@@ -48,11 +48,11 @@ namespace System.Net.Http
         private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
 
         // When reading response content, keep track of the number of bytes left in the current data frame.
-        private long _responseDataPayloadRemaining = 0;
+        private long _responseDataPayloadRemaining;
 
         // When our request content has a precomputed length, it is sent over a single DATA frame.
         // Keep track of how much is remaining in that frame.
-        private long _requestContentLengthRemaining = 0;
+        private long _requestContentLengthRemaining;
 
         public long StreamId
         {
@@ -1228,7 +1228,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask<int>(Task.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream))));
+                    return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
@@ -1275,7 +1275,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream))));
+                    return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
                 return _stream.WriteRequestContentAsync(buffer, cancellationToken);

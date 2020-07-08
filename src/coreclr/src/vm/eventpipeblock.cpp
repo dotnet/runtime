@@ -462,6 +462,4 @@ bool EventPipeStackBlock::WriteStack(DWORD stackId, StackContents* pStack)
 
     return true;
 }
-
-
 #endif // FEATURE_PERFTRACING

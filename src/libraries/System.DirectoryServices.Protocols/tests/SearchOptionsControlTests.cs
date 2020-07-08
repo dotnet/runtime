@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SearchOptionsControlTests
     {
         [Fact]
@@ -18,7 +20,8 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1340", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 1 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 1 } : new byte[] { 48, 3, 2, 1, 1 };
+            Assert.Equal(expected, control.GetValue());
         }
 
         [Fact]
@@ -30,7 +33,8 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1340", control.Type);
 
-            Assert.Equal(new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 }, control.GetValue());
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 } : new byte[] { 48, 3, 2, 1, 2 };
+            Assert.Equal(expected, control.GetValue());
         }
 
         [Theory]

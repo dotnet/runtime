@@ -357,7 +357,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public static string AnchorDescription(int anchors)
         {
             var sb = new StringBuilder();
@@ -608,6 +608,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Start:
                 case RegexNode.EndZ:
                 case RegexNode.End:
+                case RegexNode.UpdateBumpalong:
                     PushFC(new RegexFC(true));
                     break;
 

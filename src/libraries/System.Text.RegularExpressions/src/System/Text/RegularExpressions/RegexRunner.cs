@@ -675,7 +675,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Dump the current state
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal virtual void DumpState()
         {
             Debug.WriteLine($"Text:  {TextposDescription()}");
@@ -683,7 +683,7 @@ namespace System.Text.RegularExpressions
             Debug.WriteLine($"Stack: {StackDescription(runstack!, runstackpos)}");
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private static string StackDescription(int[] a, int index)
         {
             var sb = new StringBuilder();
@@ -713,7 +713,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal virtual string TextposDescription()
         {
             var sb = new StringBuilder();

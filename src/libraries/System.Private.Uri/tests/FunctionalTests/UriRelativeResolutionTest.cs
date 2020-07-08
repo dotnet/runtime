@@ -158,7 +158,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_RightToLeft()
         {
-            var loremIpsumArabic = "\u0643\u0644 \u0627\u0644\u0649 \u0627\u0644\u0639\u0627\u0644\u0645";
+            string loremIpsumArabic = "\u0643\u0644 \u0627\u0644\u0649 \u0627\u0644\u0639\u0627\u0644\u0645";
 
             string schemeAndRelative = "scheme:" + loremIpsumArabic;
             Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -170,7 +170,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_Unicode_Glitchy()
         {
-            var glitchy = "4\u0308\u0311\u031A\u030B\u0352\u034A\u030D\u036C\u036C\u036B\u0344\u0312\u0322\u0334\u0328\u0319\u0323\u0359\u0317\u0324\u0319\u032D\u0331\u0319\u031F\u0331\u0330\u0347\u0353\u0318\u032F\u032C\u03162\u0303\u0313\u031A\u0368\u036E\u0368\u0301\u0367\u0368\u0306\u0305\u0350\u036A\u036F\u0307\u0328\u035F\u0321\u0361\u0320\u032F\u032B\u034E\u0326\u033B";
+            string glitchy = "4\u0308\u0311\u031A\u030B\u0352\u034A\u030D\u036C\u036C\u036B\u0344\u0312\u0322\u0334\u0328\u0319\u0323\u0359\u0317\u0324\u0319\u032D\u0331\u0319\u031F\u0331\u0330\u0347\u0353\u0318\u032F\u032C\u03162\u0303\u0313\u031A\u0368\u036E\u0368\u0301\u0367\u0368\u0306\u0305\u0350\u036A\u036F\u0307\u0328\u035F\u0321\u0361\u0320\u032F\u032B\u034E\u0326\u033B";
 
             string schemeAndRelative = "scheme:" + glitchy;
             Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -182,11 +182,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Unicode_Format_Character_Combinations_Scheme()
         {
-            var combinations = CartesianProductAll(_ => CharUnicodeInfo.GetUnicodeCategory(_) == UnicodeCategory.Format && !UriHelper.IsIriDisallowedBidi(_));
+            IEnumerable<string> combinations = CartesianProductAll(c => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.Format && !UriHelper.IsIriDisallowedBidi(c));
 
-            foreach (var combination in combinations)
+            foreach (string combination in combinations)
             {
-                var escaped = UriHelper.IriEscapeNonUcsChars(combination);
+                string escaped = UriHelper.IriEscapeNonUcsChars(combination);
 
                 string schemeAndRelative = $"scheme:{escaped}";
                 Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -199,9 +199,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Unicode_Reserved_Character_Combinations_Scheme()
         {
-            var combinations = CartesianProductAll(UriHelper.IsIriReserved);
+            IEnumerable<string> combinations = CartesianProductAll(UriHelper.IsIriReserved);
 
-            foreach (var combination in combinations)
+            foreach (string combination in combinations)
             {
                 string schemeAndRelative = $"scheme:{combination}";
                 Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -214,9 +214,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Unicode_IriUnreserved_Character_Combinations_Scheme()
         {
-            var combinations = CartesianProductAll(UriHelper.IsIriUnreserved, _ => false, false);
+            IEnumerable<string> combinations = CartesianProductAll(UriHelper.IsIriUnreserved, _ => false, false);
 
-            foreach (var combination in combinations)
+            foreach (string combination in combinations)
             {
                 string schemeAndRelative = $"scheme:{combination}";
                 Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -229,11 +229,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Unicode_SurrogatePairs_Scheme()
         {
-            var combinations = CartesianProductAll(char.IsHighSurrogate, char.IsLowSurrogate, false);
+            IEnumerable<string> combinations = CartesianProductAll(char.IsHighSurrogate, char.IsLowSurrogate, false);
 
-            foreach (var combination in combinations)
+            foreach (string combination in combinations)
             {
-                var escape = !UriHelper.IsIriAllowedSurrogate(combination);
+                bool escape = !UriHelper.IsIriAllowedSurrogate(combination);
 
                 string schemeAndRelative = escape ? $"scheme:{UriHelper.IriEscapeAll(combination)}" : $"scheme:{combination}";
                 Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
@@ -245,9 +245,9 @@ namespace System.PrivateUri.Tests
 
         private IEnumerable<string> CartesianProductAll(Func<char, bool> filter, Func<char, bool> secondFilter = null, bool includeSingleChars = true)
         {
-            var characters = Enumerable.Range(0, 0xFFFF).Select(_ => (char)_).Where(filter).ToList();
+            char[] characters = Enumerable.Range(0, 0xFFFF).Select(c => (char)c).Where(filter).ToArray();
 
-            var secondCharacters = secondFilter == null ? characters : Enumerable.Range(0, 0xFFFF).Select(_ => (char)_).Where(secondFilter).ToList();
+            char[] secondCharacters = secondFilter == null ? characters : Enumerable.Range(0, 0xFFFF).Select(c => (char)c).Where(secondFilter).ToArray();
 
             return CartesianProduct(characters, secondCharacters, includeSingleChars);
         }
@@ -280,11 +280,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsFileLikeUri_MissingRootSlash_ThrowsUriFormatException()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-          {
-              string partialPath = "g:a";
-              Uri resolved = new Uri(_fullBaseUri, partialPath);
-          });
+            string partialPath = "g:a";
+            Assert.ThrowsAny<FormatException>(() => new Uri(_fullBaseUri, partialPath));
         }
 
         #region PathCompression
@@ -617,11 +614,7 @@ namespace System.PrivateUri.Tests
             Uri baseUri = new Uri("http://nothing.com/");
             Uri testUri = new Uri("https://specialPort.com:00065535/path?query#fragment");
 
-            int throwAway = testUri.Port; // Trigger parsing.
-
             Uri resultUri = new Uri(baseUri, testUri);
-
-            throwAway = resultUri.Port; // For Debugging.
 
             Assert.Equal(testUri.Port, resultUri.Port);
         }
@@ -694,9 +687,9 @@ namespace System.PrivateUri.Tests
             {
                 var result = new StringBuilder();
 
-                var bytes = Encoding.UTF8.GetBytes(input);
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
 
-                foreach (var b in bytes)
+                foreach (byte b in bytes)
                 {
                     result.Append('%');
                     result.Append(b.ToString("X2"));
@@ -709,7 +702,7 @@ namespace System.PrivateUri.Tests
             {
                 var result = new StringBuilder();
 
-                foreach (var c in input)
+                foreach (char c in input)
                 {
                     if (IsIriUcschar(c))
                     {
@@ -718,9 +711,9 @@ namespace System.PrivateUri.Tests
                         continue;
                     }
 
-                    var bytes = Encoding.UTF8.GetBytes(c.ToString());
+                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
 
-                    foreach (var b in bytes)
+                    foreach (byte b in bytes)
                     {
                         result.Append('%');
                         result.Append(b.ToString("X2"));
@@ -731,7 +724,7 @@ namespace System.PrivateUri.Tests
             }
             public static bool IsIriAllowedSurrogate(string pair)
             {
-                var inRange =
+                bool inRange =
                     _iriAllowedSurrogateRanges.Any(
                         _ => string.CompareOrdinal(_.Item1, pair) <= 0 && string.CompareOrdinal(_.Item2, pair) >= 0);
 
@@ -756,7 +749,7 @@ namespace System.PrivateUri.Tests
 
             private static bool IsIriUcschar(char c)
             {
-                var inRange = _iriUcscharRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
+                bool inRange = _iriUcscharRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
 
                 return inRange;
             }
@@ -778,7 +771,7 @@ namespace System.PrivateUri.Tests
                 */
 
                 // https://www.ietf.org/rfc/rfc3987.txt 2.2
-                var inRange = _iriUnreservedRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
+                bool inRange = _iriUnreservedRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
 
                 return inRange;
             }

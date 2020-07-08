@@ -67,6 +67,19 @@ namespace System.Net.Http.Json
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
             {
+#if NETCOREAPP
+                Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
+                try
+                {
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    // DisposeAsync will flush any partial write buffers. In practice our partial write
+                    // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
+                    await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                }
+#else
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
                     await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
@@ -75,6 +88,7 @@ namespace System.Net.Http.Json
                     // acceptable to Flush a Stream (multiple times) prior to completion.
                     await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(false);
                 }
+#endif
             }
             else
             {

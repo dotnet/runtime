@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -37,14 +36,14 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [return: MaybeNull]
-        public static TValue Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
+        public static TValue Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
         {
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return Deserialize<TValue>(json, typeof(TValue), options)!;
+            return Deserialize<TValue>(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -69,7 +68,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static object? Deserialize(string json, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(string json, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (json == null)
             {
@@ -86,6 +85,7 @@ namespace System.Text.Json
             return value;
         }
 
+        [return: MaybeNull]
         private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;

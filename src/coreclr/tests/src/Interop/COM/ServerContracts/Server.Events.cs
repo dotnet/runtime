@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 618 // Must test deprecated features
-
 namespace Server.Contract
 {
     using System;
@@ -189,5 +187,3 @@ namespace Server.Contract
         }
     }
 }
-
-#pragma warning restore 618 // Must test deprecated features

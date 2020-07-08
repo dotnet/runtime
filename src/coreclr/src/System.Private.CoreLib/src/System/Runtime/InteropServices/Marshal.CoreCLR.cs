@@ -26,6 +26,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
             if (t is null)
@@ -602,10 +604,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(obj));
-            }
 
             // Retrieve the data from the __ComObject.
             return co.GetData(key);
@@ -631,10 +629,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(obj));
-            }
 
             // Retrieve the data from the __ComObject.
             return co.SetData(key, data);
@@ -659,10 +653,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
-            if (t.IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_TypeIsWinRTType, nameof(t));
-            }
 
             if (o is null)
             {
@@ -672,10 +662,6 @@ namespace System.Runtime.InteropServices
             if (!o.GetType().IsCOMObject)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
-            }
-            if (o.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(o));
             }
 
             // Check to see if we have nothing to do.

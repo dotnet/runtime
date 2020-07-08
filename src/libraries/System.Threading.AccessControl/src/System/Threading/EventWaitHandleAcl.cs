@@ -25,7 +25,7 @@ namespace System.Threading
         /// -or-
         /// An <see cref="EventWaitHandle" /> with system-wide name <paramref name="name" /> cannot be created. An <see cref="EventWaitHandle" /> of a different type might have the same name.</exception>
         /// <remarks>If a `name` is passed and the system event already exists, the existing event is returned. If `name` is `null` or <see cref="string.Empty" />, a new local event is always created.</remarks>
-        public static unsafe EventWaitHandle Create(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
+        public static unsafe EventWaitHandle Create(bool initialState, EventResetMode mode, string? name, out bool createdNew, EventWaitHandleSecurity? eventSecurity)
         {
             if (eventSecurity == null)
             {
@@ -68,7 +68,7 @@ namespace System.Threading
             }
         }
 
-        private static void ValidateHandle(SafeWaitHandle handle, string name, out bool createdNew)
+        private static void ValidateHandle(SafeWaitHandle handle, string? name, out bool createdNew)
         {
             int errorCode = Marshal.GetLastWin32Error();
 

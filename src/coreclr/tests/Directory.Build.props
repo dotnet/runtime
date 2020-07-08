@@ -57,21 +57,12 @@
     <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
   </PropertyGroup>
 
-  <!-- Which tests can we build? Default: All tests.
+  <!-- Which tests can we build? Default: Build managed tests for this target.
     At the command-line, the user can specify:
-    +  /p:CLRTestNeedTargetToBuild=targetGeneric    Only build tests which run on any target platform.
-    +  /p:CLRTestNeedTargetToBuild=targetSpecific   Only build tests which run on a specific target platform.
+    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
    -->
   <PropertyGroup>
-    <CLRTestNeedTargetToBuild></CLRTestNeedTargetToBuild>
-  </PropertyGroup>
-
-  <!-- Where to put a "testhost" for running corefx tests -->
-  <PropertyGroup>
-    <TestHostVersion>$(ProductVersion)</TestHostVersion>
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', 'testhost'))</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(TestHostVersion)'))</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(TestHostVersion)'))</NETCoreAppTestSharedFrameworkPath>
+    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
   </PropertyGroup>
 
 </Project>

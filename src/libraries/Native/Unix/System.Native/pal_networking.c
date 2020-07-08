@@ -7,6 +7,7 @@
 #include "pal_io.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
+#include <pal_networking_common.h>
 #include <fcntl.h>
 
 #include <stdlib.h>
@@ -22,6 +23,10 @@
 #include <sys/event.h>
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#endif
+#if HAVE_SYS_PROCINFO_H
+#include <sys/proc_info.h>
+#include <libproc.h>
 #endif
 #include <errno.h>
 #include <netdb.h>
@@ -678,7 +683,7 @@ int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t sock
 
     if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        return Error_EAFNOSUPPORT;
+        *addressFamily = AddressFamily_AF_UNKNOWN;
     }
 
     return Error_SUCCESS;
@@ -1343,6 +1348,34 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
 }
 
+int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
+{
+    if (buffer == NULL || bufferLen < 0 || received == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+    while ((res = recv(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+
+    if (res != -1)
+    {
+        *received = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *received = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
     if (messageHeader == NULL || received == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1386,6 +1419,38 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     return SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
+{
+    if (buffer == NULL || bufferLen < 0 || sent == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+#if defined(__APPLE__) && __APPLE__
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+#else
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+#endif
+    if (res != -1)
+    {
+        *sent = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
     if (messageHeader == NULL || sent == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1407,7 +1472,7 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
-    // possible OSX kernel bug:  #31927
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
@@ -1562,29 +1627,7 @@ int32_t SystemNative_Listen(intptr_t socket, int32_t backlog)
 
 int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 {
-    int fd = ToFileDescriptor(socket);
-
-    int how;
-    switch (socketShutdown)
-    {
-        case SocketShutdown_SHUT_READ:
-            how = SHUT_RD;
-            break;
-
-        case SocketShutdown_SHUT_WRITE:
-            how = SHUT_WR;
-            break;
-
-        case SocketShutdown_SHUT_BOTH:
-            how = SHUT_RDWR;
-            break;
-
-        default:
-            return Error_EINVAL;
-    }
-
-    int err = shutdown(fd, how);
-    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return Common_Shutdown(socket, socketShutdown);
 }
 
 int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
@@ -1609,14 +1652,14 @@ int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
     return Error_SUCCESS;
 }
 
-static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketOptionLevel, int* optLevel, int* optName)
+static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socketOptionName, int* optLevel, int* optName)
 {
-    switch (socketOptionName)
+    switch (socketOptionLevel)
     {
         case SocketOptionLevel_SOL_SOCKET:
             *optLevel = SOL_SOCKET;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_DEBUG:
                     *optName = SO_DEBUG;
@@ -1697,7 +1740,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IP:
             *optLevel = IPPROTO_IP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IP_OPTIONS:
                     *optName = IP_OPTIONS;
@@ -1776,7 +1819,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IPV6:
             *optLevel = IPPROTO_IPV6;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IPV6_HOPLIMIT:
                     *optName = IPV6_HOPLIMIT;
@@ -1810,7 +1853,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_TCP:
             *optLevel = IPPROTO_TCP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_TCP_NODELAY:
                     *optName = TCP_NODELAY;
@@ -1842,7 +1885,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_UDP:
             *optLevel = IPPROTO_UDP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 // case SocketOptionName_SO_UDP_NOCHECKSUM:
 
@@ -1906,7 +1949,7 @@ int32_t SystemNative_GetSockOpt(
     int fd = ToFileDescriptor(socket);
 
     //
-    // Handle some special cases for compatibility with Windows
+    // Handle some special cases for compatibility with Windows and OSX
     //
     if (socketOptionLevel == SocketOptionLevel_SOL_SOCKET)
     {
@@ -1943,6 +1986,25 @@ int32_t SystemNative_GetSockOpt(
 #endif
             return Error_SUCCESS;
         }
+#if defined(__APPLE__) && HAVE_SYS_PROCINFO_H
+        // OSX does not have SO_ACCEPTCONN getsockopt.
+        else if (socketOptionName == SocketOptionName_SO_ACCEPTCONN)
+        {
+            if (*optionLen != sizeof(int32_t))
+            {
+                return Error_EINVAL;
+            }
+
+            struct socket_fdinfo fdi;
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+            int value = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+            *(int32_t*)optionValue = value;
+            return Error_SUCCESS;
+        }
+#endif
     }
 
     int optLevel, optName;
@@ -2422,15 +2484,39 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType)
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
-    if (addressFamily == NULL || socketType == NULL || protocolType == NULL)
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
     {
         return Error_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
 
+#if HAVE_SYS_PROCINFO_H
+    struct socket_fdinfo fdi;
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    {
+        return Error_EFAULT;
+    }
+
+    if (!TryConvertAddressFamilyPlatformToPal((sa_family_t)fdi.psi.soi_family, addressFamily))
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+    if (!TryConvertSocketTypePlatformToPal(fdi.psi.soi_type, socketType))
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+    if (!TryConvertProtocolTypePlatformToPal(*addressFamily, fdi.psi.soi_protocol, protocolType))
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
+    *isListening = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+#else
 #ifdef SO_DOMAIN
     int domainValue;
     socklen_t domainLength = sizeof(int);
@@ -2461,6 +2547,17 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
         *protocolType = ProtocolType_PT_UNKNOWN;
     }
 
+    int listeningValue;
+    socklen_t listeningLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &listeningLength) == 0)
+    {
+        *isListening = (listeningValue != 0);
+    }
+    else
+    {
+        *isListening = 0;
+    }
+#endif
     return Error_SUCCESS;
 }
 
@@ -2968,6 +3065,11 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+int32_t SystemNative_GetMaximumAddressSize(void)
+{
+    return sizeof(struct sockaddr_storage);
 }
 
 int32_t SystemNative_Disconnect(intptr_t socket)

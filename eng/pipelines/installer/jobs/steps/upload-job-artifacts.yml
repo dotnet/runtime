@@ -1,7 +1,7 @@
 parameters:
   name: ''
   runtimeFlavor: 'coreclr'
-
+  runtimeVariant: ''
   isOfficialBuild: false
 
 steps:
@@ -38,6 +38,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
-    artifactName: Installer-Logs-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
+    artifactName: Installer-Logs-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

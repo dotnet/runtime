@@ -162,12 +162,6 @@ EXTERN_C const IID IID_IAssemblyName;
             /* [out] */ LPVOID pvProperty,
             /* [out][in] */ LPDWORD pcbProperty) = 0;
         
-        virtual HRESULT STDMETHODCALLTYPE GetName( 
-            /* [annotation][out][in] */ 
-            _Inout_  LPDWORD lpcwBuffer,
-            /* [annotation][out] */ 
-            _Out_writes_opt_(*lpcwBuffer)  WCHAR *pwzName) = 0;
-        
     };
     
     
@@ -201,13 +195,6 @@ EXTERN_C const IID IID_IAssemblyName;
             /* [out] */ LPVOID pvProperty,
             /* [out][in] */ LPDWORD pcbProperty);
         
-        HRESULT ( STDMETHODCALLTYPE *GetName )( 
-            IAssemblyName * This,
-            /* [annotation][out][in] */ 
-            _Inout_  LPDWORD lpcwBuffer,
-            /* [annotation][out] */ 
-            _Out_writes_opt_(*lpcwBuffer)  WCHAR *pwzName);
-        
         END_INTERFACE
     } IAssemblyNameVtbl;
 
@@ -236,9 +223,6 @@ EXTERN_C const IID IID_IAssemblyName;
 
 #define IAssemblyName_GetProperty(This,PropertyId,pvProperty,pcbProperty)	\
     ( (This)->lpVtbl -> GetProperty(This,PropertyId,pvProperty,pcbProperty) ) 
-
-#define IAssemblyName_GetName(This,lpcwBuffer,pwzName)	\
-    ( (This)->lpVtbl -> GetName(This,lpcwBuffer,pwzName) ) 
 
 #endif /* COBJMACROS */
 

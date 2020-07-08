@@ -23,7 +23,7 @@ namespace System.Net.Mail
         private bool _identityRequired;
         private bool _shouldAbort;
 
-        private bool _enableSsl = false;
+        private bool _enableSsl;
         private X509CertificateCollection? _clientCertificates;
 
         internal SmtpTransport(SmtpClient client) : this(client, SmtpAuthenticationManager.GetModules())

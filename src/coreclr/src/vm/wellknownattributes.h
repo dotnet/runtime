@@ -30,11 +30,13 @@ enum class WellKnownAttribute : DWORD
     IsByRefLike,
     PrimaryInteropAssembly,
     ManagedToNativeComInteropStub,
-    NativeCallable,
+    UnmanagedCallersOnly,
+    NativeCallableInternal, // This is needed to support MCG scenarios
     TypeIdentifier,
     UnmanagedFunctionPointer,
     ThreadStatic,
     WinRTMarshalingBehaviorAttribute,
+    PreserveBaseOverridesAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -89,8 +91,10 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute";
         case WellKnownAttribute::ManagedToNativeComInteropStub:
             return "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
-        case WellKnownAttribute::NativeCallable:
-            return "System.Runtime.InteropServices.NativeCallableAttribute";
+        case WellKnownAttribute::UnmanagedCallersOnly:
+            return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
+        case WellKnownAttribute::NativeCallableInternal:
+            return "System.Runtime.InteropServices.NativeCallableInternalAttribute";
         case WellKnownAttribute::TypeIdentifier:
             return "System.Runtime.InteropServices.TypeIdentifierAttribute";
         case WellKnownAttribute::UnmanagedFunctionPointer:
@@ -99,6 +103,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.ThreadStaticAttribute";
         case WellKnownAttribute::WinRTMarshalingBehaviorAttribute:
             return "Windows.Foundation.Metadata.MarshalingBehaviorAttribute";
+        case WellKnownAttribute::PreserveBaseOverridesAttribute:
+            return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

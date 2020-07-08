@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,13 +17,13 @@ namespace System.Data.Common
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
         // keyword->value currently listed in the connection string
-        private Dictionary<string, object> _currentValues;
+        private Dictionary<string, object>? _currentValues;
 
         // cached connectionstring to avoid constant rebuilding
         // and to return a user's connectionstring as is until editing occurs
-        private string _connectionString = string.Empty;
+        private string? _connectionString = string.Empty;
 
-        private PropertyDescriptorCollection _propertyDescriptors;
+        private PropertyDescriptorCollection? _propertyDescriptors;
         private bool _browsableConnectionString = true;
         private readonly bool _useOdbcRules;
 
@@ -50,7 +51,7 @@ namespace System.Data.Common
         {
             get
             {
-                Dictionary<string, object> values = _currentValues;
+                Dictionary<string, object>? values = _currentValues;
                 if (null == values)
                 {
                     values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -60,21 +61,22 @@ namespace System.Data.Common
             }
         }
 
-        object IDictionary.this[object keyword]
+        object? IDictionary.this[object keyword]
         {
             // delegate to this[string keyword]
             get { return this[ObjectToString(keyword)]; }
-            set { this[ObjectToString(keyword)] = value; }
+            set { this[ObjectToString(keyword)] = value!; }
         }
 
         [Browsable(false)]
+        [AllowNull]
         public virtual object this[string keyword]
         {
             get
             {
                 DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.get_Item|API> {0}, keyword='{1}'", ObjectID, keyword);
                 ADP.CheckArgumentNull(keyword, nameof(keyword));
-                object value;
+                object? value;
                 if (CurrentValues.TryGetValue(keyword, out value))
                 {
                     return value;
@@ -125,21 +127,23 @@ namespace System.Data.Common
         }
 
         [RefreshPropertiesAttribute(RefreshProperties.All)]
+        [AllowNull]
         public string ConnectionString
         {
             get
             {
                 DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.get_ConnectionString|API> {0}", ObjectID);
-                string connectionString = _connectionString;
+                string? connectionString = _connectionString;
                 if (null == connectionString)
                 {
                     StringBuilder builder = new StringBuilder();
                     foreach (string keyword in Keys)
                     {
-                        object value;
+                        Debug.Assert(keyword != null);
+                        object? value;
                         if (ShouldSerialize(keyword) && TryGetValue(keyword, out value))
                         {
-                            string keyvalue = ConvertValueToString(value);
+                            string? keyvalue = ConvertValueToString(value);
                             AppendKeyValuePair(builder, keyword, keyvalue, _useOdbcRules);
                         }
                     }
@@ -245,26 +249,26 @@ namespace System.Data.Common
             }
         }
 
-        internal virtual string ConvertValueToString(object value)
+        internal virtual string? ConvertValueToString(object? value)
         {
             return (value == null) ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
-        void IDictionary.Add(object keyword, object value)
+        void IDictionary.Add(object keyword, object? value)
         {
-            Add(ObjectToString(keyword), value);
+            Add(ObjectToString(keyword), value!);
         }
         public void Add(string keyword, object value)
         {
             this[keyword] = value;
         }
 
-        public static void AppendKeyValuePair(StringBuilder builder, string keyword, string value)
+        public static void AppendKeyValuePair(StringBuilder builder, string keyword, string? value)
         {
             DbConnectionOptions.AppendKeyValuePairBuilder(builder, keyword, value, false);
         }
 
-        public static void AppendKeyValuePair(StringBuilder builder, string keyword, string value, bool useOdbcRules)
+        public static void AppendKeyValuePair(StringBuilder builder, string keyword, string? value, bool useOdbcRules)
         {
             DbConnectionOptions.AppendKeyValuePairBuilder(builder, keyword, value, useOdbcRules);
         }
@@ -303,13 +307,12 @@ namespace System.Data.Common
         {
             ADP.CheckArgumentNull(connectionStringBuilder, nameof(connectionStringBuilder));
 
-
             DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.EquivalentTo|API> {0}, connectionStringBuilder={1}", ObjectID, connectionStringBuilder.ObjectID);
             if ((GetType() != connectionStringBuilder.GetType()) || (CurrentValues.Count != connectionStringBuilder.CurrentValues.Count))
             {
                 return false;
             }
-            object value;
+            object? value;
             foreach (KeyValuePair<string, object> entry in CurrentValues)
             {
                 if (!connectionStringBuilder.CurrentValues.TryGetValue(entry.Key, out value) || !entry.Value.Equals(value))
@@ -373,7 +376,7 @@ namespace System.Data.Common
             return ConnectionString;
         }
 
-        public virtual bool TryGetValue(string keyword, out object value)
+        public virtual bool TryGetValue(string keyword, [NotNullWhen(true)] out object? value)
         {
             ADP.CheckArgumentNull(keyword, nameof(keyword));
             return CurrentValues.TryGetValue(keyword, out value);
@@ -388,7 +391,7 @@ namespace System.Data.Common
 
         private PropertyDescriptorCollection GetProperties()
         {
-            PropertyDescriptorCollection propertyDescriptors = _propertyDescriptors;
+            PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
             if (null == propertyDescriptors)
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|INFO> {0}", ObjectID);
@@ -418,9 +421,10 @@ namespace System.Data.Common
             {
                 // show all strongly typed properties (not already added)
                 // except ConnectionString iff BrowsableConnectionString
-                Attribute[] attributes;
+                Attribute[]? attributes;
                 foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
                 {
+                    Debug.Assert(reflected != null);
                     if (ADP.ConnectionString != reflected.Name)
                     {
                         string displayName = reflected.DisplayName;
@@ -449,6 +453,7 @@ namespace System.Data.Common
                     attributes = null;
                     foreach (string keyword in Keys)
                     {
+                        Debug.Assert(keyword != null);
                         if (!propertyDescriptors.ContainsKey(keyword))
                         {
                             object value = this[keyword];
@@ -479,7 +484,7 @@ namespace System.Data.Common
                                 vtype = typeof(string);
                             }
 
-                            Attribute[] useAttributes = attributes;
+                            Attribute[]? useAttributes = null;
                             if (StringComparer.OrdinalIgnoreCase.Equals(DbConnectionStringKeywords.Password, keyword) ||
                                 StringComparer.OrdinalIgnoreCase.Equals(DbConnectionStringSynonyms.Pwd, keyword))
                             {
@@ -511,7 +516,7 @@ namespace System.Data.Common
             }
         }
 
-        private PropertyDescriptorCollection GetProperties(Attribute[] attributes)
+        private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
             if ((null == attributes) || (0 == attributes.Length))
@@ -529,12 +534,14 @@ namespace System.Data.Common
             // Iterate over each property
             foreach (PropertyDescriptor property in propertyDescriptors)
             {
+                Debug.Assert(property != null);
+
                 // Identify if this property's attributes match the specification
                 bool match = true;
                 foreach (Attribute attribute in attributes)
                 {
                     Attribute attr = property.Attributes[attribute.GetType()];
-                    if ((attr == null && !attribute.IsDefaultAttribute()) || !attr.Match(attribute))
+                    if ((attr == null && !attribute.IsDefaultAttribute()) || attr?.Match(attribute) == false)
                     {
                         match = false;
                         break;
@@ -556,6 +563,7 @@ namespace System.Data.Common
             return new PropertyDescriptorCollection(filteredPropertiesArray);
         }
 
+#nullable disable
         string ICustomTypeDescriptor.GetClassName()
         {
             return TypeDescriptor.GetClassName(this, true);
@@ -604,5 +612,6 @@ namespace System.Data.Common
         {
             return this;
         }
+#nullable enable
     }
 }

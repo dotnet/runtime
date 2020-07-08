@@ -41,7 +41,6 @@ namespace System.IO
 
         protected TextWriter()
         {
-            _internalFormatProvider = null;  // Ask for CurrentCulture all the time.
         }
 
         protected TextWriter(IFormatProvider? formatProvider)
@@ -89,7 +88,7 @@ namespace System.IO
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
         }
 

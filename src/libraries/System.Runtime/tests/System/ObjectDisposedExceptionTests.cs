@@ -15,7 +15,7 @@ namespace System.Tests
         {
             string objectName = "theObject";
             var exception = new ObjectDisposedException(objectName);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, validateMessage: false);
             Assert.Contains(objectName, exception.Message);
 
             var exceptionNullObjectName = new ObjectDisposedException(null);
@@ -28,7 +28,7 @@ namespace System.Tests
             string message = "object disposed";
             var innerException = new Exception("Inner exception");
             var exception = new ObjectDisposedException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, innerException: innerException, message: message);
             Assert.Equal("", exception.ObjectName);
         }
 
@@ -38,7 +38,7 @@ namespace System.Tests
             string message = "object disposed";
             string objectName = "theObject";
             var exception = new ObjectDisposedException(objectName, message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OBJECTDISPOSED, validateMessage: false);
             Assert.Equal(objectName, exception.ObjectName);
             Assert.Contains(message, exception.Message);
             Assert.Contains(objectName, exception.Message);

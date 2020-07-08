@@ -46,7 +46,7 @@ enum class CallerGCMode
 {
     Unknown,
     Coop,
-    Preemptive    // (e.g. NativeCallableAttribute)
+    Preemptive    // (e.g. UnmanagedCallersOnlyAttribute)
 };
 
 // Non-CPU-specific helper functions called by the CPU-dependent code

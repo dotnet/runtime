@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
-        /// <returns>A <see cref="Task"/> that only completes when the token is triggeredor shutdown is triggered.</returns>
+        /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
-        /// <returns>A <see cref="Task"/> that only completes when the token is triggeredor shutdown is triggered.</returns>
+        /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);

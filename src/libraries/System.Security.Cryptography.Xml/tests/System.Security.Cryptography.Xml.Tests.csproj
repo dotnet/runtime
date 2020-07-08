@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
-  </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="DataObjectTest.cs" />
@@ -53,7 +50,7 @@
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="KeyInfo_ArbitraryElements.cs" />
     <Compile Include="Reference_ArbitraryElements.cs" />
     <Compile Include="Signature_ArbitraryElements.cs" />

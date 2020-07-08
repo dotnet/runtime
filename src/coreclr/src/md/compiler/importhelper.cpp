@@ -857,7 +857,7 @@ ImportHelper::FindTypeDefByName(
         szTypeDefNamespace = "";
 
     if (tkEnclosingClass == TokenFromRid(1, mdtModule))
-    {   // Module scope is the same as no scope (used in .winmd files as TypeRef scope for self-references)
+    {   // Module scope is the same as no scope
         tkEnclosingClass = mdTokenNil;
     }
 

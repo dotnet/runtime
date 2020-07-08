@@ -52,6 +52,7 @@ namespace System.IO.Tests
             Assert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz")));
 
             Assert.Null(Path.GetDirectoryName(Path.GetPathRoot(curDir)));
+            Assert.True(Path.GetDirectoryName(Path.GetPathRoot(curDir.AsSpan())).IsEmpty);
         }
 
         [Fact]
@@ -108,10 +109,16 @@ namespace System.IO.Tests
         public void GetPathRoot_Basic()
         {
             string cwd = Directory.GetCurrentDirectory();
-            Assert.Equal(cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1), Path.GetPathRoot(cwd));
+            string substring = cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1);
+
+            Assert.Equal(substring, Path.GetPathRoot(cwd));
+            PathAssert.Equal(substring.AsSpan(), Path.GetPathRoot(cwd.AsSpan()));
+
             Assert.True(Path.IsPathRooted(cwd));
 
             Assert.Equal(string.Empty, Path.GetPathRoot(@"file.exe"));
+            Assert.True(Path.GetPathRoot(@"file.exe".AsSpan()).IsEmpty);
+
             Assert.False(Path.IsPathRooted("file.exe"));
         }
 
@@ -417,6 +424,7 @@ namespace System.IO.Tests
                     Assert.EndsWith(bad, Path.GetFullPath(bad));
                 }
                 Assert.Equal(string.Empty, Path.GetPathRoot(bad));
+                Assert.True(Path.GetPathRoot(bad.AsSpan()).IsEmpty);
                 Assert.False(Path.IsPathRooted(bad));
             });
         }
@@ -431,7 +439,7 @@ namespace System.IO.Tests
                 Assert.Equal(string.Empty, new string(Path.GetExtension(bad.AsSpan())));
                 Assert.Equal(bad, new string(Path.GetFileName(bad.AsSpan())));
                 Assert.Equal(bad, new string(Path.GetFileNameWithoutExtension(bad.AsSpan())));
-                Assert.Equal(string.Empty, new string(Path.GetPathRoot(bad.AsSpan())));
+                Assert.True(Path.GetPathRoot(bad.AsSpan()).IsEmpty);
                 Assert.False(Path.IsPathRooted(bad.AsSpan()));
             });
         }

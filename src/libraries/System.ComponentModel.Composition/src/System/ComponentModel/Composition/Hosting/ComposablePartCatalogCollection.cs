@@ -24,9 +24,9 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanged;
         private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanging;
         private List<ComposablePartCatalog> _catalogs = new List<ComposablePartCatalog>();
-        private volatile bool _isCopyNeeded = false;
-        private volatile bool _isDisposed = false;
-        private bool _hasChanged = false;
+        private volatile bool _isCopyNeeded;
+        private volatile bool _isDisposed;
+        private bool _hasChanged;
 
         public ComposablePartCatalogCollection(
             IEnumerable<ComposablePartCatalog>? catalogs,

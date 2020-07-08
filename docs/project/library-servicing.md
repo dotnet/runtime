@@ -25,7 +25,7 @@ If this library ships both inbox on a platform and in its own library package th
 ```
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
-    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.0.3.0</AssemblyVersion>
+    <AssemblyVersion Condition="!$(TargetFramework.StartsWith('net4'))' != 'true'">4.0.3.0</AssemblyVersion>
 ```
 Where the `AssemblyVersion` is set to the old version before updating. To determine if the library ships inbox you can look at for `InboxOnTargetFramework` item groups or `TreatAsOutOfBox` suppressions in the pkgproj for the library.
 

@@ -246,6 +246,8 @@ CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
 
 // clang-format off
 
@@ -352,12 +354,19 @@ CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT fu
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This
                                                  // mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
+CONFIG_INTEGER(FastTailCalls, W("FastTailCalls"), 1) // If set, allow fast tail calls; otherwise allow only helper-based
+                                                     // calls
+                                                     // for explicit tail calls.
 
 CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1 to measure noway_assert usage. Only
                                                                      // valid if MEASURE_NOWAY is defined.
 CONFIG_STRING(JitMeasureNowayAssertFile,
               W("JitMeasureNowayAssertFile")) // Set to file to write noway_assert usage to a file (if not
                                               // set: stdout). Only valid if MEASURE_NOWAY is defined.
+#if defined(DEBUG)
+CONFIG_INTEGER(EnableExtraSuperPmiQueries, W("EnableExtraSuperPmiQueries"), 0) // Make extra queries to somewhat
+                                                                               // future-proof SuperPmi method contexts.
+#endif                                                                         // DEBUG
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
@@ -429,6 +438,9 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
+
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 0) // Allow Jit to retype structs as primitive types
+                                                                       // when possible.
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

@@ -31,6 +31,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -317,6 +318,8 @@ namespace System.Reflection.Emit
             return decode_string(data, pos, out pos);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
         internal static UnmanagedMarshal get_umarshal(CustomAttributeBuilder customBuilder, bool is_field)
         {
             byte[] data = customBuilder.Data;
@@ -493,6 +496,8 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {
             byte[] data = customBuilder.Data;

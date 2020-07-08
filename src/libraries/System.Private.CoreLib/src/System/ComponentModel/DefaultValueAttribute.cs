@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
@@ -27,6 +28,8 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
+        // TODO: https://github.com/mono/linker/issues/943
+        [DynamicDependency("ConvertFromInvariantString", "System.ComponentModel.TypeConverter", "System.ComponentModel.TypeConverter")]
         public DefaultValueAttribute(Type type, string? value)
         {
             // The null check and try/catch here are because attributes should never throw exceptions.

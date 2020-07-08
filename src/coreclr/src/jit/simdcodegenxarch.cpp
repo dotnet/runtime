@@ -130,48 +130,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicSqrt:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_sqrtps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_sqrtpd;
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
-        case SIMDIntrinsicAdd:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_addps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_addpd;
-            }
-            else if (baseType == TYP_INT || baseType == TYP_UINT)
-            {
-                result = INS_paddd;
-            }
-            else if (baseType == TYP_USHORT || baseType == TYP_SHORT)
-            {
-                result = INS_paddw;
-            }
-            else if (baseType == TYP_UBYTE || baseType == TYP_BYTE)
-            {
-                result = INS_paddb;
-            }
-            else if (baseType == TYP_LONG || baseType == TYP_ULONG)
-            {
-                result = INS_paddq;
-            }
-            break;
-
         case SIMDIntrinsicSub:
             if (baseType == TYP_FLOAT)
             {
@@ -196,142 +154,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             else if (baseType == TYP_LONG || baseType == TYP_ULONG)
             {
                 result = INS_psubq;
-            }
-            break;
-
-        case SIMDIntrinsicMul:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_mulps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_mulpd;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pmullw;
-            }
-            else if ((baseType == TYP_INT) && (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported))
-            {
-                result = INS_pmulld;
-            }
-            break;
-
-        case SIMDIntrinsicDiv:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_divps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_divpd;
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
-        case SIMDIntrinsicMin:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_minps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_minpd;
-            }
-            else if (baseType == TYP_UBYTE)
-            {
-                result = INS_pminub;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pminsw;
-            }
-            else if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_BYTE)
-                {
-                    result = INS_pminsb;
-                }
-                else if (baseType == TYP_USHORT)
-                {
-                    result = INS_pminuw;
-                }
-                else if (baseType == TYP_INT)
-                {
-                    result = INS_pminsd;
-                }
-                else if (baseType == TYP_UINT)
-                {
-                    result = INS_pminud;
-                }
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
-        case SIMDIntrinsicMax:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_maxps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_maxpd;
-            }
-            else if (baseType == TYP_UBYTE)
-            {
-                result = INS_pmaxub;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pmaxsw;
-            }
-            else if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_BYTE)
-                {
-                    result = INS_pmaxsb;
-                }
-                else if (baseType == TYP_USHORT)
-                {
-                    result = INS_pmaxuw;
-                }
-                else if (baseType == TYP_INT)
-                {
-                    result = INS_pmaxsd;
-                }
-                else if (baseType == TYP_UINT)
-                {
-                    result = INS_pmaxud;
-                }
-            }
-            else
-            {
-                unreached();
-            }
-            break;
-
-        case SIMDIntrinsicAbs:
-            if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_INT)
-                {
-                    result = INS_pabsd;
-                }
-                else if (baseType == TYP_SHORT)
-                {
-                    result = INS_pabsw;
-                }
-                else if (baseType == TYP_BYTE)
-                {
-                    result = INS_pabsb;
-                }
             }
             break;
 
@@ -367,65 +189,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicLessThan:
-            // Packed integers use > with swapped operands
-            assert(baseType != TYP_INT);
-
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_cmpps;
-                assert(ival != nullptr);
-                *ival = 1;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_cmppd;
-                assert(ival != nullptr);
-                *ival = 1;
-            }
-            break;
-
-        case SIMDIntrinsicLessThanOrEqual:
-            // Packed integers use (a==b) || ( b > a) in place of a <= b.
-            assert(baseType != TYP_INT);
-
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_cmpps;
-                assert(ival != nullptr);
-                *ival = 2;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_cmppd;
-                assert(ival != nullptr);
-                *ival = 2;
-            }
-            break;
-
-        case SIMDIntrinsicGreaterThan:
-            // Packed float/double use < with swapped operands
-            assert(!varTypeIsFloating(baseType));
-
-            // SSE2 supports only signed >
-            if (baseType == TYP_INT)
-            {
-                result = INS_pcmpgtd;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                result = INS_pcmpgtw;
-            }
-            else if (baseType == TYP_BYTE)
-            {
-                result = INS_pcmpgtb;
-            }
-            else if ((baseType == TYP_LONG) && (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported))
-            {
-                result = INS_pcmpgtq;
-            }
-            break;
-
         case SIMDIntrinsicBitwiseAnd:
             if (baseType == TYP_FLOAT)
             {
@@ -441,25 +204,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicBitwiseAndNot:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_andnps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_andnpd;
-            }
-            else if (baseType == TYP_INT)
-            {
-                result = INS_pandn;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_pandn;
-            }
-            break;
-
         case SIMDIntrinsicBitwiseOr:
             if (baseType == TYP_FLOAT)
             {
@@ -472,21 +216,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             else if (varTypeIsIntegral(baseType))
             {
                 result = INS_por;
-            }
-            break;
-
-        case SIMDIntrinsicBitwiseXor:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_xorps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_xorpd;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_pxor;
             }
             break;
 
@@ -645,26 +374,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             result = INS_insertps;
             break;
 
-        case SIMDIntrinsicCeil:
-        case SIMDIntrinsicFloor:
-            if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_FLOAT)
-                {
-                    result = INS_roundps;
-                }
-                else
-                {
-                    assert(baseType == TYP_DOUBLE);
-                    result = INS_roundpd;
-                }
-
-                assert(ival != nullptr);
-                *ival = (intrinsicId == SIMDIntrinsicCeil) ? ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM
-                                                           : ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM;
-            }
-            break;
-
         default:
             assert(!"Unsupported SIMD intrinsic");
             unreached();
@@ -760,10 +469,10 @@ void CodeGen::genSIMDScalarMove(
 
 void CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg)
 {
-    // We just use `INS_xorps` instead of `getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType)`
-    // since `genSIMDZero` is used for both `System.Numerics.Vectors` and HardwareIntrinsics. Modern
-    // CPUs handle this specially in the renamer and it never hits the execution pipeline, additionally
-    // `INS_xorps` is always available (when using either the legacy or VEX encoding).
+    // We just use `INS_xorps` since `genSIMDZero` is used for both `System.Numerics.Vectors` and
+    // HardwareIntrinsics. Modern CPUs handle this specially in the renamer and it never hits the
+    // execution pipeline, additionally `INS_xorps` is always available (when using either the
+    // legacy or VEX encoding).
     inst_RV_RV(INS_xorps, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
 }
 
@@ -1062,8 +771,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSqrt || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAbs);
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;
@@ -1078,32 +786,6 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
         inst_RV_RV(ins, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
     }
     genProduceReg(simdNode);
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDIntrinsicUnOpWithImm: Generate code for SIMD Intrinsic unary operations with an imm8, such as Ceil.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-
-    regNumber   op1Reg = genConsumeReg(op1);
-    unsigned    ival;
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
-    assert((ival >= 0) && (ival <= 255));
-    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op1Reg, (int8_t)ival);
 }
 
 //----------------------------------------------------------------------------------
@@ -1627,7 +1309,26 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
         genSIMDZero(simdType, baseType, tmpReg);
         if (!varTypeIsUnsigned(baseType))
         {
-            instruction compareIns = getOpForSIMDIntrinsic(SIMDIntrinsicGreaterThan, baseType);
+            instruction compareIns = INS_invalid;
+
+            if (baseType == TYP_INT)
+            {
+                compareIns = INS_pcmpgtd;
+            }
+            else if (baseType == TYP_SHORT)
+            {
+                compareIns = INS_pcmpgtw;
+            }
+            else if (baseType == TYP_BYTE)
+            {
+                compareIns = INS_pcmpgtb;
+            }
+            else if ((baseType == TYP_LONG) && (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported))
+            {
+                compareIns = INS_pcmpgtq;
+            }
+
+            assert(compareIns != INS_invalid);
             inst_RV_RV(compareIns, tmpReg, targetReg, simdType, emitSize);
         }
         inst_RV_RV(widenIns, targetReg, tmpReg, simdType);
@@ -1794,13 +1495,8 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAdd || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAndNot ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseXor || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMin ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMax);
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
@@ -1815,156 +1511,27 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
 
-    // Vector<Int>.Mul:
-    // SSE2 doesn't have an instruction to perform this operation directly
-    // whereas SSE4.1 does (pmulld).  This is special cased and computed
-    // as follows.
-    if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicMul && baseType == TYP_INT && level == SIMD_SSE2_Supported)
+    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+
+    // Currently AVX doesn't support integer.
+    // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
+    if (op1Reg != targetReg && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported &&
+        !(ins == INS_cvtsi2ss || ins == INS_cvtsi2sd) && GetEmitter()->IsThreeOperandAVXInstruction(ins))
     {
-        // We need a temporary register that is NOT the same as the target,
-        // and we MAY need another.
-        regNumber tmpReg  = simdNode->ExtractTempReg();
-        regNumber tmpReg2 = simdNode->GetSingleTempReg();
-
-        // The register allocator guarantees the following conditions:
-        // - the only registers that may be the same among op1Reg, op2Reg, tmpReg
-        //   and tmpReg2 are op1Reg and op2Reg.
-        // Let's be extra-careful and assert that now.
-        assert((op1Reg != tmpReg) && (op1Reg != tmpReg2) && (op2Reg != tmpReg) && (op2Reg != tmpReg2) &&
-               (tmpReg != tmpReg2));
-
-        // We will start by setting things up so that:
-        //    - We have op1 in op1Reg and targetReg, and they are different registers.
-        //    - We have op2 in op2Reg and tmpReg
-        //    - Either we will leave the input registers (the original op1Reg and op2Reg) unmodified,
-        //      OR they are the targetReg that will be produced.
-        //      (Note that in the code we generate below op1Reg and op2Reg are never written.)
-        // We will copy things as necessary to ensure that this is the case.
-        // Note that we can swap op1 and op2, since multiplication is commutative.
-        // We will not modify the values in op1Reg and op2Reg.
-        // (Though note that if either op1 or op2 is the same as targetReg, we will make
-        // a copy and use that copy as the input register.  In that case we WILL modify
-        // the original value in the register, but will wind up with the result in targetReg
-        // in the end, as expected.)
-
-        // First, we need a tmpReg that is NOT the same as targetReg.
-        // Note that if we have another reg that is the same as targetReg,
-        // we can use tmpReg2 for that case, as we will not have hit this case.
-        if (tmpReg == targetReg)
-        {
-            tmpReg = tmpReg2;
-        }
-
-        if (op2Reg == targetReg)
-        {
-            // We will swap the operands.
-            // Since the code below only deals with registers, this now becomes the case where
-            // op1Reg == targetReg.
-            op2Reg = op1Reg;
-            op1Reg = targetReg;
-        }
-        if (op1Reg == targetReg)
-        {
-            // Copy op1, and make tmpReg2 the new op1Reg.
-            // Note that those regs can't be the same, as we asserted above.
-            // Also, we know that tmpReg2 hasn't been used, because we couldn't have hit
-            // the "tmpReg == targetReg" case.
-            inst_RV_RV(INS_movaps, tmpReg2, op1Reg, targetType, emitActualTypeSize(targetType));
-            op1Reg = tmpReg2;
-            inst_RV_RV(INS_movaps, tmpReg, op2Reg, targetType, emitActualTypeSize(targetType));
-            // However, we have one more case to worry about: what if op2Reg is also targetReg
-            // (i.e. we have the same operand as op1 and op2)?
-            // In that case we will set op2Reg to the same register as op1Reg.
-            if (op2Reg == targetReg)
-            {
-                op2Reg = tmpReg2;
-            }
-        }
-        else
-        {
-            // Copy op1 to targetReg and op2 to tmpReg.
-            inst_RV_RV(INS_movaps, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-            inst_RV_RV(INS_movaps, tmpReg, op2Reg, targetType, emitActualTypeSize(targetType));
-        }
-        // Let's assert that things are as we expect.
-        //    - We have op1 in op1Reg and targetReg, and they are different registers.
-        assert(op1Reg != targetReg);
-        //    - We have op2 in op2Reg and tmpReg, and they are different registers.
-        assert(op2Reg != tmpReg);
-        //    - Either we are going to leave op1's reg unmodified, or it is the targetReg.
-        assert((op1->GetRegNum() == op1Reg) || (op1->GetRegNum() == op2Reg) || (op1->GetRegNum() == targetReg));
-        //    - Similarly, we are going to leave op2's reg unmodified, or it is the targetReg.
-        assert((op2->GetRegNum() == op1Reg) || (op2->GetRegNum() == op2Reg) || (op2->GetRegNum() == targetReg));
-
-        // Now we can generate the code.
-
-        // targetReg = op1 >> 4-bytes (op1 is already in targetReg)
-        GetEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), targetReg, 4);
-
-        // tmpReg  = op2 >> 4-bytes (op2 is already in tmpReg)
-        GetEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), tmpReg, 4);
-
-        // tmp = unsigned double word multiply of targetReg and tmpReg. Essentially
-        // tmpReg[63:0] = op1[1] * op2[1]
-        // tmpReg[127:64] = op1[3] * op2[3]
-        inst_RV_RV(INS_pmuludq, tmpReg, targetReg, targetType, emitActualTypeSize(targetType));
-
-        // Extract first and third double word results from tmpReg
-        // tmpReg = shuffle(0,0,2,0) of tmpReg
-        GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg, tmpReg, (int8_t)SHUFFLE_XXZX);
-
-        // targetReg[63:0] = op1[0] * op2[0]
-        // targetReg[127:64] = op1[2] * op2[2]
-        inst_RV_RV(INS_movaps, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-        inst_RV_RV(INS_pmuludq, targetReg, op2Reg, targetType, emitActualTypeSize(targetType));
-
-        // Extract first and third double word results from targetReg
-        // targetReg = shuffle(0,0,2,0) of targetReg
-        GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), targetReg, targetReg,
-                                    (int8_t)SHUFFLE_XXZX);
-
-        // pack the results into a single vector
-        inst_RV_RV(INS_punpckldq, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
+        inst_RV_RV_RV(ins, targetReg, op1Reg, op2Reg, emitActualTypeSize(targetType));
     }
     else
     {
-        instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-        // Currently AVX doesn't support integer.
-        // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
-        if (op1Reg != targetReg && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported &&
-            !(ins == INS_cvtsi2ss || ins == INS_cvtsi2sd) && GetEmitter()->IsThreeOperandAVXInstruction(ins))
+        if (op2Reg == targetReg)
         {
-            inst_RV_RV_RV(ins, targetReg, op1Reg, op2Reg, emitActualTypeSize(targetType));
+            otherReg = op1Reg;
         }
-        else
+        else if (op1Reg != targetReg)
         {
-            if (op2Reg == targetReg)
-            {
-                otherReg = op1Reg;
-            }
-            else if (op1Reg != targetReg)
-            {
-                inst_RV_RV(ins_Copy(targetType), targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-            }
-
-            inst_RV_RV(ins, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
+            inst_RV_RV(ins_Copy(targetType), targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
         }
-    }
 
-    // Vector2/3 div: since the top-most elements will be zero, we end up
-    // perfoming 0/0 which is a NAN. Therefore, post division we need to set the
-    // top-most elements to zero. This is achieved by left logical shift followed
-    // by right logical shift of targetReg.
-    if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDiv && (simdNode->gtSIMDSize < 16))
-    {
-        // These are 16 byte operations, so we subtract from 16 bytes, not the vector register length.
-        unsigned shiftCount = 16 - simdNode->gtSIMDSize;
-        assert((shiftCount > 0) && (shiftCount <= 16));
-        instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
-        GetEmitter()->emitIns_R_I(ins, EA_16BYTE, targetReg, shiftCount);
-        ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
-        GetEmitter()->emitIns_R_I(ins, EA_16BYTE, targetReg, shiftCount);
+        inst_RV_RV(ins, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
     }
 
     genProduceReg(simdNode);
@@ -1997,7 +1564,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     switch (simdNode->gtSIMDIntrinsicID)
     {
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicGreaterThan:
         {
             assert(targetReg != REG_NA);
 
@@ -2009,12 +1575,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 assert(level >= SIMD_SSE4_Supported);
             }
 #endif
-
-            // Greater-than: Floating point vectors use "<" with swapped operands
-            if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThan)
-            {
-                assert(!varTypeIsFloating(baseType));
-            }
 
             unsigned    ival = 0;
             instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
@@ -2047,411 +1607,9 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         }
         break;
 
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicLessThanOrEqual:
-        {
-            assert(targetReg != REG_NA);
-
-            // Int vectors use ">" and ">=" with swapped operands
-            assert(varTypeIsFloating(baseType));
-
-            // Get the instruction opcode for compare operation
-            unsigned    ival;
-            instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
-
-            // targetReg = op1reg RelOp op2reg
-            // Thefore, we can optimize if op1Reg == targetReg
-            if (op1Reg != targetReg)
-            {
-                inst_RV_RV(ins_Copy(targetType), targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-            }
-
-            assert((ival >= 0) && (ival <= 255));
-            GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op2Reg, (int8_t)ival);
-        }
-        break;
-
-        // (In)Equality that produces bool result instead of a bit vector
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
-        {
-            // We're only setting condition flags, if a 0/1 value is desired then Lowering should have inserted a SETCC.
-            assert(targetReg == REG_NA);
-
-            var_types simdType = op1->TypeGet();
-            // TODO-1stClassStructs: Temporary to minimize asmDiffs
-            if (simdType == TYP_DOUBLE)
-            {
-                simdType = TYP_SIMD8;
-            }
-
-            // Here we should consider TYP_SIMD12 operands as if they were TYP_SIMD16
-            // since both the operands will be in XMM registers.
-            if (simdType == TYP_SIMD12)
-            {
-                simdType = TYP_SIMD16;
-            }
-
-            // On SSE4/AVX, we can generate optimal code for (in)equality against zero using ptest.
-            if (op2->isContained())
-            {
-                assert((compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0));
-                inst_RV_RV(INS_ptest, op1->GetRegNum(), op1->GetRegNum(), simdType, emitActualTypeSize(simdType));
-            }
-            else
-            {
-                // We need one additional SIMD register to store the result of the SIMD compare.
-                regNumber tmpReg1 = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-
-                // tmpReg1 = (op1Reg == op2Reg)
-                // Call this value of tmpReg1 as 'compResult' for further reference below.
-                regNumber otherReg = op2Reg;
-                if (tmpReg1 != op2Reg)
-                {
-                    if (tmpReg1 != op1Reg)
-                    {
-                        inst_RV_RV(ins_Copy(simdType), tmpReg1, op1Reg, simdType, emitActualTypeSize(simdType));
-                    }
-                }
-                else
-                {
-                    otherReg = op1Reg;
-                }
-
-                // For all integer types we can use TYP_INT comparison.
-                unsigned    ival = 0;
-                instruction ins =
-                    getOpForSIMDIntrinsic(SIMDIntrinsicEqual, varTypeIsFloating(baseType) ? baseType : TYP_INT, &ival);
-
-                if (varTypeIsFloating(baseType))
-                {
-                    assert((ival >= 0) && (ival <= 255));
-                    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(simdType), tmpReg1, otherReg, (int8_t)ival);
-                }
-                else
-                {
-                    inst_RV_RV(ins, tmpReg1, otherReg, simdType, emitActualTypeSize(simdType));
-                }
-
-                regNumber intReg = simdNode->GetSingleTempReg(RBM_ALLINT);
-                inst_RV_RV(INS_pmovmskb, intReg, tmpReg1, simdType, emitActualTypeSize(simdType));
-                // There's no pmovmskw/pmovmskd/pmovmskq but they're not needed anyway. Vector compare
-                // instructions produce "all ones"/"all zeroes" components and pmovmskb extracts a
-                // subset of each component's ones/zeroes. In the end we need to know if the result is
-                // "all ones" where the number of ones is given by the vector byte size, not by the
-                // vector component count. So, for AVX registers we need to compare to 0xFFFFFFFF and
-                // for SSE registers we need to compare to 0x0000FFFF.
-                // The SIMD12 case is handled specially, because we can't rely on the upper bytes being
-                // zero, so we must compare only the lower 3 floats (hence the byte mask of 0xFFF).
-                // Note that -1 is used instead of 0xFFFFFFFF, on x64 emit doesn't correctly recognize
-                // that 0xFFFFFFFF can be encoded in a single byte and emits the longer 3DFFFFFFFF
-                // encoding instead of 83F8FF.
-                ssize_t mask;
-                if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
-                {
-                    mask = 0x00000FFF;
-                    GetEmitter()->emitIns_R_I(INS_and, EA_4BYTE, intReg, mask);
-                }
-                else if (emitActualTypeSize(simdType) == 32)
-                {
-                    mask = -1;
-                }
-                else
-                {
-                    mask = 0x0000FFFF;
-                }
-                GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, mask);
-            }
-        }
-        break;
-
         default:
             noway_assert(!"Unimplemented SIMD relational operation.");
             unreached();
-    }
-
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicDotProduct: Generate code for SIMD Intrinsic Dot Product.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDotProduct);
-
-    GenTree*  op1      = simdNode->gtGetOp1();
-    GenTree*  op2      = simdNode->gtGetOp2();
-    var_types baseType = simdNode->gtSIMDBaseType;
-    var_types simdType = op1->TypeGet();
-    // TODO-1stClassStructs: Temporary to minimize asmDiffs
-    if (simdType == TYP_DOUBLE)
-    {
-        simdType = TYP_SIMD8;
-    }
-    var_types simdEvalType = (simdType == TYP_SIMD12) ? TYP_SIMD16 : simdType;
-    regNumber targetReg    = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-
-    var_types targetType = simdNode->TypeGet();
-    assert(targetType == baseType);
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg  = op1->GetRegNum();
-    regNumber op2Reg  = op2->GetRegNum();
-    regNumber tmpReg1 = REG_NA;
-    regNumber tmpReg2 = REG_NA;
-
-    SIMDLevel level = compiler->getSIMDSupportLevel();
-
-    // Dot product intrinsic is supported only on float/double vectors
-    // and 32-byte int vectors on AVX.
-    //
-    // Float/Double Vectors:
-    // For SSE, or AVX with 32-byte vectors, we need one additional Xmm register
-    // different from targetReg as scratch. Note that if this is a TYP_SIMD16 or
-    // smaller on AVX, then we don't need a tmpReg.
-    //
-    // 32-byte integer vector on AVX: we need two additional Xmm registers
-    // different from targetReg as scratch.
-    //
-    // 16-byte integer vector on SSE4: we need one additional Xmm register
-    // different from targetReg as scratch.
-    if (varTypeIsFloating(baseType))
-    {
-        if ((compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported) || (simdEvalType == TYP_SIMD32))
-        {
-            tmpReg1 = simdNode->GetSingleTempReg();
-            assert(tmpReg1 != targetReg);
-        }
-        else
-        {
-            assert(simdNode->AvailableTempRegCount() == 0);
-        }
-    }
-    else
-    {
-        assert(baseType == TYP_INT);
-        assert(level >= SIMD_SSE4_Supported);
-
-        if (level == SIMD_SSE4_Supported)
-        {
-            tmpReg1 = simdNode->GetSingleTempReg();
-        }
-        else
-        {
-            tmpReg1 = simdNode->ExtractTempReg();
-            tmpReg2 = simdNode->GetSingleTempReg();
-        }
-    }
-
-    if (level == SIMD_SSE2_Supported)
-    {
-        // We avoid reg move if either op1Reg == targetReg or op2Reg == targetReg
-        if (op1Reg == targetReg)
-        {
-            // Best case
-            // nothing to do, we have registers in the right place
-        }
-        else if (op2Reg == targetReg)
-        {
-            op2Reg = op1Reg;
-        }
-        else
-        {
-            inst_RV_RV(ins_Copy(simdType), targetReg, op1Reg, simdEvalType, emitActualTypeSize(simdType));
-        }
-
-        // DotProduct(v1, v2)
-        // Here v0 = targetReg, v1 = op1Reg, v2 = op2Reg and tmp = tmpReg1
-        if ((simdNode->gtFlags & GTF_SIMD12_OP) != 0)
-        {
-            assert(baseType == TYP_FLOAT);
-            // v0 = v1 * v2
-            // tmp = v0                                       // v0  = (3, 2, 1, 0) - each element is given by its
-            //                                                // position
-            // tmp = shuffle(tmp, tmp, SHUFFLE_ZXXY)          // tmp = (2, 0, 0, 1) - don't really care what's in upper
-            //                                                // bits
-            // v0 = v0 + tmp                                  // v0  = (3+2, 0+2, 1+0, 0+1)
-            // tmp = shuffle(tmp, tmp, SHUFFLE_XXWW)          // tmp = (  1,   1,   2,   2)
-            // v0 = v0 + tmp                                  // v0  = (1+2+3,  0+1+2, 0+1+2, 0+1+2)
-            //
-            inst_RV_RV(INS_mulps, targetReg, op2Reg);
-            inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_ZXXY);
-            inst_RV_RV(INS_addps, targetReg, tmpReg1);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_XXWW);
-            inst_RV_RV(INS_addps, targetReg, tmpReg1);
-        }
-        else if (baseType == TYP_FLOAT)
-        {
-            // v0 = v1 * v2
-            // tmp = v0                                       // v0  = (3, 2, 1, 0) - each element is given by its
-            //                                                // position
-            // tmp = shuffle(tmp, tmp, SHUFFLE_ZWXY)          // tmp = (2, 3, 0, 1)
-            // v0 = v0 + tmp                                  // v0  = (3+2, 2+3, 1+0, 0+1)
-            // tmp = v0
-            // tmp = shuffle(tmp, tmp, SHUFFLE_XYZW)          // tmp = (0+1, 1+0, 2+3, 3+2)
-            // v0 = v0 + tmp                                  // v0  = (0+1+2+3, 0+1+2+3, 0+1+2+3, 0+1+2+3)
-            //                                                // Essentially horizontal addition of all elements.
-            //                                                // We could achieve the same using SSEv3 instruction
-            //                                                // HADDPS.
-            //
-            inst_RV_RV(INS_mulps, targetReg, op2Reg);
-            inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_ZWXY);
-            inst_RV_RV(INS_addps, targetReg, tmpReg1);
-            inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_XYZW);
-            inst_RV_RV(INS_addps, targetReg, tmpReg1);
-        }
-        else
-        {
-            assert(baseType == TYP_DOUBLE);
-
-            // v0 = v1 * v2
-            // tmp = v0                                       // v0  = (1, 0) - each element is given by its position
-            // tmp = shuffle(tmp, tmp, Shuffle(0,1))          // tmp = (0, 1)
-            // v0 = v0 + tmp                                  // v0  = (1+0, 0+1)
-            inst_RV_RV(INS_mulpd, targetReg, op2Reg);
-            inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, tmpReg1, tmpReg1, 0x01);
-            inst_RV_RV(INS_addpd, targetReg, tmpReg1);
-        }
-    }
-    else
-    {
-        assert(level >= SIMD_SSE4_Supported);
-
-        if (varTypeIsFloating(baseType))
-        {
-            // We avoid reg move if either op1Reg == targetReg or op2Reg == targetReg.
-            // Note that this is a duplicate of the code above for SSE, but in the AVX case we can eventually
-            // use the 3-op form, so that we can avoid these copies.
-            // TODO-CQ: Add inst_RV_RV_RV_IV().
-            if (op1Reg == targetReg)
-            {
-                // Best case
-                // nothing to do, we have registers in the right place
-            }
-            else if (op2Reg == targetReg)
-            {
-                op2Reg = op1Reg;
-            }
-            else
-            {
-                inst_RV_RV(ins_Copy(simdType), targetReg, op1Reg, simdEvalType, emitActualTypeSize(simdType));
-            }
-
-            emitAttr emitSize = emitActualTypeSize(simdEvalType);
-            if (baseType == TYP_FLOAT)
-            {
-                // dpps computes the dot product of the upper & lower halves of the 32-byte register.
-                // Notice that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
-                unsigned mask = ((simdNode->gtFlags & GTF_SIMD12_OP) != 0) ? 0x71 : 0xf1;
-                assert((mask >= 0) && (mask <= 255));
-                inst_RV_RV_IV(INS_dpps, emitSize, targetReg, op2Reg, (int8_t)mask);
-                // dpps computes the dot product of the upper & lower halves of the 32-byte register.
-                // Notice that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
-                // If this is TYP_SIMD32, we need to combine the lower & upper results.
-                if (simdEvalType == TYP_SIMD32)
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg1, targetReg, 0x01);
-                    inst_RV_RV(INS_addps, targetReg, tmpReg1, targetType, emitTypeSize(targetType));
-                }
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                if (simdEvalType == TYP_SIMD32)
-                {
-                    // targetReg = targetReg * op2Reg
-                    // targetReg = vhaddpd(targetReg, targetReg) ; horizontal sum of lower & upper halves
-                    // tmpReg    = vextractf128(targetReg, 1)    ; Moves the upper sum into tempReg
-                    // targetReg = targetReg + tmpReg1
-                    inst_RV_RV(INS_mulpd, targetReg, op2Reg, simdEvalType, emitActualTypeSize(simdType));
-                    inst_RV_RV(INS_haddpd, targetReg, targetReg, simdEvalType, emitActualTypeSize(simdType));
-                    GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg1, targetReg, 0x01);
-                    inst_RV_RV(INS_addpd, targetReg, tmpReg1, targetType, emitTypeSize(targetType));
-                }
-                else
-                {
-                    // On AVX, we have no 16-byte vectors of double.  Note that, if we did, we could use
-                    // dppd directly.
-                    assert(level == SIMD_SSE4_Supported);
-                    inst_RV_RV_IV(INS_dppd, emitSize, targetReg, op2Reg, 0x31);
-                }
-            }
-        }
-        else
-        {
-            // Dot product of 32-byte int vector on SSE4/AVX.
-            assert(baseType == TYP_INT);
-            assert(simdEvalType == TYP_SIMD16 || simdEvalType == TYP_SIMD32);
-
-#ifdef DEBUG
-            // SSE4: We need 1 scratch register.
-            // AVX2: We need 2 scratch registers.
-            if (simdEvalType == TYP_SIMD16)
-            {
-                assert(tmpReg1 != REG_NA);
-            }
-            else
-            {
-                assert(tmpReg1 != REG_NA);
-                assert(tmpReg2 != REG_NA);
-            }
-#endif
-
-            // tmpReg1 = op1 * op2
-            if (level == SIMD_AVX2_Supported)
-            {
-                // On AVX take advantage 3 operand form of pmulld
-                inst_RV_RV_RV(INS_pmulld, tmpReg1, op1Reg, op2Reg, emitTypeSize(simdEvalType));
-            }
-            else
-            {
-                inst_RV_RV(ins_Copy(simdEvalType), tmpReg1, op1Reg, simdEvalType);
-                inst_RV_RV(INS_pmulld, tmpReg1, op2Reg, simdEvalType);
-            }
-
-            if (simdEvalType == TYP_SIMD32)
-            {
-                // tmpReg2[127..0] = Upper 128-bits of tmpReg1
-                GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg2, tmpReg1, 0x01);
-
-                // tmpReg1[127..0] = tmpReg1[127..0] + tmpReg2[127..0]
-                // This will compute
-                //    tmpReg1[0] = op1[0]*op2[0] + op1[4]*op2[4]
-                //    tmpReg1[1] = op1[1]*op2[1] + op1[5]*op2[5]
-                //    tmpReg1[2] = op1[2]*op2[2] + op1[6]*op2[6]
-                //    tmpReg1[4] = op1[4]*op2[4] + op1[7]*op2[7]
-                inst_RV_RV(INS_paddd, tmpReg1, tmpReg2, TYP_SIMD16, EA_16BYTE);
-            }
-
-            // This horizontal add will compute
-            //
-            // TYP_SIMD16:
-            //   tmpReg1[0] = tmpReg1[2] = op1[0]*op2[0] + op1[1]*op2[1]
-            //   tmpReg1[1] = tmpReg1[3] = op1[2]*op2[2] + op1[4]*op2[4]
-            //
-            // TYP_SIMD32:
-            //   tmpReg1[0] = tmpReg1[2] = op1[0]*op2[0] + op1[4]*op2[4] + op1[1]*op2[1] + op1[5]*op2[5]
-            //   tmpReg1[1] = tmpReg1[3] = op1[2]*op2[2] + op1[6]*op2[6] + op1[4]*op2[4] + op1[7]*op2[7]
-            inst_RV_RV(INS_phaddd, tmpReg1, tmpReg1, TYP_SIMD16, EA_16BYTE);
-
-            // DotProduct(op1, op2) = tmpReg1[0] = tmpReg1[0] + tmpReg1[1]
-            inst_RV_RV(INS_phaddd, tmpReg1, tmpReg1, TYP_SIMD16, EA_16BYTE);
-
-            // TargetReg = integer result from tmpReg1
-            // (Note that for mov_xmm2i, the int register is always in the reg2 position)
-            inst_RV_RV(INS_mov_xmm2i, tmpReg1, targetReg, TYP_INT);
-        }
     }
 
     genProduceReg(simdNode);
@@ -2510,6 +1668,17 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             bool     isEBPbased;
             unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!isEBPbased)
+            {
+                // Adjust the offset by the amount currently pushed on the CPU stack
+                offset += genStackLevel;
+            }
+#else
+            assert(genStackLevel == 0);
+#endif // !FEATURE_FIXED_OUT_ARGS
+
             if (op1->OperGet() == GT_LCL_FLD)
             {
                 offset += op1->AsLclFld()->GetLclOffs();
@@ -2558,8 +1727,19 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     {
         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
-        bool      isEBPbased;
-        unsigned  offs     = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+        bool     isEBPbased;
+        unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+        if (!isEBPbased)
+        {
+            // Adjust the offset by the amount currently pushed on the CPU stack
+            offs += genStackLevel;
+        }
+#else
+        assert(genStackLevel == 0);
+#endif // !FEATURE_FIXED_OUT_ARGS
+
         regNumber indexReg = op2->GetRegNum();
 
         // Store the vector to the temp location.
@@ -2973,12 +2153,25 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
         offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    GenTree*  op1    = treeNode->AsOp()->gtOp1;
+    if (op1->isContained())
+    {
+        // This is only possible for a zero-init.
+        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
+        genSIMDZero(TYP_SIMD16, op1->AsSIMD()->gtSIMDBaseType, tmpReg);
+
+        // store lower 8 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, tmpReg, varNum, offs);
+
+        // Store upper 4 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, varNum, offs + 8);
+
+        return;
+    }
+
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
-
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // store lower 8 bytes
     GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);
@@ -3211,9 +2404,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicInitN(simdNode);
             break;
 
-        case SIMDIntrinsicSqrt:
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicAbs:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
@@ -3236,31 +2427,14 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicNarrow(simdNode);
             break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseAndNot:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
-        case SIMDIntrinsicMin:
-        case SIMDIntrinsicMax:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicLessThan:
-        case SIMDIntrinsicGreaterThan:
-        case SIMDIntrinsicLessThanOrEqual:
-        case SIMDIntrinsicGreaterThanOrEqual:
             genSIMDIntrinsicRelOp(simdNode);
-            break;
-
-        case SIMDIntrinsicDotProduct:
-            genSIMDIntrinsicDotProduct(simdNode);
             break;
 
         case SIMDIntrinsicGetItem:
@@ -3283,11 +2457,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
         case SIMDIntrinsicUpperRestore:
             genSIMDIntrinsicUpperRestore(simdNode);
-            break;
-
-        case SIMDIntrinsicCeil:
-        case SIMDIntrinsicFloor:
-            genSIMDIntrinsicUnOpWithImm(simdNode);
             break;
 
         default:

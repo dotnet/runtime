@@ -725,7 +725,10 @@ struct BasicBlock : private LIR::Range
         m_firstNode = tree;
     }
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    union {
+        EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+        flowList*   bbLastPred;   // last pred list entry
+    };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
     unsigned bbStkTempsIn;   // base# for input stack temps

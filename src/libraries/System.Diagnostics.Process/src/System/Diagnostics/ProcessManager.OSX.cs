@@ -21,10 +21,6 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static ProcessInfo CreateProcessInfo(int pid)
         {
             // Negative PIDs aren't valid

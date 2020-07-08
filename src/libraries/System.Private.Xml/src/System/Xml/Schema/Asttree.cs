@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.XPath;
@@ -11,6 +12,7 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Schema;
     using MS.Internal.Xml.XPath;
+    using System.Diagnostics.CodeAnalysis;
 
     /*--------------------------------------------------------------------------------------------- *
      * Dynamic Part Below...                                                                        *
@@ -41,7 +43,6 @@ namespace System.Xml.Schema
         internal void SetDepth(int depth)
         {
             this.rootDepth = this.curDepth = depth;
-            return;
         }
 
         // "a/b/c"     pointer from b move to a
@@ -88,7 +89,7 @@ namespace System.Xml.Schema
         // equal & ! attribute then move
         // "a/b/c"     pointer from a move to b
         // return true if reach c and c is an element and c is the axis
-        internal bool MoveToChild(string name, string URN, int depth, ForwardAxis parent)
+        internal bool MoveToChild(string name, string? URN, int depth, ForwardAxis parent)
         {
             // an attribute can never be the same as an element
             if (Asttree.IsAttribute(this.curNode))
@@ -101,10 +102,12 @@ namespace System.Xml.Schema
             {
                 this.isMatch = false;
             }
+
             if (!AxisStack.Equal(this.curNode.Name, this.curNode.Urn, name, URN))
             {
                 return false;
             }
+
             if (this.curDepth == -1)
             {
                 SetDepth(depth);
@@ -113,19 +116,22 @@ namespace System.Xml.Schema
             {
                 return false;
             }
+
             // matched ...
             if (this.curNode == parent.TopNode)
             {
                 this.isMatch = true;
                 return true;
             }
+
             // move down this.curNode
-            DoubleLinkAxis nowNode = (DoubleLinkAxis)(this.curNode.Next);
+            DoubleLinkAxis nowNode = (DoubleLinkAxis)(this.curNode.Next!);
             if (Asttree.IsAttribute(nowNode))
             {
                 this.isMatch = true;                    // for attribute
                 return false;
             }
+
             this.curNode = nowNode;
             this.curDepth++;
             return false;
@@ -180,7 +186,7 @@ namespace System.Xml.Schema
 
         // used in the beginning of .//  and MoveToChild
         // didn't consider Self, only consider name
-        internal static bool Equal(string thisname, string thisURN, string name, string URN)
+        internal static bool Equal(string thisname, string? thisURN, string name, string? URN)
         {
             // which means "b" in xpath, no namespace should be specified
             if (thisURN == null)
@@ -205,7 +211,7 @@ namespace System.Xml.Schema
 
         // "a/b/c"     pointer from b move to a
         // needn't change even tree structure changes
-        internal void MoveToParent(string name, string URN, int depth)
+        internal void MoveToParent(string name, string? URN, int depth)
         {
             if (_subtree.IsSelfAxis)
             {
@@ -214,7 +220,7 @@ namespace System.Xml.Schema
 
             for (int i = 0; i < _stack.Count; ++i)
             {
-                ((AxisElement)_stack[i]).MoveToParent(depth, _subtree);
+                ((AxisElement)_stack[i]!).MoveToParent(depth, _subtree);
             }
 
             // in ".//"'s case, since each time you push one new element while match, why not pop one too while match?
@@ -226,7 +232,7 @@ namespace System.Xml.Schema
 
         // "a/b/c"     pointer from a move to b
         // return true if reach c
-        internal bool MoveToChild(string name, string URN, int depth)
+        internal bool MoveToChild(string name, string? URN, int depth)
         {
             bool result = false;
             // push first
@@ -236,7 +242,7 @@ namespace System.Xml.Schema
             }
             for (int i = 0; i < _stack.Count; ++i)
             {
-                if (((AxisElement)_stack[i]).MoveToChild(name, URN, depth, _subtree))
+                if (((AxisElement)_stack[i]!).MoveToChild(name, URN, depth, _subtree))
                 {
                     result = true;
                 }
@@ -247,7 +253,7 @@ namespace System.Xml.Schema
         // attribute can only at the topaxis part
         // dealing with attribute only here, didn't go into stack element at all
         // stack element only deal with moving the pointer around elements
-        internal bool MoveToAttribute(string name, string URN, int depth)
+        internal bool MoveToAttribute(string name, string? URN, int depth)
         {
             if (!_subtree.IsAttribute)
             {
@@ -268,7 +274,7 @@ namespace System.Xml.Schema
 
             for (int i = 0; i < _stack.Count; ++i)
             {
-                AxisElement eaxis = (AxisElement)_stack[i];
+                AxisElement eaxis = (AxisElement)_stack[i]!;
                 if ((eaxis.isMatch) && (eaxis.CurNode == _subtree.TopNode.Input))
                 {
                     result = true;
@@ -312,13 +318,13 @@ namespace System.Xml.Schema
             // new one stack element for each one
             for (int i = 0; i < axisTree.SubtreeArray.Count; ++i)
             {
-                AxisStack stack = new AxisStack((ForwardAxis)axisTree.SubtreeArray[i], this);
+                AxisStack stack = new AxisStack((ForwardAxis)axisTree.SubtreeArray[i]!, this);
                 _axisStack.Add(stack);
             }
             _isActive = true;
         }
 
-        public bool MoveToStartElement(string localname, string URN)
+        public bool MoveToStartElement(string localname, string? URN)
         {
             if (!_isActive)
             {
@@ -330,7 +336,7 @@ namespace System.Xml.Schema
             bool result = false;
             for (int i = 0; i < _axisStack.Count; ++i)
             {
-                AxisStack stack = (AxisStack)_axisStack[i];
+                AxisStack stack = (AxisStack)_axisStack[i]!;
                 // special case for self tree   "." | ".//."
                 if (stack.Subtree.IsSelfAxis)
                 {
@@ -349,11 +355,12 @@ namespace System.Xml.Schema
                     // run everyone once
                 }
             }
+
             return result;
         }
 
         // return result doesn't have any meaning until in SelectorActiveAxis
-        public virtual bool EndElement(string localname, string URN)
+        public virtual bool EndElement(string localname, string? URN)
         {
             // need to think if the early quitting will affect reactivating....
             if (_currentDepth == 0)
@@ -367,27 +374,29 @@ namespace System.Xml.Schema
             }
             for (int i = 0; i < _axisStack.Count; ++i)
             {
-                ((AxisStack)_axisStack[i]).MoveToParent(localname, URN, _currentDepth);
+                ((AxisStack)_axisStack[i]!).MoveToParent(localname, URN, _currentDepth);
             }
             _currentDepth--;
             return false;
         }
 
         // Secondly field interface
-        public bool MoveToAttribute(string localname, string URN)
+        public bool MoveToAttribute(string localname, string? URN)
         {
             if (!_isActive)
             {
                 return false;
             }
+
             bool result = false;
             for (int i = 0; i < _axisStack.Count; ++i)
             {
-                if (((AxisStack)_axisStack[i]).MoveToAttribute(localname, URN, _currentDepth + 1))
+                if (((AxisStack)_axisStack[i]!).MoveToAttribute(localname, URN, _currentDepth + 1))
                 {  // don't change depth for attribute, but depth is add 1
                     result = true;
                 }
             }
+
             return result;
         }
     }
@@ -399,9 +408,9 @@ namespace System.Xml.Schema
     // each node in the xpath tree
     internal class DoubleLinkAxis : Axis
     {
-        internal Axis next;
+        internal Axis? next;
 
-        internal Axis Next
+        internal Axis? Next
         {
             get { return this.next; }
             set { this.next = value; }
@@ -421,13 +430,15 @@ namespace System.Xml.Schema
         }
 
         // recursive here
-        internal static DoubleLinkAxis ConvertTree(Axis axis)
+        [return: NotNullIfNotNull("axis")]
+        internal static DoubleLinkAxis? ConvertTree(Axis? axis)
         {
             if (axis == null)
             {
                 return null;
             }
-            return (new DoubleLinkAxis(axis, ConvertTree((Axis)(axis.Input))));
+
+            return new DoubleLinkAxis(axis, ConvertTree((Axis)axis.Input));
         }
     }
 
@@ -491,7 +502,7 @@ namespace System.Xml.Schema
     internal class Asttree
     {
         // set private then give out only get access, to keep it intact all along
-        private ArrayList _fAxisArray;
+        private ArrayList _fAxisArray = null!;
         private readonly string _xpathexpr;
         private readonly bool _isField;                                   // field or selector
         private readonly XmlNamespaceManager _nsmgr;
@@ -568,7 +579,7 @@ namespace System.Xml.Schema
             Axis stepAst;
             for (int i = 0; i < AstArray.Count; ++i)
             {
-                Axis ast = (Axis)AstArray[i];
+                Axis ast = (Axis)AstArray[i]!;
                 // Restricted form
                 // field can have an attribute:
 

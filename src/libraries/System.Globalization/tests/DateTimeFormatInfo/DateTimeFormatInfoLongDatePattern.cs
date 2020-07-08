@@ -37,6 +37,17 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void LongDatePattern_Set_InvalidatesDerivedPattern()
+        {
+            const string Pattern = "#$";
+            var format = new DateTimeFormatInfo();
+            var d = DateTimeOffset.Now;
+            d.ToString("F", format); // FullDateTimePattern
+            format.LongDatePattern = Pattern;
+            Assert.Contains(Pattern, d.ToString("F", format));
+        }
+
+        [Fact]
         public void LongDatePattern_SetNullValue_ThrowsArgumentNullException()
         {
             var format = new DateTimeFormatInfo();

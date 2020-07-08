@@ -13,13 +13,13 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         public static void DefaultCtor()
         {
             Pkcs9LocalKeyId localKeyId = new Pkcs9LocalKeyId();
-            Assert.Equal(0, localKeyId.KeyId.Length);
+            Assert.Throws<CryptographicException>(() => localKeyId.KeyId);
 
             Oid oid = localKeyId.Oid;
             Assert.NotNull(oid);
             Assert.Equal(Oids.LocalKeyId, oid.Value);
 
-            Assert.Null(localKeyId.RawData);
+            Assert.Empty(localKeyId.RawData);
         }
 
         [Fact]

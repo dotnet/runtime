@@ -38,7 +38,7 @@ namespace Generic.Dictionary
             Assert.True((await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(60))) == task) && task.IsCompletedSuccessfully);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(null)]
         [InlineData(typeof(CustomEqualityComparerInt32ValueType))]
         public async Task DictionaryConcurrentAccessDetection_ValueTypeKey(Type comparerType)
@@ -60,7 +60,7 @@ namespace Generic.Dictionary
                 d => d.Remove(1, out int value));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(null)]
         [InlineData(typeof(CustomEqualityComparerDummyRefType))]
         public async Task DictionaryConcurrentAccessDetection_ReferenceTypeKey(Type comparerType)

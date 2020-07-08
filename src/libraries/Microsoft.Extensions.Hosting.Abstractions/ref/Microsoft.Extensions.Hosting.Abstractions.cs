@@ -72,10 +72,12 @@ namespace Microsoft.Extensions.Hosting
     }
     public static partial class HostingEnvironmentExtensions
     {
+#pragma warning disable CS0618 // Type or member is obsolete
         public static bool IsDevelopment(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
         public static bool IsEnvironment(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment, string environmentName) { throw null; }
         public static bool IsProduction(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
         public static bool IsStaging(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
+#pragma warning restore CS0618 // Type or member is obsolete
     }
     [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.", false)]
     public partial interface IApplicationLifetime

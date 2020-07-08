@@ -13,8 +13,8 @@ namespace System.Net.NetworkInformation
     internal class SystemIPInterfaceProperties : IPInterfaceProperties
     {
         // These are valid for all interfaces.
-        private readonly bool _dnsEnabled = false;
-        private readonly bool _dynamicDnsEnabled = false;
+        private readonly bool _dnsEnabled;
+        private readonly bool _dynamicDnsEnabled;
         private readonly InternalIPAddressCollection _dnsAddresses;
         private readonly UnicastIPAddressInformationCollection _unicastAddresses;
         private readonly MulticastIPAddressInformationCollection _multicastAddresses;

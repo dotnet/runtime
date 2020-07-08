@@ -24,6 +24,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -57,6 +58,8 @@ namespace System.Reflection
         private IntPtr _mono_assembly;
         private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
 
         private ResolveEventHolder? resolve_event_holder;
 
@@ -151,6 +154,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetForwardedTypes()
         {
             Type[] topLevelTypes = GetTopLevelForwardedTypes();
@@ -170,6 +174,7 @@ namespace System.Reflection
             return forwardedTypes.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;
@@ -314,9 +319,9 @@ namespace System.Reflection
             return GetModules(getResourceModules);
         }
 
-        public override AssemblyName[] GetReferencedAssemblies()
+        internal static AssemblyName[] GetReferencedAssemblies(Assembly assembly)
         {
-            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(this)))
+            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(assembly)))
             {
                 int numAssemblies = nativeNames.Length;
                 try
@@ -351,6 +356,8 @@ namespace System.Reflection
             }
         }
 
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             return GetSatelliteAssembly(culture, null);
@@ -361,13 +368,13 @@ namespace System.Reflection
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            return InternalGetSatelliteAssembly(culture, version, true)!;
+            return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture, Version? version, bool throwOnFileNotFound)
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly, CultureInfo culture, Version? version, bool throwOnFileNotFound)
         {
-            AssemblyName aname = GetName();
+            AssemblyName aname = assembly.GetName();
 
             var an = new AssemblyName();
             if (version == null)
@@ -388,7 +395,7 @@ namespace System.Reflection
             {
             }
 
-            if (res == this)
+            if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));

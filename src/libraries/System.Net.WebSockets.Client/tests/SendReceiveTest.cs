@@ -396,7 +396,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             Func<ClientWebSocket, LoopbackServer, Uri, Task> connectToServerThatAbortsConnection = async (clientSocket, server, url) =>
             {
-                var pendingReceiveAsyncPosted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var pendingReceiveAsyncPosted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // Start listening for incoming connections on the server side.
                 Task acceptTask = server.AcceptConnectionAsync(async connection =>
@@ -420,7 +420,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var recvBuffer = new byte[100];
                 var recvSegment = new ArraySegment<byte>(recvBuffer);
                 Task pendingReceiveAsync = ReceiveAsync(clientSocket, recvSegment, cts.Token);
-                pendingReceiveAsyncPosted.SetResult(true);
+                pendingReceiveAsyncPosted.SetResult();
 
                 // Wait for the server to close the underlying connection.
                 await acceptTask.WithCancellation(cts.Token);

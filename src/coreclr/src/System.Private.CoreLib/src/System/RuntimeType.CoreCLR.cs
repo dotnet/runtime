@@ -244,14 +244,17 @@ namespace System
                     switch (cacheType)
                     {
                         case CacheType.Method:
-                            list = (T[])(object)new RuntimeMethodInfo[1] {
-                            new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
-                        };
+                            list = (T[])(object)new RuntimeMethodInfo[1]
+                            {
+                                new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
+                            };
                             break;
+
                         case CacheType.Constructor:
-                            list = (T[])(object)new RuntimeConstructorInfo[1] {
-                            new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
-                        };
+                            list = (T[])(object)new RuntimeConstructorInfo[1]
+                            {
+                                new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
+                            };
                             break;
                     }
 
@@ -986,7 +989,7 @@ namespace System
                     }
                     else
                     {
-                        List<RuntimeType?> al = new List<RuntimeType?>();
+                        var al = new HashSet<RuntimeType>();
 
                         // Get all constraints
                         Type[] constraints = declaringType.GetGenericParameterConstraints();
@@ -1000,31 +1003,16 @@ namespace System
 
                             Type[] temp = constraint.GetInterfaces();
                             for (int j = 0; j < temp.Length; j++)
-                                al.Add(temp[j] as RuntimeType);
+                                al.Add((RuntimeType)temp[j]);
                         }
 
-                        // Remove duplicates
-                        Dictionary<RuntimeType, RuntimeType> ht = new Dictionary<RuntimeType, RuntimeType>();
-                        for (int i = 0; i < al.Count; i++)
+                        // Populate list, without duplicates
+                        foreach (RuntimeType rt in al)
                         {
-                            RuntimeType constraint = al[i]!;
-                            if (!ht.ContainsKey(constraint))
-                                ht[constraint] = constraint;
-                        }
-
-                        RuntimeType[] interfaces = new RuntimeType[ht.Values.Count];
-                        ht.Values.CopyTo(interfaces, 0);
-
-                        // Populate link-list
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            if (filter.RequiresStringComparison())
+                            if (!filter.RequiresStringComparison() || filter.Match(RuntimeTypeHandle.GetUtf8Name(rt)))
                             {
-                                if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaces[i])))
-                                    continue;
+                                list.Add(rt);
                             }
-
-                            list.Add(interfaces[i]);
                         }
                     }
 
@@ -1672,7 +1660,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
@@ -2326,6 +2314,11 @@ namespace System
 
         #region Private\Internal Members
 
+        internal IntPtr GetUnderlyingNativeHandle()
+        {
+            return m_handle;
+        }
+
         internal override bool CacheEquals(object? o)
         {
             return (o is RuntimeType t) && (t.m_handle == m_handle);
@@ -2752,7 +2745,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -2788,7 +2781,7 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
@@ -2851,7 +2844,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -2885,7 +2878,7 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
@@ -2913,7 +2906,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -3119,20 +3112,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
-
-#if FEATURE_COMINTEROP
-        internal override bool IsWindowsRuntimeObjectImpl() => IsWindowsRuntimeObjectType(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsWindowsRuntimeObjectType(RuntimeType type);
-
-#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-        internal override bool IsExportedToWindowsRuntimeImpl() => IsTypeExportedToWindowsRuntime(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
-#endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-#endif // FEATURE_COMINTEROP
 
         internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);
 
@@ -3404,6 +3383,7 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -3804,6 +3784,8 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
@@ -4062,7 +4044,7 @@ namespace System
 
             // Handle arguments that are passed as ByRef and those
             // arguments that need to be wrapped.
-            ParameterModifier[] aParamMod = null!;
+            ParameterModifier[]? aParamMod = null;
             if (cArgs > 0)
             {
                 ParameterModifier paramMod = new ParameterModifier(cArgs);
@@ -4087,7 +4069,7 @@ namespace System
             for (int i = 0; i < cArgs; i++)
             {
                 // Determine if the parameter is ByRef.
-                if (aParamMod[0][i] && aArgs[i] != null)
+                if (aParamMod![0][i] && aArgs[i] != null)
                 {
                     Type argType = aArgsTypes[i];
                     if (!ReferenceEquals(argType, aArgs[i].GetType()))

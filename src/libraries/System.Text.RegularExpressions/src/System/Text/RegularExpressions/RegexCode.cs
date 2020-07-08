@@ -85,6 +85,7 @@ namespace System.Text.RegularExpressions
         public const int Oneloopatomic = 43;      // lef,back char,min,max    (?> a {,n} )
         public const int Notoneloopatomic = 44;   // lef,back set,min,max     (?> . {,n} )
         public const int Setloopatomic = 45;      // lef,back set,min,max     (?> [\d]{,n} )
+        public const int UpdateBumpalong = 46;    // updates the bumpalong position to the current position
 
         // Modifiers for alternate modes
         public const int Mask = 63;   // Mask to get unmodified ordinary operator
@@ -184,6 +185,7 @@ namespace System.Text.RegularExpressions
                 case Backjump:
                 case Forejump:
                 case Stop:
+                case UpdateBumpalong:
                     return 1;
 
                 case One:
@@ -223,7 +225,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private static string OperatorDescription(int Opcode)
         {
             string codeStr = (Opcode & Mask) switch
@@ -273,6 +275,7 @@ namespace System.Text.RegularExpressions
                 Oneloopatomic => nameof(Oneloopatomic),
                 Notoneloopatomic => nameof(Notoneloopatomic),
                 Setloopatomic => nameof(Setloopatomic),
+                UpdateBumpalong => nameof(UpdateBumpalong),
                 _ => "(unknown)"
             };
 
@@ -284,7 +287,7 @@ namespace System.Text.RegularExpressions
                 ((Opcode & Back2) != 0 ? "-Back2" : "");
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public string OpcodeDescription(int offset)
         {
             var sb = new StringBuilder();
@@ -393,10 +396,10 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString()
         {
             var sb = new StringBuilder();

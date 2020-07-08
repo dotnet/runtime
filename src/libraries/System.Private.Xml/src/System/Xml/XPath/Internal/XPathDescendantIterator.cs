@@ -8,7 +8,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class XPathDescendantIterator : XPathAxisIterator
     {
-        private int _level = 0;
+        private int _level;
 
         public XPathDescendantIterator(XPathNavigator nav, XPathNodeType type, bool matchSelf) : base(nav, type, matchSelf) { }
         public XPathDescendantIterator(XPathNavigator nav, string name, string namespaceURI, bool matchSelf) : base(nav, name, namespaceURI, matchSelf) { }

@@ -6,15 +6,16 @@ using System.Globalization;
 using System.Threading;
 using System.Collections;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace System.DirectoryServices.Protocols
 {
     internal class LdapPartialResultsProcessor
     {
         private readonly ArrayList _resultList = new ArrayList();
-        private readonly ManualResetEvent _workThreadWaitHandle = null;
-        private bool _workToDo = false;
-        private int _currentIndex = 0;
+        private readonly ManualResetEvent _workThreadWaitHandle;
+        private bool _workToDo;
+        private int _currentIndex;
 
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
@@ -135,7 +136,9 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                SearchResponse response = (SearchResponse)connection.ConstructResponse(asyncResult._messageID, LdapOperation.LdapSearch, resultType, asyncResult._requestTimeout, false);
+                ValueTask<DirectoryResponse> vt = connection.ConstructResponseAsync(asyncResult._messageID, LdapOperation.LdapSearch, resultType, asyncResult._requestTimeout, false, sync: true);
+                Debug.Assert(vt.IsCompleted);
+                SearchResponse response = (SearchResponse)vt.GetAwaiter().GetResult();
 
                 // This should only happen in the polling thread case.
                 if (response == null)
@@ -214,7 +217,7 @@ namespace System.DirectoryServices.Protocols
                 asyncResult._resultStatus = ResultsStatus.Done;
 
                 // Need to abandon this request.
-                Wldap32.ldap_abandon(connection._ldapHandle, asyncResult._messageID);
+                LdapPal.CancelDirectoryAsyncOperation(connection._ldapHandle, asyncResult._messageID);
             }
         }
 
@@ -332,8 +335,8 @@ namespace System.DirectoryServices.Protocols
 
     internal class PartialResultsRetriever
     {
-        private readonly ManualResetEvent _workThreadWaitHandle = null;
-        private readonly LdapPartialResultsProcessor _processor = null;
+        private readonly ManualResetEvent _workThreadWaitHandle;
+        private readonly LdapPartialResultsProcessor _processor;
 
         internal PartialResultsRetriever(ManualResetEvent eventHandle, LdapPartialResultsProcessor processor)
         {

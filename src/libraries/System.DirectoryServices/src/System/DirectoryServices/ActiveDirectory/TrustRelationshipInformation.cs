@@ -24,11 +24,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class TrustRelationshipInformation
     {
-        internal string source = null;
-        internal string target = null;
+        internal string source;
+        internal string target;
         internal TrustType type;
         internal TrustDirection direction;
-        internal DirectoryContext context = null;
+        internal DirectoryContext context;
 
         internal TrustRelationshipInformation() { }
 

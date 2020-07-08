@@ -406,17 +406,16 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
-            bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
+            ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
         // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark, bool loadTypeFromPartialName)
+        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!, loadTypeFromPartialName);
+            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
         }
 
         internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  AssemblyLoadContext assemblyLoadContext,
-                                                  bool loadTypeFromPartialName)
+                                                  AssemblyLoadContext assemblyLoadContext)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -432,7 +431,7 @@ namespace System
             GetTypeByName(name, throwOnError, ignoreCase,
                 new StackCrawlMarkHandle(ref stackMark),
                 ObjectHandleOnStack.Create(ref assemblyLoadContextStack),
-                loadTypeFromPartialName, ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
+                ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
             GC.KeepAlive(keepAlive);
 
             return type;
@@ -446,10 +445,10 @@ namespace System
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException(null, nameof(name));
 
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));
 
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -457,18 +456,18 @@ namespace System
 
         internal RuntimeType[] GetInstantiationInternal()
         {
-            RuntimeType[] types = null!;
+            RuntimeType[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.TRUE);
-            return types;
+            return types!;
         }
 
         internal Type[] GetInstantiationPublic()
         {
-            Type[] types = null!;
+            Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
-            return types;
+            return types!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -481,11 +480,11 @@ namespace System
 
             fixed (IntPtr* pInst = instHandles)
             {
-                RuntimeType type = null!;
+                RuntimeType? type = null;
                 RuntimeTypeHandle nativeHandle = GetNativeHandle();
                 Instantiate(new QCallTypeHandle(ref nativeHandle), pInst, instCount, ObjectHandleOnStack.Create(ref type));
                 GC.KeepAlive(inst);
-                return type;
+                return type!;
             }
         }
 
@@ -494,10 +493,10 @@ namespace System
 
         internal RuntimeType MakeArray(int rank)
         {
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             MakeArray(new QCallTypeHandle(ref nativeHandle), rank, ObjectHandleOnStack.Create(ref type));
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -505,10 +504,10 @@ namespace System
 
         internal RuntimeType MakeSZArray()
         {
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             MakeSZArray(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref type));
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -516,10 +515,10 @@ namespace System
 
         internal RuntimeType MakeByRef()
         {
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             MakeByRef(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref type));
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -527,10 +526,10 @@ namespace System
 
         internal RuntimeType MakePointer()
         {
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             MakePointer(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref type));
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -665,15 +664,15 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
-#pragma warning disable CA1823, 414
-        private object m_a = null!;
-        private object m_b = null!;
-        private object m_c = null!;
-        private object m_d = null!;
-        private object m_e = null!;
-        private object m_f = null!;
-        private object m_g = null!;
-#pragma warning restore CA1823, 414
+#pragma warning disable CA1823, 414, 169
+        private object? m_a;
+        private object? m_b;
+        private object? m_c;
+        private object? m_d;
+        private object? m_e;
+        private object? m_f;
+        private object? m_g;
+#pragma warning restore CA1823, 414, 169
 
         public RuntimeMethodHandleInternal m_value;
 
@@ -861,25 +860,25 @@ namespace System
 
         internal static RuntimeType[] GetMethodInstantiationInternal(IRuntimeMethodInfo method)
         {
-            RuntimeType[] types = null!;
+            RuntimeType[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.TRUE);
             GC.KeepAlive(method);
-            return types;
+            return types!;
         }
 
         internal static RuntimeType[] GetMethodInstantiationInternal(RuntimeMethodHandleInternal method)
         {
-            RuntimeType[] types = null!;
+            RuntimeType[]? types = null;
             GetMethodInstantiation(method, ObjectHandleOnStack.Create(ref types), Interop.BOOL.TRUE);
-            return types;
+            return types!;
         }
 
         internal static Type[] GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[] types = null!;
+            RuntimeType[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             GC.KeepAlive(method);
-            return types;
+            return types!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1000,14 +999,14 @@ namespace System
     internal class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 414
-        private object m_keepalive = null!;
-        private object m_c = null!;
-        private object m_d = null!;
+#pragma warning disable 414, 169
+        private object? m_keepalive;
+        private object? m_c;
+        private object? m_d;
         private int m_b;
-        private object m_e = null!;
+        private object? m_e;
         private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 414
+#pragma warning restore 414, 169
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }
@@ -1209,11 +1208,11 @@ namespace System
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                RuntimeType type = null!;
+                RuntimeType? type = null;
                 ResolveType(new QCallModule(ref module), typeToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref type));
                 GC.KeepAlive(typeInstantiationContext);
                 GC.KeepAlive(methodInstantiationContext);
-                return type;
+                return type!;
             }
         }
 
@@ -1288,11 +1287,11 @@ namespace System
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                IRuntimeFieldInfo field = null!;
+                IRuntimeFieldInfo? field = null;
                 ResolveField(new QCallModule(ref module), fieldToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, ObjectHandleOnStack.Create(ref field));
                 GC.KeepAlive(typeInstantiationContext);
                 GC.KeepAlive(methodInstantiationContext);
-                return field;
+                return field!;
             }
         }
 
@@ -1318,9 +1317,9 @@ namespace System
 
         internal static RuntimeType GetModuleType(RuntimeModule module)
         {
-            RuntimeType type = null!;
+            RuntimeType? type = null;
             GetModuleType(new QCallModule(ref module), ObjectHandleOnStack.Create(ref type));
-            return type;
+            return type!;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -1368,13 +1367,15 @@ namespace System
             Field = 0x06,
             LocalSig = 0x07,
             Property = 0x08,
-            Unmgd = 0x09,
+            Unmanaged = 0x09,
             GenericInst = 0x0A,
             Max = 0x0B,
         }
         #endregion
 
         #region FCalls
+        [MemberNotNull(nameof(m_arguments))]
+        [MemberNotNull(nameof(m_returnTypeORfieldType))]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
@@ -1386,9 +1387,9 @@ namespace System
         //
         // Keep the layout in sync with SignatureNative in the VM
         //
-        internal RuntimeType[] m_arguments = null!;
-        internal RuntimeType m_declaringType = null!; // seems not used
-        internal RuntimeType m_returnTypeORfieldType = null!;
+        internal RuntimeType[] m_arguments;
+        internal RuntimeType? m_declaringType;
+        internal RuntimeType m_returnTypeORfieldType;
         internal object? m_keepalive;
         internal void* m_sig;
         internal int m_managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags

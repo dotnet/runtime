@@ -63,6 +63,12 @@
   <data name="Cryptography_Oid_InvalidName" xml:space="preserve">
     <value>No OID value matches this name.</value>
   </data>
+  <data name="Cryptography_Oid_SetOnceValue" xml:space="preserve">
+    <value>The OID value cannot be changed from its current value.</value>
+  </data>
+  <data name="Cryptography_Oid_SetOnceFriendlyName" xml:space="preserve">
+    <value>The OID friendly name cannot be changed from its current value.</value>
+  </data>
   <data name="Cryptography_SSE_InvalidDataSize" xml:space="preserve">
     <value>NoLength of the data to encrypt is invalid.</value>
   </data>
@@ -131,5 +137,8 @@
   </data>
   <data name="ObjectDisposed_Generic" xml:space="preserve">
     <value>Cannot access a disposed object.</value>
+  </data>
+  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
+    <value>System.Security.Cryptography is not supported on Browser.</value>
   </data>
 </root>

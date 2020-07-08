@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -11,20 +10,18 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
-        protected override void Add(object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is TCollection);
-            Debug.Assert(state.Current.AddMethodDelegate != null);
-            ((Action<TCollection, object?>)state.Current.AddMethodDelegate)((TCollection)state.Current.ReturnValue!, value);
+            ((Action<TCollection, object?>)state.Current.AddMethodDelegate!)((TCollection)state.Current.ReturnValue!, value);
         }
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             JsonClassInfo.ConstructorDelegate? constructorDelegate = state.Current.JsonClassInfo.CreateObject;
 
             if (constructorDelegate == null)
             {
-                ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
             state.Current.ReturnValue = constructorDelegate();
@@ -56,7 +53,8 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                if (!converter.TryWrite(writer, enumerator.Current, options, ref state))
+                object? element = enumerator.Current;
+                if (!converter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

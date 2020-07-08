@@ -1712,8 +1712,9 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	if (reference)
 		goto leave;
 
+	// Looking up corlib resources here can cause an infinite loop
 	// See: https://github.com/dotnet/coreclr/blob/0a762eb2f3a299489c459da1ddeb69e042008f07/src/vm/appdomain.cpp#L5178-L5239
-	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME) == 0 && is_satellite) && postload) {
+	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_RESOURCE_NAME) == 0 && is_satellite) && postload) {
 		reference = mono_assembly_invoke_search_hook_internal (alc, requesting, aname, FALSE, TRUE);
 		if (reference)
 			goto leave;
@@ -1739,14 +1740,21 @@ leave:
 gboolean
 mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssemblyName *aname, MonoError *error)
 {
-	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
 
-	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+	if (image_is_dynamic (image)) {
+		MonoDynamicTable *t = &(((MonoDynamicImage*) image)->tables [MONO_TABLE_ASSEMBLYREF]);
+		if (!mono_metadata_decode_row_dynamic_checked ((MonoDynamicImage*)image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
+			return FALSE;
+	}
+	else {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+		if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
+			return FALSE;
+	}
 
-	if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
-		return FALSE;
+
 
 	// ECMA-335: II.22.5 - AssemblyRef
 	// HashValue can be null or non-null.  If non-null it's an index into the blob heap
@@ -5401,6 +5409,7 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 		"REFONLY",
 		"LOADFROM",
 		"INDIVIDIUAL",
+		"INTERNAL"
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];

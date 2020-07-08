@@ -70,7 +70,7 @@ namespace BinderTracingTests
         //   KnownPathProbed : AppPaths             (EXE)   [COR_E_FILENOTFOUND]
         // Note: corerun always sets APP_PATH and APP_NI_PATH. In regular use cases,
         // the customer would have to explicitly configure the app to set those.
-        [BinderTest]
+        [BinderTest(additionalLoadsToTrack: new string[] { "DoesNotExist" })]
         public static BindOperation NonExistentAssembly()
         {
             string assemblyName = "DoesNotExist";

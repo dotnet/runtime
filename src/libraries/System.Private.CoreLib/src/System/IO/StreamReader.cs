@@ -169,11 +169,8 @@ namespace System.IO
             _byteBuffer = new byte[bufferSize];
             _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
             _charBuffer = new char[_maxCharsPerBuffer];
-            _byteLen = 0;
-            _bytePos = 0;
             _detectEncoding = detectEncodingFromByteOrderMarks;
             _checkPreamble = encoding.Preamble.Length > 0;
-            _isBlocked = false;
             _closable = !leaveOpen;
         }
 
@@ -980,7 +977,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             return ReadAsyncInternal(buffer, cancellationToken);
@@ -1204,7 +1201,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             ValueTask<int> vt = ReadBlockAsyncInternal(buffer, cancellationToken);

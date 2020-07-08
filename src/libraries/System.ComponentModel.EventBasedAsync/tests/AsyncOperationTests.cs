@@ -12,7 +12,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
     {
         private const int SpinTimeoutSeconds = 30;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Noop()
         {
             // Test that a simple AsyncOperation can be dispatched and completed via AsyncOperationManager
@@ -28,7 +28,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 }).GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThrowAfterAsyncComplete()
         {
             Task.Run(() =>
@@ -43,7 +43,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 }).GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThrowAfterSynchronousComplete()
         {
             Task.Run(() =>
@@ -58,7 +58,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                }).GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Cancel()
         {
             // Test that cancellation gets passed all the way through PostOperationCompleted(callback, AsyncCompletedEventArgs)
@@ -78,7 +78,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
              }).GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Throw()
         {
             // Test that exceptions get passed all the way through PostOperationCompleted(callback, AsyncCompletedEventArgs)

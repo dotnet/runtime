@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -260,7 +261,7 @@ namespace System.IO.Packaging
         /// <exception cref="InvalidOperationException">If the requested part does not exists in the Package</exception>
         public PackagePart GetPart(Uri partUri)
         {
-            PackagePart returnedPart = GetPartHelper(partUri);
+            PackagePart? returnedPart = GetPartHelper(partUri);
             if (returnedPart == null)
                 throw new InvalidOperationException(SR.PartDoesNotExist);
             else
@@ -570,7 +571,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If relationship is being targeted to a relationship part</exception>
         /// <exception cref="System.Xml.XmlException">If parameter "id" is not a valid Xsd Id</exception>
         /// <exception cref="System.Xml.XmlException">If an id is provided in the method, and its not unique</exception>
-        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
+        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string? id)
         {
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
@@ -658,7 +659,7 @@ namespace System.IO.Packaging
             //All the validations for dispose and file access are done in the
             //GetRelationshipHelper method.
 
-            PackageRelationship returnedRelationship = GetRelationshipHelper(id);
+            PackageRelationship? returnedRelationship = GetRelationshipHelper(id);
             if (returnedRelationship == null)
                 throw new InvalidOperationException(SR.PackageRelationshipDoesNotExist);
             else
@@ -709,7 +710,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="partUri"></param>
         /// <returns></returns>
-        protected abstract PackagePart GetPartCore(Uri partUri);
+        protected abstract PackagePart? GetPartCore(Uri partUri);
 
         /// <summary>
         /// This method is for custom implementation corresponding to the underlying file format.
@@ -751,7 +752,7 @@ namespace System.IO.Packaging
                 }
 
                 //release objects
-                _partList = null;
+                _partList = null!;
                 _partCollection = null;
                 _relationships = null;
 
@@ -828,7 +829,7 @@ namespace System.IO.Packaging
             FileAccess packageAccess,
             FileShare packageShare)
         {
-            Package package = null;
+            Package? package = null;
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
@@ -893,7 +894,7 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
         public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
-            Package package = null;
+            Package? package = null;
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
@@ -952,10 +953,10 @@ namespace System.IO.Packaging
         // As an example - Adding any of the following parts will throw an exception -
         // 1. /abc.xaml/new.xaml
         // 2. /xyz/pqr
-        private void AddIfNoPrefixCollisionDetected(PackUriHelper.ValidatedPartUri partUri, PackagePart part)
+        private void AddIfNoPrefixCollisionDetected(PackUriHelper.ValidatedPartUri partUri, PackagePart? part)
         {
             //Add the Normalized Uri to the sorted _partList tentatively to see where it will get inserted
-            _partList.Add(partUri, part);
+            _partList.Add(partUri, part!);
 
             //Get the index of the entry at which this part was added
             int index = _partList.IndexOfKey(partUri);
@@ -963,8 +964,8 @@ namespace System.IO.Packaging
             Debug.Assert(index >= 0, "Given uri must be present in the dictionary");
 
             string normalizedPartName = partUri.NormalizedPartUriString;
-            string precedingPartName = null;
-            string followingPartName = null;
+            string? precedingPartName = null;
+            string? followingPartName = null;
 
             if (index > 0)
             {
@@ -999,6 +1000,7 @@ namespace System.IO.Packaging
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
+        [MemberNotNull(nameof(_relationships))]
         private void EnsureRelationships()
         {
             // once per package
@@ -1058,8 +1060,7 @@ namespace System.IO.Packaging
                     // This fails:
                     //                _partList[keys[i]].Flush();
 
-                    PackagePart p;
-                    if (_partList.TryGetValue(partKeys[i], out p))
+                    if (_partList.TryGetValue(partKeys[i], out PackagePart? p))
                     {
                         if (!operation(p))
                             break;
@@ -1085,8 +1086,7 @@ namespace System.IO.Packaging
                     PackUriHelper.ValidatedPartUri owningPartUri =
                         (PackUriHelper.ValidatedPartUri)PackUriHelper.GetSourcePartUriFromRelationshipPartUri(p.Uri);
                     //If the source part for this rels part exists then we close it.
-                    PackagePart sourcePart;
-                    if (_partList.TryGetValue(owningPartUri, out sourcePart))
+                    if (_partList.TryGetValue(owningPartUri, out PackagePart? sourcePart))
                         sourcePart.Close();
                 }
                 p.Close();
@@ -1118,7 +1118,7 @@ namespace System.IO.Packaging
             return true;
         }
 
-        private PackagePart GetPartHelper(Uri partUri)
+        private PackagePart? GetPartHelper(Uri partUri)
         {
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
@@ -1129,7 +1129,9 @@ namespace System.IO.Packaging
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
             if (_partList.ContainsKey(validatePartUri))
+            {
                 return _partList[validatePartUri];
+            }
             else
             {
                 //Ideally we should decide whether we should query the underlying layer for the part based on the
@@ -1138,7 +1140,7 @@ namespace System.IO.Packaging
                 //Note:
                 //Currently this incremental behavior for GetPart is not consistent with the GetParts method
                 //which just queries the underlying layer once.
-                PackagePart returnedPart = GetPartCore(validatePartUri);
+                PackagePart? returnedPart = GetPartCore(validatePartUri);
 
                 if (returnedPart != null)
                 {
@@ -1155,7 +1157,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="id">The relationship ID.</param>
         /// <returns>The relationship with ID 'id' or null if not found.</returns>
-        private PackageRelationship GetRelationshipHelper(string id)
+        private PackageRelationship? GetRelationshipHelper(string id)
         {
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
@@ -1174,7 +1176,7 @@ namespace System.IO.Packaging
         /// owned by the package based on the filter string.
         /// </summary>
         /// <returns></returns>
-        private PackageRelationshipCollection GetRelationshipsHelper(string filterString)
+        private PackageRelationshipCollection GetRelationshipsHelper(string? filterString)
         {
             ThrowIfObjectDisposed();
             ThrowIfWriteOnly();
@@ -1201,9 +1203,9 @@ namespace System.IO.Packaging
         private FileMode _openFileMode;
         private bool _disposed;
         private SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;
-        private PackagePartCollection _partCollection;
-        private InternalRelationshipCollection _relationships;
-        private PartBasedPackageProperties _packageProperties;
+        private PackagePartCollection? _partCollection;
+        private InternalRelationshipCollection? _relationships;
+        private PartBasedPackageProperties? _packageProperties;
 
 
         #endregion Private Members

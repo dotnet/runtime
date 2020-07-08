@@ -10,17 +10,25 @@ namespace System.Text.Tests
     public class Latin1EncodingTests
     {
         [Fact]
+        public void Encoding_Latin1_ExpectedObject()
+        {
+            Assert.NotNull(Encoding.Latin1);
+            Assert.Same(Encoding.Latin1, Encoding.Latin1);
+            Assert.Same(Encoding.GetEncoding("iso-8859-1"), Encoding.Latin1);
+        }
+
+        [Fact]
         public void Ctor()
         {
             Encoding encoding = Encoding.GetEncoding("latin1");
             Assert.Equal(1, encoding.EncoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.EncoderFallback.GetHashCode());
-            Assert.Equal(1, encoding.DecoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.DecoderFallback.GetHashCode());
+            Assert.True(encoding.EncoderFallback.IsLatin1BestFitFallback());
+            Assert.Equal(DecoderFallback.ReplacementFallback, encoding.DecoderFallback);
         }
 
         public static IEnumerable<object[]> Encodings_TestData()
         {
+            yield return new object[] { Encoding.Latin1 };
             yield return new object[] { Encoding.GetEncoding("latin1") };
             yield return new object[] { Encoding.GetEncoding("iso-8859-1") };
         }
@@ -64,6 +72,7 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Equals_TestData()
         {
+            yield return new object[] { Encoding.GetEncoding("latin1"), Encoding.Latin1, true };
             yield return new object[] { Encoding.GetEncoding("latin1"), Encoding.GetEncoding("latin1"), true };
             yield return new object[] { Encoding.GetEncoding("latin1"), Encoding.GetEncoding("iso-8859-1"), true };
 

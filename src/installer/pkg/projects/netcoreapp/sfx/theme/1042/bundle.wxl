@@ -53,13 +53,13 @@
   <String Id="FailureNotSupportedCurrentOperatingSystem">이 운영 체제에서는 [PRODUCT_NAME]이(가) 지원되지 않습니다. 자세한 내용은 [LINK_PREREQ_PAGE]을(를) 참조하세요.</String>
   <String Id="FailureNotSupportedX86OperatingSystem">x86 운영 체제에서는 [PRODUCT_NAME]이(가) 지원되지 않습니다. 해당 x86 설치 관리자를 사용하여 설치하세요.</String>
   <String Id="FilesInUseHeader">사용 중인 파일</String>
-  <String Id="FilesInUseLabel">다음의 응용 프로그램이 업데이트해야 할 파일을 사용 중입니다.</String>
-  <String Id="FilesInUseCloseRadioButton">응용 프로그램을 닫고 다시 시작합니다(&amp;A).</String>
+  <String Id="FilesInUseLabel">다음의 애플리케이션이 업데이트해야 할 파일을 사용 중입니다.</String>
+  <String Id="FilesInUseCloseRadioButton">애플리케이션을 닫고 다시 시작합니다(&amp;A).</String>
   <String Id="FilesInUseDontCloseRadioButton">애플리케이션을 닫지 않습니다(&amp;D). 다시 부팅해야 합니다.</String>
   <String Id="FilesInUseOkButton">확인(&amp;O)</String>
   <String Id="FilesInUseCancelButton">취소(&amp;C)</String>
   <String Id="WelcomeHeaderMessage">.NET 런타임</String>
-  <String Id="WelcomeDescription">.NET는 명령줄 애플리케이션, 마이크로 서비스 및 최신 웹 사이트를 빌드하는 데 사용할 수 있는 개발 플랫폼입니다. Microsoft가 지원하는 플랫폼 간 오픈 소스입니다. 즐기시기 바랍니다!</String>
+  <String Id="WelcomeDescription">.NET 런타임은 Windows 컴퓨터에서 .NET 애플리케이션을 실행하는 데 사용됩니다. .NET은 오픈 소스 및 플랫폼 간이며 Microsoft에서 지원합니다. .NET을 유용하게 사용하시길 바랍니다.</String>
   <String Id="LearnMoreTitle">.NET에 대한 자세한 정보</String>
   <String Id="SuccessInstallLocation">다음이 [DOTNETHOME]에 설치되었습니다.</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;자습서&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET 원격 분석&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;개인정보처리방침&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET Library EULA&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET에 대한 라이선스 정보&lt;/A&gt;</String>
+  <String Id="LicenseAssent">[설치]를 클릭하면 다음 사용 약관에 동의하는 것입니다.</String>
 </WixLocalization>

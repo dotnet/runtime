@@ -15,6 +15,12 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HOST_DARWIN
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
 
@@ -229,3 +235,94 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 
 #endif
 
+#if defined(HOST_DARWIN)
+
+void
+mono_clock_init (mono_clock_id_t *clk_id)
+{
+	kern_return_t ret;
+
+	do {
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, clk_id);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
+}
+
+void
+mono_clock_cleanup (mono_clock_id_t clk_id)
+{
+	kern_return_t ret;
+
+	do {
+		ret = mach_port_deallocate (mach_task_self (), clk_id);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
+}
+
+guint64
+mono_clock_get_time_ns (mono_clock_id_t clk_id)
+{
+	kern_return_t ret;
+	mach_timespec_t mach_ts;
+
+	do {
+		ret = clock_get_time (clk_id, &mach_ts);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: clock_get_time () returned %d", __func__, ret);
+
+	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
+}
+
+#elif defined(__linux__)
+
+void
+mono_clock_init (mono_clock_id_t *clk_id)
+{	
+}
+
+void
+mono_clock_cleanup (mono_clock_id_t clk_id)
+{
+}
+
+guint64
+mono_clock_get_time_ns (mono_clock_id_t clk_id)
+{	
+	struct timespec ts;
+
+	if (clock_gettime (clk_id, &ts) == -1)
+		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
+
+	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+}
+
+#else
+
+void
+mono_clock_init (mono_clock_id_t *clk_id)
+{
+	// TODO: need to implement this function for PC
+	g_assert_not_reached ();
+}
+
+void
+mono_clock_cleanup (mono_clock_id_t clk_id)
+{
+	// TODO: need to implement this function for PC
+	g_assert_not_reached ();
+}
+
+guint64
+mono_clock_get_time_ns (mono_clock_id_t clk_id)
+{
+	// TODO: need to implement time stamp function for PC
+	g_assert_not_reached ();
+}
+
+#endif

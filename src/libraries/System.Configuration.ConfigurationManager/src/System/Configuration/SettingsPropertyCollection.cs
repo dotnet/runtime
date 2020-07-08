@@ -8,8 +8,8 @@ namespace System.Configuration
 {
     public class SettingsPropertyCollection : IEnumerable, ICloneable, ICollection
     {
-        private readonly Hashtable _hashtable = null;
-        private bool _readOnly = false;
+        private readonly Hashtable _hashtable;
+        private bool _readOnly;
 
         public SettingsPropertyCollection()
         {

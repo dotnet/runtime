@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
@@ -6,15 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
-      <Link>Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
-      <Link>Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs">
-      <Link>Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs"
+             Link="Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs"
+             Link="Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs"
+             Link="Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +13,7 @@ namespace System.Net.Http
 {
     public class StreamContent : HttpContent
     {
-        private Stream _content = null!; // Initialized in helper
+        private Stream _content;
         private int _bufferSize;
         private bool _contentConsumed;
         private long _start;
@@ -41,6 +43,7 @@ namespace System.Net.Http
             InitializeContent(content, bufferSize);
         }
 
+        [MemberNotNull(nameof(_content))]
         private void InitializeContent(Stream content, int bufferSize)
         {
             _content = content;
@@ -50,6 +53,14 @@ namespace System.Net.Http
                 _start = content.Position;
             }
             if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
+        }
+
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+            PrepareContent();
+            // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
+            StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
@@ -95,6 +106,9 @@ namespace System.Net.Http
             }
             base.Dispose(disposing);
         }
+
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            new ReadOnlyStream(_content);
 
         protected override Task<Stream> CreateContentReadStreamAsync()
         {

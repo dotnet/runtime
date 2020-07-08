@@ -26,7 +26,7 @@ namespace System.Transactions
             return null;
         }
 
-        internal static bool CreatedServiceDomain { get; set; } = false;
+        internal static bool CreatedServiceDomain { get; set; }
 
         internal static bool UseServiceDomainForCurrent() => false;
 

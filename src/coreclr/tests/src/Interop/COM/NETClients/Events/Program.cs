@@ -50,8 +50,6 @@ namespace NetClient
             }
         }
 
-#pragma warning disable 618 // Must test deprecated features
-
         // The ComAwareEventInfo is used by the compiler when PIAs
         // containing COM Events are embedded.
         static void Validate_COMEventViaComAwareEventInfo()
@@ -89,8 +87,6 @@ namespace NetClient
                 message = msg;
             }
         }
-
-#pragma warning restore 618 // Must test deprecated features
 
         static int Main(string[] doNotUse)
         {

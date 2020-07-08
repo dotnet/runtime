@@ -483,10 +483,10 @@ void ZapInfo::CompileMethod()
 #endif
 
 #ifdef TARGET_X86
-    if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
     {
         if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
 #endif // TARGET_X86
@@ -1717,14 +1717,14 @@ void ZapInfo::embedGenericSignature(CORINFO_LOOKUP * pLookup)
     }
 }
 
-void* ZapInfo::getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags)
+bool ZapInfo::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    void * pStub = m_pEEJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    if (pStub == NULL)
-        return NULL;
-    return m_pImage->GetWrappers()->GetStub(pStub);
+    ThrowHR(E_NOTIMPL);
+    return false;
 }
 
 bool ZapInfo::convertPInvokeCalliToCall(
@@ -2147,10 +2147,16 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // is because they often change the code they emit based on what ISAs are supported by the compiler,
         // but we don't know what the target machine will support.
         //
-        // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
+        // Additionally, we make sure none of the hardware intrinsic method bodies (except ARM64) get pregenerated in crossgen
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
-        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+
+        // For Arm64, AdvSimd/ArmBase is the baseline that is suported and hence we do pregenerate the method bodies
+        // of ARM64 harware intrinsic.
+        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
+#if !defined(TARGET_ARM64)
+        fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+#endif 
 
         if (fIsPlatformHWIntrinsic)
         {
@@ -2161,7 +2167,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
             bool fIsPlatformSubArchitecture = false;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-            fIsPlatformRequiredISA     = (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
+            fIsPlatformRequiredISA     = (strcmp(isaName, "X86Base") == 0) || (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
             fIsPlatformSubArchitecture = strcmp(className, "X64") == 0;
 #elif defined(TARGET_ARM64)
             fIsPlatformRequiredISA     = (strcmp(isaName, "ArmBase") == 0) || (strcmp(isaName, "AdvSimd") == 0);
@@ -2177,13 +2183,15 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
                 }
             }
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0) || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0))
+            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0)
+                     || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0) || (strcmp(isaName, "Lzcnt") == 0))
             {
                 if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it is the get_IsSupported method for an ISA which requires the VEX
-                    // encoding we want to expand unconditionally. This will force those code
+                    // If it is the get_IsSupported method for an ISA which is intentionally not enabled
+                    // for crossgen, we want to expand unconditionally. This will force those code
                     // paths to be treated as dead code and dropped from the compilation.
+                    // See Zapper::InitializeCompilerFlags
                     //
                     // For all of the other intrinsics in an ISA which requires the VEX encoding
                     // we need to treat them as regular method calls. This is done because RyuJIT
@@ -2309,10 +2317,10 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #endif
 
 #ifdef TARGET_X86
-    if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(pResult->hMethod))
     {
         if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
+            m_zapper->Warning(W("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
 #endif // TARGET_X86
@@ -2964,7 +2972,7 @@ CORINFO_CLASS_HANDLE ZapInfo::getArgClass(CORINFO_SIG_INFO* sig,
     return m_pEEJitInfo->getArgClass(sig, args);
 }
 
-CorInfoType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     return m_pEEJitInfo->getHFAType(hClass);
 }
@@ -3328,10 +3336,9 @@ BOOL ZapInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 CorInfoInitClassResult ZapInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
-    return m_pEEJitInfo->initClass(field, method, context, speculative);
+    return m_pEEJitInfo->initClass(field, method, context);
 }
 
 void ZapInfo::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -3723,18 +3730,18 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else
         {
             _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         break;
 

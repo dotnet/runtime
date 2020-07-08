@@ -235,7 +235,7 @@ void ThreadpoolMgr::EnsureInitialized()
 {
     CONTRACTL
     {
-        THROWS;         // Initialize can throw
+        THROWS;         // EnsureInitializedSlow can throw
         MODE_ANY;
         GC_NOTRIGGER;
     }
@@ -243,6 +243,19 @@ void ThreadpoolMgr::EnsureInitialized()
 
     if (IsInitialized())
         return;
+
+    EnsureInitializedSlow();
+}
+
+NOINLINE void ThreadpoolMgr::EnsureInitializedSlow()
+{
+    CONTRACTL
+    {
+        THROWS;         // Initialize can throw
+        MODE_ANY;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     DWORD dwSwitchCount = 0;
 
@@ -758,7 +771,10 @@ void ThreadpoolMgr::ReportThreadStatus(bool isWorking)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    _ASSERTE(IsInitialized()); // can't be here without requesting a thread first
     _ASSERTE(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking));
+
     while (true)
     {
         WorkingThreadCounts currentCounts, newCounts;
@@ -1879,7 +1895,7 @@ Work:
             pThread->ChooseThreadCPUGroupAffinity();
 
             #ifdef FEATURE_COMINTEROP
-            if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+            if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
             {
                 // counts volatile read paired with CompareExchangeCounts loop set
                 counts = WorkerCounter.DangerousGetDirtyCounts();
@@ -1992,7 +2008,7 @@ Retire:
     while (true)
     {
 RetryRetire:
-        if (RetiredWorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout))
+        if (RetiredWorkerSemaphore->Wait(WorkerTimeout))
         {
             foundWork = true;
 
@@ -2069,7 +2085,7 @@ WaitForWork:
         FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
-    if (WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
+    if (WorkerSemaphore->Wait(WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
     {
         foundWork = true;
         goto Work;
@@ -2126,7 +2142,7 @@ Exit:
 
 #ifdef FEATURE_COMINTEROP
     if (pThread) {
-        pThread->SetApartment(Thread::AS_Unknown, TRUE);
+        pThread->SetApartment(Thread::AS_Unknown);
         pThread->CoUninitialize();
     }
 
@@ -2771,14 +2787,7 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
         if (asyncCallback)
             ReleaseAsyncCallback(asyncCallback);
 
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3076,6 +3085,7 @@ void ThreadpoolMgr::DeregisterWait(WaitInfo* pArgs)
 void ThreadpoolMgr::WaitHandleCleanup(HANDLE hWaitObject)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsInitialized()); // cannot call cleanup before first registering
 
     WaitInfo* waitInfo = (WaitInfo*) hWaitObject;
     _ASSERTE(waitInfo->refCount > 0);
@@ -3211,7 +3221,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     PIOCompletionContext context;
     BOOL fIsCompletionContext;
 
-    const DWORD CP_THREAD_WAIT = AppX::IsAppXProcess() ? 5000 : 15000; /* milliseconds */
+    const DWORD CP_THREAD_WAIT = 15000; /* milliseconds */
 
     _ASSERTE(GlobalCompletionPort != NULL);
 
@@ -3244,7 +3254,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
         }
     }
 
-    if (pThread && pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+    if (pThread && pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
     {
         // @todo: should we log the failure
         goto Exit;
@@ -3269,7 +3279,7 @@ Top:
                 pThread->ChooseThreadCPUGroupAffinity();
 
 #ifdef FEATURE_COMINTEROP
-                if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+                if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
                 {
                     // @todo: should we log the failure
                     goto Exit;
@@ -3607,7 +3617,7 @@ Exit:
 
 #ifdef FEATURE_COMINTEROP
     if (pThread) {
-        pThread->SetApartment(Thread::AS_Unknown, TRUE);
+        pThread->SetApartment(Thread::AS_Unknown);
         pThread->CoUninitialize();
     }
     // Couninit the worker thread
@@ -4507,10 +4517,10 @@ DWORD WINAPI ThreadpoolMgr::TimerThreadStart(LPVOID p)
     LastTickCount = GetTickCount();
 
 #ifdef FEATURE_COMINTEROP
-    if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+    if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
     {
         // @todo: should we log the failure
-        goto Exit;
+        return 0;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -4526,16 +4536,7 @@ DWORD WINAPI ThreadpoolMgr::TimerThreadStart(LPVOID p)
 #endif
     }
 
-#ifdef FEATURE_COMINTEROP
-// unreachable code
-//    if (pThread) {
-//        pThread->SetApartment(Thread::AS_Unknown, TRUE);
-//    }
-Exit:
-
-    // @todo: replace with host provided ExitThread
-    return 0;
-#endif
+    // unreachable
 }
 
 void ThreadpoolMgr::TimerThreadFire()
@@ -4563,14 +4564,7 @@ void ThreadpoolMgr::TimerThreadFire()
     EX_CATCH {
         // Assert on debug builds since a dead timer thread is a fatal error
         _ASSERTE(FALSE);
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }

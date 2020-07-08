@@ -197,8 +197,10 @@ typedef enum MonoAssemblyContextKind {
 	 * any context"): LoadFile(String) and Load(byte[]) are here.
 	 */
 	MONO_ASMCTX_INDIVIDUAL = 3,
+	/* Used internally by the runtime, not visible to managed code */
+	MONO_ASMCTX_INTERNAL = 4,
 
-	MONO_ASMCTX_LAST = 3
+	MONO_ASMCTX_LAST = 4
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {
@@ -251,6 +253,7 @@ typedef struct {
 	 * indexed by SignaturePointerPair
 	 */
 	GHashTable *delegate_abstract_invoke_cache;
+	GHashTable *delegate_bound_static_invoke_cache;
 
 	/*
 	 * indexed by MonoMethod pointers
@@ -502,7 +505,6 @@ struct _MonoImage {
 	/*
 	 * indexed by SignaturePointerPair
 	 */
-	GHashTable *delegate_bound_static_invoke_cache;
 	GHashTable *native_func_wrapper_cache;
 
 	/*
@@ -922,6 +924,9 @@ mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoErro
 gboolean
 mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, uint32_t *res, int res_size, MonoError *error);
 
+gboolean
+mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, int idx, guint32 *res, int res_size, MonoError *error);
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type);
 
@@ -1063,6 +1068,9 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 
 guint	       mono_metadata_generic_inst_hash (gconstpointer data);
 gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb);
+
+gboolean
+mono_metadata_signature_equal_no_ret (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
 
 MONO_API void
 mono_metadata_field_info_with_mempool (

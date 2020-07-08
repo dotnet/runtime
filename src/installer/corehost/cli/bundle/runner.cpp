@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,11 +48,11 @@ StatusCode runner_t::extract()
     }
 }
 
-const file_entry_t*  runner_t::probe(const pal::string_t& path) const
+const file_entry_t*  runner_t::probe(const pal::string_t &relative_path) const
 {
     for (const file_entry_t& entry : m_manifest.files)
     {
-        if (entry.relative_path() == path)
+        if (pal::pathcmp(entry.relative_path(), relative_path) == 0)
         {
             return &entry;
         }
@@ -61,10 +61,27 @@ const file_entry_t*  runner_t::probe(const pal::string_t& path) const
     return nullptr;
 }
 
-bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_path) const
+bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const
 {
-    const bundle::runner_t* app = bundle::runner_t::app();
-    const bundle::file_entry_t* entry = app->probe(relative_path);
+    const bundle::file_entry_t* entry = probe(relative_path);
+
+    if (entry == nullptr)
+    {
+        return false;
+    }
+
+    assert(entry->offset() != 0);
+
+    *offset = entry->offset();
+    *size = entry->size();
+
+
+    return true;
+}
+
+bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_path, bool& extracted_to_disk) const
+{
+    const bundle::file_entry_t* entry = probe(relative_path);
 
     if (entry == nullptr)
     {
@@ -72,12 +89,11 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
         return false;
     }
 
-    // Currently, all files except deps.json and runtimeconfig.json are extracted to disk.
-    // The json files are not queried by the host using this method.
-    assert(entry->needs_extraction());
+    extracted_to_disk = entry->needs_extraction();
+    full_path.assign(extracted_to_disk ? extraction_path() : base_path());
 
-    full_path.assign(app->extraction_path());
     append_path(&full_path, relative_path.c_str());
 
     return true;
 }
+

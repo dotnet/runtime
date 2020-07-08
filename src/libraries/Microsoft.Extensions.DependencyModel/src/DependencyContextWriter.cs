@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.DependencyModel
                     // Add a placeholder item
                     // We need to generate a pseudo-path because there could be multiple different asset groups with placeholders
                     // Only the last path segment matters, the rest is basically just a GUID.
-                    var pseudoPathFolder = assetType == DependencyContextStrings.RuntimeAssetType ?
+                    string pseudoPathFolder = assetType == DependencyContextStrings.RuntimeAssetType ?
                         "lib" :
                         "native";
 

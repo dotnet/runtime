@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // ComEventsHelper is marked as Obsolete.
     public class ComEventsHelperTests
     {
         [Fact]
@@ -51,5 +50,4 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("obj", () => ComEventsHelper.Remove(1, Guid.Empty, 1, null));
         }
     }
-#pragma warning restore 0618
 }

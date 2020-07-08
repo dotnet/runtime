@@ -2516,7 +2516,15 @@ namespace System.Tests
                 Assert.Equal(s1.GetHashCode(), s1.GetHashCode());
             }
 
-            Assert.Equal(expected, s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            if (string.IsNullOrEmpty(s1) && string.IsNullOrEmpty(s2))
+            {
+                // null strings are normalized to empty spans
+                Assert.True(s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            }
+            else
+            {
+                Assert.Equal(expected, s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            }
         }
 
         public static IEnumerable<object[]> Equals_EncyclopaediaData()
@@ -6777,6 +6785,19 @@ namespace System.Tests
              CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
              Assert.Equal(expected, source.StartsWith(start, ignoreCase, ci));
              Assert.Equal(expected, source.EndsWith(end, ignoreCase, ci));
+        }
+
+        [Theory]
+        [InlineData("", StringComparison.InvariantCulture, true)]
+        [InlineData("", StringComparison.Ordinal, true)]
+        [InlineData(ZeroWidthJoiner, StringComparison.InvariantCulture, true)]
+        [InlineData(ZeroWidthJoiner, StringComparison.Ordinal, false)]
+        public static void StartEndWith_ZeroWeightValue(string value, StringComparison comparison, bool expectedStartsAndEndsWithResult)
+        {
+            Assert.Equal(expectedStartsAndEndsWithResult, string.Empty.StartsWith(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult, string.Empty.EndsWith(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult ? 0 : -1, string.Empty.IndexOf(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult ? 0 : -1, string.Empty.LastIndexOf(value, comparison));
         }
 
         [Fact]

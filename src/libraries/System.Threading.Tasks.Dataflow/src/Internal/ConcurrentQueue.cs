@@ -38,7 +38,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         private volatile Segment _tail;
         private const int SEGMENT_SIZE = 32;
         //number of snapshot takers, GetEnumerator(), ToList() and ToArray() operations take snapshot.
-        internal volatile int _numSnapshotTakers = 0;
+        internal volatile int _numSnapshotTakers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class.

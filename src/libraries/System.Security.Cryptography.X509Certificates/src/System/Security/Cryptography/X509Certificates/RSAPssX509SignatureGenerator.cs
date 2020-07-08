@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.X509Certificates.Asn1;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -74,34 +73,33 @@ namespace System.Security.Cryptography.X509Certificates
 
             PssParamsAsn parameters = new PssParamsAsn
             {
-                HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(digestOid) },
-                MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Mgf1) },
+                HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
+                MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
                 SaltLength = cbSalt,
                 TrailerField = 1,
             };
 
-            using (AsnWriter mgfParamWriter = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                mgfParamWriter.PushSequence();
-                mgfParamWriter.WriteObjectIdentifier(digestOid);
-                mgfParamWriter.PopSequence();
-                parameters.MaskGenAlgorithm.Parameters = mgfParamWriter.Encode();
+                writer.WriteObjectIdentifierForCrypto(digestOid);
             }
 
-            using (AsnWriter parametersWriter = new AsnWriter(AsnEncodingRules.DER))
-            using (AsnWriter identifierWriter = new AsnWriter(AsnEncodingRules.DER))
+            parameters.MaskGenAlgorithm.Parameters = writer.Encode();
+            writer.Reset();
+
+            parameters.Encode(writer);
+
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
-                parameters.Encode(parametersWriter);
+                Algorithm = Oids.RsaPss,
+                Parameters = writer.Encode(),
+            };
 
-                AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
-                {
-                    Algorithm = new Oid(Oids.RsaPss),
-                    Parameters = parametersWriter.Encode(),
-                };
-
-                identifier.Encode(identifierWriter);
-                return identifierWriter.Encode();
-            }
+            writer.Reset();
+            identifier.Encode(writer);
+            return writer.Encode();
         }
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)

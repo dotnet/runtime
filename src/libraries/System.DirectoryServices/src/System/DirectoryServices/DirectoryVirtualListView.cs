@@ -8,12 +8,12 @@ namespace System.DirectoryServices
 {
     public class DirectoryVirtualListView
     {
-        private int _beforeCount = 0;
-        private int _afterCount = 0;
-        private int _offset = 0;
+        private int _beforeCount;
+        private int _afterCount;
+        private int _offset;
         private string _target = "";
-        private int _approximateTotal = 0;
-        private int _targetPercentage = 0;
+        private int _approximateTotal;
+        private int _targetPercentage;
 
         public DirectoryVirtualListView()
         {

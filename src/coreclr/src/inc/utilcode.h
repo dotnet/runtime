@@ -2573,6 +2573,7 @@ template <class MemMgr>
 class CHashTableAndData : public CHashTable
 {
 public:
+    DAC_ALIGNAS(CHashTable)
     ULONG      m_iFree;                // Index into m_pcEntries[] of next available slot
     ULONG      m_iEntries;             // size of m_pcEntries[]
 
@@ -4715,13 +4716,6 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
 extern HINSTANCE g_hmodCoreCLR;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// Corrupting Exception limited support for outside the VM folder
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 namespace UtilCode
 {
     // These are type-safe versions of Interlocked[Compare]Exchange
@@ -4930,28 +4924,15 @@ namespace Com
 
 }}
 
-#if defined(FEATURE_APPX) && !defined(DACCESS_COMPILE)
-    // Forward declaration of AppX::IsAppXProcess
-    namespace AppX { bool IsAppXProcess(); }
-
-    // LOAD_WITH_ALTERED_SEARCH_PATH is unsupported in AppX processes.
-    inline DWORD GetLoadWithAlteredSearchPathFlag()
-    {
-        WRAPPER_NO_CONTRACT;
-        return AppX::IsAppXProcess() ? 0 : LOAD_WITH_ALTERED_SEARCH_PATH;
-    }
-#else // FEATURE_APPX && !DACCESS_COMPILE
-    // LOAD_WITH_ALTERED_SEARCH_PATH can be used unconditionally.
-    inline DWORD GetLoadWithAlteredSearchPathFlag()
-    {
-        LIMITED_METHOD_CONTRACT;
-        #ifdef LOAD_WITH_ALTERED_SEARCH_PATH
-            return LOAD_WITH_ALTERED_SEARCH_PATH;
-        #else
-            return 0;
-        #endif
-    }
-#endif // FEATURE_APPX && !DACCESS_COMPILE
+inline DWORD GetLoadWithAlteredSearchPathFlag()
+{
+    LIMITED_METHOD_CONTRACT;
+    #ifdef LOAD_WITH_ALTERED_SEARCH_PATH
+        return LOAD_WITH_ALTERED_SEARCH_PATH;
+    #else
+        return 0;
+    #endif
+}
 
 // clr::SafeAddRef and clr::SafeRelease helpers.
 namespace clr

@@ -129,15 +129,6 @@ namespace System
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
 
-            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
-            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
-            {
-                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
-                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
-                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
-                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
-            }
-
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {
                 Console.Write(keyInfo.KeyChar);
@@ -416,24 +407,10 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return left;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return top;
-            }
+            TryGetCursorPosition(out int left, out int top);
+            return (left, top);
         }
 
         /// <summary>
@@ -1233,11 +1210,19 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            fixed (byte* bufPtr = buffer)
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
+            try
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
-                return result;
+                fixed (byte* bufPtr = buffer)
+                {
+                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
+                    Debug.Assert(result <= count);
+                    return result;
+                }
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
             }
         }
 
@@ -1279,7 +1264,7 @@ namespace System
                         // only the blocking behavior, and thus ignore any poll errors
                         // and loop around to do another write (which may correctly fail
                         // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.Sys.PollEvents.POLLOUT, Timeout.Infinite, out Interop.Sys.PollEvents triggered);
+                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
                         continue;
                     }
                     else

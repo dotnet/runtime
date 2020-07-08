@@ -159,7 +159,6 @@ PALEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                           GssCtxId* contextHandle,
                                           int32_t isEncrypt,
                                           uint8_t* inputBytes,
-                                          int32_t offset,
                                           int32_t count,
                                           PAL_GssBuffer* outBuffer);
 

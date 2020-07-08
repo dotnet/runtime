@@ -206,12 +206,15 @@ mono_marshal_init (void)
 		register_icall (ves_icall_mono_string_from_utf16, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_from_byvalstr, mono_icall_sig_obj_ptr_int, FALSE);
 		register_icall (mono_string_from_byvalwstr, mono_icall_sig_obj_ptr_int, FALSE);
+		register_icall (mono_string_from_ansibstr, mono_icall_sig_obj_ptr, FALSE);
+		register_icall (mono_string_from_tbstr, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_new_wrapper_internal, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (ves_icall_string_new_wrapper, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_new_len_wrapper, mono_icall_sig_obj_ptr_int, FALSE);
 		register_icall (ves_icall_mono_string_to_utf8, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_string_to_utf8str, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_string_to_ansibstr, mono_icall_sig_ptr_object, FALSE);
+		register_icall (mono_string_to_tbstr, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_string_builder_to_utf8, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_string_builder_to_utf16, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_array_to_savearray, mono_icall_sig_ptr_object, FALSE);
@@ -512,7 +515,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
 
-		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		mono_delegate_ctor (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -992,11 +995,52 @@ mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 
 #endif
 
-gpointer
+// Assume ANSI == UTF8 for now, same as LPSTR
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+char *
 mono_string_to_ansibstr_impl (MonoStringHandle string_obj, MonoError *error)
 {
-	g_error ("UnmanagedMarshal.BStr is not implemented.");
-	return NULL;
+	if (MONO_HANDLE_IS_NULL (string_obj))
+		return NULL;
+
+	char *utf8_str = mono_string_handle_to_utf8 (string_obj, error);
+	return_val_if_nok (error, NULL);
+	char *res = mono_ptr_to_ansibstr (utf8_str, g_utf8_strlen (utf8_str, -1));
+	g_free (utf8_str);
+	return res;
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+MonoStringHandle
+mono_string_from_ansibstr_impl (const char *data, MonoError *error)
+{
+	if (!data)
+		return NULL_HANDLE_STRING;
+
+	return mono_string_new_utf8_len (mono_domain_get (), data, *((guint32 *)data - 1) / sizeof (char), error);
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+gpointer
+mono_string_to_tbstr_impl (MonoStringHandle string_obj, MonoError *error)
+{
+#ifdef TARGET_WIN32
+	return mono_string_to_bstr_impl (string_obj, error);
+#else
+	return mono_string_to_ansibstr_impl (string_obj, error);
+#endif
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+MonoStringHandle
+mono_string_from_tbstr_impl (gpointer data, MonoError *error)
+{
+#ifdef TARGET_WIN32
+	return mono_string_from_bstr_checked ((mono_bstr)data, error);
+#else
+	return mono_string_from_ansibstr_impl ((char *)data, error);
+#endif
 }
 
 /**
@@ -1332,6 +1376,10 @@ mono_marshal_get_string_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_STR_BSTR;
 	case MONO_NATIVE_UTF8STR:
 		return MONO_MARSHAL_CONV_STR_UTF8STR;
+	case MONO_NATIVE_ANSIBSTR:
+		return MONO_MARSHAL_CONV_STR_ANSIBSTR;
+	case MONO_NATIVE_TBSTR:
+		return MONO_MARSHAL_CONV_STR_TBSTR;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -1379,6 +1427,10 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_LPTSTR_STR;
 	case MONO_NATIVE_BSTR:
 		return MONO_MARSHAL_CONV_BSTR_STR;
+	case MONO_NATIVE_ANSIBSTR:
+		return MONO_MARSHAL_CONV_ANSIBSTR_STR;
+	case MONO_NATIVE_TBSTR:
+		return MONO_MARSHAL_CONV_TBSTR_STR;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -2228,7 +2280,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			return res;
 		cache_key = method->klass;
 	} else if (static_method_with_first_arg_bound) {
-		cache = get_cache (&get_method_image (target_method)->delegate_bound_static_invoke_cache,
+		GHashTable **cache_ptr;
+
+		cache_ptr = &mono_method_get_wrapper_cache (target_method)->delegate_bound_static_invoke_cache;
+
+		cache = get_cache (cache_ptr,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
@@ -5191,11 +5247,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHan
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
-	if (bytes)
-		memmove (dest, managed_source_addr, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) {
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
+		if (bytes)
+			memmove (dest, managed_source_addr, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 void
@@ -5208,11 +5266,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpoin
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
-	if (bytes)
-		memmove (managed_dest_addr, src, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) { 
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
+		if (bytes)
+			memmove (managed_dest_addr, src, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 MonoStringHandle
@@ -5589,11 +5649,12 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			break;
 #endif
 		case MONO_MARSHAL_CONV_STR_LPSTR:
-		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-		case MONO_MARSHAL_CONV_STR_TBSTR:
 		case MONO_MARSHAL_CONV_STR_UTF8STR:
 			mono_marshal_free (*(gpointer *)cpos);
 			break;
+
+		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+		case MONO_MARSHAL_CONV_STR_TBSTR:
 		case MONO_MARSHAL_CONV_STR_BSTR:
 			mono_free_bstr (*(gpointer*)cpos);
 			break;
@@ -6260,6 +6321,36 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 
 		return res;
 	}
+	case MONO_TYPE_SZARRAY: {
+		//TODO: Implement structs and in-params for all value types	
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		// we only support char[] for in-params; we return a pointer to the managed heap here, and that's not 'in'-safe
+		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
+			break;
+
+		if (m_class_get_rank (klass) > 1)
+			break;
+
+		if (arr->bounds)
+			if (arr->bounds->lower_bound != 0)
+				break;
+
+		if (mono_class_is_auto_layout (eklass))
+			break;
+
+		if (m_class_is_valuetype (eklass) && (mono_class_is_explicit_layout (eklass) || m_class_is_blittable (eklass) || m_class_is_enumtype (eklass)))
+			return arr->vector;
+
+		if (eklass == mono_get_char_class ()) {
+			char *res =  mono_utf16_to_utf8 ((mono_unichar2 *) arr->vector, arr->max_length, error);
+			return_val_if_nok (error, NULL);
+			return res;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -6318,6 +6409,20 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		}
 
 		mono_marshal_free (ptr);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		if (eklass != mono_get_char_class ())
+			break;
+
+		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
+		g_free (ptr);
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
+		g_free (utf16_array);
 		break;
 	}
 	default:
@@ -6544,8 +6649,8 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_remove (image->delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
+	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
+		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
