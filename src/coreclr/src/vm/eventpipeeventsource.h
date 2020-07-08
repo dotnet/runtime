@@ -19,15 +19,15 @@ private:
     const static WCHAR* s_pProcessInfoEventName;
     EventPipeEvent *m_pProcessInfoEvent;
 
-    const static WCHAR* s_pOSInformation;
-    const static WCHAR* s_pArchInformation;
-
 public:
     EventPipeEventSource();
     ~EventPipeEventSource();
 
     void Enable(EventPipeSession *pSession);
     void SendProcessInfo(LPCWSTR pCommandLine);
+
+    const static WCHAR* s_pOSInformation;
+    const static WCHAR* s_pArchInformation;
 };
 
 #endif // FEATURE_PERFTRACING
