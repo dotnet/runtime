@@ -54,7 +54,7 @@ mono_ldftn (MonoMethod *method)
 		return addr;
 	}
 
-	/* if we're need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
+	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
 	 * variables that won't be there if we run on a thread that's not attached yet. */
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 		addr = mono_compile_method_checked (method, error);
