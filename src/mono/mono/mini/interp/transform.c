@@ -842,6 +842,15 @@ interp_generate_bie_throw (TransformData *td)
 }
 
 static void
+interp_generate_not_supported_throw (TransformData *td)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_not_supported;
+
+	interp_add_ins (td, MINT_ICALL_V_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
+static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
@@ -6226,9 +6235,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
-						(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 						m->wrapper_type == MONO_WRAPPER_NONE &&
 						mono_method_has_unmanaged_callers_only_attribute (m))) {
+
+					if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+						interp_generate_not_supported_throw (td);
+						interp_add_ins (td, MINT_LDNULL);
+						td->ip += 5;
+						PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+						break;
+					}
 
 					MonoMethod *ctor_method;
 

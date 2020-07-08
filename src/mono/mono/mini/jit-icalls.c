@@ -1596,6 +1596,14 @@ mono_throw_bad_image ()
 }
 
 void
+mono_throw_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_throw_invalid_program (const char *msg)
 {
 	ERROR_DECL (error);

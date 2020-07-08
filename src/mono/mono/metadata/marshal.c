@@ -3662,6 +3662,25 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
+	gboolean unmanaged_callers_only = FALSE;
+
+	if (G_UNLIKELY (pinvoke && (mono_method_has_unmanaged_callers_only_attribute (method)))) {
+		/* emit a wrapper that throws a NotSupportedException */
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both  DllImportAttribute and UnmanagedCallersOnlyAttribute");
+
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 16, info, NULL);
+		mono_mb_free (mb);
+
+		return res;
+	}
+
+
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.

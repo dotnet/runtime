@@ -2308,6 +2308,12 @@ emit_bad_image_failure (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee
 }
 
 static void
+emit_not_supported_failure (MonoCompile *cfg)
+{
+	mono_emit_jit_icall (cfg, mono_throw_not_supported, NULL);
+}
+
+static void
 emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
 {
 	g_assert (!is_ok (error_msg));
@@ -11130,6 +11136,15 @@ mono_ldptr:
 
 			/* UnmanagedCallersOnlyAttribute means ldftn should return a method callable from native */
 			if (G_UNLIKELY (has_unmanaged_callers_only)) {
+				if (G_UNLIKELY (cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+					// Follow CoreCLR, disallow [UnmanagedCallersOnly] and [DllImport] to be used
+					// together
+					emit_not_supported_failure (cfg);
+					EMIT_NEW_PCONST (cfg, ins, NULL);
+					*sp++ = ins;
+					inline_costs += CALL_COST * MIN(10, num_calls++);
+					break;
+				}
 				MonoClass *delegate_klass = NULL;
 				MonoGCHandle target_handle = 0;
 				ERROR_DECL (wrapper_error);
