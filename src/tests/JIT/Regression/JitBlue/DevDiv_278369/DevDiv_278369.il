@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test checks that value numbering does not incorrectly propagate the value number for an operand to its
 // consuming operator unless the type of the operand and the operator agree.

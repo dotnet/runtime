@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // These are only used by rapidjson/error/en.h to declare the error messages,
 // and have to be set to these values before any files are included.  They're

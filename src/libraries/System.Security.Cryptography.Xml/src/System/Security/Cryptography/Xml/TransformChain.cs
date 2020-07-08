@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file contains the classes necessary to represent the Transform processing model used in
 // XMLDSIG. The basic idea is as follows. A Reference object contains within it a TransformChain, which

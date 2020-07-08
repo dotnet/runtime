@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // The Adams-Moulton Predictor Corrector Method adapted from Conte and de Boor
 // original source: adams_d.c

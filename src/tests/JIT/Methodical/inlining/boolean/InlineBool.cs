@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Tests for boolean expression, control flow, and inlining optimizations.
 // All 100 variants of Id should generate the same code.

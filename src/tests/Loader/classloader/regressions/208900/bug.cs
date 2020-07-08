@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Regression test for bug VSWhidbey 208900
 // "Corrupt OBJECTREF when calling a virtual generic method instantiated at a struct which returns that struct"

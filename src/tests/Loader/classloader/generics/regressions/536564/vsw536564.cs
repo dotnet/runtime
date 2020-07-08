@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // this is regression test for VSW 536564 (and the duplicate VSW 537413)
 // We were getting a TypeLoadException when trying to load Class1

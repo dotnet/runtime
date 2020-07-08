@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Do an IL jmp instruction in a method with a big local frame,
 // where SP restore needs a free register to free local frame (sp += frameSize).

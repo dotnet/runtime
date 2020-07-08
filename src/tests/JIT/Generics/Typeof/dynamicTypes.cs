@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 /* The following are the checks being made, where x is a user defined type as described below. The test does all of this pretty much as a grid cross section, so there are redundant cast cases also covered here.
