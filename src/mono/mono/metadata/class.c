@@ -1416,7 +1416,8 @@ mono_method_get_verification_success (MonoMethod *method)
  * mono_method_lookup_infrequent_bits:
  *
  * Looks for existing \c MonoMethodDefInfrequentBits struct associated with
- * this method definition.
+ * this method definition.  Unlike \c mono_method_get_infrequent bits, this
+ * does not allocate a new struct if one doesn't exist.
  *
  * LOCKING: Acquires the image lock
  */
@@ -1433,6 +1434,9 @@ mono_method_lookup_infrequent_bits (MonoMethod *method)
  *
  * Looks for an existing, or allocates a new \c MonoMethodDefInfrequentBits struct for this method definition.
  * Method must not be inflated.
+ *
+ * Unlike \c mono_method_lookup_infrequent_bits, this will allocate a new
+ * struct if the method didn't have one.
  *
  * LOCKING: Acquires the image lock
  */
