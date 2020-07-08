@@ -9,45 +9,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        public static int i32_res;
-        public static void InvokeI32(int a, int b)
+        internal static int _i32Value;
+        private static void InvokeI32(int a, int b)
         {
-            i32_res = a + b;
+            _i32Value = a + b;
         }
 
-        public static float f32_res;
-        public static void InvokeFloat(float f)
+        internal static float _f32Value;
+        private static void InvokeFloat(float f)
         {
-            f32_res = f;
+            _f32Value = f;
         }
 
-        public static double f64_res;
-        public static void InvokeDouble(double d)
+        internal static double _f64Value;
+        private static void InvokeDouble(double d)
         {
-            f64_res = d;
+            _f64Value = d;
         }
 
-        public static long i64_res;
-        public static void InvokeLong(long l)
+        internal static long _i64Value;
+        private static void InvokeLong(long l)
         {
-            i64_res = l;
+            _i64Value = l;
         }
-        internal static byte[] byteBuffer;
+        internal static byte[] _byteBuffer;
         private static void MarshalArrayBuffer(ArrayBuffer buffer)
         {
             using (var bytes = new Uint8Array(buffer))
-                byteBuffer = bytes.ToArray();
+                _byteBuffer = bytes.ToArray();
         }
 
         private static void MarshalByteBuffer(Uint8Array buffer)
         {
-            byteBuffer = buffer.ToArray();
+            _byteBuffer = buffer.ToArray();
         }
-        internal static int[] intBuffer;
+        internal static int[] _intBuffer;
         private static void MarshalArrayBufferToInt32Array(ArrayBuffer buffer)
         {
             using (var ints = new Int32Array(buffer))
-                intBuffer = ints.ToArray();
+                _intBuffer = ints.ToArray();
         }
 
         internal static string _stringResource;
@@ -80,6 +80,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _marshalledObject = new object();
             return _marshalledObject;
+        }
+
+        internal static int _valOne, _valTwo;
+        public static void ManipulateObject(JSObject obj)
+        {
+            _valOne = (int)obj.Invoke("inc"); ;
+            _valTwo = (int)obj.Invoke("add", 20);
         }
     }
 }
