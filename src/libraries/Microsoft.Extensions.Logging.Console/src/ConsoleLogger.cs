@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Console
         internal ConsoleLoggerOptions Options { get; set; }
 
         [ThreadStatic]
-        internal static StringWriter _stringWriter;
+        private static StringWriter t_stringWriter;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
@@ -43,21 +43,20 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 throw new ArgumentNullException(nameof(formatter));
             }
-            if (exception == null && formatter(state, exception) == null)
+            t_stringWriter ??= new StringWriter();
+            LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
+            Formatter.Write(in logEntry, ScopeProvider, t_stringWriter);
+
+            var sb = t_stringWriter.GetStringBuilder();
+            if (sb.Length == 0)
             {
                 return;
             }
-
-            _stringWriter ??= new StringWriter();
-            LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
-            Formatter.Write(in logEntry, ScopeProvider, _stringWriter);
-
-            var sb = _stringWriter.GetStringBuilder();
-            string computedAnsiString = null;
-            if (sb.Length != 0)
+            string computedAnsiString = sb.ToString();
+            sb.Clear();
+            if (sb.Capacity > 1024)
             {
-                computedAnsiString = sb.ToString();
-                sb.Clear();
+                sb.Capacity = 1024;
             }
             _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options.LogToStandardErrorThreshold));
         }

@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging.Console
             return SetForegroundColor(foreground) || backgroundChanged;
         }
 
-        public bool SetBackgroundColor(ConsoleColor? background)
+        private bool SetBackgroundColor(ConsoleColor? background)
         {
             if (background.HasValue)
             {
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Console
             return false;
         }
 
-        public bool SetForegroundColor(ConsoleColor? foreground)
+        private bool SetForegroundColor(ConsoleColor? foreground)
         {
             if (foreground.HasValue)
             {
@@ -56,6 +56,31 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
+        /// <summary>
+        /// Parses a subset of display attributes and skips those it does not understand
+        /// Set Display Attributes
+        /// Set Attribute Mode [{attr1};...;{attrn}m
+        /// Sets multiple display attribute settings. The following lists standard attributes that are getting parsed:
+        /// 1 Bright
+        /// Foreground Colours
+        /// 30 Black
+        /// 31 Red
+        /// 32 Green
+        /// 33 Yellow
+        /// 34 Blue
+        /// 35 Magenta
+        /// 36 Cyan
+        /// 37 White
+        /// Background Colours
+        /// 40 Black
+        /// 41 Red
+        /// 42 Green
+        /// 43 Yellow
+        /// 44 Blue
+        /// 45 Magenta
+        /// 46 Cyan
+        /// 47 White
+        /// </summary>
         public void Write(string message)
         {
             // writes content with the embedded foreground and background ansi colored. it skips non-color related ansi codes
@@ -119,12 +144,6 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 Write(span.Slice(content.startIndex, content.length), content.bg, content.fg);
             }
-        }
-
-        public void Flush()
-        {
-            // No action required as for every write, data is sent directly to the console
-            // output stream
         }
 
         private static bool SetsForegroundColor(int number, bool isDark, out ConsoleColor? color)

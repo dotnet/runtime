@@ -15,9 +15,6 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal class SimpleConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        [ThreadStatic]
-        private static StringBuilder _logBuilder;
-
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
@@ -26,7 +23,6 @@ namespace Microsoft.Extensions.Logging.Console
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
         : base (ConsoleFormatterNames.Simple)
         {
-            FormatterOptions = options.CurrentValue;
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
@@ -45,6 +41,11 @@ namespace Microsoft.Extensions.Logging.Console
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
+            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+            if (logEntry.Exception == null && message == null)
+            {
+                return;
+            }
             LogLevel logLevel = logEntry.LogLevel;
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
@@ -60,57 +61,37 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 textWriter.Write(FormatterOptions.SingleLine ? timestamp + ' ' : timestamp);
             }
-
             if (logLevelString != null)
             {
                 textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground, FormatterOptions.DisableColors);
             }
-
-            StringBuilder logBuilder = _logBuilder;
-            _logBuilder = null;
-
-            if (logBuilder == null)
-            {
-                logBuilder = new StringBuilder();
-            }
-
-            CreateDefaultLogMessage(logBuilder, logEntry, scopeProvider);
-            textWriter.Write(logBuilder.ToString());
-
-            logBuilder.Clear();
-            if (logBuilder.Capacity > 1024)
-            {
-                logBuilder.Capacity = 1024;
-            }
-            _logBuilder = logBuilder;
+            CreateDefaultLogMessage(textWriter, logEntry, message, scopeProvider);
         }
 
-        private void CreateDefaultLogMessage<TState>(StringBuilder logBuilder, in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider)
+        private void CreateDefaultLogMessage<TState>(TextWriter textWriter, in LogEntry<TState> logEntry, string message, IExternalScopeProvider scopeProvider)
         {
             bool singleLine = FormatterOptions.SingleLine;
-            string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
             Exception exception = logEntry.Exception;
-            string message = logEntry.Formatter(logEntry.State, exception);
 
             // Example:
             // info: ConsoleApp.Program[10]
             //       Request received
 
             // category and event id
-            logBuilder.Append(LoglevelPadding + category + '[' + eventId + "]");
+            textWriter.Write(LoglevelPadding + logEntry.Category + '[' + eventId + "]");
             if (!singleLine)
             {
-                logBuilder.Append(Environment.NewLine);
+                textWriter.Write(Environment.NewLine);
             }
 
             // scope information
-            GetScopeInformation(logBuilder, scopeProvider, singleLine);
+            GetScopeInformation(textWriter, scopeProvider, singleLine);
             if (singleLine)
             {
-                logBuilder.Append(' ');
+                textWriter.Write(' ');
             }
-            WriteMessage(logBuilder, message, singleLine);
+            WriteMessage(textWriter, message, singleLine);
 
             // Example:
             // System.InvalidOperationException
@@ -118,35 +99,34 @@ namespace Microsoft.Extensions.Logging.Console
             if (exception != null)
             {
                 // exception message
-                WriteMessage(logBuilder, exception.ToString(), singleLine);
+                WriteMessage(textWriter, exception.ToString(), singleLine);
             }
             if (singleLine)
             {
-                logBuilder.Append(Environment.NewLine);
+                textWriter.Write(Environment.NewLine);
             }
         }
 
-        private void WriteMessage(StringBuilder stringBuilder, string message, bool singleLine)
+        private void WriteMessage(TextWriter textWriter, string message, bool singleLine)
         {
             if (!string.IsNullOrEmpty(message))
             {
                 if (singleLine)
                 {
-                    WriteReplacing(Environment.NewLine, " ", message, stringBuilder);
+                    WriteReplacing(textWriter, Environment.NewLine, " ", message);
                 }
                 else
                 {
-                    stringBuilder.Append(_messagePadding);
-                    WriteReplacing(Environment.NewLine, _newLineWithMessagePadding, message, stringBuilder);
-                    stringBuilder.Append(Environment.NewLine);
+                    textWriter.Write(_messagePadding);
+                    WriteReplacing(textWriter, Environment.NewLine, _newLineWithMessagePadding, message);
+                    textWriter.Write(Environment.NewLine);
                 }
             }
 
-            void WriteReplacing(string oldValue, string newValue, string message, StringBuilder builder)
+            static void WriteReplacing(TextWriter writer, string oldValue, string newValue, string message)
             {
-                int len = builder.Length;
-                builder.Append(message);
-                builder.Replace(oldValue, newValue, len, message.Length);
+                string newMessage = message.Replace(oldValue, newValue);
+                writer.Write(newMessage);
             }
         }
 
@@ -189,46 +169,43 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void GetScopeInformation(StringBuilder stringBuilder, IExternalScopeProvider scopeProvider, bool singleLine)
+        private void GetScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider, bool singleLine)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                int initialLength = stringBuilder.Length;
-
+                bool paddingNeeded = !singleLine;
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    (StringBuilder builder, int paddAt) = state;
-                    bool padd = paddAt == builder.Length;
-                    if (padd)
+                    if (paddingNeeded)
                     {
-                        builder.Append(_messagePadding);
-                        builder.Append("=> ");
+                        paddingNeeded = false;
+                        state.Write(_messagePadding + "=> ");
                     }
                     else
                     {
-                        builder.Append(" => ");
+                        state.Write(" => ");
                     }
-                    builder.Append(scope);
-                }, (stringBuilder, singleLine ? -1 : initialLength));
+                    state.Write(scope);
+                }, textWriter);
 
-                if (stringBuilder.Length > initialLength && !singleLine)
+                if (!paddingNeeded && !singleLine)
                 {
-                    stringBuilder.AppendLine();
+                    textWriter.Write(Environment.NewLine);
                 }
             }
         }
-    }
 
-    internal readonly struct ConsoleColors
-    {
-        public ConsoleColors(ConsoleColor? foreground, ConsoleColor? background)
+        private readonly struct ConsoleColors
         {
-            Foreground = foreground;
-            Background = background;
+            public ConsoleColors(ConsoleColor? foreground, ConsoleColor? background)
+            {
+                Foreground = foreground;
+                Background = background;
+            }
+
+            public ConsoleColor? Foreground { get; }
+
+            public ConsoleColor? Background { get; }
         }
-
-        public ConsoleColor? Foreground { get; }
-
-        public ConsoleColor? Background { get; }
     }
 }

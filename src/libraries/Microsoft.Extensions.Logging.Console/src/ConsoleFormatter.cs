@@ -16,6 +16,10 @@ namespace Microsoft.Extensions.Logging.Console
     {
         protected ConsoleFormatter(string name)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
             Name = name;
         }
 
@@ -25,8 +29,11 @@ namespace Microsoft.Extensions.Logging.Console
         public string Name { get; }
 
         /// <summary>
-        /// Formats a log message at the specified log level.
+        /// Writes the log message to the specified TextWriter.
         /// </summary>
+        /// <remarks>
+        /// if the formatter wants to write colors to the console, it can do so by embedding ANSI color codes into the string
+        /// </remarks>
         /// <param name="logEntry">The log entry.</param>
         /// <param name="scopeProvider">The provider of scope data.</param>
         /// <param name="textWriter">The string writer embedding ansi code for colors.</param>

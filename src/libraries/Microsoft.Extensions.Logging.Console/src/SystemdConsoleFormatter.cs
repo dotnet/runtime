@@ -12,17 +12,11 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal class SystemdConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        [ThreadStatic]
-        private static StringBuilder _logBuilder;
         private IDisposable _optionsReloadToken;
-
-        private const string LoglevelPadding = ": ";
-        private static readonly string _messagePadding = new string(' ', GetSyslogSeverityString(LogLevel.Information).Length + LoglevelPadding.Length);
 
         public SystemdConsoleFormatter(IOptionsMonitor<ConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Systemd)
         {
-            FormatterOptions = options.CurrentValue;
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
@@ -41,32 +35,15 @@ namespace Microsoft.Extensions.Logging.Console
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
+            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+            if (logEntry.Exception == null && message == null)
+            {
+                return;
+            }
             LogLevel logLevel = logEntry.LogLevel;
             string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
             Exception exception = logEntry.Exception;
-            string message = logEntry.Formatter(logEntry.State, exception);
-
-            StringBuilder logBuilder = _logBuilder;
-            _logBuilder = null;
-
-            if (logBuilder == null)
-            {
-                logBuilder = new StringBuilder();
-            }
-            CreateSystemdLogMessage(logBuilder, logLevel, category, eventId, message, exception, scopeProvider);
-            textWriter.Write(logBuilder.ToString());
-
-            logBuilder.Clear();
-            if (logBuilder.Capacity > 1024)
-            {
-                logBuilder.Capacity = 1024;
-            }
-            _logBuilder = logBuilder;
-        }
-
-        private void CreateSystemdLogMessage(StringBuilder logBuilder, LogLevel logLevel, string logName, int eventId, string message, Exception exception, IExternalScopeProvider scopeProvider)
-        {
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
             // Messages longer than the journal LineMax setting (default: 48KB) are cropped.
@@ -75,49 +52,48 @@ namespace Microsoft.Extensions.Logging.Console
 
             // loglevel
             string logLevelString = GetSyslogSeverityString(logLevel);
-            logBuilder.Append(logLevelString);
+            textWriter.Write(logLevelString);
 
             // timestamp
             string timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
                 DateTime dateTime = GetCurrentDateTime();
-                logBuilder.Append(dateTime.ToString(timestampFormat));
+                textWriter.Write(dateTime.ToString(timestampFormat));
             }
 
             // category and event id
-            logBuilder.Append(logName);
-            logBuilder.Append('[');
-            logBuilder.Append(eventId);
-            logBuilder.Append(']');
+            textWriter.Write(category);
+            textWriter.Write('[');
+            textWriter.Write(eventId);
+            textWriter.Write(']');
 
             // scope information
-            GetScopeInformation(logBuilder, scopeProvider);
+            GetScopeInformation(textWriter, scopeProvider);
 
             // message
             if (!string.IsNullOrEmpty(message))
             {
-                logBuilder.Append(' ');
+                textWriter.Write(' ');
                 // message
-                AppendAndReplaceNewLine(logBuilder, message);
+                WriteReplacingNewLine(textWriter, message);
             }
 
             // exception
             // System.InvalidOperationException at Namespace.Class.Function() in File:line X
             if (exception != null)
             {
-                logBuilder.Append(' ');
-                AppendAndReplaceNewLine(logBuilder, exception.ToString());
+                textWriter.Write(' ');
+                WriteReplacingNewLine(textWriter, exception.ToString());
             }
 
             // newline delimiter
-            logBuilder.Append(Environment.NewLine);
+            textWriter.Write(Environment.NewLine);
 
-            static void AppendAndReplaceNewLine(StringBuilder sb, string message)
+            static void WriteReplacingNewLine(TextWriter writer, string message)
             {
-                int len = sb.Length;
-                sb.Append(message);
-                sb.Replace(Environment.NewLine, " ", len, message.Length);
+                string newMessage = message.Replace(Environment.NewLine, " ");
+                writer.Write(newMessage);
             }
         }
 
@@ -141,27 +117,15 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void GetScopeInformation(StringBuilder stringBuilder, IExternalScopeProvider scopeProvider)
+        private void GetScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                int initialLength = stringBuilder.Length;
-
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    (StringBuilder builder, int paddAt) = state;
-                    bool padd = paddAt == builder.Length;
-                    if (padd)
-                    {
-                        builder.Append(_messagePadding);
-                        builder.Append("=> ");
-                    }
-                    else
-                    {
-                        builder.Append(" => ");
-                    }
-                    builder.Append(scope);
-                }, (stringBuilder, -1));
+                    state.Write(" => ");
+                    state.Write(scope);
+                }, textWriter);
             }
         }
     }

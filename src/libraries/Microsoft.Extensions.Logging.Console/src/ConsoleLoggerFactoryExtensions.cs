@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging
         {
             builder.AddConfiguration();
 
-            builder.AddConsoleFormatter<JsonConsoleLogFormatter, JsonConsoleFormatterOptions>();
+            builder.AddConsoleFormatter<JsonConsoleFormatter, JsonConsoleFormatterOptions>();
             builder.AddConsoleFormatter<SystemdConsoleFormatter, ConsoleFormatterOptions>();
             builder.AddConsoleFormatter<SimpleConsoleFormatter, SimpleConsoleFormatterOptions>();
 

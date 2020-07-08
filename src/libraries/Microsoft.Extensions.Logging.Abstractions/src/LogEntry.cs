@@ -7,7 +7,7 @@ using System;
 namespace Microsoft.Extensions.Logging.Abstractions
 {
     /// <summary>
-    /// Holds the log entry information that is being passed onto the console formatter for writing
+    /// Holds the information for a single log entry.
     /// </summary>
     public readonly struct LogEntry<TState>
     {

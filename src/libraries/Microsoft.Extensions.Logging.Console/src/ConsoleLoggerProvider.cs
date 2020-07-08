@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Logging.Console
                 var jsonMonitor = new FormatterOptionsMonitor<JsonConsoleFormatterOptions>(new JsonConsoleFormatterOptions());
                 _formatters.GetOrAdd(ConsoleFormatterNames.Simple, formatterName => new SimpleConsoleFormatter(defaultMonitor));
                 _formatters.GetOrAdd(ConsoleFormatterNames.Systemd, formatterName => new SystemdConsoleFormatter(systemdMonitor));
-                _formatters.GetOrAdd(ConsoleFormatterNames.Json, formatterName => new JsonConsoleLogFormatter(jsonMonitor));
+                _formatters.GetOrAdd(ConsoleFormatterNames.Json, formatterName => new JsonConsoleFormatter(jsonMonitor));
             }
             else
             {

@@ -53,7 +53,6 @@ namespace Microsoft.Extensions.Logging.Console
         {
             IConsole console = entry.LogAsError ? ErrorConsole : Console;
             console.Write(entry.Message);
-            console.Flush();
         }
 
         private void ProcessLogQueue()

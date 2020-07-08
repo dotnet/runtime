@@ -8,10 +8,6 @@
 
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Console" />
-    <PackageReference Include="Moq" Version="$(MoqVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-  </ItemGroup>
 </Project>

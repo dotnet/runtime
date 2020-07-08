@@ -22,24 +22,27 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class JsonConsoleLogFormatter : ConsoleFormatter, IDisposable
+    internal class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private IDisposable _optionsReloadToken;
 
-        public JsonConsoleLogFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
+        public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base (ConsoleFormatterNames.Json)
         {
-            FormatterOptions = options.CurrentValue;
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
+            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+            if (logEntry.Exception == null && message == null)
+            {
+                return;
+            }
             LogLevel logLevel = logEntry.LogLevel;
             string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
-            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
             Exception exception = logEntry.Exception;
             const int DefaultBufferSize = 1024;
             var output = new ArrayBufferWriter<byte>(DefaultBufferSize);

@@ -11,24 +11,16 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     internal class AnsiLogConsole : IConsole
     {
-        private readonly StringBuilder _outputBuilder;
         private readonly IAnsiSystemConsole _systemConsole;
 
         public AnsiLogConsole(IAnsiSystemConsole systemConsole)
         {
-            _outputBuilder = new StringBuilder();
             _systemConsole = systemConsole;
         }
 
         public void Write(string message)
         {
-            _outputBuilder.Append(message);
-        }
-
-        public void Flush()
-        {
-            _systemConsole.Write(_outputBuilder.ToString());
-            _outputBuilder.Clear();
+            _systemConsole.Write(message);
         }
     }
 }

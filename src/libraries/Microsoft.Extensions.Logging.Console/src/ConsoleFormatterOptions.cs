@@ -8,7 +8,7 @@ using System.Text;
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Options for the built-in systemd console log formatter.
+    /// Options for the built-in console log formatter.
     /// </summary>
     public class ConsoleFormatterOptions
     {
