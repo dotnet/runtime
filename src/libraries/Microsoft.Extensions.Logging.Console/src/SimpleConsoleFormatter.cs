@@ -17,11 +17,11 @@ namespace Microsoft.Extensions.Logging.Console
     {
         [ThreadStatic]
         private static StringBuilder _logBuilder;
+
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
         private IDisposable _optionsReloadToken;
-
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
         : base (ConsoleFormatterNames.Simple)

@@ -109,39 +109,33 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void GetScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)
         {
-            try
+            if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                if (FormatterOptions.IncludeScopes && scopeProvider != null)
+                int numScopes = 1;
+                writer.WriteStartObject("Scopes");
+                scopeProvider.ForEachScope((scope, state) =>
                 {
-                    writer.WriteStartObject("Scopes");
-                    scopeProvider.ForEachScope((scope, state) =>
+                    if (scope is IReadOnlyList<KeyValuePair<string, object>> kvps)
                     {
-                        if (scope is IReadOnlyList<KeyValuePair<string, object>> kvps)
+                        foreach (var kvp in kvps)
                         {
-                            foreach (var kvp in kvps)
+                            if (kvp.Value is string stringValue)
+                                state.WriteString(kvp.Key, stringValue);
+                            else if (kvp.Value is int intValue)
+                                state.WriteNumber(kvp.Key, intValue);
+                            else
                             {
-                                if (kvp.Value is string stringValue)
-                                    state.WriteString(kvp.Key, stringValue);
-                                else if (kvp.Value is int intValue)
-                                    state.WriteNumber(kvp.Key, intValue);
-                                else
-                                {
-                                    state.WritePropertyName(kvp.Key);
-                                    JsonSerializer.Serialize(state, kvp.Value);
-                                }
+                                state.WritePropertyName(kvp.Key);
+                                JsonSerializer.Serialize(state, kvp.Value);
                             }
                         }
-                        else
-                        {
-                            state.WriteString("noName", scope.ToString());
-                        }
-                    }, (writer));
-                    writer.WriteEndObject();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine("Something went wrong" + ex.Message);
+                    }
+                    else
+                    {
+                        state.WriteString("Scope_" + numScopes++, scope.ToString());
+                    }
+                }, (writer));
+                writer.WriteEndObject();
             }
         }
 
