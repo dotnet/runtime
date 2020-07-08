@@ -5957,6 +5957,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         case CORINFO_CALLCONV_NATIVEVARARG:
             info.compIsVarArgs = true;
             break;
+        case CORINFO_CALLCONV_C:
+        case CORINFO_CALLCONV_STDCALL:
+        case CORINFO_CALLCONV_THISCALL:
         case CORINFO_CALLCONV_DEFAULT:
             info.compIsVarArgs = false;
             break;

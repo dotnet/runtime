@@ -8872,6 +8872,12 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
     if ((corType == CORINFO_TYPE_VALUECLASS) || (corType == CORINFO_TYPE_REFANY))
     {
         // We have some kind of STRUCT being returned
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+        if (methInfo->args.getCallConv() == CORINFO_CALLCONV_THISCALL)
+        {
+            return true;
+        }
+#endif
 
         structPassingKind howToReturnStruct = SPK_Unknown;
 
