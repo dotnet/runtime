@@ -1998,6 +1998,12 @@
         "tizen"
       ]
     },
+    "tizen.4.0.0-arm64": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-arm64"
+      ]
+    },
     "tizen.4.0.0-armel": {
       "#import": [
         "tizen.4.0.0",
@@ -2015,6 +2021,12 @@
         "tizen.4.0.0"
       ]
     },
+    "tizen.5.0.0-arm64": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-arm64"
+      ]
+    },
     "tizen.5.0.0-armel": {
       "#import": [
         "tizen.5.0.0",
@@ -2030,6 +2042,12 @@
     "tizen.5.5.0": {
       "#import": [
         "tizen.5.0.0"
+      ]
+    },
+    "tizen.5.5.0-arm64": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-arm64"
       ]
     },
     "tizen.5.5.0-armel": {
@@ -2052,7 +2070,7 @@
     "tizen.6.0.0-arm64": {
       "#import": [
         "tizen.6.0.0",
-        "tizen-arm64"
+        "tizen.5.5.0-arm64"
       ]
     },
     "tizen.6.0.0-armel": {
