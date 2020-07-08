@@ -26,6 +26,7 @@ public partial class CancelKeyPressTests
     }
 
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [SkipOnMono("Mono doesn't call CancelKeyPress for SIGQUIT.")]
     public void HandlerInvokedForSigQuit()
     {
         // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
