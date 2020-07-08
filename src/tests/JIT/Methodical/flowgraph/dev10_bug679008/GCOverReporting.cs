@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*
  * If using a value type/struct that contains only a single reference type field, under certain situations the x64 JIT reports the stack location as a live GC pointer before zero-initializing it.
  * The only workaround would be to disable optimizations via MethodImplOptions.NoOptimization.  This GC hole is sort of an existing one and sort of a regression.
  * In one sense, it has been in the JIT since we turned on candidates and made worse with OPT_WITH_EH (since it adds a lot of cases where we try and then undo worthless register candidates), which was done between beta2 and RTM of Whidbey/2.0.
- * Previously bugs in this area caused the stack’s lifetime to not get reported at all.
+ * Previously bugs in this area caused the stack's lifetime to not get reported at all.
  * Earlier this year 2 bugs were fixed, and recently I ported those fixes to arrowhead, so that we now correctly report the untracked stack lifetime of these value types.
  * This bug is a manifestation of the opposite problem where the reference pointer is reported, but not initialized.
  * Thus depending upon the previous stack contents, can cause an inverse-GCHole (reporting of a non-GC pointer as a GC pointer).
