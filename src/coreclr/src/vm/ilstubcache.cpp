@@ -256,11 +256,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
     }
     else
-    if (SF_IsTailCallDispatcherStub(dwStubFlags))
-    {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallDispatcherStub);
-    }
-    else
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {

@@ -93,7 +93,6 @@ public:
 #endif
         TailCallStoreArgsStub,
         TailCallCallTargetStub,
-        TailCallDispatcherStub,
     };
 
     ILStubType GetStubType();

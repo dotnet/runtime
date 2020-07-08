@@ -107,7 +107,8 @@ struct TailCallInfo
     }
 };
 
-MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
+static MethodDesc* s_tailCallDispatcherMD;
+MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
 {
     CONTRACTL
     {
@@ -116,8 +117,17 @@ MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
         INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
-    
-    return MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
+
+    if (s_tailCallDispatcherMD == NULL)
+        s_tailCallDispatcherMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
+
+    return s_tailCallDispatcherMD;
+}
+
+MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
+{
+    LIMITED_METHOD_CONTRACT;
+    return s_tailCallDispatcherMD;
 }
 
 

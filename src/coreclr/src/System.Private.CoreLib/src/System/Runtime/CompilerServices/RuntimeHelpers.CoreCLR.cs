@@ -292,7 +292,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
 
-        internal static unsafe void DispatchTailCalls(
+        private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
             delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
             IntPtr retVal)
