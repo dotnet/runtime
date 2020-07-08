@@ -1353,13 +1353,8 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regTy
 //
 RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
-    bool fixedReg = false;
     // The candidate set should contain only integer registers.
     assert((internalCands & ~allRegs(TYP_INT)) == RBM_NONE);
-    if (genMaxOneBit(internalCands))
-    {
-        fixedReg = true;
-    }
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, IntRegisterType, internalCands);
     return defRefPosition;
@@ -1377,13 +1372,8 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 //
 RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
-    bool fixedReg = false;
     // The candidate set should contain only float registers.
     assert((internalCands & ~allRegs(TYP_FLOAT)) == RBM_NONE);
-    if (genMaxOneBit(internalCands))
-    {
-        fixedReg = true;
-    }
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, FloatRegisterType, internalCands);
     return defRefPosition;
