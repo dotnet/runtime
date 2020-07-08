@@ -17,10 +17,11 @@ unsafe class ThisCallNative
             public IntPtr getSize;
             public IntPtr getWidth;
             public IntPtr getHeightAsInt;
+            public IntPtr getE;
         }
 
         public VtableLayout* vtable;
-        private int c;
+        public E dummy;
         public float width;
         public float height;
     }
@@ -41,12 +42,20 @@ unsafe class ThisCallNative
         public int i;
     }
 
+    public enum E : uint
+    {
+        Value = 42
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     public delegate SizeF GetSizeFn(C* c);
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     public delegate Width GetWidthFn(C* c);
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     public delegate IntWrapper GetHeightAsIntFn(C* c);
+
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+    public delegate E GetEFn(C* c);
 
     [DllImport(nameof(ThisCallNative))]
     public static extern C* CreateInstanceOfC(float width, float height);
@@ -57,6 +66,8 @@ unsafe class ThisCallNative
     public static extern Width GetWidthFromManaged(C* c);
     [DllImport(nameof(ThisCallNative))]
     public static extern IntWrapper GetHeightAsIntFromManaged(C* c);
+    [DllImport(nameof(ThisCallNative))]
+    public static extern E GetEFromManaged(C* c);
 }
 
 unsafe class ThisCallTest
@@ -71,9 +82,11 @@ unsafe class ThisCallTest
             Test8ByteHFA(instance);
             Test4ByteHFA(instance);
             Test4ByteNonHFA(instance);
+            TestEnum(instance);
             Test8ByteHFAReverse();
             Test4ByteHFAReverse();
             Test4ByteNonHFAReverse();
+            TestEnumReverse();
         }
         catch (System.Exception ex)
         {
@@ -111,6 +124,15 @@ unsafe class ThisCallTest
         Assert.AreEqual((int)instance->height, result.i);
     }
 
+    private static void TestEnum(ThisCallNative.C* instance)
+    {
+        ThisCallNative.GetEFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetEFn>(instance->vtable->getE);
+
+        ThisCallNative.E result = callback(instance);
+
+        Assert.AreEqual(instance->dummy, result);
+    }
+
     private static void Test8ByteHFAReverse()
     {
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
@@ -136,11 +158,20 @@ unsafe class ThisCallTest
         Assert.AreEqual((int)c.height, result.i);
     }
 
+    private static void TestEnumReverse()
+    {
+        ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
+        ThisCallNative.E result = ThisCallNative.GetEFromManaged(&c);
+
+        Assert.AreEqual(c.dummy, result);
+    }
+
     private static ThisCallNative.C CreateCWithManagedVTable(float width, float height)
     {
         return new ThisCallNative.C
         {
             vtable = ManagedVtable,
+            dummy = ThisCallNative.E.Value,
             width = width,
             height = height
         };
@@ -161,6 +192,8 @@ unsafe class ThisCallTest
                     (ThisCallNative.GetWidthFn)((ThisCallNative.C* c) => new ThisCallNative.Width { width = c->width} ));
                 managedVtable->getHeightAsInt = Marshal.GetFunctionPointerForDelegate(
                     (ThisCallNative.GetHeightAsIntFn)((ThisCallNative.C* c) => new ThisCallNative.IntWrapper { i = (int)c->height} ));
+                managedVtable->getE = Marshal.GetFunctionPointerForDelegate(
+                    (ThisCallNative.GetEFn)((ThisCallNative.C* c) => c->dummy ));
             }
             return managedVtable;
         }
