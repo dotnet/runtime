@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -11,6 +10,13 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private class FakeOptions
+        {
+            public string TargetHost;
+        }
+
+        private FakeOptions? _sslAuthenticationOptions;
+
         private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             // Without setting (or using) these members you will get a build exception in the unit test project.
@@ -35,6 +41,7 @@ namespace System.Net.Security
 
         private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
+            _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };
         }
 
         private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
@@ -87,6 +94,11 @@ namespace System.Net.Security
         internal X509Certificate LocalClientCertificate => default;
         internal X509RevocationMode CheckCertRevocationStatus => default;
         internal ProtocolToken CreateShutdownToken() => default;
+
+        internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
+        {
+            return certificate as X509Certificate2;
+        }
     }
 
     internal class ProtocolToken

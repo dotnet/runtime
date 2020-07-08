@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -76,6 +75,23 @@ namespace System.Formats.Cbor
                     return false;
 
                 case CborConformanceMode.Canonical:
+                case CborConformanceMode.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceMode));
+            };
+        }
+
+        public static bool RequiresPreservingFloatPrecision(CborConformanceMode conformanceMode)
+        {
+            switch (conformanceMode)
+            {
+                case CborConformanceMode.Lax:
+                case CborConformanceMode.Strict:
+                case CborConformanceMode.Canonical:
+                    return false;
+
                 case CborConformanceMode.Ctap2Canonical:
                     return true;
 

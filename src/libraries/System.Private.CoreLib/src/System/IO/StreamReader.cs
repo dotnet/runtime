@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -169,11 +168,8 @@ namespace System.IO
             _byteBuffer = new byte[bufferSize];
             _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
             _charBuffer = new char[_maxCharsPerBuffer];
-            _byteLen = 0;
-            _bytePos = 0;
             _detectEncoding = detectEncodingFromByteOrderMarks;
             _checkPreamble = encoding.Preamble.Length > 0;
-            _isBlocked = false;
             _closable = !leaveOpen;
         }
 

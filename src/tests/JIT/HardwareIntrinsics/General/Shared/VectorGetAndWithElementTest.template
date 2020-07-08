@@ -1,0 +1,228 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}{BaseType}{Imm}()
+        {
+            var test = new VectorGetAndWithElement__{Method}{BaseType}{Imm}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            // Validates that invalid indices throws ArgumentOutOfRangeException
+            test.RunArgumentOutOfRangeScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorGetAndWithElement__{Method}{BaseType}{Imm}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario(int imm = {Imm}, bool expectedOutOfRangeException = false)
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                values[i] = {NextValueOp};
+            }
+
+            {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
+
+            bool succeeded = !expectedOutOfRangeException;
+
+            try
+            {
+                {BaseType} result = value.GetElement(imm);
+                ValidateGetResult(result, values);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = expectedOutOfRangeException;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.GetElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+
+            succeeded = !expectedOutOfRangeException;
+
+            {BaseType} insertedValue = {NextValueOp};
+
+            try
+            {
+                {VectorType}<{BaseType}> result2 = value.WithElement(imm, insertedValue);
+                ValidateWithResult(result2, values, insertedValue);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = expectedOutOfRangeException;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        public void RunReflectionScenario(int imm = {Imm}, bool expectedOutOfRangeException = false)
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                values[i] = {NextValueOp};
+            }
+
+            {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
+
+            bool succeeded = !expectedOutOfRangeException;
+
+            try
+            {
+                object result = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.GetElement))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value, imm });
+                ValidateGetResult(({BaseType})(result), values);
+            }
+            catch (TargetInvocationException e)
+            {
+                succeeded = expectedOutOfRangeException
+                          && e.InnerException is ArgumentOutOfRangeException;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.GetElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+
+            succeeded = !expectedOutOfRangeException;
+
+            {BaseType} insertedValue = {NextValueOp};
+
+            try
+            {
+                object result2 = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.WithElement))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value, imm, insertedValue });
+                ValidateWithResult(({VectorType}<{BaseType}>)(result2), values, insertedValue);
+            }
+            catch (TargetInvocationException e)
+            {
+                succeeded = expectedOutOfRangeException
+                          && e.InnerException is ArgumentOutOfRangeException;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        public void RunArgumentOutOfRangeScenario()
+        {
+            RunBasicScenario({Imm} - ElementCount, expectedOutOfRangeException: true);
+            RunBasicScenario({Imm} + ElementCount, expectedOutOfRangeException: true);
+
+            RunReflectionScenario({Imm} - ElementCount, expectedOutOfRangeException: true);
+            RunReflectionScenario({Imm} + ElementCount, expectedOutOfRangeException: true);
+        }
+
+        private void ValidateGetResult({BaseType} result, {BaseType}[] values, [CallerMemberName] string method = "")
+        {
+            if (result != values[{Imm}])
+            {
+                Succeeded = false;
+
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.GetElement({Imm}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({result})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+            }
+        }
+
+        private void ValidateWithResult({VectorType}<{BaseType}> result, {BaseType}[] values, {BaseType} insertedValue, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+            ValidateWithResult(resultElements, values, insertedValue, method);
+        }
+
+        private void ValidateWithResult({BaseType}[] result, {BaseType}[] values, {BaseType} insertedValue, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                if ((i != {Imm}) && (result[i] != values[i]))
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (result[{Imm}] != insertedValue)
+            {
+                succeeded = false;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithElement({Imm}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  insert: insertedValue");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

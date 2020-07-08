@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 
 #include "common.h"
@@ -125,7 +124,7 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
     Thread *pThread = GetThread();
 
     // Finalize everyone
-    while (fobj)
+    while (fobj && !fQuitFinalizer)
     {
         if (fobj->GetHeader()->GetBits() & bitToCheck)
         {
@@ -379,7 +378,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
     // Make sure the finalizer thread is set to MTA to avoid hitting
     // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA, FALSE);
+    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();

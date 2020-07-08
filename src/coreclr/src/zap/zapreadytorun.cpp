@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapReadyToRun.cpp
 //
@@ -843,6 +842,9 @@ static_assert_no_msg((int)READYTORUN_FIXUP_IndirectPInvokeTarget     == (int)ENC
 static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENCODE_PINVOKE_TARGET);
 
 static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
+
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_FieldOffset         == (int)ENCODE_VERIFY_FIELD_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_TypeLayout          == (int)ENCODE_VERIFY_TYPE_LAYOUT);
 
 //
 // READYTORUN_EXCEPTION

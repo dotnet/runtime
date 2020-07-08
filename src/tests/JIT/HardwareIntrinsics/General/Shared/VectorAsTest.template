@@ -1,0 +1,252 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}{BaseType}()
+        {
+            var test = new VectorAs__{Method}{BaseType}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates basic functionality works using the generic form, rather than the type-specific form of the method
+            test.RunGenericScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorAs__{Method}{BaseType}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+            {VectorType}<{BaseType}> value;
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<byte> byteResult = value.{Method}Byte();
+            ValidateResult(byteResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<double> doubleResult = value.{Method}Double();
+            ValidateResult(doubleResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<short> shortResult = value.{Method}Int16();
+            ValidateResult(shortResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<int> intResult = value.{Method}Int32();
+            ValidateResult(intResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<long> longResult = value.{Method}Int64();
+            ValidateResult(longResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<sbyte> sbyteResult = value.{Method}SByte();
+            ValidateResult(sbyteResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<float> floatResult = value.{Method}Single();
+            ValidateResult(floatResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<ushort> ushortResult = value.{Method}UInt16();
+            ValidateResult(ushortResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<uint> uintResult = value.{Method}UInt32();
+            ValidateResult(uintResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<ulong> ulongResult = value.{Method}UInt64();
+            ValidateResult(ulongResult, value);
+        }
+
+        public void RunGenericScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunGenericScenario));
+            {VectorType}<{BaseType}> value;
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<byte> byteResult = value.{Method}<{BaseType}, byte>();
+            ValidateResult(byteResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<double> doubleResult = value.{Method}<{BaseType}, double>();
+            ValidateResult(doubleResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<short> shortResult = value.{Method}<{BaseType}, short>();
+            ValidateResult(shortResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<int> intResult = value.{Method}<{BaseType}, int>();
+            ValidateResult(intResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<long> longResult = value.{Method}<{BaseType}, long>();
+            ValidateResult(longResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<sbyte> sbyteResult = value.{Method}<{BaseType}, sbyte>();
+            ValidateResult(sbyteResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<float> floatResult = value.{Method}<{BaseType}, float>();
+            ValidateResult(floatResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<ushort> ushortResult = value.{Method}<{BaseType}, ushort>();
+            ValidateResult(ushortResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<uint> uintResult = value.{Method}<{BaseType}, uint>();
+            ValidateResult(uintResult, value);
+
+            value = {VectorType}.Create({NextValueOp});
+            {VectorType}<ulong> ulongResult = value.{Method}<{BaseType}, ulong>();
+            ValidateResult(ulongResult, value);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+            {VectorType}<{BaseType}> value;
+
+            value = {VectorType}.Create({NextValueOp});
+            object byteResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Byte))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<byte>)(byteResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object doubleResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Double))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<double>)(doubleResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object shortResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Int16))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<short>)(shortResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object intResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Int32))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<int>)(intResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object longResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Int64))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<long>)(longResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object sbyteResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}SByte))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<sbyte>)(sbyteResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object floatResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}Single))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<float>)(floatResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object ushortResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}UInt16))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<ushort>)(ushortResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object uintResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}UInt32))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<uint>)(uintResult), value);
+
+            value = {VectorType}.Create({NextValueOp});
+            object ulongResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.{Method}UInt64))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateResult(({VectorType}<ulong>)(ulongResult), value);
+        }
+
+        private void ValidateResult<T>({VectorType}<T> result, {VectorType}<{BaseType}> value, [CallerMemberName] string method = "")
+            where T : struct
+        {
+            {BaseType}[] resultElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+
+            {BaseType}[] valueElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref valueElements[0]), value);
+
+            ValidateResult(resultElements, valueElements, typeof(T), method);
+        }
+
+        private void ValidateResult({BaseType}[] resultElements, {BaseType}[] valueElements, Type targetType, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < ElementCount; i++)
+            {
+                if (resultElements[i] != valueElements[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.{Method}{targetType.Name}: {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", valueElements)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

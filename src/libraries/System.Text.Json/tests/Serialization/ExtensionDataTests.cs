@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -866,9 +865,8 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
-            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated

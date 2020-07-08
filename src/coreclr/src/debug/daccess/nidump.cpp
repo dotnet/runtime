@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -8590,7 +8589,7 @@ NativeImageDumper::EnumMnemonics s_CConv[] =
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_FIELD),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_PROPERTY),
-    CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_UNMGD),
+    CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_UNMANAGED),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_GENERICINST),
     CC_CALLCONV_ENTRY(IMAGE_CEE_CS_CALLCONV_NATIVEVARARG),
 #undef CC_CALLCONV_ENTRY

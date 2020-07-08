@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
@@ -33,12 +32,6 @@ namespace System.Threading.Tasks
         /// </summary>
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            // To get the AsyncCausality events, we need to inform the AsyncCausalityTracer
-            if (command.Command == EventCommand.Enable)
-                AsyncCausalityTracer.EnableToETW(true);
-            else if (command.Command == EventCommand.Disable)
-                AsyncCausalityTracer.EnableToETW(false);
-
             if (IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds))
                 ActivityTracker.Instance.Enable();
             else

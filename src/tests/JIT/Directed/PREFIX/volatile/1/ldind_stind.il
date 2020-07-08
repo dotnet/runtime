@@ -1,0 +1,150 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+.assembly ldind_stind.exe{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
+  //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
+                        }
+
+.class ldind_stind {
+
+//-------------------------
+// Global Data            -
+//-------------------------
+/*
+    .data I1 = int32(0x00000000)
+
+    .data I2 = int32(0x00000000)
+
+    .data I4 = int32(0x00000000)
+
+    .data I8 = int64(0x0000000000000000)
+
+    .data R4 = int32(0x00000000)
+
+    .data R8 = int64(0x0000000000000000)
+
+    .data I = int32(0xAAAAAAAA)
+*/
+
+	.field static int32 I1
+	.field static int32 I2
+	.field static int32 I4
+	.field static int64 I8
+	.field static float32 R4
+	.field static float64 R8
+	.field static int32 I
+
+//-------------------------
+// Entry point - Main     -
+//-------------------------
+.method static int32 main(class [mscorlib]System.String[]) {
+.entrypoint
+.maxstack	10
+//----------------
+// begin testing -
+//----------------
+// --- Store values ---
+	ldsflda		int32 ldind_stind::I1
+	ldc.i4		0x00000011
+	volatile.
+	stind.i1
+
+	ldsflda		int32 ldind_stind::I2
+	ldc.i4		0x00002222
+	volatile.
+	stind.i2
+
+	ldsflda		int32 ldind_stind::I4
+	ldc.i4		0x44444444
+	volatile.
+	stind.i4
+
+	ldsflda		int64 ldind_stind::I8
+	ldc.i8		0x8888888888888888
+	volatile.
+	stind.i8
+
+	ldsflda		float32 ldind_stind::R4
+	ldc.r4		float32(0x3F800000)
+	volatile.
+	stind.r4
+
+	ldsflda		float64 ldind_stind::R8
+	ldc.r8		float64(0x3FF0000000000000)
+	volatile.
+	stind.r8
+
+	ldsflda		int32 ldind_stind::I
+	ldsflda		int32 ldind_stind::I
+	volatile.
+	stind.i
+
+//----------------------------------
+
+	ldsflda		int32 ldind_stind::I1
+	volatile.
+	ldind.i1
+	ldc.i4		0x00000011
+	ceq
+	brfalse		FAIL
+
+	ldsflda		int32 ldind_stind::I2
+	volatile.
+	ldind.i2
+	ldc.i4		0x00002222
+	ceq
+	brfalse		FAIL
+
+	ldsflda		int32 ldind_stind::I4
+	volatile.
+	ldind.i4
+	ldc.i4		0x44444444
+	ceq
+	brfalse		FAIL
+
+	ldsflda		int64 ldind_stind::I8
+	volatile.
+	ldind.i8
+	ldc.i8		0x8888888888888888
+	ceq
+	brfalse		FAIL
+
+	ldsflda		float32 ldind_stind::R4
+	volatile.
+	ldind.r4
+	ldc.r4		float32(0x3F800000)
+	ceq
+	brfalse		FAIL
+
+	ldsflda		float64 ldind_stind::R8
+	volatile.
+	ldind.r8
+	ldc.r8		float64(0x3FF0000000000000)
+	ceq
+	brfalse		FAIL
+
+	ldsflda		int32 ldind_stind::I
+	volatile.
+	ldind.i
+	conv.i4
+	ldsflda		int32 ldind_stind::I
+	conv.i4
+	ceq
+	brfalse		FAIL
+
+//----------------
+PASS:
+	ldc.i4	0x64
+	ret
+//----------------
+FAIL:
+	ldc.i4	0x0
+	ret
+}
+}

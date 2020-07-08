@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6858,6 +6857,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 unsigned             lclNum = lcl->GetLclNum();
                 LclVarDsc*           varDsc = &lvaTable[lclNum];
+
+                if (varDsc->CanBeReplacedWithItsField(this))
+                {
+                    lclNum = varDsc->lvFieldLclStart;
+                    varDsc = &lvaTable[lclNum];
+                }
 
                 // Do we have a Use (read) of the LclVar?
                 //

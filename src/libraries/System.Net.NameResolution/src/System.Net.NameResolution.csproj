@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.NameResolution</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -69,7 +69,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />

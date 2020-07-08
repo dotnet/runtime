@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Formats.Asn1;
@@ -13,10 +12,6 @@ namespace Internal.Cryptography
     internal abstract partial class AsnFormatter
     {
         private static readonly AsnFormatter s_instance = new AppleAsnFormatter();
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 
     internal class AppleAsnFormatter : AsnFormatter

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Linq.Expressions
 {
@@ -15,7 +14,6 @@ namespace System.Linq.Expressions
         public static readonly object BoxedInt2 = 2;
         public static readonly object BoxedInt3 = 3;
 
-#pragma warning disable CA1805 // TODO: https://github.com/dotnet/roslyn-analyzers/pull/3785
         public static readonly object BoxedDefaultSByte = default(sbyte);
         public static readonly object BoxedDefaultChar = default(char);
         public static readonly object BoxedDefaultInt16 = default(short);
@@ -28,7 +26,6 @@ namespace System.Linq.Expressions
         public static readonly object BoxedDefaultDouble = default(double);
         public static readonly object BoxedDefaultDecimal = default(decimal);
         public static readonly object BoxedDefaultDateTime = default(DateTime);
-#pragma warning restore CA1805
 
         private static readonly ConstantExpression s_true = Expression.Constant(BoxedTrue);
         private static readonly ConstantExpression s_false = Expression.Constant(BoxedFalse);

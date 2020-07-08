@@ -109,7 +109,9 @@ jobs:
       - eng/pipelines/installer/*
     - subset: runtimetests
       include:
+      - src/tests/*
       - src/coreclr/tests/*
+      - src/coreclr/build-test.cmd
       - src/coreclr/build-test.sh
     - subset: installer
       include:
@@ -151,6 +153,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -187,6 +190,7 @@ jobs:
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -598,6 +602,7 @@ jobs:
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -635,6 +640,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -658,6 +664,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -677,6 +684,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #

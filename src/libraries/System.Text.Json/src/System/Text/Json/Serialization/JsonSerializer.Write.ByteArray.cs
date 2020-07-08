@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -16,7 +17,9 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonSerializerOptions? options = null)
+        public static byte[] SerializeToUtf8Bytes<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+            TValue value,
+            JsonSerializerOptions? options = null)
         {
             return WriteCoreBytes<TValue>(value, typeof(TValue), options);
         }
@@ -38,7 +41,10 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
-        public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerOptions? options = null)
+        public static byte[] SerializeToUtf8Bytes(
+            object? value,
+            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            JsonSerializerOptions? options = null)
         {
             if (inputType == null)
             {

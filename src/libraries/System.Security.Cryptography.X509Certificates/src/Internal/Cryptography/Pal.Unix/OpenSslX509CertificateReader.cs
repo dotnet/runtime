@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ namespace Internal.Cryptography.Pal
             return certPal.DuplicateHandles();
         }
 
-        public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -199,13 +198,13 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        internal static bool TryReadX509Pem(byte[] rawData, [NotNullWhen(true)] out ICertificatePal? certPal)
+        internal static bool TryReadX509Pem(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? certPal)
         {
             using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                if (Interop.Crypto.BioWrite(bio, rawData, rawData.Length) != rawData.Length)
+                if (Interop.Crypto.BioWrite(bio, rawData) != rawData.Length)
                 {
                     Interop.Crypto.ErrClearError();
                 }

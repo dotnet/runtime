@@ -17,7 +17,7 @@
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />

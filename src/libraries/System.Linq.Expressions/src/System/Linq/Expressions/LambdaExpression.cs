@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -76,25 +75,25 @@ namespace System.Linq.Expressions
 
         internal virtual bool TailCallCore => false;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeParameters()
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         ParameterExpression IParameterProvider.GetParameter(int index) => GetParameter(index);
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ParameterExpression GetParameter(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         int IParameterProvider.ParameterCount => ParameterCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual int ParameterCount
         {
             get
@@ -249,13 +248,13 @@ namespace System.Linq.Expressions
             return Lambda<TDelegate>(body, Name, TailCall, parameters);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             throw ContractUtils.Unreachable;

@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -46,6 +48,8 @@ namespace System.Reflection.Emit
         private FieldBuilder _underlyingField;
         private Type _underlyingType;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         internal EnumBuilder(ModuleBuilder mb, string name, TypeAttributes visibility, Type underlyingType)
         {
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)

@@ -1,42 +1,44 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization
 {
     internal static class IEnumerableConverterFactoryHelpers
     {
-        private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
+        // Immutable collection types.
         private const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
-
-        private const string ImmutableListTypeName = "System.Collections.Immutable.ImmutableList";
         private const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
         private const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
-
-        private const string ImmutableStackTypeName = "System.Collections.Immutable.ImmutableStack";
         private const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
         private const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
-
-        private const string ImmutableQueueTypeName = "System.Collections.Immutable.ImmutableQueue";
         private const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
         private const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
-
-        private const string ImmutableSortedSetTypeName = "System.Collections.Immutable.ImmutableSortedSet";
         private const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
-
-        private const string ImmutableHashSetTypeName = "System.Collections.Immutable.ImmutableHashSet";
         private const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
         private const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
-
-        private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
         private const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
         private const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
-
-        private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
         private const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
+
+        // Immutable collection builder types.
+        private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
+        private const string ImmutableListTypeName = "System.Collections.Immutable.ImmutableList";
+        private const string ImmutableStackTypeName = "System.Collections.Immutable.ImmutableStack";
+        private const string ImmutableQueueTypeName = "System.Collections.Immutable.ImmutableQueue";
+        private const string ImmutableSortedSetTypeName = "System.Collections.Immutable.ImmutableSortedSet";
+        private const string ImmutableHashSetTypeName = "System.Collections.Immutable.ImmutableHashSet";
+        private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
+        private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
+
+        private const string CreateRangeMethodName = "CreateRange";
+        private const string CreateRangeMethodNameForEnumerable = "CreateRange`1";
+        private const string CreateRangeMethodNameForDictionary = "CreateRange`2";
+
+        private const string ImmutableCollectionsAssembly = "System.Collections.Immutable";
 
         internal static Type? GetCompatibleGenericBaseClass(this Type type, Type baseType)
         {
@@ -139,19 +141,27 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableArrayTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableListTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableStackTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsAssembly)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
-            Type constructingType = GetImmutableEnumerableConstructingType(type);
-
-            MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
-            foreach (MethodInfo method in constructingTypeMethods)
+            Type? constructingType = GetImmutableEnumerableConstructingType(type);
+            if (constructingType != null)
             {
-                if (method.Name == "CreateRange"
-                    && method.GetParameters().Length == 1
-                    && method.IsGenericMethod
-                    && method.GetGenericArguments().Length == 1)
+                MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
+                foreach (MethodInfo method in constructingTypeMethods)
                 {
-                    return method.MakeGenericMethod(elementType);
+                    if (method.Name == CreateRangeMethodName &&
+                        method.GetParameters().Length == 1 &&
+                        method.IsGenericMethod &&
+                        method.GetGenericArguments().Length == 1)
+                    {
+                        return method.MakeGenericMethod(elementType);
+                    }
                 }
             }
 
@@ -159,19 +169,23 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
+        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
         {
-            Type constructingType = GetImmutableDictionaryConstructingType(type);
-
-            MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
-            foreach (MethodInfo method in constructingTypeMethods)
+            Type? constructingType = GetImmutableDictionaryConstructingType(type);
+            if (constructingType != null)
             {
-                if (method.Name == "CreateRange"
-                    && method.GetParameters().Length == 1
-                    && method.IsGenericMethod
-                    && method.GetGenericArguments().Length == 2)
+                MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
+                foreach (MethodInfo method in constructingTypeMethods)
                 {
-                    return method.MakeGenericMethod(typeof(string), elementType);
+                    if (method.Name == CreateRangeMethodName &&
+                        method.GetParameters().Length == 1 &&
+                        method.IsGenericMethod &&
+                        method.GetGenericArguments().Length == 2)
+                    {
+                        return method.MakeGenericMethod(typeof(string), elementType);
+                    }
                 }
             }
 
@@ -179,7 +193,7 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
-        private static Type GetImmutableEnumerableConstructingType(Type type)
+        private static Type? GetImmutableEnumerableConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableEnumerableType());
 
@@ -216,14 +230,13 @@ namespace System.Text.Json.Serialization
                 default:
                     // We verified that the type is an immutable collection, so the
                     // generic definition is one of the above.
-                    return null!;
+                    return null;
             }
 
-            // This won't be null because we verified the assembly is actually System.Collections.Immutable.
-            return underlyingType.Assembly.GetType(constructingTypeName)!;
+            return underlyingType.Assembly.GetType(constructingTypeName);
         }
 
-        private static Type GetImmutableDictionaryConstructingType(Type type)
+        private static Type? GetImmutableDictionaryConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableDictionaryType());
 
@@ -245,22 +258,40 @@ namespace System.Text.Json.Serialization
                 default:
                     // We verified that the type is an immutable collection, so the
                     // generic definition is one of the above.
-                    return null!;
+                    return null;
             }
 
-            // This won't be null because we verified the assembly is actually System.Collections.Immutable.
-            return underlyingType.Assembly.GetType(constructingTypeName)!;
+            return underlyingType.Assembly.GetType(constructingTypeName);
         }
 
         public static bool IsNonGenericStackOrQueue(this Type type)
         {
-            Type? typeOfStack = Type.GetType("System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
-            Type? typeOfQueue = Type.GetType("System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+#if BUILDING_INBOX_LIBRARY
+            // Optimize for linking scenarios where mscorlib is trimmed out.
+            const string stackTypeName = "System.Collections.Stack, System.Collections.NonGeneric";
+            const string queueTypeName = "System.Collections.Queue, System.Collections.NonGeneric";
+#else
+            const string stackTypeName = "System.Collections.Stack, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            const string queueTypeName = "System.Collections.Queue, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+#endif
 
-            Debug.Assert(typeOfStack != null);
-            Debug.Assert(typeOfQueue != null);
+            Type? stackType = GetTypeIfExists(stackTypeName);
+            if (stackType?.IsAssignableFrom(type) == true)
+            {
+                return true;
+            }
 
-            return typeOfStack.IsAssignableFrom(type) || typeOfQueue.IsAssignableFrom(type);
+            Type? queueType = GetTypeIfExists(queueTypeName);
+            if (queueType?.IsAssignableFrom(type) == true)
+            {
+                return true;
+            }
+
+            return false;
         }
+
+        // This method takes an unannotated string which makes linker reflection analysis lose track of the type we are
+        // looking for. This indirection allows the removal of the type if it is not used in the calling application.
+        private static Type? GetTypeIfExists(string name) => Type.GetType(name, false);
     }
 }

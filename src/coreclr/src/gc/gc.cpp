@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -12195,7 +12194,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 #endif //FEATURE_LOH_COMPACTION
 
             // must fit exactly or leave formattable space
-            if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
+            if ((diff == 0) || (diff >= (ptrdiff_t)Align (min_obj_size, align_const)))
             {
 #ifdef BACKGROUND_GC
                 cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
@@ -12407,7 +12406,7 @@ found_no_fit:
     return FALSE;
 }
 
-BOOL gc_heap::loh_a_fit_segment_end_p (int gen_number,
+BOOL gc_heap::uoh_a_fit_segment_end_p (int gen_number,
                                        size_t size,
                                        alloc_context* acontext,
                                        uint32_t flags,
@@ -12974,7 +12973,7 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 
     if (!a_fit_free_list_uoh_p (size, acontext, flags, align_const, gen_number))
     {
-        can_allocate = loh_a_fit_segment_end_p (gen_number, size,
+        can_allocate = uoh_a_fit_segment_end_p (gen_number, size,
                                                 acontext, flags, align_const,
                                                 commit_failed_p, oom_r);
 
@@ -24126,17 +24125,24 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
     }
 
 #ifdef FEATURE_LOH_COMPACTION
-    if (loh_compacted_p)
+    if (settings.loh_compaction)
     {
         heap_segment* pSegment = seg_mapping_table_segment_of ((uint8_t*)old_address);
-        size_t flags = pSegment->flags;
-        if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
-            && !(flags & heap_segment_flags_readonly)
+#ifdef MULTIPLE_HEAPS
+        if (heap_segment_heap (pSegment)->loh_compacted_p)
+#else
+        if (loh_compacted_p)
 #endif
-            )
         {
-            *pold_address = old_address + loh_node_relocation_distance (old_address);
+            size_t flags = pSegment->flags;
+            if ((flags & heap_segment_flags_loh)
+#ifdef FEATURE_BASICFREEZE
+                && !(flags & heap_segment_flags_readonly)
+#endif
+                )
+            {
+                *pold_address = old_address + loh_node_relocation_distance (old_address);
+            }
         }
     }
 #endif //FEATURE_LOH_COMPACTION

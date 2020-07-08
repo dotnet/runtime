@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************
  **                                                                         **
@@ -2507,6 +2506,7 @@ typedef enum CorDebugGenerationTypes
     CorDebug_Gen1 = 1,
     CorDebug_Gen2 = 2,
     CorDebug_LOH  = 3,
+    CorDebug_POH  = 4,
 } CorDebugGenerationTypes;
 
 typedef struct _COR_SEGMENT
