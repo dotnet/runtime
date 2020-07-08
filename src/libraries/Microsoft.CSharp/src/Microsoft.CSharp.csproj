@@ -12,6 +12,7 @@
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderEquivalence.cs" />

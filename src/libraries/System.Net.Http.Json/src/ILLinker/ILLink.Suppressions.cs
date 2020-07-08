@@ -1,0 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics.CodeAnalysis;
+
+[assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__2.MoveNext")]
+[assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__3`1.MoveNext")]
+[assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__18.MoveNext")]

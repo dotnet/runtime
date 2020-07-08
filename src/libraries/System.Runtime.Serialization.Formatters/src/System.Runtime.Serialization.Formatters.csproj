@@ -15,6 +15,7 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
     <Compile Include="System\Runtime\Serialization\Formatter.cs" />

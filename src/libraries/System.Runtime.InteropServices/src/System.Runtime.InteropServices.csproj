@@ -7,6 +7,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\ADVF.cs" />

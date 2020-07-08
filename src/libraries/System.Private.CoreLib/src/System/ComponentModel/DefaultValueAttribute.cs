@@ -57,38 +57,38 @@ namespace System.ComponentModel
                 {
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
-
-                // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
-                static bool TryConvertFromInvariantString(Type? typeToConvert, string? stringValue, out object? conversionResult)
-                {
-                    conversionResult = null;
-
-                    // lazy init reflection objects
-                    if (s_convertFromInvariantString == null)
-                    {
-                        Type? typeDescriptorType = Type.GetType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter", throwOnError: false);
-                        MethodInfo? mi = typeDescriptorType?.GetMethod("ConvertFromInvariantString", BindingFlags.NonPublic | BindingFlags.Static);
-                        Volatile.Write(ref s_convertFromInvariantString, mi == null ? new object() : mi.CreateDelegate(typeof(Func<Type, string, object>)));
-                    }
-
-                    if (!(s_convertFromInvariantString is Func<Type?, string?, object> convertFromInvariantString))
-                        return false;
-
-                    try
-                    {
-                        conversionResult = convertFromInvariantString(typeToConvert, stringValue);
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-
-                    return true;
-                }
             }
             catch
             {
             }
+        }
+
+        // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
+        private static bool TryConvertFromInvariantString(Type? typeToConvert, string? stringValue, out object? conversionResult)
+        {
+            conversionResult = null;
+
+            // lazy init reflection objects
+            if (s_convertFromInvariantString == null)
+            {
+                Type? typeDescriptorType = Type.GetType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter", throwOnError: false);
+                MethodInfo? mi = typeDescriptorType?.GetMethod("ConvertFromInvariantString", BindingFlags.NonPublic | BindingFlags.Static);
+                Volatile.Write(ref s_convertFromInvariantString, mi == null ? new object() : mi.CreateDelegate(typeof(Func<Type, string, object>)));
+            }
+
+            if (!(s_convertFromInvariantString is Func<Type?, string?, object> convertFromInvariantString))
+                return false;
+
+            try
+            {
+                conversionResult = convertFromInvariantString(typeToConvert, stringValue);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

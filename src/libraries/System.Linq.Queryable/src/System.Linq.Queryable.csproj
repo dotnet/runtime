@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System\Linq\CachedReflection.cs" />
     <Compile Include="System\Linq\EnumerableExecutor.cs" />
     <Compile Include="System\Linq\EnumerableQuery.cs" />

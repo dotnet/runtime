@@ -1,0 +1,2 @@
+# Exposed publicly in the implementation to suppress linker warnings.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute' does not exist in the reference but it does exist in the implementation.

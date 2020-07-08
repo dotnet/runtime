@@ -155,6 +155,8 @@
 
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"
                               Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
+    
+    <Compile Include="$(ILLinkDirectory)ILLink.Suppressions.cs" />
   </ItemGroup>
 
   <!-- Sources -->

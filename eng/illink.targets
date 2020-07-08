@@ -216,6 +216,13 @@
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
       <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
+      <!-- enable verbose output -->
+      <ILLinkArgs>$(ILLinkArgs) --verbose</ILLinkArgs>
+      <!-- suppress "error IL2025: Duplicate preserve of" warnings from verbose output,
+           as we need both linker annotations and xml files
+           suppress "error IL2047: All overridden members must have the same DynamicallyAccessedMembersAttribute usage",
+           as we don't add suppression files for ref projects -->
+      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2025;IL2047</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />

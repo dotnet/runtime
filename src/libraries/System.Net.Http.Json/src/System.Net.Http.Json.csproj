@@ -16,6 +16,7 @@
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
     <Reference Include="System.Net.Mail" />

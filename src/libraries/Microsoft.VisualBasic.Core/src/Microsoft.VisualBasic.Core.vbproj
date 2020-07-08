@@ -27,6 +27,7 @@
     <Compile Include="Microsoft\VisualBasic\Helpers\UnsafeNativeMethods.vb" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.vb" />
     <Compile Include="Microsoft\VisualBasic\Collection.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />

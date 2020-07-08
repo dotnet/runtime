@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System.Data.Common.TypeForwards.cs" />
     <Compile Include="System\Data\DataReaderExtensions.cs" />
     <Compile Include="System\HResults.cs" />

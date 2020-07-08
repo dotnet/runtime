@@ -17,6 +17,7 @@
     <Reference Include="Microsoft.Win32.SystemEvents" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ILLinker\ILLink.Suppressions.cs" />
     <Compile Include="System\Drawing\KnownColorNames.cs" />
     <Compile Include="System\Drawing\Point.cs" />
     <Compile Include="System\Drawing\PointF.cs" />

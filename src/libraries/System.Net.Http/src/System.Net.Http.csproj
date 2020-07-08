@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+    <Compile Include="$(ILLinkDirectory)ILLink.Suppressions.cs" />
   </ItemGroup>
 
   <ItemGroup>
