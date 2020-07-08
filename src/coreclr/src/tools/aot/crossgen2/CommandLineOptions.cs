@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.CommandLine;
@@ -43,10 +42,11 @@ namespace ILCompiler
         public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
         public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
         public int? CustomPESectionAlignment { get; set; }
+        public bool VerifyTypeAndFieldLayout { get; set; }
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
-        public string[] SingleMethodGenericArgs { get; set; }
+        public string[] SingleMethodGenericArg { get; set; }
 
         public string[] CodegenOptions { get; set; }
 
@@ -198,6 +198,10 @@ namespace ILCompiler
                 {
                     Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
+                new Option(new[] { "--verify-type-and-field-layout" }, SR.VerifyTypeAndFieldLayoutOption)
+                {
+                    Argument = new Argument<bool>()
+                }
             };
         }
     }

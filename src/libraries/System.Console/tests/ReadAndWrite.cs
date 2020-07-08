@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -312,14 +311,7 @@ public class ReadAndWrite
     public static void OutputEncoding_Getter_Returns_Unicode()
     {
         Encoding curEncoding = Console.OutputEncoding;
-        Assert.Equal(Encoding.Unicode, curEncoding);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Browser)]
-    public static void OutputEncoding_Setter_Throws_PlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = Encoding.Unicode);
+        Assert.Equal(Encoding.UTF8, curEncoding);
     }
 
     [Fact]

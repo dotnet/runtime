@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -527,8 +526,8 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Completed);
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(promise.Id, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
                         Task.RemoveFromActiveTasks(promise);
@@ -649,8 +648,8 @@ namespace System.Threading.Tasks
 
             Task<TResult> promise = new Task<TResult>((object?)null, creationOptions);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync");
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync", 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -665,8 +664,8 @@ namespace System.Threading.Tasks
                 (object?)null, null,
                 default, TaskCreationOptions.None, InternalTaskOptions.None, null);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(t, "TaskFactory.FromAsync Callback");
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(t.Id, "TaskFactory.FromAsync Callback", 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(t);
@@ -764,8 +763,8 @@ namespace System.Threading.Tasks
 
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -786,8 +785,8 @@ namespace System.Threading.Tasks
             }
             catch
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(promise.Id, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
                     Task.RemoveFromActiveTasks(promise);
@@ -881,8 +880,8 @@ namespace System.Threading.Tasks
 
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -903,8 +902,8 @@ namespace System.Threading.Tasks
             }
             catch
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(promise.Id, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
                     Task.RemoveFromActiveTasks(promise);
@@ -1006,8 +1005,8 @@ namespace System.Threading.Tasks
 
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1028,8 +1027,8 @@ namespace System.Threading.Tasks
             }
             catch
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(promise.Id, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
                     Task.RemoveFromActiveTasks(promise);
@@ -1139,8 +1138,8 @@ namespace System.Threading.Tasks
 
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1161,8 +1160,8 @@ namespace System.Threading.Tasks
             }
             catch
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(promise.Id, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
                     Task.RemoveFromActiveTasks(promise);

@@ -12,12 +12,12 @@
     <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-$(Configuration)\System.Runtime.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.Sockets.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.Primitives.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.NameResolution\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.NameResolution.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.FileSystem.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Sockets.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Primitives.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.NameResolution\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.NameResolution.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Security.Cryptography.Algorithms\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Security.Cryptography.Algorithms.dll"/>
   </ItemGroup>
 

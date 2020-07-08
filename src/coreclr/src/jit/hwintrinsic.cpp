@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #include "hwintrinsic.h"
@@ -91,6 +90,10 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
+    if (m_simdHandleCache == nullptr)
+    {
+        return NO_CLASS_HANDLE;
+    }
     if (simdType == TYP_SIMD16)
     {
         switch (simdBaseType)
@@ -483,14 +486,19 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 // Arguments:
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
-//    expectAddr --  if true indicates we are expecting type stack entry to be a TYP_BYREF.
+//    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
+//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr)
+GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
+                                        CORINFO_CLASS_HANDLE argClass,
+                                        bool                 expectAddr,
+                                        GenTree*             newobjThis)
 {
     GenTree* arg = nullptr;
+
     if (varTypeIsStruct(argType))
     {
         if (!varTypeIsSIMD(argType))
@@ -500,16 +508,32 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
             argType           = getSIMDTypeForSize(argSizeBytes);
         }
         assert(varTypeIsSIMD(argType));
-        arg = impSIMDPopStack(argType, expectAddr);
-        assert(varTypeIsSIMD(arg->TypeGet()));
+
+        if (newobjThis == nullptr)
+        {
+            arg = impSIMDPopStack(argType, expectAddr);
+            assert(varTypeIsSIMD(arg->TypeGet()));
+        }
+        else
+        {
+            assert((newobjThis->gtOper == GT_ADDR) && (newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR));
+            arg = newobjThis;
+
+            // push newobj result on type stack
+            unsigned tmp = arg->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+            impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(argClass).NormaliseForStack());
+        }
     }
     else
     {
         assert(varTypeIsArithmetic(argType));
+
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()));
+
         assert(genActualType(arg->gtType) == genActualType(argType));
     }
+
     return arg;
 }
 
@@ -803,7 +827,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     sigReader.Read(info.compCompHnd, sig);
 
 #ifdef TARGET_ARM64
-    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
+        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
@@ -1054,7 +1079,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
                 }
-                else if (intrinsic == NI_AdvSimd_Insert)
+                else if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar))
                 {
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 }

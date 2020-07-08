@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -43,7 +42,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
-                if (_fixupKind == ReadyToRunFixupKind.Check_TypeLayout)
+                if ((_fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
+                    (_fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
                     EncodeTypeLayout(dataBuilder, _typeDesc);
                 }

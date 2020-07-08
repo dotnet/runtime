@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -1370,9 +1369,8 @@ class RCWCleanupList
 
 public:
     RCWCleanupList()
-        : m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE),
-          m_pFirstBucket(NULL)
+        : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
     {
         WRAPPER_NO_CONTRACT;
     }

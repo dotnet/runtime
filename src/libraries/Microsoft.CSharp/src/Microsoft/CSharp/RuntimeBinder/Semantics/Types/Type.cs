@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             TypeKind = kind;
         }
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual Type AssociatedSystemType => throw Error.InternalCompilerError();
 
         public TypeKind TypeKind { get; }
@@ -99,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public virtual bool IsClassType => false;
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual AggregateType UnderlyingEnumType => throw Error.InternalCompilerError();
 
         // Pointer types (or arrays of them) are the only unsafe types.
@@ -110,7 +109,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public virtual bool IsPredefined => false;
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual PredefinedType PredefinedType => throw Error.InternalCompilerError();
 
         public virtual bool IsStaticClass => false;
@@ -122,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public virtual bool IsReferenceType => false;
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual AggregateType GetAts()
         {
             Debug.Fail("Bad type for AsAggregateType");

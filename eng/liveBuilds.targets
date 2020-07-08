@@ -22,6 +22,7 @@
     but we need to point to the AllArtifacts locations when building the platform manifest.
   -->
   <PropertyGroup Condition="
+    '$(RuntimeIdentifier)' != '' and
     '$(RuntimeIdentifier)' != '$(OutputRid)' and
     '$(AllArtifactsDownloadPath)' != ''">
     <!-- Convert the OS component in the RID into names that match the job IDs. -->
@@ -189,7 +190,8 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
-        $(LibrariesNativeArtifactsPath)dotnet.wasm;"
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;"
         IsNative="true" />
     </ItemGroup>
 

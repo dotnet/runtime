@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // Contract.h
 //
@@ -986,7 +985,7 @@ class BaseContract
     };
 
 
-    NOTHROW_DECL BaseContract() : m_pClrDebugState(NULL),  m_testmask(0)
+    NOTHROW_DECL BaseContract() : m_testmask(0), m_pClrDebugState(NULL)
     {
     }
     NOTHROW_DECL void Restore()

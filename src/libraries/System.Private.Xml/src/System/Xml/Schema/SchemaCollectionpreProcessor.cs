@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -706,7 +705,6 @@ namespace System.Xml.Schema
                 }
             }
 
-#pragma warning disable CS8605 // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry entry in redefine.Groups)
             {
                 redefine.Schema!.Groups.Insert((XmlQualifiedName)entry.Key!, (XmlSchemaObject)entry.Value!);
@@ -721,7 +719,6 @@ namespace System.Xml.Schema
             {
                 redefine.Schema!.SchemaTypes.Insert((XmlQualifiedName)entry.Key!, (XmlSchemaObject)entry.Value!);
             }
-#pragma warning restore CS8605
         }
 
         private int CountGroupSelfReference(XmlSchemaObjectCollection items, XmlQualifiedName name)

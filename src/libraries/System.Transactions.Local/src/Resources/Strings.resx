@@ -62,7 +62,6 @@
   <data name="BadResourceManagerId" xml:space="preserve"><value>Resource Manager Identifiers cannot be Guid.Empty.</value></data>
   <data name="CannotPromoteSnapshot" xml:space="preserve"><value>Transactions with IsolationLevel Snapshot cannot be promoted.</value></data>
   <data name="CannotSetCurrent" xml:space="preserve"><value>Current cannot be set directly when Com+ Interop is enabled.</value></data>
-  <data name="ConfigInvalidTimeSpanValue" xml:space="preserve"><value>Valid TimeSpan values are greater than TimeSpan.Zero.</value></data>
   <data name="CurrentDelegateSet" xml:space="preserve"><value>The delegate for an external current can only be set once.</value></data>
   <data name="DisposeScope" xml:space="preserve"><value>The current TransactionScope is already complete. You should dispose the TransactionScope.</value></data>
   <data name="EnlistmentStateException" xml:space="preserve"><value>The operation is not valid for the current state of the enlistment.</value></data>

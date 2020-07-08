@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net;
@@ -77,6 +76,9 @@ namespace Internal.IL.Stubs
         private MethodIL EmitIL()
         {
             if (!_importMetadata.Flags.PreserveSig)
+                throw new NotSupportedException();
+
+            if (_targetMethod.IsUnmanagedCallersOnly)
                 throw new NotSupportedException();
 
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))

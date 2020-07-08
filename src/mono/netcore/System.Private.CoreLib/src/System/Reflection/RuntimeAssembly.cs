@@ -26,6 +26,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -155,6 +156,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetForwardedTypes()
         {
             Type[] topLevelTypes = GetTopLevelForwardedTypes();
@@ -174,6 +176,7 @@ namespace System.Reflection
             return forwardedTypes.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;

@@ -49,11 +49,13 @@ namespace System.Reflection.Emit
         public const int FAULT = 4;
         public const int FILTER_START = -1;
 
+#region Sync with MonoILExceptionBlock in object-internals.h
         internal Type? extype;
         internal int type;
         internal int start;
         internal int len;
         internal int filter_offset;
+#endregion
 
         internal void Debug()
         {
@@ -68,14 +70,12 @@ namespace System.Reflection.Emit
     }
     internal struct ILExceptionInfo
     {
-#pragma warning disable 169
-#pragma warning disable 414
+#region Sync with MonoILExceptionInfo in object-internals.h
         internal ILExceptionBlock[] handlers;
         internal int start;
         internal int len;
         internal Label end;
-#pragma warning restore 169
-#pragma warning restore 414
+#endregion
 
         internal int NumHandlers()
         {
@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
             public int maxStack;
         }
 
-        #region Sync with reflection.h
+#region Sync with MonoReflectionILGen in object-internals.h
         private byte[] code;
         private int code_len;
         private int max_stack;
@@ -228,7 +228,7 @@ namespace System.Reflection.Emit
         private ILExceptionInfo[]? ex_handlers;
         private int num_token_fixups;
         private object? token_fixups;
-        #endregion
+#endregion
 
         private LabelData[]? labels;
         private int num_labels;
@@ -246,6 +246,7 @@ namespace System.Reflection.Emit
         private List<SequencePointList>? sequencePointLists;
         private SequencePointList? currentSequence;
 
+        [DynamicDependency(nameof(token_fixups))]  // Automatically keeps all previous fields too due to StructLayout
         internal ILGenerator(Module m, ITokenGenerator token_gen, int size)
         {
             if (size < 0)

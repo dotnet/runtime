@@ -90,6 +90,9 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <Reference Include="System.AppContext" />
+  </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />

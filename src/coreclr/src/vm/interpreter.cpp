@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 #include "common.h"
@@ -56,7 +55,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
       m_methodCache(NULL)
 {
     // Overflow sanity check. (Can ILCodeSize ever be zero?)
-    assert(m_ILCode <= m_ILCodeEnd);
+    _ASSERTE(m_ILCode <= m_ILCodeEnd);
 
     // Does the calling convention indicate an implicit "this" (first arg) or generic type context arg (last arg)?
     SetFlag<Flag_hasThisArg>((methInfo->args.callConv & CORINFO_CALLCONV_HASTHIS) != 0);
@@ -413,6 +412,10 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_PROPERTY");
         break;
 
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_UNMANAGED");
+        break;
+
     case CORINFO_CALLCONV_NATIVEVARARG:
         NYI_INTERP("InterpreterMethodInfo::InitArgInfo -- CORINFO_CALLCONV_NATIVEVARARG");
         break;
@@ -468,12 +471,12 @@ bool InterpreterMethodInfo::GetPinningBit(unsigned locNum)
 void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noReg, bool twoSlotAlign)
 {
 #if defined(HOST_AMD64)
-    assert(!noReg);
-    assert(!twoSlotAlign);
+    _ASSERTE(!noReg);
+    _ASSERTE(!twoSlotAlign);
     AddArgAmd64(canonIndex, numSlots, /*isFloatingType*/false);
 #else // !HOST_AMD64
 #if defined(HOST_X86) || defined(HOST_ARM64)
-    assert(!twoSlotAlign); // Shouldn't use this flag on x86 (it wouldn't work right in the stack, at least).
+    _ASSERTE(!twoSlotAlign); // Shouldn't use this flag on x86 (it wouldn't work right in the stack, at least).
 #endif
     // If the argument requires two-slot alignment, make sure we have it.  This is the
     // ARM model: both in regs and on the stack.
@@ -525,7 +528,7 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         ClrSafeInt<short> offset(callerArgStackSlots);
 #endif
         offset *= static_cast<short>(sizeof(void*));
-        assert(!offset.IsOverflow());
+        _ASSERTE(!offset.IsOverflow());
         argOffsets[canonIndex] = offset.Value();
 #if defined(HOST_ARM) || defined(HOST_ARM64)
         callerArgStackSlots += numSlots;
@@ -544,7 +547,7 @@ void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numS
     // If floating type and there are slots use a float reg slot.
     if (isFloatingType && (numFPRegArgSlots < MaxNumFPRegArgSlots))
     {
-        assert(numSlots == 1);
+        _ASSERTE(numSlots == 1);
         argIsReg[canonIndex] = ARS_FloatReg;
         argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
         fpArgsUsed |= (0x1 << (numFPRegArgSlots + 1));
@@ -566,7 +569,7 @@ void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numS
     {
         argIsReg[canonIndex] = ARS_NotReg;
         ClrSafeInt<short> offset(callerArgStackSlots * sizeof(void*));
-        assert(!offset.IsOverflow());
+        _ASSERTE(!offset.IsOverflow());
         argOffsets[canonIndex] = offset.Value();
         callerArgStackSlots += 1;
     }
@@ -576,20 +579,20 @@ void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numS
 void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlots, bool twoSlotAlign)
 {
 #if defined(HOST_AMD64)
-    assert(!twoSlotAlign);
-    assert(numSlots == 1);
+    _ASSERTE(!twoSlotAlign);
+    _ASSERTE(numSlots == 1);
     AddArgAmd64(canonIndex, numSlots, /*isFloatingType*/ true);
 #elif defined(HOST_X86)
-    assert(false);  // Don't call this on x86; we pass all FP on the stack.
+    _ASSERTE(false);  // Don't call this on x86; we pass all FP on the stack.
 #elif defined(HOST_ARM)
     // We require "numSlots" alignment.
-    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    _ASSERTE(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
     argIsReg[canonIndex] = ARS_FloatReg;
 
     if (twoSlotAlign)
     {
         // If we require two slot alignment, the number of slots must be a multiple of two.
-        assert((numSlots % 2) == 0);
+        _ASSERTE((numSlots % 2) == 0);
 
         // Skip a slot if necessary.
         if ((numFPRegArgSlots % 2) != 0)
@@ -612,8 +615,8 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
             // for previous unused registers.
             unsigned slot = 0;
             while (slot < 32 && (fpArgsUsed & (1 << slot))) slot++;
-            assert(slot < 32); // Search succeeded.
-            assert(slot <= numFPRegArgSlots);  // No bits at or above numFPRegArgSlots are set (regs used).
+            _ASSERTE(slot < 32); // Search succeeded.
+            _ASSERTE(slot <= numFPRegArgSlots);  // No bits at or above numFPRegArgSlots are set (regs used).
             argOffsets[canonIndex] = slot * sizeof(void*);
             fpArgsUsed |= (0x1 << slot);
             if (slot == numFPRegArgSlots)
@@ -632,8 +635,8 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
     }
 #elif defined(HOST_ARM64)
 
-    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
-    assert(!twoSlotAlign);
+    _ASSERTE(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    _ASSERTE(!twoSlotAlign);
     argIsReg[canonIndex] = ARS_FloatReg;
 
     argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
@@ -766,7 +769,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         }
         else
         {
-            assert(offsetOfLd == ILOffsetOfLdFldInDeadSimpleInstanceGetterOpt);
+            _ASSERTE(offsetOfLd == ILOffsetOfLdFldInDeadSimpleInstanceGetterOpt);
         }
     }
 #endif // FEATURE_INTERPRETER_DEADSIMPLE_OPT
@@ -878,7 +881,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     if (sig.HasThis())
     {
-        assert(info->args.callConv & CORINFO_CALLCONV_HASTHIS);
+        _ASSERTE(info->args.callConv & CORINFO_CALLCONV_HASTHIS);
         hasThis = true;
         totalArgs++; sigArgsPlusThis++;
     }
@@ -899,7 +902,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     if (sig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE)
     {
-        assert(info->args.callConv & CORINFO_CALLCONV_PARAMTYPE);
+        _ASSERTE(info->args.callConv & CORINFO_CALLCONV_PARAMTYPE);
         hasGenericsContextArg = true;
         genericsContextArgIndex = totalArgs;
         totalArgs++;
@@ -1112,6 +1115,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_AMD64)
                         argState.AddArg(k, static_cast<short>(szSlots));
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
+                        // TODO: handle Vector64, Vector128 types
                         CorInfoHFAElemType hfaType = comp->getHFAType(vcTypeRet);
                         if (CorInfoTypeIsFloatingPoint(hfaType))
                         {
@@ -1205,7 +1209,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 // that argPerm[k] == kk.
                 unsigned k = argPermInverse[kk];
 
-                assert(k < totalArgs);
+                _ASSERTE(k < totalArgs);
 
                 if (argState.argIsReg[k] == ArgState::ARS_IntReg)
                 {
@@ -1219,7 +1223,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     }
                     else
                     {
-                        assert(regArgsFound == 2);
+                        _ASSERTE(regArgsFound == 2);
                         if (!jmpCall) { sl.X86EmitPushReg(kEDX); }
                         argState.argOffsets[k] = (argState.numRegArgs - regArgsFound)*sizeof(void*);
                     }
@@ -1283,6 +1287,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     case CORINFO_CALLCONV_PROPERTY:
         NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_PROPERTY");
+        break;
+
+    case CORINFO_CALLCONV_UNMANAGED:
+        NYI_INTERP("GenerateInterpreterStub -- CORINFO_CALLCONV_UNMANAGED");
         break;
 
     case CORINFO_CALLCONV_NATIVEVARARG:
@@ -1605,7 +1613,7 @@ inline ARG_SLOT Interpreter::InterpretMethodBody(struct InterpreterMethodInfo* i
         // Allocate a new jitInfo and also a new interpMethInfo.
         if (interpMethInfo == NULL)
         {
-            assert(doJmpCall);
+            _ASSERTE(doJmpCall);
             jitInfo = new CEEInfo(pMD, true);
 
             CORINFO_METHOD_INFO methInfo;
@@ -1827,12 +1835,16 @@ AwareLock* Interpreter::GetMonitorForStaticMethod()
         {
         case CORINFO_LOOKUP_CLASSPARAM:
             {
-                classHnd = (CORINFO_CLASS_HANDLE) GetPreciseGenericsContext();
+                CORINFO_CONTEXT_HANDLE ctxHnd = GetPreciseGenericsContext();
+                _ASSERTE_MSG((((size_t)ctxHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS), "Precise context not class context");
+                classHnd = (CORINFO_CLASS_HANDLE) ((size_t)ctxHnd & ~CORINFO_CONTEXTFLAGS_CLASS);
             }
             break;
         case CORINFO_LOOKUP_METHODPARAM:
             {
-                MethodDesc* pMD = (MethodDesc*) GetPreciseGenericsContext();
+                CORINFO_CONTEXT_HANDLE ctxHnd = GetPreciseGenericsContext();
+                _ASSERTE_MSG((((size_t)ctxHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD), "Precise context not method context");
+                MethodDesc* pMD = (MethodDesc*) (CORINFO_METHOD_HANDLE) ((size_t)ctxHnd & ~CORINFO_CONTEXTFLAGS_METHOD);
                 classHnd = (CORINFO_CLASS_HANDLE) pMD->GetMethodTable();
             }
             break;
@@ -1842,7 +1854,7 @@ AwareLock* Interpreter::GetMonitorForStaticMethod()
         }
         MethodTable* pMT = GetMethodTableFromClsHnd(classHnd);
         OBJECTREF ref = pMT->GetManagedClassObject();
-        ASSERT(ref);
+        _ASSERTE(ref);
         return (AwareLock*) ref->GetSyncBlock()->GetMonitor();
     }
 }
@@ -2131,7 +2143,7 @@ EvalLoop:
             m_ILCodePtr += 9;
             continue;
         case CEE_DUP:
-            assert(m_curStackHt > 0);
+            _ASSERTE(m_curStackHt > 0);
             it = OpStackTypeGet(m_curStackHt - 1);
             OpStackTypeSet(m_curStackHt, it);
             if (it.IsLargeStruct(&m_interpCeeInfo))
@@ -2148,7 +2160,7 @@ EvalLoop:
             m_curStackHt++;
             break;
         case CEE_POP:
-            assert(m_curStackHt > 0);
+            _ASSERTE(m_curStackHt > 0);
             m_curStackHt--;
             it = OpStackTypeGet(m_curStackHt);
             if (it.IsLargeStruct(&m_interpCeeInfo))
@@ -2190,11 +2202,11 @@ EvalLoop:
         case CEE_RET:
             if (m_methInfo->m_returnType == CORINFO_TYPE_VOID)
             {
-                assert(m_curStackHt == 0);
+                _ASSERTE(m_curStackHt == 0);
             }
             else
             {
-                assert(m_curStackHt == 1);
+                _ASSERTE(m_curStackHt == 1);
                 InterpreterType retValIt = OpStackTypeGet(0);
                 bool looseInt = s_InterpreterLooseRules &&
                     CorInfoTypeIsIntegral(m_methInfo->m_returnType) &&
@@ -2207,7 +2219,7 @@ EvalLoop:
                     (m_methInfo->m_returnType != retValIt.ToCorInfoType());
 
                 // Make sure that the return value "matches" (which allows certain relaxations) the declared return type.
-                assert((m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
+                _ASSERTE((m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
                        (m_methInfo->m_returnType == CORINFO_TYPE_REFANY && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
                        (m_methInfo->m_returnType == CORINFO_TYPE_REFANY && retValIt.ToCorInfoType() == CORINFO_TYPE_REFANY) ||
                        (looseInt || looseFloat) ||
@@ -2224,7 +2236,7 @@ EvalLoop:
 #endif
                 if (m_methInfo->GetFlag<InterpreterMethodInfo::Flag_hasRetBuffArg>())
                 {
-                    assert((m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
+                    _ASSERTE((m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
                        (m_methInfo->m_returnType == CORINFO_TYPE_REFANY && retValIt.ToCorInfoType() == CORINFO_TYPE_VALUECLASS) ||
                        (m_methInfo->m_returnType == CORINFO_TYPE_REFANY && retValIt.ToCorInfoType() == CORINFO_TYPE_REFANY));
                     if (retValIt.ToCorInfoType() == CORINFO_TYPE_REFANY)
@@ -2249,8 +2261,8 @@ EvalLoop:
 #if defined(FEATURE_HFA)
                 // Is it an HFA?
                 else if (m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS
-                         && (cit != CORINFO_HFA_ELEM_NONE))
-                    && (MetaSig(reinterpret_cast<MethodDesc*>(m_methInfo->m_method)).GetCallingConventionInfo() & CORINFO_CALLCONV_VARARG) == 0)
+                         && (cit != CORINFO_HFA_ELEM_NONE)
+                         && (MetaSig(reinterpret_cast<MethodDesc*>(m_methInfo->m_method)).GetCallingConventionInfo() & CORINFO_CALLCONV_VARARG) == 0)
                 {
                     if (retValIt.IsLargeStruct(&m_interpCeeInfo))
                     {
@@ -2290,7 +2302,7 @@ EvalLoop:
                         // is small (but this is guaranteed not to happen by def'n of ARG_SLOT.)
                         //
                         // Note structs of size 5, 6, 7 may be returned as 8 byte ints.
-                        assert(sz <= sizeof(INT64));
+                        _ASSERTE(sz <= sizeof(INT64));
                         *retVal = OpStackGet<INT64>(0);
                     }
                 }
@@ -2355,7 +2367,7 @@ EvalLoop:
             BrOnComparison<CO_EQ, false, 1>();
             continue;
         case CEE_BGE_S:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2372,7 +2384,7 @@ EvalLoop:
             BrOnComparison<CO_GT, false, 1>();
             continue;
         case CEE_BLE_S:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2392,7 +2404,7 @@ EvalLoop:
             BrOnComparison<CO_EQ, true, 1>();
             continue;
         case CEE_BGE_UN_S:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2409,7 +2421,7 @@ EvalLoop:
             BrOnComparison<CO_GT_UN, false, 1>();
             continue;
         case CEE_BLE_UN_S:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2475,7 +2487,7 @@ EvalLoop:
             BrOnComparison<CO_EQ, false, 4>();
             continue;
         case CEE_BGE:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2492,7 +2504,7 @@ EvalLoop:
             BrOnComparison<CO_GT, false, 4>();
             continue;
         case CEE_BLE:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2512,7 +2524,7 @@ EvalLoop:
             BrOnComparison<CO_EQ, true, 4>();
             continue;
         case CEE_BGE_UN:
-            assert(m_curStackHt >= 2);
+            _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2529,7 +2541,7 @@ EvalLoop:
             BrOnComparison<CO_GT_UN, false, 4>();
             continue;
         case CEE_BLE_UN:
-             assert(m_curStackHt >= 2);
+             _ASSERTE(m_curStackHt >= 2);
             // ECMA spec gives different semantics for different operand types:
             switch (OpStackTypeGet(m_curStackHt-1).ToCorInfoType())
             {
@@ -2548,13 +2560,13 @@ EvalLoop:
 
         case CEE_SWITCH:
             {
-                assert(m_curStackHt > 0);
+                _ASSERTE(m_curStackHt > 0);
                 m_curStackHt--;
 #if defined(_DEBUG) || defined(HOST_AMD64)
                 CorInfoType cit = OpStackTypeGet(m_curStackHt).ToCorInfoType();
 #endif // _DEBUG || HOST_AMD64
 #ifdef _DEBUG
-                assert(cit == CORINFO_TYPE_INT || cit == CORINFO_TYPE_UINT || cit == CORINFO_TYPE_NATIVEINT);
+                _ASSERTE(cit == CORINFO_TYPE_INT || cit == CORINFO_TYPE_UINT || cit == CORINFO_TYPE_NATIVEINT);
 #endif // _DEBUG
 #if defined(HOST_AMD64)
                 UINT32 val = (cit == CORINFO_TYPE_NATIVEINT) ? (INT32) OpStackGet<NativeInt>(m_curStackHt)
@@ -2786,7 +2798,7 @@ EvalLoop:
             }
             else
             {
-                assert(sizeof(NativeInt) == 8);
+                _ASSERTE(sizeof(NativeInt) == 8);
                 ConvOvfUn<NativeInt, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
@@ -2797,7 +2809,7 @@ EvalLoop:
             }
             else
             {
-                assert(sizeof(NativeUInt) == 8);
+                _ASSERTE(sizeof(NativeUInt) == 8);
                 ConvOvfUn<NativeUInt, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
@@ -2933,7 +2945,7 @@ EvalLoop:
             }
             else
             {
-                assert(sizeof(NativeInt) == 8);
+                _ASSERTE(sizeof(NativeInt) == 8);
                 ConvOvf<NativeInt, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
@@ -2944,7 +2956,7 @@ EvalLoop:
             }
             else
             {
-                assert(sizeof(NativeUInt) == 8);
+                _ASSERTE(sizeof(NativeUInt) == 8);
                 ConvOvf<NativeUInt, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
@@ -2976,7 +2988,7 @@ EvalLoop:
 
                 {
                     GCX_FORBID();
-                    assert(m_inFlightException != NULL);
+                    _ASSERTE(m_inFlightException != NULL);
                     finallyException = m_inFlightException;
                     INTERPLOG("endfinally handling for %s, %p, %p\n", methName, m_methInfo, finallyException);
                     m_inFlightException = NULL;
@@ -2990,7 +3002,7 @@ EvalLoop:
             else if (!SearchForCoveringFinally())
             {
                 // No, there isn't -- go to the leave target.
-                assert(!m_leaveInfoStack.IsEmpty());
+                _ASSERTE(!m_leaveInfoStack.IsEmpty());
                 LeaveInfo li = m_leaveInfoStack.Pop();
                 ExecuteBranch(li.m_target);
             }
@@ -3035,7 +3047,7 @@ EvalLoop:
             {
             case TWOBYTE_CEE_ARGLIST:
                 // NYI_INTERP("Unimplemented opcode: TWOBYTE_CEE_ARGLIST");
-                assert(m_methInfo->m_varArgHandleArgNum != NO_VA_ARGNUM);
+                _ASSERTE(m_methInfo->m_varArgHandleArgNum != NO_VA_ARGNUM);
                 LdArgA(m_methInfo->m_varArgHandleArgNum);
                 m_ILCodePtr += 2;
                 break;
@@ -3268,7 +3280,7 @@ void Interpreter::EndFilter()
             Object* filterException = NULL;
             {
                 GCX_FORBID();
-                assert(m_inFlightException != NULL);
+                _ASSERTE(m_inFlightException != NULL);
                 filterException = m_inFlightException;
                 INTERPLOG("endfilter handling for %s, %p, %p\n", m_methInfo->m_methName, m_methInfo, filterException);
                 m_inFlightException = NULL;
@@ -3322,7 +3334,7 @@ bool Interpreter::MethodHandlesException(OBJECTREF orThrowable)
             {
                 CORINFO_EH_CLAUSE clause;
                 m_interpCeeInfo.getEHinfo(m_methInfo->m_method, XTnum, &clause);
-                assert(clause.HandlerLength != (unsigned)-1); // @DEPRECATED
+                _ASSERTE(clause.HandlerLength != (unsigned)-1); // @DEPRECATED
 
                 // First, is the current offset in the try block?
                 if (clause.TryOffset <= curOffset && curOffset < clause.TryOffset + clause.TryLength)
@@ -3460,7 +3472,7 @@ static unsigned OpFormatExtraSize(opcode_format_t format) {
         return 1;
 
     default:
-        assert(false);
+        _ASSERTE(false);
         return 0;
     }
 }
@@ -3523,7 +3535,7 @@ bool Interpreter::MethodMayHaveLoop(BYTE* ilCode, unsigned codeSize)
 
         case CEE_PREFIX1:
             op = *(ilCode + 1) + 0x100;
-            assert(op < CEE_COUNT);  // Bounds check for below.
+            _ASSERTE(op < CEE_COUNT);  // Bounds check for below.
             // deliberate fall-through here.
         default:
             // For the rest of the 1-byte instructions, we'll use a table-driven approach.
@@ -3558,7 +3570,7 @@ bool Interpreter::SearchForCoveringFinally()
     {
         CORINFO_EH_CLAUSE clause;
         m_interpCeeInfo.getEHinfo(m_methInfo->m_method, XTnum, &clause);
-        assert(clause.HandlerLength != (unsigned)-1); // @DEPRECATED
+        _ASSERTE(clause.HandlerLength != (unsigned)-1); // @DEPRECATED
 
         // First, is the offset of the leave instruction in the try block?
         unsigned tryEndOffset = clause.TryOffset + clause.TryLength;
@@ -3708,12 +3720,12 @@ void Interpreter::GCScanRootAtLoc(Object** loc, InterpreterType it, promote_func
         break;
 
     case CORINFO_TYPE_VALUECLASS:
-        assert(!pinningRef);
+        _ASSERTE(!pinningRef);
         GCScanValueClassRootAtLoc(loc, it.ToClassHandle(), pf, sc);
         break;
 
     default:
-        assert(!pinningRef);
+        _ASSERTE(!pinningRef);
         break;
     }
 }
@@ -3812,7 +3824,7 @@ CorInfoType CorInfoTypeStackNormalize(CorInfoType cit)
         // interconvert.
     case CORINFO_TYPE_FLOAT:
     case CORINFO_TYPE_DOUBLE:
-        assert(IsStackNormalType(cit));
+        _ASSERTE(IsStackNormalType(cit));
         return cit;
 
     default:
@@ -3903,14 +3915,14 @@ bool InterpreterType::MatchesWork(const InterpreterType it2, CEEInfo* info) cons
     {
     case CORINFO_TYPE_NATIVEINT:
     case CORINFO_TYPE_NATIVEUINT:
-        assert(sizeof(NativeInt) == sizeof(NativeUInt));
+        _ASSERTE(sizeof(NativeInt) == sizeof(NativeUInt));
         if (it2.Size(info) == sizeof(NativeInt))
             return true;
         break;
 
     case CORINFO_TYPE_INT:
     case CORINFO_TYPE_UINT:
-        assert(sizeof(INT32) == sizeof(UINT32));
+        _ASSERTE(sizeof(INT32) == sizeof(UINT32));
         if (it2.Size(info) == sizeof(INT32))
             return true;
         break;
@@ -4012,6 +4024,10 @@ bool CorInfoTypeIsFloatingPoint(CorInfoType cit)
     return cit == CORINFO_TYPE_FLOAT || cit == CORINFO_TYPE_DOUBLE;
 }
 
+bool CorInfoTypeIsFloatingPoint(CorInfoHFAElemType cihet)
+{
+    return cihet == CORINFO_HFA_ELEM_FLOAT || cihet == CORINFO_HFA_ELEM_DOUBLE;
+}
 
 bool CorElemTypeIsUnsigned(CorElementType cet)
 {
@@ -4186,8 +4202,8 @@ void Interpreter::LdNull()
 template<typename T, CorInfoType cit>
 void Interpreter::LdInd()
 {
-    assert(TOSIsPtr());
-    assert(IsStackNormalType(cit));
+    _ASSERTE(TOSIsPtr());
+    _ASSERTE(IsStackNormalType(cit));
     unsigned curStackInd = m_curStackHt-1;
     T* ptr = OpStackGet<T*>(curStackInd);
     ThrowOnInvalidPointer(ptr);
@@ -4199,8 +4215,8 @@ void Interpreter::LdInd()
 template<typename T, bool isUnsigned>
 void Interpreter::LdIndShort()
 {
-    assert(TOSIsPtr());
-    assert(sizeof(T) < 4);
+    _ASSERTE(TOSIsPtr());
+    _ASSERTE(sizeof(T) < 4);
     unsigned curStackInd = m_curStackHt-1;
     T* ptr = OpStackGet<T*>(curStackInd);
     ThrowOnInvalidPointer(ptr);
@@ -4220,8 +4236,8 @@ void Interpreter::LdIndShort()
 template<typename T>
 void Interpreter::StInd()
 {
-    assert(m_curStackHt >= 2);
-    assert(CorInfoTypeIsPointer(OpStackTypeGet(m_curStackHt-2).ToCorInfoType()));
+    _ASSERTE(m_curStackHt >= 2);
+    _ASSERTE(CorInfoTypeIsPointer(OpStackTypeGet(m_curStackHt-2).ToCorInfoType()));
     BarrierIfVolatile();
     unsigned stackInd0 = m_curStackHt-2;
     unsigned stackInd1 = m_curStackHt-1;
@@ -4242,8 +4258,8 @@ void Interpreter::StInd()
 
 void Interpreter::StInd_Ref()
 {
-    assert(m_curStackHt >= 2);
-    assert(CorInfoTypeIsPointer(OpStackTypeGet(m_curStackHt-2).ToCorInfoType()));
+    _ASSERTE(m_curStackHt >= 2);
+    _ASSERTE(CorInfoTypeIsPointer(OpStackTypeGet(m_curStackHt-2).ToCorInfoType()));
     BarrierIfVolatile();
     unsigned stackInd0 = m_curStackHt-2;
     unsigned stackInd1 = m_curStackHt-1;
@@ -4272,15 +4288,15 @@ void Interpreter::BinaryArithOp()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned op1idx = m_curStackHt - 2;
     unsigned op2idx = m_curStackHt - 1;
     InterpreterType t1 = OpStackTypeGet(op1idx);
-    assert(IsStackNormalType(t1.ToCorInfoType()));
+    _ASSERTE(IsStackNormalType(t1.ToCorInfoType()));
     // Looking at the generated code, it does seem to save some instructions to use the "shifted
     // types," though the effect on end-to-end time is variable.  So I'll leave it set.
     InterpreterType t2 = OpStackTypeGet(op2idx);
-    assert(IsStackNormalType(t2.ToCorInfoType()));
+    _ASSERTE(IsStackNormalType(t2.ToCorInfoType()));
 
     // In all cases belows, since "op" is compile-time constant, "if" chains on it should fold away.
     switch (t1.ToCorInfoTypeShifted())
@@ -4530,17 +4546,17 @@ void Interpreter::BinaryArithOvfOp()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned op1idx = m_curStackHt - 2;
     unsigned op2idx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(op1idx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     InterpreterType t2 = OpStackTypeGet(op2idx);
     CorInfoType cit2 = t2.ToCorInfoType();
-    assert(IsStackNormalType(cit2));
+    _ASSERTE(IsStackNormalType(cit2));
 
     // In all cases belows, since "op" is compile-time constant, "if" chains on it should fold away.
     switch (cit1)
@@ -4786,17 +4802,17 @@ void Interpreter::BinaryIntOp()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned op1idx = m_curStackHt - 2;
     unsigned op2idx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(op1idx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     InterpreterType t2 = OpStackTypeGet(op2idx);
     CorInfoType cit2 = t2.ToCorInfoType();
-    assert(IsStackNormalType(cit2));
+    _ASSERTE(IsStackNormalType(cit2));
 
     // In all cases belows, since "op" is compile-time constant, "if" chains on it should fold away.
     switch (cit1)
@@ -4898,7 +4914,7 @@ void Interpreter::BinaryIntOpWork(T val1, T val2)
     }
     else
     {
-        assert(op == BIO_DivUn || op == BIO_RemUn);
+        _ASSERTE(op == BIO_DivUn || op == BIO_RemUn);
         if (val2 == 0)
         {
             ThrowDivideByZero();
@@ -4935,17 +4951,17 @@ void Interpreter::ShiftOp()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned op1idx = m_curStackHt - 2;
     unsigned op2idx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(op1idx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     InterpreterType t2 = OpStackTypeGet(op2idx);
     CorInfoType cit2 = t2.ToCorInfoType();
-    assert(IsStackNormalType(cit2));
+    _ASSERTE(IsStackNormalType(cit2));
 
     // In all cases belows, since "op" is compile-time constant, "if" chains on it should fold away.
     switch (cit1)
@@ -4990,7 +5006,7 @@ void Interpreter::ShiftOpWork(unsigned op1idx, CorInfoType cit2)
         }
         else
         {
-            assert(op == CEE_SHR_UN);
+            _ASSERTE(op == CEE_SHR_UN);
             res = (static_cast<UT>(val)) >> shiftAmt;
         }
     }
@@ -5007,7 +5023,7 @@ void Interpreter::ShiftOpWork(unsigned op1idx, CorInfoType cit2)
         }
         else
         {
-            assert(op == CEE_SHR_UN);
+            _ASSERTE(op == CEE_SHR_UN);
             res = (static_cast<UT>(val)) >> shiftAmt;
         }
     }
@@ -5027,12 +5043,12 @@ void Interpreter::Neg()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     switch (cit1)
     {
@@ -5069,12 +5085,12 @@ void Interpreter::Not()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     switch (cit1)
     {
@@ -5104,12 +5120,12 @@ void Interpreter::Conv()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     T val;
     switch (cit1)
@@ -5191,12 +5207,12 @@ void Interpreter::ConvRUn()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     switch (cit1)
     {
@@ -5231,12 +5247,12 @@ void Interpreter::ConvOvf()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     switch (cit1)
     {
@@ -5327,12 +5343,12 @@ void Interpreter::ConvOvfUn()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned opidx = m_curStackHt - 1;
 
     InterpreterType t1 = OpStackTypeGet(opidx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
 
     switch (cit1)
     {
@@ -5424,7 +5440,7 @@ void Interpreter::LdObj()
 
     BarrierIfVolatile();
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned ind = m_curStackHt - 1;
 
 #ifdef _DEBUG
@@ -5521,7 +5537,7 @@ void Interpreter::CpObj()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned destInd = m_curStackHt - 2;
     unsigned srcInd  = m_curStackHt - 1;
 
@@ -5575,7 +5591,7 @@ void Interpreter::StObj()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned destInd = m_curStackHt - 2;
     unsigned valInd  = m_curStackHt - 1;
 
@@ -5642,12 +5658,12 @@ void Interpreter::StObj()
                 }
             }
 
-            assert(isClass || isPrim || isShared);
+            _ASSERTE(isClass || isPrim || isShared);
         }
         else
         {
             const bool isSz = s_InterpreterLooseRules && sz <= sizeof(dest);
-            assert(isSz);
+            _ASSERTE(isSz);
         }
 
 #endif // _DEBUG
@@ -5670,7 +5686,7 @@ void Interpreter::StObj()
     else
     {
         // The ostack entry is an object reference.
-        assert(OpStackTypeGet(valInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+        _ASSERTE(OpStackTypeGet(valInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
         // Note that "dest" might be a pointer into the heap.  It is therefore important
         // to calculate it *after* any PREEMP transitions at which we might do a GC.  (Thus,
@@ -5698,7 +5714,7 @@ void Interpreter::InitObj()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned destInd = m_curStackHt - 1;
 #ifdef _DEBUG
     // Check that src and dest are both pointer types.
@@ -5879,7 +5895,7 @@ void Interpreter::NewObj()
 
         if (clsFlags & CORINFO_FLG_ARRAY)
         {
-            assert(clsFlags & CORINFO_FLG_VAROBJSIZE);
+            _ASSERTE(clsFlags & CORINFO_FLG_VAROBJSIZE);
 
             MethodDesc* methDesc = GetMethod(methTok.hMethod);
 
@@ -5889,7 +5905,7 @@ void Interpreter::NewObj()
             MetaSig msig(pSig, cbSigSize, methDesc->GetModule(), NULL);
 
             unsigned dwNumArgs = msig.NumFixedArgs();
-            assert(m_curStackHt >= dwNumArgs);
+            _ASSERTE(m_curStackHt >= dwNumArgs);
             m_curStackHt -= dwNumArgs;
 
             INT32* args = (INT32*)_alloca(dwNumArgs * sizeof(INT32));
@@ -5948,7 +5964,7 @@ void Interpreter::NewArr()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned stkInd = m_curStackHt-1;
     CorInfoType cit = OpStackTypeGet(stkInd).ToCorInfoType();
     NativeInt sz = 0;
@@ -6025,11 +6041,11 @@ void Interpreter::IsInst()
 
     CORINFO_CLASS_HANDLE cls = GetTypeFromToken(m_ILCodePtr + 1, CORINFO_TOKENKIND_Casting  InterpTracingArg(RTK_IsInst));
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned idx = m_curStackHt - 1;
 #ifdef _DEBUG
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
-    assert(cit == CORINFO_TYPE_CLASS || cit == CORINFO_TYPE_STRING);
+    _ASSERTE(cit == CORINFO_TYPE_CLASS || cit == CORINFO_TYPE_STRING);
 #endif // DEBUG
 
     Object * pObj = OpStackGet<Object*>(idx);
@@ -6058,11 +6074,11 @@ void Interpreter::CastClass()
 
     CORINFO_CLASS_HANDLE cls = GetTypeFromToken(m_ILCodePtr + 1, CORINFO_TOKENKIND_Casting  InterpTracingArg(RTK_CastClass));
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned idx = m_curStackHt - 1;
 #ifdef _DEBUG
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
-    assert(cit == CORINFO_TYPE_CLASS || cit == CORINFO_TYPE_STRING);
+    _ASSERTE(cit == CORINFO_TYPE_CLASS || cit == CORINFO_TYPE_STRING);
 #endif // _DEBUG
 
     Object * pObj = OpStackGet<Object*>(idx);
@@ -6088,7 +6104,7 @@ void Interpreter::LocAlloc()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned idx = m_curStackHt - 1;
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
     NativeUInt sz = 0;
@@ -6134,7 +6150,7 @@ void Interpreter::MkRefany()
 #endif // INTERP_TRACING
 
     CORINFO_CLASS_HANDLE cls = GetTypeFromToken(m_ILCodePtr + 1, CORINFO_TOKENKIND_Class  InterpTracingArg(RTK_MkRefAny));
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned idx = m_curStackHt - 1;
 
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
@@ -6146,11 +6162,11 @@ void Interpreter::MkRefany()
     InterpreterType typedRefIT = GetTypedRefIT(&m_interpCeeInfo);
     TypedByRef* tbr;
 #if defined(HOST_AMD64)
-    assert(typedRefIT.IsLargeStruct(&m_interpCeeInfo));
+    _ASSERTE(typedRefIT.IsLargeStruct(&m_interpCeeInfo));
     tbr = (TypedByRef*) LargeStructOperandStackPush(GetTypedRefSize(&m_interpCeeInfo));
     OpStackSet<void*>(idx, tbr);
 #elif defined(HOST_X86) || defined(HOST_ARM)
-    assert(!typedRefIT.IsLargeStruct(&m_interpCeeInfo));
+    _ASSERTE(!typedRefIT.IsLargeStruct(&m_interpCeeInfo));
     tbr = OpStackGetAddr<TypedByRef>(idx);
 #elif defined(HOST_ARM64)
     tbr = NULL;
@@ -6173,7 +6189,7 @@ void Interpreter::RefanyType()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned idx = m_curStackHt - 1;
 
     if (OpStackTypeGet(idx) != GetTypedRefIT(&m_interpCeeInfo))
@@ -6235,7 +6251,7 @@ void Interpreter::RefanyVal()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned idx = m_curStackHt - 1;
 
     if (OpStackTypeGet(idx) != GetTypedRefIT(&m_interpCeeInfo))
@@ -6266,7 +6282,7 @@ void Interpreter::CkFinite()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned idx = m_curStackHt - 1;
 
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
@@ -6393,7 +6409,7 @@ void Interpreter::LdVirtFtn()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned ind = m_curStackHt - 1;
 
     unsigned tokVal = getU4LittleEndian(m_ILCodePtr + 2);
@@ -6410,8 +6426,10 @@ void Interpreter::LdVirtFtn()
         GCX_PREEMP();
         ResolveToken(&tok, tokVal, CORINFO_TOKENKIND_Method InterpTracingArg(RTK_LdVirtFtn));
         m_interpCeeInfo.getCallInfo(&tok, NULL, m_methInfo->m_method,
-                                  combine(CORINFO_CALLINFO_SECURITYCHECKS,CORINFO_CALLINFO_LDFTN),
-                                  &callInfo);
+                                    combine(CORINFO_CALLINFO_CALLVIRT,
+                                            combine(CORINFO_CALLINFO_SECURITYCHECKS,
+                                                    CORINFO_CALLINFO_LDFTN)),
+                                    &callInfo);
 
 
         classHnd = tok.hClass;
@@ -6509,7 +6527,7 @@ CORINFO_CLASS_HANDLE Interpreter::GetTypedRefClsHnd(CEEInfo* info)
 
 void Interpreter::Initialize()
 {
-    assert(!s_initialized);
+    _ASSERTE(!s_initialized);
 
     s_InterpretMeths.ensureInit(CLRConfig::INTERNAL_Interpret);
     s_InterpretMethsExclude.ensureInit(CLRConfig::INTERNAL_InterpretExclude);
@@ -6615,7 +6633,7 @@ void Interpreter::CompareOp()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned op1idx = m_curStackHt - 2;
     INT32 res = CompareOpRes<op>(op1idx);
     OpStackSet<INT32>(op1idx, res);
@@ -6632,14 +6650,14 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= op1idx + 2);
+    _ASSERTE(m_curStackHt >= op1idx + 2);
     unsigned op2idx = op1idx + 1;
     InterpreterType t1 = OpStackTypeGet(op1idx);
     CorInfoType cit1 = t1.ToCorInfoType();
-    assert(IsStackNormalType(cit1));
+    _ASSERTE(IsStackNormalType(cit1));
     InterpreterType t2 = OpStackTypeGet(op2idx);
     CorInfoType cit2 = t2.ToCorInfoType();
-    assert(IsStackNormalType(cit2));
+    _ASSERTE(IsStackNormalType(cit2));
     INT32 res = 0;
 
     switch (cit1)
@@ -6667,7 +6685,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(op == CO_LT_UN);
+                _ASSERTE(op == CO_LT_UN);
                 if (static_cast<UINT32>(val1) < static_cast<UINT32>(val2)) res = 1;
             }
         }
@@ -6696,7 +6714,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(op == CO_LT_UN);
+                _ASSERTE(op == CO_LT_UN);
                 if (static_cast<NativeUInt>(val1) < static_cast<NativeUInt>(val2)) res = 1;
             }
         }
@@ -6760,7 +6778,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(op == CO_LT_UN);
+                _ASSERTE(op == CO_LT_UN);
                 if (static_cast<UINT32>(val1) < static_cast<UINT32>(val2)) res = 1;
             }
         }
@@ -6791,12 +6809,12 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else if (cit2 == CORINFO_TYPE_CLASS)
             {
-                assert(OpStackGet<void*>(op2idx) == 0);
+                _ASSERTE(OpStackGet<void*>(op2idx) == 0);
                 val2 = 0;
             }
             else
             {
-                assert(s_InterpreterLooseRules && cit2 == CORINFO_TYPE_BYREF);
+                _ASSERTE(s_InterpreterLooseRules && cit2 == CORINFO_TYPE_BYREF);
                 val2 = reinterpret_cast<NativeInt>(OpStackGet<void*>(op2idx));
             }
             if (op == CO_EQ)
@@ -6817,7 +6835,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(op == CO_LT_UN);
+                _ASSERTE(op == CO_LT_UN);
                 if (static_cast<NativeUInt>(val1) < static_cast<NativeUInt>(val2)) res = 1;
             }
         }
@@ -6854,7 +6872,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 }
                 else
                 {
-                    assert(op == CO_LT_UN);
+                    _ASSERTE(op == CO_LT_UN);
                     if (static_cast<UINT64>(val1) < static_cast<UINT64>(val2)) res = 1;
                 }
             }
@@ -6921,7 +6939,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 }
                 else
                 {
-                    assert(op == CO_LT_UN);
+                    _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
                     if (_isnan(val1) || _isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
@@ -6963,7 +6981,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 }
                 else
                 {
-                    assert(op == CO_LT_UN);
+                    _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
                     if (_isnan(val1) || _isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
@@ -6987,7 +7005,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(s_InterpreterLooseRules && cit2 == CORINFO_TYPE_NATIVEINT);
+                _ASSERTE(s_InterpreterLooseRules && cit2 == CORINFO_TYPE_NATIVEINT);
                 val2 = OpStackGet<NativeInt>(op2idx);
             }
             if (op == CO_EQ)
@@ -7008,7 +7026,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                assert(op == CO_LT_UN);
+                _ASSERTE(op == CO_LT_UN);
                 if (static_cast<NativeUInt>(val1) < static_cast<NativeUInt>(val2)) res = 1;
             }
         }
@@ -7033,7 +7051,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         break;
 
     default:
-        assert(false); // Should not be here if the type is stack-normal.
+        _ASSERTE(false); // Should not be here if the type is stack-normal.
     }
 
     return res;
@@ -7042,8 +7060,8 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
 template<bool val, int targetLen>
 void Interpreter::BrOnValue()
 {
-    assert(targetLen == 1 || targetLen == 4);
-    assert(m_curStackHt > 0);
+    _ASSERTE(targetLen == 1 || targetLen == 4);
+    _ASSERTE(m_curStackHt > 0);
     unsigned stackInd = m_curStackHt - 1;
     InterpreterType it = OpStackTypeGet(stackInd);
 
@@ -7119,8 +7137,8 @@ void Interpreter::BrOnComparison()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(targetLen == 1 || targetLen == 4);
-    assert(m_curStackHt >= 2);
+    _ASSERTE(targetLen == 1 || targetLen == 4);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned v1Ind = m_curStackHt - 2;
 
     INT32 res = CompareOpRes<compOp>(v1Ind);
@@ -7183,7 +7201,7 @@ void Interpreter::LdFld(FieldDesc* fldIn)
         {
             unsigned tok = getU4LittleEndian(m_ILCodePtr + sizeof(BYTE));
             fld = FindField(tok  InterpTracingArg(RTK_LdFld));
-            assert(fld != NULL);
+            _ASSERTE(fld != NULL);
 
             fldOffset = fld->GetOffset();
             if (s_InterpreterUseCaching && fldOffset < FIELD_OFFSET_LAST_REAL_OFFSET)
@@ -7214,7 +7232,7 @@ void Interpreter::LdFld(FieldDesc* fldIn)
     UINT sz = fld->GetSize();
 
     // Live vars: valCit, structValIt
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned stackInd = m_curStackHt - 1;
     InterpreterType addrIt = OpStackTypeGet(stackInd);
     CorInfoType addrCit = addrIt.ToCorInfoType();
@@ -7319,12 +7337,12 @@ void Interpreter::LdFld(FieldDesc* fldIn)
         }
         else
         {
-            assert(CorInfoTypeIsPointer(addrCit));
+            _ASSERTE(CorInfoTypeIsPointer(addrCit));
             ptr = OpStackGet<INT8*>(stackInd);
             ThrowOnInvalidPointer(ptr);
         }
 
-        assert(ptr != NULL);
+        _ASSERTE(ptr != NULL);
         ptr += fldOffset;
 
         if (valCit == CORINFO_TYPE_VALUECLASS)
@@ -7412,7 +7430,7 @@ void Interpreter::LdFldA()
         fld = FindField(tok  InterpTracingArg(RTK_LdFldA));
         if (s_InterpreterUseCaching) CacheInstanceField(offset, fld);
     }
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned stackInd = m_curStackHt - 1;
     CorInfoType addrCit = OpStackTypeGet(stackInd).ToCorInfoType();
     if (addrCit == CORINFO_TYPE_BYREF || addrCit == CORINFO_TYPE_CLASS || addrCit == CORINFO_TYPE_NATIVEINT)
@@ -7461,7 +7479,7 @@ void Interpreter::StFld()
             unsigned tok = getU4LittleEndian(m_ILCodePtr + sizeof(BYTE));
             GCX_PREEMP();
             fld = FindField(tok  InterpTracingArg(RTK_StFld));
-            assert(fld != NULL);
+            _ASSERTE(fld != NULL);
             fldOffset = fld->GetOffset();
             if (s_InterpreterUseCaching && fldOffset < FIELD_OFFSET_LAST_REAL_OFFSET)
                 CacheInstanceField(ilOffset, fld);
@@ -7474,12 +7492,12 @@ void Interpreter::StFld()
     m_ILCodePtr += 5;  // Last use above, so update now.
 
     UINT sz = fld->GetSize();
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned addrInd = m_curStackHt - 2;
     CorInfoType addrCit = OpStackTypeGet(addrInd).ToCorInfoType();
     unsigned valInd = m_curStackHt - 1;
     CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
-    assert(IsStackNormalType(addrCit) && IsStackNormalType(valCit));
+    _ASSERTE(IsStackNormalType(addrCit) && IsStackNormalType(valCit));
 
     m_curStackHt -= 2;
 
@@ -7542,7 +7560,7 @@ void Interpreter::StFld()
     }
     else
     {
-        assert(addrCit == CORINFO_TYPE_BYREF || addrCit == CORINFO_TYPE_NATIVEINT);
+        _ASSERTE(addrCit == CORINFO_TYPE_BYREF || addrCit == CORINFO_TYPE_NATIVEINT);
 
         INT8* destPtr = OpStackGet<INT8*>(addrInd);
         ThrowOnInvalidPointer(destPtr);
@@ -7755,14 +7773,14 @@ void Interpreter::EnsureClassInit(MethodTable* pMT)
         // This is tantamount to a call, so exempt it from the cycle count.
 #if INTERP_ILCYCLE_PROFILE
         unsigned __int64 startCycles;
-        bool b = CycleTimer::GetThreadCyclesS(&startCycles); assert(b);
+        bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
 
         pMT->CheckRunClassInitThrowing();
 
 #if INTERP_ILCYCLE_PROFILE
         unsigned __int64 endCycles;
-        b = CycleTimer::GetThreadCyclesS(&endCycles); assert(b);
+        b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
     }
@@ -7874,11 +7892,11 @@ void Interpreter::LdElemWithType()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned arrInd = m_curStackHt - 2;
     unsigned indexInd = m_curStackHt - 1;
 
-    assert(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+    _ASSERTE(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
     ArrayBase* a = OpStackGet<ArrayBase*>(arrInd);
     ThrowOnInvalidPointer(a);
@@ -7902,7 +7920,7 @@ void Interpreter::LdElemWithType()
             intptr_t res_ptr = reinterpret_cast<intptr_t>(reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements());
             if (cit == CORINFO_TYPE_INT)
             {
-                assert(std::is_integral<T>::value);
+                _ASSERTE(std::is_integral<T>::value);
 
                 // Widen narrow types.
                 int ires;
@@ -7938,7 +7956,7 @@ void Interpreter::LdElemWithType()
     }
     else
     {
-        assert(indexCit == CORINFO_TYPE_NATIVEINT);
+        _ASSERTE(indexCit == CORINFO_TYPE_NATIVEINT);
         NativeInt index = OpStackGet<NativeInt>(indexInd);
         if (index < 0 || index >= NativeInt(len)) ThrowArrayBoundsException();
 
@@ -7970,12 +7988,12 @@ void Interpreter::StElemWithType()
     } CONTRACTL_END;
 
 
-    assert(m_curStackHt >= 3);
+    _ASSERTE(m_curStackHt >= 3);
     unsigned arrInd = m_curStackHt - 3;
     unsigned indexInd = m_curStackHt - 2;
     unsigned valInd = m_curStackHt - 1;
 
-    assert(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+    _ASSERTE(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
     ArrayBase* a = OpStackGet<ArrayBase*>(arrInd);
     ThrowOnInvalidPointer(a);
@@ -8010,7 +8028,7 @@ void Interpreter::StElemWithType()
     }
     else
     {
-        assert(indexCit == CORINFO_TYPE_NATIVEINT);
+        _ASSERTE(indexCit == CORINFO_TYPE_NATIVEINT);
         NativeInt index = OpStackGet<NativeInt>(indexInd);
         if (index < 0 || index >= NativeInt(len)) ThrowArrayBoundsException();
         if (IsObjType)
@@ -8048,7 +8066,7 @@ void Interpreter::LdElem()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned arrInd = m_curStackHt - 2;
     unsigned indexInd = m_curStackHt - 1;
 
@@ -8089,7 +8107,7 @@ void Interpreter::LdElem()
         elemIt = InterpreterType(elemCit);
     }
 
-    assert(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+    _ASSERTE(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
 
     ArrayBase* a = OpStackGet<ArrayBase*>(arrInd);
@@ -8107,7 +8125,7 @@ void Interpreter::LdElem()
         }
         else
         {
-            assert(indexCit == CORINFO_TYPE_NATIVEINT);
+            _ASSERTE(indexCit == CORINFO_TYPE_NATIVEINT);
             index = OpStackGet<NativeInt>(indexInd);
         }
     }
@@ -8173,7 +8191,7 @@ void Interpreter::StElem()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 3);
+    _ASSERTE(m_curStackHt >= 3);
     unsigned arrInd = m_curStackHt - 3;
     unsigned indexInd = m_curStackHt - 2;
     unsigned valInd = m_curStackHt - 1;
@@ -8225,7 +8243,7 @@ void Interpreter::StElem()
     }
 #endif // _DEBUG
 
-    assert(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+    _ASSERTE(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
     ArrayBase* a = OpStackGet<ArrayBase*>(arrInd);
     ThrowOnInvalidPointer(a);
@@ -8314,7 +8332,7 @@ void Interpreter::InitBlk()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 3);
+    _ASSERTE(m_curStackHt >= 3);
     unsigned addrInd = m_curStackHt - 3;
     unsigned valInd  = m_curStackHt - 2;
     unsigned sizeInd = m_curStackHt - 1;
@@ -8364,7 +8382,7 @@ void Interpreter::CpBlk()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 3);
+    _ASSERTE(m_curStackHt >= 3);
     unsigned destInd = m_curStackHt - 3;
     unsigned srcInd  = m_curStackHt - 2;
     unsigned sizeInd = m_curStackHt - 1;
@@ -8421,7 +8439,7 @@ void Interpreter::Box()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned ind = m_curStackHt - 1;
 
     DWORD boxTypeAttribs = 0;
@@ -8524,7 +8542,7 @@ void Interpreter::Unbox()
         MODE_COOPERATIVE;
     } CONTRACTL_END
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned tos = m_curStackHt - 1;
 
 #ifdef _DEBUG
@@ -8618,7 +8636,7 @@ void Interpreter::Throw()
         MODE_COOPERATIVE;
     } CONTRACTL_END
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
 
     // Note that we can't decrement the stack height here, since the operand stack
     // protects the thrown object.  Nor do we need to, since the ostack will be cleared on
@@ -8666,7 +8684,7 @@ void Interpreter::UnboxAny()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned tos = m_curStackHt - 1;
 
     unsigned boxTypeTok = getU4LittleEndian(m_ILCodePtr + 1);
@@ -8786,10 +8804,10 @@ void Interpreter::LdLen()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 1);
+    _ASSERTE(m_curStackHt >= 1);
     unsigned arrInd = m_curStackHt - 1;
 
-    assert(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
+    _ASSERTE(OpStackTypeGet(arrInd).ToCorInfoType() == CORINFO_TYPE_CLASS);
 
     GCX_FORBID();
 
@@ -8837,7 +8855,7 @@ CORINFO_CONTEXT_HANDLE InterpreterMethodInfo::GetPreciseGenericsContext(Object* 
     //     2) generic method of a class: generic argument is the precise MethodDesc* of the method.
     if (GetFlag<InterpreterMethodInfo::Flag_hasGenericsContextArg>())
     {
-        assert(GetFlag<InterpreterMethodInfo::Flag_methHasGenericArgs>() || GetFlag<InterpreterMethodInfo::Flag_typeHasGenericArgs>());
+        _ASSERTE(GetFlag<InterpreterMethodInfo::Flag_methHasGenericArgs>() || GetFlag<InterpreterMethodInfo::Flag_typeHasGenericArgs>());
         if (GetFlag<InterpreterMethodInfo::Flag_methHasGenericArgs>())
         {
             return MAKE_METHODCONTEXT(reinterpret_cast<CORINFO_METHOD_HANDLE>(genericsCtxtArg));
@@ -8885,7 +8903,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if 0
     // XXX
     unsigned __int64 callStartCycles;
-    bool b = CycleTimer::GetThreadCyclesS(&callStartCycles); assert(b);
+    bool b = CycleTimer::GetThreadCyclesS(&callStartCycles); _ASSERTE(b);
     unsigned __int64 callStartExemptCycles = m_exemptCycles;
 #endif
 #endif // INTERP_ILCYCLE_PROFILE
@@ -8906,7 +8924,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // call to pop that Frame before the caller method completes.  If this were not true, if one method could push
     // a Frame, but defer the pop to its caller, then we could *never* use a Frame in the interpreter, and
     // our implementation plan would be doomed.)
-    assert(m_callThisArg == NULL);
+    _ASSERTE(m_callThisArg == NULL);
     m_callThisArg = thisArg;
 
     // Have we already cached a MethodDescCallSite for this call? (We do this only in loops
@@ -8939,7 +8957,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             GCX_PREEMP();
 
             // callInfoPtr and methTokPtr must either both be NULL, or neither.
-            assert(methTokPtr == NULL);
+            _ASSERTE(methTokPtr == NULL);
 
             methTokPtr = &methTok;
             ResolveToken(methTokPtr, tok, CORINFO_TOKENKIND_Method InterpTracingArg(RTK_Call));
@@ -8959,7 +8977,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             if (virtualCall)
             {
                 unsigned __int64 callEndCycles;
-                b = CycleTimer::GetThreadCyclesS(&callEndCycles); assert(b);
+                b = CycleTimer::GetThreadCyclesS(&callEndCycles); _ASSERTE(b);
                 unsigned __int64 delta = (callEndCycles - callStartCycles);
                 delta -= (m_exemptCycles - callStartExemptCycles);
                 s_callCycles += delta;
@@ -8970,7 +8988,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
             callInfoPtr = &callInfo;
 
-            assert(!callInfoPtr->exactContextNeedsRuntimeLookup);
+            _ASSERTE(!callInfoPtr->exactContextNeedsRuntimeLookup);
 
             methToCall = reinterpret_cast<MethodDesc*>(methTok.hMethod);
             exactClass = methTok.hClass;
@@ -8978,9 +8996,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         else
         {
             // callInfoPtr and methTokPtr must either both be NULL, or neither.
-            assert(methTokPtr != NULL);
+            _ASSERTE(methTokPtr != NULL);
 
-            assert(!callInfoPtr->exactContextNeedsRuntimeLookup);
+            _ASSERTE(!callInfoPtr->exactContextNeedsRuntimeLookup);
 
             methToCall = reinterpret_cast<MethodDesc*>(callInfoPtr->hMethod);
             exactClass = methTokPtr->hClass;
@@ -9071,31 +9089,37 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             didIntrinsic = true;
         }
 
-// TODO: The following check for hardware intrinsics is not a production-level
-//       solution and may produce incorrect results.
-#ifdef FEATURE_INTERPRETER
+        // TODO: The following check for hardware intrinsics is not a production-level
+        //       solution and may produce incorrect results.
         static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
         if (s_InterpreterHWIntrinsicsIsSupportedFalse.val(CLRConfig::INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse) != 0)
         {
-            if (strcmp(methToCall->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+            GCX_PREEMP();
+
+            // Hardware intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if (
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.X86", 29) == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
 #elif defined(TARGET_ARM64)
-                strncmp(methToCall->GetClass()->GetDebugClassName(), "System.Runtime.Intrinsics.Arm", 29) == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0 &&
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-                strcmp(methToCall->GetName(), "get_IsSupported") == 0)
+                strcmp(methodName, "get_IsSupported") == 0
+            )
             {
+                GCX_COOP();
                 DoGetIsSupported();
                 didIntrinsic = true;
             }
         }
-#endif // FEATURE_INTERPRETER
 
 #if FEATURE_SIMD
         if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
         {
             // Check for the simd class...
-            assert(exactClass != NULL);
+            _ASSERTE(exactClass != NULL);
             GCX_PREEMP();
             bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
 
@@ -9236,9 +9260,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         ctorData.pMethod = methToCall;
 
         // Second argument to delegate constructor will be code address of the function the delegate wraps.
-        assert(TOSIsPtr() && OpStackTypeGet(m_curStackHt-1).ToCorInfoType() != CORINFO_TYPE_BYREF);
+        _ASSERTE(TOSIsPtr() && OpStackTypeGet(m_curStackHt-1).ToCorInfoType() != CORINFO_TYPE_BYREF);
         CORINFO_METHOD_HANDLE targetMethodHnd = GetFunctionPointerStack()[m_curStackHt-1];
-        assert(targetMethodHnd != NULL);
+        _ASSERTE(targetMethodHnd != NULL);
         CORINFO_METHOD_HANDLE alternateCtorHnd = m_interpCeeInfo.GetDelegateCtor(reinterpret_cast<CORINFO_METHOD_HANDLE>(methToCall), methTokPtr->hClass, targetMethodHnd, &ctorData);
         MethodDesc* alternateCtor = reinterpret_cast<MethodDesc*>(alternateCtorHnd);
         if (alternateCtor != methToCall)
@@ -9268,7 +9292,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     unsigned totalArgsOnILStack = totalSigArgs;
     if (m_callThisArg != NULL)
     {
-        assert(totalArgsOnILStack > 0);
+        _ASSERTE(totalArgsOnILStack > 0);
         totalArgsOnILStack--;
     }
 
@@ -9335,7 +9359,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     int curArgSlot = 0;
 
     // The operand stack index of the first IL argument.
-    assert(m_curStackHt >= totalArgsOnILStack);
+    _ASSERTE(m_curStackHt >= totalArgsOnILStack);
     int argsBase = m_curStackHt - totalArgsOnILStack;
 
     // Current on-stack argument index.
@@ -9346,7 +9370,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     if (m_constrainedFlag)
     {
-        _ASSERT(m_callThisArg == NULL);  // "m_callThisArg" non-null only for .ctor, which are not callvirts.
+        _ASSERTE(m_callThisArg == NULL);  // "m_callThisArg" non-null only for .ctor, which are not callvirts.
 
         CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
         if (argCIT != CORINFO_TYPE_BYREF)
@@ -9367,7 +9391,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 {
                     GCX_PREEMP();
                     DWORD clsAttribs = m_interpCeeInfo.getClassAttribs(m_constrainedResolvedToken.hClass);
-                    assert((clsAttribs & CORINFO_FLG_VALUECLASS) == 0);
+                    _ASSERTE((clsAttribs & CORINFO_FLG_VALUECLASS) == 0);
                 }
 #endif // _DEBUG
                 {
@@ -9505,14 +9529,14 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // should have thrown OOM if it was unable to allocate an instance.
             if (m_callThisArg == NULL)
             {
-                assert(!methToCall->IsStatic());
+                _ASSERTE(!methToCall->IsStatic());
                 ThrowNullPointerException();
             }
             // ...except in the case of strings, which are both
             // allocated and initialized by their special constructor.
             else
             {
-                assert(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
+                _ASSERTE(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
             }
         }
         curArgSlot++;
@@ -9562,7 +9586,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #endif // defined(HOST_ARM)
             )
         {
-            assert(retTypeClsHnd != NULL);
+            _ASSERTE(retTypeClsHnd != NULL);
             retTypeIt = InterpreterType(&m_interpCeeInfo, retTypeClsHnd);
             retTypeSz = retTypeIt.Size(&m_interpCeeInfo);
 
@@ -9621,7 +9645,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     if (((sigInfo.callConv & CORINFO_CALLCONV_VARARG) != 0) && sigInfo.isVarArg())
     {
-        assert(vaSigCookie != nullptr);
+        _ASSERTE(vaSigCookie != nullptr);
         args[curArgSlot] = PtrToArgSlot(vaSigCookie);
         argTypes[curArgSlot] = InterpreterType(CORINFO_TYPE_NATIVEINT);
         curArgSlot++;
@@ -9648,7 +9672,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         if (sigInfo.hasTypeArg())
         {
             // If we still have a type argument, we're calling an ArrayOpStub and need to pass the array TypeHandle.
-            assert(methToCall->IsArray());
+            _ASSERTE(methToCall->IsArray());
             doNotCache = true;
             args[curArgSlot] = PtrToArgSlot(exactClass);
             argTypes[curArgSlot] = InterpreterType(CORINFO_TYPE_NATIVEINT);
@@ -9752,7 +9776,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         {
             PCODE pCode;
 
-            assert(thisArgHnd != NULL);
+            _ASSERTE(thisArgHnd != NULL);
             OBJECTREF objRef = ObjectToOBJECTREF(*thisArgHnd);
             GCPROTECT_BEGIN(objRef);
             pCode = methToCall->GetMultiCallableAddrOfVirtualizedCode(&objRef, methToCall->GetMethodTable());
@@ -9767,7 +9791,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             MethodTable* dispatchingMT = NULL;
             if (exactMethToCall->IsVtableMethod())
             {
-                assert(thisArgHnd != NULL);
+                _ASSERTE(thisArgHnd != NULL);
                 dispatchingMT = (*thisArgHnd)->GetMethodTable();
             }
             GCX_PREEMP();
@@ -9781,11 +9805,11 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // If we're interpreting the method, simply call it directly.
         if (InterpretationStubToMethodInfo(target) == exactMethToCall)
         {
-            assert(!exactMethToCall->IsILStub());
+            _ASSERTE(!exactMethToCall->IsILStub());
             InterpreterMethodInfo* methInfo = MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE(exactMethToCall));
-            assert(methInfo != NULL);
+            _ASSERTE(methInfo != NULL);
 #if INTERP_ILCYCLE_PROFILE
-            bool b = CycleTimer::GetThreadCyclesS(&startCycles); assert(b);
+            bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
             retVal = InterpretMethodBody(methInfo, true, reinterpret_cast<BYTE*>(args), NULL);
             pCscd = NULL;  // Nothing to cache.
@@ -9796,7 +9820,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // We've already resolved the virtual call target above, so there is no need to do it again.
             MethodDescCallSite mdcs(exactMethToCall, &msig, target);
 #if INTERP_ILCYCLE_PROFILE
-            bool b = CycleTimer::GetThreadCyclesS(&startCycles); assert(b);
+            bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
             mdcs.CallTargetWorker(args, &retVal, sizeof(retVal));
 
@@ -9822,7 +9846,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 #if INTERP_ILCYCLE_PROFILE
         unsigned __int64 endCycles;
-        bool b = CycleTimer::GetThreadCyclesS(&endCycles); assert(b);
+        bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
 
@@ -9931,7 +9955,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #endif // defined(HOST_ARM)
                     if (pLargeStructRetVal != NULL)
                     {
-                        assert(hasRetBuffArg);
+                        _ASSERTE(hasRetBuffArg);
                         void* dst = LargeStructOperandStackPush(retTypeSz);
                         CopyValueClassUnchecked(dst, pLargeStructRetVal, GetMethodTableFromClsHnd(retTypeClsHnd));
                         OpStackSet<void*>(m_curStackHt, dst);
@@ -9973,7 +9997,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Originally, this assertion was in the ValueClass case above, but it does a COOP->PREEMP
     // transition, and therefore causes a GC, and we're GCX_FORBIDden from doing a GC while retVal
     // is vulnerable.  So, for completeness, do it here.
-    assert(sigInfo.retType != CORINFO_TYPE_VALUECLASS || retTypeIt == InterpreterType(&m_interpCeeInfo, retTypeClsHnd));
+    _ASSERTE(sigInfo.retType != CORINFO_TYPE_VALUECLASS || retTypeIt == InterpreterType(&m_interpCeeInfo, retTypeClsHnd));
 
     // If we created a cached call site, cache it now (when it's safe to take a GC).
     if (pCscd != NULL && !doNotCache)
@@ -10075,7 +10099,7 @@ void Interpreter::CallI()
 
     // The operand stack index of the first IL argument.
     unsigned totalArgPositions = totalArgsOnILStack + 1;  // + 1 for the ftn argument.
-    assert(m_curStackHt >= totalArgPositions);
+    _ASSERTE(m_curStackHt >= totalArgPositions);
     int argsBase = m_curStackHt - totalArgPositions;
 
     // Current on-stack argument index.
@@ -10222,7 +10246,7 @@ void Interpreter::CallI()
     unsigned ftnInd = m_curStackHt - 1;
 #ifdef _DEBUG
     CorInfoType ftnType = OpStackTypeGet(ftnInd).ToCorInfoType();
-    assert(ftnType == CORINFO_TYPE_NATIVEINT
+    _ASSERTE(ftnType == CORINFO_TYPE_NATIVEINT
              || ftnType == CORINFO_TYPE_INT
              || ftnType == CORINFO_TYPE_LONG);
 #endif // DEBUG
@@ -10235,9 +10259,9 @@ void Interpreter::CallI()
         if ((methToCall = InterpretationStubToMethodInfo((PCODE)ftnPtr)) != NULL)
         {
             InterpreterMethodInfo* methInfo = MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE(methToCall));
-            assert(methInfo != NULL);
+            _ASSERTE(methInfo != NULL);
 #if INTERP_ILCYCLE_PROFILE
-            bool b = CycleTimer::GetThreadCyclesS(&startCycles); assert(b);
+            bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
             retVal = InterpretMethodBody(methInfo, true, reinterpret_cast<BYTE*>(args), NULL);
         }
@@ -10340,7 +10364,7 @@ void Interpreter::CallI()
                     // is protected by being fully "on" the operandStack.
                     if (pLargeStructRetVal != NULL)
                     {
-                        assert(hasRetBuffArg);
+                        _ASSERTE(hasRetBuffArg);
                         void* dst = LargeStructOperandStackPush(retTypeSz);
                         CopyValueClassUnchecked(dst, pLargeStructRetVal, GetMethodTableFromClsHnd(retTypeClsHnd));
                         OpStackSet<void*>(m_curStackHt, dst);
@@ -10380,7 +10404,7 @@ void Interpreter::CallI()
     // Originally, this assertion was in the ValueClass case above, but it does a COOP->PREEMP
     // transition, and therefore causes a GC, and we're GCX_FORBIDden from doing a GC while retVal
     // is vulnerable.  So, for completeness, do it here.
-    assert(sigInfo.retType != CORINFO_TYPE_VALUECLASS || retTypeIt == InterpreterType(&m_interpCeeInfo, retTypeClsHnd));
+    _ASSERTE(sigInfo.retType != CORINFO_TYPE_VALUECLASS || retTypeIt == InterpreterType(&m_interpCeeInfo, retTypeClsHnd));
 
     m_ILCodePtr += 5;
 }
@@ -10413,7 +10437,7 @@ bool Interpreter::IsDeadSimpleGetter(CEEInfo* info, MethodDesc* pMD, size_t* off
             return false;
         if (*codePtr != CEE_LDSFLD)
             return false;
-        assert(ILOffsetOfLdSFldInDeadSimpleStaticGetter == 0);
+        _ASSERTE(ILOffsetOfLdSFldInDeadSimpleStaticGetter == 0);
         *offsetOfLd = 0;
         codePtr += 5;
         return (*codePtr == CEE_RET);
@@ -10439,7 +10463,7 @@ bool Interpreter::IsDeadSimpleGetter(CEEInfo* info, MethodDesc* pMD, size_t* off
         if (*codePtr != CEE_LDFLD)
             return false;
         *offsetOfLd = codePtr - methInfo.ILCode;
-        assert((dbg && ILOffsetOfLdFldInDeadSimpleInstanceGetterDbg == *offsetOfLd)
+        _ASSERTE((dbg && ILOffsetOfLdFldInDeadSimpleInstanceGetterDbg == *offsetOfLd)
                  || (!dbg && ILOffsetOfLdFldInDeadSimpleInstanceGetterOpt == *offsetOfLd));
         codePtr += 5;
         if (dbg)
@@ -10467,7 +10491,7 @@ void Interpreter::DoStringLength()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned ind = m_curStackHt - 1;
 
 #ifdef _DEBUG
@@ -10506,7 +10530,7 @@ void Interpreter::DoStringGetChar()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt >= 2);
+    _ASSERTE(m_curStackHt >= 2);
     unsigned strInd = m_curStackHt - 2;
     unsigned indexInd = strInd + 1;
 
@@ -10566,7 +10590,7 @@ void Interpreter::DoGetTypeFromHandle()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned ind = m_curStackHt - 1;
 
 #ifdef _DEBUG
@@ -10594,8 +10618,8 @@ void Interpreter::DoByReferenceCtor()
     } CONTRACTL_END;
 
     // Note 'this' is not passed on the operand stack...
-    assert(m_curStackHt > 0);
-    assert(m_callThisArg != NULL);
+    _ASSERTE(m_curStackHt > 0);
+    _ASSERTE(m_callThisArg != NULL);
     unsigned valInd = m_curStackHt - 1;
     CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
 
@@ -10628,7 +10652,7 @@ void Interpreter::DoByReferenceValue()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    assert(m_curStackHt > 0);
+    _ASSERTE(m_curStackHt > 0);
     unsigned slot = m_curStackHt - 1;
     CorInfoType thisCit = OpStackTypeGet(slot).ToCorInfoType();
 
@@ -10727,7 +10751,7 @@ void Interpreter::LargeStructOperandStackEnsureCanPush(size_t sz)
 void* Interpreter::LargeStructOperandStackPush(size_t sz)
 {
     LargeStructOperandStackEnsureCanPush(sz);
-    assert(m_largeStructOperandStackAllocSize >= m_largeStructOperandStackHt + sz);
+    _ASSERTE(m_largeStructOperandStackAllocSize >= m_largeStructOperandStackHt + sz);
     void* res = &m_largeStructOperandStack[m_largeStructOperandStackHt];
     m_largeStructOperandStackHt += sz;
     return res;
@@ -10737,7 +10761,7 @@ void Interpreter::LargeStructOperandStackPop(size_t sz, void* fromAddr)
 {
     if (!IsInLargeStructLocalArea(fromAddr))
     {
-        assert(m_largeStructOperandStackHt >= sz);
+        _ASSERTE(m_largeStructOperandStackHt >= sz);
         m_largeStructOperandStackHt -= sz;
     }
 }
@@ -10753,7 +10777,7 @@ bool Interpreter::LargeStructStackHeightIsValid()
             sz2 += OpStackTypeGet(k).Size(&m_interpCeeInfo);
         }
     }
-    assert(sz2 == m_largeStructOperandStackHt);
+    _ASSERTE(sz2 == m_largeStructOperandStackHt);
     return sz2 == m_largeStructOperandStackHt;
 }
 #endif // _DEBUG
@@ -10895,7 +10919,7 @@ void Interpreter::RecordInterpreterStubForMethodDesc(CORINFO_METHOD_HANDLE md, v
     AddrToMDMap* map = Interpreter::GetAddrToMdMap();
 #ifdef _DEBUG
     CORINFO_METHOD_HANDLE dummy;
-    assert(!map->Lookup(addr, &dummy));
+    _ASSERTE(!map->Lookup(addr, &dummy));
 #endif // DEBUG
     map->AddOrReplace(KeyValuePair<void*,CORINFO_METHOD_HANDLE>(addr, md));
 }
@@ -11272,7 +11296,7 @@ unsigned               Interpreter::s_calls = 0;
 void Interpreter::UpdateCycleCount()
 {
     unsigned __int64 endCycles;
-    bool b = CycleTimer::GetThreadCyclesS(&endCycles); assert(b);
+    bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
     if (m_instr != CEE_COUNT)
     {
         unsigned __int64 delta = (endCycles - m_startCycles);
@@ -11288,7 +11312,7 @@ void Interpreter::UpdateCycleCount()
     if (m_instr == CEE_PREFIX1) {
         m_instr = *(m_ILCodePtr + 1) + 0x100;
     }
-    b = CycleTimer::GetThreadCyclesS(&m_startCycles); assert(b);
+    b = CycleTimer::GetThreadCyclesS(&m_startCycles); _ASSERTE(b);
 }
 
 #endif // INTERP_ILCYCLE_PROFILE
@@ -11352,7 +11376,7 @@ void InterpreterCache<Key,Val>::EnsureCanInsert()
     // Otherwise, must make room.
     if (m_allocSize == 0)
     {
-        assert(m_count == 0);
+        _ASSERTE(m_count == 0);
         m_pairs = new KeyValPair[InitSize];
         m_allocSize = InitSize;
 #ifdef _DEBUG
@@ -11387,7 +11411,7 @@ bool InterpreterCache<Key,Val>::AddItem(Key key, Val val)
     }
     if (firstGreaterOrEqual < m_count && m_pairs[firstGreaterOrEqual].m_key == key)
     {
-        assert(m_pairs[firstGreaterOrEqual].m_val == val);
+        _ASSERTE(m_pairs[firstGreaterOrEqual].m_val == val);
         return false;
     }
     // Move everything starting at firstGreater up one index (if necessary)
@@ -11429,7 +11453,7 @@ bool InterpreterCache<Key,Val>::GetItem(Key key, Val& v)
         }
         else
         {
-            assert(key > midKey);
+            _ASSERTE(key > midKey);
             lo = mid + 1;
         }
     }
@@ -11543,7 +11567,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     }
     else
     {
-        assert(strlen("<NULL>.") == 7);
+        _ASSERTE(strlen("<NULL>.") == 7);
         length = 7;
     }
 
@@ -11621,7 +11645,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
         strcat_s(retName, length, returnType);
     }
 
-    assert(strlen(retName) == length - 1);
+    _ASSERTE(strlen(retName) == length - 1);
 
     return(retName);
 }
@@ -11680,7 +11704,7 @@ void Interpreter::PrintOStack()
         for (unsigned k = 0; k < m_curStackHt; k++)
         {
             CorInfoType cit = OpStackTypeGet(k).ToCorInfoType();
-            assert(IsStackNormalType(cit));
+            _ASSERTE(IsStackNormalType(cit));
             fprintf(GetLogFile(), "      %4d: %10s: ", k, CorInfoTypeNames[cit]);
             PrintOStackValue(k);
             fprintf(GetLogFile(), "\n");
@@ -11911,7 +11935,7 @@ int _cdecl Interpreter::CompareMethInfosByInvocations(const void* mi0in, const v
     }
     else
     {
-        assert(mi0->m_invocations > mi1->m_invocations);
+        _ASSERTE(mi0->m_invocations > mi1->m_invocations);
         return 1;
     }
 }
@@ -11925,7 +11949,7 @@ int _cdecl Interpreter::CompareMethInfosByILInstrs(const void* mi0in, const void
     else if (mi0->m_totIlInstructionsExeced == mi1->m_totIlInstructionsExeced) return 0;
     else
     {
-        assert(mi0->m_totIlInstructionsExeced > mi1->m_totIlInstructionsExeced);
+        _ASSERTE(mi0->m_totIlInstructionsExeced > mi1->m_totIlInstructionsExeced);
         return -1;
     }
 }
@@ -12152,7 +12176,7 @@ void Interpreter::PrintPostMortemData()
             continue; // Don't count these if they occur...
         }
         ieps[i].m_cycles = s_ILInstrCycles[i];
-        assert((ieps[i].m_execs != 0) || (ieps[i].m_cycles == 0)); // Cycles can be zero for non-zero execs because of measurement correction.
+        _ASSERTE((ieps[i].m_execs != 0) || (ieps[i].m_cycles == 0)); // Cycles can be zero for non-zero execs because of measurement correction.
 #endif // INTERP_ILCYCLE_PROFILE
     }
     for (unsigned short i = 0; i < CountIlInstr2Byte; i++)
@@ -12161,7 +12185,7 @@ void Interpreter::PrintPostMortemData()
         ieps[ind].m_instr = i; ieps[ind].m_is2byte = true; ieps[ind].m_execs = s_ILInstr2ByteExecs[i];
 #if INTERP_ILCYCLE_PROFILE
         ieps[ind].m_cycles = s_ILInstrCycles[ind];
-        assert((ieps[i].m_execs != 0) || (ieps[i].m_cycles == 0)); // Cycles can be zero for non-zero execs because of measurement correction.
+        _ASSERTE((ieps[i].m_execs != 0) || (ieps[i].m_cycles == 0)); // Cycles can be zero for non-zero execs because of measurement correction.
 #endif // INTERP_ILCYCLE_PROFILE
     }
 

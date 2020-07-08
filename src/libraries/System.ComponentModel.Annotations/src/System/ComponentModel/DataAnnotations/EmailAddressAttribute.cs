@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -11,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
         public EmailAddressAttribute()
             : base(DataType.EmailAddress)
         {
-            // Set DefaultErrorMessage not ErrrorMessage, allowing user to set
+            // Set DefaultErrorMessage not ErrorMessage, allowing user to set
             // ErrorMessageResourceType and ErrorMessageResourceName to use localized messages.
             DefaultErrorMessage = SR.EmailAddressAttribute_Invalid;
         }

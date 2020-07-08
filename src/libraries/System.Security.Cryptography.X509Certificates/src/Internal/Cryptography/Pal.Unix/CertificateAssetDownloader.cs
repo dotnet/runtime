@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -23,14 +22,16 @@ namespace Internal.Cryptography.Pal
         {
             byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
 
-            if (data == null)
+            if (data == null || data.Length == 0)
             {
                 return null;
             }
 
             try
             {
-                return new X509Certificate2(data);
+                X509Certificate2 certificate = new X509Certificate2(data);
+                certificate.ThrowIfInvalid();
+                return certificate;
             }
             catch (CryptographicException)
             {
