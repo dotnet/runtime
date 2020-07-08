@@ -163,8 +163,6 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(authType));
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, uriPrefix, authType);
-
             if (_cache == null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
@@ -217,8 +215,6 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host, port, authenticationType);
 
             if (_cacheForHosts == null)
             {

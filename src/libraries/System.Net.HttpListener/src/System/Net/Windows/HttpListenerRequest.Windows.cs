@@ -216,12 +216,10 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 if (_requestStream == null)
                 {
                     _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return _requestStream;
             }
         }
@@ -256,31 +254,25 @@ namespace System.Net
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             X509Certificate2 clientCertificate = null;
-            try
+
+            if (asyncResult == null)
             {
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-                ListenerClientCertAsyncResult clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
-                if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
-                {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-                }
-                if (clientCertAsyncResult.EndCalled)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
-                }
-                clientCertAsyncResult.EndCalled = true;
-                clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
-            finally
+            ListenerClientCertAsyncResult clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
+            if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
+            if (clientCertAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
+            }
+            clientCertAsyncResult.EndCalled = true;
+            clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+
             return clientCertificate;
         }
 
@@ -325,7 +317,6 @@ namespace System.Net
         //should only be called from httplistenercontext
         internal void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             RequestContextBase memoryBlob = _memoryBlob;
             if (memoryBlob != null)
             {
@@ -333,7 +324,6 @@ namespace System.Net
                 _memoryBlob = null;
             }
             _isDisposed = true;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)

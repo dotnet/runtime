@@ -231,22 +231,15 @@ namespace System.Net
 
         public X509Certificate2 GetClientCertificate()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            try
-            {
-                if (ClientCertState == ListenerClientCertState.InProgress)
-                    throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
-                ClientCertState = ListenerClientCertState.InProgress;
+            if (ClientCertState == ListenerClientCertState.InProgress)
+                throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
+            ClientCertState = ListenerClientCertState.InProgress;
 
-                GetClientCertificateCore();
+            GetClientCertificateCore();
 
-                ClientCertState = ListenerClientCertState.Completed;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
+            ClientCertState = ListenerClientCertState.Completed;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+
             return ClientCertificate;
         }
 

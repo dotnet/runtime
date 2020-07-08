@@ -66,8 +66,6 @@ namespace System.Net
         //     Newly created WebRequest.
         private static WebRequest Create(Uri requestUri, bool useUriBase)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, requestUri);
-
             string LookupUri;
             WebRequestPrefixElement? Current = null;
             bool Found = false;
@@ -125,12 +123,10 @@ namespace System.Net
             {
                 // We found a match, so just call the creator and return what it does.
                 WebRequest webRequest = Current!.Creator.Create(requestUri);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, webRequest);
                 return webRequest;
             }
 
             // Otherwise no match, throw an exception.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             throw new NotSupportedException(SR.net_unknown_prefix);
         }
 
