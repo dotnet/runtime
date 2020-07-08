@@ -8873,7 +8873,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
     {
         // We have some kind of STRUCT being returned
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        if (methInfo->args.getCallConv() == CORINFO_CALLCONV_THISCALL)
+        if (compMethodIsNativeInstanceMethod(methInfo))
         {
             return true;
         }

@@ -1972,6 +1972,11 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
+bool Compiler::compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo)
+{
+    return mthInfo->args.getCallConv() == CORINFO_CALLCONV_THISCALL;
+}
+
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 

@@ -349,6 +349,18 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     /* Is there a "this" pointer ? */
     lvaInitThisPtr(varDscInfo);
 
+    unsigned numUserArgsToSkip = 0;
+    unsigned numUserArgs = info.compMethodInfo->args.numArgs;
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+    {
+        assert(numUserArgs >= 1);
+        lvaInitUserArgs(varDscInfo, 0, 1);
+        numUserArgsToSkip++;
+        numUserArgs--;
+    }
+#endif
+
     /* If we have a hidden return-buffer parameter, that comes here */
     lvaInitRetBuffArg(varDscInfo);
 
@@ -366,7 +378,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     //-------------------------------------------------------------------------
     // Now walk the function signature for the explicit user arguments
     //-------------------------------------------------------------------------
-    lvaInitUserArgs(varDscInfo);
+    lvaInitUserArgs(varDscInfo, numUserArgsToSkip, numUserArgs);
 
 #if !USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
@@ -557,7 +569,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
 }
 
 /*****************************************************************************/
-void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
+void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs)
 {
 //-------------------------------------------------------------------------
 // Walk the function signature for the explicit arguments
@@ -575,11 +587,20 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
     const unsigned argSigLen = info.compMethodInfo->args.numArgs;
 
+    const int64_t numUserArgs = min(takeArgs, (argSigLen - (int64_t)skipArgs));
+
+    if (numUserArgs <= 0)
+    {
+        return;
+    }
+
 #ifdef TARGET_ARM
     regMaskTP doubleAlignMask = RBM_NONE;
 #endif // TARGET_ARM
 
-    for (unsigned i = 0; i < argSigLen;
+    for (unsigned i = 0; i < skipArgs; i++, argLst = info.compCompHnd->getArgNext(argLst));
+
+    for (unsigned i = 0; i < numUserArgs;
          i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
     {
         LclVarDsc*           varDsc  = varDscInfo->varDsc;
@@ -5163,6 +5184,20 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         lclNum++;
     }
 
+    unsigned userArgsToSkip = 0;
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+    {
+        noway_assert(lvaTable[lclNum].lvIsRegArg);
+#ifndef TARGET_X86
+        argOffs =
+            lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+#endif // TARGET_X86
+        lclNum++;
+        userArgsToSkip++;
+    }
+#endif
+
     /* if we have a hidden buffer parameter, that comes here */
 
     if (info.compRetBuffArg != BAD_VAR_NUM)
@@ -5196,6 +5231,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 
     CORINFO_ARG_LIST_HANDLE argLst    = info.compMethodInfo->args.args;
     unsigned                argSigLen = info.compMethodInfo->args.numArgs;
+    assert(userArgsToSkip <= argSigLen);
+    argSigLen -= userArgsToSkip;
+    for(unsigned i = 0; i < userArgsToSkip; i++, argLst = info.compCompHnd->getArgNext(argLst));
 
 #ifdef TARGET_ARM
     //

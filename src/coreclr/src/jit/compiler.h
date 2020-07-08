@@ -3291,7 +3291,7 @@ public:
     void lvaInitArgs(InitVarDscInfo* varDscInfo);
     void lvaInitThisPtr(InitVarDscInfo* varDscInfo);
     void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo);
-    void lvaInitUserArgs(InitVarDscInfo* varDscInfo);
+    void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
     void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
     void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
 
@@ -9340,6 +9340,11 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
+
+    // Calculates if this method's entry point should have the same calling
+    // convention as an unmanaged instance method variant of the standard calling convention.
+    // (only used on applicable platforms)
+    bool compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo);
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
