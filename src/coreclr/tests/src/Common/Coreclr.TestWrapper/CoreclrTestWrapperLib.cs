@@ -349,19 +349,19 @@ namespace CoreclrTestLib
                 }
                 else
                 {
-                    int exitCode = -1;
+                    int timedOutExitCode = -1;
                     // Timed out.
                     try
                     {
                         cts.Cancel();
                         if (process.HasExited)
                         {
-                            exitCode = process.ExitCode;
+                            timedOutExitCode = process.ExitCode;
                         }
                     }
                     catch {}
 
-                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out. Now= " + DateTime.Now + ", exitCode= " + exitCode);
+                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out. Now= " + DateTime.Now + ", exitCode= " + timedOutExitCode);
                     errorWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
 
                     if (collectCrashDumps)
