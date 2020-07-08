@@ -613,9 +613,10 @@ void
 CrashInfo::Trace(const char* format, ...)
 {
     if (g_diagnostics) {
-        va_list ap;
-        va_start(ap, format);
-        vprintf(format, ap);
-        va_end(ap);
+        va_list args;
+        va_start(args, format);
+        vfprintf(stdout, format, args);
+        fflush(stdout);
+        va_end(args);
     }
 }
