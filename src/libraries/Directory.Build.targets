@@ -182,8 +182,13 @@
     <ItemGroup>
       <ProjectReference>
         <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-        <AdditionalProperties Condition="'%(Filename)' == 'System.Private.CoreLib' and '$(RuntimeFlavor)' == 'CoreCLR'">Configuration=$(CoreCLRConfiguration);TargetFramework=$(NetCoreAppCurrent)</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Filename)' == 'System.Private.CoreLib' and '$(RuntimeFlavor)' == 'Mono'">Configuration=$(MonoConfiguration);TargetFramework=$(NetCoreAppCurrent)</AdditionalProperties>
+        <UndefineProperties Condition="'%(Filename)' == 'System.Private.CoreLib'">$(UndefineProperties);TargetFramework</UndefineProperties>
+        <SetConfiguration Condition="'%(Filename)' == 'System.Private.CoreLib' and
+                                     '$(RuntimeFlavor)' == 'CoreCLR' and
+                                     '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+        <SetConfiguration Condition="'%(Filename)' == 'System.Private.CoreLib' and
+                                     '$(RuntimeFlavor)' == 'Mono' and
+                                     '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
       </ProjectReference>
     </ItemGroup>
   </Target>
