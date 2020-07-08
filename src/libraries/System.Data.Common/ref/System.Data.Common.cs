@@ -2203,7 +2203,6 @@ namespace System.Data.Common
         protected DbException(string message) { }
         protected DbException(string message, System.Exception innerException) { }
         protected DbException(string message, int errorCode) { }
-        public virtual bool IsTransient { get { throw null; } }
         protected DbException(string? message) { }
         protected DbException(string? message, System.Exception? innerException) { }
         protected DbException(string? message, int errorCode) { }
