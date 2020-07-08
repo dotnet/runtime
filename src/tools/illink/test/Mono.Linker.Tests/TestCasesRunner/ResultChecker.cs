@@ -601,19 +601,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
 						var expectedMessage = (string) attr.ConstructorArguments[0].Value;
 
-						Assert.That (new Func<bool> (() => {
+						Assert.That (() => {
 							if ((bool) attr.ConstructorArguments[1].Value)
 								return logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessage));
 							return logger.Messages.Any (mc => mc.Message.Contains (expectedMessage));
-						}), $"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+						},
+						$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
 					}
 
 					if (attr.AttributeType.Resolve ().Name == nameof (LogDoesNotContainAttribute)) {
-						var unexpectedMessagePattern = (string) attr.ConstructorArguments[0].Value;
+						var unexpectedMessage = (string) attr.ConstructorArguments[0].Value;
 						foreach (var loggedMessage in logger.Messages) {
-							Assert.That (
-								!Regex.IsMatch (loggedMessage.Message, unexpectedMessagePattern),
-								$"Expected to not find logged message matching `{unexpectedMessagePattern}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+							Assert.That (() => {
+								if ((bool) attr.ConstructorArguments[1].Value)
+									return !Regex.IsMatch (loggedMessage.Message, unexpectedMessage);
+								return !Regex.IsMatch (loggedMessage.Message, unexpectedMessage);
+							},
+							$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
 						}
 					}
 				}

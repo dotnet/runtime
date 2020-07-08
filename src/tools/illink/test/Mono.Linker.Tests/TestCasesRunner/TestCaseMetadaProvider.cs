@@ -84,11 +84,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ((string) ca[0].Value, values));
 			}
 
-			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
-				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute)) ||
-				_testCaseTypeDefinition.AllMembers ().Any (method => method.CustomAttributes.Any (attr =>
-				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute)))) {
-				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ("--verbose", new string[] { }));
+			foreach (var testType in _fullTestCaseAssemblyDefinition.AllDefinedTypes ()) {
+				if (testType.CustomAttributes.Concat (testType.AllMembers ().SelectMany (m => m.CustomAttributes)).Any (attr =>
+					attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))) {
+					tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ("--verbose", new string[] { }));
+					break;
+				}
 			}
 
 			return tclo;

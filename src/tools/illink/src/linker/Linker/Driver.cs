@@ -1094,6 +1094,7 @@ namespace Mono.Linker
 			p.AppendStep (new DynamicDependencyLookupStep ());
 			p.AppendStep (new TypeMapStep ());
 			p.AppendStep (new MarkStep ());
+			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());
 			p.AppendStep (new SweepStep ());
 			p.AppendStep (new CodeRewriterStep ());
 			p.AppendStep (new CleanStep ());

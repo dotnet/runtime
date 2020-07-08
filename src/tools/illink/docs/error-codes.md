@@ -237,3 +237,11 @@ error and warning codes.
 #### `IL2045`: Custom Attribute 'type' is being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove the linker attribute XML portion which removes the attribute instances, or to override this use the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).
 
 - CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the "remove" attribute tag on a type inside the LinkAttributes xml
+
+#### `IL2046`: Presence of RequiresUnreferencedCodeAttribute on method '<method>' doesn't match overridden method 'base method'. All overridden methods must have RequiresUnreferencedCodeAttribute.
+
+- All overrides of a virtual method including the base method must either have or not have the RequiresUnreferencedCodeAttribute.
+
+#### `IL2047`: DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on <member> don't match overridden <base member>. All overriden members must have the same DynamicallyAccessedMembersAttribute usage.
+
+- All overrides of a virtual method including the base method must have the same DynamicallyAccessedMemberAttribute usage on all it's components (return value, parameters and generic parameters).
