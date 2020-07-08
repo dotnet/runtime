@@ -82,17 +82,16 @@ namespace Tracing.Tests.GCDumpTest
 
             return () =>
             {
-                // These values are ~80% (rounded to nice whole numbers) of the values
-                // I saw when writing the test. The idea is that I want to catch
-                // any real deviation in the number of types, but don't want to have
-                // to maintain this test as the number of types varies. (And they will vary due to
-                // framework code changes). If this test needs any sort of ongoing maintenance
-                // just change all these values to a low number like 10 and move on.
-                if (_bulkTypeCount > 125
-                    && _bulkNodeCount > 600
-                    && _bulkEdgeCount > 850
-                    && _bulkRootEdgeCount > 150
-                    && _bulkRootStaticVarCount > 70)
+                // 50 is a safe number, comfortably less than the events we expect.
+                // Hopefully it is low enough to be resillient to changes in the runtime
+                // and high enough to catch issues. There should be between hundreds and thousands
+                // for each, but the number is variable and the point of the test is to verify
+                // that we get any events at all.
+                if (_bulkTypeCount > 50
+                     && _bulkNodeCount > 50
+                     && _bulkEdgeCount > 50
+                     && _bulkRootEdgeCount > 50
+                     && _bulkRootStaticVarCount > 50)
                 {
                     return 100;
                 }
