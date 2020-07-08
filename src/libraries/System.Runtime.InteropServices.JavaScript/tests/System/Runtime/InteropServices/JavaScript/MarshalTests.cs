@@ -90,5 +90,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.NotNull(HelperMarshal._marshalledString);
             Assert.Equal(HelperMarshal._marshalledString, HelperMarshal._stringResource);
         }
+
+        [Fact]
+        public static void JSObjectKeepIdentityAcrossCalls()
+        {
+            HelperMarshal._object1 = HelperMarshal._object2 = null;
+            Runtime.InvokeJS(@"
+                var obj = { foo: 10 };
+                var res = App.call_test_method (""InvokeObj1"", ""o"", [ obj ]);
+                App.call_test_method (""InvokeObj2"", ""o"", [ res ]);
+            ");
+
+            Assert.NotNull(HelperMarshal._object1);
+            Assert.Same(HelperMarshal._object1, HelperMarshal._object2);
+        }
+
+        [Fact]
+        public static void CSObjectKeepIdentityAcrossCalls()
+        {
+            HelperMarshal._marshalledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeMarshalObj"", """", [ ]);
+                var res = App.call_test_method (""InvokeObj1"", ""o"", [ obj ]);
+                App.call_test_method (""InvokeObj2"", ""o"", [ res ]);
+            ");
+
+            Assert.NotNull(HelperMarshal._object1);
+            Assert.Same(HelperMarshal._marshalledObject, HelperMarshal._object1);
+            Assert.Same(HelperMarshal._object1, HelperMarshal._object2);
+        }
     }
 }

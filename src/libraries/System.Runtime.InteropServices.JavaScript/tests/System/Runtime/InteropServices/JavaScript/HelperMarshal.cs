@@ -61,5 +61,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _marshalledString = "Hic Sunt Dracones";
             return _marshalledString;
         }
+        internal static object _object1;
+        private static object InvokeObj1(object obj)
+        {
+            _object1 = obj;
+            return obj;
+        }
+
+        internal static object _object2;
+        private static object InvokeObj2(object obj)
+        {
+            _object2 = obj;
+            return obj;
+        }
+
+        internal static object _marshalledObject;
+        private static object InvokeMarshalObj()
+        {
+            _marshalledObject = new object();
+            return _marshalledObject;
+        }
     }
 }
