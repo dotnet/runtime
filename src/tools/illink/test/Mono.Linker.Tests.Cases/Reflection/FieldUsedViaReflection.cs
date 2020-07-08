@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Security.Policy;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -21,6 +22,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestDataFlowType ();
 			TestIfElse (1);
 			TestFieldInBaseType ();
+			TestIgnoreCaseBindingFlags ();
+			TestFailIgnoreCaseBindingFlags ();
+			TestUnsupportedBindingFlags ();
 		}
 
 		[Kept]
@@ -132,6 +136,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var publicField = typeof (DerivedClass).GetField ("publicFieldOnBase");
 		}
 
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (IgnoreCaseBindingFlagsClass), nameof (IgnoreCaseBindingFlagsClass.publicField), (Type[]) null)]
+		static void TestIgnoreCaseBindingFlags ()
+		{
+			var field = typeof (IgnoreCaseBindingFlagsClass).GetField ("publicfield", BindingFlags.IgnoreCase | BindingFlags.Public);
+		}
+
+		[Kept]
+		static void TestFailIgnoreCaseBindingFlags ()
+		{
+			var field = typeof (FailIgnoreCaseBindingFlagsClass).GetField ("publicfield", BindingFlags.Public);
+		}
+
+		[Kept]
+		static void TestUnsupportedBindingFlags ()
+		{
+			var field = typeof (PutDispPropertyBindingFlagsClass).GetField ("putDispPropertyField", BindingFlags.PutDispProperty);
+		}
+
 		static int field;
 
 		[Kept]
@@ -178,6 +203,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptBaseType (typeof (BaseClass))]
 		class DerivedClass : BaseClass
 		{
+		}
+
+		[Kept]
+		private class IgnoreCaseBindingFlagsClass
+		{
+			[Kept]
+			public static int publicField;
+
+			[Kept]
+			public static int markedDueToIgnoreCaseField;
+		}
+
+		[Kept]
+		private class FailIgnoreCaseBindingFlagsClass
+		{
+			public static int publicField;
+		}
+
+		[Kept]
+		private class PutDispPropertyBindingFlagsClass
+		{
+			[Kept]
+			public static int putDispPropertyField;
+
+			[Kept]
+			private int markedDueToPutDispPropertyField;
 		}
 	}
 }
