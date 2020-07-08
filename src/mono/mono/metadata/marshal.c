@@ -4056,7 +4056,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			return NULL;
 		}
 		if (!method_signature_is_blittable (invoke_sig)) {
-			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters", mono_method_full_name (method, TRUE));
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters or return type", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
 		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
