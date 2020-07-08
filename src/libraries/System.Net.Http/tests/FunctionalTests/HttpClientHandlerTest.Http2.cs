@@ -2271,7 +2271,7 @@ namespace System.Net.Http.Functional.Tests
                     cancellationTokenSource.Cancel();
 
                     // Cancellation may not propagate immediately. So wait a brief time to try to ensure it propagates.
-                    await Task.Delay(500);
+                    await Task.Delay(3000);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
@@ -2707,7 +2707,7 @@ namespace System.Net.Http.Functional.Tests
                     (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
 
                     // Client finished sending request headers and we received them.
-                    // Send reqquest body.
+                    // Send request body.
                     await requestStream.WriteAsync(Encoding.UTF8.GetBytes(requestContent));
                     duplexContent.Complete();
 
@@ -2717,7 +2717,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadBodyAsync();
                     }
 
-                     // Send response headers
+                    // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false, responseCode);
 
                     HttpResponseMessage response = await responseTask;

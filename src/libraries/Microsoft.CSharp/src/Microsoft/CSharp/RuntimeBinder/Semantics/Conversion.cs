@@ -208,7 +208,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new byte[] /* OBJECT */ { right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   same }
         };
 #if DEBUG
-        private static volatile bool s_fCheckedBetter = false;
+        private static volatile bool s_fCheckedBetter;
         private void CheckBetterTable()
         {
             if (s_fCheckedBetter)

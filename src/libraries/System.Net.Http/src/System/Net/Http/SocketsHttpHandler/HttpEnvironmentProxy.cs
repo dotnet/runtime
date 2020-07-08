@@ -98,7 +98,7 @@ namespace System.Net.Http
 
         private readonly Uri? _httpProxyUri;       // String URI for HTTP requests
         private readonly Uri? _httpsProxyUri;      // String URI for HTTPS requests
-        private readonly string[]? _bypass = null; // list of domains not to proxy
+        private readonly string[]? _bypass;        // list of domains not to proxy
         private ICredentials? _credentials;
 
         private HttpEnvironmentProxy(Uri? httpProxy, Uri? httpsProxy, string? bypassList)
@@ -107,25 +107,7 @@ namespace System.Net.Http
             _httpsProxyUri = httpsProxy;
 
             _credentials = HttpEnvironmentProxyCredentials.TryCreate(httpProxy, httpsProxy);
-
-            if (!string.IsNullOrWhiteSpace(bypassList))
-            {
-                string[] list = bypassList.Split(',');
-                List<string> tmpList = new List<string>(list.Length);
-
-                foreach (string value in list)
-                {
-                    string tmp = value.Trim();
-                    if (tmp.Length > 0)
-                    {
-                        tmpList.Add(tmp);
-                    }
-                }
-                if (tmpList.Count > 0)
-                {
-                    _bypass = tmpList.ToArray();
-                }
-            }
+            _bypass = bypassList?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         }
 
         /// <summary>

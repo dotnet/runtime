@@ -19,7 +19,6 @@ extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, Mo
 extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
 extern void* mono_wasm_release_handle (int js_handle, int *is_exception);
 extern void* mono_wasm_release_object (int js_handle, int *is_exception);
-extern MonoObject* mono_wasm_new_object (int js_handle, MonoArray *args, int *is_exception);
 extern MonoObject* mono_wasm_new (MonoString *core_name, MonoArray *args, int *is_exception);
 extern int mono_wasm_bind_core_object (int js_handle, int gc_handle, int *is_exception);
 extern int mono_wasm_bind_host_object (int js_handle, int gc_handle, int *is_exception);
@@ -79,7 +78,6 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
 	mono_add_internal_call ("Interop/Runtime::ReleaseHandle", mono_wasm_release_handle);
 	mono_add_internal_call ("Interop/Runtime::ReleaseObject", mono_wasm_release_object);
-	mono_add_internal_call ("Interop/Runtime::NewObjectJS", mono_wasm_new_object);
 	mono_add_internal_call ("Interop/Runtime::BindCoreObject", mono_wasm_bind_core_object);
 	mono_add_internal_call ("Interop/Runtime::BindHostObject", mono_wasm_bind_host_object);
 	mono_add_internal_call ("Interop/Runtime::New", mono_wasm_new);

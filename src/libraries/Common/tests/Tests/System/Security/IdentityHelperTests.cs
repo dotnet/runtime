@@ -29,6 +29,7 @@ namespace Tests.System.Security
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void GetNormalizedStrongNameHash()
         {
             // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
@@ -36,6 +37,7 @@ namespace Tests.System.Security
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void GetNormalizedUrlHash()
         {
             // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.

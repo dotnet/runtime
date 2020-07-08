@@ -2035,7 +2035,6 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
             }
             if(sz)  report->error("Failed to convert string '%s' to Unicode: %s\n",(char*)pb,sz);
             else    report->error("Failed to convert string '%s' to Unicode: error 0x%08X\n",(char*)pb,dw);
-            delete instr;
             goto OuttaHere;
         }
         L--;
@@ -2066,7 +2065,6 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     {
         report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%S'\n",
                hr, UnicodeString);
-        delete instr;
     }
     else
     {
@@ -2091,7 +2089,6 @@ void Assembler::EmitInstrSig(Instr* instr, BinStr* sig)
     if (FAILED(m_pEmitter->GetTokenFromSig(mySig, cSig, &MetadataToken)))
     {
         report->error("Unable to convert signature to metadata token.\n");
-        delete instr;
     }
     else
     {

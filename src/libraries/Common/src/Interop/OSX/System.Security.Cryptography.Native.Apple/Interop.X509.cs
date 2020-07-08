@@ -19,9 +19,31 @@ internal static partial class Interop
         private static readonly SafeCreateHandle s_emptyExportString =
             CoreFoundation.CFStringCreateWithCString("");
 
+        private static int AppleCryptoNative_X509ImportCertificate(
+            ReadOnlySpan<byte> keyBlob,
+            X509ContentType contentType,
+            SafeCreateHandle cfPfxPassphrase,
+            SafeKeychainHandle tmpKeychain,
+            int exportable,
+            out SafeSecCertificateHandle pCertOut,
+            out SafeSecIdentityHandle pPrivateKeyOut,
+            out int pOSStatus)
+        {
+            return AppleCryptoNative_X509ImportCertificate(
+                ref MemoryMarshal.GetReference(keyBlob),
+                keyBlob.Length,
+                contentType,
+                cfPfxPassphrase,
+                tmpKeychain,
+                exportable,
+                out pCertOut,
+                out pPrivateKeyOut,
+                out pOSStatus);
+        }
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509ImportCertificate(
-            byte[] pbKeyBlob,
+            ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
@@ -33,7 +55,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509ImportCollection(
-            byte[] pbKeyBlob,
+            ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
@@ -51,8 +73,11 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
 
+        internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
+            => X509GetContentType(ref MemoryMarshal.GetReference(data), data.Length);
+
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509GetContentType")]
-        internal static extern X509ContentType X509GetContentType(byte[] pbData, int cbData);
+        private static extern X509ContentType X509GetContentType(ref byte pbData, int cbData);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509CopyCertFromIdentity(
@@ -119,7 +144,7 @@ internal static partial class Interop
         }
 
         internal static SafeSecCertificateHandle X509ImportCertificate(
-            byte[] bytes,
+            ReadOnlySpan<byte> bytes,
             X509ContentType contentType,
             SafePasswordHandle importPassword,
             SafeKeychainHandle keychain,
@@ -156,8 +181,8 @@ internal static partial class Interop
             }
         }
 
-        internal static SafeSecCertificateHandle X509ImportCertificate(
-            byte[] bytes,
+        private static SafeSecCertificateHandle X509ImportCertificate(
+            ReadOnlySpan<byte> bytes,
             X509ContentType contentType,
             SafeCreateHandle? importPassword,
             SafeKeychainHandle keychain,
@@ -171,7 +196,6 @@ internal static partial class Interop
 
             int ret = AppleCryptoNative_X509ImportCertificate(
                 bytes,
-                bytes.Length,
                 contentType,
                 cfPassphrase,
                 keychain,
@@ -209,7 +233,7 @@ internal static partial class Interop
         }
 
         internal static SafeCFArrayHandle X509ImportCollection(
-            byte[] bytes,
+            ReadOnlySpan<byte> bytes,
             X509ContentType contentType,
             SafePasswordHandle importPassword,
             SafeKeychainHandle keychain,
@@ -236,7 +260,7 @@ internal static partial class Interop
                 }
 
                 ret = AppleCryptoNative_X509ImportCollection(
-                    bytes,
+                    ref MemoryMarshal.GetReference(bytes),
                     bytes.Length,
                     contentType,
                     cfPassphrase,

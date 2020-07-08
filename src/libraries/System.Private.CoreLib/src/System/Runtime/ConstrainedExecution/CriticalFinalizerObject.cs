@@ -22,7 +22,7 @@ namespace System.Runtime.ConstrainedExecution
         {
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
+        [SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers", Justification = "Base finalizer method on CriticalFinalizerObject")]
         ~CriticalFinalizerObject()
         {
         }

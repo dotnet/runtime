@@ -432,7 +432,8 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             var config = new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: true).Build();
         }
 
-        [ConditionalFact]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [FrameworkSkipCondition(RuntimeFrameworks.Mono)]
         public void LoadKeyValuePairsFromValidEncryptedXml()
         {

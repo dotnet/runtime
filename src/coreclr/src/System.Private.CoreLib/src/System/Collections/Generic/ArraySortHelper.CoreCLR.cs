@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
@@ -20,7 +21,7 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<T> Default => s_defaultArraySortHelper;
 
-        [PreserveDependency(".ctor", "System.Collections.Generic.GenericArraySortHelper`1")]
+        [DynamicDependency("#ctor", typeof(GenericArraySortHelper<>))]
         private static IArraySortHelper<T> CreateArraySortHelper()
         {
             IArraySortHelper<T> defaultArraySortHelper;
@@ -55,7 +56,7 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<TKey, TValue> Default => s_defaultArraySortHelper;
 
-        [PreserveDependency(".ctor", "System.Collections.Generic.GenericArraySortHelper`2")]
+        [DynamicDependency("#ctor", typeof(GenericArraySortHelper<,>))]
         private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
             IArraySortHelper<TKey, TValue> defaultArraySortHelper;

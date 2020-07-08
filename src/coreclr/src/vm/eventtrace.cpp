@@ -6286,7 +6286,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             BulkTypeEventLogger typeLogger;
 
             ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
-            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
 
             StackSArray<ULONGLONG> rgTypeParameters;
@@ -6312,7 +6312,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             // Log any referenced parameter types
             for (COUNT_T i=0; i < cParams; i++)
             {
-                ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, rgTypeParameters[i], ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+                ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, rgTypeParameters[i], ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             }
 
             typeLogger.FireBulkTypeEvent();

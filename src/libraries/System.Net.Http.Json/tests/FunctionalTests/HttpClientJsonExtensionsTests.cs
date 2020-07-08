@@ -25,14 +25,13 @@ namespace System.Net.Http.Json.Functional.Tests
         public async Task TestGetFromJsonAsync()
         {
             const string json = @"{""Name"":""David"",""Age"":24}";
-            const int NumRequests = 4;
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
 
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         Person per = (Person)await client.GetFromJsonAsync(uri, typeof(Person));
                         per.Validate();
@@ -47,45 +46,31 @@ namespace System.Net.Http.Json.Functional.Tests
                         per.Validate();
                     }
                 },
-                async server =>
-                {
-                    for (int i = 0; i < NumRequests; i++)
-                    {
-                        await server.HandleRequestAsync(content: json, headers: headers);
-                    }
-                });
+                server => server.HandleRequestAsync(content: json, headers: headers));
         }
 
         [Fact]
         public async Task TestGetFromJsonAsyncUnsuccessfulResponseAsync()
         {
-            const int NumRequests = 2;
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, typeof(Person)));
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<Person>(uri));
                     }
                 },
-                async server =>
-                {
-                    for (int i = 0; i < NumRequests; i++)
-                    {
-                        await server.HandleRequestAsync(statusCode: HttpStatusCode.InternalServerError);
-                    }
-                });
+                server => server.HandleRequestAsync(statusCode: HttpStatusCode.InternalServerError));
         }
 
         [Fact]
         public async Task TestPostAsJsonAsync()
         {
-            const int NumRequests = 4;
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         Person person = Person.Create();
 
@@ -103,24 +88,20 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 async server => {
-                    for (int i = 0; i < NumRequests; i++)
-                    {
-                        HttpRequestData request = await server.HandleRequestAsync();
-                        ValidateRequest(request);
-                        Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
-                        per.Validate();
-                    }
+                    HttpRequestData request = await server.HandleRequestAsync();
+                    ValidateRequest(request);
+                    Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                    per.Validate();
                 });
         }
 
         [Fact]
         public async Task TestPutAsJsonAsync()
         {
-            const int NumRequests = 4;
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         Person person = Person.Create();
                         Type typePerson = typeof(Person);
@@ -139,13 +120,10 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 async server => {
-                    for (int i = 0; i < NumRequests; i++)
-                    {
-                        HttpRequestData request = await server.HandleRequestAsync();
-                        ValidateRequest(request);
-                        Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
-                        obj.Validate();
-                    }
+                    HttpRequestData request = await server.HandleRequestAsync();
+                    ValidateRequest(request);
+                    Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                    obj.Validate();
                 });
         }
 
@@ -177,11 +155,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task AllowNullRequesturlAsync()
         {
-            const int NumRequests = 4;
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         client.BaseAddress = uri;
 
@@ -196,10 +173,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
                     string json = Person.Create().Serialize();
 
-                    for (int i = 0; i < NumRequests; i++)
-                    {
-                        await server.HandleRequestAsync(content: json, headers: headers);
-                    }
+                    await server.HandleRequestAsync(content: json, headers: headers);
                 });
         }
     }

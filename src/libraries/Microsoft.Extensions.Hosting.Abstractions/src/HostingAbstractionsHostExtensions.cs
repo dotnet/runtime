@@ -60,15 +60,15 @@ namespace Microsoft.Extensions.Hosting
         {
             try
             {
-                await host.StartAsync(token);
+                await host.StartAsync(token).ConfigureAwait(false);
 
-                await host.WaitForShutdownAsync(token);
+                await host.WaitForShutdownAsync(token).ConfigureAwait(false);
             }
             finally
             {
                 if (host is IAsyncDisposable asyncDisposable)
                 {
-                    await asyncDisposable.DisposeAsync();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
-            var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
+            IHostApplicationLifetime applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
 
             token.Register(state =>
             {
@@ -101,10 +101,10 @@ namespace Microsoft.Extensions.Hosting
                 tcs.TrySetResult(null);
             }, waitForStop);
 
-            await waitForStop.Task;
+            await waitForStop.Task.ConfigureAwait(false);
 
             // Host will use its default ShutdownTimeout if none is specified.
-            await host.StopAsync();
+            await host.StopAsync().ConfigureAwait(false);
         }
     }
 }

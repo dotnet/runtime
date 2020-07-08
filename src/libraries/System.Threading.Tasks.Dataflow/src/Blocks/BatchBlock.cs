@@ -127,9 +127,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-#pragma warning disable CS8614 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/42470
         public bool TryReceive(Predicate<T[]>? filter, [NotNullWhen(true)] out T[]? item)
-#pragma warning restore CS8614
         {
             return _source.TryReceive(filter, out item);
         }
@@ -589,9 +587,17 @@ namespace System.Threading.Tasks.Dataflow
 
                     if (_nonGreedyState != null)
                     {
-                        // We can make a triggered batch using postponed messages
-                        if (_nonGreedyState.AcceptFewerThanBatchSize &&
-                            (_messages.Count > 0 || (_nonGreedyState.PostponedMessages.Count > 0 && boundedCapacityAvailable > 0)))
+                        // If a batch was triggered and we have any messages, we can create a batch from what we already have.
+                        if (_nonGreedyState.AcceptFewerThanBatchSize && _messages.Count > 0)
+                            return true;
+
+                        // At this point, to make a batch we'll need to consume postponed messages, but we can't do
+                        // that if we're declining all future messages.
+                        if (_decliningPermanently)
+                            return false;
+
+                        // If a batch was triggered and there are any postponed messages to retrieve and there's room available, try.
+                        if (_nonGreedyState.AcceptFewerThanBatchSize && _nonGreedyState.PostponedMessages.Count > 0 && boundedCapacityAvailable > 0)
                             return true;
 
                         if (_dataflowBlockOptions.Greedy)

@@ -964,7 +964,7 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_FIELD         = 0x6,
     IMAGE_CEE_CS_CALLCONV_LOCAL_SIG     = 0x7,
     IMAGE_CEE_CS_CALLCONV_PROPERTY      = 0x8,
-    IMAGE_CEE_CS_CALLCONV_UNMGD         = 0x9,
+    IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
     IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
@@ -1909,6 +1909,17 @@ typedef enum NativeTypeArrayFlags
 } NativeTypeArrayFlags;
 
 //
+// Enum used for HFA type recognition.
+// Supported across architectures, so that it can be used in altjits and cross-compilation.
+typedef enum CorInfoHFAElemType : unsigned {
+    CORINFO_HFA_ELEM_NONE,
+    CORINFO_HFA_ELEM_FLOAT,
+    CORINFO_HFA_ELEM_DOUBLE,
+    CORINFO_HFA_ELEM_VECTOR64,
+    CORINFO_HFA_ELEM_VECTOR128,
+} CorInfoHFAElemType;
+
+//
 // Opaque types for security properties and values.
 //
 typedef void  *  PSECURITY_PROPS ;
@@ -1928,4 +1939,3 @@ typedef struct COR_SECATTR {
 } COR_SECATTR;
 
 #endif // __CORHDR_H__
-

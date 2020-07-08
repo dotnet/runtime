@@ -68,7 +68,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+            [ExcludeFromCodeCoverage(Justification = "Typed overload should always be the method called")]
             public override bool Equals(object obj)
             {
                 Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");

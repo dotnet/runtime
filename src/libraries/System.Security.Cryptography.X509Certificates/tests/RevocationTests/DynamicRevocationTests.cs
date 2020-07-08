@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
@@ -15,32 +16,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
-        private static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
-        [Flags]
-        public enum PkiOptions
-        {
-            None = 0,
-
-            IssuerRevocationViaCrl = 1 << 0,
-            IssuerRevocationViaOcsp = 1 << 1,
-            EndEntityRevocationViaCrl = 1 << 2,
-            EndEntityRevocationViaOcsp = 1 << 3,
-
-            CrlEverywhere = IssuerRevocationViaCrl | EndEntityRevocationViaCrl,
-            OcspEverywhere = IssuerRevocationViaOcsp | EndEntityRevocationViaOcsp,
-            AllIssuerRevocation = IssuerRevocationViaCrl | IssuerRevocationViaOcsp,
-            AllEndEntityRevocation = EndEntityRevocationViaCrl | EndEntityRevocationViaOcsp,
-            AllRevocation = CrlEverywhere | OcspEverywhere,
-
-            IssuerAuthorityHasDesignatedOcspResponder = 1 << 16,
-            RootAuthorityHasDesignatedOcspResponder = 1 << 17,
-        }
 
         private delegate void RunSimpleTest(
             CertificateAuthority root,
@@ -351,6 +333,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -434,6 +417,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -1262,7 +1246,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
         }
 
-        private static void BuildPrivatePki(
+        internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
             out RevocationResponder responder,
             out CertificateAuthority rootAuthority,
@@ -1282,77 +1266,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            // All keys created in this method are smaller than recommended,
-            // but they only live for a few seconds (at most),
-            // and never communicate out of process.
-            const int KeySize = 1024;
-
-            using (RSA rootKey = RSA.Create(KeySize))
-            using (RSA intermedKey = RSA.Create(KeySize))
-            using (RSA eeKey = RSA.Create(KeySize))
-            {
-                var rootReq = new CertificateRequest(
-                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
-                    rootKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                X509BasicConstraintsExtension caConstraints =
-                    new X509BasicConstraintsExtension(true, false, 0, true);
-
-                rootReq.CertificateExtensions.Add(caConstraints);
-                var rootSkid = new X509SubjectKeyIdentifierExtension(rootReq.PublicKey, false);
-                rootReq.CertificateExtensions.Add(
-                    rootSkid);
-
-                DateTimeOffset start = DateTimeOffset.UtcNow;
-                DateTimeOffset end = start.AddMonths(3);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 rootCert = rootReq.CreateSelfSigned(start.AddDays(-2), end.AddDays(2));
-                responder = RevocationResponder.CreateAndListen();
-
-                string cdpUrl = $"{responder.UriPrefix}crl/{rootSkid.SubjectKeyIdentifier}.crl";
-                string ocspUrl = $"{responder.UriPrefix}ocsp/{rootSkid.SubjectKeyIdentifier}";
-
-                rootAuthority = new CertificateAuthority(
-                    rootCert,
-                    issuerRevocationViaCrl ? cdpUrl : null,
-                    issuerRevocationViaOcsp ? ocspUrl : null);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 intermedCert;
-
-                {
-                    X509Certificate2 intermedPub = rootAuthority.CreateSubordinateCA(
-                        BuildSubject("A Revocation Test CA", testName, pkiOptions, pkiOptionsInSubject),
-                        intermedKey);
-
-                    intermedCert = intermedPub.CopyWithPrivateKey(intermedKey);
-                    intermedPub.Dispose();
-                }
-
-                X509SubjectKeyIdentifierExtension intermedSkid =
-                    intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
-
-                cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
-                ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
-
-                intermediateAuthority = new CertificateAuthority(
-                    intermedCert,
-                    endEntityRevocationViaCrl ? cdpUrl : null,
-                    endEntityRevocationViaOcsp ? ocspUrl : null);
-
-                endEntityCert = intermediateAuthority.CreateEndEntity(
-                    BuildSubject("A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey);
-            }
-
-            if (registerAuthorities)
-            {
-                responder.AddCertificateAuthority(rootAuthority);
-                responder.AddCertificateAuthority(intermediateAuthority);
-            }
+            CertificateAuthority.BuildPrivatePki(pkiOptions, out responder, out rootAuthority, out intermediateAuthority, out endEntityCert, testName, registerAuthorities, pkiOptionsInSubject);
         }
 
         private static string BuildSubject(

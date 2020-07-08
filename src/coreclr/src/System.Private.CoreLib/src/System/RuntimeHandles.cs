@@ -1367,7 +1367,7 @@ namespace System
             Field = 0x06,
             LocalSig = 0x07,
             Property = 0x08,
-            Unmgd = 0x09,
+            Unmanaged = 0x09,
             GenericInst = 0x0A,
             Max = 0x0B,
         }

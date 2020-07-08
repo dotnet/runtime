@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
@@ -9,8 +10,8 @@ namespace System.Xml.Schema
     public class XmlSchemaSimpleTypeList : XmlSchemaSimpleTypeContent
     {
         private XmlQualifiedName _itemTypeName = XmlQualifiedName.Empty;
-        private XmlSchemaSimpleType _itemType;
-        private XmlSchemaSimpleType _baseItemType; //Compiled
+        private XmlSchemaSimpleType? _itemType;
+        private XmlSchemaSimpleType? _baseItemType; //Compiled
 
         [XmlAttribute("itemType")]
         public XmlQualifiedName ItemTypeName
@@ -20,7 +21,7 @@ namespace System.Xml.Schema
         }
 
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
-        public XmlSchemaSimpleType ItemType
+        public XmlSchemaSimpleType? ItemType
         {
             get { return _itemType; }
             set { _itemType = value; }
@@ -28,7 +29,7 @@ namespace System.Xml.Schema
 
         //Compiled
         [XmlIgnore]
-        public XmlSchemaSimpleType BaseItemType
+        public XmlSchemaSimpleType? BaseItemType
         {
             get { return _baseItemType; }
             set { _baseItemType = value; }

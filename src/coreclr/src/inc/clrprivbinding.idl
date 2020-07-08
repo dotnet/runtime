@@ -10,11 +10,6 @@ import "fusion.idl";
 interface ICLRPrivBinder;
 interface ICLRPrivAssembly;
 
-interface ICLRPrivResource;
-interface ICLRPrivResourcePath;
-
-interface ICLRPrivAssemblyInfo;
-
 typedef LPCSTR LPCUTF8;
 
 /**************************************************************************************
@@ -105,101 +100,4 @@ interface ICLRPrivAssembly : ICLRPrivBinder
      **********************************************************************************/
     HRESULT GetAvailableImageTypes(
         [out, retval] LPDWORD pdwImageTypes);
-
-    /**********************************************************************************
-     ** GetImageResource - Returns the resource for the given image type. The returned
-     ** IUnknown interface is one of the ICLRPrivResource* interfaces defined below.
-     ** It is the binder's choice as to which resource type is returned. If
-     ** pdwImageType is non-null, then this will be set to indicate the image type
-     ** returned.
-     **     NOTE: This method is required to be idempotent. See general comment above.
-     **********************************************************************************/
-    HRESULT GetImageResource(
-        [in]  DWORD dwImageType,
-        [out] DWORD* pdwImageType,
-        [out, retval] ICLRPrivResource ** ppIResource);
-};
-
-/**************************************************************************************
- ** ICLRPrivResource - Generic resource that must be queried for more specific
- ** interface.
- **************************************************************************************/
-[
-    uuid(2601F621-E462-404C-B299-3E1DE72F8547),
-    version(1.0),
-    local
-]
-interface ICLRPrivResource : IUnknown
-{
-    /**********************************************************************************
-     ** GetResourceType - use to query the interface IID of the specific resource type.
-     **
-     ** priid - set to the IID corresponding to the resource type.
-     **********************************************************************************/
-    HRESULT GetResourceType(
-        [out, retval] IID *pIID);
-};
-
-/**************************************************************************************
- ** ICLRPrivResourcePath - Encapsulates a resource identified by path.
- **************************************************************************************/
-[
-    uuid(2601F621-E462-404C-B299-3E1DE72F8544),
-    version(1.0),
-    local
-]
-interface ICLRPrivResourcePath : IUnknown
-{
-    /**********************************************************************************
-     ** GetPath - Use to retrieve the resource's absolute file path.
-     **     NOTE: This method is required to be idempotent. See general comment above.
-     **
-     ** cchBuffer - the count of unicode characters available in the buffer.
-     **********************************************************************************/
-    HRESULT GetPath(
-        [in]  DWORD cchBuffer,
-        [out] LPDWORD pcchBuffer,
-        [out, size_is(cchBuffer), length_is(*pcchBuffer), string, optional] LPWSTR wzBuffer);
-};
-
-[
-    uuid(8d2d3cc9-1249-4ad4-977d-b772bd4e8a94),
-    version(1.0),
-    local
-]
-interface ICLRPrivResourceAssembly : IUnknown
-{
-    /**********************************************************************************
-     ** GetAssembly - Use to retrieve the resource's BINDER_SPACE::Assembly value.
-     **     NOTE: This method is required to be idempotent. See general comment above.
-     **********************************************************************************/
-    HRESULT GetAssembly(
-        [out, retval] LPVOID * pAssembly);
-};
-
-/**************************************************************************************
- ** ICLRPrivAssemblyInfo - Encapsulates assembly image info.
- **************************************************************************************/
-[
-    uuid(5653946E-800B-48B7-8B09-B1B879B54F68),
-    version(1.0),
-    local
-]
-interface ICLRPrivAssemblyInfo : IUnknown
-{
-    HRESULT GetAssemblyName(
-        [in]  DWORD     cchBuffer,
-        [out] LPDWORD   pcchBuffer,
-        [out, string, optional] LPWSTR wzBuffer);
-
-    HRESULT GetAssemblyVersion(
-        [out] USHORT *pMajor,
-        [out] USHORT *pMinor,
-        [out] USHORT *pBuild,
-        [out] USHORT *pRevision);
-
-    HRESULT GetAssemblyPublicKey(
-        [in]  DWORD cbBuffer,
-        [out] LPDWORD pcbBuffer,
-        [out, size_is(cbBuffer), length_is(*pcbBuffer), optional] BYTE *pbBuffer);
 };

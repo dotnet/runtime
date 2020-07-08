@@ -695,13 +695,13 @@ namespace System.Text
         internal class ISCIIEncoder : EncoderNLS
         {
             // Need to remember the default code page (for HasState)
-            internal int defaultCodePage = 0;
+            internal int defaultCodePage;
 
             // Need a place for the current code page
-            internal int currentCodePage = 0;
+            internal int currentCodePage;
 
             // Was the last character a virama?  (Because ZWJ and ZWNJ are different then)
-            internal bool bLastVirama = false;
+            internal bool bLastVirama;
 
             public ISCIIEncoder(EncodingNLS encoding) : base(encoding)
             {
@@ -733,12 +733,12 @@ namespace System.Text
         internal class ISCIIDecoder : DecoderNLS
         {
             // Need a place to store any our current code page and last ATR flag
-            internal int currentCodePage = 0;
-            internal bool bLastATR = false;
-            internal bool bLastVirama = false;
-            internal bool bLastDevenagariStressAbbr = false;
-            internal char cLastCharForNextNukta = '\0';
-            internal char cLastCharForNoNextNukta = '\0';
+            internal int currentCodePage;
+            internal bool bLastATR;
+            internal bool bLastVirama;
+            internal bool bLastDevenagariStressAbbr;
+            internal char cLastCharForNextNukta;
+            internal char cLastCharForNoNextNukta;
 
             public ISCIIDecoder(EncodingNLS encoding) : base(encoding)
             {

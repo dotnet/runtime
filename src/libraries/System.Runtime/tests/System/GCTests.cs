@@ -114,6 +114,26 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ExpensiveFinalizerDoesNotBlockShutdown()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 100000; i++)
+                    GC.KeepAlive(new ObjectWithExpensiveFinalizer());
+                GC.Collect();
+                Thread.Sleep(100); // Give the finalizer thread a chance to start running
+            }).Dispose();
+        }
+
+        private class ObjectWithExpensiveFinalizer
+        {
+            ~ObjectWithExpensiveFinalizer()
+            {
+                Thread.Sleep(100);
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void KeepAlive()
         {

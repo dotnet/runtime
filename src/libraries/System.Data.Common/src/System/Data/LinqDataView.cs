@@ -23,7 +23,7 @@ namespace System.Data
         internal Func<object, DataRow, int> comparerKeyRow;  // comparer for DataView.Find(..
 
         /// <summary>
-        /// Builds the sort expression in case multiple selector/comparers are added
+        /// Builds the sort expression in case multiple selector/comparers are added.
         /// </summary>
         internal readonly SortExpressionBuilder<DataRow> sortExpressionBuilder;
 
@@ -32,6 +32,7 @@ namespace System.Data
         /// Does not create index on the DataView since filter and sort expressions are not yet provided.
         /// </summary>
         /// <param name="table">The input table from which LinkDataView is to be created.</param>
+        /// <param name="sortExpressionBuilder">The sort expression builder in case multiple selectors/comparers are added.</param>
         internal LinqDataView(DataTable table, SortExpressionBuilder<DataRow> sortExpressionBuilder)
             : base(table)
         {

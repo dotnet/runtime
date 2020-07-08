@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override ILEmitCallSiteAnalysisResult VisitConstructor(ConstructorCallSite constructorCallSite, object argument)
         {
             var result = new ILEmitCallSiteAnalysisResult(ConstructorILSize);
-            foreach (var callSite in constructorCallSite.ParameterCallSites)
+            foreach (ServiceCallSite callSite in constructorCallSite.ParameterCallSites)
             {
                 result = result.Add(VisitCallSite(callSite, argument));
             }
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override ILEmitCallSiteAnalysisResult VisitIEnumerable(IEnumerableCallSite enumerableCallSite, object argument)
         {
             var result = new ILEmitCallSiteAnalysisResult(ConstructorILSize);
-            foreach (var callSite in enumerableCallSite.ServiceCallSites)
+            foreach (ServiceCallSite callSite in enumerableCallSite.ServiceCallSites)
             {
                 result = result.Add(VisitCallSite(callSite, argument));
             }

@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetEra_TestData))]
-        public void GetEra_Invoke_RetrunsExpected(DateTimeFormatInfo format, string eraName, int expected)
+        public void GetEra_Invoke_ReturnsExpected(DateTimeFormatInfo format, string eraName, int expected)
         {
             Assert.Equal(expected, format.GetEra(eraName));
         }

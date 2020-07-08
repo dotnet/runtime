@@ -42,6 +42,7 @@ using MonoTests.Common;
 
 namespace MonoTests.System.Runtime.Caching
 {
+    [SkipOnMono("MemoryCache is not supported on Browser", TestPlatforms.Browser)]
     public class MemoryCacheTest
     {
         [Fact]
@@ -988,8 +989,8 @@ namespace MonoTests.System.Runtime.Caching
 
             Assert.Equal(numItems, mc.GetCount());
 
-            // Trimming 75% for such a small number of items (supposedly each in its cache store) will end up trimming all of them
-            long trimmed = mc.Trim(75);
+            // Trimming 76% for such a small number of items (supposedly each in its cache store) will end up trimming all of them
+            long trimmed = mc.Trim(76);
             Assert.Equal(numItems, trimmed);
             Assert.Equal(0, mc.GetCount());
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -10,7 +11,7 @@ namespace System.Xml.Schema
     public class XmlSchemaSimpleTypeRestriction : XmlSchemaSimpleTypeContent
     {
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
-        private XmlSchemaSimpleType _baseType;
+        private XmlSchemaSimpleType? _baseType;
         private readonly XmlSchemaObjectCollection _facets = new XmlSchemaObjectCollection();
 
         [XmlAttribute("base")]
@@ -21,7 +22,7 @@ namespace System.Xml.Schema
         }
 
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
-        public XmlSchemaSimpleType BaseType
+        public XmlSchemaSimpleType? BaseType
         {
             get { return _baseType; }
             set { _baseType = value; }

@@ -23,6 +23,7 @@ public partial class ConsoleEncoding
 
     [Theory]
     [MemberData(nameof(InputData))]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void TestEncoding(string inputString)
     {
         TextWriter outConsoleStream = Console.Out;
@@ -79,6 +80,7 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>
@@ -98,7 +100,6 @@ public partial class ConsoleEncoding
         {
             check(Encoding.ASCII);
         }
-
     }
 
     public class NonexistentCodePageEncoding : Encoding

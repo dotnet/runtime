@@ -840,13 +840,12 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
     CORINFO_FIELD_HANDLE field,        // Non-nullptr - inquire about cctor trigger before static field access
                                        // nullptr - inquire about cctor trigger in method prolog
     CORINFO_METHOD_HANDLE  method,     // Method referencing the field or prolog
-    CORINFO_CONTEXT_HANDLE context,    // Exact context of method
-    BOOL                   speculative // TRUE means don't actually run it
+    CORINFO_CONTEXT_HANDLE context     // Exact context of method
     )
 {
     mc->cr->AddCall("initClass");
-    CorInfoInitClassResult temp = original_ICorJitInfo->initClass(field, method, context, speculative);
-    mc->recInitClass(field, method, context, speculative, temp);
+    CorInfoInitClassResult temp = original_ICorJitInfo->initClass(field, method, context);
+    mc->recInitClass(field, method, context, temp);
     return temp;
 }
 
@@ -1314,10 +1313,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
 }
 
 // Returns type of HFA for valuetype
-CorInfoType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     mc->cr->AddCall("getHFAType");
-    CorInfoType temp = original_ICorJitInfo->getHFAType(hClass);
+    CorInfoHFAElemType temp = original_ICorJitInfo->getHFAType(hClass);
     this->mc->recGetHFAType(hClass, temp);
     return temp;
 }

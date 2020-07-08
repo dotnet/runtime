@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
@@ -44,7 +39,7 @@ namespace System.Xml
 
         // buffer positions
         protected int _bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                       // close an empty element or in CDATA section detection of double ]; bufChars[0] will always be 0
+                                       // close an empty element or in CDATA section detection of double ]; _bufChars[0] will always be 0
         protected int _textPos = 1;    // text end position; don't indent first element, pi, or comment
         protected int _contentPos;     // element content end position
         protected int _cdataPos;       // cdata end position
@@ -229,7 +224,6 @@ namespace System.Xml
             if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
                 if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
-
                 RawText("<?xml version=\"");
 
                 // Version
@@ -776,6 +770,7 @@ namespace System.Xml
         {
             FlushBuffer();
             FlushEncoder();
+
             if (_stream != null)
             {
                 _stream.Flush();
@@ -848,7 +843,7 @@ namespace System.Xml
                 _contentPos = 0;    // Needs to be zero, since overwriting '>' character is no longer possible
                 _cdataPos = 0;      // Needs to be zero, since overwriting ']]>' characters is no longer possible
                 _bufPos = 1;        // Buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
-                                   // close an empty element or in CDATA section detection of double ]; bufChars[0] will always be 0
+                                   // close an empty element or in CDATA section detection of double ]; _bufChars[0] will always be 0
             }
         }
 
@@ -920,6 +915,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value
@@ -1532,7 +1528,7 @@ namespace System.Xml
                     {
                         case '>':
                             if (_hadDoubleBracket && pDst[-1] == (char)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufChars[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufChars[0]
                                 // The characters "]]>" were found within the CData text
                                 pDst = RawEndCData(pDst);
                                 pDst = RawStartCData(pDst);
@@ -1542,7 +1538,7 @@ namespace System.Xml
                             break;
                         case ']':
                             if (pDst[-1] == (char)']')
-                            {   // pDst[-1] will always correct - there is a padding character at bufChars[0]
+                            {   // pDst[-1] will always correct - there is a padding character at _bufChars[0]
                                 _hadDoubleBracket = true;
                             }
                             else
@@ -1616,7 +1612,6 @@ namespace System.Xml
             }
         }
 
-
         private static unsafe char* EncodeSurrogate(char* pSrc, char* pSrcEnd, char* pDst)
         {
             Debug.Assert(XmlCharType.IsSurrogate(*pSrc));
@@ -1663,6 +1658,7 @@ namespace System.Xml
                 {
                     *pDst = (char)ch;
                     pDst++;
+
                     return pDst;
                 }
             }
@@ -1712,6 +1708,7 @@ namespace System.Xml
             Array.Copy(_textContentMarks, newTextContentMarks, _textContentMarks.Length);
             _textContentMarks = newTextContentMarks;
         }
+
         // Write NewLineChars to the specified buffer position and return an updated position.
         protected unsafe char* WriteNewLine(char* pDst)
         {
@@ -1854,7 +1851,7 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected unsafe void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {

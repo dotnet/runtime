@@ -2552,5 +2552,18 @@ namespace System.Text.Json
                 JsonTokenType.True => nameof(JsonTokenType.True),
                 _ => ((byte)TokenType).ToString()
             };
+
+        private ReadOnlySpan<byte> GetUnescapedSpan()
+        {
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            if (_stringHasEscaping)
+            {
+                int idx = span.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+                span = JsonReaderHelper.GetUnescapedSpan(span, idx);
+            }
+
+            return span;
+        }
     }
 }

@@ -83,7 +83,7 @@ unw_init_local (unw_cursor_t *cursor, unw_context_t *uc)
   unw_word_t sp, bsp;
   int ret;
 
-  if (!tdep_init_done)
+  if (!atomic_load(&tdep_init_done))
     tdep_init ();
 
   Debug (1, "(cursor=%p)\n", c);

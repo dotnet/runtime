@@ -2,25 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public class AnyRef
+    public abstract class AnyRef : SafeHandleMinusOneIsInvalid
     {
-        public int JSHandle { get; protected private set; }
-        internal GCHandle Handle;
+        private GCHandle AnyRefHandle;
+        public int JSHandle => (int)handle;
 
-        internal AnyRef(int jsHandle)
+        internal AnyRef(int jsHandle, bool ownsHandle) : this((IntPtr)jsHandle, ownsHandle)
+        { }
+
+        internal AnyRef(IntPtr jsHandle, bool ownsHandle) : base(ownsHandle)
         {
-            JSHandle = jsHandle;
-            Handle = GCHandle.Alloc(this);
+            SetHandle(jsHandle);
+            AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
+        }
+        internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
+
+        protected void FreeGCHandle()
+        {
+            AnyRefHandle.Free();
+        }
+#if DEBUG_HANDLE
+        private int _refCount;
+
+        internal void AddRef()
+        {
+            Interlocked.Increment(ref _refCount);
         }
 
-        internal AnyRef(IntPtr jsHandle)
+        internal void Release()
         {
-            JSHandle = (int)jsHandle;
-            Handle = GCHandle.Alloc(this);
+            Debug.Assert(_refCount > 0, "AnyRefSafeHandle: Release() called more times than AddRef");
+            Interlocked.Decrement(ref _refCount);
         }
 
-        internal int Int32Handle => (int)(IntPtr)Handle;
+        internal int RefCount => _refCount;
+#endif
     }
 }

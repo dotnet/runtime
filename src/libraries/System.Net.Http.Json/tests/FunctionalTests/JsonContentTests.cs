@@ -71,11 +71,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task SendQuotedCharsetAsync()
         {
-
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         JsonContent content = JsonContent.Create<Foo>(null);
                         content.Headers.ContentType.CharSet = "\"utf-8\"";
@@ -106,10 +105,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task JsonContentMediaTypeValidateOnServerAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-8");
@@ -163,10 +162,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public static async Task ValidateUtf16IsTranscodedAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");
@@ -186,10 +185,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         // EnsureDefaultOptions uses a JsonConverter where we validate the JsonSerializerOptions when not provided to JsonContent.Create.
                         EnsureDefaultOptions dummyObj = new EnsureDefaultOptions();
@@ -204,10 +203,10 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task TestJsonContentNullContentTypeAsync()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = new HttpClient(handler))
                     {
                         var request = new HttpRequestMessage(HttpMethod.Post, uri);
                         MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");

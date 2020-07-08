@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -20,6 +22,29 @@ namespace System.Text.Json
         {
             WriteLiteralHelper(propertyName.EncodedUtf8Bytes, JsonConstants.NullValue);
             _tokenType = JsonTokenType.Null;
+        }
+
+        internal void WriteNullSection(ReadOnlySpan<byte> escapedPropertyNameSection)
+        {
+            if (_options.Indented)
+            {
+                ReadOnlySpan<byte> escapedName =
+                    escapedPropertyNameSection.Slice(1, escapedPropertyNameSection.Length - 3);
+
+                WriteLiteralHelper(escapedName, JsonConstants.NullValue);
+                _tokenType = JsonTokenType.Null;
+            }
+            else
+            {
+                Debug.Assert(escapedPropertyNameSection.Length <= JsonConstants.MaxUnescapedTokenSize - 3);
+
+                ReadOnlySpan<byte> span = JsonConstants.NullValue;
+
+                WriteLiteralSection(escapedPropertyNameSection, span);
+
+                SetFlagToAddListSeparatorBeforeNextItem();
+                _tokenType = JsonTokenType.Null;
+            }
         }
 
         private void WriteLiteralHelper(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value)
@@ -360,6 +385,34 @@ namespace System.Text.Json
             BytesPending += value.Length;
         }
 
+        // AggressiveInlining used since this is only called from one location.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteLiteralSection(ReadOnlySpan<byte> escapedPropertyNameSection, ReadOnlySpan<byte> value)
+        {
+            Debug.Assert(value.Length <= JsonConstants.MaxUnescapedTokenSize);
+            Debug.Assert(escapedPropertyNameSection.Length < int.MaxValue - value.Length - 1);
+
+            int minRequired = escapedPropertyNameSection.Length + value.Length;
+            int maxRequired = minRequired + 1; // Optionally, 1 list separator
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            escapedPropertyNameSection.CopyTo(output.Slice(BytesPending));
+            BytesPending += escapedPropertyNameSection.Length;
+
+            value.CopyTo(output.Slice(BytesPending));
+            BytesPending += value.Length;
+        }
+
         private void WriteLiteralIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> value)
         {
             int indent = Indentation;
@@ -450,6 +503,16 @@ namespace System.Text.Json
 
             value.CopyTo(output.Slice(BytesPending));
             BytesPending += value.Length;
+        }
+
+        internal void WritePropertyName(bool value)
+        {
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatBooleanLength];
+
+            bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

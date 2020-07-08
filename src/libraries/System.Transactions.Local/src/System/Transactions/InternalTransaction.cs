@@ -133,13 +133,13 @@ namespace System.Transactions
 
         // If there was an exception that happened during promotion save that exception so that it
         // can be used as an inner exception to the transaciton aborted exception.
-        internal Exception? _innerException = null;
+        internal Exception? _innerException;
 
         // Note the number of Transaction objects supported by this object
         internal int _cloneCount;
 
         // The number of enlistments on this transaction.
-        internal int _enlistmentCount = 0;
+        internal int _enlistmentCount;
 
         // Double-checked locking pattern requires volatile for read/write synchronization
         // Manual Reset event for IAsyncResult support
@@ -172,7 +172,7 @@ namespace System.Transactions
             LazyInitializer.EnsureInitialized(ref s_instanceIdentifier, ref s_classSyncObject, () => Guid.NewGuid().ToString() + ":");
 
         // Double-checked locking pattern requires volatile for read/write synchronization
-        private volatile bool _traceIdentifierInited = false;
+        private volatile bool _traceIdentifierInited;
 
         // The trace identifier for the internal transaction.
         private TransactionTraceIdentifier _traceIdentifier;
@@ -205,7 +205,7 @@ namespace System.Transactions
         // Promote call is made and set back to false after the call returns (or an exception is thrown). The value is
         // checked for true in TransactionStatePSPEOperation.PSPEPromoteAndConvertToEnlistDurable to make sure the transaction
         // is in the process of promoting via a PSPE enlistment.
-        internal bool _attemptingPSPEPromote = false;
+        internal bool _attemptingPSPEPromote;
 
         // This is called from TransactionStatePromoted.EnterState. We assume we are promoting to MSDTC.
         internal void SetPromoterTypeToMSDTC()

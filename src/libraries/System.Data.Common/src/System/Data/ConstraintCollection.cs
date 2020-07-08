@@ -20,7 +20,7 @@ namespace System.Data
 
         private CollectionChangeEventHandler _onCollectionChanged;
         private Constraint[] _delayLoadingConstraints;
-        private bool _fLoadForeignKeyConstraintsOnly = false;
+        private bool _fLoadForeignKeyConstraintsOnly;
 
         /// <summary>
         /// ConstraintCollection constructor.  Used only by DataTable.

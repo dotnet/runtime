@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -18,6 +19,26 @@ namespace System.Text.Json
         /// </exception>
         public void WritePropertyName(JsonEncodedText propertyName)
             => WritePropertyNameHelper(propertyName.EncodedUtf8Bytes);
+
+        internal void WritePropertyNameSection(ReadOnlySpan<byte> escapedPropertyNameSection)
+        {
+            if (_options.Indented)
+            {
+                ReadOnlySpan<byte> escapedPropertyName =
+                    escapedPropertyNameSection.Slice(1, escapedPropertyNameSection.Length - 3);
+
+                WritePropertyNameHelper(escapedPropertyName);
+            }
+            else
+            {
+                Debug.Assert(escapedPropertyNameSection.Length <= JsonConstants.MaxUnescapedTokenSize - 3);
+
+                WriteStringPropertyNameSection(escapedPropertyNameSection);
+
+                _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+                _tokenType = JsonTokenType.PropertyName;
+            }
+        }
 
         private void WritePropertyNameHelper(ReadOnlySpan<byte> utf8PropertyName)
         {
@@ -234,6 +255,15 @@ namespace System.Text.Json
             _tokenType = JsonTokenType.PropertyName;
         }
 
+        private void WritePropertyNameUnescaped(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            WriteStringByOptionsPropertyName(utf8PropertyName);
+
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+        }
+
         private void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
@@ -285,6 +315,8 @@ namespace System.Text.Json
             }
         }
 
+        // AggressiveInlining used since this is only called from one location.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteStringMinimizedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
         {
             Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxEscapedTokenSize);
@@ -313,6 +345,33 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.KeyValueSeperator;
         }
 
+        // AggressiveInlining used since this is only called from one location.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteStringPropertyNameSection(ReadOnlySpan<byte> escapedPropertyNameSection)
+        {
+            Debug.Assert(escapedPropertyNameSection.Length <= JsonConstants.MaxEscapedTokenSize - 3);
+            Debug.Assert(escapedPropertyNameSection.Length < int.MaxValue - 4);
+
+            int maxRequired = escapedPropertyNameSection.Length + 1; // Optionally, 1 list separator
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            escapedPropertyNameSection.CopyTo(output.Slice(BytesPending));
+            BytesPending += escapedPropertyNameSection.Length;
+        }
+
+        // AggressiveInlining used since this is only called from one location.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteStringIndentedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
         {
             int indent = Indentation;

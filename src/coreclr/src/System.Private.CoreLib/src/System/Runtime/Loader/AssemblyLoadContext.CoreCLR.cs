@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ namespace System.Runtime.Loader
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyLoadContextStrong);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
@@ -26,6 +28,7 @@ namespace System.Runtime.Loader
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyLoadContext);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
@@ -47,6 +50,7 @@ namespace System.Runtime.Loader
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
@@ -54,6 +58,7 @@ namespace System.Runtime.Loader
             return loadedAssembly!;
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal unsafe Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             RuntimeAssembly? loadedAssembly = null;

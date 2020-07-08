@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private void OnProcessExit(object sender, EventArgs e)
         {
             ApplicationLifetime.StopApplication();
-            if(!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
+            if (!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
             {
                 Logger.LogInformation("Waiting for the host to be disposed. Ensure all 'IHost' instances are wrapped in 'using' blocks.");
             }

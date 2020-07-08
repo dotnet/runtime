@@ -15,13 +15,13 @@ namespace System.Xml
     {
         Task<int> ReadDataAsync();
 
-        Task<int> ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder);
-        Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder);
-        Task ParsePIAsync(StringBuilder sb);
-        Task ParseCommentAsync(StringBuilder sb);
+        Task<int> ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder);
+        Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder);
+        Task ParsePIAsync(StringBuilder? sb);
+        Task ParseCommentAsync(StringBuilder? sb);
 
         Task<Tuple<int, bool>> PushEntityAsync(IDtdEntityInfo entity);
 
-        Task<bool> PushExternalSubsetAsync(string systemId, string publicId);
+        Task<bool> PushExternalSubsetAsync(string? systemId, string? publicId);
     }
 }

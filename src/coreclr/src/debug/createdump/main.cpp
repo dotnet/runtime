@@ -20,6 +20,8 @@ const char* g_help = "createdump [options] pid\n"
 "-u, --full - create full core dump.\n"
 "-d, --diag - enable diagnostic messages.\n";
 
+bool g_diagnostics = false;
+
 bool CreateDump(const char* dumpPathTemplate, int pid, MINIDUMP_TYPE minidumpType);
 
 //

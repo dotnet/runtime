@@ -9,6 +9,12 @@ namespace System.Runtime.CompilerServices.Tests
     public static class AttributesTests
     {
         [Fact]
+        public static void ModuleInitializerAttributeTests()
+        {
+            new ModuleInitializerAttribute();
+        }
+
+        [Fact]
         public static void SkipLocalsInitAttributeTests()
         {
             new SkipLocalsInitAttribute();

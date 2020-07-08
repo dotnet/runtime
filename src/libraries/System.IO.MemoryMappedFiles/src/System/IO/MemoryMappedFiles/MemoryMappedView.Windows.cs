@@ -149,10 +149,6 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static int GetSystemPageAllocationGranularity()
         {
             Interop.Kernel32.SYSTEM_INFO info;

@@ -299,6 +299,36 @@ namespace System.Net
             WriteEvent(CriticalFailureEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
+        #region Verbose
+        /// <summary>Logs an info message at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="formattableString">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(formattableString);
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+        }
+
+        /// <summary>Logs an info at verbose mode.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="message">The message to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void Verbose(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        {
+            DebugValidateArg(thisOrContextObject);
+            DebugValidateArg(message);
+            if (IsEnabled) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+        }
+
+        [Event(ErrorEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
+        private void VerboseMessage(string thisOrContextObject, string? memberName, string? message) =>
+            WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
+        #endregion
+
         #region DumpBuffer
         /// <summary>Logs the contents of a buffer.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
@@ -733,6 +763,109 @@ namespace System.Net
                     descrs[3] = new EventData
                     {
                         DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                {
+                    const int NumEventDatas = 8;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg2),
+                        Size = sizeof(int)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
+                        Size = sizeof(int)
+                    };
+                    descrs[5] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg6),
+                        Size = sizeof(int)
+                    };
+                    descrs[6] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg7),
+                        Size = sizeof(int)
+                    };
+                    descrs[7] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg8),
+                        Size = sizeof(int)
+                    };
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string arg1, string arg2, int arg3, int arg4, int arg5)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+                if (arg2 == null) arg2 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                fixed (char* arg2Ptr = arg2)
+                {
+                    const int NumEventDatas = 5;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg2Ptr),
+                        Size = (arg2.Length + 1) * sizeof(char)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
                         Size = sizeof(int)
                     };
 
