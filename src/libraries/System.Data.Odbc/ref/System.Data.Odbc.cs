@@ -99,6 +99,9 @@ namespace System.Data.Odbc
         public new System.Data.Odbc.OdbcCommand CreateCommand() { throw null; }
         protected override System.Data.Common.DbCommand CreateDbCommand() { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Data.DataTable GetSchema() { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName) { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName, string[] restrictionValues) { throw null; }
         public override void Open() { }
         public static void ReleaseObjectPool() { }
         object System.ICloneable.Clone() { throw null; }
