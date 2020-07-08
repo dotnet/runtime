@@ -456,7 +456,7 @@ namespace System.Net.Security
             return ProcessAuthentication(true, true, cancellationToken)!;
         }
 
-        public Task AuthenticateAsServerAsync( ServerOptionsSelectionCallback optionCallback, object? state, CancellationToken cancellationToken = default)
+        public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionCallback, object? state, CancellationToken cancellationToken = default)
         {
             ValidateCreateContext(new SslAuthenticationOptions(optionCallback, state));
             return ProcessAuthentication(true, false, cancellationToken)!;
