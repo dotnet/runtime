@@ -21,8 +21,8 @@ unsafe class ThisCallNative
 
         public VtableLayout* vtable;
         private int c;
-        public readonly float width;
-        public readonly float height;
+        public float width;
+        public float height;
     }
 
     public struct SizeF
@@ -50,11 +50,18 @@ unsafe class ThisCallNative
 
     [DllImport(nameof(ThisCallNative))]
     public static extern C* CreateInstanceOfC(float width, float height);
+
+    [DllImport(nameof(ThisCallNative))]
+    public static extern SizeF GetSizeFromManaged(C* c);
+    [DllImport(nameof(ThisCallNative))]
+    public static extern Width GetWidthFromManaged(C* c);
+    [DllImport(nameof(ThisCallNative))]
+    public static extern IntWrapper GetHeightAsIntFromManaged(C* c);
 }
 
-class ThisCallTest
+unsafe class ThisCallTest
 {
-    public unsafe static int Main(string[] args)
+    public static int Main(string[] args)
     {
         try
         {
@@ -64,6 +71,9 @@ class ThisCallTest
             Test8ByteHFA(instance);
             Test4ByteHFA(instance);
             Test4ByteNonHFA(instance);
+            Test8ByteHFAReverse();
+            Test4ByteHFAReverse();
+            Test4ByteNonHFAReverse();
         }
         catch (System.Exception ex)
         {
@@ -73,7 +83,7 @@ class ThisCallTest
         return 100;
     }
 
-    private static unsafe void Test8ByteHFA(ThisCallNative.C* instance)
+    private static void Test8ByteHFA(ThisCallNative.C* instance)
     {
         ThisCallNative.GetSizeFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetSizeFn>(instance->vtable->getSize);
 
@@ -83,7 +93,7 @@ class ThisCallTest
         Assert.AreEqual(instance->height, result.height);
     }
 
-    private static unsafe void Test4ByteHFA(ThisCallNative.C* instance)
+    private static void Test4ByteHFA(ThisCallNative.C* instance)
     {
         ThisCallNative.GetWidthFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetWidthFn>(instance->vtable->getWidth);
 
@@ -92,12 +102,67 @@ class ThisCallTest
         Assert.AreEqual(instance->width, result.width);
     }
 
-    private static unsafe void Test4ByteNonHFA(ThisCallNative.C* instance)
+    private static void Test4ByteNonHFA(ThisCallNative.C* instance)
     {
         ThisCallNative.GetHeightAsIntFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetHeightAsIntFn>(instance->vtable->getHeightAsInt);
 
         ThisCallNative.IntWrapper result = callback(instance);
 
         Assert.AreEqual((int)instance->height, result.i);
+    }
+
+    private static void Test8ByteHFAReverse()
+    {
+        ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
+        ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
+        
+        Assert.AreEqual(c.width, result.width);
+        Assert.AreEqual(c.height, result.height);
+    }
+    
+    private static void Test4ByteHFAReverse()
+    {
+        ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
+        ThisCallNative.Width result = ThisCallNative.GetWidthFromManaged(&c);
+
+        Assert.AreEqual(c.width, result.width);
+    }
+
+    private static void Test4ByteNonHFAReverse()
+    {
+        ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
+        ThisCallNative.IntWrapper result = ThisCallNative.GetHeightAsIntFromManaged(&c);
+
+        Assert.AreEqual((int)c.height, result.i);
+    }
+
+    private static ThisCallNative.C CreateCWithManagedVTable(float width, float height)
+    {
+        return new ThisCallNative.C
+        {
+            vtable = ManagedVtable,
+            width = width,
+            height = height
+        };
+    }
+
+    private static ThisCallNative.C.VtableLayout* managedVtable;
+
+    private static ThisCallNative.C.VtableLayout* ManagedVtable
+    {
+        get
+        {
+            if (managedVtable == null)
+            {
+                managedVtable = (ThisCallNative.C.VtableLayout*)Marshal.AllocHGlobal(sizeof(ThisCallNative.C.VtableLayout));
+                managedVtable->getSize = Marshal.GetFunctionPointerForDelegate(
+                    (ThisCallNative.GetSizeFn)((ThisCallNative.C* c) => new ThisCallNative.SizeF { width = c->width, height = c->height} ));
+                managedVtable->getWidth = Marshal.GetFunctionPointerForDelegate(
+                    (ThisCallNative.GetWidthFn)((ThisCallNative.C* c) => new ThisCallNative.Width { width = c->width} ));
+                managedVtable->getHeightAsInt = Marshal.GetFunctionPointerForDelegate(
+                    (ThisCallNative.GetHeightAsIntFn)((ThisCallNative.C* c) => new ThisCallNative.IntWrapper { i = (int)c->height} ));
+            }
+            return managedVtable;
+        }
     }
 }

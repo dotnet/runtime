@@ -55,3 +55,18 @@ extern "C" DLL_EXPORT C* STDMETHODCALLTYPE CreateInstanceOfC(float width, float 
 {
     return new C(width, height);
 }
+
+extern "C" DLL_EXPORT SizeF STDMETHODCALLTYPE GetSizeFromManaged(C* c)
+{
+    return c->GetSize();
+}
+
+extern "C" DLL_EXPORT Width STDMETHODCALLTYPE GetWidthFromManaged(C* c)
+{
+    return c->GetWidth();
+}
+
+extern "C" DLL_EXPORT IntWrapper STDMETHODCALLTYPE GetHeightAsIntFromManaged(C* c)
+{
+    return c->GetHeightAsInt();
+}
