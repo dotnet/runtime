@@ -1219,27 +1219,26 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<T> ReturnVectorTWithMerge<T>(int v, T init1, T init2, T init3, T init4) where T : struct
     {
-        // issue https://github.com/dotnet/runtime/issues/37341
-        // if (v == 0)
-        // {
-            // return new Vector<T>();
-        // }
-        // else if (v == 1)
-        // {
-            // return new Vector<T>(init1);
-        // }
-        // else if (v == 2)
-        // {
-            // return new Vector<T>(init2);
-        // }
-        // else if (v == 3)
-        // {
-            // return new Vector<T>(init3);
-        // }
-        // else
-        // {
-            // return new Vector<T>(init4);
-        // }
+        if (v == 0)
+        {
+            return new Vector<T>();
+        }
+        else if (v == 1)
+        {
+            return new Vector<T>(init1);
+        }
+        else if (v == 2)
+        {
+            return new Vector<T>(init2);
+        }
+        else if (v == 3)
+        {
+            return new Vector<T>(init3);
+        }
+        else
+        {
+            return new Vector<T>(init4);
+        }
         return new Vector<T>();
     }
 
@@ -1374,8 +1373,6 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<Vector4>(new Vector4(1));
-            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
-            Console.WriteLine(a.ToString());
             Debug.Assert(false, "unreachable");
         }
         catch (System.NotSupportedException)
@@ -1384,8 +1381,6 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<VectorTWrapperWrapper<int>>(new VectorTWrapperWrapper<int>());
-            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
-            Console.WriteLine(a.ToString());
             Debug.Assert(false, "unreachable");
         }
         catch (System.NotSupportedException)
@@ -1398,7 +1393,6 @@ class TestHFAandHVA
         ReturnVectorTWithMerge(1, 0.0, 0.0, 0.0, 0.0);
         ReturnVectorTWithMerge<short>(2, 0, 0, 0, 0);
         ReturnVectorTWithMerge<long>(3, 0, 0, 0, 0);
-        ReturnVectorTWithMerge<Vector<Single>>(3, new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0));
 
         ReturnVectorShortWrapper();
         ReturnVectorShortWrapperPromoted();
