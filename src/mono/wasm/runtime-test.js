@@ -389,6 +389,6 @@ var App = {
 		}
 	},
 	call_test_method: function (method_name, args) {
-		return BINDING.call_static_method("[System.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:"+method_name, args);
+		return BINDING.call_static_method("[System.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name, args);
 	}
 };

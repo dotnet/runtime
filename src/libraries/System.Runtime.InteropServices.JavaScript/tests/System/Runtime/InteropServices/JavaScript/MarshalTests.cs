@@ -139,5 +139,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(10, HelperMarshal._valOne);
             Assert.Equal(31, HelperMarshal._valTwo);
         }
+
+        [Fact]
+        public static void JSInvokeTypes()
+        {
+            Runtime.InvokeJS(@"
+                var obj = {
+                    return_int: function() { return 100; },
+                    return_double: function() { return 4.5; },
+                    return_string: function() { return 'Hic Sunt Dracones'; },
+                    return_bool: function() { return true; },
+                };
+                App.call_test_method (""MinipulateObjTypes"", [ obj ]);
+            ");
+
+            Assert.Equal(100, HelperMarshal._jsObjects[0]);
+            Assert.Equal(4.5, HelperMarshal._jsObjects[1]);
+            Assert.Equal("Hic Sunt Dracones", HelperMarshal._jsObjects[2]);
+            Assert.NotEqual("HIC SVNT LEONES", HelperMarshal._jsObjects[2]);
+            Assert.Equal(true, HelperMarshal._jsObjects[3]);
+        }
+
+        [Fact]
+        public static void JSObjectApply()
+        {
+            Runtime.InvokeJS(@"
+                var do_add = function(a, b) { return a + b};
+                App.call_test_method (""UseFunction"", [ do_add ]);
+            ");
+            Assert.Equal(30, HelperMarshal._jsAddFunctionResult);
+        }
+
+        [Fact]
+        public static void JSObjectAsFunction()
+        {
+            Runtime.InvokeJS(@"
+                var do_add = function(a, b) { return a + b};
+                App.call_test_method (""UseAsFunction"", [ do_add ]);
+            ");
+            Assert.Equal(50, HelperMarshal._jsAddAsFunctionResult);
+        }
     }
 }

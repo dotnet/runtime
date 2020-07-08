@@ -83,10 +83,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         internal static int _valOne, _valTwo;
-        public static void ManipulateObject(JSObject obj)
+        private static void ManipulateObject(JSObject obj)
         {
             _valOne = (int)obj.Invoke("inc"); ;
             _valTwo = (int)obj.Invoke("add", 20);
+        }
+
+        internal static object[] _jsObjects;
+        private static void MinipulateObjTypes(JSObject obj)
+        {
+            _jsObjects = new object[4];
+            _jsObjects[0] = obj.Invoke("return_int");
+            _jsObjects[1] = obj.Invoke("return_double");
+            _jsObjects[2] = obj.Invoke("return_string");
+            _jsObjects[3] = obj.Invoke("return_bool");
+        }
+
+        internal static int _jsAddFunctionResult;
+        private static void UseFunction(JSObject obj)
+        {
+            _jsAddFunctionResult = (int)obj.Invoke("call", null, 10, 20);
+        }
+
+        internal static int _jsAddAsFunctionResult;
+        private static void UseAsFunction(Function func)
+        {
+            _jsAddAsFunctionResult = (int)func.Call(null, 20, 30);
         }
     }
 }
