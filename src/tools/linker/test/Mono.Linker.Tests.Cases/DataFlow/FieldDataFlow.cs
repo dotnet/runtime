@@ -32,35 +32,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToStaticFieldOnADifferentClass ();
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		Type _typeWithDefaultConstructor;
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		Type _typeWithPublicParameterlessConstructor;
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		static Type _staticTypeWithDefaultConstructor;
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		static Type _staticTypeWithPublicParameterlessConstructor;
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
-			"The field 'System.Type Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::_typeWithDefaultConstructor' " +
-			"with dynamically accessed member kinds 'DefaultConstructor' is passed into " +
+			"The field 'System.Type Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::_typeWithPublicParameterlessConstructor' " +
+			"with dynamically accessed member kinds 'PublicParameterlessConstructor' is passed into " +
 			"the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow.RequirePublicConstructors(Type)' " +
 			"which requires dynamically accessed member kinds 'PublicConstructors'. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceField ()
 		{
-			RequireDefaultConstructor (_typeWithDefaultConstructor);
-			RequirePublicConstructors (_typeWithDefaultConstructor);
-			RequireNonPublicConstructors (_typeWithDefaultConstructor);
-			RequireNothing (_typeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (_typeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (_typeWithPublicParameterlessConstructor);
+			RequireNothing (_typeWithPublicParameterlessConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_typeWithDefaultConstructor))]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_typeWithDefaultConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_typeWithPublicParameterlessConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_typeWithPublicParameterlessConstructor))]
 		private void WriteToInstanceField ()
 		{
-			_typeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
-			_typeWithDefaultConstructor = GetTypeWithPublicConstructors ();
-			_typeWithDefaultConstructor = GetTypeWithNonPublicConstructors ();
-			_typeWithDefaultConstructor = GetUnkownType ();
+			_typeWithPublicParameterlessConstructor = GetTypeWithPublicParameterlessConstructor ();
+			_typeWithPublicParameterlessConstructor = GetTypeWithPublicConstructors ();
+			_typeWithPublicParameterlessConstructor = GetTypeWithNonPublicConstructors ();
+			_typeWithPublicParameterlessConstructor = GetUnkownType ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
@@ -69,66 +69,66 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			var store = new TypeStore ();
 
-			RequireDefaultConstructor (store._typeWithDefaultConstructor);
-			RequirePublicConstructors (store._typeWithDefaultConstructor);
-			RequireNonPublicConstructors (store._typeWithDefaultConstructor);
-			RequireNothing (store._typeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (store._typeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (store._typeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (store._typeWithPublicParameterlessConstructor);
+			RequireNothing (store._typeWithPublicParameterlessConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._typeWithDefaultConstructor))]
-		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._typeWithDefaultConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._typeWithPublicParameterlessConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._typeWithPublicParameterlessConstructor))]
 		private void WriteToInstanceFieldOnADifferentClass ()
 		{
 			var store = new TypeStore ();
 
-			store._typeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
-			store._typeWithDefaultConstructor = GetTypeWithPublicConstructors ();
-			store._typeWithDefaultConstructor = GetTypeWithNonPublicConstructors ();
-			store._typeWithDefaultConstructor = GetUnkownType ();
+			store._typeWithPublicParameterlessConstructor = GetTypeWithPublicParameterlessConstructor ();
+			store._typeWithPublicParameterlessConstructor = GetTypeWithPublicConstructors ();
+			store._typeWithPublicParameterlessConstructor = GetTypeWithNonPublicConstructors ();
+			store._typeWithPublicParameterlessConstructor = GetUnkownType ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticField ()
 		{
-			RequireDefaultConstructor (_staticTypeWithDefaultConstructor);
-			RequirePublicConstructors (_staticTypeWithDefaultConstructor);
-			RequireNonPublicConstructors (_staticTypeWithDefaultConstructor);
-			RequireNothing (_staticTypeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (_staticTypeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (_staticTypeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (_staticTypeWithPublicParameterlessConstructor);
+			RequireNothing (_staticTypeWithPublicParameterlessConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_staticTypeWithDefaultConstructor))]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_staticTypeWithDefaultConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_staticTypeWithPublicParameterlessConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (_staticTypeWithPublicParameterlessConstructor))]
 		private void WriteToStaticField ()
 		{
-			_staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
-			_staticTypeWithDefaultConstructor = GetTypeWithPublicConstructors ();
-			_staticTypeWithDefaultConstructor = GetTypeWithNonPublicConstructors ();
-			_staticTypeWithDefaultConstructor = GetUnkownType ();
+			_staticTypeWithPublicParameterlessConstructor = GetTypeWithPublicParameterlessConstructor ();
+			_staticTypeWithPublicParameterlessConstructor = GetTypeWithPublicConstructors ();
+			_staticTypeWithPublicParameterlessConstructor = GetTypeWithNonPublicConstructors ();
+			_staticTypeWithPublicParameterlessConstructor = GetUnkownType ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticFieldOnADifferentClass ()
 		{
-			RequireDefaultConstructor (TypeStore._staticTypeWithDefaultConstructor);
-			RequirePublicConstructors (TypeStore._staticTypeWithDefaultConstructor);
-			RequireNonPublicConstructors (TypeStore._staticTypeWithDefaultConstructor);
-			RequireNothing (TypeStore._staticTypeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (TypeStore._staticTypeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (TypeStore._staticTypeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (TypeStore._staticTypeWithPublicParameterlessConstructor);
+			RequireNothing (TypeStore._staticTypeWithPublicParameterlessConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithDefaultConstructor))]
-		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithDefaultConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithPublicParameterlessConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithPublicParameterlessConstructor))]
 		private void WriteToStaticFieldOnADifferentClass ()
 		{
-			TypeStore._staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
-			TypeStore._staticTypeWithDefaultConstructor = GetTypeWithPublicConstructors ();
-			TypeStore._staticTypeWithDefaultConstructor = GetTypeWithNonPublicConstructors ();
-			TypeStore._staticTypeWithDefaultConstructor = GetUnkownType ();
+			TypeStore._staticTypeWithPublicParameterlessConstructor = GetTypeWithPublicParameterlessConstructor ();
+			TypeStore._staticTypeWithPublicParameterlessConstructor = GetTypeWithPublicConstructors ();
+			TypeStore._staticTypeWithPublicParameterlessConstructor = GetTypeWithNonPublicConstructors ();
+			TypeStore._staticTypeWithPublicParameterlessConstructor = GetUnkownType ();
 		}
 
-		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
 		{
 		}
@@ -145,8 +145,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		private static Type GetTypeWithDefaultConstructor ()
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		private static Type GetTypeWithPublicParameterlessConstructor ()
 		{
 			return null;
 		}
@@ -174,11 +174,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TypeStore
 		{
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-			public Type _typeWithDefaultConstructor;
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+			public Type _typeWithPublicParameterlessConstructor;
 
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-			public static Type _staticTypeWithDefaultConstructor;
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+			public static Type _staticTypeWithPublicParameterlessConstructor;
 		}
 	}
 }

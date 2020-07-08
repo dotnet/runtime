@@ -27,10 +27,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ReadFromStaticProperty ();
 			instance.WriteToStaticProperty ();
 
-			_ = instance.PropertyDefaultConstructorWithExplicitAccessors;
+			_ = instance.PropertyPublicParameterlessConstructorWithExplicitAccessors;
 			_ = instance.PropertyPublicConstructorsWithExplicitAccessors;
 			_ = instance.PropertyNonPublicConstructorsWithExplicitAccessors;
-			instance.PropertyDefaultConstructorWithExplicitAccessors = null;
+			instance.PropertyPublicParameterlessConstructorWithExplicitAccessors = null;
 			instance.PropertyPublicConstructorsWithExplicitAccessors = null;
 			instance.PropertyNonPublicConstructorsWithExplicitAccessors = null;
 
@@ -46,7 +46,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
-			RequireDefaultConstructor (PropertyWithPublicConstructor);
+			RequirePublicParameterlessConstructor (PropertyWithPublicConstructor);
 			RequirePublicConstructors (PropertyWithPublicConstructor);
 			RequireNonPublicConstructors (PropertyWithPublicConstructor);
 			RequireNothing (PropertyWithPublicConstructor);
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticProperty ()
 		{
-			RequireDefaultConstructor (StaticPropertyWithPublicConstructor);
+			RequirePublicParameterlessConstructor (StaticPropertyWithPublicConstructor);
 			RequirePublicConstructors (StaticPropertyWithPublicConstructor);
 			RequireNonPublicConstructors (StaticPropertyWithPublicConstructor);
 			RequireNothing (StaticPropertyWithPublicConstructor);
@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToInstanceProperty ()
 		{
-			PropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
+			PropertyWithPublicConstructor = GetTypeWithPublicParameterlessConstructor ();
 			PropertyWithPublicConstructor = GetTypeWithPublicConstructors ();
 			PropertyWithPublicConstructor = GetTypeWithNonPublicConstructors ();
 			PropertyWithPublicConstructor = GetUnkownType ();
@@ -77,7 +77,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToStaticProperty ()
 		{
-			StaticPropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
+			StaticPropertyWithPublicConstructor = GetTypeWithPublicParameterlessConstructor ();
 			StaticPropertyWithPublicConstructor = GetTypeWithPublicConstructors ();
 			StaticPropertyWithPublicConstructor = GetTypeWithNonPublicConstructors ();
 			StaticPropertyWithPublicConstructor = GetUnkownType ();
@@ -100,15 +100,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		Type PropertyDefaultConstructorWithExplicitAccessors {
+		Type PropertyPublicParameterlessConstructorWithExplicitAccessors {
 			[RecognizedReflectionAccessPattern]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
-			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
@@ -147,7 +147,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void TestImplicitProperty ()
 			{
 				RequirePublicConstructors (ImplicitProperty);
-				ImplicitProperty = GetTypeWithDefaultConstructor (); // This will warn since the setter requires public .ctors
+				ImplicitProperty = GetTypeWithPublicParameterlessConstructor (); // This will warn since the setter requires public .ctors
 			}
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -263,8 +263,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
 		{
 		}
@@ -281,8 +281,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.DefaultConstructor)]
-		private static Type GetTypeWithDefaultConstructor ()
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		private static Type GetTypeWithPublicParameterlessConstructor ()
 		{
 			return null;
 		}

@@ -22,8 +22,8 @@ namespace Mono.Linker.Dataflow
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
 				results.Add (DynamicallyAccessedMemberTypes.PublicConstructors);
-			else if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.DefaultConstructor))
-				results.Add (DynamicallyAccessedMemberTypes.DefaultConstructor);
+			else if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor))
+				results.Add (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicMethods))
 				results.Add (DynamicallyAccessedMemberTypes.NonPublicMethods);

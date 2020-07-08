@@ -20,19 +20,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ReadFromInstanceField ();
 		}
 
-		Type _typeWithDefaultConstructor;
+		Type _typeWithPublicParameterlessConstructor;
 
 		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
 		[RecognizedReflectionAccessPattern]
 		private void ReadFromInstanceField ()
 		{
-			RequireDefaultConstructor (_typeWithDefaultConstructor);
-			RequirePublicConstructors (_typeWithDefaultConstructor);
-			RequireNonPublicConstructors (_typeWithDefaultConstructor);
+			RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);
+			RequirePublicConstructors (_typeWithPublicParameterlessConstructor);
+			RequireNonPublicConstructors (_typeWithPublicParameterlessConstructor);
 		}
-		private static void RequireDefaultConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+		private static void RequirePublicParameterlessConstructor (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
 		{
 		}

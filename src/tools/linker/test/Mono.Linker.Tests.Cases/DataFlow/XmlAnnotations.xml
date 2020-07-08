@@ -2,18 +2,18 @@
 <linker>
   <assembly fullname="Test">
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations">
-      <field name="_typeWithDefaultConstructor">
+      <field name="_typeWithPublicParameterlessConstructor">
         <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
           <argument>0</argument>
         </attribute>
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-          <argument>DefaultConstructor</argument>
+          <argument>PublicParameterlessConstructor</argument>
         </attribute>
       </field>
       <method signature="System.Void TwoAnnotatedParameters(System.Type,System.Type)">
         <parameter name="type">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
-            <argument>DefaultConstructor</argument>
+            <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="type2">
@@ -32,26 +32,26 @@
       <method signature="GenericMethod&lt;T&gt;(T,System.Type)">
         <parameter name="type">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
-            <argument>DefaultConstructor</argument>
+            <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </parameter>
       </method>
       <method name="ReturnConstructorsFailure">
         <return>
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
-            <argument>DefaultConstructor</argument>
+            <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </return>
       </method>
-      <property name="PropertyWithDefaultConstructor">
+      <property name="PropertyWithPublicParameterlessConstructor">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
-          <argument>DefaultConstructor</argument>
+          <argument>PublicParameterlessConstructor</argument>
         </attribute>
       </property>
       <type name="NestedType">
-        <field name="_typeWithDefaultConstructor">
+        <field name="_typeWithPublicParameterlessConstructor">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
-            <argument>DefaultConstructor</argument>
+            <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </field>
       </type>

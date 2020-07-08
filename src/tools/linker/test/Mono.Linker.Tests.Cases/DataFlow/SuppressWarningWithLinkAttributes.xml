@@ -6,12 +6,12 @@
       <argument>IL2006</argument>
     </attribute>
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes">
-      <field name="_typeWithDefaultConstructor">
+      <field name="_typeWithPublicParameterlessConstructor">
         <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
           <argument>0</argument>
         </attribute>
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-          <argument>DefaultConstructor</argument>
+          <argument>PublicParameterlessConstructor</argument>
         </attribute>
       </field>
     </type>
