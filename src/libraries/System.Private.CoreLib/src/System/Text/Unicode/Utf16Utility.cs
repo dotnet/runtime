@@ -67,6 +67,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint ConvertAllAsciiCharsInUInt32ToUppercase(uint value)
         {
+            // Intrinsified in mono interpreter
             // ASSUMPTION: Caller has validated that input value is ASCII.
             Debug.Assert(AllCharsInUInt32AreAscii(value));
 
@@ -145,6 +146,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool UInt32OrdinalIgnoreCaseAscii(uint valueA, uint valueB)
         {
+            // Intrinsified in mono interpreter
             // ASSUMPTION: Caller has validated that input values are ASCII.
             Debug.Assert(AllCharsInUInt32AreAscii(valueA));
             Debug.Assert(AllCharsInUInt32AreAscii(valueB));
@@ -186,6 +188,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool UInt64OrdinalIgnoreCaseAscii(ulong valueA, ulong valueB)
         {
+            // Intrinsified in mono interpreter
             // ASSUMPTION: Caller has validated that input values are ASCII.
             Debug.Assert(AllCharsInUInt64AreAscii(valueA));
             Debug.Assert(AllCharsInUInt64AreAscii(valueB));

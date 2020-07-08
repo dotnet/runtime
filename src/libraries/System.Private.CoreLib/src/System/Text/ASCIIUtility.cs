@@ -1460,6 +1460,7 @@ namespace System.Text
         /// </summary>
         public static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
+            // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
