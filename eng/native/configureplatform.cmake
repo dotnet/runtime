@@ -1,4 +1,3 @@
-include(CheckPIESupported)
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
 # If set, indicates that this is not an officially supported release
@@ -381,19 +380,9 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     # but since we know that PIE is supported, we can safely skip this redundant check).
     #
     # The default linker on Solaris also does not support PIE.
-    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS)
-        # All code we build should be compiled as position independent
-        get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-        if("CXX" IN_LIST languages)
-            set(CLR_PIE_LANGUAGE CXX)
-        else()
-            set(CLR_PIE_LANGUAGE C)
-        endif()
-        check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
-        if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
-            message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                      "PIE link options will not be passed to linker.")
-        endif()
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS AND NOT MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fpie")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fpic")
     endif()
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
