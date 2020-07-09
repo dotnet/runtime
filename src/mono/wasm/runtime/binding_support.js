@@ -761,6 +761,8 @@ var BindingSupportLib = {
 		},
 		
 		resolve_method_fqn: function (fqn) {
+			this.bindings_lazy_init ();
+			
 			var assembly = fqn.substring(fqn.indexOf ("[") + 1, fqn.indexOf ("]")).trim();
 			fqn = fqn.substring (fqn.indexOf ("]") + 1).trim();
 
