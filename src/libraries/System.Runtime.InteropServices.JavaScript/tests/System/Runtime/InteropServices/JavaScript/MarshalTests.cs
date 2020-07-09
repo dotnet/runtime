@@ -440,5 +440,132 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(7.5f, HelperMarshal._doubleBuffer[3]);
         }
 
+        [Fact]
+        public static void MarshalTypedArraySByte()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArraySByte"", [ obj ]);
+                App.call_test_method (""GetTypedArraySByte"", [ obj ]);
+            ");
+            Assert.Equal(11, HelperMarshal._taSByte.Length);
+            Assert.Equal(32, HelperMarshal._taSByte[0]);
+            Assert.Equal(32, HelperMarshal._taSByte[HelperMarshal._taSByte.Length - 1]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayByte()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayByte"", [ obj ]);
+                App.call_test_method (""GetTypedArrayByte"", [ obj ]);
+            ");
+            Assert.Equal(11, HelperMarshal._taSByte.Length);
+            Assert.Equal(104, HelperMarshal._taByte[0]);
+            Assert.Equal(115, HelperMarshal._taByte[HelperMarshal._taByte.Length - 1]);
+            Assert.Equal("hic sunt dracones", System.Text.Encoding.Default.GetString(HelperMarshal._taByte));
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayShort()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayShort"", [ obj ]);
+                App.call_test_method (""GetTypedArrayShort"", [ obj ]);
+            ");
+            Assert.Equal(13, HelperMarshal._taShort.Length);
+            Assert.Equal(32, HelperMarshal._taShort[0]);
+            Assert.Equal(32, HelperMarshal._taShort[HelperMarshal._taShort.Length - 1]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayUShort()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayUShort"", [ obj ]);
+                App.call_test_method (""GetTypedArrayUShort"", [ obj ]);
+            ");
+            Assert.Equal(14, HelperMarshal._taUShort.Length);
+            Assert.Equal(32, HelperMarshal._taUShort[0]);
+            Assert.Equal(32, HelperMarshal._taUShort[HelperMarshal._taUShort.Length - 1]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayInt()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayInt"", ""o"", [ obj ]);
+                App.call_test_method (""GetTypedArrayInt"", ""o"", [ obj ]);
+            ");
+            Assert.Equal(15, HelperMarshal._taInt.Length);
+            Assert.Equal(32, HelperMarshal._taInt[0]);
+            Assert.Equal(32, HelperMarshal._taInt[HelperMarshal._taInt.Length - 1]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayUInt()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayUInt"", [ obj ]);
+                App.call_test_method (""GetTypedArrayUInt"", [ obj ]);
+            ");
+            Assert.Equal(16, HelperMarshal._taUInt.Length);
+            Assert.Equal(32, (int)HelperMarshal._taUInt[0]);
+            Assert.Equal(32, (int)HelperMarshal._taUInt[HelperMarshal._taUInt.Length - 1]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArrayFloat()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayFloat"", [ obj ]);
+                App.call_test_method (""GetTypedArrayFloat"", [ obj ]);
+            ");
+            Assert.Equal(17, HelperMarshal._taFloat.Length);
+            Assert.Equal(3.14f, HelperMarshal._taFloat[0]);
+            Assert.Equal(3.14f, HelperMarshal._taFloat[HelperMarshal._taFloat.Length - 1]);
+        }
+
+
+        [Fact]
+        public static void MarshalTypedArrayDouble()
+        {
+            Runtime.InvokeJS(@"
+                var obj = { };
+                App.call_test_method (""SetTypedArrayDouble"", ""o"", [ obj ]);
+                App.call_test_method (""GetTypedArrayDouble"", ""o"", [ obj ]);
+            ");
+            Assert.Equal(18, HelperMarshal._taDouble.Length);
+            Assert.Equal(3.14d, HelperMarshal._taDouble[0]);
+            Assert.Equal(3.14d, HelperMarshal._taDouble[HelperMarshal._taDouble.Length - 1]);
+        }
+
+        [Fact]
+        public static void TestFunctionSum()
+        {
+            HelperMarshal._sumValue = 0;
+            Runtime.InvokeJS(@"
+                App.call_test_method (""CreateFunctionSum"", null, [ ]);
+                App.call_test_method (""CallFunctionSum"", null, [  ]);
+            ");
+            Assert.Equal(8, HelperMarshal._sumValue);
+        }
+
+        [Fact]
+        public static void TestFunctionApply()
+        {
+            HelperMarshal._minValue = 0;
+            Runtime.InvokeJS(@"
+                App.call_test_method (""CreateFunctionApply"", null, [ ]);
+                App.call_test_method (""CallFunctionApply"", null, [  ]);
+            ");
+            Assert.Equal(2, HelperMarshal._minValue);
+        }
     }
 }

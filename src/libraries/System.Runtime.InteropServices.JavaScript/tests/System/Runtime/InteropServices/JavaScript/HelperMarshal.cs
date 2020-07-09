@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -202,6 +203,130 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             using (var doubles = new Float64Array(buffer))
                 _doubleBuffer = doubles.ToArray();
+        }
+
+        private static void SetTypedArraySByte(JSObject obj)
+        {
+            sbyte[] buffer = Enumerable.Repeat((sbyte)0x20, 11).ToArray();
+            obj.SetObjectProperty("typedArray", Int8Array.From(buffer));
+        }
+
+        internal static sbyte[] _taSByte;
+        private static void GetTypedArraySByte(JSObject obj)
+        {
+            _taSByte = ((Int8Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        private static void SetTypedArrayByte(JSObject obj)
+        {
+            var dragons = "hic sunt dracones";
+            byte[] buffer = System.Text.Encoding.ASCII.GetBytes(dragons);
+            obj.SetObjectProperty("dracones", Uint8Array.From(buffer));
+        }
+
+        internal static byte[] _taByte;
+        private static void GetTypedArrayByte(JSObject obj)
+        {
+            _taByte = ((Uint8Array)obj.GetObjectProperty("dracones")).ToArray();
+        }
+
+        private static void SetTypedArrayShort(JSObject obj)
+        {
+            short[] buffer = Enumerable.Repeat((short)0x20, 13).ToArray();
+            obj.SetObjectProperty("typedArray", Int16Array.From(buffer));
+        }
+
+        internal static short[] _taShort;
+        private static void GetTypedArrayShort(JSObject obj)
+        {
+            _taShort = ((Int16Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        private static void SetTypedArrayUShort(JSObject obj)
+        {
+            ushort[] buffer = Enumerable.Repeat((ushort)0x20, 14).ToArray();
+            obj.SetObjectProperty("typedArray", Uint16Array.From(buffer));
+        }
+
+        internal static ushort[] _taUShort;
+        private static void GetTypedArrayUShort(JSObject obj)
+        {
+            _taUShort = ((Uint16Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        private static void SetTypedArrayInt(JSObject obj)
+        {
+            int[] buffer = Enumerable.Repeat((int)0x20, 15).ToArray();
+            obj.SetObjectProperty("typedArray", Int32Array.From(buffer));
+        }
+
+        internal static int[] _taInt;
+        private static void GetTypedArrayInt(JSObject obj)
+        {
+            _taInt = ((Int32Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        public static void SetTypedArrayUInt(JSObject obj)
+        {
+            uint[] buffer = Enumerable.Repeat((uint)0x20, 16).ToArray();
+            obj.SetObjectProperty("typedArray", Uint32Array.From(buffer));
+        }
+
+        internal static uint[] _taUInt;
+        private static void GetTypedArrayUInt(JSObject obj)
+        {
+            _taUInt = ((Uint32Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        private static void SetTypedArrayFloat(JSObject obj)
+        {
+            float[] buffer = Enumerable.Repeat(3.14f, 17).ToArray();
+            obj.SetObjectProperty("typedArray", Float32Array.From(buffer));
+        }
+
+        internal static float[] _taFloat;
+        private static void GetTypedArrayFloat(JSObject obj)
+        {
+            _taFloat = ((Float32Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+
+        private static void SetTypedArrayDouble(JSObject obj)
+        {
+            double[] buffer = Enumerable.Repeat(3.14d, 18).ToArray();
+            obj.SetObjectProperty("typedArray", Float64Array.From(buffer));
+        }
+
+        internal static double[] _taDouble;
+        private static void GetTypedArrayDouble(JSObject obj)
+        {
+            _taDouble = ((Float64Array)obj.GetObjectProperty("typedArray")).ToArray();
+        }
+
+        private static Function _sumFunction;
+        private static void CreateFunctionSum()
+        {
+            _sumFunction = new Function("a", "b", "return a + b");
+        }
+
+        internal static int _sumValue = 0;
+        private static void CallFunctionSum()
+        {
+            _sumValue = (int)_sumFunction.Call(null, 3, 5);
+        }
+
+        private static Function _mathMinFunction;
+        private static void CreateFunctionApply()
+        {
+            var math = (JSObject)Runtime.GetGlobalObject("Math");
+            _mathMinFunction = (Function)math.GetObjectProperty("min");
+
+        }
+
+        internal static int _minValue = 0;
+        private static void CallFunctionApply()
+        {
+            _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
     }
 }
