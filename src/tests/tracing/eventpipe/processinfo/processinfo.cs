@@ -19,6 +19,45 @@ namespace Tracing.Tests.ProcessInfoValidation
 {
     public class ProcessInfoValidation
     {
+        public static IEnumerable<string> ParseCommandLine(string cmdline)
+        {
+            // ASSUMPTION: double quotes (") and single quotes (') are used for paths with spaces
+            // ASSUMPTION: This test will only have two parts to the commandline
+
+            // check for quotes in first part
+            var parts = new List<string>();
+            bool isQuoted = false;
+            int start = 0;
+
+            for (int i = 0; i < cmdline.Length; i++)
+            {
+                if (isQuoted)
+                {
+                    if (cmdline[i] == '"' || cmdline[i] == '\'')
+                    {
+                        parts.Add(cmdline.Substring(start, i - start));
+                        isQuoted = false;
+                    }
+                }
+                else if (cmdline[i] == '"' || cmdline[i] == '\'')
+                {
+                    isQuoted = true;
+                    start = i + 1;
+                }
+                else if (cmdline[i] == ' ')
+                {
+                    parts.Add(cmdline.Substring(start, i - start));
+                    start = i + 1;
+                }
+                else if (i == cmdline.Length - 1)
+                {
+                    parts.Add(cmdline.Substring(start));
+                }
+            }
+
+            return parts;
+        }
+
         public static int Main(string[] args)
         {
 
@@ -73,9 +112,13 @@ namespace Tracing.Tests.ProcessInfoValidation
             string commandLine = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
             Logger.logger.Log($"commandLine: \"{commandLine}\"");
 
+            // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
+            // /path/to/corerun /path/to/processinfo.dll
+            // or
+            // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
             string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
-            string[] commandLineParts = commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            string receivedCommandLine = $"{Path.GetFullPath(commandLineParts[0])} {Path.GetFullPath(commandLineParts[1])}";
+            IEnumerable<FileInfo> commandLineParts = ParseCommandLine(commandLine).Select(part => new FileInfo(part));
+            string receivedCommandLine = commandLineParts.Select(f => f.FullName).Aggregate((s1, s2) => string.Join(' ', s1, s2));
             Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
 
             // VALIDATE OS
