@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
             if (timestamp != null)
             {
-                textWriter.Write(FormatterOptions.SingleLine ? timestamp + ' ' : timestamp);
+                textWriter.Write(timestamp);
             }
             if (logLevelString != null)
             {
@@ -163,8 +163,8 @@ namespace Microsoft.Extensions.Logging.Console
                 LogLevel.Debug => new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black),
                 LogLevel.Information => new ConsoleColors(ConsoleColor.DarkGreen, ConsoleColor.Black),
                 LogLevel.Warning => new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black),
-                LogLevel.Error => new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red),
-                LogLevel.Critical => new ConsoleColors(ConsoleColor.White, ConsoleColor.Red),
+                LogLevel.Error => new ConsoleColors(ConsoleColor.Black, ConsoleColor.DarkRed),
+                LogLevel.Critical => new ConsoleColors(ConsoleColor.White, ConsoleColor.DarkRed),
                 _ => new ConsoleColors(null, null)
             };
         }

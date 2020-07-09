@@ -6,11 +6,11 @@ using System.IO;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class WindowsLogConsole : IConsole
+    internal class AnsiParsingLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;
 
-        public WindowsLogConsole(bool stdErr = false)
+        public AnsiParsingLogConsole(bool stdErr = false)
         {
             _textWriter = stdErr ? System.Console.Error : System.Console.Out;
         }
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         /// <summary>
-        /// Parses a subset of display attributes and skips those it does not understand
+        /// Parses a subset of display attributes
         /// Set Display Attributes
         /// Set Attribute Mode [{attr1};...;{attrn}m
         /// Sets multiple display attribute settings. The following lists standard attributes that are getting parsed:
@@ -88,42 +88,47 @@ namespace Microsoft.Extensions.Logging.Console
             var span = message.AsSpan();
             const char EscapeChar = '\x1B';
             ConsoleColor? color = null;
-            bool isDarkColor = true;
+            bool isBright = false;
             for (int i = 0; i < span.Length; i++)
             {
-                if (span[i] != EscapeChar || span.Length < i + 3 || span[i + 1] != '[')
+                if (span[i] != EscapeChar || span.Length < i + 4 || span[i + 1] != '[')
                 {
-                    // not an escape char
-                    content.length++;
                     if (content.startIndex == -1)
                     {
                         content.startIndex = i;
                     }
+                    int nextEscapeIndex = span.Slice(i, span.Length - i).IndexOf(EscapeChar);
+                    if (nextEscapeIndex == -1)
+                    {
+                        content.length += span.Length - i;
+                        break;
+                    }
+                    content.length += nextEscapeIndex;
+                    i += nextEscapeIndex - 1;
                 }
                 else if (span[i + 3] == 'm')
                 {
-                    if (int.TryParse(span.Slice(i + 2, length: 1), out int escapeCode))
+                    if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
                     {
                         if (escapeCode == 1)
-                            isDarkColor = false;
-                        // parsing only ansi color codes
+                            isBright = true;
                         i += 3;
                     }
                 }
-                else if (span[i + 4] == 'm')
+                else if (span.Length >= i + 5 && span[i + 4] == 'm')
                 {
-                    if (int.TryParse(span.Slice(i + 2, length: 2), out int escapeCode))
+                    if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
                     {
-                        if (SetsForegroundColor(escapeCode, isDarkColor, out color))
+                        if (SetsForegroundColor(escapeCode, isBright, out color))
                         {
                             if (content.startIndex != -1)
                             {
                                 Write(span.Slice(content.startIndex, content.length), content.bg, content.fg);
                                 content.startIndex = -1;
                                 content.length = 0;
-                                isDarkColor = true;
                             }
                             content.fg = color;
+                            isBright = false;
                         }
                         else if (SetsBackgroundColor(escapeCode, out color))
                         {
@@ -135,7 +140,6 @@ namespace Microsoft.Extensions.Logging.Console
                             }
                             content.bg = color;
                         }
-                        // parsing only ansi color codes
                         i += 4;
                     }
                 }
@@ -146,76 +150,38 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static bool SetsForegroundColor(int number, bool isDark, out ConsoleColor? color)
+        private static bool SetsForegroundColor(int number, bool isBright, out ConsoleColor? color)
         {
-            switch (number)
+            color = number switch
             {
-                case 30:
-                    color = ConsoleColor.Black;
-                    return true;
-                case 31:
-                    color = isDark ? ConsoleColor.DarkRed : ConsoleColor.Red;
-                    return true;
-                case 32:
-                    color = isDark ? ConsoleColor.DarkGreen : ConsoleColor.Green;
-                    return true;
-                case 33:
-                    color = isDark ? ConsoleColor.DarkYellow : ConsoleColor.Yellow;
-                    return true;
-                case 34:
-                    color = isDark ? ConsoleColor.DarkBlue : ConsoleColor.Blue;
-                    return true;
-                case 35:
-                    color = isDark ? ConsoleColor.DarkMagenta : ConsoleColor.Magenta;
-                    return true;
-                case 36:
-                    color = isDark ? ConsoleColor.DarkCyan : ConsoleColor.Cyan;
-                    return true;
-                case 37:
-                    color = isDark ? ConsoleColor.Gray : ConsoleColor.White;
-                    return true;
-                case 39:
-                    color = null;
-                    return true;
-            }
-            color = null;
-            return false;
+                30 => ConsoleColor.Black,
+                31 => isBright ? ConsoleColor.Red: ConsoleColor.DarkRed,
+                32 => isBright ? ConsoleColor.Green: ConsoleColor.DarkGreen,
+                33 => isBright ? ConsoleColor.Yellow: ConsoleColor.DarkYellow,
+                34 => isBright ? ConsoleColor.Blue: ConsoleColor.DarkBlue,
+                35 => isBright ? ConsoleColor.Magenta: ConsoleColor.DarkMagenta,
+                36 => isBright ? ConsoleColor.Cyan: ConsoleColor.DarkCyan,
+                37 => isBright ? ConsoleColor.White: ConsoleColor.Gray,
+                _ => null
+            };
+            return color != null || number == 39;
         }
 
         private static bool SetsBackgroundColor(int number, out ConsoleColor? color)
         {
-            switch (number)
+            color = number switch
             {
-                case 40:
-                    color = ConsoleColor.Black;
-                    return true;
-                case 41:
-                    color = ConsoleColor.Red;
-                    return true;
-                case 42:
-                    color = ConsoleColor.Green;
-                    return true;
-                case 43:
-                    color = ConsoleColor.Yellow;
-                    return true;
-                case 44:
-                    color = ConsoleColor.Blue;
-                    return true;
-                case 45:
-                    color = ConsoleColor.Magenta;
-                    return true;
-                case 46:
-                    color = ConsoleColor.Cyan;
-                    return true;
-                case 47:
-                    color = ConsoleColor.White;
-                    return true;
-                case 49:
-                    color = null;
-                    return true;
-            }
-            color = null;
-            return false;
+                40 => ConsoleColor.Black,
+                41 => ConsoleColor.DarkRed,
+                42 => ConsoleColor.DarkGreen,
+                43 => ConsoleColor.DarkYellow,
+                44 => ConsoleColor.DarkBlue,
+                45 => ConsoleColor.DarkMagenta,
+                46 => ConsoleColor.DarkCyan,
+                47 => ConsoleColor.Gray,
+                _ => null
+            };
+            return color != null || number == 49;
         }
     }
 }

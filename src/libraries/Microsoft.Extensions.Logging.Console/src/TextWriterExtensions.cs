@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             if (disableColors)
             {
+                textWriter.Write(message);
                 return false;
             }
             // Order: backgroundcolor, foregroundcolor, Message, reset foregroundcolor, reset backgroundcolor
@@ -69,12 +70,12 @@ namespace Microsoft.Extensions.Logging.Console
             return color switch
             {
                 ConsoleColor.Black => "\x1B[40m",
-                ConsoleColor.Red => "\x1B[41m",
-                ConsoleColor.Green => "\x1B[42m",
-                ConsoleColor.Yellow => "\x1B[43m",
-                ConsoleColor.Blue => "\x1B[44m",
-                ConsoleColor.Magenta => "\x1B[45m",
-                ConsoleColor.Cyan => "\x1B[46m",
+                ConsoleColor.DarkRed => "\x1B[41m",
+                ConsoleColor.DarkGreen => "\x1B[42m",
+                ConsoleColor.DarkYellow => "\x1B[43m",
+                ConsoleColor.DarkBlue => "\x1B[44m",
+                ConsoleColor.DarkMagenta => "\x1B[45m",
+                ConsoleColor.DarkCyan => "\x1B[46m",
                 ConsoleColor.Gray => "\x1B[47m",
                 _ => DefaultBackgroundColor // Use default background color
             };

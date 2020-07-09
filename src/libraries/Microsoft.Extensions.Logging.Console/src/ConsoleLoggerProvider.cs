@@ -47,17 +47,33 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!DoesOperatingSystemSupportAnsi())
             {
-                // [TODO]: check if VT enabled on windows, console mode.
-                _messageQueue.Console = new WindowsLogConsole();
-                _messageQueue.ErrorConsole = new WindowsLogConsole(stdErr: true);
+                _messageQueue.Console = new AnsiParsingLogConsole();
+                _messageQueue.ErrorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
             else
             {
                 _messageQueue.Console = new AnsiLogConsole(new AnsiSystemConsole());
                 _messageQueue.ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
             }
+        }
+
+        private static bool DoesOperatingSystemSupportAnsi()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return true;
+            }
+
+            // for Windows, check the console mode
+            var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
+            if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
+            {
+                return false;
+            }
+
+            return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         }
 
         private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
