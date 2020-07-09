@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices.JavaScript;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -191,6 +192,126 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             Assert.Equal(30, HelperMarshal._functionResultValue);
             Assert.Equal(60, HelperMarshal._i32Value);
+        }
+        [Fact]
+        public static void BindStaticMethod()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (200);
+            ");
+
+            Assert.Equal(200, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void BindIntPtrStaticMethod()
+        {
+            HelperMarshal._intPtrValue = IntPtr.Zero;
+            Runtime.InvokeJS(@$"
+                var invoke_int_ptr = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
+                invoke_int_ptr (42);
+            ");
+            Assert.Equal(42, (int)HelperMarshal._intPtrValue);
+        }
+
+        [Fact]
+        public static void MarshalIntPtrToJS()
+        {
+            HelperMarshal._marshaledIntPtrValue = IntPtr.Zero;
+            Runtime.InvokeJS(@$"
+                var invokeMarshalIntPtr = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
+                var r = invokeMarshalIntPtr ();
+
+                if (r != 42) throw `Invalid int_ptr value`;
+            ");
+            Assert.Equal(42, (int)HelperMarshal._marshaledIntPtrValue);
+        }
+
+        [Fact]
+        public static void InvokeStaticMethod()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(@$"
+                Module.mono_call_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"", [ 300 ]);
+            ");
+
+            Assert.Equal(300, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void ResolveMethod()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_method_resolve (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                App.call_test_method (""InvokeInt"", [ invoke_int ]);
+            ");
+
+            Assert.NotEqual(0, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void GetObjectProperties()
+        {
+            Runtime.InvokeJS(@"
+                var obj = {myInt: 100, myDouble: 4.5, myString: ""Hic Sunt Dracones"", myBoolean: true};
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+            ");
+
+            Assert.Equal(100, HelperMarshal._jsProperties[0]);
+            Assert.Equal(4.5, HelperMarshal._jsProperties[1]);
+            Assert.Equal("Hic Sunt Dracones", HelperMarshal._jsProperties[2]);
+            Assert.Equal(true, HelperMarshal._jsProperties[3]);
+        }
+
+        [Fact]
+        public static void SetObjectProperties()
+        {
+            Runtime.InvokeJS(@"
+                var obj = {myInt: 200, myDouble: 0, myString: ""foo"", myBoolean: false};
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+            ");
+
+            Assert.Equal(100, HelperMarshal._jsProperties[0]);
+            Assert.Equal(4.5, HelperMarshal._jsProperties[1]);
+            Assert.Equal("qwerty", HelperMarshal._jsProperties[2]);
+            Assert.Equal(true, HelperMarshal._jsProperties[3]);
+        }
+
+        [Fact]
+        public static void SetObjectPropertiesIfNotExistsFalse()
+        {
+            // This test will not create the properties if they do not already exist
+            Runtime.InvokeJS(@"
+                var obj = {myInt: 200};
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+            ");
+
+            Assert.Equal(100, HelperMarshal._jsProperties[0]);
+            Assert.Null(HelperMarshal._jsProperties[1]);
+            Assert.Null(HelperMarshal._jsProperties[2]);
+            Assert.Null(HelperMarshal._jsProperties[3]);
+        }
+
+        [Fact]
+        public static void SetObjectPropertiesIfNotExistsTrue()
+        {
+            // This test will set the value of the property if it exists and will create and 
+            // set the value if it does not exists
+            Runtime.InvokeJS(@"
+                var obj = {myInt: 200};
+                App.call_test_method (""PopulateObjectProperties"", [ obj, true ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
+            ");
+
+            Assert.Equal(100, HelperMarshal._jsProperties[0]);
+            Assert.Equal(4.5, HelperMarshal._jsProperties[1]);
+            Assert.Equal("qwerty", HelperMarshal._jsProperties[2]);
+            Assert.Equal(true, HelperMarshal._jsProperties[3]);
         }
     }
 }

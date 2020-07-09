@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices.JavaScript;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
+        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -118,6 +120,44 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 _functionResultValue = a + b;
                 return _functionResultValue;
             };
+        }
+
+        internal static int _intValue;
+        private static void InvokeInt(int value)
+        {
+            _intValue = value;
+        }
+
+        internal static IntPtr _intPtrValue;
+        private static void InvokeIntPtr(IntPtr i)
+        {
+            _intPtrValue = i;
+        }
+
+        internal static IntPtr _marshaledIntPtrValue;
+        private static IntPtr InvokeMarshalIntPtr()
+        {
+            _marshaledIntPtrValue = (IntPtr)42;
+            return _marshaledIntPtrValue;
+        }
+
+        internal static object[] _jsProperties;
+        private static void RetrieveObjectProperties(JSObject obj)
+        {
+            _jsProperties = new object[4];
+            _jsProperties[0] = obj.GetObjectProperty("myInt");
+            _jsProperties[1] = obj.GetObjectProperty("myDouble");
+            _jsProperties[2] = obj.GetObjectProperty("myString");
+            _jsProperties[3] = obj.GetObjectProperty("myBoolean");
+        }
+
+        private static void PopulateObjectProperties(JSObject obj, bool createIfNotExist)
+        {
+            _jsProperties = new object[4];
+            obj.SetObjectProperty("myInt", 100, createIfNotExist);
+            obj.SetObjectProperty("myDouble", 4.5, createIfNotExist);
+            obj.SetObjectProperty("myString", "qwerty", createIfNotExist);
+            obj.SetObjectProperty("myBoolean", true, createIfNotExist);
         }
     }
 }
