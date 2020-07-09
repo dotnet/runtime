@@ -55,6 +55,13 @@ inline void FATAL_GC_ERROR()
 // turned on.
 #define FEATURE_LOH_COMPACTION
 
+// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
+// Additionally the platform ABI requires these types and composite type containing them to be similarly
+// aligned when passed as arguments.
+#ifdef TARGET_ARM
+#define FEATURE_64BIT_ALIGNMENT
+#endif
+
 #ifdef FEATURE_64BIT_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
 #define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
