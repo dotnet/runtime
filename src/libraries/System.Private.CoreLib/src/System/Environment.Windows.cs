@@ -86,6 +86,8 @@ namespace System
             Interop.Kernel32.GetComputerName() ??
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
+        private static int GetCurrentProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+
         private static unsafe OperatingSystem GetOSVersion()
         {
             if (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) != 0)
