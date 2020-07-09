@@ -4,6 +4,13 @@
 #ifndef __GCENV_OBJECT_H__
 #define __GCENV_OBJECT_H__
 
+// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
+// Additionally the platform ABI requires these types and composite type containing them to be similarly
+// aligned when passed as arguments.
+#ifdef TARGET_ARM
+#define FEATURE_64BIT_ALIGNMENT
+#endif
+
 //-------------------------------------------------------------------------------------------------
 //
 // Low-level types describing GC object layouts.
