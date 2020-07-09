@@ -4,8 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -940,10 +940,8 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-                    if (Sse41.X64.IsSupported)
+                    if ((AdvSimd.IsSupported || Sse41.X64.IsSupported) && BitConverter.IsLittleEndian)
                     {
-                        Debug.Assert(BitConverter.IsLittleEndian, "SSE41 requires little-endian.");
-
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
                         ulong possibleNonAsciiQWord;
@@ -957,9 +955,18 @@ namespace System.Text.Unicode
                                 goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                             }
 
-                            // narrow and write
+                            if (AdvSimd.IsSupported)
+                            {
+                                Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(utf16Data);
+                                Vector128<sbyte> source = AdvSimd.ExtractNarrowingSaturateUpper(lower, AdvSimd.LoadVector128((short*)pInputBuffer));
+                                AdvSimd.Store((ulong*)pOutputBuffer, source.AsUInt64());
+                            }
+                            else
+                            {
+                                // narrow and write
 
-                            Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                                Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                            }
 
                             pInputBuffer += 8;
                             pOutputBuffer += 8;
@@ -978,7 +985,17 @@ namespace System.Text.Unicode
                             }
 
                             utf16Data = Vector128.CreateScalarUnsafe(possibleNonAsciiQWord).AsInt16();
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+
+                            if (AdvSimd.IsSupported)
+                            {
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                Vector128<byte> source = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(lower, AdvSimd.LoadVector128((short*)pInputBuffer + Vector128<short>.Count));
+                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, source.AsUInt32(), 0);
+                            }
+                            else
+                            {
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
 
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1000,7 +1017,16 @@ namespace System.Text.Unicode
 
                         if (Utf16Utility.AllCharsInUInt64AreAscii(possibleNonAsciiQWord)) // all chars in first QWORD are ASCII
                         {
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            if (AdvSimd.IsSupported)
+                            {
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                Vector128<byte> source = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(lower, AdvSimd.LoadVector128((short*)pOutputBuffer + Vector128<short>.Count));
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, source.AsUInt32().ToScalar());
+                            }
+                            else
+                            {
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
                             outputBytesRemaining -= 4;
