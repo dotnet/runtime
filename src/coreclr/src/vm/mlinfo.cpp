@@ -2363,22 +2363,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
                         }
                         else
-#ifdef TARGET_X86
-                        // JIT64 is not aware of normalized value types and this optimization
-                        // (returning small value types by value in registers) is already done in JIT64.
-                        if (        !m_byref   // Permit register-sized structs as return values
-                                 && !isParam
-                                 && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
-                                 && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
-                                 && managedSize <= sizeof(void*)
-                                 && nativeSize <= sizeof(void*)
-                                 && !IsFieldScenario())
-                        {
-                            m_type = MARSHAL_TYPE_GENERIC_4;
-                            m_args.m_pMT = m_pMT;
-                        }
-                        else
-#endif // TARGET_X86
                         {
                             m_args.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;
