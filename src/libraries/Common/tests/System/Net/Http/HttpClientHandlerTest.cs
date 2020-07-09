@@ -2150,7 +2150,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestDataAsync(readBody: true);
                     }
-                    catch { }
+                    catch { } // Eat errors from client disconnect.
                     await clientFinished.Task;
                 });
             });
