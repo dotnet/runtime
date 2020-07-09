@@ -3,7 +3,7 @@
     <AssemblyName>System.Net.NetworkInformation</AssemblyName>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -122,7 +122,7 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSAIoctl.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\IPAddressUtil.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkFiles.cs" />
     <Compile Include="System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs" />
@@ -154,7 +154,7 @@
              Link="Common\System\IO\RowConfigReader.cs" />
   </ItemGroup>
   <!-- Linux -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\ExceptionHelper.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV4Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV6Statistics.cs" />
@@ -221,7 +221,7 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs"
              Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs"
              Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
@@ -248,11 +248,11 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
 </Project>

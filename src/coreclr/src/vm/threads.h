@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // THREADS.H -
 //
 
@@ -3446,7 +3445,7 @@ private:
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
 #ifndef TARGET_UNIX
-    BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
+    BOOL    HandledJITCase();
 
 #ifdef TARGET_X86
     PCODE       m_LastRedirectIP;

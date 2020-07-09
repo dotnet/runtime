@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -80,8 +79,6 @@ int compact_ratio = 0;
 
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
-
-bool g_fFinalizerRunOnShutDown = false;
 
 #ifdef FEATURE_SVR_GC
 bool g_built_with_svr_gc = true;
@@ -37830,26 +37827,6 @@ size_t GCHeap::GetFinalizablePromotedCount()
 #endif //MULTIPLE_HEAPS
 }
 
-bool GCHeap::ShouldRestartFinalizerWatchDog()
-{
-    // This condition was historically used as part of the condition to detect finalizer thread timeouts
-    return gc_heap::gc_lock.lock != -1;
-}
-
-void GCHeap::SetFinalizeQueueForShutdown(bool fHasLock)
-{
-#ifdef MULTIPLE_HEAPS
-    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        gc_heap* hp = gc_heap::g_heaps [hn];
-        hp->finalize_queue->SetSegForShutDown(fHasLock);
-    }
-
-#else //MULTIPLE_HEAPS
-    pGenGCHeap->finalize_queue->SetSegForShutDown(fHasLock);
-#endif //MULTIPLE_HEAPS
-}
-
 //---------------------------------------------------------------------------
 // Finalized class tracking
 //---------------------------------------------------------------------------
@@ -37982,18 +37959,9 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     } CONTRACTL_END;
 
     EnterFinalizeLock();
+
     // Adjust gen
-    unsigned int dest = 0;
-
-    if (g_fFinalizerRunOnShutDown)
-    {
-        //put it in the finalizer queue and sort out when
-        //dequeueing
-        dest = FinalizerListSeg;
-    }
-
-    else
-        dest = gen_segment (gen);
+    unsigned int dest = gen_segment (gen);
 
     // Adjust boundary for segments so that GC will keep objects alive.
     Object*** s_i = &SegQueue (FreeList);
@@ -38049,24 +38017,9 @@ CFinalize::GetNextFinalizableObject (BOOL only_non_critical)
     Object* obj = 0;
     EnterFinalizeLock();
 
-retry:
     if (!IsSegEmpty(FinalizerListSeg))
     {
-        if (g_fFinalizerRunOnShutDown)
-        {
-            obj = *(SegQueueLimit (FinalizerListSeg)-1);
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem ((SegQueueLimit (FinalizerListSeg)-1),
-                          FinalizerListSeg, CriticalFinalizerListSeg);
-                goto retry;
-            }
-            else
-                --SegQueueLimit (FinalizerListSeg);
-        }
-        else
-            obj =  *(--SegQueueLimit (FinalizerListSeg));
-
+        obj =  *(--SegQueueLimit (FinalizerListSeg));
     }
     else if (!only_non_critical && !IsSegEmpty(CriticalFinalizerListSeg))
     {
@@ -38083,52 +38036,10 @@ retry:
     return obj;
 }
 
-void
-CFinalize::SetSegForShutDown(BOOL fHasLock)
-{
-    int i;
-
-    if (!fHasLock)
-        EnterFinalizeLock();
-    for (i = 0; i <= max_generation; i++)
-    {
-        unsigned int seg = gen_segment (i);
-        Object** startIndex = SegQueueLimit (seg)-1;
-        Object** stopIndex  = SegQueue (seg);
-        for (Object** po = startIndex; po >= stopIndex; po--)
-        {
-            Object* obj = *po;
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem (po, seg, CriticalFinalizerListSeg);
-            }
-            else
-            {
-                MoveItem (po, seg, FinalizerListSeg);
-            }
-        }
-    }
-    if (!fHasLock)
-        LeaveFinalizeLock();
-}
-
-void
-CFinalize::DiscardNonCriticalObjects()
-{
-    //empty the finalization queue
-    Object** startIndex = SegQueueLimit (FinalizerListSeg)-1;
-    Object** stopIndex  = SegQueue (FinalizerListSeg);
-    for (Object** po = startIndex; po >= stopIndex; po--)
-    {
-        MoveItem (po, FinalizerListSeg, FreeList);
-    }
-}
-
 size_t
 CFinalize::GetNumberFinalizableObjects()
 {
-    return SegQueueLimit (FinalizerListSeg) -
-        (g_fFinalizerRunOnShutDown ? m_Array : SegQueue(FinalizerListSeg));
+    return SegQueueLimit(FinalizerListSeg) - SegQueue(FinalizerListSeg);
 }
 
 void
@@ -38840,11 +38751,6 @@ bool GCHeap::IsConcurrentGCEnabled()
 #else
     return FALSE;
 #endif //BACKGROUND_GC
-}
-
-void GCHeap::SetFinalizeRunOnShutdown(bool value)
-{
-    g_fFinalizerRunOnShutDown = value;
 }
 
 void PopulateDacVars(GcDacVars *gcDacVars)

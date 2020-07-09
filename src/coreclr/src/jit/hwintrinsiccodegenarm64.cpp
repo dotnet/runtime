@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -853,6 +852,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                             INS_OPTS_NONE);
             }
             break;
+
+            case NI_AdvSimd_ReverseElement16:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_4H : INS_OPTS_8H);
+                break;
+
+            case NI_AdvSimd_ReverseElement32:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_2S : INS_OPTS_4S);
+                break;
+
+            case NI_AdvSimd_ReverseElement8:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
+                break;
 
             default:
                 unreached();
