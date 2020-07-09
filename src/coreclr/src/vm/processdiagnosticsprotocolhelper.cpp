@@ -132,7 +132,6 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     if (fSuccess)
         fSuccess &= TryWriteString(lpBuffer, cbSize, Arch);
 
-    // TODO: add this file to CMakeList.txt
     return fSuccess;
 }
 
