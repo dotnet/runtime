@@ -3250,16 +3250,50 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         switch (oper)
         {
 #ifdef TARGET_ARM
-            case GT_CNS_LNG:
-                costSz = 9;
-                costEx = 4;
-                goto COMMON_CNS;
-
             case GT_CNS_STR:
                 // Uses movw/movt
-                costSz = 7;
-                costEx = 3;
+                costSz = 8;
+                costEx = 2;
                 goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            {
+                GenTreeIntConCommon* con = tree->AsIntConCommon();
+
+                INT64 lngVal = con->LngValue();
+                INT32 loVal  = (INT32)(lngVal & 0xffffffff);
+                INT32 hiVal  = (INT32)(lngVal >> 32);
+
+                if (lngVal == 0)
+                {
+                    costSz = 1;
+                    costEx = 1;
+                }
+                else
+                {
+                    // Minimum of one instruction to setup hiVal,
+                    // and one instruction to setup loVal
+                    costSz = 4 + 4;
+                    costEx = 1 + 1;
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)hiVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)hiVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)loVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
+                }
+                goto COMMON_CNS;
+            }
 
             case GT_CNS_INT:
             {
@@ -3267,61 +3301,87 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
+                GenTreeIntConCommon* con    = tree->AsIntConCommon();
+                INT32                conVal = con->IconValue();
 
-                if (con->ImmedValNeedsReloc(this) ||
-                    !codeGen->validImmForInstr(INS_mov, (target_ssize_t)tree->AsIntCon()->gtIconVal))
+                if (con->ImmedValNeedsReloc(this))
                 {
-                    // Uses movw/movt
-                    costSz = 7;
-                    costEx = 3;
+                    // Requires movw/movt
+                    costSz = 8;
+                    costEx = 2;
                 }
-                else if (((unsigned)tree->AsIntCon()->gtIconVal) <= 0x00ff)
+                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
                 {
-                    // mov  Rd, <const8>
-                    costSz = 1;
+                    // Typically included with parent oper
+                    costSz = 2;
+                    costEx = 1;
+                }
+                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
+                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                {
+                    // Uses mov or mvn
+                    costSz = 4;
                     costEx = 1;
                 }
                 else
                 {
-                    // Uses movw/mvn
-                    costSz = 3;
-                    costEx = 1;
+                    // Needs movw/movt
+                    costSz = 8;
+                    costEx = 2;
                 }
                 goto COMMON_CNS;
             }
 
 #elif defined TARGET_XARCH
 
-            case GT_CNS_LNG:
-                costSz = 10;
-                costEx = 3;
-                goto COMMON_CNS;
-
             case GT_CNS_STR:
+#ifdef TARGET_AMD64
+                costSz = 10;
+                costEx = 2;
+#else // TARGET_X86
                 costSz = 4;
                 costEx = 1;
+#endif
                 goto COMMON_CNS;
 
+            case GT_CNS_LNG:
             case GT_CNS_INT:
             {
+                GenTreeIntConCommon* con       = tree->AsIntConCommon();
+                ssize_t              conVal    = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
+                bool                 fitsInVal = true;
+
+#ifdef TARGET_X86
+                if (oper == GT_CNS_LNG)
+                {
+                    INT64 lngVal = con->LngValue();
+
+                    conVal = (ssize_t)lngVal; // truncate to 32-bits
+
+                    fitsInVal = ((INT64)conVal == lngVal);
+                }
+#endif // TARGET_X86
+
                 // If the constant is a handle then it will need to have a relocation
                 //  applied to it.
                 //
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
-
                 bool iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
-                if (!iconNeedsReloc && con->FitsInI8())
+                if (iconNeedsReloc)
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else if (fitsInVal && GenTreeIntConCommon::FitsInI8(conVal))
                 {
                     costSz = 1;
                     costEx = 1;
                 }
-#if defined(TARGET_AMD64)
-                else if (iconNeedsReloc || !con->FitsInI32())
+#ifdef TARGET_AMD64
+                else if (!GenTreeIntConCommon::FitsInI32(conVal))
                 {
                     costSz = 10;
-                    costEx = 3;
+                    costEx = 2;
                 }
 #endif // TARGET_AMD64
                 else
@@ -3329,21 +3389,83 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                     costEx = 1;
                 }
+#ifdef TARGET_X86
+                if (oper == GT_CNS_LNG)
+                {
+                    costSz += fitsInVal ? 1 : 4;
+                    costEx += 1;
+                }
+#endif // TARGET_X86
+
                 goto COMMON_CNS;
             }
 
 #elif defined(TARGET_ARM64)
-            case GT_CNS_LNG:
+
             case GT_CNS_STR:
+            case GT_CNS_LNG:
             case GT_CNS_INT:
-                // TODO-ARM64-NYI: Need cost estimates.
-                costSz = 1;
-                costEx = 1;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                INT64                imm            = con->LngValue();
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc)
+                {
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else if (emitter::emitIns_valid_imm_for_add(imm, size))
+                {
+                    costSz = 2;
+                    costEx = 1;
+                }
+                else if (emitter::emitIns_valid_imm_for_mov(imm, size))
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else
+                {
+                    // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
+                    // There are three forms
+                    //    movk which loads into any halfword preserving the remaining halfwords
+                    //    movz which loads into any halfword zeroing the remaining halfwords
+                    //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
+                    //    the register
+                    // In some cases it is preferable to use movn, because it has the side effect of filling the
+                    // other halfwords
+                    // with ones
+
+                    // Determine whether movn or movz will require the fewest instructions to populate the immediate
+                    bool preferMovz       = false;
+                    bool preferMovn       = false;
+                    int  instructionCount = 4;
+
+                    for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                    {
+                        if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
+                        {
+                            preferMovz = true; // by using a movk to start we can save one instruction
+                            instructionCount--;
+                        }
+                        else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
+                        {
+                            preferMovn = true; // by using a movn to start we can save one instruction
+                            instructionCount--;
+                        }
+                    }
+
+                    costEx = instructionCount;
+                    costSz = 4 * instructionCount;
+                }
+            }
                 goto COMMON_CNS;
 
 #else
-            case GT_CNS_LNG:
             case GT_CNS_STR:
+            case GT_CNS_LNG:
             case GT_CNS_INT:
 #error "Unknown TARGET"
 #endif
