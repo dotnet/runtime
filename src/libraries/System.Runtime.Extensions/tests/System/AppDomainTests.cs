@@ -122,7 +122,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38994", TestPlatforms.Browser)]
         public void FriendlyName()
         {
             string s = AppDomain.CurrentDomain.FriendlyName;
@@ -131,7 +130,7 @@ namespace System.Tests
 
             // GetEntryAssembly may be null (i.e. desktop)
             if (expected == null)
-                expected = Assembly.GetExecutingAssembly().GetName().Name;
+                expected = "DefaultDomain";
 
             Assert.Equal(expected, s);
         }
