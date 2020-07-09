@@ -3606,9 +3606,7 @@ namespace System
         public abstract bool Equals(string? x, string? y);
         public static System.StringComparer FromComparison(System.StringComparison comparisonType) { throw null; }
         public int GetHashCode(object obj) { throw null; }
-#pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
         public abstract int GetHashCode(string obj);
-#pragma warning restore CS8614
     }
     public enum StringComparison
     {
@@ -9927,9 +9925,7 @@ namespace System.Runtime.Versioning
         public string? Message { get; }
         public string? Url { get; set; }
     }
-#pragma warning disable CS3015 // Type has no accessible constructors which use only CLS-compliant types
     public abstract class OSPlatformAttribute : System.Attribute
-#pragma warning restore CS3015 // Type has no accessible constructors which use only CLS-compliant types
     {
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }

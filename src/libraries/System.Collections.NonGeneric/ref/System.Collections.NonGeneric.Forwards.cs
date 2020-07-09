@@ -7,6 +7,4 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.ArrayList))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Comparer))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Hashtable))]
-#pragma warning disable 0618
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.IHashCodeProvider))]
-#pragma warning restore 0618
