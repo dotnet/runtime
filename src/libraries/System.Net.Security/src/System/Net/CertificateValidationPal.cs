@@ -47,7 +47,7 @@ namespace System.Net
                             // NOTE: that if this call fails we won't keep track and the next time we enter we will try to open the store again.
                             store = OpenStore(storeLocation);
 
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
 
                             if (isMachineStore)
@@ -68,7 +68,7 @@ namespace System.Net
                                 return null;
                             }
 
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Error(null, SR.Format(SR.net_log_open_store_failed, storeLocation, exception));
 
                             throw;

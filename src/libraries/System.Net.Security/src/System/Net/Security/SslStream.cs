@@ -109,7 +109,7 @@ namespace System.Net.Security
 
             _innerStream = innerStream;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
