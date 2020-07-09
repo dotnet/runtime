@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // File: ARRAY.CPP
 //
 
@@ -325,9 +324,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // We always have a non-virtual slot array, see assert at end
     cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                           FALSE,                           // GenericsStaticsInfo
-                                                          FALSE,                           // GuidInfo
-                                                          FALSE,                           // CCWTemplate
-                                                          FALSE,                           // RCWPerTypeData
                                                           FALSE);                          // TokenOverflow
 
     // This is the offset of the beginning of the interface map

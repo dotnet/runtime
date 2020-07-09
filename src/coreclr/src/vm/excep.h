@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // EXCEP.H
 //
 
@@ -352,14 +351,10 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
-void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, OBJECTREF* pProtectedThrowable, IRestrictedErrorInfo *pResErrorInfo = NULL, BOOL bHasLanguageRestrictedErrorInfo = FALSE);
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 
-#if FEATURE_COMINTEROP
-IRestrictedErrorInfo* GetRestrictedErrorInfoFromErrorObject(OBJECTREF throwable);
-#endif
 //==========================================================================
 // Throw an ArithmeticException
 //==========================================================================

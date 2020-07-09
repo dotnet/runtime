@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Security;
@@ -24,6 +23,12 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
+        public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
+        public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
+        public static bool IsNotBrowser => !IsBrowser;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -36,6 +41,7 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsThreadingSupported => !IsBrowser;
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
@@ -109,11 +115,13 @@ namespace System
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || IsIllumos || IsSolaris;
+
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
-            ((!IsOSX && !IsWindows) &&
+            (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && Environment.OSVersion.Version > new Version(10, 12));
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
@@ -261,20 +269,26 @@ namespace System
                 // assume no if key is missing or on error.
                 return false;
             }
-            else if (IsOSX)
+            else if (IsOSX || IsiOS || IstvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
             }
-            else
+            else if (IsOpenSslSupported)
             {
-                // Covers Linux and FreeBSD
+                // Covers Linux, FreeBSD, illumos and Solaris
                 return OpenSslVersion >= new Version(1,1,1);
             }
+
+            return false;
         }
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
+            // Browser is always using interpreter right now
+            if (IsBrowser)
+                return true;
+
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");

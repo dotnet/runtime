@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -101,41 +100,59 @@ namespace System.Text.Json
                                 ? StringComparer.OrdinalIgnoreCase
                                 : StringComparer.Ordinal);
 
+                        Dictionary<string, PropertyInfo>? ignoredProperties = null;
+
+                        // We start from the most derived type.
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                             {
-                                // Ignore indexers
-                                if (propertyInfo.GetIndexParameters().Length > 0)
+                                // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
+                                if (propertyInfo.GetIndexParameters().Length > 0 || PropertyIsOverridenAndIgnored(propertyInfo, ignoredProperties))
                                 {
                                     continue;
                                 }
 
-                                // For now we only support public getters\setters
+                                // For now we only support public properties (i.e. setter and/or getter is public).
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
                                     JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, currentType, options);
                                     Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
-                                    // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
+                                    string propertyName = propertyInfo.Name;
+
+                                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
                                     if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                                     {
                                         JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
 
-                                        if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
+                                        if (other.IsIgnored)
                                         {
-                                            // Overwrite the one just added since it has [JsonIgnore].
+                                            // Overwrite previously cached property since it has [JsonIgnore].
                                             cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
                                         }
-                                        else if (other.PropertyInfo?.Name != jsonPropertyInfo.PropertyInfo?.Name &&
-                                            (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true))
+                                        else if (
+                                            // Does the current property have `JsonIgnoreAttribute`?
+                                            !jsonPropertyInfo.IsIgnored &&
+                                            // Is the current property hidden by the previously cached property
+                                            // (with `new` keyword, or by overriding)?
+                                            other.PropertyInfo!.Name != propertyName &&
+                                            // Was a property with the same CLR name ignored? That property hid the current property,
+                                            // thus, if it was ignored, the current property should be ignored too.
+                                            ignoredProperties?.ContainsKey(propertyName) != true
+                                            )
                                         {
-                                            // Check for name equality is required to determine when a new slot is used for the member.
-                                            // Therefore, if names are not the same, there is conflict due to the name policy or attributes.
+                                            // Throw if we have two public properties with the same JSON property name,
+                                            // neither overrides or hides the other, and neither have been ignored.
                                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                                         }
-                                        // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.
+                                        // Ignore the current property.
+                                    }
+
+                                    if (jsonPropertyInfo.IsIgnored)
+                                    {
+                                        (ignoredProperties ??= new Dictionary<string, PropertyInfo>())[propertyName] = propertyInfo;
                                     }
                                 }
                                 else
@@ -154,7 +171,7 @@ namespace System.Text.Json
                         if (DetermineExtensionDataProperty(cache))
                         {
                             // Remove from cache since it is handled independently.
-                            cache.Remove(DataExtensionProperty!.NameAsString!);
+                            cache.Remove(DataExtensionProperty!.NameAsString);
 
                             cacheArray = new JsonPropertyInfo[cache.Count + 1];
 
@@ -212,7 +229,8 @@ namespace System.Text.Json
         private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
-            Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
+            Dictionary<string, JsonParameterInfo> parameterCache = new Dictionary<string, JsonParameterInfo>(
+                parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
             foreach (ParameterInfo parameterInfo in parameters)
             {
@@ -248,10 +266,10 @@ namespace System.Text.Json
 
                         // One object property cannot map to multiple constructor
                         // parameters (ConvertName above can't return multiple strings).
-                        parameterCache.Add(jsonPropertyInfo.NameAsString!, jsonParameterInfo);
+                        parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
 
                         // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
-                        propertyCache.Remove(jsonPropertyInfo.NameAsString!);
+                        propertyCache.Remove(jsonPropertyInfo.NameAsString);
 
                         isBound = true;
                         firstMatch = propertyInfo;
@@ -261,7 +279,7 @@ namespace System.Text.Json
 
             // It is invalid for the extension data property to bind with a constructor argument.
             if (DataExtensionProperty != null &&
-                parameterCache.ContainsKey(DataExtensionProperty.NameAsString!))
+                parameterCache.ContainsKey(DataExtensionProperty.NameAsString))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.PropertyInfo!, Type, constructorInfo);
             }
@@ -270,6 +288,23 @@ namespace System.Text.Json
             ParameterCount = parameters.Length;
 
             PropertyCache = propertyCache;
+        }
+
+        private static bool PropertyIsOverridenAndIgnored(PropertyInfo currentProperty, Dictionary<string, PropertyInfo>? ignoredProperties)
+        {
+            if (ignoredProperties == null || !ignoredProperties.TryGetValue(currentProperty.Name, out PropertyInfo? ignoredProperty))
+            {
+                return false;
+            }
+
+            return currentProperty.PropertyType == ignoredProperty.PropertyType &&
+                PropertyIsVirtual(currentProperty) &&
+                PropertyIsVirtual(ignoredProperty);
+        }
+
+        private static bool PropertyIsVirtual(PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true;
         }
 
         public bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
@@ -325,14 +360,13 @@ namespace System.Text.Json
         {
             if (jsonPropertyInfo.IsIgnored)
             {
-                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(parameterInfo, jsonPropertyInfo, options);
+                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(jsonPropertyInfo, options);
             }
 
             JsonConverter converter = jsonPropertyInfo.ConverterBase;
 
             JsonParameterInfo jsonParameterInfo = converter.CreateJsonParameterInfo();
             jsonParameterInfo.Initialize(
-                jsonPropertyInfo.DeclaredPropertyType,
                 jsonPropertyInfo.RuntimePropertyType!,
                 parameterInfo,
                 jsonPropertyInfo,

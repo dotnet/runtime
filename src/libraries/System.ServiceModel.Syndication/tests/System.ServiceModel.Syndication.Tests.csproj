@@ -51,11 +51,11 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
+    <Content Include="$(MSBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 </Project>

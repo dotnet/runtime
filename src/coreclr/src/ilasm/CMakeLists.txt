@@ -86,7 +86,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
-        mdwinmd_wks
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -114,14 +113,8 @@ if(CLR_CMAKE_HOST_UNIX)
     mscorrc
     coreclrpal
     palrt
+    ${CMAKE_DL_LIBS}
   )
-
-  # FreeBSD and NetBSD implement dlopen(3) in libc
-  if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
-    target_link_libraries(ilasm
-      dl
-    )
-  endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}

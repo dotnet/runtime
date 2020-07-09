@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -674,7 +673,7 @@ namespace System.IO
             Debug.Assert(_asyncState != null);
 
             if (cancellationToken.IsCancellationRequested)
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -705,7 +704,7 @@ namespace System.IO
                     }
                     catch (Exception exc)
                     {
-                        return new ValueTask(Task.FromException(exc));
+                        return ValueTask.FromException(exc);
                     }
                     finally
                     {

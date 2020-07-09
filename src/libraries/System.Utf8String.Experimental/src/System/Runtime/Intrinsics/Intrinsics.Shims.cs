@@ -1,12 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.Intrinsics
 {
     internal static class Vector64
     {
         public static Vector64<ulong> Create(ulong value) => throw new PlatformNotSupportedException();
+        public static Vector64<uint> CreateScalar(uint value) => throw new PlatformNotSupportedException();
         public static Vector64<byte> AsByte<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector64<T>

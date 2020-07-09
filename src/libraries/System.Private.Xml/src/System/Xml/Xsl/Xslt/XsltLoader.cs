@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //#define XSLT2
 
@@ -31,7 +30,6 @@ namespace System.Xml.Xsl.Xslt
         private XsltInput _input;          // Current input stream
         private Stylesheet _curStylesheet;  // Current stylesheet
         private Template _curTemplate;    // Current template
-        private readonly object _curFunction;    // Current function
 
         internal static QilName nullMode = f.QName(string.Empty);
 
@@ -1355,7 +1353,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private const int MAX_LOADINSTRUCTIONS_DEPTH = 1024;
-        private int _loadInstructionsDepth = 0;
+        private int _loadInstructionsDepth;
         private List<XslNode> LoadInstructions(List<XslNode> content, InstructionFlags flags)
         {
             if (++_loadInstructionsDepth > MAX_LOADINSTRUCTIONS_DEPTH)
@@ -1944,18 +1942,7 @@ namespace System.Xml.Xsl.Xslt
             string select = ParseStringAttribute(1, "select");
             string asType = ParseStringAttribute(2, "as");
             TriState required = ParseYesNoAttribute(3, "required");
-            if (nodeType == XslNodeType.Param && _curFunction != null)
-            {
-                if (!_input.ForwardCompatibility)
-                {
-                    CheckError(required != TriState.Unknown, /*[???]*/SR.Xslt_RequiredOnFunction, name.ToString());
-                }
-                required = TriState.True;
-            }
-            else
-            {
-                if (required == TriState.True) ReportNYI("xsl:param/@required == true()");
-            }
+            if (required == TriState.True) ReportNYI("xsl:param/@required == true()");
 
             if (asType != null)
             {

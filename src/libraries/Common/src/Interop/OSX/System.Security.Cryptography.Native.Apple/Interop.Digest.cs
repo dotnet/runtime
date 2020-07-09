@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -16,17 +15,23 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
         internal static extern SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
 
-        internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> pbData, int cbData) =>
-            DigestUpdate(ctx, ref MemoryMarshal.GetReference(pbData), cbData);
+        internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> data) =>
+            DigestUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
         private static extern int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
 
-        internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> pbOutput, int cbOutput) =>
-            DigestFinal(ctx, ref MemoryMarshal.GetReference(pbOutput), cbOutput);
+        internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> output) =>
+            DigestFinal(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
         private static extern int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
+
+        internal static int DigestCurrent(SafeDigestCtxHandle ctx, Span<byte> output) =>
+            DigestCurrent(ctx, ref MemoryMarshal.GetReference(output), output.Length);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
+        private static extern int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
     }
 }
 

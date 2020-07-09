@@ -15,7 +15,8 @@
     <CoreCLRTargetOS Condition="'$(TargetsBrowser)' == 'true'">Browser</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsNetBSD)' == 'true'">NetBSD</CoreCLRTargetOS>
-    <CoreCLRTargetOS Condition="'$(TargetsSunOS)' == 'true'">SunOS</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsIllumos)' == 'true'">illumos</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsSolaris)' == 'true'">Solaris</CoreCLRTargetOS>
     <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 

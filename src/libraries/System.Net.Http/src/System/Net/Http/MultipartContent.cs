@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -166,6 +165,42 @@ namespace System.Net.Http
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled
         // then the stream will be closed an exception thrown.
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+            try
+            {
+                // Write start boundary.
+                EncodeStringToStream(stream, "--" + _boundary + CrLf);
+
+                // Write each nested content.
+                var output = new StringBuilder();
+                for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
+                {
+                    // Write divider, headers, and content.
+                    HttpContent content = _nestedContent[contentIndex];
+                    EncodeStringToStream(stream, SerializeHeadersToString(output, contentIndex, content));
+                    content.CopyTo(stream, context, cancellationToken);
+                }
+
+                // Write footer boundary.
+                EncodeStringToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
+                throw;
+            }
+        }
+
+        // for-each content
+        //   write "--" + boundary
+        //   for-each content header
+        //     write header: header-value
+        //   write content.CopyTo[Async]
+        // write "--" + boundary + "--"
+        // Can't be canceled directly by the user.  If the overall request is canceled
+        // then the stream will be closed an exception thrown.
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, context, default);
 
@@ -198,21 +233,28 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            ValueTask<Stream> task = CreateContentReadStreamAsyncCore(async: false, cancellationToken);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
+        }
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
-            CreateContentReadStreamAsyncCore(CancellationToken.None);
+            CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).AsTask();
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
+            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask() :
             base.CreateContentReadStreamAsync(cancellationToken);
 
-        private async Task<Stream> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
+        private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
         {
             try
             {
@@ -231,16 +273,27 @@ namespace System.Net.Http
                     HttpContent nestedContent = _nestedContent[contentIndex];
                     streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
 
-                    Stream readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) ?? new MemoryStream();
+                    Stream readStream;
+                    if (async)
+                    {
+                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        readStream = nestedContent.ReadAsStream();
+                    }
+                    // Cannot be null, at least an empty stream is necessary.
+                    readStream ??= new MemoryStream();
+
                     if (!readStream.CanSeek)
                     {
-                        // Seekability impacts whether HttpClientHandlers are able to rewind.  To maintain compat
+                        // Seekability impacts whether HttpClientHandlers are able to rewind. To maintain compat
                         // and to allow such use cases when a nested stream isn't seekable (which should be rare),
-                        // we fall back to the base behavior.  We don't dispose of the streams already obtained
+                        // we fall back to the base behavior. We don't dispose of the streams already obtained
                         // as we don't necessarily own them yet.
 
-                        // Do not pass a cancellationToken to base as it would trigger an infinite loop => StackOverflow
-                        return await base.CreateContentReadStreamAsync().ConfigureAwait(false);
+                        // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
+                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
                     }
                     streams[streamIndex++] = readStream;
                 }
@@ -252,7 +305,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -288,6 +341,12 @@ namespace System.Net.Http
             scratch.Append(CrLf);
 
             return scratch.ToString();
+        }
+
+        private static void EncodeStringToStream(Stream stream, string input)
+        {
+            byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
+            stream.Write(buffer);
         }
 
         private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)

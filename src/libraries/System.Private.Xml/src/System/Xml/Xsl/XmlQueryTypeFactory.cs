@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1134,8 +1133,10 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Create a Node XmlQueryType having an XSD content type.
         /// </summary>
+        /// <param name="nameTest">The name test.</param>
         /// <param name="kind">unless kind is Root, Element, or Attribute, "contentType" is ignored</param>
         /// <param name="contentType">content type of the node</param>
+        /// <param name="isNillable">Whether it's nillable.</param>
         /// <returns>the node type</returns>
         public static XmlQueryType Type(XPathNodeType kind, XmlQualifiedNameTest nameTest, XmlSchemaType contentType, bool isNillable)
         {

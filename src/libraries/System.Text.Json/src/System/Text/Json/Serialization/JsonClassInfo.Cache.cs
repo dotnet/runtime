@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,6 +13,11 @@ namespace System.Text.Json
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
     internal sealed partial class JsonClassInfo
     {
+        /// <summary>
+        /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
+        /// </summary>
+        public static readonly Type ObjectType = typeof(object);
+
         // The length of the property name embedded in the key (in bytes).
         // The key is a ulong (8 bytes) containing the first 7 bytes of the property name
         // followed by a byte representing the length.
@@ -47,34 +51,6 @@ namespace System.Text.Json
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
-
-        private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            StringComparer comparer;
-
-            if (Options.PropertyNameCaseInsensitive)
-            {
-                comparer = StringComparer.OrdinalIgnoreCase;
-            }
-            else
-            {
-                comparer = StringComparer.Ordinal;
-            }
-
-            return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
-        }
-
-        public Dictionary<string, JsonParameterInfo> CreateParameterCache(int capacity, JsonSerializerOptions options)
-        {
-            if (options.PropertyNameCaseInsensitive)
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity, StringComparer.OrdinalIgnoreCase);
-            }
-            else
-            {
-                return new Dictionary<string, JsonParameterInfo>(capacity);
-            }
-        }
 
         public static JsonPropertyInfo AddProperty(PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
@@ -139,13 +115,17 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            return CreateProperty(
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
-                parentClassType: typeof(object), // a dummy value (not used)
+                parentClassType: JsonClassInfo.ObjectType, // a dummy value (not used)
                 converter: converter,
                 options);
+
+            Debug.Assert(jsonPropertyInfo.IsForClassInfo);
+
+            return jsonPropertyInfo;
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
@@ -466,18 +446,10 @@ namespace System.Text.Json
 
             if (length > 7)
             {
-                key = MemoryMarshal.Read<ulong>(propertyName);
-
-                // Max out the length byte.
-                // This will cause the comparison logic to always test for equality against the full contents
-                // when the first 7 bytes are the same.
-                key |= 0xFF00000000000000;
-
-                // It is also possible to include the length up to 0xFF in order to prevent false positives
-                // when the first 7 bytes match but a different length (up to 0xFF). However the extra logic
-                // slows key generation in the majority of cases:
-                // key &= 0x00FFFFFFFFFFFFFF;
-                // key |= (ulong) 7 << Math.Max(length, 0xFF);
+                key = MemoryMarshal.Read<ulong>(propertyName)
+                    & 0x00FFFFFFFFFFFFFF
+                    // Include the length with a max of 0xFF.
+                    | ((ulong)Math.Min(length, 0xFF)) << (7 * BitsInByte);
             }
             else if (length > 3)
             {
@@ -533,13 +505,17 @@ namespace System.Text.Json
 
             // Verify key contains the embedded bytes as expected.
             Debug.Assert(
-                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << 8 * 0)) >> 8 * 0)) &&
-                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << 8 * 1)) >> 8 * 1)) &&
-                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << 8 * 2)) >> 8 * 2)) &&
-                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << 8 * 3)) >> 8 * 3)) &&
-                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << 8 * 4)) >> 8 * 4)) &&
-                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << 8 * 5)) >> 8 * 5)) &&
-                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << 8 * 6)) >> 8 * 6)));
+                // Verify embedded property name.
+                (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << BitsInByte * 0)) >> BitsInByte * 0)) &&
+                (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << BitsInByte * 1)) >> BitsInByte * 1)) &&
+                (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << BitsInByte * 2)) >> BitsInByte * 2)) &&
+                (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << BitsInByte * 3)) >> BitsInByte * 3)) &&
+                (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << BitsInByte * 4)) >> BitsInByte * 4)) &&
+                (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << BitsInByte * 5)) >> BitsInByte * 5)) &&
+                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
+                // Verify embedded length.
+                (length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)length) &&
+                (length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
 
             return key;
         }

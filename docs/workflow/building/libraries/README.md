@@ -176,6 +176,25 @@ dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
 
+### Iterating on System.Private.CoreLib changes
+When changing `System.Private.CoreLib` after a full build, in order to test against those changes, you will need an updated `System.Private.CoreLib` in the testhost. In order to achieve that, you can build the `libs.pretest` subset which does testhost setup including copying over `System.Private.CoreLib`.
+
+After doing a build of the runtime:
+
+```
+build.cmd clr -rc Release
+```
+
+You can iterate on `System.Private.CoreLib` by running:
+
+```
+build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
+```
+
+When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
+
+You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
+
 ### Building for Mono
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
 

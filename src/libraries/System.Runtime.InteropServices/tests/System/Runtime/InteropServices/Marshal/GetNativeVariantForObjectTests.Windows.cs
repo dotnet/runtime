@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices.Tests.Common;
@@ -100,8 +99,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new DualComObject[] { new DualComObject() } };
             yield return new object[] { new IUnknownComObject[] { new IUnknownComObject(), null } };
             yield return new object[] { new IDispatchComObject[] { new IDispatchComObject(), null } };
-            yield return new object[] { new IInspectableComObject[] { new IInspectableComObject(), null } };
-
             yield return new object[] { new NonDualComObject[] { new NonDualComObject(), null } };
             yield return new object[] { new AutoDispatchComObject[] { new AutoDispatchComObject(), null } };
             yield return new object[] { new AutoDualComObject[] { new AutoDualComObject(), null } };

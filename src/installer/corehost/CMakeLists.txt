@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.14.5)
 
 project(corehost)
 
@@ -9,6 +9,10 @@ if(MSVC)
 
     # Host components don't try to handle asynchronous exceptions
     add_compile_options(/EHsc)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    # Prevents libc from calling pthread_cond_destroy on static objects in
+    # dlopen()'ed library which we dlclose() in pal::unload_library.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>)
 endif()
 
 add_subdirectory(cli)

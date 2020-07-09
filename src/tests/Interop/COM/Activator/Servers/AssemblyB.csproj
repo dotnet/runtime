@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyB.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyC.csproj" />
+    <ProjectReference Include="AssemblyContracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -104,13 +103,11 @@ namespace System
             if (!baseUri.IsAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
-
             string? newUriString = null;
             bool userEscaped = false;
-            Uri? result = Uri.ResolveHelper(baseUri, relativeUri, ref newUriString, ref userEscaped, out parsingError);
+            parsingError = null;
 
-            if (parsingError != null)
-                return null;
+            Uri? result = Uri.ResolveHelper(baseUri, relativeUri, ref newUriString, ref userEscaped);
 
             if (result != null)
                 return result.OriginalString;

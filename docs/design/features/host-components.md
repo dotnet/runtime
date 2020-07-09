@@ -8,15 +8,14 @@ The .NET Core default hosting setup consists of several components which are des
 * `apphost` (executable) - which is used to give app an actual executable which can be run directly. The executable will be named using the application name. The advantage of having an app-local executable is that it can be customized for each app (not just the name, but icon, OS behavior and so on).
 * `comhost` (library) - which is used to enable COM server hosting. Component which wants to expose COM server objects will be built with this dynamic library in its output. The `comhost` then acts as the main entry point for the OS.
 * `ijwhost` (library) - which is used to enable loading of IJW assemblies. The library exposes functionality needed by the C++ compiler to generate mixed mode assemblies.
-* `winrthost` (library) - which is used to enable WinRT component hosting. Any component which wants to be a WinRT component will be built with this library in its output. The `winrthost` then acts as the main entry point for the OS (very similar to `comhost`).
 * `nethost` (library) - which is used by native apps (any app which is not .NET Core) to load .NET Core code dynamically.
 
 The entry-point typically does just one thing: it finds the `hostfxr` library and passes control to it. It also exposes the right entry points for its purpose (so the "main" for `dotnet` and `apphost`, the COM exports for `comhost` and so on).
 * `dotnet` host - `hostfxr` is obtained from the `./host/fxr/<highestversion>` folder (relative to the location of the `dotnet` host).
 * `apphost`, `comhost` and the others - `hostfxr` is located using this process:
     1. The app's folder is searched first. This is either the folder where the entry-point host lives or in case of `apphost` it is the path it has embedded in it as the app path.
-    1. If the `DOTNET_ROOT` environment variable is defined, that path is searched
-    1. The default shared locations are searched
+    2. If the `DOTNET_ROOT` environment variable is defined, that path is searched
+    3. The default shared locations are searched
 
 ## Host FXR
 This library finds and resolves the runtime and all the frameworks the app needs. Then it loads the `hostpolicy` library and transfers control to it.

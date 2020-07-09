@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\""
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
 
         local exitCode="$?"
@@ -51,7 +51,6 @@ generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -124,8 +123,8 @@ generate_layout()
 
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
-    if [[ "$__TargetOS" != "OSX" ]]; then
-        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+    if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
+        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 
@@ -181,10 +180,11 @@ precompile_coreroot_fx()
     local totalPrecompiled=0
     local failedToPrecompile=0
     local compositeCommandLine="${__DotNetCli}"
-    compositeCommandLine+=" $__BinDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" $__Crossgen2Dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
+    compositeCommandLine+=" --targetarch ${__BuildArch}"
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -206,7 +206,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $__Crossgen2Dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename --targetarch ${__BuildArch}"
         fi
 
         echo Precompiling "$filename"
@@ -273,7 +273,6 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -504,21 +503,25 @@ build_MSBuild_projects()
     fi
 }
 
-usage_list=("-buildtestwrappersonly: only build the test wrappers.")
+usage_list=()
+
+usage_list+=("-skiprestorepackages: skip package restore.")
+usage_list+=("-skipstressdependencies: Don't install stress dependencies.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
+
+usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
+usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
+usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
+
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
-usage_list+=("-generatetesthostonly: only generate the test host.")
-usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
-usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
-usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+usage_list+=("-allTargets: Build managed tests for all target platforms.")
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-skiprestorepackages: skip package restore.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
@@ -537,11 +540,20 @@ handle_arguments_local() {
             ;;
 
         copynativeonly|-copynativeonly)
+            __SkipStressDependencies=1
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
+            __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
+            ;;
+
+        crossgenframeworkonly|-crossgenframeworkonly)
+            __SkipStressDependencies=1
+            __SkipNative=1
+            __SkipManaged=1
+            __SkipGenerateLayout=1
             ;;
 
         crossgen|-crossgen)
@@ -560,10 +572,6 @@ handle_arguments_local() {
             __TestBuildMode=crossgen2
             ;;
 
-        generatetesthostonly|-generatetesthostonly)
-            __GenerateTestHostOnly=1
-            ;;
-
         generatelayoutonly|-generatelayoutonly)
             __GenerateLayoutOnly=1
             ;;
@@ -573,12 +581,8 @@ handle_arguments_local() {
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
             ;;
 
-        targetGeneric|-targetGeneric)
-            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
-            ;;
-
-        targetSpecific|-targetSpecific)
-            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
+        allTargets|-allTargets)
+            __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
             ;;
 
         rebuild|-rebuild)
@@ -591,6 +595,10 @@ handle_arguments_local() {
 
         skiprestorepackages|-skiprestorepackages)
             __SkipRestorePackages=1
+            ;;
+
+        skipstressdependencies|-skipstressdependencies)
+            __SkipStressDependencies=1
             ;;
 
         skipgeneratelayout|-skipgeneratelayout)
@@ -630,7 +638,6 @@ __DoCrossgen2=0
 __CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
-__GenerateTestHostOnly=
 __IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
@@ -645,6 +652,7 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
+__SkipStressDependencies=0
 __SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
@@ -668,7 +676,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__TestDir="$__ProjectDir/tests"
+__TestDir="${__RepoRootDir}/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
@@ -681,6 +689,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
 fi
 __CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
+__Crossgen2Dll="$__CrossComponentBinDir/crossgen2/crossgen2.dll"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.
@@ -694,7 +703,7 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers

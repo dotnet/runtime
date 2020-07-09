@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.CodeDom;
@@ -46,7 +45,7 @@ namespace Microsoft.VisualBasic
                                                          GeneratorSupport.GenericTypeDeclaration |
                                                          GeneratorSupport.DeclareIndexerProperties;
 
-        private int _statementDepth = 0;
+        private int _statementDepth;
         private readonly IDictionary<string, string> _provOptions;
 
         // This is the keyword list. To minimize search time and startup time, this is stored by length

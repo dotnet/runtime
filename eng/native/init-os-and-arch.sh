@@ -9,7 +9,7 @@ fi
 
 case "$OSName" in
 FreeBSD|Linux|NetBSD|OpenBSD|SunOS|Android)
-    os=$OSName ;;
+    os="$OSName" ;;
 Darwin)
     os=OSX ;;
 *)
@@ -20,7 +20,12 @@ esac
 # On Solaris, `uname -m` is discoragued, see https://docs.oracle.com/cd/E36784_01/html/E36870/uname-1.html
 # and `uname -p` returns processor type (e.g. i386 on amd64).
 # The appropriate tool to determine CPU is isainfo(1) https://docs.oracle.com/cd/E36784_01/html/E36870/isainfo-1.html.
-if [ "$OSName" = "SunOS" ]; then
+if [ "$os" = "SunOS" ]; then
+    if uname -o 2>&1 | grep -q illumos; then
+        os="illumos"
+    else
+        os="Solaris"
+    fi
     CPUName=$(isainfo -n)
 else
     # For rest of the operating systems, use uname(1) to determine what the CPU is.

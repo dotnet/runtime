@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -30,6 +32,7 @@ using System.Runtime.InteropServices;
 using System.Reflection.Emit;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using InteropServicesCallingConvention = System.Runtime.InteropServices.CallingConvention;
 
 namespace System.Reflection
@@ -174,9 +177,9 @@ namespace System.Reflection
             if (IsGenericMethod)
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
 
-            sbName.Append("(");
+            sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+            sbName.Append(')');
 
             return sbName.ToString();
         }
@@ -212,7 +215,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [PreserveDependency(".ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", "System.Reflection.RuntimeMethodBody")]
+        [DynamicDependency("#ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", typeof(RuntimeMethodBody))]
         internal static extern MethodBody GetMethodBodyInternal(IntPtr handle);
 
         internal static MethodBody GetMethodBody(IntPtr handle)
@@ -970,9 +973,9 @@ namespace System.Reflection
             StringBuilder sbName = new StringBuilder(Name);
             sbName.Append("Void ");
 
-            sbName.Append("(");
+            sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+            sbName.Append(')');
 
             return sbName.ToString();
         }

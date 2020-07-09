@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Data.Common;
@@ -26,9 +25,9 @@ namespace System.Data
 
         private sealed class ColumnInfo
         {
-            public bool flag = false;               // Misc. Use
-            public bool equalsOperator = false;     // True when the associated expr has = Operator defined
-            public BinaryNode expr = null;          // Binary Search capable expression associated
+            public bool flag;               // Misc. Use
+            public bool equalsOperator;     // True when the associated expr has = Operator defined
+            public BinaryNode expr;          // Binary Search capable expression associated
         }
 
         private ColumnInfo[] _candidateColumns;

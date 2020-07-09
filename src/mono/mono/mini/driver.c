@@ -528,7 +528,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 			func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
 			mono_error_cleanup (error);
 #else
-			g_error ("No JIT or AOT available, regression testing not possible!")
+			g_error ("No JIT or AOT available, regression testing not possible!");
 #endif
 
 #else

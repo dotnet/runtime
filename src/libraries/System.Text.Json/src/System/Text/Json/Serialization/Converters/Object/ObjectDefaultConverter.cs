@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,10 +14,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
             object obj;
 
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -49,10 +48,10 @@ namespace System.Text.Json.Serialization.Converters
                     // Read method would have thrown if otherwise.
                     Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out bool useExtensionProperty);
 
@@ -76,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (shouldReadPreservedReferences)
+                    if (options.ReferenceHandler != null)
                     {
                         if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                         {
@@ -106,10 +105,10 @@ namespace System.Text.Json.Serialization.Converters
                     obj = state.Current.JsonClassInfo.CreateObject!()!;
                     if (state.Current.MetadataId != null)
                     {
-                        if (!state.ReferenceResolver.AddReferenceOnDeserialize(state.Current.MetadataId, obj))
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(state.Current.MetadataId, ref state);
-                        }
+                        state.ReferenceResolver.AddReference(state.Current.MetadataId, obj);
+                        // Clear metadata name, if the next read fails
+                        // we want to point the JSON path to the property's object.
+                        state.Current.JsonPropertyName = null;
                     }
 
                     state.Current.ReturnValue = obj;
@@ -153,10 +152,10 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty);
 
@@ -230,7 +229,11 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal sealed override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool OnTryWrite(
+            Utf8JsonWriter writer,
+            T value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
             object objectValue = value!;
@@ -239,7 +242,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 writer.WriteStartObject();
 
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                if (options.ReferenceHandler != null)
                 {
                     if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                     {
@@ -294,7 +297,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     writer.WriteStartObject();
 
-                    if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                    if (options.ReferenceHandler != null)
                     {
                         if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                         {
@@ -357,6 +360,8 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        // AggressiveInlining since this method is only called from two locations and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ReadPropertyValue(
             object obj,
             ref ReadStack state,

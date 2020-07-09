@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -113,7 +112,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36100", TestPlatforms.Windows)]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -196,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> NotSupportedSSLVersionServers()
         {
 #pragma warning disable 0618
-            if (PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
                 yield return new object[] { SslProtocols.Ssl2, Configuration.Http.SSLv2RemoteServer };
             }
@@ -249,7 +247,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls)] // Skip this on WinHttpHandler.
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36100", TestPlatforms.Windows)]
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {

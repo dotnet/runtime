@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <!-- IJW is Windows-only -->
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- IJW is not supported on ARM64 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
+    <!-- Loading IJW assemblies into an unloadable context is not allowed -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
+    <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
+  </ItemGroup>
+</Project>

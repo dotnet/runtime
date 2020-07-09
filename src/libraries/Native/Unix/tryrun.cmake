@@ -6,23 +6,21 @@ macro(set_cache_value)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
 endmacro()
 
-if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
+if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl)
-  
-   SET(ALPINE_LINUX 1)
-   SET(FREEBSD 0)
-else()
-   SET(ALPINE_LINUX 0)
-   if(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
-       set(FREEBSD 1)
-       set(CMAKE_SYSTEM_NAME FreeBSD)
-       set(CLR_CMAKE_TARGET_OS FreeBSD)
-   else()
-       SET(FREEBSD 0)
-   endif()
+
+  set(ALPINE_LINUX 1)
+elseif(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
+  set(FREEBSD 1)
+  set(CMAKE_SYSTEM_NAME FreeBSD)
+  set(CLR_CMAKE_TARGET_OS FreeBSD)
+elseif(EXISTS ${CROSS_ROOTFS}/usr/platform/i86pc)
+  set(ILLUMOS 1)
+  set(CLR_CMAKE_TARGET_OS SunOS)
 endif()
 
-if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$" OR FREEBSD)
+if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$" OR FREEBSD OR ILLUMOS)
   set_cache_value(HAVE_CLOCK_MONOTONIC_EXITCODE 0)
   set_cache_value(HAVE_CLOCK_REALTIME_EXITCODE 0)
 
@@ -31,7 +29,8 @@ if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$" OR FREEBSD)
   else()
     set_cache_value(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP_EXITCODE 0)
   endif()
-  if (FREEBSD)
+
+  if(FREEBSD)
     set_cache_value(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP 1)
     set_cache_value(HAVE_CLOCK_MONOTONIC 1)
     set_cache_value(HAVE_CLOCK_REALTIME 1)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -21,10 +20,16 @@ internal class Xcode
         string monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
+        bool useAotForSimulator,
+        bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc"};
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
+        if (stripDebugSymbols)
+        {
+            excludes.Add(".pdb");
+        }
 
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
@@ -80,6 +85,8 @@ internal class Xcode
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%Defines%", 
+            useAotForSimulator ? "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)" : "");
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
@@ -147,7 +154,16 @@ internal class Xcode
         args.Append(" -configuration ").Append(config);
 
         Utils.RunProcess("xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath));
-        return Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
+
+        string appPath = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
             Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+
+        long appSize = new DirectoryInfo(appPath)
+            .EnumerateFiles("*", SearchOption.AllDirectories)
+            .Sum(file => file.Length);
+
+        Utils.LogInfo($"\nAPP size: {(appSize / 1000_000.0):0.#} Mb.\n");
+
+        return appPath;
     }
 }

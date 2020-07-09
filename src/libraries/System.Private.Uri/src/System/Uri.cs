@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -141,11 +140,16 @@ namespace System
 
         private class UriInfo
         {
-            public string? Host;
-            public string? ScopeId;        //only IP v6 may need this
-            public string? String;
             public Offset Offset;
-            public string? DnsSafeHost;    // stores dns safe host when idn is on and we have unicode or idn host
+            public string? String;
+            public string? Host;
+            public string? IdnHost;
+            public string? PathAndQuery;
+
+            /// <summary>
+            /// Only IP v6 may need this
+            /// </summary>
+            public string? ScopeId;
 
             private MoreInfo? _moreInfo;
             public MoreInfo MoreInfo
@@ -321,8 +325,9 @@ namespace System
 
         private void EnsureHostString(bool allowDnsOptimization)
         {
-            EnsureUriInfo();
-            if ((object?)_info.Host == null)
+            UriInfo info = EnsureUriInfo();
+
+            if (info.Host is null)
             {
                 if (allowDnsOptimization && InFact(Flags.CanonicalDnsHost))
                 {
@@ -474,19 +479,15 @@ namespace System
             // Parse relativeUri and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.RelativeOrAbsolute);
 
-            UriFormatException? e;
             if (baseUri.Syntax!.IsSimple)
             {
                 // Resolve Uris if possible OR get merged Uri String to re-parse below
-                Uri? uriResult = ResolveHelper(baseUri, this, ref relativeUri, ref dontEscape, out e);
-
-                if (e != null)
-                    throw e;
+                Uri? uriResult = ResolveHelper(baseUri, this, ref relativeUri, ref dontEscape);
 
                 // If resolved into a Uri then we build from that Uri
                 if (uriResult != null)
                 {
-                    if ((object)uriResult != (object)this)
+                    if (!ReferenceEquals(this, uriResult))
                         CreateThisFromUri(uriResult);
 
                     return;
@@ -495,7 +496,7 @@ namespace System
             else
             {
                 dontEscape = false;
-                relativeUri = baseUri.Syntax.InternalResolve(baseUri, this, out e);
+                relativeUri = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
                 if (e != null)
                     throw e;
             }
@@ -522,20 +523,16 @@ namespace System
             CreateThisFromUri(relativeUri);
 
             string? newUriString = null;
-            UriFormatException? e;
             bool dontEscape;
 
             if (baseUri.Syntax!.IsSimple)
             {
                 dontEscape = InFact(Flags.UserEscaped);
-                Uri? resolvedRelativeUri = ResolveHelper(baseUri, this, ref newUriString, ref dontEscape, out e);
-
-                if (e != null)
-                    throw e;
+                Uri? resolvedRelativeUri = ResolveHelper(baseUri, this, ref newUriString, ref dontEscape);
 
                 if (resolvedRelativeUri != null)
                 {
-                    if ((object)resolvedRelativeUri != (object)this)
+                    if (!ReferenceEquals(this, resolvedRelativeUri))
                         CreateThisFromUri(resolvedRelativeUri);
 
                     DebugSetLeftCtor();
@@ -545,7 +542,7 @@ namespace System
             else
             {
                 dontEscape = false;
-                newUriString = baseUri.Syntax.InternalResolve(baseUri, this, out e);
+                newUriString = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
                 if (e != null)
                     throw e;
             }
@@ -562,7 +559,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe ParsingError GetCombinedString(Uri baseUri, string relativeStr,
+        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -604,7 +601,7 @@ namespace System
                             // This is the place where we switch the scheme.
                             // Return relative part as the result Uri.
                             result = relativeStr;
-                            return ParsingError.None;
+                            return;
                         }
                     }
                     break;
@@ -614,11 +611,11 @@ namespace System
             if (relativeStr.Length == 0)
             {
                 result = baseUri.OriginalString;
-                return ParsingError.None;
             }
-
-            result = CombineUri(baseUri, relativeStr, dontEscape ? UriFormat.UriEscaped : UriFormat.SafeUnescaped);
-            return ParsingError.None;
+            else
+            {
+                result = CombineUri(baseUri, relativeStr, dontEscape ? UriFormat.UriEscaped : UriFormat.SafeUnescaped);
+            }
         }
 
         private static UriFormatException? GetException(ParsingError err)
@@ -838,16 +835,23 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
-                //
-                // Compatibility:
-                // Remove the first slash from a Dos Path if it's present
-                //
-                if (IsDosPath && result[0] == '/')
+                UriInfo info = EnsureUriInfo();
+
+                if (info.PathAndQuery is null)
                 {
-                    result = result.Substring(1);
+                    string result = GetParts(UriComponents.PathAndQuery, UriFormat.UriEscaped);
+
+                    // Compatibility:
+                    // Remove the first slash from a Dos Path if it's present
+                    if (IsDosPath && result[0] == '/')
+                    {
+                        result = result.Substring(1);
+                    }
+
+                    info.PathAndQuery = result;
                 }
-                return result;
+
+                return info.PathAndQuery;
             }
         }
 
@@ -1129,44 +1133,15 @@ namespace System
 
                 EnsureHostString(false);
 
-                if (_info.DnsSafeHost != null)
+                Flags hostType = HostType;
+                if (hostType == Flags.IPv6HostType || (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical)))
                 {
-                    // Cached
-                    return _info.DnsSafeHost;
+                    return IdnHost;
                 }
-                else if (_info.Host!.Length == 0)
+                else
                 {
-                    // Empty host, no possible processing
-                    return string.Empty;
+                    return _info.Host!;
                 }
-
-                // Special case, will include ScopeID and strip [] around IPv6
-                // This will also unescape the host string
-                string ret = _info.Host;
-
-                if (HostType == Flags.IPv6HostType)
-                {
-                    ret = _info.ScopeId != null ?
-                        string.Concat(ret.AsSpan(1, ret.Length - 2), _info.ScopeId) :
-                        ret.Substring(1, ret.Length - 2);
-                }
-                // Validate that this basic host qualifies as Dns safe,
-                // It has looser parsing rules that might allow otherwise.
-                // It might be a registry-based host from RFC 2396 Section 3.2.1
-                else if (HostType == Flags.BasicHostType
-                    && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
-                {
-                    // Unescape everything
-                    char[] dest = new char[ret.Length];
-                    int count = 0;
-                    UriHelper.UnescapeString(ret, 0, ret.Length, dest, ref count, c_DummyChar, c_DummyChar,
-                        c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
-                    ret = new string(dest, 0, count);
-                }
-
-                _info.DnsSafeHost = ret;
-
-                return ret;
             }
         }
 
@@ -1175,14 +1150,48 @@ namespace System
         {
             get
             {
-                string host = this.DnsSafeHost;
-
-                if (HostType == Flags.DnsHostType)
+                if (IsNotAbsoluteUri)
                 {
-                    host = DomainNameHelper.IdnEquivalent(host);
+                    throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                return host;
+                if (_info?.IdnHost is null)
+                {
+                    EnsureHostString(false);
+
+                    string host = _info!.Host!;
+
+                    Flags hostType = HostType;
+                    if (hostType == Flags.DnsHostType)
+                    {
+                        host = DomainNameHelper.IdnEquivalent(host);
+                    }
+                    else if (hostType == Flags.IPv6HostType)
+                    {
+                        host = _info.ScopeId != null ?
+                            string.Concat(host.AsSpan(1, host.Length - 2), _info.ScopeId) :
+                            host.Substring(1, host.Length - 2);
+                    }
+                    // Validate that this basic host qualifies as Dns safe,
+                    // It has looser parsing rules that might allow otherwise.
+                    // It might be a registry-based host from RFC 2396 Section 3.2.1
+                    else if (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
+                    {
+                        // Unescape everything
+                        ValueStringBuilder dest = new ValueStringBuilder(stackalloc char[256]);
+
+                        UriHelper.UnescapeString(host, 0, host.Length, ref dest,
+                            c_DummyChar, c_DummyChar, c_DummyChar,
+                            UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                            _syntax, isQuery: false);
+
+                        host = dest.ToString();
+                    }
+
+                    _info.IdnHost = host;
+                }
+
+                return _info.IdnHost;
             }
         }
 
@@ -1403,7 +1412,7 @@ namespace System
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))
             {
-                char ret = UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]);
+                char ret = UriHelper.DecodeHexChars(pattern[index + 1], pattern[index + 2]);
                 if (ret != c_DummyChar)
                 {
                     index += 3;
@@ -3201,8 +3210,10 @@ namespace System
             //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
-                // Dos paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
-                if (IsDosPath)
+                DebugAssertInCtor();
+
+                // Dos/Unix paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
+                if (IsFile && !IsUncPath)
                 {
                     if (IsImplicitFile)
                     {
@@ -3245,19 +3256,7 @@ namespace System
                     origIdx = index == -1 ? _originalUnicodeString.Length : (index + origIdx);
                 }
 
-                // Correctly escape unescape
-                string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
-
-                // Normalize path
-                try
-                {
-                    _string += escapedPath;
-                }
-                catch (ArgumentException)
-                {
-                    UriFormatException e = GetException(ParsingError.BadFormat)!;
-                    throw e;
-                }
+                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
 
                 if (_string.Length > ushort.MaxValue)
                 {
@@ -3376,6 +3375,8 @@ namespace System
             //
             if (buildIriStringFromPath)
             {
+                DebugAssertInCtor();
+
                 int offset = origIdx;
 
                 if (origIdx < _originalUnicodeString.Length && _originalUnicodeString[origIdx] == '?')
@@ -3391,19 +3392,7 @@ namespace System
                         origIdx = _originalUnicodeString.Length;
                     }
 
-                    // Correctly escape unescape
-                    string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
-
-                    // Normalize path
-                    try
-                    {
-                        _string += escapedPath;
-                    }
-                    catch (ArgumentException)
-                    {
-                        UriFormatException e = GetException(ParsingError.BadFormat)!;
-                        throw e;
-                    }
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
 
                     if (_string.Length > ushort.MaxValue)
                     {
@@ -3452,25 +3441,15 @@ namespace System
             //
             if (buildIriStringFromPath)
             {
+                DebugAssertInCtor();
+
                 int offset = origIdx;
 
                 if (origIdx < _originalUnicodeString.Length && _originalUnicodeString[origIdx] == '#')
                 {
                     origIdx = _originalUnicodeString.Length;
 
-                    // Correctly escape unescape
-                    string escapedPath = EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
-
-                    // Normalize path
-                    try
-                    {
-                        _string += escapedPath;
-                    }
-                    catch (ArgumentException)
-                    {
-                        UriFormatException e = GetException(ParsingError.BadFormat)!;
-                        throw e;
-                    }
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
 
                     if (_string.Length > ushort.MaxValue)
                     {
@@ -3538,7 +3517,9 @@ namespace System
             }
 
             // Unix: Unix path?
-            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            // A path starting with 2 / or \ (including mixed) is treated as UNC and will be matched below
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/' &&
+                (idx + 1 == length || (uriString[idx + 1] != '/' && uriString[idx + 1] != '\\')))
             {
                 flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
                 syntax = UriParser.UnixFileUri;
@@ -4405,7 +4386,7 @@ namespace System
                 {
                     if (!foundEscaping) foundEscaping = true;
                     //try unescape a byte hex escaping
-                    if (i + 2 < end && (c = UriHelper.EscapedAscii(str[i + 1], str[i + 2])) != c_DummyChar)
+                    if (i + 2 < end && (c = UriHelper.DecodeHexChars(str[i + 1], str[i + 2])) != c_DummyChar)
                     {
                         if (c == '.' || c == '/' || c == '\\')
                         {
@@ -4636,7 +4617,7 @@ namespace System
             if (pch >= pend) goto done;
             if (*pch++ != '%') goto over;
 
-            char ch = UriHelper.EscapedAscii(*pch++, *pch++);
+            char ch = UriHelper.DecodeHexChars(*pch++, *pch++);
             if (!(ch == ch1 || ch == ch2 || ch == ch3)) goto over;
 
             // Here we found something and now start copying the scanned chars
@@ -4648,7 +4629,7 @@ namespace System
             if (pch >= pend) goto done;
             if ((*pnew++ = *pch++) != '%') goto over_new;
 
-            ch = UriHelper.EscapedAscii((*pnew++ = *pch++), (*pnew++ = *pch++));
+            ch = UriHelper.DecodeHexChars((*pnew++ = *pch++), (*pnew++ = *pch++));
             if (!(ch == ch1 || ch == ch2 || ch == ch3))
             {
                 goto over_new;

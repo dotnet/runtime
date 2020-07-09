@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Code that is used by both the Unix corerun and coreconsole.
@@ -131,18 +130,11 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
         }
         else
         {
-            char *joined;
-            if (asprintf(&joined, "%s/%s", cwd, path) < 0)
-            {
-                result = false;
-            }
-            else
-            {
-                entrypointExecutable.assign(joined);
-                result = true;
-                free(joined);
-            }
-
+            entrypointExecutable
+                .assign(cwd)
+                .append("/")
+                .append(path);
+            result = true;
             free(cwd);
         }
     }
@@ -151,8 +143,6 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
         entrypointExecutable.assign(path);
         result = true;
     }
-
-    free((void*)path);
 #else
 
 #if HAVE_GETAUXVAL && defined(AT_EXECFN)

@@ -66,7 +66,7 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 #endif
 
 	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -876,7 +876,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 
 	if (!ji || (!stack_ovf && !nullref)) {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL, NULL);
 		// if couldn't dump or if mono_handle_native_crash returns, abort
 		abort ();
 	}

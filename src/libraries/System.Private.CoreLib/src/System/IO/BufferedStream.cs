@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -676,7 +675,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             EnsureNotClosed();
@@ -1066,7 +1065,7 @@ namespace System.IO
             // Fast path check for cancellation already requested
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             EnsureNotClosed();

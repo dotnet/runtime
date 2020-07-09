@@ -1916,8 +1916,23 @@ emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		} else {
-			// TODO: Optimize Create(a1, a2, a3 ...) overloads
-			break;
+			MonoInst *ins, *load;
+
+			// FIXME: Optimize this
+			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+			ins->dreg = alloc_preg (cfg);
+			ins->inst_imm = 16;
+			MONO_ADD_INS (cfg->cbb, ins);
+
+			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			int store_opcode = mono_type_to_store_membase (cfg, etype);
+			for (int i = 0; i < fsig->param_count; ++i)
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
+
+			load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
+			load->inst_c0 = 16;
+			load->inst_c1 = get_underlying_type (etype);
+			return load;
 		}
 	}
 	case SN_CreateScalarUnsafe:

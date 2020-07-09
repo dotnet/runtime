@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if DEBUG
 //#define VerifyIndex
@@ -98,13 +97,13 @@ namespace System.Data
 
         private TreePage[] _pageTable;          // initial size 4, then doubles (grows) - it never shrinks
         private int[] _pageTableMap;
-        private int _inUsePageCount = 0;    // contains count of allocated pages per tree, its <= the capacity of  pageTable
+        private int _inUsePageCount;    // contains count of allocated pages per tree, its <= the capacity of  pageTable
         private int _nextFreePageLine;   // used for keeping track of position of last used free page in pageTable
         public int root;
         private int _version;
 
-        private int _inUseNodeCount = 0; // total number of nodes currently in use by this tree.
-        private int _inUseSatelliteTreeCount = 0; // total number of satellite associated with this tree.
+        private int _inUseNodeCount; // total number of nodes currently in use by this tree.
+        private int _inUseSatelliteTreeCount; // total number of satellite associated with this tree.
         private readonly TreeAccessMethod _accessMethod;
 
         protected abstract int CompareNode(K record1, K record2);

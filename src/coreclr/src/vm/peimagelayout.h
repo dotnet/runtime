@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImageLayout.h
 //
@@ -54,6 +53,7 @@ public:
     static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
     static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError = TRUE);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
+    static PEImageLayout* LoadConverted(PEImage* pOwner);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
     static PEImageLayout* Map(PEImage* pOwner);
 #endif

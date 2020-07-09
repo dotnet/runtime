@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -316,7 +316,9 @@ namespace System.Runtime.InteropServices
             PtrToStructureInternal(ptr, structure, allowValueClasses);
         }
 
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
+        private static object PtrToStructureHelper(IntPtr ptr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type structureType)
         {
             object obj = Activator.CreateInstance(structureType)!;
             PtrToStructureHelper(ptr, obj, true);
@@ -371,6 +373,8 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
         internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {
             var key = (type, cookie);

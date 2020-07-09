@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests
@@ -261,9 +261,43 @@ Zm9v
         }
 
         [Fact]
+        public void TryFind_Success_AfterSuccessiveInvalidBase64()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < 100; i++)
+            {
+                builder.Append($"-----BEGIN CERTIFICATE-----\n${i:000}\n-----END CERTIFICATE-----\n");
+            }
+
+            builder.Append($"-----BEGIN CERTIFICATE-----\nZm9v\n-----END CERTIFICATE-----");
+
+            AssertPemFound(builder.ToString(),
+                expectedLocation: 5900..5958,
+                expectedBase64: 5928..5932,
+                expectedLabel: 5911..5922);
+        }
+
+        [Fact]
         public void Find_Fail_Empty()
         {
             AssertNoPemFound(string.Empty);
+        }
+
+        [Fact]
+        public void Find_Fail_InvalidBase64_MultipleInvalid_WithSurroundingText()
+        {
+            string content = @"
+CN=Intermediate1
+-----BEGIN CERTIFICATE-----
+MII
+-----END CERTIFICATE-----
+CN=Intermediate2
+-----BEGIN CERTIFICATE-----
+MII
+-----END CERTIFICATE-----
+";
+            AssertNoPemFound(content);
         }
 
         [Fact]

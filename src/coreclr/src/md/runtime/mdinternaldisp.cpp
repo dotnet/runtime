@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 //  File: MDInternalDisp.CPP
 //
@@ -16,7 +15,7 @@
 #include "corpriv.h"
 #include "assemblymdinternaldisp.h"
 #include "pedecoder.h"
-#include "winmdinterfaces.h"
+#include "metamodel.h"
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
@@ -184,18 +183,7 @@ STDAPI GetMDInternalInterface(
 
         IfFailGo( pInternalRO->Init(const_cast<void*>(pData), cbData) );
 
-#ifdef FEATURE_COMINTEROP
-        IfFailGo(pInternalRO->QueryInterface(IID_IMDCommon, (void**)&pInternalROMDCommon));
-        IfFailGo( (flags & ofNoTransform) ? S_FALSE : CheckIfWinMDAdapterNeeded(pInternalROMDCommon));
-        if (hr == S_OK)
-        {
-            IfFailGo(CreateWinMDInternalImportRO(pInternalROMDCommon, riid, (void**)ppIUnk));
-        }
-        else
-#endif // FEATURE_COMINTEROP
-        {
-            IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
-        }
+        IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
 
     }
     else

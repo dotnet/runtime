@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -50,12 +49,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Serialize
             var obj = new ClassWithPropertyNamingConflict();
+
+            // Newtonsoft.Json throws JsonSerializationException here because
+            // non-public properties are included when [JsonProperty] is placed on them.
             string json = JsonSerializer.Serialize(obj);
 
             Assert.Equal(@"{""MyString"":""DefaultValue""}", json);
 
             // Deserialize
             json = @"{""MyString"":""NewValue""}";
+
+            // Newtonsoft.Json throws JsonSerializationException here because
+            // non-public properties are included when [JsonProperty] is placed on them.
             obj = JsonSerializer.Deserialize<ClassWithPropertyNamingConflict>(json);
 
             Assert.Equal("NewValue", obj.MyString);
@@ -82,7 +87,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serealize_NewSlotPublicProperty_ConflictWithBasePublicProperty()
+        public static void Serialize_NewSlotPublicProperty_ConflictWithBasePublicProperty()
         {
             // Serialize
             var obj = new ClassWithNewSlotDecimalProperty();
@@ -98,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serealize_NewSlotPublicProperty_SpecifiedJsonPropertyName()
+        public static void Serialize_NewSlotPublicProperty_SpecifiedJsonPropertyName()
         {
             // Serialize
             var obj = new ClassWithNewSlotAttributedDecimalProperty();
@@ -174,12 +179,19 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{}", json);
 
+            // Newtonsoft.Json has the following output because non-public properties are included when [JsonProperty] is placed on them.
+            // {"MyString":"ConflictingValue"}
+
             // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflictPrivate>(json);
 
             Assert.Equal("DefaultValue", obj.MyString);
             Assert.Equal("ConflictingValue", obj.ConflictingString);
+
+            // The output for Newtonsoft.Json is:
+            // obj.ConflictingString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
         }
 
         [Fact]
@@ -259,10 +271,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Serialize(obj));
 
+            // The output for Newtonsoft.Json is:
+            // {"MyString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassInheritedWithPropertyNamingConflictWhichThrows>(json));
+
+            // The output for Newtonsoft.Json is:
+            // obj.ConflictingString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
         }
 
         [Fact]
@@ -273,10 +294,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Serialize(obj));
 
+            // The output for Newtonsoft.Json is:
+            // {"MyString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
+
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyNamingConflictWhichThrows>(json));
+
+            // The output for Newtonsoft.Json is:
+            // obj.ConflictingString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
         }
 
         [Fact]
@@ -302,13 +333,23 @@ namespace System.Text.Json.Serialization.Tests
 
             // Serialize
             var obj = new ClassInheritedWithPropertyPolicyConflictWhichThrows();
+
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Serialize(obj, options));
+
+            // The output for Newtonsoft.Json is:
+            // {"myString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
+
+            // The output for Newtonsoft.Json is:
+            // obj.myString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
         }
 
         [Fact]
@@ -318,13 +359,74 @@ namespace System.Text.Json.Serialization.Tests
 
             // Serialize
             var obj = new ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows();
+
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Serialize(obj, options));
 
+            // The output for Newtonsoft.Json is:
+            // {"myString":"ConflictingValue"}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
+
             Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
+
+            // The output for Newtonsoft.Json is:
+            // obj.myString = "NewValue"
+            // obj.MyString still equals "DefaultValue"
+        }
+
+        [Fact]
+        public static void HiddenPropertiesIgnored_WhenOverridesIgnored()
+        {
+            string serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride());
+            Assert.Equal(@"{}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithVisibleProperty_Of_DerivedClass_With_IgnoredOverride());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_Ignored_NewProperty());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithConflictingNewMember());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithConflictingNewMember_Of_DifferentType());
+            Assert.Equal(@"{""MyProp"":0}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_Ignored_ConflictingNewMember());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_Ignored_ConflictingNewMember_Of_DifferentType());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_NewProperty_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_Ignored_NewProperty_Of_DifferentType());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_Ignored_NewProperty_Of_DifferentType_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            // Here we differ from Newtonsoft.Json, where the output would be
+            // {"MyProp":null}
+            // Conflicts at different type-hierarchy levels that are not caused by
+            // deriving or the new keyword are allowed. Properties on more derived types win.
+            // This is invalid in System.Text.Json.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new DerivedClass_WithConflictingPropertyName()));
+
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_IgnoredOverride());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
         }
 
         public class ClassWithInternalProperty
@@ -472,6 +574,112 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonPropertyName("MyNewNumeric")]
             public new decimal MyNumeric { get; set; } = 1.5M;
+        }
+
+        private class Class_With_VirtualProperty
+        {
+            public virtual bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_IgnoredOverride : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithVisibleProperty_Of_DerivedClass_With_IgnoredOverride : DerivedClass_With_IgnoredOverride
+        {
+            public override bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName : Class_With_VirtualProperty
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class Class_With_Property
+        {
+            public bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_Ignored_NewProperty : Class_With_Property
+        {
+            [JsonIgnore]
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_NewProperty_And_ConflictingPropertyName : Class_With_Property
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_Ignored_NewProperty_Of_DifferentType : Class_With_Property
+        {
+            [JsonIgnore]
+            public new int MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_Ignored_NewProperty_Of_DifferentType_And_ConflictingPropertyName : Class_With_Property
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public new int MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithIgnoredOverride : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithConflictingNewMember : Class_With_VirtualProperty
+        {
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithConflictingNewMember_Of_DifferentType : Class_With_VirtualProperty
+        {
+            public new int MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_Ignored_ConflictingNewMember : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_Ignored_ConflictingNewMember_Of_DifferentType : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public new int MyProp { get; set; }
+        }
+
+        private class FurtherDerivedClass_With_ConflictingPropertyName : DerivedClass_WithIgnoredOverride
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+        }
+
+        private class DerivedClass_WithConflictingPropertyName : Class_With_VirtualProperty
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+        }
+
+        private class FurtherDerivedClass_With_IgnoredOverride : DerivedClass_WithConflictingPropertyName
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
         }
 
         [Fact]
@@ -642,18 +850,41 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new JsonSerializerOptions();
 
             // Unsupported collections will throw on serialize by default.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
+            // Only when the collection contains elements.
 
-            // Unsupported collections will throw on deserialize by default.
+            var dictionary = new Dictionary<object, object>();
+            // Uri is an unsupported dictionary key.
+            dictionary.Add(new Uri("http://foo"), "bar");
+
+            var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
+
+            var instance = new ClassWithUnsupportedDictionary()
+            {
+                MyConcurrentDict = concurrentDictionary,
+                MyIDict = dictionary
+            };
+
+            var instanceWithIgnore = new ClassWithIgnoredUnsupportedDictionary
+            {
+                MyConcurrentDict = concurrentDictionary,
+                MyIDict = dictionary
+            };
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
+
+            // Unsupported collections will throw on deserialize by default if they contain elements.
             options = new JsonSerializerOptions();
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
 
             options = new JsonSerializerOptions();
-            // Unsupported collections will throw on serialize by default.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
+            // Unsupported collections will throw on serialize by default if they contain elements.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, options));
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();
+
+            Assert.NotNull(JsonSerializer.Serialize(instanceWithIgnore, options));
+
             ClassWithIgnoredUnsupportedDictionary obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedDictionary>(json, options);
             Assert.Null(obj.MyDict);
 

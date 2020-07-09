@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Primitives</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Primitives</RootNamespace>
-    <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

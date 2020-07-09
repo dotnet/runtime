@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Threading.Tasks;
 
@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessThreadTests : ProcessTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCommonPriorityAndTimeProperties()
         {
             CreateDefaultProcess();
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestThreadCount()
         {
             int numOfThreads = 10;
@@ -156,7 +156,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestThreadStateProperty()
         {
             CreateDefaultProcess();
@@ -168,7 +168,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Threads_GetMultipleTimes_ReturnsSameInstance()
         {
             CreateDefaultProcess();

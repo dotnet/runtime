@@ -1,0 +1,24 @@
+<Project>
+  <Target Name="RestoreProject">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore" />
+  </Target>
+
+  <Target Name="AddFrameworkReference">
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.NETCore.App" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateRuntimePack"
+          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTrimmed" DependsOnTargets="RestoreProject;UpdateRuntimePack;Publish" />
+
+</Project>

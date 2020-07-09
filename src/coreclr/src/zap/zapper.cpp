@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -15,14 +14,11 @@
 extern const WCHAR g_pwBaseLibrary[];
 extern bool g_fAllowNativeImages;
 bool g_fNGenMissingDependenciesOk;
-bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 bool g_fReadyToRunCompilation;
 bool g_fLargeVersionBubble;
 #endif
-
-static bool s_fNGenNoMetaData;
 
 /* --------------------------------------------------------------------------- *
  * Public entry points for ngen
@@ -31,7 +27,7 @@ static bool s_fNGenNoMetaData;
 // Zapper Object instead of creating one on your own.
 
 
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
 {
     HRESULT hr = S_OK;
 
@@ -74,8 +70,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         ngo.fNgenLastRetry = false;
 
-        s_fNGenNoMetaData = (dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0;
-
         zap = Zapper::NewZapper(&ngo);
 
         if (pwzOutputFilename)
@@ -95,19 +89,12 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         if (pwzAppPaths != nullptr)
             zap->SetAppPaths(pwzAppPaths);
 
-        if (pwzPlatformWinmdPaths != nullptr)
-            zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
-
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         if (pwszCLRJITPath != nullptr)
             zap->SetCLRJITPath(pwszCLRJITPath);
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         g_fNGenMissingDependenciesOk = !!(dwFlags & NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK);
-
-#ifdef FEATURE_WINMD_RESILIENT
-        g_fNGenWinMDResilient = !!(dwFlags & NGENWORKER_FLAGS_WINMD_RESILIENT);
-#endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
         g_fReadyToRunCompilation = !!(dwFlags & NGENWORKER_FLAGS_READYTORUN);
@@ -128,7 +115,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
     return hr;
 }
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath)
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzDiasymreaderPath)
 {
     HRESULT hr = S_OK;
 
@@ -163,9 +150,6 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
         if (pwzAppNiPaths != nullptr)
             zap->SetAppNiPaths(pwzAppNiPaths);
-
-        if (pwzPlatformWinmdPaths != nullptr)
-            zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
 
 #if !defined(NO_NGENPDB)
         if (pwzDiasymreaderPath != nullptr)
@@ -217,8 +201,7 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
-  m_compilerFlags(),
-  m_fNoMetaData(s_fNGenNoMetaData)
+  m_compilerFlags()
 {
     SetCompilerFlags();
 
@@ -897,10 +880,6 @@ void Zapper::CreateCompilationDomain()
                                                fForceDebug,
                                                fForceProfile,
                                                fForceInstrument));
-
-#ifdef CROSSGEN_COMPILE
-    IfFailThrow(m_pDomain->SetPlatformWinmdPaths(m_platformWinmdPaths));
-#endif
 
     // we support only TPA binding on CoreCLR
 
@@ -1677,12 +1656,6 @@ void Zapper::SetAppNiPaths(LPCWSTR pwzAppNiPaths)
 {
     m_appNiPaths.Set(pwzAppNiPaths);
 }
-
-void Zapper::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
-{
-    m_platformWinmdPaths.Set(pwzPlatformWinmdPaths);
-}
-
 
 void Zapper::SetOutputFilename(LPCWSTR pwzOutputFilename)
 {

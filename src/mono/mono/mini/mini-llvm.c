@@ -1713,6 +1713,9 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 		name = g_strdup_printf ("jit_icall_%s", mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->name);
 		break;
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		name = g_strdup_printf ("jit_icall_addr_nocall_%s", mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->name);
+		break;
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = (MonoJumpInfoRgctxEntry*)data;
 		name = g_strdup_printf ("rgctx_slot_index_%s", mono_rgctx_info_type_to_str (entry->info_type));

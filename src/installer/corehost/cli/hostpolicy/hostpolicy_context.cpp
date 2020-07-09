@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_context.h"
 
@@ -106,24 +105,41 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
-        return StatusCode::CoreClrResolveFailure;
+        // in a single-file case we may not need coreclr,
+        // otherwise fail early.
+        if (!bundle::info_t::is_single_file_bundle())
+        {
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            return StatusCode::CoreClrResolveFailure;
+        }
+
+        // save for tracing purposes.
+        clr_dir = clr_path;
     }
-
-    // Get path in which CoreCLR is present.
-    clr_dir = get_directory(clr_path);
-
-    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
-    pal::string_t corelib_path = clr_dir;
-    append_path(&corelib_path, CORELIB_NAME);
-
-    // Append CoreLib path
-    if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+    else
     {
-        probe_paths.tpa.push_back(PATH_SEPARATOR);
+        // Get path in which CoreCLR is present.
+        clr_dir = get_directory(clr_path);
     }
 
-    probe_paths.tpa.append(corelib_path);
+    // If this is a self-contained single-file bundle,
+    // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
+    // In all other cases, 
+    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
+    if (!bundle::info_t::is_single_file_bundle() ||
+        bundle::runner_t::app()->probe(CORELIB_NAME) == nullptr)
+    {
+        pal::string_t corelib_path = clr_dir;
+        append_path(&corelib_path, CORELIB_NAME);
+
+        // Append CoreLib path
+        if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+        {
+            probe_paths.tpa.push_back(PATH_SEPARATOR);
+        }
+
+        probe_paths.tpa.append(corelib_path);
+    }
 
     const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
 

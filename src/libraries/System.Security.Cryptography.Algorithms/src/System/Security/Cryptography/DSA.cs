@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -934,14 +934,14 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char>.Empty,
                 passwordBytes);
 
-            using (AsnWriter pkcs8PrivateKey = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+            AsnWriter pkcs8PrivateKey = WritePkcs8();
+
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                 passwordBytes,
                 pkcs8PrivateKey,
-                pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+                pbeParameters);
+
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
@@ -958,34 +958,29 @@ namespace System.Security.Cryptography
                 password,
                 ReadOnlySpan<byte>.Empty);
 
-            using (AsnWriter pkcs8PrivateKey = WritePkcs8())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+            AsnWriter pkcs8PrivateKey = WritePkcs8();
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                 password,
                 pkcs8PrivateKey,
-                pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+                pbeParameters);
+
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public override bool TryExportPkcs8PrivateKey(
             Span<byte> destination,
             out int bytesWritten)
         {
-            using (AsnWriter writer = WritePkcs8())
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = WritePkcs8();
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public override bool TryExportSubjectPublicKeyInfo(
             Span<byte> destination,
             out int bytesWritten)
         {
-            using (AsnWriter writer = WriteSubjectPublicKeyInfo())
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = WriteSubjectPublicKeyInfo();
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         private unsafe AsnWriter WritePkcs8()

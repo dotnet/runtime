@@ -3,6 +3,8 @@
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <EnableComBinder Condition="'$(TargetsWindows)'=='true'">true</EnableComBinder>

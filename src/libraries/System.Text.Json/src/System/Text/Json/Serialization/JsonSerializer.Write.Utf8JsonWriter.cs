@@ -1,30 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        /// <summary>
-        /// Internal version that allows re-entry with preserving WriteStack so that JsonPath works correctly.
-        /// </summary>
-        // If this is made public, we will also want to have a non-generic version.
-        internal static void Serialize<T>(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state, string? propertyName = null)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            JsonConverter jsonConverter = state.Current.InitializeReEntry(typeof(T), options, propertyName);
-            bool success = jsonConverter.TryWriteAsObject(writer, value, options, ref state);
-            Debug.Assert(success);
-        }
-
         /// <summary>
         /// Write one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
@@ -38,7 +22,10 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions? options = null)
+        public static void Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+            Utf8JsonWriter writer,
+            TValue value,
+            JsonSerializerOptions? options = null)
         {
             Serialize<TValue>(writer, value, typeof(TValue), options);
         }
@@ -60,7 +47,11 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
-        public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options = null)
+        public static void Serialize(
+            Utf8JsonWriter writer,
+            object? value,
+            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            JsonSerializerOptions? options = null)
         {
             if (inputType == null)
             {
@@ -75,7 +66,7 @@ namespace System.Text.Json
             Serialize<object?>(writer, value, inputType, options);
         }
 
-        private static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, Type type, JsonSerializerOptions? options)
+        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {

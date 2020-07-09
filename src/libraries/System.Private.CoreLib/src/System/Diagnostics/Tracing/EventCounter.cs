@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -38,7 +37,13 @@ namespace System.Diagnostics.Tracing
             _min = double.PositiveInfinity;
             _max = double.NegativeInfinity;
 
-            InitializeBuffer();
+            var bufferedValues = new double[BufferedSize];
+            for (int i = 0; i < bufferedValues.Length; i++)
+            {
+                bufferedValues[i] = UnusedBufferSlotValue;
+            }
+            Volatile.Write(ref _bufferedValues, bufferedValues);
+
             Publish();
         }
 
@@ -136,18 +141,8 @@ namespace System.Diagnostics.Tracing
         // Values buffering
         private const int BufferedSize = 10;
         private const double UnusedBufferSlotValue = double.NegativeInfinity;
-        private volatile double[] _bufferedValues;
+        private readonly double[] _bufferedValues;
         private volatile int _bufferedValuesIndex;
-
-        [MemberNotNull(nameof(_bufferedValues))]
-        private void InitializeBuffer()
-        {
-            _bufferedValues = new double[BufferedSize];
-            for (int i = 0; i < _bufferedValues.Length; i++)
-            {
-                _bufferedValues[i] = UnusedBufferSlotValue;
-            }
-        }
 
         private void Enqueue(double value)
         {

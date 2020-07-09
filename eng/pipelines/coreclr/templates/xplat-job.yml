@@ -72,21 +72,6 @@ jobs:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
 
-    - ${{ if eq(parameters.buildConfig, 'checked') }}:
-      - name: buildConfigUpper
-        value: 'Checked'
-
-    - ${{ if eq(parameters.buildConfig, 'debug') }}:
-      - name: buildConfigUpper
-        value: 'Debug'
-
-    - ${{ if eq(parameters.buildConfig, 'release') }}:
-      - name: buildConfigUpper
-        value: 'Release'
-
-    - name: _BuildConfig
-      value: $(buildConfigUpper)
-
     - name: archType
       value: ${{ parameters.archType }}
 

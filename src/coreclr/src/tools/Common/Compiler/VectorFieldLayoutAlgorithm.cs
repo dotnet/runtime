@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 
@@ -90,7 +89,8 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM64)
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
+                type.Instantiation[0].IsPrimitiveNumeric)
             {
                 return type.InstanceFieldSize.AsInt switch
                 {
@@ -106,8 +106,9 @@ namespace ILCompiler
         {
             return type.IsIntrinsic &&
                 type.Namespace == "System.Runtime.Intrinsics" &&
-                ((type.Name == "Vector64`1") || (type.Name == "Vector128`1")) &&
-                type.Instantiation[0].IsPrimitive;
+                (type.Name == "Vector64`1" ||
+                type.Name == "Vector128`1" ||
+                type.Name == "Vector256`1");
         }
     }
 }

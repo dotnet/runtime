@@ -65,16 +65,11 @@
 
     <Message Text="Found $(TestCount) built tests"/>
 
-    <Error Condition="'$(CLRTestNeedTargetToBuild)' != '' and '$(CLRTestNeedTargetToBuild)' != 'targetGeneric' and '$(CLRTestNeedTargetToBuild)' != 'targetSpecific'" Text="Unknown CLRTestNeedTargetToBuild $(CLRTestNeedTargetToBuild)" />
-
-    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' != 'targetSpecific'">
+    <ItemGroup>
       <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific'">
-      <Error Condition="'$(TestCount)' &lt;= 100" Text="Unexpected test count. Expected &lt; 100, found $(TestCount).'" />
     </ItemGroup>
   </Target>
 
@@ -114,7 +109,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -354,7 +349,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">

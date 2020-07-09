@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using Internal.Cryptography.Pal;
@@ -141,8 +140,9 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.CustomTrustStore,
                     chainPolicy.TrustMode,
                     chainPolicy.VerificationTime,
-                    chainPolicy.UrlRetrievalTimeout
-                    );
+                    chainPolicy.UrlRetrievalTimeout,
+                    chainPolicy.DisableCertificateDownloads);
+
                 if (_pal == null)
                     return false;
 

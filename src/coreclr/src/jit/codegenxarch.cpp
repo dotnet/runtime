@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -54,14 +53,14 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
 // Arguments:
-//     initReg        - register to use as a scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                      this call sets 'initReg' to a non-zero value.
+//     initReg           - register to use as a scratch register
+//     pInitRegModified  - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//                         this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -85,7 +84,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
             genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
             GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
         else
 #endif
@@ -106,7 +105,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, compiler->lvaGSSecurityCookie, 0);
         if (initReg == REG_EAX)
         {
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
     }
 }
@@ -437,7 +436,10 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 
 //  Move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
+                                     regNumber reg,
+                                     ssize_t   imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -1747,7 +1749,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsOp());
+            genCodeForNullCheck(treeNode->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -1849,162 +1851,118 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     }
 }
 
+#ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------
-// genMultiRegStoreToLocal: store multi-reg return value of a call node to a local
+// genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
 //
 // Arguments:
-//    treeNode  -  Gentree of GT_STORE_LCL_VAR
+//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
 //
-// Assumptions:
-//    The child of store is a multi-reg node.
-//
-void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
+void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 {
-    assert(treeNode->OperGet() == GT_STORE_LCL_VAR);
-    assert(varTypeIsStruct(treeNode) || varTypeIsMultiReg(treeNode));
-    GenTree* op1       = treeNode->gtGetOp1();
-    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+#ifdef UNIX_AMD64_ABI
+    regNumber dst       = lclNode->GetRegNum();
+    GenTree*  op1       = lclNode->gtGetOp1();
+    GenTree*  actualOp1 = op1->gtSkipReloadOrCopy();
+    unsigned  regCount =
+        actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
     assert(op1->IsMultiRegNode());
-    unsigned regCount = op1->GetMultiRegCount();
-
-    // Assumption: The current implementation requires that a multi-reg
-    // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
-    // being struct promoted.
-
-    unsigned   lclNum = treeNode->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
-    {
-        assert(regCount == MAX_RET_REG_COUNT);
-        noway_assert(varDsc->lvIsMultiRegRet);
-    }
-
     genConsumeRegs(op1);
 
-#ifdef UNIX_AMD64_ABI
-    // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
+    // Right now the only enregistrable structs supported are SIMD types.
+    // They are only returned in 1 or 2 registers - the 1 register case is
+    // handled as a regular STORE_LCL_VAR.
+    // This case is always a call (AsCall() will assert if it is not).
+    GenTreeCall*          call        = actualOp1->AsCall();
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
 
-    // Handle the case of a SIMD type returned in 2 registers.
-    if (varTypeIsSIMD(treeNode) && (treeNode->GetRegNum() != REG_NA))
+    assert(regCount == 2);
+    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
+    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
+
+    // This is a case where the two 8-bytes that comprise the operand are in
+    // two different xmm registers and need to be assembled into a single
+    // xmm register.
+    regNumber targetReg = lclNode->GetRegNum();
+    regNumber reg0      = call->GetRegNumByIdx(0);
+    regNumber reg1      = call->GetRegNumByIdx(1);
+
+    if (op1->IsCopyOrReload())
     {
-        // Right now the only enregistrable structs supported are SIMD types.
-        // They are only returned in 1 or 2 registers - the 1 register case is
-        // handled as a regular STORE_LCL_VAR.
-        // This case is always a call (AsCall() will assert if it is not).
-        GenTreeCall*          call        = actualOp1->AsCall();
-        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
-
-        assert(regCount == 2);
-        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
-        assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
-
-        // This is a case where the two 8-bytes that comprise the operand are in
-        // two different xmm registers and need to be assembled into a single
-        // xmm register.
-        regNumber targetReg = treeNode->GetRegNum();
-        regNumber reg0      = call->GetRegNumByIdx(0);
-        regNumber reg1      = call->GetRegNumByIdx(1);
-
-        if (op1->IsCopyOrReload())
+        // GT_COPY/GT_RELOAD will have valid reg for those positions
+        // that need to be copied or reloaded.
+        regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
+        if (reloadReg != REG_NA)
         {
-            // GT_COPY/GT_RELOAD will have valid reg for those positions
-            // that need to be copied or reloaded.
-            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(0);
-            if (reloadReg != REG_NA)
-            {
-                reg0 = reloadReg;
-            }
-
-            reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
-            if (reloadReg != REG_NA)
-            {
-                reg1 = reloadReg;
-            }
+            reg0 = reloadReg;
         }
 
-        if (targetReg != reg0 && targetReg != reg1)
+        reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(1);
+        if (reloadReg != REG_NA)
         {
-            // targetReg = reg0;
-            // targetReg[127:64] = reg1[127:64]
-            inst_RV_RV(ins_Copy(TYP_DOUBLE), targetReg, reg0, TYP_DOUBLE);
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
+            reg1 = reloadReg;
         }
-        else if (targetReg == reg0)
-        {
-            // (elided) targetReg = reg0
-            // targetReg[127:64] = reg1[127:64]
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
-        }
-        else
-        {
-            assert(targetReg == reg1);
-            // We need two shuffles to achieve this
-            // First:
-            // targetReg[63:0] = targetReg[63:0]
-            // targetReg[127:64] = reg0[63:0]
-            //
-            // Second:
-            // targetReg[63:0] = targetReg[127:64]
-            // targetReg[127:64] = targetReg[63:0]
-            //
-            // Essentially copy low 8-bytes from reg0 to high 8-bytes of targetReg
-            // and next swap low and high 8-bytes of targetReg to have them
-            // rearranged in the right order.
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x00);
-            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
-        }
+    }
+
+    if (targetReg != reg0 && targetReg != reg1)
+    {
+        // targetReg = reg0;
+        // targetReg[127:64] = reg1[127:64]
+        inst_RV_RV(ins_Copy(TYP_DOUBLE), targetReg, reg0, TYP_DOUBLE);
+        inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
+    }
+    else if (targetReg == reg0)
+    {
+        // (elided) targetReg = reg0
+        // targetReg[127:64] = reg1[127:64]
+        inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
     }
     else
-#endif // UNIX_AMD64_ABI
     {
-        // This may be:
-        // - a call returning multiple registers
-        // - a HW intrinsic producing two registers to be stored into a TYP_STRUCT
+        assert(targetReg == reg1);
+        // We need two shuffles to achieve this
+        // First:
+        // targetReg[63:0] = targetReg[63:0]
+        // targetReg[127:64] = reg0[63:0]
         //
-        int offset = 0;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            var_types type = op1->GetRegTypeByIndex(i);
-            regNumber reg  = op1->GetRegByIndex(i);
-            if (op1->IsCopyOrReload())
-            {
-                // GT_COPY/GT_RELOAD will have valid reg for those positions
-                // that need to be copied or reloaded.
-                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
-                if (reloadReg != REG_NA)
-                {
-                    reg = reloadReg;
-                }
-            }
-
-            assert(reg != REG_NA);
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
-        }
-        // Update variable liveness.
-        genUpdateLife(treeNode);
-        varDsc->SetRegNum(REG_STK);
+        // Second:
+        // targetReg[63:0] = targetReg[127:64]
+        // targetReg[127:64] = targetReg[63:0]
+        //
+        // Essentially copy low 8-bytes from reg0 to high 8-bytes of targetReg
+        // and next swap low and high 8-bytes of targetReg to have them
+        // rearranged in the right order.
+        inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg0, 0x00);
+        inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
     }
+    genProduceReg(lclNode);
+#else  // !UNIX_AMD64_ABI
+    assert(!"Multireg store to SIMD reg not supported on X64 Windows");
+#endif // !UNIX_AMD64_ABI
 }
+#endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
 // genAllocLclFrame: Probe the stack and allocate the local stack frame - subtract from SP.
 //
 // Arguments:
-//      frameSize         - the size of the stack frame being allocated.
-//      initReg           - register to use as a scratch register.
-//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                          this call sets 'initReg' to a non-zero value.
-//      maskArgRegsLiveIn - incoming argument registers that are currently live.
+//      frameSize          - the size of the stack frame being allocated.
+//      initReg            - register to use as a scratch register.
+//      pInitRegModified   - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//                           this call sets 'initReg' to a non-zero value.
+//      maskArgRegsLiveIn  - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned  frameSize,
+                               regNumber initReg,
+                               bool*     pInitRegModified,
+                               regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -2088,7 +2046,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         if (initReg == REG_DEFAULT_HELPER_CALL_TARGET)
         {
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
 
         static_assert_no_msg((RBM_STACK_PROBE_HELPER_TRASH & RBM_STACK_PROBE_HELPER_ARG) == RBM_NONE);
@@ -2098,7 +2056,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         if (initReg == REG_STACK_PROBE_HELPER_ARG)
         {
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
     }
 
@@ -3839,7 +3797,7 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 // Return value:
 //    None
 //
-void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_NULLCHECK));
 
@@ -4372,7 +4330,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
 #if defined(FEATURE_SIMD) && defined(TARGET_X86)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
@@ -4428,29 +4386,28 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 // genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
 //
 // Arguments:
-//    tree - the GT_STORE_LCL_VAR node
+//    lclNode - the GT_STORE_LCL_VAR node
 //
-void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 {
-    assert(tree->OperIs(GT_STORE_LCL_VAR));
+    assert(lclNode->OperIs(GT_STORE_LCL_VAR));
 
-    regNumber targetReg = tree->GetRegNum();
+    regNumber targetReg = lclNode->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op1 = lclNode->gtGetOp1();
 
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
+    // Stores from a multi-reg source are handled separately.
     if (op1->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
-        genMultiRegStoreToLocal(tree);
+        genMultiRegStoreToLocal(lclNode);
     }
     else
     {
-        unsigned   lclNum = tree->GetLclNum();
+        unsigned   lclNum = lclNode->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
-        var_types targetType = varDsc->GetRegisterType(tree);
+        var_types targetType = varDsc->GetRegisterType(lclNode);
 
 #ifdef DEBUG
         var_types op1Type = op1->TypeGet();
@@ -4469,7 +4426,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 #if !defined(TARGET_64BIT)
         if (targetType == TYP_LONG)
         {
-            genStoreLongLclVar(tree);
+            genStoreLongLclVar(lclNode);
             return;
         }
 #endif // !defined(TARGET_64BIT)
@@ -4478,7 +4435,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         // storing of TYP_SIMD12 (i.e. Vector3) field
         if (targetType == TYP_SIMD12)
         {
-            genStoreLclTypeSIMD12(tree);
+            genStoreLclTypeSIMD12(lclNode);
             return;
         }
 #endif // FEATURE_SIMD
@@ -4494,7 +4451,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             {
                 emit->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                   emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
-                genUpdateLife(tree);
+                genUpdateLife(lclNode);
                 varDsc->SetRegNum(REG_STK);
             }
             else
@@ -4506,7 +4463,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         {
             // stack store
             emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
-                                  emitTypeSize(targetType), tree);
+                                  emitTypeSize(targetType), lclNode);
             varDsc->SetRegNum(REG_STK);
         }
         else
@@ -4538,14 +4495,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             else if (op1->GetRegNum() != targetReg)
             {
                 assert(op1->GetRegNum() != REG_NA);
-                emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(tree), tree, op1);
+                emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(lclNode), lclNode, op1);
             }
         }
-    }
-
-    if (targetReg != REG_NA)
-    {
-        genProduceReg(tree);
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(lclNode);
+        }
     }
 }
 
@@ -6861,7 +6817,11 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     if (*bitMask == nullptr)
     {
         assert(cnsAddr != nullptr);
-        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, genTypeSize(targetType), emitDataAlignment::Preferred);
+
+        UNATIVE_OFFSET cnsSize  = genTypeSize(targetType);
+        UNATIVE_OFFSET cnsAlign = (compiler->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, cnsSize, cnsAlign);
     }
 
     // We need an additional register for bitmask.
@@ -8495,9 +8455,9 @@ void CodeGen::genAmd64EmitterUnitTests()
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg        - register to use as scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
-//                      not zero after this call.
+//     initReg          - register to use as scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if 'initReg' is
+//                        not zero after this call.
 //
 // Return Value:
 //     None
@@ -8516,7 +8476,7 @@ void CodeGen::genAmd64EmitterUnitTests()
 // 4. All registers are preserved.
 // 5. The helper pops the FunctionIDOrClientID argument from the stack.
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -8661,14 +8621,14 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg        - register to use as scratch register
-//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
-//                      not zero after this call.
+//     initReg          - register to use as scratch register
+//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if 'initReg' is
+//                        not zero after this call.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -8805,7 +8765,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
     if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
     {
-        *pInitRegZeroed = false;
+        *pInitRegModified = true;
     }
 
 #else // !defined(UNIX_AMD64_ABI)
@@ -8854,7 +8814,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
     if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
     {
-        *pInitRegZeroed = false;
+        *pInitRegModified = true;
     }
 
 #endif // !defined(UNIX_AMD64_ABI)

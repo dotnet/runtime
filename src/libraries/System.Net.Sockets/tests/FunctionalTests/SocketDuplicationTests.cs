@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -168,7 +167,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DuplicateSocket_IsNotInheritable()
         {
             // 300 ms should be long enough to connect if the socket is actually present & listening.
@@ -305,7 +304,7 @@ namespace System.Net.Sockets.Tests
                     { AddressFamily.InterNetworkV6, true },
                 };
 
-            [Theory]
+            [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
             [PlatformSpecific(TestPlatforms.Windows)]
             [MemberData(nameof(TcpServerHandlerData))]
             public async Task DuplicateAndClose_TcpServerHandler(AddressFamily addressFamily, bool sameProcess)

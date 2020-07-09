@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -68,22 +67,6 @@ namespace System.Runtime.CompilerServices.Tests
             int i = 3;
             object iOV = RuntimeHelpers.GetObjectValue(i);
             Assert.Equal(i, (int)iOV);
-        }
-
-        [Fact]
-        public static unsafe void OffsetToStringData()
-        {
-            // RuntimeHelpers.OffsetToStringData
-            char[] expectedValues = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
-            string s = "abcdef";
-
-            fixed (char* values = s) // Compiler will use OffsetToStringData with fixed statements
-            {
-                for (int i = 0; i < expectedValues.Length; i++)
-                {
-                    Assert.Equal(expectedValues[i], values[i]);
-                }
-            }
         }
 
         [Fact]

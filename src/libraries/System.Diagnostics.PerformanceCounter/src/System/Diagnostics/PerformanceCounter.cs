@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Globalization;
@@ -26,8 +25,8 @@ namespace System.Diagnostics
         private PerformanceCounterInstanceLifetime _instanceLifetime = PerformanceCounterInstanceLifetime.Global;
 
         private bool _isReadOnly;
-        private bool _initialized = false;
-        private string _helpMsg = null;
+        private bool _initialized;
+        private string _helpMsg;
         private int _counterType = -1;
 
         // Cached old sample

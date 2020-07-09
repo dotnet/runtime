@@ -5,6 +5,12 @@
         "linux-musl"
       ]
     },
+    "alpine-arm64": {
+      "#import": [
+        "alpine",
+        "linux-musl-arm64"
+      ]
+    },
     "alpine-x64": {
       "#import": [
         "alpine",
@@ -14,6 +20,12 @@
     "alpine.3.10": {
       "#import": [
         "alpine.3.9"
+      ]
+    },
+    "alpine.3.10-arm64": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-arm64"
       ]
     },
     "alpine.3.10-x64": {
@@ -27,15 +39,44 @@
         "alpine.3.10"
       ]
     },
+    "alpine.3.11-arm64": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-arm64"
+      ]
+    },
     "alpine.3.11-x64": {
       "#import": [
         "alpine.3.11",
         "alpine.3.10-x64"
       ]
     },
+    "alpine.3.12": {
+      "#import": [
+        "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-arm64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-arm64"
+      ]
+    },
+    "alpine.3.12-x64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
+      ]
+    },
+    "alpine.3.6-arm64": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-arm64"
       ]
     },
     "alpine.3.6-x64": {
@@ -49,6 +90,12 @@
         "alpine.3.6"
       ]
     },
+    "alpine.3.7-arm64": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-arm64"
+      ]
+    },
     "alpine.3.7-x64": {
       "#import": [
         "alpine.3.7",
@@ -60,6 +107,12 @@
         "alpine.3.7"
       ]
     },
+    "alpine.3.8-arm64": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-arm64"
+      ]
+    },
     "alpine.3.8-x64": {
       "#import": [
         "alpine.3.8",
@@ -69,6 +122,12 @@
     "alpine.3.9": {
       "#import": [
         "alpine.3.8"
+      ]
+    },
+    "alpine.3.9-arm64": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-arm64"
       ]
     },
     "alpine.3.9-x64": {
@@ -887,6 +946,17 @@
         "linux-x64"
       ]
     },
+    "illumos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "illumos-x64": {
+      "#import": [
+        "illumos",
+        "unix-x64"
+      ]
+    },
     "ios": {
       "#import": [
         "unix"
@@ -1386,6 +1456,39 @@
         "rhel.8.0-x64"
       ]
     },
+    "omnios": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "omnios-x64": {
+      "#import": [
+        "omnios",
+        "illumos-x64"
+      ]
+    },
+    "omnios.15": {
+      "#import": [
+        "omnios"
+      ]
+    },
+    "omnios.15-x64": {
+      "#import": [
+        "omnios.15",
+        "omnios-x64"
+      ]
+    },
+    "openindiana": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "openindiana-x64": {
+      "#import": [
+        "openindiana",
+        "illumos-x64"
+      ]
+    },
     "opensuse": {
       "#import": [
         "linux"
@@ -1812,9 +1915,70 @@
         "sles.15-x64"
       ]
     },
+    "smartos": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "smartos-x64": {
+      "#import": [
+        "smartos",
+        "illumos-x64"
+      ]
+    },
+    "smartos.2020": {
+      "#import": [
+        "smartos"
+      ]
+    },
+    "smartos.2020-x64": {
+      "#import": [
+        "smartos.2020",
+        "smartos-x64"
+      ]
+    },
+    "smartos.2021": {
+      "#import": [
+        "smartos.2020"
+      ]
+    },
+    "smartos.2021-x64": {
+      "#import": [
+        "smartos.2021",
+        "smartos.2020-x64"
+      ]
+    },
+    "solaris": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "solaris-x64": {
+      "#import": [
+        "solaris",
+        "unix-x64"
+      ]
+    },
+    "solaris.11": {
+      "#import": [
+        "solaris"
+      ]
+    },
+    "solaris.11-x64": {
+      "#import": [
+        "solaris.11",
+        "solaris-x64"
+      ]
+    },
     "tizen": {
       "#import": [
         "linux"
+      ]
+    },
+    "tizen-arm64": {
+      "#import": [
+        "tizen",
+        "linux-arm64"
       ]
     },
     "tizen-armel": {
@@ -1834,6 +1998,12 @@
         "tizen"
       ]
     },
+    "tizen.4.0.0-arm64": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-arm64"
+      ]
+    },
     "tizen.4.0.0-armel": {
       "#import": [
         "tizen.4.0.0",
@@ -1849,6 +2019,12 @@
     "tizen.5.0.0": {
       "#import": [
         "tizen.4.0.0"
+      ]
+    },
+    "tizen.5.0.0-arm64": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-arm64"
       ]
     },
     "tizen.5.0.0-armel": {
@@ -1868,6 +2044,12 @@
         "tizen.5.0.0"
       ]
     },
+    "tizen.5.5.0-arm64": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-arm64"
+      ]
+    },
     "tizen.5.5.0-armel": {
       "#import": [
         "tizen.5.5.0",
@@ -1883,6 +2065,12 @@
     "tizen.6.0.0": {
       "#import": [
         "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-arm64": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-arm64"
       ]
     },
     "tizen.6.0.0-armel": {
@@ -2332,6 +2520,122 @@
     "ubuntu.19.10-x86": {
       "#import": [
         "ubuntu.19.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.04-arm": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.04-arm64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.04-x64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.04-x86": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.10-arm": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.10-arm64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.10-x64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.10-x86": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.04-arm": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.04-arm64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.04-x64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.04-x86": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.10-arm": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.10-arm64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.10-x64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.10-x86": {
+      "#import": [
+        "ubuntu.21.10",
         "ubuntu-x86"
       ]
     },

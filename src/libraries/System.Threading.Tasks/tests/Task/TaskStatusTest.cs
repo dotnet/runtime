@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Collections.Generic;
@@ -531,7 +530,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskStatus10()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTask)
@@ -545,7 +544,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskStatus11()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedTask)
@@ -585,7 +584,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskStatus14()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedChildTask)
@@ -599,7 +598,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskStatus15()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedChildTask)
@@ -627,7 +626,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskStatus17()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTaskAndAcknowledge)
@@ -641,7 +640,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(Status_IsProperties_Match_MemberData))]
         public void Status_IsProperties_Match(StrongBox<Task> taskBox)
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 // This file defines an internal class used to throw exceptions in BCL code.
@@ -740,6 +739,8 @@ namespace System
                     return SR.Arg_RankMultiDimNotSupported;
                 case ExceptionResource.Arg_NonZeroLowerBound:
                     return SR.Arg_NonZeroLowerBound;
+                case ExceptionResource.ArgumentOutOfRange_GetCharCountOverflow:
+                    return SR.ArgumentOutOfRange_GetCharCountOverflow;
                 case ExceptionResource.ArgumentOutOfRange_ListInsert:
                     return SR.ArgumentOutOfRange_ListInsert;
                 case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
@@ -972,6 +973,7 @@ namespace System
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
+        ArgumentOutOfRange_GetCharCountOverflow,
         ArgumentOutOfRange_ListInsert,
         ArgumentOutOfRange_NeedNonNegNum,
         ArgumentOutOfRange_SmallCapacity,

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -88,7 +87,7 @@ namespace System.Security.Cryptography
                 // must be a white space character.
                 if (preebIndex > 0 && !IsWhiteSpaceCharacter(pemData[preebIndex - 1]))
                 {
-                    areaOffset += labelStartIndex;
+                    areaOffset = labelStartIndex;
                     continue;
                 }
 
@@ -150,16 +149,16 @@ namespace System.Security.Cryptography
                 return true;
 
                 NextAfterLabel:
-                if (preebEndIndex <= 0)
+                if (preebEndIndex <= areaOffset)
                 {
                     // We somehow ended up in a situation where we will advance
-                    // 0 or -1 characters, which means we'll probably end up here again,
-                    // advancing 0 or -1 characters, in a loop. To avoid getting stuck,
+                    // backward or not at all, which means we'll probably end up here again,
+                    // advancing backward, in a loop. To avoid getting stuck,
                     // detect this situation and return.
                     fields = default;
                     return false;
                 }
-                areaOffset += preebEndIndex;
+                areaOffset = preebEndIndex;
             }
 
             fields = default;
@@ -178,6 +177,7 @@ namespace System.Security.Cryptography
 
         private static int IndexOfByOffset(this ReadOnlySpan<char> str, ReadOnlySpan<char> value, int startPosition)
         {
+            Debug.Assert(startPosition <= str.Length);
             int index = str.Slice(startPosition).IndexOf(value);
             return index == -1 ? -1 : index + startPosition;
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -47,6 +46,9 @@ Abstract:
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #ifdef  __cplusplus
@@ -374,7 +376,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath);
+    const char *szExePath, bool runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -446,12 +448,10 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
-#ifdef __APPLE__
 PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId();
-#endif
 
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 
@@ -2543,6 +2543,7 @@ Abstract
 
 Parameters:
     IN hFile    - The file to load
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     A valid base address if successful.
@@ -2551,7 +2552,7 @@ Return value:
 PALIMPORT
 PVOID
 PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile);
+PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
 
 /*++
     PAL_LOADUnloadPEFile

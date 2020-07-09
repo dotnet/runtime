@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // File: genmeth.cpp
 //
 // Most functionality for generic methods is put here
@@ -383,7 +382,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             else if (getWrappedCode)
             {
                 pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
@@ -413,18 +412,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         }
 
         BOOL forComInterop = FALSE;
-#ifdef FEATURE_COMINTEROP
-        if (pExactMT->IsProjectedFromWinRT())
-        {
-            forComInterop = (pExactMT->IsInterface() || (pExactMT->IsDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-        else
-        {
-            // redirected interfaces and delegates also support interop
-            forComInterop = (pExactMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) ||
-                            (pExactMT->IsWinRTRedirectedDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-#endif // FEATURE_COMINTEROP
 
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets

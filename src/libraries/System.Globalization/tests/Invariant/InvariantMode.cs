@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Binary;
@@ -635,6 +634,22 @@ namespace System.Globalization.Tests
             //
             Assert.Equal(ci.Name == "" ? 0x7F : 0x1000, ci.CompareInfo.LCID);
             Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Theory]
+        [MemberData(nameof(Cultures_TestData))]
+        public void SetCultureData(string cultureName)
+        {
+            CultureInfo ci = new CultureInfo(cultureName);
+
+            //
+            // DateTimeInfo
+            //
+            var calendar = new GregorianCalendar();
+            ci.DateTimeFormat.Calendar = calendar;
+            Assert.Equal(calendar, ci.DateTimeFormat.Calendar);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
         }
 
         [Fact]

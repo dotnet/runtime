@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
-#include "rcwwalker.h"
 #include "olecontexthelpers.h"
 #include "finalizerthread.h"
 
@@ -27,6 +25,7 @@ namespace
         void* Identity;
         void* ThreadContext;
         DWORD SyncBlockIndex;
+        INT64 WrapperId;
 
         enum
         {
@@ -42,6 +41,7 @@ namespace
             _In_ IUnknown* identity,
             _In_opt_ void* threadContext,
             _In_ DWORD syncBlockIndex,
+            _In_ INT64 wrapperId,
             _In_ DWORD flags)
         {
             CONTRACTL
@@ -58,6 +58,7 @@ namespace
             cxt->Identity = (void*)identity;
             cxt->ThreadContext = threadContext;
             cxt->SyncBlockIndex = syncBlockIndex;
+            cxt->WrapperId = wrapperId;
             cxt->Flags = flags;
         }
 
@@ -91,6 +92,40 @@ namespace
 
             _ASSERTE(IsActive());
             return ObjectToOBJECTREF(g_pSyncTable[SyncBlockIndex].m_Object);
+        }
+
+        struct Key
+        {
+        public:
+            Key(void* identity, INT64 wrapperId)
+                : _identity { identity }
+                , _wrapperId { wrapperId }
+            {
+                _ASSERTE(identity != NULL);
+                _ASSERTE(wrapperId != ComWrappersNative::InvalidWrapperId);
+            }
+
+            DWORD Hash() const
+            {
+                DWORD hash = (_wrapperId >> 32) ^ (_wrapperId & 0xFFFFFFFF);
+#if POINTER_BITS == 32
+                return hash ^ (DWORD)_identity;
+#else
+                INT64 identityInt64 = (INT64)_identity;
+                return hash ^ (identityInt64 >> 32) ^ (identityInt64 & 0xFFFFFFFF);
+#endif
+            }
+
+            bool operator==(const Key & rhs) const { return _identity == rhs._identity && _wrapperId == rhs._wrapperId; }
+
+        private:
+            void* _identity;
+            INT64 _wrapperId;
+        };
+
+        Key GetKey() const
+        {
+            return Key(Identity, WrapperId);
         }
     };
 
@@ -172,10 +207,10 @@ namespace
         class Traits : public DefaultSHashTraits<ExternalObjectContext *>
         {
         public:
-            using key_t = void*;
-            static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return (key_t)e->Identity; }
-            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key; }
-            static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
+            using key_t = ExternalObjectContext::Key;
+            static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return e->GetKey(); }
+            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)key.Hash(); }
+            static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { LIMITED_METHOD_CONTRACT; return lhs == rhs; }
         };
 
         // Alias some useful types
@@ -312,7 +347,7 @@ namespace
             RETURN gc.arrRef;
         }
 
-        ExternalObjectContext* Find(_In_ IUnknown* instance)
+        ExternalObjectContext* Find(_In_ const ExternalObjectContext::Key& key)
         {
             CONTRACT(ExternalObjectContext*)
             {
@@ -320,7 +355,6 @@ namespace
                 GC_NOTRIGGER;
                 MODE_COOPERATIVE;
                 PRECONDITION(IsLockHeld());
-                PRECONDITION(instance != NULL);
                 POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             }
             CONTRACT_END;
@@ -328,7 +362,7 @@ namespace
             // Forbid the GC from messing with the hash table.
             GCX_FORBID();
 
-            RETURN _hashMap.Lookup(instance);
+            RETURN _hashMap.Lookup(key);
         }
 
         ExternalObjectContext* Add(_In_ ExternalObjectContext* cxt)
@@ -341,7 +375,7 @@ namespace
                 PRECONDITION(IsLockHeld());
                 PRECONDITION(!Traits::IsNull(cxt) && !Traits::IsDeleted(cxt));
                 PRECONDITION(cxt->Identity != NULL);
-                PRECONDITION(Find(static_cast<IUnknown*>(cxt->Identity)) == NULL);
+                PRECONDITION(Find(cxt->GetKey()) == NULL);
                 POSTCONDITION(RETVAL == cxt);
             }
             CONTRACT_END;
@@ -350,7 +384,7 @@ namespace
             RETURN cxt;
         }
 
-        ExternalObjectContext* FindOrAdd(_In_ IUnknown* key, _In_ ExternalObjectContext* newCxt)
+        ExternalObjectContext* FindOrAdd(_In_ const ExternalObjectContext::Key& key, _In_ ExternalObjectContext* newCxt)
         {
             CONTRACT(ExternalObjectContext*)
             {
@@ -358,9 +392,8 @@ namespace
                 GC_NOTRIGGER;
                 MODE_COOPERATIVE;
                 PRECONDITION(IsLockHeld());
-                PRECONDITION(key != NULL);
                 PRECONDITION(!Traits::IsNull(newCxt) && !Traits::IsDeleted(newCxt));
-                PRECONDITION(key == newCxt->Identity);
+                PRECONDITION(key == newCxt->GetKey());
                 POSTCONDITION(CheckPointer(RETVAL));
             }
             CONTRACT_END;
@@ -393,7 +426,7 @@ namespace
             }
             CONTRACTL_END;
 
-            _hashMap.Remove(cxt->Identity);
+            _hashMap.Remove(cxt->GetKey());
         }
     };
 
@@ -401,8 +434,8 @@ namespace
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
 
     // Indicator for if a ComWrappers implementation is globally registered
-    bool g_IsGlobalComWrappersRegisteredForMarshalling;
-    bool g_IsGlobalComWrappersRegisteredForTrackerSupport;
+    INT64 g_marshallingGlobalInstanceId = ComWrappersNative::InvalidWrapperId;
+    INT64 g_trackerSupportGlobalInstanceId = ComWrappersNative::InvalidWrapperId;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -523,6 +556,7 @@ namespace
 
     bool TryGetOrCreateComInterfaceForObjectInternal(
         _In_opt_ OBJECTREF impl,
+        _In_ INT64 wrapperId,
         _In_ OBJECTREF instance,
         _In_ CreateComInterfaceFlags flags,
         _In_ ComWrappersScenario scenario,
@@ -534,7 +568,8 @@ namespace
             MODE_COOPERATIVE;
             PRECONDITION(instance != NULL);
             PRECONDITION(wrapperRaw != NULL);
-            PRECONDITION((impl != NULL && scenario == ComWrappersScenario::Instance)|| (impl == NULL && scenario != ComWrappersScenario::Instance));
+            PRECONDITION((impl != NULL && scenario == ComWrappersScenario::Instance) || (impl == NULL && scenario != ComWrappersScenario::Instance));
+            PRECONDITION(wrapperId != ComWrappersNative::InvalidWrapperId);
         }
         CONTRACT_END;
 
@@ -560,7 +595,7 @@ namespace
         _ASSERTE(syncBlock->IsPrecious());
 
         // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe))
+        if (!interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe))
         {
             // Compute VTables for the new existing COM object using the supplied COM Wrappers implementation.
             //
@@ -571,7 +606,7 @@ namespace
             void* vtables = CallComputeVTables(scenario, &gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe)
+            if (!interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe)
                 && ((vtables != nullptr && vtableCount > 0) || (vtableCount == 0)))
             {
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
@@ -591,14 +626,14 @@ namespace
                 _ASSERTE(!newWrapper.IsNull());
 
                 // Try setting the newly created managed object wrapper on the InteropSyncBlockInfo.
-                if (!interopInfo->TrySetManagedObjectComWrapper(newWrapper))
+                if (!interopInfo->TrySetManagedObjectComWrapper(wrapperId, newWrapper))
                 {
                     // The new wrapper couldn't be set which means a wrapper already exists.
                     newWrapper.Release();
 
                     // If the managed object wrapper couldn't be set, then
                     // it should be possible to get the current one.
-                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe))
+                    if (!interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe))
                     {
                         UNREACHABLE();
                     }
@@ -639,6 +674,7 @@ namespace
 
     bool TryGetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
+        _In_ INT64 wrapperId,
         _In_ IUnknown* identity,
         _In_ CreateObjectFlags flags,
         _In_ ComWrappersScenario scenario,
@@ -652,6 +688,7 @@ namespace
             PRECONDITION(identity != NULL);
             PRECONDITION(objRef != NULL);
             PRECONDITION((impl != NULL && scenario == ComWrappersScenario::Instance) || (impl == NULL && scenario != ComWrappersScenario::Instance));
+            PRECONDITION(wrapperId != ComWrappersNative::InvalidWrapperId);
         }
         CONTRACT_END;
 
@@ -673,13 +710,15 @@ namespace
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
         InteropLib::OBJECTHANDLE handle = NULL;
 
+        ExternalObjectContext::Key cacheKey(identity, wrapperId);
+
         // Check if the user requested a unique instance.
         bool uniqueInstance = !!(flags & CreateObjectFlags::CreateObjectFlags_UniqueInstance);
         if (!uniqueInstance)
         {
             // Query the external object cache
             ExtObjCxtCache::LockHolder lock(cache);
-            extObjCxt = cache->Find(identity);
+            extObjCxt = cache->Find(cacheKey);
 
             // If is no object found in the cache, check if the object COM instance is actually the CCW
             // representing a managed object. For the scenario of marshalling through a global instance,
@@ -751,6 +790,7 @@ namespace
                     identity,
                     GetCurrentCtxCookie(),
                     gc.objRefMaybe->GetSyncBlockIndex(),
+                    wrapperId,
                     flags);
 
                 if (uniqueInstance)
@@ -761,7 +801,7 @@ namespace
                 {
                     // Attempt to insert the new context into the cache.
                     ExtObjCxtCache::LockHolder lock(cache);
-                    extObjCxt = cache->FindOrAdd(identity, resultHolder.GetContext());
+                    extObjCxt = cache->FindOrAdd(cacheKey, resultHolder.GetContext());
                 }
 
                 // If the returned context matches the new context it means the
@@ -800,6 +840,11 @@ namespace
         *objRef = gc.objRefMaybe;
         RETURN (gc.objRefMaybe != NULL);
     }
+}
+
+namespace
+{
+    BOOL g_isGlobalPeggingOn = TRUE;
 }
 
 namespace InteropLibImports
@@ -844,7 +889,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewAddMemoryPressure(memoryInBytes);
+            GCInterface::AddMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -863,7 +908,7 @@ namespace InteropLibImports
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
-            GCInterface::NewRemoveMemoryPressure(memoryInBytes);
+            GCInterface::RemoveMemoryPressure(memoryInBytes);
         }
         END_EXTERNAL_ENTRYPOINT;
 
@@ -981,7 +1026,7 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        return (RCWWalker::s_bIsGlobalPeggingOn != FALSE);
+        return (VolatileLoad(&g_isGlobalPeggingOn) != FALSE);
     }
 
     void SetGlobalPeggingState(_In_ bool state) noexcept
@@ -995,7 +1040,7 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         BOOL newState = state ? TRUE : FALSE;
-        VolatileStore(&RCWWalker::s_bIsGlobalPeggingOn, newState);
+        VolatileStore(&g_isGlobalPeggingOn, newState);
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(
@@ -1035,6 +1080,7 @@ namespace InteropLibImports
             // Get wrapper for external object
             bool success = TryGetOrCreateObjectForComInstanceInternal(
                 gc.implRef,
+                g_trackerSupportGlobalInstanceId,
                 externalComObject,
                 externalObjectFlags,
                 ComWrappersScenario::TrackerSupportGlobalInstance,
@@ -1047,6 +1093,7 @@ namespace InteropLibImports
             // Get wrapper for managed object
             success = TryGetOrCreateComInterfaceForObjectInternal(
                 gc.implRef,
+                g_trackerSupportGlobalInstanceId,
                 gc.objRef,
                 trackerTargetFlags,
                 ComWrappersScenario::TrackerSupportGlobalInstance,
@@ -1216,6 +1263,7 @@ namespace InteropLibImports
 
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ INT64 wrapperId,
     _In_ QCall::ObjectHandleOnStack instance,
     _In_ INT32 flags,
     _Outptr_ void** wrapper)
@@ -1232,6 +1280,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
         GCX_COOP();
         success = TryGetOrCreateComInterfaceForObjectInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
+            wrapperId,
             ObjectToOBJECTREF(*instance.m_ppObject),
             (CreateComInterfaceFlags)flags,
             ComWrappersScenario::Instance,
@@ -1245,6 +1294,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
 
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ INT64 wrapperId,
     _In_ void* ext,
     _In_ INT32 flags,
     _In_ QCall::ObjectHandleOnStack wrapperMaybe,
@@ -1274,6 +1324,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
         OBJECTREF newObj;
         success = TryGetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
+            wrapperId,
             identity,
             (CreateObjectFlags)flags,
             ComWrappersScenario::Instance,
@@ -1383,19 +1434,25 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
     _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
 }
 
-void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling()
+void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    _ASSERTE(!g_IsGlobalComWrappersRegisteredForMarshalling);
-    g_IsGlobalComWrappersRegisteredForMarshalling = true;
+    _ASSERTE(g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId && id != ComWrappersNative::InvalidWrapperId);
+    g_marshallingGlobalInstanceId = id;
+}
+
+bool GlobalComWrappersForMarshalling::IsRegisteredInstance(INT64 id)
+{
+    return g_marshallingGlobalInstanceId != ComWrappersNative::InvalidWrapperId
+        && g_marshallingGlobalInstanceId == id;
 }
 
 bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
-    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
+    if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
     // Switch to Cooperative mode since object references
@@ -1408,6 +1465,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateComInterfaceForObjectInternal(
             NULL,
+            g_marshallingGlobalInstanceId,
             instance,
             flags,
             ComWrappersScenario::MarshallingGlobalInstance,
@@ -1420,7 +1478,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
-    if (!g_IsGlobalComWrappersRegisteredForMarshalling)
+    if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
     // Determine the true identity of the object
@@ -1444,6 +1502,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateObjectForComInstanceInternal(
             NULL /*comWrappersImpl*/,
+            g_marshallingGlobalInstanceId,
             identity,
             (CreateObjectFlags)flags,
             ComWrappersScenario::MarshallingGlobalInstance,
@@ -1452,12 +1511,18 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     }
 }
 
-void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport()
+void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    _ASSERTE(!g_IsGlobalComWrappersRegisteredForTrackerSupport);
-    g_IsGlobalComWrappersRegisteredForTrackerSupport = true;
+    _ASSERTE(g_trackerSupportGlobalInstanceId == ComWrappersNative::InvalidWrapperId && id != ComWrappersNative::InvalidWrapperId);
+    g_trackerSupportGlobalInstanceId = id;
+}
+
+bool GlobalComWrappersForTrackerSupport::IsRegisteredInstance(INT64 id)
+{
+    return g_trackerSupportGlobalInstanceId != ComWrappersNative::InvalidWrapperId
+        && g_trackerSupportGlobalInstanceId == id;
 }
 
 bool GlobalComWrappersForTrackerSupport::TryGetOrCreateComInterfaceForObject(
@@ -1471,12 +1536,13 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateComInterfaceForObject(
     }
     CONTRACTL_END;
 
-    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+    if (g_trackerSupportGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
     // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
     return TryGetOrCreateComInterfaceForObjectInternal(
         NULL,
+        g_trackerSupportGlobalInstanceId,
         instance,
         CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport,
         ComWrappersScenario::TrackerSupportGlobalInstance,
@@ -1494,7 +1560,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
     }
     CONTRACTL_END;
 
-    if (!g_IsGlobalComWrappersRegisteredForTrackerSupport)
+    if (g_trackerSupportGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
     // Determine the true identity of the object
@@ -1509,6 +1575,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
     // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
     return TryGetOrCreateObjectForComInstanceInternal(
         NULL /*comWrappersImpl*/,
+        g_trackerSupportGlobalInstanceId,
         identity,
         CreateObjectFlags::CreateObjectFlags_TrackerObject,
         ComWrappersScenario::TrackerSupportGlobalInstance,
@@ -1516,7 +1583,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         objRef);
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId)
 {
     CONTRACTL
     {
@@ -1524,10 +1591,13 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(objectPROTECTED));
+        PRECONDITION(CheckPointer(wrapperId));
     }
     CONTRACTL_END;
 
     ASSERT_PROTECTED(objectPROTECTED);
+
+    *wrapperId = ComWrappersNative::InvalidWrapperId;
 
     SyncBlock* syncBlock = (*objectPROTECTED)->PassiveGetSyncBlock();
     if (syncBlock == nullptr)
@@ -1541,10 +1611,13 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
         return nullptr;
     }
 
-    void* context;
-    if (interopInfo->TryGetExternalComObjectContext(&context))
+    void* contextMaybe;
+    if (interopInfo->TryGetExternalComObjectContext(&contextMaybe))
     {
-        IUnknown* identity = reinterpret_cast<IUnknown*>(reinterpret_cast<ExternalObjectContext*>(context)->Identity);
+        ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
+        *wrapperId = context->WrapperId;
+
+        IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
         GCX_PREEMP();
         IUnknown* result;
         if (SUCCEEDED(identity->QueryInterface(riid, (void**)&result)))
@@ -1565,20 +1638,6 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     //
@@ -1623,13 +1682,6 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(nCondemnedGeneration);
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     //

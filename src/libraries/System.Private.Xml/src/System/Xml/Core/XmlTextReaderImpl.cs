@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.IO;
@@ -119,7 +118,7 @@ namespace System.Xml
         //the purpose is to make the Create of XmlReader do not block on IO.
         private class LaterInitParam
         {
-            public bool useAsync = false;
+            public bool useAsync;
 
             public Stream? inputStream;
             public byte[]? inputBytes;
@@ -133,7 +132,7 @@ namespace System.Xml
             public InitInputType initType = InitInputType.Invalid;
         }
 
-        private LaterInitParam? _laterInitParam = null;
+        private LaterInitParam? _laterInitParam;
 
         private enum InitInputType
         {
@@ -163,7 +162,7 @@ namespace System.Xml
         private NodeData _curNode;
 
         // current index
-        private int _index = 0;
+        private int _index;
 
         // attributes info
         private int _curAttrIndex = -1;
@@ -463,7 +462,7 @@ namespace System.Xml
         {
         }
 
-        internal XmlTextReaderImpl(string url, Stream input, XmlNameTable nt) : this(nt)
+        internal XmlTextReaderImpl(string? url, Stream input, XmlNameTable nt) : this(nt)
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
@@ -495,7 +494,7 @@ namespace System.Xml
         {
         }
 
-        internal XmlTextReaderImpl(string url, TextReader input, XmlNameTable nt) : this(nt)
+        internal XmlTextReaderImpl(string? url, TextReader input, XmlNameTable nt) : this(nt)
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
@@ -695,7 +694,7 @@ namespace System.Xml
 
         // Initializes a new instance of the XmlTextReaderImpl class with the specified arguments.
         // This constructor is used when creating XmlTextReaderImpl via XmlReader.Create
-        internal XmlTextReaderImpl(Stream stream, byte[]? bytes, int byteCount, XmlReaderSettings settings, Uri? baseUri, string baseUriStr,
+        internal XmlTextReaderImpl(Stream stream, byte[]? bytes, int byteCount, XmlReaderSettings settings, Uri? baseUri, string? baseUriStr,
                                     XmlParserContext? context, bool closeInput)
             : this(settings.GetXmlResolver(), settings, context)
         {
@@ -707,7 +706,7 @@ namespace System.Xml
                 if (context.BaseURI != null && context.BaseURI.Length > 0 &&
                     !UriEqual(baseUri, baseUriStr, context.BaseURI, settings.GetXmlResolver()))
                 {
-                    if (baseUriStr.Length > 0)
+                    if (baseUriStr!.Length > 0)
                     {
                         Throw(SR.Xml_DoubleBaseUri);
                     }
@@ -769,7 +768,7 @@ namespace System.Xml
 
         // Initializes a new instance of the XmlTextReaderImpl class with the specified arguments.
         // This constructor is used when creating XmlTextReaderImpl via XmlReader.Create
-        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string baseUriStr, XmlParserContext? context)
+        internal XmlTextReaderImpl(TextReader input, XmlReaderSettings settings, string? baseUriStr, XmlParserContext? context)
             : this(settings.GetXmlResolver(), settings, context)
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref baseUriStr, settings.GetXmlResolver());
@@ -2189,7 +2188,7 @@ namespace System.Xml
         }
 
         // Specifies XmlResolver used for opening the XML document and other external references
-        internal XmlResolver XmlResolver
+        internal XmlResolver? XmlResolver
         {
             set
             {
@@ -2477,7 +2476,7 @@ namespace System.Xml
             }
         }
 
-        internal char[]? DtdParserProxy_ParsingBuffer
+        internal char[] DtdParserProxy_ParsingBuffer
         {
             get
             {
@@ -2560,18 +2559,18 @@ namespace System.Xml
             return this.ReadData();
         }
 
-        internal int DtdParserProxy_ParseNumericCharRef(StringBuilder internalSubsetBuilder)
+        internal int DtdParserProxy_ParseNumericCharRef(StringBuilder? internalSubsetBuilder)
         {
             EntityType entType;
             return this.ParseNumericCharRef(true, internalSubsetBuilder, out entType);
         }
 
-        internal int DtdParserProxy_ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
+        internal int DtdParserProxy_ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder)
         {
             return this.ParseNamedCharRef(expand, internalSubsetBuilder);
         }
 
-        internal void DtdParserProxy_ParsePI(StringBuilder sb)
+        internal void DtdParserProxy_ParsePI(StringBuilder? sb)
         {
             if (sb == null)
             {
@@ -2586,7 +2585,7 @@ namespace System.Xml
             }
         }
 
-        internal void DtdParserProxy_ParseComment(StringBuilder sb)
+        internal void DtdParserProxy_ParseComment(StringBuilder? sb)
         {
             Debug.Assert(_parsingMode == ParsingMode.Full);
 
@@ -2725,6 +2724,7 @@ namespace System.Xml
             _ps.eolNormalized = false;
         }
 
+        [DoesNotReturn]
         internal void DtdParserProxy_Throw(Exception e)
         {
             this.Throw(e);
@@ -4630,7 +4630,7 @@ namespace System.Xml
                 {
                     NodeData attr = _nodes[i];
 
-                    IDtdAttributeInfo attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
+                    IDtdAttributeInfo? attributeInfo = attlistInfo.LookupAttribute(attr.prefix, attr.localName);
                     if (attributeInfo != null && attributeInfo.IsNonCDataType)
                     {
                         if (DtdValidation && _standalone && attributeInfo.IsDeclaredInExternal)
@@ -8251,7 +8251,7 @@ namespace System.Xml
                 Encoding? enc = _ps.encoding;
 
                 PushParsingState();
-                InitStringInput(entity.SystemId, enc, string.Empty);
+                InitStringInput(entity.SystemId!, enc, string.Empty);
 
                 RegisterEntity(entity);
 
@@ -8269,7 +8269,7 @@ namespace System.Xml
 
             PushParsingState();
 
-            InitStringInput(entity.DeclaredUriString ?? string.Empty, enc, entity.Text);
+            InitStringInput(entity.DeclaredUriString ?? string.Empty, enc, entity.Text!);
 
             RegisterEntity(entity);
 
@@ -8278,7 +8278,7 @@ namespace System.Xml
 
             _ps.eolNormalized = true;
 
-            RegisterConsumedCharacters(entity.Text.Length, true);
+            RegisterConsumedCharacters(entity.Text!.Length, true);
         }
 
         private void PopEntity()
@@ -9746,7 +9746,7 @@ namespace System.Xml
         }
 
         // SxS: URIs are resolved only to be compared. No resource exposure. It's OK to suppress the SxS warning.
-        private bool UriEqual(Uri? uri1, string uri1Str, string uri2Str, XmlResolver? resolver)
+        private bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
         {
             if (resolver == null)
             {
@@ -9996,6 +9996,6 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri(ref string url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri(ref string? url, XmlResolver? resolver);
     }
 }

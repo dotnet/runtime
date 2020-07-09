@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -399,7 +398,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             method.Emit(OpCodes.Ret);
 
-            return (IUnknownReleaseDelegate)dm.CreateDelegate(typeof(IUnknownReleaseDelegate));
+            return dm.CreateDelegate<IUnknownReleaseDelegate>();
         }
 
         internal static readonly IntPtr s_nullInterfaceId = GetNullInterfaceId();
@@ -539,7 +538,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             method.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), invokeParamTypes);
 
             method.Emit(OpCodes.Ret);
-            return (IDispatchInvokeDelegate)dm.CreateDelegate(typeof(IDispatchInvokeDelegate));
+            return dm.CreateDelegate<IDispatchInvokeDelegate>();
         }
 
         #endregion

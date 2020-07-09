@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // TypeDelegator
 //
@@ -20,11 +19,15 @@ namespace System.Reflection
             return IsAssignableFrom(typeInfo.AsType());
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         protected Type typeImpl = null!;
 
         protected TypeDelegator() { }
 
-        public TypeDelegator(Type delegatingType)
+        // NOTE: delegatingType is marked as DynamicallyAccessedMemberTypes.All, but analysis tools special case
+        // calls to this constructor and propagate the existing dataflow metadata from delegatingType to this
+        // TypeDelegator. The only purpose of the annotation here is to avoid dataflow warnings _within_ this type.
+        public TypeDelegator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type delegatingType)
         {
             if (delegatingType is null)
                 throw new ArgumentNullException(nameof(delegatingType));

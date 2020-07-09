@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -26,7 +25,7 @@ internal class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool ignoreErrors = false,
-        bool silent = false)
+        bool silent = true)
     {
         LogInfo($"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
@@ -52,7 +51,7 @@ internal class Utils
 
         Process? process = Process.Start(processStartInfo);
         if (process == null)
-            throw new ArgumentException("Process.Start({path} {args}) returned null process");
+            throw new ArgumentException($"Process.Start({path} {args}) returned null process");
 
         process.ErrorDataReceived += (sender, e) =>
         {
@@ -60,8 +59,8 @@ internal class Utils
             {
                 LogError(e.Data);
                 outputBuilder.AppendLine(e.Data);
-                errorBuilder.AppendLine(e.Data);
             }
+            errorBuilder.AppendLine(e.Data);
         };
         process.OutputDataReceived += (sender, e) =>
         {

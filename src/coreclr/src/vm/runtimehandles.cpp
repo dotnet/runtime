@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -378,49 +377,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeNEQ, Object* left, Object* right)
 FCIMPLEND
 
 #include <optdefault.h>
-
-
-
-
-#ifdef FEATURE_COMINTEROP
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isWindowsRuntimeType = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isWindowsRuntimeType = pMT->IsWinRTObjectType();
-    }
-
-    FC_RETURN_BOOL(isWindowsRuntimeType);
-}
-FCIMPLEND
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isExportedToWinRT = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isExportedToWinRT = pMT->IsExportedToWinRT();
-    }
-
-    FC_RETURN_BOOL(isExportedToWinRT);
-}
-FCIMPLEND
-#endif
-#endif // FEATURE_COMINTEROP
 
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
 {
@@ -1417,7 +1373,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                                 QCall::StackCrawlMarkHandle pStackMark,
                                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                                QCall::ObjectHandleOnStack retType,
                                                 QCall::ObjectHandleOnStack keepAlive)
 {
     QCALL_CONTRACT;
@@ -1445,7 +1401,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
-                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
+                                              (OBJECTREF*)keepAlive.m_ppObject,
                                               pPrivHostBinder);
     }
 
@@ -2188,7 +2144,8 @@ FCIMPL2(FC_BOOL_RET, SignatureNative::CompareSig, SignatureNative* pLhsUNSAFE, S
     {
         ret = MetaSig::CompareMethodSigs(
             gc.pLhs->GetCorSig(), gc.pLhs->GetCorSigSize(), gc.pLhs->GetModule(), NULL,
-            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL);
+            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL,
+            FALSE);
     }
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(ret);

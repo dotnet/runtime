@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipeevent.h"
@@ -23,7 +22,8 @@ EventPipeEvent::EventPipeEvent(
                                    m_level(level),
                                    m_needStack(needStack),
                                    m_enabledMask(0),
-                                   m_pMetadata(nullptr)
+                                   m_pMetadata(nullptr),
+                                   m_metadataLength(0)
 {
     CONTRACTL
     {

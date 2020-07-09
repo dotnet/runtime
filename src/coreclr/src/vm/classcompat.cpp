@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CLASSCOMPAT.CPP
 
@@ -310,7 +309,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     // Com Import classes are special
     if (IsComImport()  && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
-        _ASSERTE(pParentMethodTable == g_pBaseCOMObject || pThisMT->IsWinRTObjectType());
+        _ASSERTE(pParentMethodTable == g_pBaseCOMObject);
         _ASSERTE(!(HasLayout()));
 
         // if the current class is imported
@@ -1405,7 +1404,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                                     bmtType->pModule, NULL,
                                     pInterfaceMethodSig,
                                     cInterfaceMethodSig,
-                                    pInterfaceMD->GetModule(), NULL))
+                                    pInterfaceMD->GetModule(), NULL, FALSE))
                                 {   // Found match, break from loop
                                     break;
                                 }
@@ -2263,7 +2262,8 @@ VOID    MethodTableBuilder::EnumerateMethodImpls()
                                                 pSigBody,
                                                 cbSigBody,
                                                 bmtType->pModule,
-                                                NULL))
+                                                NULL,
+                                                FALSE))
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }

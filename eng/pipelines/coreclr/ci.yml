@@ -98,13 +98,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: gdbjit.cpp
 //
@@ -1791,16 +1790,6 @@ void VarDebugInfo::DumpDebugInfo(char* ptr, int& offset)
     offset += sizeof(DebugInfoVar);
     offset += len;
 }
-
-/* static data for symbol strings */
-struct Elf_Symbol {
-    const char* m_name;
-    int m_off;
-    TADDR m_value;
-    int m_section, m_size;
-    NewArrayHolder<char> m_symbol_name;
-    Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
-};
 
 template <class T>
 static int countFuncs(T &arr, int n)

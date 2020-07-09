@@ -3,19 +3,29 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
-    <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
-    <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+  </PropertyGroup>
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
+    <Compile Include="System\Net\Http\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\EmptyContent.cs" />
@@ -29,7 +39,6 @@
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
@@ -40,6 +49,7 @@
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
+    <Compile Include="System\Net\Http\HttpTelemetry.cs" />
     <Compile Include="System\Net\Http\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
@@ -47,6 +57,7 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -80,6 +91,7 @@
     <Compile Include="System\Net\Http\Headers\ProductHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\QPackStaticTable.cs" />
     <Compile Include="System\Net\Http\Headers\RangeConditionHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeItemHeaderValue.cs" />
@@ -111,16 +123,14 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-       <Link>Common\System\Net\ArrayBuffer.cs</Link>
-     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="Common\System\Net\ArrayBuffer.cs"/>
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -166,56 +176,6 @@
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
              Link="Common\System\Net\ContextFlagsPal.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs"
-             Link="Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3SettingType.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Http3SettingType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3StreamType.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Http3StreamType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs"
-             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs"
              Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs"
@@ -309,8 +269,86 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
+  <!-- Header support -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3SettingType.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Http3SettingType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3StreamType.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Http3StreamType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
+    </Compile>
+  </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
@@ -320,7 +358,7 @@
              Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
@@ -349,7 +387,7 @@
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -516,7 +554,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs"
              Link="Common\Interop\Unix\StrongToWeakReference.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
@@ -566,7 +604,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
@@ -612,6 +650,20 @@
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="System\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -642,7 +694,7 @@
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsBrowser)' != 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
@@ -667,5 +719,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SR.resx" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>

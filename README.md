@@ -12,6 +12,7 @@ Official Starting Page: https://dotnet.microsoft.com/
 
 * [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://dotnet.microsoft.com/download)
+  * [Install daily builds](https://github.com/dotnet/installer#installers-and-binaries)
   * [Documentation](https://docs.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://docs.microsoft.com/dotnet/core/deploying)
   * [Supported OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md)

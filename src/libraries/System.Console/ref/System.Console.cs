@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -19,6 +18,7 @@ namespace System
         public static bool CursorVisible { get { throw null; } set { } }
         public static System.IO.TextWriter Error { get { throw null; } }
         public static System.ConsoleColor ForegroundColor { get { throw null; } set { } }
+        public static (int Left, int Top) GetCursorPosition() { throw null; }
         public static System.IO.TextReader In { get { throw null; } }
         public static System.Text.Encoding InputEncoding { get { throw null; } set { } }
         public static bool IsErrorRedirected { get { throw null; } }

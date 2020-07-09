@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // <spec>http://www.w3.org/TR/xpath#exprlex</spec>
 //------------------------------------------------------------------------------
@@ -603,7 +602,7 @@ namespace System.Xml.Xsl.XPath
 
             if (LexKind.LastNonChar < t)
             {
-                Debug.Assert("()[].@,*/$}".IndexOf((char)t) >= 0);
+                Debug.Assert("()[].@,*/$}".Contains((char)t));
                 return char.ToString((char)t);
             }
 

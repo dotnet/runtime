@@ -59,9 +59,6 @@ jobs:
 
   - name: OfficialBuildArg
     value: ''
-  
-  - name: _BuildConfig
-    value: ${{ parameters.buildConfig }}
 
   - name: SkipTests
     value: ${{ or(
@@ -79,14 +76,6 @@ jobs:
 
   - name: SignType
     value: test
-
-  - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
-    - name: llvmParameter
-      value: /p:MonoEnableLLVM=true
-
-  - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-    - name: llvmParameter
-      value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -408,9 +397,11 @@ jobs:
       buildType: current
       downloadType: specific
       downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
+      allowPartiallySucceededBuilds: true
       itemPattern: |
         $(runtimeFlavorName)Product_*/**
         libraries_bin_*/**
+        !*Logs*
 
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
@@ -457,7 +448,7 @@ jobs:
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-    - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
       displayName: Install Build Dependencies
 
     - script: |

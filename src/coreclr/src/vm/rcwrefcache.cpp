@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -188,28 +187,6 @@ void RCWRefCache::ShrinkDependentHandles()
         ));
 
     LOG((LF_INTEROP, LL_INFO100, "\t[RCWRefCache 0x%p] ----- RCWRefCache::ShrinkDependentHandles ENDS   -----\n", this));
-}
-
-//
-// Add a reference from RCW to CCW
-//
-HRESULT RCWRefCache::AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pRCW));
-        PRECONDITION(CheckPointer(pCCW));
-        PRECONDITION(CheckPointer(OBJECTREFToObject(pCCW->GetObjectRef())));
-        PRECONDITION(pRCW->IsJupiterObject());
-        PRECONDITION(pCCW->GetJupiterRefCount() > 0);
-    }
-    CONTRACTL_END;
-
-    // Try adding reference using dependent handles
-    return AddReferenceUsingDependentHandle(pRCW->GetExposedObject(), pCCW->GetObjectRef());
 }
 
 //

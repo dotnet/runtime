@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.CPP
 // ===========================================================================
@@ -164,6 +163,7 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
+#include "pgo.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -239,8 +239,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
 #endif // !CROSSGEN_COMPILE
 
-
-
+// g_coreclr_embedded indicates that coreclr is linked directly into the program
+#ifdef CORECLR_EMBEDDED
+bool g_coreclr_embedded = true;
+#else
+bool g_coreclr_embedded = false;
+#endif
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
@@ -290,12 +294,6 @@ HRESULT EnsureEEStarted()
     if (!g_fEEStarted)
     {
         BEGIN_ENTRYPOINT_NOTHROW;
-
-#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
-        STARTUP_FLAGS startupFlags = CorHost2::GetStartupFlags();
-        // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
-        AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
-#endif
 
 #ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
@@ -486,6 +484,13 @@ void InitGSCookie()
     }
     CONTRACTL_END;
 
+#if defined(TARGET_OSX) && defined(CORECLR_EMBEDDED)
+    // OSX does not like the way we change section protection when running in a superhost bundle
+    // disabling this for now
+    // https://github.com/dotnet/runtime/issues/38184
+    return;
+#endif
+
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef TARGET_UNIX
@@ -673,12 +678,16 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipe::Initialize();
-
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
+
+#ifdef FEATURE_PERFTRACING
+        DiagnosticServer::Initialize();
+        DiagnosticServer::PauseForDiagnosticsMonitor();
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit
@@ -717,6 +726,10 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Initialize();
 #endif
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
@@ -836,8 +849,6 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-        GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
-
 #endif // CROSSGEN_COMPILE
 
         // Setup the domains. Threads are started in a default domain.
@@ -930,12 +941,12 @@ void EEStartupHelper()
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
-#ifdef FEATURE_EVENT_TRACE
+#ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipe::FinishInitialize();
-#endif
+#endif // FEATURE_PERFTRACING
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -1004,11 +1015,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
-#ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PERFTRACING
-        DiagnosticServer::Initialize();
-#endif
-#endif
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");
@@ -1313,6 +1319,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Shutdown();
 #endif
 
         {
@@ -1669,10 +1679,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
         }
 
 #ifdef FEATURE_MULTICOREJIT
-        if (!AppX::IsAppXProcess()) // When running as Appx, make the delayed timer driven writing be the only option
-        {
-            MulticoreJitManager::StopProfileAll();
-        }
+        MulticoreJitManager::StopProfileAll();
 #endif
     }
 

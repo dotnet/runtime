@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -43,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
-            FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(handler);
         }
     }

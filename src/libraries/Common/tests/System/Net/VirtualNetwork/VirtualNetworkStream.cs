@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -14,7 +13,7 @@ namespace System.Net.Test.Common
         private MemoryStream _readStream;
         private readonly bool _isServer;
         private SemaphoreSlim _readStreamLock = new SemaphoreSlim(1, 1);
-        private TaskCompletionSource<object> _flushTcs;
+        private TaskCompletionSource _flushTcs;
 
         public VirtualNetworkStream(VirtualNetwork network, bool isServer)
         {
@@ -36,15 +35,22 @@ namespace System.Net.Test.Common
 
         public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public bool DelayFlush { get; set; }
+
         public override void Flush() => HasBeenSyncFlushed = true;
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (!DelayFlush)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_flushTcs != null)
             {
                 throw new InvalidOperationException();
             }
-            _flushTcs = new TaskCompletionSource<object>();
+            _flushTcs = new TaskCompletionSource();
 
             return _flushTcs.Task;
         }
@@ -58,7 +64,7 @@ namespace System.Net.Test.Common
                 throw new InvalidOperationException();
             }
 
-            _flushTcs.SetResult(null);
+            _flushTcs.SetResult();
             _flushTcs = null;
         }
 

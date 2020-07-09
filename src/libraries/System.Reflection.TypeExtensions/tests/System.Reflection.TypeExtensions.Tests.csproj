@@ -18,9 +18,9 @@
     <Compile Include="TypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(CommonTestPath)Data\TinyAssembly.dll">
+    <Content Include="$(CommonTestPath)Data\TinyAssembly.dll">
       <Link>TinyAssembly.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 </Project>

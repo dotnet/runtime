@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class SwitchLevelAttribute : Attribute
     {
-        private Type _type = null!;
+        private Type _type;
 
         public SwitchLevelAttribute(Type switchLevelType)
         {
@@ -17,6 +18,7 @@ namespace System.Diagnostics
         public Type SwitchLevelType
         {
             get { return _type; }
+            [MemberNotNull(nameof(_type))]
             set
             {
                 if (value == null)

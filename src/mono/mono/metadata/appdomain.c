@@ -1609,7 +1609,8 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 	goto_if_nok (error, exit);
 
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
 	goto_if_nok (error, exit);
 
 	gpointer args [1];
@@ -1677,7 +1678,8 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 #endif
 	mono_domain_assemblies_unlock (domain);
 
-	mono_domain_fire_assembly_load_event (domain, assembly, error_out);
+	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
 	mono_error_cleanup (error);
@@ -2603,8 +2605,10 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	if (!parsed)
 		goto fail;
 
-	MonoAssemblyCandidatePredicate predicate = NULL;
-	void* predicate_ud = NULL;
+	MonoAssemblyCandidatePredicate predicate;
+	void* predicate_ud;
+	predicate = NULL;
+	predicate_ud = NULL;
 	if (mono_loader_get_strict_assembly_name_check ()) {
 		predicate = &mono_assembly_candidate_predicate_sn_same_name;
 		predicate_ud = &aname;

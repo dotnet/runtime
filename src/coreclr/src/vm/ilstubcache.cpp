@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubCache.cpp
 //
@@ -270,18 +269,13 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
 
-            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::WinRTToCLRInteropStub : ILStubResolver::COMToCLRInteropStub);
+            ILStubResolver::ILStubType type = ILStubResolver::COMToCLRInteropStub;
             pMD->GetILStubResolver()->SetStubType(type);
         }
         else
         {
-            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::CLRToWinRTInteropStub : ILStubResolver::CLRToCOMInteropStub);
+            ILStubResolver::ILStubType type =  ILStubResolver::CLRToCOMInteropStub;
             pMD->GetILStubResolver()->SetStubType(type);
-        }
-
-        if (SF_IsWinRTDelegateStub(dwStubFlags))
-        {
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdDelegateCOMStub;
         }
     }
     else

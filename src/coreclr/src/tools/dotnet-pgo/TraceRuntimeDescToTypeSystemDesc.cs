@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Diagnostics.Tracing.Etlx;
 using System;
@@ -14,6 +13,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection;
 using System.IO;
 using System.Text;
+using System.Net;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -84,6 +84,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             public readonly long ID;
             public TypeDesc Type;
             public readonly TraceTypeData TypeValue;
+
+            public override string ToString()
+            {
+                return Type != null ? Type.ToString() : "NULL";
+            }
         }
 
         class ModuleDescInfo
@@ -103,6 +108,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private readonly Dictionary<long, TypeHandleInfo> _types = new Dictionary<long, TypeHandleInfo>();
         private readonly Dictionary<long, ModuleDescInfo> _modules = new Dictionary<long, ModuleDescInfo>();
         private readonly object _lock = new object();
+        private readonly int s_bulkTypeEvents = 0;
+        private readonly int s_bulkTypeTypes = 0;
 
         public TraceRuntimeDescToTypeSystemDesc(TraceProcess traceProcess, TypeSystemContext context, int clrInstanceID)
         {
@@ -157,6 +164,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             foreach (var bulkTypeTrace in traceProcess.EventsInProcess.ByEventType<GCBulkTypeTraceData>())
             {
+                s_bulkTypeEvents++;
+
                 if (bulkTypeTrace.ClrInstanceID != _clrInstanceID)
                     continue;
 
@@ -164,6 +173,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     TypeHandleInfo currentInfo;
                     var typeTrace = bulkTypeTrace.Values(i);
+                    s_bulkTypeTypes++;
 
                     if (_types.TryGetValue((long)typeTrace.TypeID, out currentInfo))
                     {
@@ -241,6 +251,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         _modules.Add(managedModule.ModuleID, currentInfo);
                     }
                 }
+            }
+
+
+            // Fill in all the types
+            foreach (var entry in _types)
+            {
+                ResolveTypeHandle(entry.Key, false);
             }
         }
 

@@ -65,14 +65,14 @@ jobs:
     - name: managedTestArtifactRootFolderPath
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: managedTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+    - name: managedGenericTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
 
     - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+      value: 'MicrosoftNetSdkIlPackage_AnyOS_AnyCPU_$(buildConfig)'
 
     - name: monoRepoRoot
       value: '$(Build.SourcesDirectory)/src/mono'

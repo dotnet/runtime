@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -24,6 +23,12 @@ namespace System.Net.Sockets
             // requires Unix Domain Sockets. The programming model is fundamentally different,
             // and incompatible with the design of SocketInformation-related methods.
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
+        internal bool PreferInlineCompletions
+        {
+            get => _handle.PreferInlineCompletions;
+            set => _handle.PreferInlineCompletions = value;
         }
 
         partial void ValidateForMultiConnect(bool isMultiEndpoint)

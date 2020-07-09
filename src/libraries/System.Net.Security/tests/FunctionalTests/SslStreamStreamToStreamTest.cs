@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -259,6 +258,34 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task SslStream_StreamToStream_ZeroByteRead_SucceedsWhenDataAvailable()
+        {
+            (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
+            using var clientSslStream = new SslStream(clientStream, leaveInnerStreamOpen: false, AllowAnyServerCertificate);
+            using var serverSslStream = new SslStream(serverStream);
+            await DoHandshake(clientSslStream, serverSslStream);
+
+            for (int iter = 0; iter < 2; iter++)
+            {
+                ValueTask<int> zeroByteRead = clientSslStream.ReadAsync(Memory<byte>.Empty);
+                Assert.False(zeroByteRead.IsCompleted);
+
+                await serverSslStream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                Assert.Equal(0, await zeroByteRead);
+
+                var readBytes = new byte[5];
+                int count = 0;
+                while (count < readBytes.Length)
+                {
+                    int n = await clientSslStream.ReadAsync(readBytes.AsMemory(count));
+                    Assert.InRange(n, 1, readBytes.Length - count);
+                    count += n;
+                }
+                Assert.Equal("hello", Encoding.UTF8.GetString(readBytes));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -411,10 +438,10 @@ namespace System.Net.Security.Tests
                 await DoHandshake(clientSslStream, serverSslStream);
 
                 var serverBuffer = new byte[1];
-                var tcs = new TaskCompletionSource<object>();
+                var tcs = new TaskCompletionSource();
                 serverStream.OnRead += (buffer, offset, count) =>
                 {
-                    tcs.TrySetResult(null);
+                    tcs.TrySetResult();
                 };
                 Task readTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
 
@@ -565,6 +592,7 @@ namespace System.Net.Security.Tests
             using (var stream = new VirtualNetworkStream(network, isServer: false))
             using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
             {
+                stream.DelayFlush = true;
                 Task task = sslStream.FlushAsync();
 
                 Assert.False(task.IsCompleted);

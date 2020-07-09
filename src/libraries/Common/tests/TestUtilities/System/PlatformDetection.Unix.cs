@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -32,10 +31,12 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
+        public static bool IsOSXLike =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 13);
-        public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
 
@@ -50,7 +51,7 @@ namespace System
             libc.geteuid() == 0 :
             throw new PlatformNotSupportedException();
 
-        public static Version OpenSslVersion => !IsOSX && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
@@ -161,6 +162,39 @@ namespace System
                 // FreeBSD 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC
                 // What we want is major release as minor releases should be compatible.
                 result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
+            }
+            else if (IsIllumos)
+            {
+                // examples:
+                //   on OmniOS
+                //       SunOS 5.11 omnios-r151018-95eaa7e
+                //   on OpenIndiana Hipster:
+                //       SunOS 5.11 illumos-63878f749f
+                //   on SmartOS:
+                //       SunOS 5.11 joyent_20200408T231825Z
+                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                switch (versionDescription)
+                {
+                    case string version when version.StartsWith("omnios"):
+                        result.Id = "OmniOS";
+                        result.VersionId = ToVersion(version.Substring("omnios-r".Length, 2)); // e.g. 15
+                        break;
+                    case string version when version.StartsWith("joyent"):
+                        result.Id = "SmartOS";
+                        result.VersionId = ToVersion(version.Substring("joyent_".Length, 4)); // e.g. 2020
+                        break;
+                    case string version when version.StartsWith("illumos"):
+                        result.Id = "OpenIndiana";
+                        // version-less
+                        break;
+                }
+            }
+            else if (IsSolaris)
+            {
+                // example:
+                //   SunOS 5.11 11.3
+                result.Id = "Solaris";
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2]); // e.g. 11.3
             }
             else if (File.Exists("/etc/os-release"))
             {

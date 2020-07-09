@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -989,7 +988,7 @@ namespace System
                     }
                     else
                     {
-                        List<RuntimeType?> al = new List<RuntimeType?>();
+                        var al = new HashSet<RuntimeType>();
 
                         // Get all constraints
                         Type[] constraints = declaringType.GetGenericParameterConstraints();
@@ -1003,31 +1002,16 @@ namespace System
 
                             Type[] temp = constraint.GetInterfaces();
                             for (int j = 0; j < temp.Length; j++)
-                                al.Add(temp[j] as RuntimeType);
+                                al.Add((RuntimeType)temp[j]);
                         }
 
-                        // Remove duplicates
-                        Dictionary<RuntimeType, RuntimeType> ht = new Dictionary<RuntimeType, RuntimeType>();
-                        for (int i = 0; i < al.Count; i++)
+                        // Populate list, without duplicates
+                        foreach (RuntimeType rt in al)
                         {
-                            RuntimeType constraint = al[i]!;
-                            if (!ht.ContainsKey(constraint))
-                                ht[constraint] = constraint;
-                        }
-
-                        RuntimeType[] interfaces = new RuntimeType[ht.Values.Count];
-                        ht.Values.CopyTo(interfaces, 0);
-
-                        // Populate link-list
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            if (filter.RequiresStringComparison())
+                            if (!filter.RequiresStringComparison() || filter.Match(RuntimeTypeHandle.GetUtf8Name(rt)))
                             {
-                                if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaces[i])))
-                                    continue;
+                                list.Add(rt);
                             }
-
-                            list.Add(interfaces[i]);
                         }
                     }
 
@@ -1675,7 +1659,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
@@ -2328,6 +2312,11 @@ namespace System
         #endregion
 
         #region Private\Internal Members
+
+        internal IntPtr GetUnderlyingNativeHandle()
+        {
+            return m_handle;
+        }
 
         internal override bool CacheEquals(object? o)
         {
@@ -3123,20 +3112,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
 
-#if FEATURE_COMINTEROP
-        internal override bool IsWindowsRuntimeObjectImpl() => IsWindowsRuntimeObjectType(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsWindowsRuntimeObjectType(RuntimeType type);
-
-#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-        internal override bool IsExportedToWindowsRuntimeImpl() => IsTypeExportedToWindowsRuntime(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
-#endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-#endif // FEATURE_COMINTEROP
-
         internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);
 
         public override GenericParameterAttributes GenericParameterAttributes
@@ -3407,6 +3382,7 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -3807,6 +3783,8 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {

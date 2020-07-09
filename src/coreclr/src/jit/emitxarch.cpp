@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2944,7 +2943,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 //
 void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
-    assert(mem->OperIs(GT_IND));
+    assert(mem->OperIs(GT_IND, GT_NULLCHECK));
 
     GenTree* addr = mem->Addr();
 
@@ -2954,10 +2953,15 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), 0);
+        unsigned             offset  = 0;
+        if (addr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            offset = varNode->AsLclFld()->GetLclOffs();
+        }
+        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
         codeGen->genUpdateLife(varNode);
@@ -3006,17 +3010,22 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        unsigned             offset  = 0;
+        if (addr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            offset = varNode->AsLclFld()->GetLclOffs();
+        }
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
         else
         {
             assert(!data->isContained());
-            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), 0);
+            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset);
         }
 
         // Updating variable liveness after instruction was emitted
@@ -10765,8 +10774,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
+        // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
+        // we expect the same alignment as the size of the constant.
+
         assert((emitChkAlign == false) || (ins == INS_lea) ||
-               ((byteSize < 16) && (((size_t)addr & (byteSize - 1)) == 0)) || (((size_t)addr & (16 - 1)) == 0));
+               ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
+               (((size_t)addr & (byteSize - 1)) == 0));
     }
     else
     {

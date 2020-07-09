@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection.Metadata.Ecma335;
 
@@ -17,12 +16,14 @@ namespace Internal.TypeSystem.Ecma
 
             EcmaModule module = _type.EcmaModule;
             EcmaModule otherModule = otherMethod._type.EcmaModule;
-            
-            int result = module.MetadataReader.GetToken(_handle) - otherModule.MetadataReader.GetToken(otherMethod._handle);
+
+            // Sort by module in preference to by token. This will place methods of the same type near each other
+            // even when working with several modules
+            int result = module.CompareTo(otherModule);
             if (result != 0)
                 return result;
 
-            return module.CompareTo(otherModule);
+            return module.MetadataReader.GetToken(_handle) - otherModule.MetadataReader.GetToken(otherMethod._handle);
         }
     }
 }

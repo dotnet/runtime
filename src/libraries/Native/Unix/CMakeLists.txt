@@ -1,14 +1,9 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.14.5)
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
-
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     cmake_policy(SET CMP0083 NEW)
@@ -203,22 +198,18 @@ if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
 elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    add_subdirectory(System.Globalization.Native)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
     if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
-    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

@@ -16,4 +16,8 @@
     <Compile Include="PInvokeTableGenerator.cs" />
     <Compile Include="WasmAppBuilder.cs" />
   </ItemGroup>
+
+  <Target Name="PublishBuilder"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
 </Project>

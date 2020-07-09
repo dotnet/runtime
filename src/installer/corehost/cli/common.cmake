@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(${DOTNET_PROJECT_NAME})
 
@@ -38,7 +37,7 @@ endif()
 
 # This is required to map a symbol reference to a matching definition local to the module (.so)
 # containing the reference instead of using definitions from other modules.
-if(CLR_CMAKE_TARGET_LINUX)
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 endif()
 

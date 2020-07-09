@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -217,6 +216,23 @@ namespace System.Numerics.Tests
 
             Matrix4x4 i = mtx * actual;
             Assert.True(MathHelper.Equal(i, Matrix4x4.Identity));
+        }
+
+        // A test for Invert (Matrix4x4)
+        [Fact]
+        public void Matrix4x4InvertRank3()
+        {
+            // A 4x4 Matrix having a rank of 3
+            Matrix4x4 mtx = new Matrix4x4(1.0f, 2.0f, 3.0f, 0.0f,
+                                          5.0f, 1.0f, 6.0f, 0.0f,
+                                          8.0f, 9.0f, 1.0f, 0.0f,
+                                          4.0f, 7.0f, 3.0f, 0.0f);
+
+            Matrix4x4 actual;
+            Assert.False(Matrix4x4.Invert(mtx, out actual));
+
+            Matrix4x4 i = mtx * actual;
+            Assert.False(MathHelper.Equal(i, Matrix4x4.Identity));
         }
 
         void DecomposeTest(float yaw, float pitch, float roll, Vector3 expectedTranslation, Vector3 expectedScales)

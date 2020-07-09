@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -109,6 +108,8 @@ namespace System.Net.Security
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -175,12 +176,13 @@ namespace System.Net.Security
 
         private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
+            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
             }
 
-            if ((sslServerAuthenticationOptions.ServerCertificate != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            if ((sslServerAuthenticationOptions.ServerCertificate != null || sslServerAuthenticationOptions.ServerCertificateContext != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
             }
@@ -484,7 +486,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -560,7 +562,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 return _context!.ConnectionInfo?.TlsCipherSuite ?? default(TlsCipherSuite);
             }
         }
@@ -569,7 +571,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -583,7 +585,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -598,7 +600,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -612,7 +614,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -627,7 +629,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -642,7 +644,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -650,6 +652,14 @@ namespace System.Net.Security
                 }
 
                 return info.KeyExchKeySize;
+            }
+        }
+
+        public string TargetHostName
+        {
+            get
+            {
+                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
             }
         }
 
@@ -858,6 +868,17 @@ namespace System.Net.Security
             ThrowIfExceptional();
 
             if (!IsAuthenticated)
+            {
+                ThrowNotAuthenticated();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfExceptionalOrNotHandshake()
+        {
+            ThrowIfExceptional();
+
+            if (!IsAuthenticated && _context?.ConnectionInfo == null)
             {
                 ThrowNotAuthenticated();
             }

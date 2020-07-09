@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // THREADS.CPP
 //
@@ -48,6 +47,7 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_PERFTRACING
@@ -4721,7 +4721,7 @@ BOOL Thread::PrepareApartmentAndContext()
         FastInterlockAnd ((ULONG *) &m_State, ~TS_InSTA & ~TS_InMTA);
 
         // Attempt to set the requested apartment state.
-        SetApartment(aState, FALSE);
+        SetApartment(aState);
     }
 
     // In the case where we own the thread and we have switched it to a different
@@ -4731,9 +4731,9 @@ BOOL Thread::PrepareApartmentAndContext()
 #endif //FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP
-    // Our IInitializeSpy will be registered in AppX always, in classic processes
+    // Our IInitializeSpy will be registered in classic processes
     // only if the internal config switch is on.
-    if (AppX::IsAppXProcess() || g_pConfig->EnableRCWCleanupOnSTAShutdown())
+    if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
         NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
 
@@ -4908,9 +4908,7 @@ VOID Thread::ResetApartment()
 // achieved is returned and may differ from the input state if someone managed
 // to call CoInitializeEx on this thread first (note that calls to SetApartment
 // made before the thread has started are guaranteed to succeed).
-// The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-// on an apartment state mismatch.
-Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch)
+Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 {
     CONTRACTL {
         THROWS;
@@ -5066,8 +5064,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-#ifdef FEATURE_COMINTEROP
-
     // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
     // we need to make sure that it is initialized in the same threading mode as we just started COM itself
     // with (or that we detected COM had already been started with).
@@ -5112,7 +5108,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Since we've just called CoInitialize, COM has effectively been started up.
     // To ensure the CLR is aware of this, we need to call EnsureComStarted.
     EnsureComStarted(FALSE);
-#endif // FEATURE_COMINTEROP
 
     return GetApartment();
 }
@@ -7242,7 +7237,7 @@ void Thread::DoExtraWorkForFinalizer()
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     if (RequiresCoInitialize())
     {
-        SetApartment(AS_InMTA, FALSE);
+        SetApartment(AS_InMTA);
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

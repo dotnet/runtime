@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ namespace System.Net.Http
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
-        private HttpMessageHandler? _handler;
+        private HttpMessageHandlerStage? _handler;
         private bool _disposed;
 
         private void CheckDisposed()
@@ -287,7 +287,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private HttpMessageHandler SetupHandlerChain()
+        private HttpMessageHandlerStage SetupHandlerChain()
         {
             // Clone the settings to get a relatively consistent view that won't change after this point.
             // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
@@ -295,7 +295,7 @@ namespace System.Net.Http
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
 
-            HttpMessageHandler handler;
+            HttpMessageHandlerStage handler;
 
             if (settings._credentials == null)
             {
@@ -311,7 +311,7 @@ namespace System.Net.Http
                 // Just as with WinHttpHandler, for security reasons, we do not support authentication on redirects
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
-                HttpMessageHandler redirectHandler =
+                HttpMessageHandlerStage redirectHandler =
                     (settings._credentials == null || settings._credentials is CredentialCache) ?
                     handler :
                     new HttpConnectionHandler(poolManager);        // will not authenticate
@@ -333,8 +333,27 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.Version.Major >= 2)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
+            }
+
+            CheckDisposed();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
+
+            Exception? error = ValidateAndNormalizeRequest(request);
+            if (error != null)
+            {
+                throw error;
+            }
+
+            return handler.Send(request, cancellationToken);
+        }
+
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();

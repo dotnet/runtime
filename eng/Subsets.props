@@ -13,7 +13,7 @@
 
       ./build.sh corehost installer.managed
 
-        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.DotNet.PlatformAbstractions)
+        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.NET.HostModel)
         projects. A space ' ' or '+' are the delimiters between multiple subsets to build.
 
       ./build.sh -test installer.tests
@@ -104,7 +104,7 @@
     <!-- Installer -->
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
-    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes PlatformAbstractions and HostModel." />
+    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
     <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundles" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
@@ -149,7 +149,8 @@
                              $(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" Category="clr" BuildInParallel="true" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj" Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
@@ -239,12 +240,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.tests+'))">
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="installer" />
   </ItemGroup>
 

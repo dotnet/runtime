@@ -16,6 +16,7 @@
 #else
 #define MONO_ASSEMBLY_CORLIB_NAME "System.Private.CoreLib"
 #endif
+#define MONO_ASSEMBLY_CORLIB_RESOURCE_NAME (MONO_ASSEMBLY_CORLIB_NAME ".resources")
 
 /* Flag bits for mono_assembly_names_equal_flags (). */
 typedef enum {

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetCoreAppCurrent)</TargetFrameworks>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 

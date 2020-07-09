@@ -65,6 +65,7 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AesProvider.cs" />
     <Compile Include="AesTests.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />

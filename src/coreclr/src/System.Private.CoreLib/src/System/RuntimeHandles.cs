@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -406,17 +405,16 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
-            bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
+            ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
         // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark, bool loadTypeFromPartialName)
+        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!, loadTypeFromPartialName);
+            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
         }
 
         internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  AssemblyLoadContext assemblyLoadContext,
-                                                  bool loadTypeFromPartialName)
+                                                  AssemblyLoadContext assemblyLoadContext)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -432,7 +430,7 @@ namespace System
             GetTypeByName(name, throwOnError, ignoreCase,
                 new StackCrawlMarkHandle(ref stackMark),
                 ObjectHandleOnStack.Create(ref assemblyLoadContextStack),
-                loadTypeFromPartialName, ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
+                ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
             GC.KeepAlive(keepAlive);
 
             return type;
@@ -1368,7 +1366,7 @@ namespace System
             Field = 0x06,
             LocalSig = 0x07,
             Property = 0x08,
-            Unmgd = 0x09,
+            Unmanaged = 0x09,
             GenericInst = 0x0A,
             Max = 0x0B,
         }

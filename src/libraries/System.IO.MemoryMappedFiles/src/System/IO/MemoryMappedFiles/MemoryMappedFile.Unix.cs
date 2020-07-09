@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -8,6 +7,46 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
+        // This will verify file access and return file size. fileSize will return -1 for special devices.
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, out long fileSize)
+        {
+            fileSize = -1;
+
+            if (fileStream != null)
+            {
+                Interop.Sys.FileStatus status;
+
+                int result = Interop.Sys.FStat(fileStream.SafeFileHandle, out status);
+                if (result != 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
+                }
+
+                bool isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
+
+                if (isRegularFile)
+                {
+                    fileSize = status.Size;
+                    if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
+                    {
+                        throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+                    }
+
+                    // one can always create a small view if they do not want to map an entire file
+                    if (fileStream.Length > capacity)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
+                    }
+
+                    if (access == MemoryMappedFileAccess.Write)
+                    {
+                        throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
@@ -18,6 +57,8 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
+            VerifyMemoryMappedFileAccess(access, capacity, fileStream, out long fileSize);
+
             if (mapName != null)
             {
                 // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using
@@ -35,10 +76,10 @@ namespace System.IO.MemoryMappedFiles
             bool ownsFileStream = false;
             if (fileStream != null)
             {
-                // This map is backed by a file.  Make sure the file's size is increased to be
-                // at least as big as the requested capacity of the map.
-                if (fileStream.Length < capacity)
+                if (fileSize >= 0 && capacity > fileSize)
                 {
+                    // This map is backed by a file.  Make sure the file's size is increased to be
+                    // at least as big as the requested capacity of the map for Write* access.
                     try
                     {
                         fileStream.SetLength(capacity);
@@ -109,10 +150,6 @@ namespace System.IO.MemoryMappedFiles
             throw CreateNamedMapsNotSupportedException();
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
         private static Exception CreateNamedMapsNotSupportedException()
         {
@@ -132,10 +169,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateSharedBackingObjectUsingMemory(protections, capacity, inheritability)
                 ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         private static FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)

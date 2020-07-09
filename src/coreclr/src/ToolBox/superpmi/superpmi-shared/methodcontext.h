@@ -63,7 +63,6 @@ public:
         DWORDLONG field;
         DWORDLONG method;
         DWORDLONG context;
-        DWORD     speculative;
     };
     struct DLDL
     {
@@ -631,13 +630,11 @@ public:
     void recInitClass(CORINFO_FIELD_HANDLE   field,
                       CORINFO_METHOD_HANDLE  method,
                       CORINFO_CONTEXT_HANDLE context,
-                      BOOL                   speculative,
                       CorInfoInitClassResult result);
     void dmpInitClass(const Agnostic_InitClass& key, DWORD value);
     CorInfoInitClassResult repInitClass(CORINFO_FIELD_HANDLE   field,
                                         CORINFO_METHOD_HANDLE  method,
-                                        CORINFO_CONTEXT_HANDLE context,
-                                        BOOL                   speculative);
+                                        CORINFO_CONTEXT_HANDLE context);
 
     void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
     void dmpGetMethodName(DLD key, DD value);
@@ -867,9 +864,9 @@ public:
     void dmpGetArgClass(const GetArgClassValue& key, const Agnostic_GetArgClass_Value& value);
     CORINFO_CLASS_HANDLE repGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, DWORD* exceptionCode);
 
-    void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result);
+    void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoHFAElemType result);
     void dmpGetHFAType(DWORDLONG key, DWORD value);
-    CorInfoType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
+    CorInfoHFAElemType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
 
     void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, bool result, DWORD exceptionCode);
     void dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value);

@@ -190,7 +190,7 @@
     <value>The provider name '{0}' is invalid.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
-    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
   </data>
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>

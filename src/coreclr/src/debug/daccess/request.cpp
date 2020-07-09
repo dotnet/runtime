@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: request.cpp
 //
@@ -3904,12 +3903,8 @@ HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwD
     rcwData->creatorThread   = TO_CDADDR(pRCW->m_pCreatorThread);
     rcwData->ctxCookie       = TO_CDADDR(pRCW->GetWrapperCtxCookie());
     rcwData->refCount        = pRCW->m_cbRefCount;
-
-    rcwData->isJupiterObject = pRCW->IsJupiterObject();
-    rcwData->supportsIInspectable = pRCW->SupportsIInspectable();
     rcwData->isAggregated = pRCW->IsURTAggregated();
     rcwData->isContained = pRCW->IsURTContained();
-    rcwData->jupiterObject = TO_CDADDR(pRCW->GetJupiterObject());
     rcwData->isFreeThreaded = pRCW->IsFreeThreaded();
     rcwData->isDisconnected = pRCW->IsDisconnected();
 
@@ -4155,9 +4150,6 @@ HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwDa
     ccwData->isNeutered    = pSimpleCCW->IsNeutered();
     ccwData->ccwAddress    = TO_CDADDR(dac_cast<TADDR>(pCCW));
 
-    ccwData->jupiterRefCount = pSimpleCCW->GetJupiterRefCount();
-    ccwData->isPegged = pSimpleCCW->IsPegged();
-    ccwData->isGlobalPegged = RCWWalker::IsGlobalPeggingOn();
     ccwData->hasStrongRef = pCCW->IsWrapperActive();
     ccwData->handle = pCCW->GetObjectHandle();
     ccwData->isExtendsCOMObject = pCCW->GetSimpleWrapper()->IsExtendsCOMObject();
@@ -4505,5 +4497,230 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     SOSDacLeave();
 
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)
+{
+    if (pGenerations == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    *pGenerations = (unsigned int)(g_gcDacGlobals->total_generation_count);
+
+    SOSDacLeave();
+    return S_OK;
+}
+
+HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (cGenerations > 0 && pGenerationData == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->generation_table.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; i++)
+            {
+                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (cFillPointers > 0 && pFinalizationFillPointers == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->finalize_queue.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = Dereference(g_gcDacGlobals->finalize_queue);
+            DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; i++)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cGenerations > 0 && pGenerationData == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
+            {
+                DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cFillPointers > 0 && pFinalizationFillPointers == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
+            DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; ++i)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext)
+{
+    if (methodTable == 0 || assemblyLoadContext == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+    PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
+    PTR_Module pModule = pMT->GetModule();
+
+    PTR_PEFile pPEFile = pModule->GetFile();
+    PTR_AssemblyLoadContext pAssemblyLoadContext = pPEFile->GetAssemblyLoadContext();
+
+    INT_PTR managedAssemblyLoadContextHandle = pAssemblyLoadContext->GetManagedAssemblyLoadContext();
+
+    TADDR managedAssemblyLoadContextAddr = 0;
+    if (managedAssemblyLoadContextHandle != 0)
+    {
+        DacReadAll(managedAssemblyLoadContextHandle,&managedAssemblyLoadContextAddr,sizeof(TADDR),true);
+    }
+
+    *assemblyLoadContext = TO_CDADDR(managedAssemblyLoadContextAddr);
+
+    SOSDacLeave();
     return hr;
 }

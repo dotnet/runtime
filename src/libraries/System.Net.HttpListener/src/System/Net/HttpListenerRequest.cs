@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -28,7 +27,7 @@ namespace System.Net
 
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
             CookieCollection cookies = new CookieCollection();
             CookieParser parser = new CookieParser(setCookieHeader);
             while (true)
@@ -39,7 +38,7 @@ namespace System.Net
                     // EOF, done.
                     break;
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
                 if (cookie.Name.Length == 0)
                 {
                     continue;
@@ -182,11 +181,11 @@ namespace System.Net
                         header = header.ToLowerInvariant();
                         _keepAlive =
                             header.IndexOf("close", StringComparison.OrdinalIgnoreCase) < 0 ||
-                            header.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) >= 0;
+                            header.Contains("keep-alive", StringComparison.OrdinalIgnoreCase);
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
                 return _keepAlive.Value;
             }
         }
@@ -232,7 +231,7 @@ namespace System.Net
 
         public X509Certificate2 GetClientCertificate()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 if (ClientCertState == ListenerClientCertState.InProgress)
@@ -242,18 +241,18 @@ namespace System.Net
                 GetClientCertificateCore();
 
                 ClientCertState = ListenerClientCertState.Completed;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
             return ClientCertificate;
         }
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             if (ClientCertState == ListenerClientCertState.InProgress)
                 throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
             ClientCertState = ListenerClientCertState.InProgress;

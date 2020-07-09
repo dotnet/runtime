@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include <stdlib.h>
@@ -432,10 +431,23 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
 
+    if (strlen(version) > (size_t)MaxICUVersionStringLength)
+    {
+        fprintf(stderr, "The resolved version \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", version, (size_t)MaxICUVersionStringLength);
+        abort();
+    }
+
     sscanf(version, "%d.%d.%d", &major, &minor, &build);
 
     if (suffix != NULL)
     {
+        size_t suffixAllowedSize = SYMBOL_CUSTOM_SUFFIX_SIZE - 2; // SYMBOL_CUSTOM_SUFFIX_SIZE considers `_` and `\0`.
+        if (strlen(suffix) > suffixAllowedSize)
+        {
+            fprintf(stderr, "The resolved suffix \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", suffix, suffixAllowedSize);
+            abort();
+        }
+
         assert(strlen(suffix) + 1 <= SYMBOL_CUSTOM_SUFFIX_SIZE);
 
 #if defined(TARGET_WINDOWS)

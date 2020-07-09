@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -145,12 +144,13 @@ Abstract
 
 Parameters:
     IN hFile    - The file to load
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     A valid base address if successful.
     0 if failure
 --*/
-void * PAL_LOADLoadPEFile(HANDLE hFile);
+void* PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
 
 /*++
     PAL_LOADUnloadPEFile

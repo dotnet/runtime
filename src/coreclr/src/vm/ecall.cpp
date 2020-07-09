@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ECALL.CPP -
 //
 // Handles our private native calling interface.
@@ -195,9 +194,9 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
-    // Array element accessors are more perf sensitive than other managed helpers and indirection 
+    // Array element accessors are more perf sensitive than other managed helpers and indirection
     // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
-    // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT, 
+    // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT,
     // so indirection is not as big concern.
     // We JIT-compile the following helpers eagerly here to avoid indirection costs.
 
@@ -349,7 +348,7 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
 
             //@GENERICS: none of these methods belong to generic classes so there is no instantiation info to pass in
             if (!MetaSig::CompareMethodSigs(pMethodSig, cbMethodSigLen, pModule, NULL,
-                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL))
+                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL, FALSE))
             {
                 continue;
             }
@@ -468,7 +467,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     // COM imported classes have special constructors
     if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
-        && pMT != g_pBaseCOMObject && pMT != g_pBaseRuntimeClass
+        && pMT != g_pBaseCOMObject
 #endif // FEATURE_COMINTEROP
     )
     {
@@ -478,7 +477,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
         // This has to be tlbimp constructor
         _ASSERTE(pMD->IsCtor());
-        _ASSERTE(!pMT->IsProjectedFromWinRT());
 
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);

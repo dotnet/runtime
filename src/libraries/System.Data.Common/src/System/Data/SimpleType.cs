@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Xml.Schema;
@@ -13,9 +12,9 @@ namespace System.Data
 {
     internal sealed class SimpleType : ISerializable
     {
-        private string _baseType = null;                 // base type name
-        private SimpleType _baseSimpleType = null;
-        private XmlQualifiedName _xmlBaseType = null;    // Qualified name of Basetype
+        private string _baseType;                 // base type name
+        private SimpleType _baseSimpleType;
+        private XmlQualifiedName _xmlBaseType;    // Qualified name of Basetype
         private string _name = string.Empty;
         private int _length = -1;
         private int _minLength = -1;
@@ -216,8 +215,7 @@ namespace System.Data
 
         internal string QualifiedName(string name)
         {
-            int iStart = name.IndexOf(':');
-            if (iStart == -1)
+            if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;
             else
                 return name;

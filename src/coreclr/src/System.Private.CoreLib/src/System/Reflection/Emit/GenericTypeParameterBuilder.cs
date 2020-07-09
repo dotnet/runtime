@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -203,7 +202,7 @@ namespace System.Reflection.Emit
             m_type.SetGenParamCustomAttribute(customBuilder);
         }
 
-        public void SetBaseTypeConstraint(Type? baseTypeConstraint)
+        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             m_type.CheckContext(baseTypeConstraint);
             m_type.SetParent(baseTypeConstraint);

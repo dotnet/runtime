@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -773,6 +772,7 @@ void fgArgTabEntry::Dump()
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
     printf(" %s", varTypeName(argType));
+    printf(" (%s)", passedByRef ? "By ref" : "By value");
     if (GetRegNum() != REG_STK)
     {
         printf(", %u reg%s:", numRegs, numRegs == 1 ? "" : "s");
@@ -1005,7 +1005,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -1087,7 +1087,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -2703,6 +2703,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
+#ifdef DEBUG
+        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 
         // Push the stub address onto the list of arguments.
@@ -3672,7 +3675,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // actually passed in registers.
                     if (argEntry->isPassedInRegisters())
                     {
-                        assert(argEntry->structDesc.passedInRegisters);
                         if (argObj->OperIs(GT_OBJ))
                         {
                             if (passingSize != structSize)
@@ -4423,12 +4425,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 )
         {
             // We have a HFA struct.
-            // Note that GetHfaType may not be the same as elemType, since TYP_SIMD8 is handled the same as TYP_DOUBLE.
-            var_types useElemType = elemType;
-#if defined(TARGET_ARM64) & defined(FEATURE_SIMD)
-            useElemType = (elemType == TYP_SIMD8) ? TYP_DOUBLE : useElemType;
-#endif // TARGET_ARM64 && FEATURE_SIMD
-            noway_assert(useElemType == varDsc->GetHfaType());
+            noway_assert(elemType == varDsc->GetHfaType());
             noway_assert(elemSize == genTypeSize(elemType));
             noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
             noway_assert(elemSize * elemCount == varDsc->lvExactSize);
@@ -6099,6 +6096,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
                                                       GTF_ICON_FIELD_HDL, false);
+#ifdef DEBUG
+                offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
+#endif
             }
             else
             {
@@ -8396,6 +8396,9 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
+#ifdef DEBUG
+        stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
     }
     assert(stubAddrArg != nullptr);
     stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
@@ -10191,8 +10194,19 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         }
         else if (effectiveVal->TypeGet() != asgType)
         {
-            GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-            effectiveVal  = gtNewIndir(asgType, addr);
+            if (effectiveVal->IsCall())
+            {
+#ifdef DEBUG
+                GenTreeCall* call = effectiveVal->AsCall();
+                assert(call->TypeGet() == TYP_STRUCT);
+                assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
+#endif
+            }
+            else
+            {
+                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+                effectiveVal  = gtNewIndir(asgType, addr);
+            }
         }
     }
     else
@@ -10329,6 +10343,16 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         return tree;
     }
 #endif // FEATURE_MULTIREG_RET
+
+    if (src->IsCall() && dest->OperIs(GT_LCL_VAR) && !compDoOldStructRetyping())
+    {
+        LclVarDsc* varDsc = lvaGetDesc(dest->AsLclVar());
+        if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(this))
+        {
+            JITDUMP(" not morphing a single reg call return\n");
+            return tree;
+        }
+    }
 
     // If we have an array index on the lhs, we need to create an obj node.
 
@@ -10594,8 +10618,20 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         // If we passed the above checks, then we will check these two
         if (!requiresCopyBlock)
         {
+            // It is not always profitable to do field by field init for structs that are allocated to memory.
+            // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
+            // A simple heuristic when field by field copy is prefered:
+            // - if fields can be enregistered;
+            // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
+            // - if the struct has only one field.
+            bool dstFldIsProfitable =
+                ((destLclVar != nullptr) &&
+                 (!destLclVar->lvDoNotEnregister || destLclVar->HasGCPtr() || (destLclVar->lvFieldCnt == 1)));
+            bool srcFldIsProfitable =
+                ((srcLclVar != nullptr) &&
+                 (!srcLclVar->lvDoNotEnregister || srcLclVar->HasGCPtr() || (srcLclVar->lvFieldCnt == 1)));
             // Are both dest and src promoted structs?
-            if (destDoFldAsg && srcDoFldAsg)
+            if (destDoFldAsg && srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
             {
                 // Both structs should be of the same type, or have the same number of fields of the same type.
                 // If not we will use a copy block.
@@ -10627,13 +10663,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
-            // Are neither dest or src promoted structs?
-            else if (!destDoFldAsg && !srcDoFldAsg)
-            {
-                requiresCopyBlock = true; // Leave as a CopyBlock
-                JITDUMP(" with no promoted structs");
-            }
-            else if (destDoFldAsg)
+            else if (destDoFldAsg && dstFldIsProfitable)
             {
                 // Match the following kinds of trees:
                 //  fgMorphTree BB01, stmt 9 (before)
@@ -10677,9 +10707,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
-            else
+            else if (srcDoFldAsg && srcFldIsProfitable)
             {
-                assert(srcDoFldAsg);
                 // Check for the symmetric case (which happens for the _pointer field of promoted spans):
                 //
                 //               [000240] -----+------             /--*  lclVar    struct(P) V18 tmp9
@@ -10701,6 +10730,13 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                 }
             }
+            // Are neither dest or src promoted structs?
+            else
+            {
+                assert(!(destDoFldAsg && dstFldIsProfitable) && !(srcDoFldAsg && srcFldIsProfitable));
+                requiresCopyBlock = true; // Leave as a CopyBlock
+                JITDUMP(" with no promoted structs");
+            }
         }
 
         // If we require a copy block the set both of the field assign bools to false
@@ -10719,8 +10755,18 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             if (!destLclVar->lvRegStruct || (destLclVar->lvType != dest->TypeGet()))
             {
-                // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                if (!dest->IsMultiRegLclVar() || (blockWidth != destLclVar->lvExactSize) ||
+                    (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles))
+                {
+                    // Mark it as DoNotEnregister.
+                    lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                }
+                else if (dest->IsMultiRegLclVar())
+                {
+                    // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
+                    // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
+                    destLclVar->lvIsMultiRegRet = true;
+                }
             }
         }
 
@@ -11650,6 +11696,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op2->AsDblCon()->gtDconVal = 1.0 / divisor;
                 }
             }
+
+            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
+            // if op2 is a positive cns
+            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
+                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UDIV or DIV
+            {
+                assert(tree->OperIs(GT_DIV));
+                tree->ChangeOper(GT_UDIV);
+                return fgMorphSmpOp(tree, mac);
+            }
+
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -11712,6 +11769,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     tree->AsOp()->gtOp2 = op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
                 }
                 goto USE_HELPER_FOR_ARITH;
+            }
+
+            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
+            // if op2 is a positive cns
+            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
+                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UMOD or MOD
+            {
+                assert(tree->OperIs(GT_MOD));
+                tree->ChangeOper(GT_UMOD);
+                return fgMorphSmpOp(tree, mac);
             }
 
             // Do not use optimizations (unlike UMOD's idiv optimizing during codegen) for signed mod.
@@ -11920,28 +11987,43 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_OBJ, GT_BLK))
+            if (!compDoOldStructRetyping() && !tree->TypeIs(TYP_VOID))
             {
-                assert(!compDoOldStructRetyping());
-                GenTree* addr = op1->AsBlk()->Addr();
-                // if we return `OBJ` or `BLK` from a local var, lcl var has to have a stack address.
-                if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
+                if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
                 {
-                    GenTreeLclVar* lclVar = addr->gtGetOp1()->AsLclVar();
-                    assert(!gtIsActiveCSE_Candidate(addr) && !gtIsActiveCSE_Candidate(op1));
-                    if (gtGetStructHandle(tree) == gtGetStructHandleIfPresent(lclVar))
+                    op1 = fgMorphRetInd(tree->AsUnOp());
+                }
+                if (op1->OperIs(GT_LCL_VAR))
+                {
+                    // With a `genReturnBB` this `RETURN(src)` tree will be replaced by a `ASG(genReturnLocal, src)`
+                    // and `ASG` will be tranformed into field by field copy without parent local referencing if
+                    // possible.
+                    GenTreeLclVar* lclVar = op1->AsLclVar();
+                    unsigned       lclNum = lclVar->GetLclNum();
+                    if ((genReturnLocal == BAD_VAR_NUM) || (genReturnLocal == lclNum))
                     {
-                        // Fold *(&x).
-                        tree->AsUnOp()->gtOp1 = op1;
-                        DEBUG_DESTROY_NODE(op1);
-                        DEBUG_DESTROY_NODE(addr);
-                        op1 = lclVar;
-                    }
-                    else
-                    {
-                        // TODO-1stClassStructs: It is not address-taken or block operation,
-                        // but the current IR doesn't allow to express that cast without stack, see #11413.
-                        lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DNER_BlockOp));
+                        LclVarDsc* varDsc = lvaGetDesc(lclVar);
+                        if (varDsc->CanBeReplacedWithItsField(this))
+                        {
+                            // We can replace the struct with its only field and allow copy propogation to replace
+                            // return value that was written as a field.
+                            unsigned   fieldLclNum = varDsc->lvFieldLclStart;
+                            LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
+
+                            if (!varTypeIsSmallInt(fieldDsc->lvType))
+                            {
+                                // TODO-CQ: support that substitution for small types without creating `CAST` node.
+                                // When a small struct is returned in a register higher bits could be left in undefined
+                                // state.
+                                JITDUMP("Replacing an independently promoted local var V%02u with its only field  "
+                                        "V%02u for "
+                                        "the return [%06u]\n",
+                                        lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
+                                lclVar->SetLclNum(fieldLclNum);
+                                var_types fieldType = fieldDsc->lvType;
+                                lclVar->ChangeType(fieldDsc->lvType);
+                            }
+                        }
                     }
                 }
             }
@@ -13110,12 +13192,18 @@ DONE_MORPHING_CHILDREN:
                 {
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
-                        // Fold "x*2.0" to "x+x"
-                        op2  = op1->OperIsLeaf() ? gtCloneExpr(op1) : fgMakeMultiUse(&tree->AsOp()->gtOp1);
-                        op1  = tree->AsOp()->gtOp1;
-                        oper = GT_ADD;
-                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
-                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        bool needsComma = !op1->OperIsLeaf() && !op1->IsLocal();
+                        // if op1 is not a leaf/local we have to introduce a temp via GT_COMMA.
+                        // Unfortunately, it's not optHoistLoopCode-friendly yet so let's do it later.
+                        if (!needsComma || (fgOrder == FGOrderLinear))
+                        {
+                            // Fold "x*2.0" to "x+x"
+                            op2  = fgMakeMultiUse(&tree->AsOp()->gtOp1);
+                            op1  = tree->AsOp()->gtOp1;
+                            oper = GT_ADD;
+                            tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        }
                     }
                     else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {
@@ -14164,6 +14252,87 @@ DONE_MORPHING_CHILDREN:
 
     return tree;
 }
+
+//----------------------------------------------------------------------------------------------
+// fgMorphRetInd: Try to get rid of extra IND(ADDR()) pairs in a return tree.
+//
+// Arguments:
+//    node - The return node that uses an indirection.
+//
+// Return Value:
+//    the original op1 of the ret if there was no optimization or an optimized new op1.
+//
+GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
+{
+    assert(!compDoOldStructRetyping());
+    assert(ret->OperIs(GT_RETURN));
+    assert(ret->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ));
+    GenTreeIndir* ind  = ret->gtGetOp1()->AsIndir();
+    GenTree*      addr = ind->Addr();
+
+    if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
+    {
+        // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
+        // LclVar.
+        // Example: in `Vector128:AsVector2` we have RETURN SIMD8(OBJ SIMD8(ADDR byref(LCL_VAR SIMD16))).
+        GenTreeLclVar* lclVar = addr->gtGetOp1()->AsLclVar();
+        if (!lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
+        {
+            assert(!gtIsActiveCSE_Candidate(addr) && !gtIsActiveCSE_Candidate(ind));
+            unsigned indSize;
+            if (ind->OperIs(GT_IND))
+            {
+                indSize = genTypeSize(ind);
+            }
+            else
+            {
+                indSize = ind->AsBlk()->GetLayout()->GetSize();
+            }
+
+            LclVarDsc* varDsc = lvaGetDesc(lclVar);
+
+            unsigned lclVarSize;
+            if (!lclVar->TypeIs(TYP_STRUCT))
+
+            {
+                lclVarSize = genTypeSize(varDsc->TypeGet());
+            }
+            else
+            {
+                lclVarSize = varDsc->lvExactSize;
+            }
+            // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST
+            // int<-SIMD16` etc.
+            assert((indSize <= lclVarSize) || varDsc->lvDoNotEnregister);
+
+#if defined(TARGET_64BIT)
+            bool canFold = (indSize == lclVarSize);
+#else // !TARGET_64BIT
+            // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
+            // long<->double` there.
+            bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
+#endif
+            // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
+            // gtNewTempAssign`.
+            if (canFold && (genReturnBB == nullptr))
+            {
+                // Fold (TYPE1)*(&(TYPE2)x) even if types do not match, lowering will handle it.
+                // Getting rid of this IND(ADDR()) pair allows to keep lclVar as not address taken
+                // and enregister it.
+                DEBUG_DESTROY_NODE(ind);
+                DEBUG_DESTROY_NODE(addr);
+                ret->gtOp1 = lclVar;
+                return ret->gtGetOp1();
+            }
+            else if (!varDsc->lvDoNotEnregister)
+            {
+                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+            }
+        }
+    }
+    return ind;
+}
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
@@ -16262,6 +16431,17 @@ void Compiler::fgMorphBlocks()
     fgGlobalMorph = false;
     compCurBB     = nullptr;
 
+    // Under OSR, we no longer need to specially protect the original method entry
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBB->bbRefs > 0);
+        fgEntryBB->bbRefs--;
+        // We don't need to remember this block anymore.
+        fgEntryBB = nullptr;
+    }
+
 #ifdef DEBUG
     if (verboseTrees)
     {
@@ -16540,18 +16720,18 @@ GenTree* Compiler::fgInitThisClass()
         switch (kind.runtimeLookupKind)
         {
             case CORINFO_LOOKUP_THISOBJ:
+            {
                 // This code takes a this pointer; but we need to pass the static method desc to get the right point in
                 // the hierarchy
-                {
-                    GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
-                    vtTree->gtFlags |= GTF_VAR_CONTEXT;
-                    // Vtable pointer of this object
-                    vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
-                    vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
-                    GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
+                GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+                vtTree->gtFlags |= GTF_VAR_CONTEXT;
+                // Vtable pointer of this object
+                vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
+                vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
+                GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-                    return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
-                }
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
+            }
 
             case CORINFO_LOOKUP_CLASSPARAM:
             {
@@ -16567,11 +16747,12 @@ GenTree* Compiler::fgInitThisClass()
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID,
                                            gtNewCallArgs(gtNewIconNode(0), methHndTree));
             }
+
+            default:
+                noway_assert(!"Unknown LOOKUP_KIND");
+                UNREACHABLE();
         }
     }
-
-    noway_assert(!"Unknown LOOKUP_KIND");
-    UNREACHABLE();
 }
 
 #ifdef DEBUG

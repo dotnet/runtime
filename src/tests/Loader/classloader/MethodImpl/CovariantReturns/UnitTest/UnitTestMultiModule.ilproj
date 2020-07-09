@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="Modules\A.ilproj"/>
+    <ProjectReference Include="Modules\B.ilproj"/>
+    <ProjectReference Include="Modules\C.ilproj"/>
+    <ProjectReference Include="Modules\Dictionary.ilproj"/>
+    <ProjectReference Include="Modules\GenBaseType.ilproj"/>
+    <ProjectReference Include="Modules\GenDerive1.ilproj"/>
+    <ProjectReference Include="Modules\GenDerive2.ilproj"/>
+    <ProjectReference Include="Modules\GenDerive3.ilproj"/>
+    <ProjectReference Include="Modules\GenRetType.ilproj"/>
+    <ProjectReference Include="Modules\GenTestType.ilproj"/>
+    <ProjectReference Include="Modules\GenToNonGen1.ilproj"/>
+    <ProjectReference Include="Modules\GenToNonGen2.ilproj"/>
+    <ProjectReference Include="Modules\GenToNonGen3.ilproj"/>
+    <ProjectReference Include="Modules\NonGenericDerived1.ilproj"/>
+    <ProjectReference Include="Modules\NonGenericDerived2.ilproj"/>
+    <ProjectReference Include="Modules\NonGenericDerived3.ilproj"/>
+    <ProjectReference Include="Modules\NonGenericDerived4.ilproj"/>
+    <ProjectReference Include="Modules\NonGenThroughGen1.ilproj"/>
+    <ProjectReference Include="Modules\NonGenThroughGen2.ilproj"/>
+    <ProjectReference Include="Modules\NonGenThroughGen3.ilproj"/>
+    <ProjectReference Include="Modules\NonGenThroughGen4.ilproj"/>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="UnitTestMultiModule.il" />
+  </ItemGroup>
+</Project>

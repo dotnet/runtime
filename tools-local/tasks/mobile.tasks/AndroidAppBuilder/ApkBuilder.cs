@@ -80,6 +80,7 @@ public class ApkBuilder
         Directory.CreateDirectory(OutputDir);
         Directory.CreateDirectory(Path.Combine(OutputDir, "bin"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
+        Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
@@ -89,17 +90,13 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets (ignore native files)
-        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets"), file =>
+        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // these files then will be zipped and copied to apk/assets/assets.zip
+        Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
 
-            if (file.Any(s => s >= 128))
-            {
-                // non-ascii files/folders are not allowed
-                return false;
-            }
             if (extensionsToIgnore.Contains(extension))
             {
                 // ignore native files, those go to lib/%abi%
@@ -124,11 +121,15 @@ public class ApkBuilder
         string keytool = "keytool";
         string javac = "javac";
         string cmake = "cmake";
+        string zip = "zip";
+
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-q -r ../assets/assets.zip .");
+        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libruntime-android.so` via cmake
+        // 1. Build libmonodroid.so` via cmake
 
         string monoRuntimeLib = Path.Combine(sourceDir, "libmonosgen-2.0.a");
         if (!File.Exists(monoRuntimeLib))
@@ -139,15 +140,15 @@ public class ApkBuilder
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
-        string runtimeAndroidSrc = Utils.GetEmbeddedResource("runtime-android.c")
+        string monodroidSrc = Utils.GetEmbeddedResource("monodroid.c")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
             .Replace("%RID%", GetRid(abi)));
-        File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
+        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), monodroidSrc);
         
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B runtime-android";
+            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
 
-        string cmakeBuildArgs = "--build runtime-android";
+        string cmakeBuildArgs = "--build monodroid";
         
         if (StripDebugSymbols)
         {
@@ -191,7 +192,7 @@ public class ApkBuilder
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: OutputDir);
         
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(OutputDir, "runtime-android", "libruntime-android.so"));
+        dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
         dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
 
         // add all *.so files to lib/%abi%/
@@ -201,7 +202,7 @@ public class ApkBuilder
             string dynamicLibName = Path.GetFileName(dynamicLib);
             if (dynamicLibName == "libmonosgen-2.0.so")
             {
-                // we link mono runtime statically into libruntime-android.so
+                // we link mono runtime statically into libmonodroid.so
                 continue;
             }
 
@@ -217,6 +218,8 @@ public class ApkBuilder
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
         Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        // we don't need the unaligned one any more
+        File.Delete(apkFile);
 
         // 5. Generate key
         

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -188,32 +187,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-        /// <summary>
-        /// Tests overflow in Id generation when parentId has a single (root) node
-        /// </summary>
-        [Fact]
-        public void ActivityIdNonHierarchicalOverflow()
-        {
-            // find out Activity Id length on this platform in this AppDomain
-            Activity testActivity = new Activity("activity")
-                .Start();
-            var expectedIdLength = testActivity.Id.Length;
-            testActivity.Stop();
-
-            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
-            // it causes overflow during Id generation, and new root Id is generated for the new Activity
-            var parentId = '|' + new string('a', 1022) + '.';
-
-            var activity = new Activity("activity")
-                .SetParentId(parentId)
-                .Start();
-
-            Assert.Equal(parentId, activity.ParentId);
-
-            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
-            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
-            Assert.DoesNotContain('#', activity.Id);
-        }
 
         /// <summary>
         /// Tests activity start and stop
@@ -238,7 +211,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationNoParent()
         {
             var orphan1 = new Activity("orphan1");
@@ -254,10 +227,11 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.Hierarchical);
             parent.Start();
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
@@ -535,11 +509,11 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_HierarchicalIsDefault()
+        public void IdFormat_W3CIsDefaultForNet5()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            Assert.Equal(PlatformDetection.IsNetCore ? ActivityIdFormat.W3C : ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
@@ -604,7 +578,7 @@ namespace System.Diagnostics.Tests
             Assert.True(IdIsW3CFormat(activity.Id));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenDefaultIsW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -617,7 +591,21 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IdFormat_WithTheEnvironmentSwitch()
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL", "true");
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Activity activity = new Activity("activity15");
+                activity.Start();
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -633,16 +621,26 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
+        public void IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat()
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-            Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+            }
+            else
+            {
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenForcedAndHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -763,7 +761,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
@@ -841,7 +839,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -855,7 +853,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedHierarchical()
         {
             RemoteExecutor.Invoke(() =>
@@ -936,7 +934,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdBeforeStart_NoParent()
         {
             RemoteExecutor.Invoke(() =>
@@ -1239,7 +1237,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1256,7 +1254,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1295,7 +1293,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
