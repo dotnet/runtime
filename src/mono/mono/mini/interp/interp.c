@@ -328,6 +328,10 @@ int mono_interp_traceopt = 0;
 
 #endif
 
+#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP && !ENABLE_CHECKED_BUILD
+#define USE_COMPUTED_GOTO 1
+#endif
+
 #if USE_COMPUTED_GOTO
 
 #define MINT_IN_DISPATCH(op) goto *in_labels [opcode = (MintOpcode)(op)]
