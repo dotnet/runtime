@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                 signatureBuilder.EmitMethodSignature(
-                    new MethodWithToken(method.Method, moduleToken, constrainedType: null, unboxing: false),
+                    new MethodWithToken(method.Method, exactType: method.Method.OwningType, moduleToken, constrainedType: null, unboxing: false),
                     enforceDefEncoding: true,
                     enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
                     factory.SignatureContext,

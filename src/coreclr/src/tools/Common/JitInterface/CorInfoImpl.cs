@@ -26,6 +26,7 @@ using ILCompiler.DependencyAnalysis;
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using System.Reflection.Metadata;
 #endif
 
 namespace Internal.JitInterface
@@ -1107,14 +1108,56 @@ namespace Internal.JitInterface
 
             if (result is MethodDesc)
             {
+                ModuleToken methodToken = HandleToModuleToken(ref pResolvedToken);
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
+                TypeDesc contextType;
+                switch (methodToken.TokenType)
+                {
+                    case CorTokenType.mdtMethodDef:
+                        {
+                            MethodDefinition methodDef = methodToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)methodToken.Handle);
+                            contextType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
+                            break;
+                        }
 
-                TypeDesc owningClass = method.OwningType;
-                pResolvedToken.hClass = ObjectToHandle(owningClass);
+                    case CorTokenType.mdtMemberRef:
+                        {
+                            MemberReference memberRef = methodToken.MetadataReader.GetMemberReference((MemberReferenceHandle)methodToken.Handle);
+                            contextType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, (mdToken)MetadataTokens.GetToken(memberRef.Parent));
+                            break;
+                        }
+
+                    case CorTokenType.mdtMethodSpec:
+                        {
+                            MethodSpecification methodSpec = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
+                            switch (methodSpec.Method.Kind)
+                            {
+                                case HandleKind.MethodDefinition:
+                                    contextType = method.OwningType;
+                                    break;
+
+                                case HandleKind.MemberReference:
+                                    {
+                                        MemberReference memberRef = methodToken.MetadataReader.GetMemberReference((MemberReferenceHandle)methodSpec.Method);
+                                        contextType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, (mdToken)MetadataTokens.GetToken(memberRef.Parent));
+                                        break;
+                                    }
+
+                                default:
+                                    throw new NotImplementedException(methodSpec.Method.Kind.ToString());
+                            }
+                            break;
+                        }
+
+                    default:
+                        contextType = method.OwningType;
+                        break;
+                }
+                pResolvedToken.hClass = ObjectToHandle(contextType);
 
 #if !SUPPORT_JIT
-                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+                _compilation.TypeSystemContext.EnsureLoadableType(method.OwningType);
 #endif
 
 #if READYTORUN

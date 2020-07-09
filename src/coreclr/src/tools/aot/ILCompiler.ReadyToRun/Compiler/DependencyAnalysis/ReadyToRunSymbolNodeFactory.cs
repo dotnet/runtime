@@ -537,6 +537,13 @@ namespace ILCompiler.DependencyAnalysis
                         helperArgument,
                         methodContext);
 
+                case ReadyToRunHelperId.DeclaringTypeHandle:
+                    return GenericLookupTypeHelper(
+                        runtimeLookupKind,
+                        ReadyToRunFixupKind.DeclaringTypeHandle,
+                        (MethodWithToken)helperArgument,
+                        methodContext);
+
                 case ReadyToRunHelperId.MethodHandle:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,

@@ -1107,6 +1107,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (TYPE_HANDLE)");
                     break;
 
+                case ReadyToRunFixupKind.DeclaringTypeHandle:
+                    ParseType(builder);
+                    builder.Append(" => ");
+                    ParseType(builder);
+                    builder.Append(" (DECLARING_TYPE_HANDLE)");
+                    break;
+
                 case ReadyToRunFixupKind.MethodHandle:
                     ParseMethod(builder);
                     builder.Append(" (METHOD_HANDLE)");
@@ -1323,11 +1330,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" => ");
                     ParseType(builder);
                     builder.Append(" (DELEGATE_CTOR)");
-                    break;
-
-                case ReadyToRunFixupKind.DeclaringTypeHandle:
-                    ParseType(builder);
-                    builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 
                 case ReadyToRunFixupKind.IndirectPInvokeTarget:

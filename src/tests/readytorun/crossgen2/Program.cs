@@ -1691,6 +1691,8 @@ internal class Program
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
+        RunTest("ConstrainedCallTest612", TypeGeneratorTest612.ConstrainedCallsTest());
+        RunTest("ConstrainedCallTest1358", TypeGeneratorTest1358.ConstrainedCallsTest());
 
         File.Delete(TextFileName);
 

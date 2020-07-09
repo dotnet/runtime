@@ -27,14 +27,16 @@ namespace Internal.JitInterface
     public class MethodWithToken
     {
         public readonly MethodDesc Method;
+        public readonly TypeDesc ExactType;
         public readonly ModuleToken Token;
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing)
+        public MethodWithToken(MethodDesc method, TypeDesc exactType, ModuleToken token, TypeDesc constrainedType, bool unboxing)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
+            ExactType = exactType;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
@@ -48,17 +50,29 @@ namespace Internal.JitInterface
 
         public override int GetHashCode()
         {
-            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked (39 * (ConstrainedType?.GetHashCode() ?? 0));
+            return Method.GetHashCode()
+                ^ unchecked(29 * ExactType.GetHashCode())
+                ^ unchecked(17 * Token.GetHashCode())
+                ^ unchecked (39 * (ConstrainedType?.GetHashCode() ?? 0));
         }
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType && Unboxing == methodWithToken.Unboxing;
+            return Method == methodWithToken.Method
+                && ExactType == methodWithToken.ExactType
+                && Token.Equals(methodWithToken.Token)
+                && ConstrainedType == methodWithToken.ConstrainedType
+                && Unboxing == methodWithToken.Unboxing;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledMethodName(Method));
+            if (ExactType != Method.OwningType)
+            {
+                sb.Append(" ~ ");
+                sb.Append(nameMangler.GetMangledTypeName(ExactType));
+            }
             if (ConstrainedType != null)
             {
                 sb.Append(" @ ");
@@ -84,6 +98,10 @@ namespace Internal.JitInterface
                 if (result != 0)
                     return result;
             }
+
+            result = comparer.Compare(ExactType, other.ExactType);
+            if (result != 0)
+                return result;
 
             result = comparer.Compare(Method, other.Method);
             if (result != 0)
@@ -304,15 +322,20 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        TypeDesc constrainedType = null;
-                        if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
+                        TypeDesc contextType = null;
+                        if (pGenericLookupKind.runtimeLookupArgs != null && helperId == ReadyToRunHelperId.DeclaringTypeHandle)
                         {
-                            constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            contextType = (TypeDesc)HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
                         }
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false);
+                            TypeDesc constrainedType = null;
+                            if (pGenericLookupKind.runtimeLookupArgs != null && helperId != ReadyToRunHelperId.DeclaringTypeHandle)
+                            {
+                                constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            }
+                            helperArg = new MethodWithToken(methodDesc, methodDesc.OwningType, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false);
                         }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
@@ -342,7 +365,7 @@ namespace Internal.JitInterface
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
             MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
             Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
-            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false);
+            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, exactType: targetMethodDesc.OwningType, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1570,7 +1593,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
+                                new MethodWithToken(targetMethod, exactType, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
                         }
                     break;
@@ -1604,7 +1627,7 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
+                                new MethodWithToken(nonUnboxingMethod, exactType, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
                     }
@@ -1621,7 +1644,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
+                                new MethodWithToken(targetMethod, exactType, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1648,7 +1671,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false)));
+                            new MethodWithToken(targetMethod, exactType, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false)));
                     }
                     else
                     {
@@ -1887,7 +1910,7 @@ namespace Internal.JitInterface
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub));
+                                new MethodWithToken(md, exactType: md.OwningType, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub));
                         }
                         break;
 
@@ -2115,7 +2138,7 @@ namespace Internal.JitInterface
                 methodDesc = rawPInvoke.Target;
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, exactType: ecmaMethod.OwningType, moduleToken, constrainedType: null, unboxing: false);
 
             if (ecmaMethod.IsSuppressGCTransition())
             {

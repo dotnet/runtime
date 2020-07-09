@@ -80,13 +80,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
+                    method = new MethodWithToken(method.Method, method.ExactType, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
+                        method = new MethodWithToken(method.Method, method.ExactType, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
                     }
                 }
             }

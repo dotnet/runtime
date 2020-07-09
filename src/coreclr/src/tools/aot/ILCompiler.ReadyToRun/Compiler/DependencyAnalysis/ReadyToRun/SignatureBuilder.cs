@@ -530,7 +530,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(flags);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                EmitTypeSignature(method.Method.OwningType, context);
+                EmitTypeSignature(method.ExactType, context);
             }
             EmitTokenRid(methodToken.Token);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)

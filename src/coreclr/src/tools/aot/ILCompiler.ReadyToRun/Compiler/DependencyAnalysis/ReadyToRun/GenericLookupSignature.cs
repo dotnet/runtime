@@ -116,6 +116,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else if (_typeArgument != null)
             {
+                if (_fixupKind == ReadyToRunFixupKind.DeclaringTypeHandle)
+                {
+                    dataBuilder.EmitTypeSignature(_methodContext.ContextType, innerContext);
+                }
                 dataBuilder.EmitTypeSignature(_typeArgument, innerContext);
             }
             else if (_fieldArgument != null)
