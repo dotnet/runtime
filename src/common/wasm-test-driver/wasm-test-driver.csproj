@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>wasm_test_driver</RootNamespace>
+  </PropertyGroup>
+
+  <Target Name="AfterBuild">
+    <Exec ConsoleToMSBuild="true"  Command="find ../../../artifacts/tests/coreclr/Browser.wasm.Release/ -name *.dll > test_assemblies.txt" />
+  </Target>
+
+</Project>

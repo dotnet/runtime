@@ -390,6 +390,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(RunTests)'=='true' "/>
   </Target>
 
+  <Target Name="GenerateTestAssemblyList" AfterTarget="Build">
+	<Exec ConsoleToMSBuild="true" Command="find $(XunitTestBinBase) -name *.dll > $(XunitTestBinBase)/test_assemblies" />
+  </Target> 
+
   <Target Name="Clean">
     <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
   </Target>
