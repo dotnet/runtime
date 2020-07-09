@@ -14,6 +14,14 @@
   <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
