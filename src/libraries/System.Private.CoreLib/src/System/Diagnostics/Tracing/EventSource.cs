@@ -3905,8 +3905,14 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     public class EventListener : IDisposable
     {
-        private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
+        internal struct EventListenerEventSourceState
+        {
+            public EventKeywords Keyword;
+            public EventLevel Level;
+        }
 
+        private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
+        private Dictionary<int, EventListenerEventSourceState>? _EnabledEventSourceStates;
         /// <summary>
         /// This event is raised whenever a new eventSource is 'attached' to the dispatcher.
         /// This can happen for all existing EventSources when the EventListener is created
@@ -3955,6 +3961,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventListener()
         {
+            // Initialize dictionaries that keep track of the EventSources' states that are enabled in this instance of EventListener.
+            _EnabledEventSourceStates = new Dictionary<int, EventListenerEventSourceState>();
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
                 args.EventSource!.AddListener((EventListener)obj!));
@@ -4052,6 +4060,9 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(eventSource));
             }
 
+            if (_EnabledEventSourceStates != null)
+                _EnabledEventSourceStates[EventSourceIndex(eventSource)] = new EventListenerEventSourceState{ Level = level, Keyword = matchAnyKeyword };
+
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
@@ -4123,7 +4134,15 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventData"></param>
         protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            this.EventWritten?.Invoke(this, eventData);
+            int eventSourceId = EventListener.EventSourceIndex(eventData.EventSource);
+            if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceId))
+            {
+                EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceId];
+                if ((state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0))
+                {
+                    this.EventWritten?.Invoke(this, eventData);
+                }
+            }
         }
 
 #region private
