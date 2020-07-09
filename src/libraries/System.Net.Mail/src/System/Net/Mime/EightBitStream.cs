@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text;
 
 namespace System.Net.Mime
 {
@@ -154,6 +155,8 @@ namespace System.Net.Mime
         public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+
+        public int EncodeString(string value, Encoding encoding) { throw new NotImplementedException(); }
 
         public string GetEncodedString() { throw new NotImplementedException(); }
     }

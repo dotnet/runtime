@@ -208,26 +208,10 @@ namespace System.Net
             }
             else
             {
+                // unfortunately we need to transform bytes back to chars to obtain codepoints
                 // TODO: find way not to transform bytes back and forth
-                char[] chars = _writeState.Encoding.GetChars(buffer, offset, count);
-                for (int i = 0; i < chars.Length; ++i)
-                {
-                    if (char.IsSurrogate(chars[i]))
-                    {
-                        if (!char.IsSurrogatePair(chars[i], chars[i + 1]))
-                        {
-                            throw new ArgumentException(nameof(buffer));
-                        }
-                        byte[] bytes = _writeState.Encoding.GetBytes(chars, i, 2);
-                        AppendEncodedCodepoint(bytes, shouldAppendSpaceToCRLF);
-                        ++i;
-                    }
-                    else
-                    {
-                        byte[] bytes = _writeState.Encoding.GetBytes(chars, i, 1);
-                        AppendEncodedCodepoint(bytes, shouldAppendSpaceToCRLF);
-                    }
-                }
+                string value = _writeState.Encoding.GetString(buffer, offset, count);
+                AppendEncodedString(value, _writeState.Encoding);
             }
 
             if (dontDeferFinalBytes)
@@ -240,13 +224,46 @@ namespace System.Net
             return count;
         }
 
+        public int EncodeString(string value, Encoding encoding)
+        {
+            // Add Encoding header, if any. e.g. =?encoding?b?
+            WriteState.AppendHeader();
+
+            int bytesCount = AppendEncodedString(value, encoding);
+            AppendPadding();
+
+            // Write out the last footer, if any.  e.g. ?=
+            WriteState.AppendFooter();
+            return bytesCount;
+        }
+
+        private int AppendEncodedString(string value, Encoding encoding)
+        {
+            int bytesCount = 0;
+            for (int i = 0; i < value.Length; ++i)
+            {
+                byte[] bytes;
+                if (!char.IsSurrogate(value[i]))
+                {
+                    bytes = encoding.GetBytes(value, i, 1);
+                }
+                else
+                {
+                    if (!char.IsSurrogatePair(value[i], value[i + 1]))
+                    {
+                        throw new ArgumentException(nameof(value));
+                    }
+                    bytes = encoding.GetBytes(value, i, 2);
+                    ++i;
+                }
+                AppendEncodedCodepoint(bytes, true);
+                bytesCount += bytes.Length;
+            }
+            return bytesCount;
+        }
+
         private int AppendEncodedCodepoint(byte[] bytes, bool shouldAppendSpaceToCRLF)
         {
-            if (bytes.Length != 1 && bytes.Length != 2 && bytes.Length != 4)
-            {
-                throw new ArgumentException(nameof(bytes));
-            }
-
             if (LineBreakNeeded(bytes.Length)) {
                 AppendPadding();
                 WriteState.AppendCRLF(shouldAppendSpaceToCRLF);

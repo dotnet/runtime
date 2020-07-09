@@ -253,6 +253,12 @@ namespace System.Net.Mime
             return cur - offset;
         }
 
+        public int EncodeString(string value, Encoding encoding)
+        {
+            byte[] buffer = encoding.GetBytes(value);
+            return EncodeBytes(buffer, 0, buffer.Length);
+        }
+
         private static bool IsAsciiLetterOrDigit(char character) =>
             IsAsciiLetter(character) || (character >= '0' && character <= '9');
 
