@@ -67,7 +67,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool NameEquals(ReadOnlySpan<byte> utf8Text)
         {
-            return Value.TextEqualsHelper(utf8Text, isPropertyName: true);
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: true);
         }
 
         /// <summary>
@@ -88,6 +88,11 @@ namespace System.Text.Json
         public bool NameEquals(ReadOnlySpan<char> text)
         {
             return Value.TextEqualsHelper(text, isPropertyName: true);
+        }
+
+        internal bool EscapedNameEquals(ReadOnlySpan<byte> utf8Text)
+        {
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: false);
         }
 
         /// <summary>
