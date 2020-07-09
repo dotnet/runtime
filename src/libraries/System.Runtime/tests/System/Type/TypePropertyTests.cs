@@ -535,7 +535,9 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(Delegate);
 
-        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
+        public override TypeAttributes Attributes => PlatformDetection.IsMonoRuntime
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
     }
 
     public class EnumTypeTests : ClassTypeTestBase
@@ -1089,6 +1091,10 @@ namespace System.Tests.Types
     public class ArgIteratorTypeTests : StructTypeTestBase
     {
         public override Type CreateType() => typeof(ArgIterator);
+
+        public override TypeAttributes Attributes => PlatformDetection.IsMonoRuntime
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit;
     }
 
     public class RuntimeArgumentHandleTypeTests : StructTypeTestBase
