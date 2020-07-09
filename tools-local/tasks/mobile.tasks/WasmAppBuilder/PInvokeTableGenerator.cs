@@ -173,7 +173,7 @@ public class PInvokeTableGenerator : Task
 		foreach (var cb in callbacks) {
 			var method = cb.Method;
 
-			if (!IsBlittable(method.ReturnType))
+			if (method.ReturnType != typeof(void) && !IsBlittable(method.ReturnType))
 				Error("The return type of pinvoke callback method '" + method + "' needs to be blittable.");
 			foreach (var p in method.GetParameters()) {
 				if (!IsBlittable(p.ParameterType))
