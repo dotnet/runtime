@@ -287,6 +287,25 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+		[Theory]
+		[InlineData ("IL2001;IL2002;IL2003;IL2004", 4)]
+		[InlineData ("IL2001 IL2002 IL2003 IL2004", 4)]
+		[InlineData ("IL2001,IL2002,IL2003,IL2004", 4)]
+		[InlineData ("IL2001,IL2002; IL2003 IL2004", 4)]
+		[InlineData ("IL2001,CS4550,CA2123,IL2002,2000,IL8000,IL1003", 2)]
+		[InlineData ("SomeText,IL20000,IL02000", 0)]
+		public void TestValidNoWarn (string noWarn, int validNoWarns)
+		{
+			var task = new MockTask () {
+				NoWarn = noWarn
+			};
+
+			using (var driver = task.CreateDriver ()) {
+				var actualUsedNoWarns = driver.Context.NoWarn;
+				Assert.Equal (actualUsedNoWarns.Count, validNoWarns);
+			}
+		}
+
 		public static IEnumerable<object[]> CustomDataCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {

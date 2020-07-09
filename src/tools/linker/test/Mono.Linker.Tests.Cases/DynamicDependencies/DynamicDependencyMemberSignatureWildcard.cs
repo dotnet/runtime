@@ -5,8 +5,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMemberSignatureWildcard.Dependency(): No members were resolved for '*'.")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DynamicDependencyMethodInAssemblyLibrary.cs" })]
+	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMemberSignatureWildcard.Dependency(): No members were resolved for '*'.")]
 	public class DynamicDependencyMemberSignatureWildcard
 	{
 		public static void Main ()
