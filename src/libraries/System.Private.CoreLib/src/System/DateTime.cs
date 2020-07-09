@@ -1047,7 +1047,6 @@ namespace System
         internal bool IsAmbiguousDaylightSavingTime() =>
             InternalKind == KindLocalAmbiguousDst;
 
-
         public DateTimeKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
