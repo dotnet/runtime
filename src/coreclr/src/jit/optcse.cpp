@@ -401,7 +401,7 @@ void Compiler::optValnumCSE_Init()
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    unsigned key;
+    size_t   key;
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
@@ -446,11 +446,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = (unsigned)vnLib; // include the exc set in the hash key
+            key = vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = (unsigned)vnLibNorm;
+            key = vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -461,12 +461,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     }
     else // Not a GT_COMMA
     {
-        key = (unsigned)vnLibNorm;
+        key = vnLibNorm;
     }
 
     // Compute the hash value for the expression
 
-    hash = key;
+    hash = (unsigned)key;
+#ifdef TARGET_64BIT
+    hash ^= (unsigned)(key >> 32);
+#endif
     hash *= (unsigned)(s_optCSEhashSize + 1);
     hash >>= 7;
 
@@ -645,8 +648,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nCSE candidate #%02u, vn=", CSEindex);
-            vnPrint(key, 0);
+            printf("\nCSE candidate #%02u, key=", CSEindex);
+            vnPrint((ValueNum)key, 0);
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
             gtDispTree(tree);
         }
