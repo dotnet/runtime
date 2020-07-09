@@ -26,7 +26,7 @@ all: build-native timezone-data
 
 EMSCRIPTEN_VERSION=1.39.16
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(CURDIR)/emsdk_env.sh && emcc
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
@@ -41,10 +41,6 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 else
 provision-wasm:
 endif
-
-# emsdk_env.sh calls emsdk construct_env which is a bit slow so make a copy
-emsdk_env.sh: | provision-wasm
-	cd $(EMSDK_PATH) && ./emsdk construct_env $(CURDIR)/emsdk_env.sh
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
@@ -75,19 +71,19 @@ $(BUILDS_BIN_DIR):
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(BUILDS_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(2) | $(BUILDS_BIN_DIR)/ emsdk_env.sh
+$(BUILDS_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(2) | $(BUILDS_BIN_DIR)/
 	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(BUILDS_BIN_DIR)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
 
-$(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c runtime/corebindings.c | $(BUILDS_OBJ_DIR) emsdk_env.sh
+$(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c runtime/corebindings.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
-$(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(BUILDS_OBJ_DIR) emsdk_env.sh
+$(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
 
-$(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR) emsdk_env.sh
+$(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
 build-native: $(BUILDS_BIN_DIR)/dotnet.js
@@ -108,7 +104,6 @@ clean-emsdk:
 
 clean:
 	$(RM) -rf $(BUILDS_BIN_DIR) $(BUILDS_OBJ_DIR)
-	$(RM) emsdk_env.sh
 
 # Helper targets
 .PHONY: runtime
