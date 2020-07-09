@@ -1,0 +1,41 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+namespace Mono.Linker.Tests.Cases.DataFlow
+{
+	[SetupLinkAttributesFile ("LinkerAttributeRemoval.xml")]
+	[SetupLinkerDescriptorFile ("OverrideAttributeRemoval.xml")]
+	[IgnoreLinkAttributes (false)]
+	[KeptMember (".ctor()")]
+	class OverrideAttributeRemoval
+	{
+		public static void Main ()
+		{
+			var instance = new OverrideAttributeRemoval ();
+			instance._fieldWithCustomAttribute = null;
+			string value = instance.methodWithCustomAttribute ("parameter");
+		}
+		[Kept]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		Type _fieldWithCustomAttribute;
+
+		[Kept]
+		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		private string methodWithCustomAttribute (
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+			string parameterWithCustomAttribute)
+		{
+			return "this is a return value";
+		}
+	}
+}
