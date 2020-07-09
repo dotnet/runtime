@@ -60,6 +60,20 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
+        [Fact]
+        public void ProcessId_Idempotent()
+        {
+            Assert.InRange(Environment.ProcessId, 1, int.MaxValue);
+            Assert.Equal(Environment.ProcessId, Environment.ProcessId);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessId_MatchesExpectedValue()
+        {
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Console.WriteLine(Environment.ProcessId), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
+            Assert.Equal(handle.Process.Id, int.Parse(handle.Process.StandardOutput.ReadToEnd()));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {

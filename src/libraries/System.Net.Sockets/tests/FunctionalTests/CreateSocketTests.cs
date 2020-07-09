@@ -570,10 +570,10 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.Equal(AddressFamily.Unknown, netlink.AddressFamily);
 
-                netlink.Bind(new NlEndPoint(Process.GetCurrentProcess().Id));
+                netlink.Bind(new NlEndPoint(Environment.ProcessId));
 
                 nl_request req = default;
-                req.nlh.nlmsg_pid = (uint)Process.GetCurrentProcess().Id;
+                req.nlh.nlmsg_pid = (uint)Environment.ProcessId;
                 req.nlh.nlmsg_type = RTM_GETROUTE;  /* We wish to get routes */
                 req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
                 req.nlh.nlmsg_len = sizeof(nl_request);

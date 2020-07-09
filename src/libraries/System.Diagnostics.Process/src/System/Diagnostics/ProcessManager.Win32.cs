@@ -96,7 +96,7 @@ namespace System.Diagnostics
                     SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
                     try
                     {
-                        hCurProcess = ProcessManager.OpenProcess((int)Interop.Kernel32.GetCurrentProcessId(), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
+                        hCurProcess = ProcessManager.OpenProcess(Environment.ProcessId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
 
                         if (!Interop.Kernel32.IsWow64Process(hCurProcess, out bool sourceProcessIsWow64))
                         {

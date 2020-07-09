@@ -1069,7 +1069,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetCurrentProcess()
         {
-            return new Process(".", false, GetCurrentProcessId(), null);
+            return new Process(".", false, Environment.ProcessId, null);
         }
 
         /// <devdoc>

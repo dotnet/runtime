@@ -89,7 +89,6 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34786", TestPlatforms.AnyUnix)]
         [Fact]
         public void LoadXml()
         {
@@ -112,9 +111,14 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(Convert.ToBase64String(parameters.Q), qValue);
             Assert.Equal(Convert.ToBase64String(parameters.G), gValue);
             Assert.Equal(Convert.ToBase64String(parameters.Y), yValue);
-            Assert.NotNull(parameters.Seed);
-            Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
-            Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
+
+            // Not all providers support round-tripping the seed value.
+            // Seed and PGenCounter are round-tripped together.
+            if (parameters.Seed != null)
+            {
+                Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
+                Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
+            }
         }
 
         [Fact]
