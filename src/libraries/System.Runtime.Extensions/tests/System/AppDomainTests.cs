@@ -122,6 +122,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38994", TestPlatforms.Browser)]
         public void FriendlyName()
         {
             string s = AppDomain.CurrentDomain.FriendlyName;
