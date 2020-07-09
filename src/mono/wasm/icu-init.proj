@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <!-- This project installs the wasm ICU nupkg -->
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="microsoft.netcore.runtime.icu" Version="1.0.0-dev"/>
+  </ItemGroup>
+
+</Project>
