@@ -79,51 +79,56 @@ namespace Internal.Cryptography
 
             ReadOnlySpan<byte> inputCiphertext;
             Span<byte> ciphertext;
+            byte[]? rentedCiphertext = null;
+            int rentedCiphertextSize = 0;
 
-            if (_heldoverCipher == null)
+            try
             {
-#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-                ciphertext = new byte[inputBuffer.Length];
-#else
-                ciphertext = GC.AllocateUninitializedArray<byte>(inputBuffer.Length);
-#endif
-                inputCiphertext = inputBuffer;
-            }
-            else
-            {
-                Span<byte> continuedCiphertext;
-#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-                continuedCiphertext = new byte[_heldoverCipher.Length + inputBuffer.Length];
-#else
-                continuedCiphertext = GC.AllocateUninitializedArray<byte>(_heldoverCipher.Length + inputBuffer.Length);
-#endif
-                _heldoverCipher.AsSpan().CopyTo(continuedCiphertext);
-                inputBuffer.CopyTo(continuedCiphertext.Slice(_heldoverCipher.Length));
-
-                // Decrypt in-place
-                ciphertext = continuedCiphertext;
-                inputCiphertext = continuedCiphertext;
-            }
-
-            int unpaddedLength = 0;
-
-            fixed (byte* pCiphertext = ciphertext)
-            {
-                // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
-                // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
-                int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
-                Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
-
-                if (decryptedBytes.Length > 0)
+                if (_heldoverCipher == null)
                 {
-                    unpaddedLength = GetPaddingLength(decryptedBytes);
-                    decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
-                    CryptographicOperations.ZeroMemory(decryptedBytes);
+                    rentedCiphertextSize = inputBuffer.Length;
+                    rentedCiphertext = CryptoPool.Rent(inputBuffer.Length);
+                    ciphertext = rentedCiphertext.AsSpan(0, inputBuffer.Length);
+                    inputCiphertext = inputBuffer;
+                }
+                else
+                {
+                    rentedCiphertextSize = _heldoverCipher.Length + inputBuffer.Length;
+                    rentedCiphertext = CryptoPool.Rent(rentedCiphertextSize);
+                    ciphertext = rentedCiphertext.AsSpan(0, rentedCiphertextSize);
+                    _heldoverCipher.AsSpan().CopyTo(ciphertext);
+                    inputBuffer.CopyTo(ciphertext.Slice(_heldoverCipher.Length));
+
+                    // Decrypt in-place
+                    inputCiphertext = ciphertext;
+                }
+
+                int unpaddedLength = 0;
+
+                fixed (byte* pCiphertext = ciphertext)
+                {
+                    // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
+                    // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
+                    int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
+                    Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
+
+                    if (decryptedBytes.Length > 0)
+                    {
+                        unpaddedLength = GetPaddingLength(decryptedBytes);
+                        decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
+                    }
+                }
+
+                Reset();
+                return unpaddedLength;
+            }
+            finally
+            {
+                if (rentedCiphertext != null)
+                {
+                    CryptoPool.Return(rentedCiphertext, clearSize: rentedCiphertextSize);
                 }
             }
-
-            Reset();
-            return unpaddedLength;
         }
 
         protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
