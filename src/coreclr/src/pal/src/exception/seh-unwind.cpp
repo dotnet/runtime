@@ -317,7 +317,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     }
 
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
+// The unw_getcontext is defined in the libunwind headers for ARM as inline assembly with
+// stmia instruction storing SP and PC, which clang complains about as deprecated.
+// However, it is required for atomic restoration of the context, so disable that warning.
+#if defined(__llvm__) && defined(TARGET_ARM)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winline-asm"
+#endif
     st = unw_getcontext(&unwContext);
+#if defined(__llvm__) && defined(TARGET_ARM)
+#pragma clang diagnostic pop
+#endif
+
     if (st < 0)
     {
         return FALSE;
