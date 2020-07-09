@@ -144,7 +144,7 @@ control options listed below.
 | File Format | Resource Name  |  Control Option  |
 |---|---|---|
 | Descriptor  | ILLink.Descriptors.xml  |   --ignore-descriptors |
-| Substition  | ILLink.Substitution.xml  |  --ignore-substitutions |
+| Substition  | ILLink.Substitutions.xml  |  --ignore-substitutions |
 | LinkAttributes  | ILLink.LinkAttributes.xml    |  --ignore-link-attributes |
 
 ### Generating warning suppressions
