@@ -157,7 +157,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
 
       # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
+      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
       add_link_options($<$<AND:$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>>:${CLR_SANITIZE_LINK_OPTIONS}>)
 
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
