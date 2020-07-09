@@ -6868,7 +6868,7 @@ if test x$with_core = xonly; then
 			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes
 		elif test x$host_wasm = xyes; then
-			ICU_CFLAGS="-DDISABLE_SHARED=1 -DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes
 		else
 			GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"

@@ -18,8 +18,6 @@
 
 #include "pal_icushim.h"
 
-#ifndef DISABLE_SHARED
-
 // Define pointers to all the used ICU functions
 #define PER_FUNCTION_BLOCK(fn, lib) __typeof(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
@@ -483,24 +481,3 @@ int32_t GlobalizationNative_GetICUVersion()
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }
-
-#else // DISABLE_SHARED
-
-int32_t GlobalizationNative_LoadICU()
-{
-    return 1;
-}
-
-void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* version, const char* suffix)
-{
-}
-
-int32_t GlobalizationNative_GetICUVersion()
-{
-    UVersionInfo versionInfo;
-    u_getVersion(versionInfo);
-
-    return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
-}
-
-#endif // DISABLE_SHARED
