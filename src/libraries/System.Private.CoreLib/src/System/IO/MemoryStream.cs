@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -52,7 +51,6 @@ namespace System.IO
             _expandable = true;
             _writable = true;
             _exposable = true;
-            _origin = 0;      // Must be 0 for byte[]'s created by MemoryStream
             _isOpen = true;
         }
 
@@ -69,8 +67,6 @@ namespace System.IO
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
-            _exposable = false;
-            _origin = 0;
             _isOpen = true;
         }
 
@@ -100,7 +96,6 @@ namespace System.IO
             _length = _capacity = index + count;
             _writable = writable;
             _exposable = publiclyVisible;  // Can TryGetBuffer/GetBuffer return the array?
-            _expandable = false;
             _isOpen = true;
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1032,67 +1031,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
-            return Convert.ToBoolean(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToBoolean(GetValue());
         }
 
         char IConvertible.ToChar(IFormatProvider? provider)
         {
-            return Convert.ToChar(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToChar(GetValue());
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
-            return Convert.ToSByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSByte(GetValue());
         }
 
         byte IConvertible.ToByte(IFormatProvider? provider)
         {
-            return Convert.ToByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToByte(GetValue());
         }
 
         short IConvertible.ToInt16(IFormatProvider? provider)
         {
-            return Convert.ToInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt16(GetValue());
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
-            return Convert.ToUInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt16(GetValue());
         }
 
         int IConvertible.ToInt32(IFormatProvider? provider)
         {
-            return Convert.ToInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt32(GetValue());
         }
 
         uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
-            return Convert.ToUInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt32(GetValue());
         }
 
         long IConvertible.ToInt64(IFormatProvider? provider)
         {
-            return Convert.ToInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt64(GetValue());
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
-            return Convert.ToUInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt64(GetValue());
         }
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSingle(GetValue());
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDouble(GetValue());
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
-            return Convert.ToDecimal(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDecimal(GetValue());
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider)

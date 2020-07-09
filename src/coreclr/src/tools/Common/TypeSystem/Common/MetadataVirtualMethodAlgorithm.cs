@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -576,7 +575,7 @@ namespace Internal.TypeSystem
         //    Interface function resolution follows the following rules
         //    1.    Apply any method impl that may exist, if once of these exists, resolve to target immediately.
         //    2.    If an interface is explicitly defined on a type, then attempt to perform a namesig match on the 
-        //          current type to resolve.If the interface isn’t resolved, if it isn’t implemented on a base type, 
+        //          current type to resolve.If the interface isn't resolved, if it isn't implemented on a base type, 
         //          scan all base types for name / sig matches.
         //    3.    If implicitly defined, attempt to perform a namesig match if the interface method implementation 
         //          has not been found on some base type.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Reflection.Metadata
 {
@@ -40,5 +39,10 @@ namespace System.Reflection.Metadata
         /// Managed calling convention for passing extra arguments.
         /// </summary>
         VarArgs = 0x5,
+
+        /// <summary>
+        /// Indicating the specifics of the unmanaged calling convention are encoded as modopts.
+        /// </summary>
+        Unmanaged = 0x9,
     }
 }

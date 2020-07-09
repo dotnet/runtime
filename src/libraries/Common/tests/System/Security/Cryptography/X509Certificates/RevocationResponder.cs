@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
@@ -28,6 +27,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             new List<(string, CertificateAuthority)>();
 
         public string UriPrefix { get; }
+
+        public bool RespondEmpty { get; set; }
 
         private RevocationResponder(HttpListener listener, string uriPrefix)
         {
@@ -133,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 catch (Exception)
                 {
                 }
-                
+
                 return;
             }
 
@@ -159,7 +160,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_aiaPaths.TryGetValue(url, out authority))
             {
-                byte[] certData = authority.GetCertData();
+                byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
 
                 responded = true;
                 context.Response.StatusCode = 200;
@@ -171,7 +172,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_crlPaths.TryGetValue(url, out authority))
             {
-                byte[] crl = authority.GetCrl();
+                byte[] crl = RespondEmpty ? Array.Empty<byte>() : authority.GetCrl();
 
                 responded = true;
                 context.Response.StatusCode = 200;
@@ -208,7 +209,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                             return;
                         }
 
-                        byte[] ocspResponse = authority.BuildOcspResponse(certId, nonce);
+                        byte[] ocspResponse = RespondEmpty ? Array.Empty<byte>() : authority.BuildOcspResponse(certId, nonce);
 
                         responded = true;
                         context.Response.StatusCode = 200;
@@ -234,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal static RevocationResponder CreateAndListen()
         {
             HttpListener listener = OpenListener(out string uriPrefix);
-            
+
             RevocationResponder responder = new RevocationResponder(listener, uriPrefix);
             responder.HandleRequests();
             return responder;

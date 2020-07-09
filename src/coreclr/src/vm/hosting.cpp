@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 
@@ -244,7 +243,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 #define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
 #undef SleepEx
-#undef Sleep
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
     CONTRACTL
@@ -265,25 +263,10 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 }
 #define SleepEx(dwMilliseconds,bAlertable) \
         Dont_Use_SleepEx(dwMilliseconds,bAlertable)
-#define Sleep(a) Dont_Use_Sleep(a)
 
 // non-zero return value if this function causes the OS to switch to another thread
 // See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
-{
-  CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return  __DangerousSwitchToThread(dwSleepMSec, dwSwitchCount, FALSE);
-}
-
-#undef SleepEx
-BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goThroughOS)
 {
     // If you sleep for a long time, the thread should be in Preemptive GC mode.
     CONTRACTL
@@ -297,14 +280,7 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
 
     if (dwSleepMSec > 0)
     {
-        // when called with goThroughOS make sure to not call into the host. This function
-        // may be called from GetRuntimeFunctionCallback() which is called by the OS to determine
-        // the personality routine when it needs to unwind managed code off the stack. when this
-        // happens in the context of an SO we want to avoid calling into the host
-        if (goThroughOS)
-            ::SleepEx(dwSleepMSec, FALSE);
-        else
-            ClrSleepEx(dwSleepMSec,FALSE);
+        ClrSleepEx(dwSleepMSec,FALSE);
         return TRUE;
     }
 
@@ -331,18 +307,11 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
     _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
     if (dwSwitchCount >= SLEEP_START_THRESHOLD)
     {
-        if (goThroughOS)
-            ::SleepEx(1, FALSE);
-        else
-            ClrSleepEx(1, FALSE);
+        ClrSleepEx(1, FALSE);
     }
 
-    {
-        return SwitchToThread();
-    }
+    return SwitchToThread();
 }
-#define SleepEx(dwMilliseconds,bAlertable) \
-        Dont_Use_SleepEx(dwMilliseconds,bAlertable)
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
 // build of the EE, we poison the Crst as a poor man's attempt to do some argument

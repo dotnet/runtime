@@ -1,0 +1,95 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".il" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+
+// Use the following commands to generate a corresponding IL file
+//   "%DevEnvDir%\TextTransform.exe" .\GitHub_21061_StackOverflowInFunctionProlog.tt
+
+// This test is designed to be run manually under debugger to validate different stack probing mechanisms implemented in CodeGen::genAllocLclFrame().
+// For example, this can be used to check whether a debugger can unwind and show stack trace when StackOverflow occurs in a function prolog while doing stack probing.
+
+.assembly extern System.Runtime
+{
+}
+
+.assembly GitHub_21061
+{
+}
+
+.module GitHub_21061.dll
+
+// The following AllocLocal() functions will allocate a local of given size and "touch" the beginning of the local (i.e. the lowest address on the allocated stack frame)
+// to ensure that the stack probing has been completed by the function prolog.
+// Note that the "touching" of the local should never cause StackOverflow. The function prolog can only throw StackOverflow here.
+// Main function will call the AllocLocal() functions in increasing order of the corresponding stack frames.
+// Consequently, _<i + OsPageSizeInBytes>.AllocLocal() will probe one extra page on the stack in comparison with _<i>.AllocLocal().
+<#
+  foreach(int structSizeInBytes in StructSizesInBytes)
+  {
+    string structName = StructName(structSizeInBytes);
+#>
+
+.class private explicit ansi sealed beforefieldinit GitHub_21061.<#= structName #>
+  extends [System.Runtime]System.ValueType
+{
+  .field [0] private int32 _0
+  .field [<#= structSizeInBytes #>] private int32 <#= structName #>
+
+  .method public hidebysig static void  AllocLocal() cil managed noinlining
+  {
+    .maxstack  8
+    .locals init (valuetype GitHub_21061.<#= structName #> V_0)
+
+    ldloca.s   V_0
+    initobj    GitHub_21061.<#= structName #>
+
+    ldloc.0
+    ldfld      int32 GitHub_21061.<#= structName #>::_0
+    call       void GitHub_21061.Program::Keep(int32)
+
+    ret
+  }
+}
+<#
+  }
+#>
+
+.class private auto ansi beforefieldinit GitHub_21061.Program
+       extends [System.Runtime]System.Object
+{
+  .method public hidebysig static void  Keep(int32 i) cil managed noinlining
+  {
+    .maxstack  8
+    ret
+  }
+
+  .method private hidebysig static void  Main(string[] args) cil managed
+  {
+    .entrypoint
+    .maxstack  5
+<#
+  foreach(int structSizeInBytes in StructSizesInBytes)
+  {
+#>
+    call       void GitHub_21061.<#= StructName(structSizeInBytes) #>::AllocLocal()
+<#
+  }
+#>
+    ret
+  }
+}
+<#+
+  string StructName(int structSizeInBytes)
+  {
+    return $"_{structSizeInBytes:X8}";
+  }
+
+  const int OsPageSizeInBytes = 4096;
+  const int MaxSizeOfStackFrameInBytes = 8 * 1024 * 1024; // 8 megabytes should be enough to cause StackOverflow on all supported platforms.
+  int[] StructSizesInBytes = Enumerable.Range(1, MaxSizeOfStackFrameInBytes / OsPageSizeInBytes).Select(k => k * OsPageSizeInBytes).ToArray();
+#>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.h
 //
@@ -83,7 +82,11 @@ public:
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
     // Either MD or signature & module must be given.
-    static BOOL MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig = NULL, Module *pModule = NULL);
+    static BOOL MarshalingRequired(
+        _In_opt_ MethodDesc* pMD,
+        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ Module* pModule = NULL,
+        _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
     static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, BOOL throwOnError = TRUE);
 
     static MethodDesc* CreateCLRToNativeILStub(

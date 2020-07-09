@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections.Generic;
@@ -1186,9 +1185,6 @@ namespace System.StubHelpers
 
     internal static class StubHelpers
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsQCall(IntPtr pMD);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InitDeclaringType(IntPtr pMD);
 

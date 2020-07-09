@@ -37,7 +37,7 @@
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs"
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"

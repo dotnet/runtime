@@ -1,5 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -396,11 +396,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
-            bool isUnboxingStub,
             bool isInstantiatingStub)
         {
             uint flags = 0;
-            if (isUnboxingStub)
+            if (method.Unboxing)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
             }

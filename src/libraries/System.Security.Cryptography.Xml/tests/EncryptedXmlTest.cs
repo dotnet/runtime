@@ -1,16 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // EncryptedXmlTest.cs
 //
 // Author:
 //  Atsushi Enomoto  <atsushi@ximian.com>
 //
 // Copyright (C) 2006 Novell, Inc (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
-
 
 using System.Collections;
 using System.Collections.Generic;

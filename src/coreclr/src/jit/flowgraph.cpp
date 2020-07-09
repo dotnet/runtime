@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -89,7 +88,8 @@ void Compiler::fgInit()
     fgCurBBEpochSize         = 0;
     fgBBSetCountInSizeTUnits = 0;
 
-    genReturnBB = nullptr;
+    genReturnBB    = nullptr;
+    genReturnLocal = BAD_VAR_NUM;
 
     /* We haven't reached the global morphing phase */
     fgGlobalMorph = false;
