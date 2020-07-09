@@ -2457,11 +2457,14 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part
     //separately.
 
+    _ASSERTE(OffsetWithinPage((off_t)loadedBase) == 0);
+
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     loadedHeader = (IMAGE_DOS_HEADER*)(static_cast<char*>(loadedBase) + OffsetWithinPage(offset));
 
     LPVOID loadedHeaderBase;
     loadedHeaderBase = NULL;
+    _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((off_t)loadedHeader));
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
                     (LPVOID)loadedHeader, headerSize, PROT_READ, readOnlyFlags, fd, offset,
                     &loadedHeaderBase);
@@ -2496,6 +2499,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 
     void* prevSectionEnd;
     prevSectionEnd = (char*)loadedHeader + headerSize; // the first "section" for our purposes is the header
+
     for (unsigned i = 0; i < numSections; ++i)
     {
         //for each section, map the section of the file to the correct virtual offset.  Gather the
@@ -2554,6 +2558,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
             flags = readWriteFlags;
         }
 
+        _ASSERTE(OffsetWithinPage((off_t)sectionBase) == OffsetWithinPage(offset + currentHeader.PointerToRawData));
         palError = MAPmmapAndRecord(pFileObject, loadedBase,
                         sectionBase,
                         currentHeader.SizeOfRawData,
