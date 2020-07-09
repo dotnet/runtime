@@ -10,17 +10,17 @@ if (CLR_CMAKE_HOST_WIN32)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
-    add_link_options(/ENTRY:CoreDllMain)
+    add_linker_flag("/ENTRY:CoreDllMain")
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options(/INCREMENTAL:NO)
+    add_linker_flag("/INCREMENTAL:NO")
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options("/DELAYLOAD:version.dll")
+    add_linker_flag("/DELAYLOAD:version.dll")
 
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
@@ -33,7 +33,11 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options("LINKER:-Bsymbolic")
+        if (CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+            add_linker_flag("-Xlinker -Bsymbolic")
+        else()
+            add_linker_flag("-Wl,-Bsymbolic")
+        endif()
 
         # The following linked options can be inserted into the linker libraries list to
         # ensure proper resolving of circular references between a subset of the libraries.
