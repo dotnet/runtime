@@ -22,6 +22,7 @@ namespace System.Net.Http
         private Uri? _requestUri;
         private HttpRequestHeaders? _headers;
         private Version _version;
+        private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private bool _disposed;
         private IDictionary<string, object?>? _properties;
@@ -38,6 +39,17 @@ namespace System.Net.Http
                 CheckDisposed();
 
                 _version = value;
+            }
+        }
+
+        public HttpVersionPolicy VersionPolicy
+        {
+            get { return _versionPolicy; }
+            set
+            {
+                CheckDisposed();
+
+                _versionPolicy = value;
             }
         }
 

@@ -26,6 +26,7 @@ namespace System.Net.Http
         private CancellationTokenSource _pendingRequestsCts;
         private HttpRequestHeaders? _defaultRequestHeaders;
         private Version _defaultRequestVersion = HttpUtilities.DefaultRequestVersion;
+        private HttpVersionPolicy _defaultVersionPolicy = HttpUtilities.DefaultVersionPolicy;
 
         private Uri? _baseAddress;
         private TimeSpan _timeout;
@@ -54,6 +55,16 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _defaultRequestVersion = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        public HttpVersionPolicy DefaultVersionPolicy
+        {
+            get => _defaultVersionPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _defaultVersionPolicy = value;
             }
         }
 
@@ -803,7 +814,7 @@ namespace System.Net.Http
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
         private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri? uri) =>
-            new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion };
+            new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion, VersionPolicy = _defaultVersionPolicy };
         #endregion Private Helpers
     }
 }
