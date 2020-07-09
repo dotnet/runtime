@@ -175,6 +175,7 @@ namespace System.Net.Http
                 _current -= granted;
                 return granted;
             }
+
             return 0;
         }
     }

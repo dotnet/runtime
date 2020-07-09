@@ -492,7 +492,7 @@ namespace System.Net.Http
             Socket? socket = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
-            IReadOnlyList<Http2Connection>? lastHttp2Connections = _http2Connections;
+            Http2Connection[]? lastHttp2Connections = _http2Connections;
 
             // Serialize creation attempt
             await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);

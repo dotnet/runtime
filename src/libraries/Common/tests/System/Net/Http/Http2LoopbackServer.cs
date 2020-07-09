@@ -104,7 +104,7 @@ namespace System.Net.Test.Common
 
         public Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            return EstablishConnectionAsync(null, settingsEntries);
+            return EstablishConnectionAsync(timeout: null, settingsEntries);
         }
 
         public async Task<Http2LoopbackConnection> EstablishConnectionAsync(TimeSpan? timeout, params SettingsEntry[] settingsEntries)
@@ -115,7 +115,7 @@ namespace System.Net.Test.Common
 
         public Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
         {
-            return EstablishConnectionGetSettingsAsync(null, settingsEntries);
+            return EstablishConnectionGetSettingsAsync(timeout: null, settingsEntries);
         }
 
         public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(TimeSpan? timeout, params SettingsEntry[] settingsEntries)
