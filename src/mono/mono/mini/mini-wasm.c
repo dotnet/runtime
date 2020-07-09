@@ -395,6 +395,9 @@ extern void mono_set_timeout (int t, int d);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
+extern void mono_wasm_pump_threadpool (void);
+void mono_background_exec (void);
+
 #endif // HOST_WASM
 
 gpointer
@@ -621,11 +624,20 @@ mono_wasm_queue_tp_cb (void)
 }
 
 void
+mono_wasm_pump_threadpool (void)
+{
+#ifdef HOST_WASM
+	mono_background_exec ();
+#endif
+}
+
+void
 mono_arch_register_icall (void)
 {
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::PumpThreadPool", mono_wasm_pump_threadpool);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif
@@ -761,24 +773,24 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
 
 ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 {
-	g_error ("sendfile");
-	return 0;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int
 getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwnam_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 int
 getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwuid_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 G_END_DECLS

@@ -249,9 +249,11 @@ common_sources = \
 	class-getters.h		\
 	class-init.h		\
 	class-init.c		\
+	class-init-internals.h	\
 	class-internals.h	\
 	class-inlines.h		\
 	class-private-definition.h	\
+	class-setup-vtable.c	\
 	class-accessors.c	\
 	cominterop.c		\
 	cominterop.h		\
@@ -416,7 +418,8 @@ common_sources = \
 	abi.c	\
 	native-library.c \
 	native-library.h \
-	native-library-qcall.c
+	native-library-qcall.c \
+	qcall-def.h 
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

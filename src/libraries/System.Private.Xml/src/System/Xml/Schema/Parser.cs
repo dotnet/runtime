@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -23,12 +22,12 @@ namespace System.Xml.Schema
         private XmlReader? _reader;
         private PositionInfo? _positionInfo;
         private bool _isProcessNamespaces;
-        private int _schemaXmlDepth = 0;
+        private int _schemaXmlDepth;
         private int _markupDepth;
         private SchemaBuilder? _builder;
         private XmlSchema? _schema;
         private SchemaInfo? _xdrSchema;
-        private XmlResolver? _xmlResolver = null; //to be used only by XDRBuilder
+        private XmlResolver? _xmlResolver; //to be used only by XDRBuilder
 
         //xs:Annotation perf fix
         private readonly XmlDocument _dummyDocument;

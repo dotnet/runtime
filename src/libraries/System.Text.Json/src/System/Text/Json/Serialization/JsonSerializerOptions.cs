@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -32,7 +31,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
-        private JavaScriptEncoder? _encoder = null;
+        private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 
         private int _defaultBufferSize = BufferSizeDefault;

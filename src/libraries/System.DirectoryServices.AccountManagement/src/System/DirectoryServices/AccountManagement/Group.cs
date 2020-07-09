@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -39,7 +38,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // IsSecurityGroup property
-        private bool _isSecurityGroup = false;          // the actual property value
+        private bool _isSecurityGroup;          // the actual property value
         private LoadState _isSecurityGroupChanged = LoadState.NotSet;   // change-tracking
 
         public Nullable<bool> IsSecurityGroup
@@ -130,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Members property
-        private PrincipalCollection _members = null;
+        private PrincipalCollection _members;
 
         public PrincipalCollection Members
         {
@@ -212,7 +211,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         public override void Dispose()
         {

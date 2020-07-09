@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections.Generic;
@@ -47,9 +46,9 @@ namespace System.Net
         internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
-        private Uri? m_commentUri = null; // Do not rename (binary serialization)
+        private Uri? m_commentUri; // Do not rename (binary serialization)
         private CookieVariant m_cookieVariant = CookieVariant.Plain; // Do not rename (binary serialization)
-        private bool m_discard = false; // Do not rename (binary serialization)
+        private bool m_discard; // Do not rename (binary serialization)
         private string m_domain = string.Empty; // Do not rename (binary serialization)
         private bool m_domain_implicit = true; // Do not rename (binary serialization)
         private DateTime m_expires = DateTime.MinValue; // Do not rename (binary serialization)
@@ -58,19 +57,20 @@ namespace System.Net
         private bool m_path_implicit = true; // Do not rename (binary serialization)
         private string m_port = string.Empty; // Do not rename (binary serialization)
         private bool m_port_implicit = true; // Do not rename (binary serialization)
-        private int[]? m_port_list = null; // Do not rename (binary serialization)
-        private bool m_secure = false; // Do not rename (binary serialization)
+        private int[]? m_port_list; // Do not rename (binary serialization)
+        private bool m_secure; // Do not rename (binary serialization)
         [System.Runtime.Serialization.OptionalField]
         private bool m_httpOnly = false; // Do not rename (binary serialization)
         private DateTime m_timeStamp = DateTime.Now; // Do not rename (binary serialization)
         private string m_value = string.Empty; // Do not rename (binary serialization)
-        private int m_version = 0; // Do not rename (binary serialization)
+        private int m_version; // Do not rename (binary serialization)
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-        internal bool IsQuotedVersion = false;
-
-        internal bool IsQuotedDomain = false;
+#pragma warning disable 0649 // set via reflection by CookieParser: https://github.com/dotnet/runtime/issues/19348
+        internal bool IsQuotedVersion; // Do not rename (binary serialization)
+        internal bool IsQuotedDomain; // Do not rename (binary serialization)
+#pragma warning restore 0649
 
 #if DEBUG
         static Cookie()

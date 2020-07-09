@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -72,7 +71,7 @@ namespace System.Net.WebSockets
         /// expect to always receive unmasked payloads, whereas servers always send
         /// unmasked payloads and expect to always receive masked payloads.
         /// </summary>
-        private readonly bool _isServer = false;
+        private readonly bool _isServer;
         /// <summary>The agreed upon subprotocol with the server.</summary>
         private readonly string? _subprotocol;
         /// <summary>Timer used to send periodic pings to the server, at the interval specified</summary>
@@ -104,9 +103,9 @@ namespace System.Net.WebSockets
         /// <summary>Whether we've ever received a close frame.</summary>
         private bool _receivedCloseFrame;
         /// <summary>The reason for the close, as sent by the server, or null if not yet closed.</summary>
-        private WebSocketCloseStatus? _closeStatus = null;
+        private WebSocketCloseStatus? _closeStatus;
         /// <summary>A description of the close reason as sent by the server, or null if not yet closed.</summary>
-        private string? _closeStatusDescription = null;
+        private string? _closeStatusDescription;
 
         /// <summary>
         /// The last header received in a ReceiveAsync.  If ReceiveAsync got a header but then
@@ -118,15 +117,15 @@ namespace System.Net.WebSockets
         /// </summary>
         private MessageHeader _lastReceiveHeader = new MessageHeader { Opcode = MessageOpcode.Text, Fin = true };
         /// <summary>The offset of the next available byte in the _receiveBuffer.</summary>
-        private int _receiveBufferOffset = 0;
+        private int _receiveBufferOffset;
         /// <summary>The number of bytes available in the _receiveBuffer.</summary>
-        private int _receiveBufferCount = 0;
+        private int _receiveBufferCount;
         /// <summary>
         /// When dealing with partially read fragments of binary/text messages, a mask previously received may still
         /// apply, and the first new byte received may not correspond to the 0th position in the mask.  This value is
         /// the next offset into the mask that should be applied.
         /// </summary>
-        private int _receivedMaskOffsetOffset = 0;
+        private int _receivedMaskOffsetOffset;
         /// <summary>
         /// Temporary send buffer.  This should be released back to the ArrayPool once it's
         /// no longer needed for the current send operation.  It is stored as an instance

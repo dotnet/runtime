@@ -1,7 +1,5 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -22,14 +20,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             MethodWithGCInfo localMethod,
-            bool isUnboxingStub,
             bool isInstantiatingStub) :
             base (
                 factory,
                 factory.MethodSignature(
                       fixupKind,
                       method,
-                      isUnboxingStub,
                       isInstantiatingStub)
             )
         {
@@ -55,14 +51,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 yield return entry;
             }
-            yield return new DependencyListEntry(_localMethod, "Precode Method Import");
+            if (_localMethod != null)
+                yield return new DependencyListEntry(_localMethod, "Precode Method Import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            int result = comparer.Compare(_localMethod, ((PrecodeMethodImport)other)._localMethod);
-            if (result != 0)
-                return result;
+            if ((_localMethod != null) && (((PrecodeMethodImport)other)._localMethod != null))
+            {
+                int result = comparer.Compare(_localMethod, ((PrecodeMethodImport)other)._localMethod);
+                if (result != 0)
+                    return result;
+            }
+            else if (_localMethod != null)
+                return 1;
+            else if (((PrecodeMethodImport)other)._localMethod != null)
+                return -1;
 
             return base.CompareToImpl(other, comparer);
         }

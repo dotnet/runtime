@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -138,6 +137,20 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+#ifdef DEBUG
+/*****************************************************************************
+*
+*  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
+*  The values are such that they don't overlap with helper's or user function's handle.
+*/
+enum TargetHandleType : BYTE
+{
+    THT_Unknown                  = 2,
+    THT_GSCookieCheck            = 4,
+    THT_SetGSCookie              = 6,
+    THT_IntializeArrayIntrinsics = 8
+};
+#endif
 /*****************************************************************************/
 
 struct BasicBlock;
@@ -2958,6 +2971,12 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
     FieldSeqNode* gtFieldSeq;
+
+#ifdef DEBUG
+    // If the value represents target address, holds the method handle to that target which is used
+    // to fetch target method name and display in the disassembled code.
+    size_t gtTargetHandle = 0;
+#endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
@@ -7078,9 +7097,7 @@ inline bool GenTree::IsMultiRegCall() const
 {
     if (this->IsCall())
     {
-        // We cannot use AsCall() as it is not declared const
-        const GenTreeCall* call = reinterpret_cast<const GenTreeCall*>(this);
-        return call->HasMultiRegRetVal();
+        return AsCall()->HasMultiRegRetVal();
     }
 
     return false;

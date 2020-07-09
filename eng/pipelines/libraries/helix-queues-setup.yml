@@ -90,16 +90,12 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
-          # - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
-          # - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
@@ -119,8 +115,6 @@ jobs:
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
-          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
-          # - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
@@ -128,8 +122,6 @@ jobs:
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
             - Windows.7.Amd64.Open
-            # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
-            # - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 
       # NET472
@@ -143,5 +135,9 @@ jobs:
     # Windows_NT arm64
     - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
       - Windows.10.Arm64.Open
+
+    # WebAssembly
+    - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+      - Ubuntu.2004.Amd64.Open
 
     ${{ insert }}: ${{ parameters.jobParameters }}

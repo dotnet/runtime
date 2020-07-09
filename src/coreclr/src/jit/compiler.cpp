@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3414,7 +3413,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
 
         // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
+        // mode allowlist. If user has requested only enable mode,
         // don't allow this stress mode to turn on.
         const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
 
@@ -4364,7 +4363,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Insert call to class constructor as the first basic block if
         // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
                                         impTokenLookupContextHandle /* context */) &
             CORINFO_INITCLASS_USE_HELPER)
         {
@@ -4756,8 +4755,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 //
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
             }
-
-            DoPhase(this, PHASE_ZERO_INITS, &Compiler::optRemoveRedundantZeroInits);
 
             if (doEarlyProp)
             {
@@ -5392,7 +5389,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        impTokenLookupContextHandle = MAKE_METHODCONTEXT(info.compMethodHnd);
+        impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
         info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);

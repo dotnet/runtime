@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -34,7 +33,7 @@ namespace System.Net.Http
 
             if (remoteCertificateStore.Count > 0)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     foreach (X509Certificate cert in remoteCertificateStore)
                     {
@@ -80,14 +79,14 @@ namespace System.Net.Http
                     {
                         if (status.dwError == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
                         {
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, nameof(Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH));
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(certificate, nameof(Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH));
                             sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                         }
                     }
                     else
                     {
                         // Failure checking the policy. This is a rare error. We will assume the name check failed.
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, $"Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(certificate, $"Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
                         sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                     }
                 }

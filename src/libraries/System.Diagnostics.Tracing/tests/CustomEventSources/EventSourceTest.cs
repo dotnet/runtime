@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -155,15 +154,6 @@ namespace SdtEventSources
         [Event(27)]
         public void EventWith9Strings(string s0, string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8)
         { WriteEvent(27, s0, s1, s2, s3, s4, s5, s6, s7, s8); }
-
-        [Event(28, Keywords = Keywords.Transfer | Keywords.HasNoArgs)]
-        public void LogTransferNoOpcode(Guid RelatedActivityId)
-        {
-            unsafe
-            {
-                WriteEventWithRelatedActivityIdCore(28, &RelatedActivityId, 0, null);
-            }
-        }
 
         [Event(29, Keywords = Keywords.Transfer | Keywords.HasNoArgs, Level = EventLevel.Informational, Opcode = EventOpcode.Send, Task = Tasks.WorkManyArgs)]
         public void EventWithXferManyTypeArgs(Guid RelatedActivityId, long l, uint ui, ulong ui64, char ch,

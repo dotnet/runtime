@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -181,9 +180,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8765
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
@@ -192,9 +189,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8765
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ComCompatibleVersionAttribute : System.Attribute

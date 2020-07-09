@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -58,29 +57,29 @@ namespace System.Globalization
         private readonly CultureData _cultureData;
 
         // The culture name used to create this DTFI.
-        private string? _name = null;
+        private string? _name;
 
         // The language name of the culture used to create this DTFI.
-        private string? _langName = null;
+        private string? _langName;
 
         // CompareInfo usually used by the parser.
-        private CompareInfo? _compareInfo = null;
+        private CompareInfo? _compareInfo;
 
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
-        private CultureInfo? _cultureInfo = null;
+        private CultureInfo? _cultureInfo;
 
-        private string? amDesignator = null;
-        private string? pmDesignator = null;
+        private string? amDesignator;
+        private string? pmDesignator;
 
-        private string? dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
+        private string? dateSeparator;            // derived from short date (whidbey expects, arrowhead doesn't)
 
-        private string? generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
+        private string? generalShortTimePattern;     // short date + short time (whidbey expects, arrowhead doesn't)
 
-        private string? generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
+        private string? generalLongTimePattern;     // short date + long time (whidbey expects, arrowhead doesn't)
 
-        private string? timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
-        private string? monthDayPattern = null;
-        private string? dateTimeOffsetPattern = null;
+        private string? timeSeparator;            // derived from long time (whidbey expects, arrowhead doesn't)
+        private string? monthDayPattern;
+        private string? dateTimeOffsetPattern;
 
         private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
@@ -93,26 +92,26 @@ namespace System.Globalization
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;
 
-        private string? fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
+        private string? fullDateTimePattern;        // long date + long time (whidbey expects, arrowhead doesn't)
 
-        private string[]? abbreviatedDayNames = null;
+        private string[]? abbreviatedDayNames;
 
-        private string[]? m_superShortDayNames = null;
+        private string[]? m_superShortDayNames;
 
-        private string[]? dayNames = null;
-        private string[]? abbreviatedMonthNames = null;
-        private string[]? monthNames = null;
+        private string[]? dayNames;
+        private string[]? abbreviatedMonthNames;
+        private string[]? monthNames;
 
         // Cache the genitive month names that we retrieve from the data table.
 
-        private string[]? genitiveMonthNames = null;
+        private string[]? genitiveMonthNames;
 
         // Cache the abbreviated genitive month names that we retrieve from the data table.
 
-        private string[]? m_genitiveAbbreviatedMonthNames = null;
+        private string[]? m_genitiveAbbreviatedMonthNames;
 
         // Cache the month names of a leap year that we retrieve from the data table.
-        private string[]? leapYearMonthNames = null;
+        private string[]? leapYearMonthNames;
 
         // For our "patterns" arrays we have 2 variables, a string and a string[]
         //
@@ -121,30 +120,30 @@ namespace System.Globalization
         // When we initially construct our string[], we set the string to string[0]
 
         // The "default" Date/time patterns
-        private string? longDatePattern = null;
-        private string? shortDatePattern = null;
-        private string? yearMonthPattern = null;
-        private string? longTimePattern = null;
-        private string? shortTimePattern = null;
+        private string? longDatePattern;
+        private string? shortDatePattern;
+        private string? yearMonthPattern;
+        private string? longTimePattern;
+        private string? shortTimePattern;
 
-        private string[]? allYearMonthPatterns = null;
+        private string[]? allYearMonthPatterns;
 
-        private string[]? allShortDatePatterns = null;
-        private string[]? allLongDatePatterns = null;
-        private string[]? allShortTimePatterns = null;
-        private string[]? allLongTimePatterns = null;
+        private string[]? allShortDatePatterns;
+        private string[]? allLongDatePatterns;
+        private string[]? allShortTimePatterns;
+        private string[]? allLongTimePatterns;
 
         // Cache the era names for this DateTimeFormatInfo instance.
-        private string[]? m_eraNames = null;
-        private string[]? m_abbrevEraNames = null;
-        private string[]? m_abbrevEnglishEraNames = null;
+        private string[]? m_eraNames;
+        private string[]? m_abbrevEraNames;
+        private string[]? m_abbrevEnglishEraNames;
 
-        private CalendarId[]? optionalCalendars = null;
+        private CalendarId[]? optionalCalendars;
 
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
         // CultureInfo updates this
-        internal bool _isReadOnly = false;
+        internal bool _isReadOnly;
 
         // This flag gives hints about if formatting/parsing should perform special code path for things like
         // genitive form or leap year month names.

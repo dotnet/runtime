@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Summary:
@@ -106,10 +105,10 @@ DWORD __stdcall StackSampler::SamplingThreadProc(void* arg)
 
 // Constructor
 StackSampler::StackSampler()
-    : m_nSampleAfter(0)
+    : m_crstJitInfo(CrstStackSampler, (CrstFlags)(CRST_UNSAFE_ANYMODE))
     , m_nSampleEvery(s_knDefaultSamplingIntervalMsec)
+    , m_nSampleAfter(0)
     , m_nNumMethods(s_knDefaultNumMethods)
-    , m_crstJitInfo(CrstStackSampler, (CrstFlags) (CRST_UNSAFE_ANYMODE))
 {
     // When to start sampling after the thread launch.
     int nSampleAfter = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StackSamplingAfter);

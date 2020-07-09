@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
 
@@ -225,7 +224,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private static string OperatorDescription(int Opcode)
         {
             string codeStr = (Opcode & Mask) switch
@@ -287,7 +286,7 @@ namespace System.Text.RegularExpressions
                 ((Opcode & Back2) != 0 ? "-Back2" : "");
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public string OpcodeDescription(int offset)
         {
             var sb = new StringBuilder();
@@ -396,10 +395,10 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString()
         {
             var sb = new StringBuilder();

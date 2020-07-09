@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -27,8 +26,8 @@ namespace System.Data
         private bool _fInClear;
 
         private DataColumn[] _columnsImplementingIChangeTracking = Array.Empty<DataColumn>();
-        private int _nColumnsImplementingIChangeTracking = 0;
-        private int _nColumnsImplementingIRevertibleChangeTracking = 0;
+        private int _nColumnsImplementingIChangeTracking;
+        private int _nColumnsImplementingIRevertibleChangeTracking;
 
         /// <summary>
         /// DataColumnCollection constructor.  Used only by DataTable.

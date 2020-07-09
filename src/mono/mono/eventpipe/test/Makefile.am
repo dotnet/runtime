@@ -32,19 +32,21 @@ if !HOST_WIN32
 if ENABLE_PERFTRACING
 
 test_eventpipe_SOURCES = \
-ep-test-runner.c	\
-ep-test-driver.c	\
+ep-buffer-manager-tests.c	\
+ep-buffer-tests.c	\
 ep-fake-tests.c	\
 ep-fastserializer-tests.c	\
-ep-provider-callback-dataqueue-tests.c	\
-ep-setup-tests.c	\
-ep-tests.c	\
 ep-file-tests.c	\
+ep-provider-callback-dataqueue-tests.c	\
 ep-session-tests.c	\
+ep-setup-tests.c	\
 ep-teardown-tests.c \
+ep-tests.c	\
+ep-tests.h	\
+ep-test-runner.c	\
+ep-test-driver.c	\
 ep-thread-tests.c \
-ep-tests-debug.h	\
-ep-tests.h
+ep-tests-debug.h
 
 test_eventpipe_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
 test_eventpipe_LDADD = $(mini_libs) $(sgen_libs) $(eventpipe_libs)

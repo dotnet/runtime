@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -96,7 +95,7 @@ namespace System.Configuration
             // (1) Company name
             string part1 = Validate(_companyName, limitSize: true);
 
-            // (2) Domain or product name & an application urit hash
+            // (2) Domain or product name & an application uri hash
             string namePrefix = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);

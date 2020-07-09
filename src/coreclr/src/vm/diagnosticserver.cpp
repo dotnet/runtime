@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "diagnosticserver.h"
@@ -27,7 +26,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
     CONTRACTL
     {
+#ifndef DEBUG
         NOTHROW;
+#endif
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActiveConnections());
@@ -44,8 +45,10 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, "warning (%d): %s.\n", code, szMessage);
     };
 
+#ifndef DEBUG
     EX_TRY
     {
+#endif
         while (!s_shuttingDown)
         {
             IpcStream *pStream = IpcStreamFactory::GetNextAvailableStream(LoggingCallback);
@@ -97,13 +100,14 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 break;
             }
         }
+#ifndef DEBUG
     }
     EX_CATCH
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Exception caught in diagnostic thread. Leaving thread now.\n");
-        _ASSERTE(!"Hit an error in the diagnostic server thread\n.");
     }
     EX_END_CATCH(SwallowAllExceptions);
+#endif
 
     return 0;
 }

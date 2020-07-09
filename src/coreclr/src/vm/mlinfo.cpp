@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: mlinfo.cpp
 //
@@ -2348,7 +2347,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         // Override the prohibition on byref returns so that IJW works
                         m_byref = FALSE;
-                        m_type = ((sizeof(void*) == 4) ? MARSHAL_TYPE_GENERIC_4 : MARSHAL_TYPE_GENERIC_8);
+                        m_type = ((TARGET_POINTER_SIZE == 4) ? MARSHAL_TYPE_GENERIC_4 : MARSHAL_TYPE_GENERIC_8);
                     }
                     else
                     {
@@ -2373,8 +2372,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                  && !onInstanceMethod
                                  && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
                                  && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
-                                 && managedSize <= sizeof(void*)
-                                 && nativeSize <= sizeof(void*)
+                                 && managedSize <= TARGET_POINTER_SIZE
+                                 && nativeSize <= TARGET_POINTER_SIZE
                                  && !IsFieldScenario())
                         {
                             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -3026,7 +3025,7 @@ void MarshalInfo::SetupArgumentSizes()
 
     if (m_byref)
     {
-        m_nativeArgSize = StackElemSize(sizeof(void*));
+        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
     }
     else
     {
@@ -3035,7 +3034,7 @@ void MarshalInfo::SetupArgumentSizes()
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        m_nativeArgSize = StackElemSize(sizeof(void*));
+        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 

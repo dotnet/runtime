@@ -20,11 +20,11 @@
     <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == ''">1800</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
-    
+
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
-    
+
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
@@ -60,6 +60,10 @@
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
@@ -113,7 +117,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
-    
+
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <!--
       For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
@@ -147,7 +151,7 @@
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
     <ItemGroup>
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.IO;
@@ -42,7 +41,7 @@ namespace System.Diagnostics
             public override void WriteLine(string? message) { TraceInternal.WriteLine(message); }
         }
 
-        private static volatile string? s_appName = null;
+        private static volatile string? s_appName;
         private static volatile TraceListenerCollection? s_listeners;
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;

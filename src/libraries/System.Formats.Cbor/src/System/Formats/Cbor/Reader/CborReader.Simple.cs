@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 
@@ -8,7 +7,43 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        private const int SizeOfHalf = 2; // the size in bytes of an IEEE 754 Half-Precision float
+        /// <summary>
+        ///   Reads the next data item as a half-precision floating point number (major type 7).
+        /// </summary>
+        /// <returns>The decoded value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a floating-point number encoding. -or-
+        ///   the encoded value is a double-precision float
+        /// </exception>
+        /// <exception cref="CborContentException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
+        /// </exception>
+        public Half ReadHalf()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            Half result;
+
+            switch (header.AdditionalInfo)
+            {
+                case CborAdditionalInfo.Additional16BitData:
+                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
+                    result = HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
+                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
+                    AdvanceDataItemCounters();
+                    return result;
+
+                case CborAdditionalInfo.Additional32BitData:
+                case CborAdditionalInfo.Additional64BitData:
+                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingAsLowerPrecision);
+
+                default:
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
+            }
+        }
 
         /// <summary>
         ///   Reads the next data item as a single-precision floating point number (major type 7).
@@ -33,9 +68,9 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
-                    result = (float)ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(1 + SizeOfHalf);
+                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
+                    result = (float)HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
+                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
@@ -47,7 +82,7 @@ namespace System.Formats.Cbor
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingDoubleAsSingle);
+                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingAsLowerPrecision);
 
                 default:
                     throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
@@ -77,9 +112,9 @@ namespace System.Formats.Cbor
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
-                    result = ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(1 + SizeOfHalf);
+                    EnsureReadCapacity(buffer, 1 + HalfHelpers.SizeOfHalf);
+                    result = (double)HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
+                    AdvanceBuffer(1 + HalfHelpers.SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
@@ -198,31 +233,6 @@ namespace System.Formats.Cbor
                 default:
                     throw new InvalidOperationException(SR.Cbor_Reader_NotASimpleValueEncoding);
             }
-        }
-
-        // half-precision float decoder adapted from https://tools.ietf.org/html/rfc7049#appendix-D
-        private static double ReadHalfBigEndian(ReadOnlySpan<byte> buffer)
-        {
-            int half = (buffer[0] << 8) + buffer[1];
-            bool isNegative = (half >> 15) != 0;
-            int exp = (half >> 10) & 0x1f;
-            int mant = half & 0x3ff;
-            double value;
-
-            if (exp == 0)
-            {
-                value = Math.ScaleB(mant, -24);
-            }
-            else if (exp != 31)
-            {
-                value = Math.ScaleB(mant + 1024, exp - 25);
-            }
-            else
-            {
-                value = (mant == 0) ? double.PositiveInfinity : double.NaN;
-            }
-
-            return isNegative ? -value : value;
         }
     }
 }

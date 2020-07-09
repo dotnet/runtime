@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -93,7 +92,7 @@ namespace System.Net.Http
             {
                 // We have no credential for this auth type, so we can't respond to the challenge.
                 // We'll continue to look for a different auth type that we do have a credential for.
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.AuthenticationInfo(uri, $"Authentication scheme '{scheme}' supported by server, but not by client.");
                 }
@@ -101,7 +100,7 @@ namespace System.Net.Http
             }
 
             challenge = new AuthenticationChallenge(authenticationType, scheme, credential, challengeData);
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.AuthenticationInfo(uri, $"Authentication scheme '{scheme}' selected. Client username={challenge.Credential.UserName}");
             }
@@ -118,7 +117,7 @@ namespace System.Net.Http
 
             // Try to get a valid challenge for the schemes we support, in priority order.
             HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues = GetResponseAuthenticationHeaderValues(response, isProxyAuth);
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.AuthenticationInfo(authUri, $"{(isProxyAuth ? "Proxy" : "Server")} authentication requested with WWW-Authenticate header value '{authenticationHeaderValues}'");
             }
@@ -192,7 +191,7 @@ namespace System.Net.Http
             // Any errors in obtaining parameter return false and we don't proceed with auth
             if (string.IsNullOrEmpty(parameter))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.AuthenticationError(request.RequestUri, $"Unable to find 'Digest' authentication token when authenticating with {(isProxyAuth ? "proxy" : "server")}");
                 }
@@ -204,14 +203,14 @@ namespace System.Net.Http
             return true;
         }
 
-        private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+        private static ValueTask<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
-                pool.SendWithRetryAsync(request, doRequestAuth, cancellationToken) :
-                pool.SendWithProxyAuthAsync(request, doRequestAuth, cancellationToken);
+                pool.SendWithRetryAsync(request, async, doRequestAuth, cancellationToken) :
+                pool.SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private static async Task<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+        private static async ValueTask<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
             // If preauth is enabled and this isn't proxy auth, try to get a basic credential from the
             // preauth credentials cache, and if successful, set an auth header for it onto the request.
@@ -238,7 +237,7 @@ namespace System.Net.Http
                 }
             }
 
-            HttpResponseMessage response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await InnerSendAsync(request, async, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
 
             if (TryGetAuthenticationChallenge(response, isProxyAuth, authUri, credentials, out AuthenticationChallenge challenge))
             {
@@ -249,7 +248,7 @@ namespace System.Net.Http
                         if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                         {
                             response.Dispose();
-                            response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+                            response = await InnerSendAsync(request, async, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
 
                             // Retry in case of nonce timeout in server.
                             if (TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out string? challengeData))
@@ -259,7 +258,7 @@ namespace System.Net.Http
                                     await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                                 {
                                     response.Dispose();
-                                    response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+                                    response = await InnerSendAsync(request, async, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
                                 }
                             }
                         }
@@ -268,7 +267,7 @@ namespace System.Net.Http
                     case AuthenticationType.Basic:
                         if (performedBasicPreauth)
                         {
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.AuthenticationError(authUri, $"Pre-authentication with {(isProxyAuth ? "proxy" : "server")} failed.");
                             }
@@ -277,7 +276,7 @@ namespace System.Net.Http
 
                         response.Dispose();
                         SetBasicAuthToken(request, challenge.Credential, isProxyAuth);
-                        response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+                        response = await InnerSendAsync(request, async, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
 
                         if (preAuthenticate)
                         {
@@ -285,7 +284,7 @@ namespace System.Net.Http
                             {
                                 case HttpStatusCode.ProxyAuthenticationRequired:
                                 case HttpStatusCode.Unauthorized:
-                                    if (NetEventSource.IsEnabled)
+                                    if (NetEventSource.Log.IsEnabled())
                                     {
                                         NetEventSource.AuthenticationError(authUri, $"Pre-authentication with {(isProxyAuth ? "proxy" : "server")} failed.");
                                     }
@@ -296,7 +295,7 @@ namespace System.Net.Http
                                     {
                                         try
                                         {
-                                            if (NetEventSource.IsEnabled)
+                                            if (NetEventSource.Log.IsEnabled())
                                             {
                                                 NetEventSource.Info(pool.PreAuthCredentials, $"Adding Basic credential to cache, uri={authUri}, username={challenge.Credential.UserName}");
                                             }
@@ -305,7 +304,7 @@ namespace System.Net.Http
                                         catch (ArgumentException)
                                         {
                                             // The credential already existed.
-                                            if (NetEventSource.IsEnabled)
+                                            if (NetEventSource.Log.IsEnabled())
                                             {
                                                 NetEventSource.Info(pool.PreAuthCredentials, $"Basic credential present in cache, uri={authUri}, username={challenge.Credential.UserName}");
                                             }
@@ -318,7 +317,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (NetEventSource.IsEnabled && response.StatusCode == HttpStatusCode.Unauthorized)
+            if (NetEventSource.Log.IsEnabled() && response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 NetEventSource.AuthenticationError(authUri, $"{(isProxyAuth ? "Proxy" : "Server")} authentication failed.");
             }
@@ -326,15 +325,15 @@ namespace System.Net.Http
             return response;
         }
 
-        public static Task<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+        public static ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            return SendWithAuthAsync(request, proxyUri, proxyCredentials, preAuthenticate: false, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
+            return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: false, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
+        public static ValueTask<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
-            return SendWithAuthAsync(request, request.RequestUri, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken);
+            return SendWithAuthAsync(request, request.RequestUri, async, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken);
         }
     }
 }

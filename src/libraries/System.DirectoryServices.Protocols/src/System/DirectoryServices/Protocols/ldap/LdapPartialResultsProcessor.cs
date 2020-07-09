@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Threading;
@@ -13,9 +12,9 @@ namespace System.DirectoryServices.Protocols
     internal class LdapPartialResultsProcessor
     {
         private readonly ArrayList _resultList = new ArrayList();
-        private readonly ManualResetEvent _workThreadWaitHandle = null;
-        private bool _workToDo = false;
-        private int _currentIndex = 0;
+        private readonly ManualResetEvent _workThreadWaitHandle;
+        private bool _workToDo;
+        private int _currentIndex;
 
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
@@ -335,8 +334,8 @@ namespace System.DirectoryServices.Protocols
 
     internal class PartialResultsRetriever
     {
-        private readonly ManualResetEvent _workThreadWaitHandle = null;
-        private readonly LdapPartialResultsProcessor _processor = null;
+        private readonly ManualResetEvent _workThreadWaitHandle;
+        private readonly LdapPartialResultsProcessor _processor;
 
         internal PartialResultsRetriever(ManualResetEvent eventHandle, LdapPartialResultsProcessor processor)
         {

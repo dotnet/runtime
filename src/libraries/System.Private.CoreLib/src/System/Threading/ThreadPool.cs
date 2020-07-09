@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -384,7 +383,7 @@ namespace System.Threading
 
         private readonly Internal.PaddingFor32 pad1;
 
-        private volatile int numOutstandingThreadRequests = 0;
+        private volatile int numOutstandingThreadRequests;
 
         private readonly Internal.PaddingFor32 pad2;
 

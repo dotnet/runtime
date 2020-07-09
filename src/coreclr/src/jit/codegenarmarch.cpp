@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -587,7 +586,8 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_SetGSCookie) DEBUGARG(0));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
         regSet.verifyRegUsed(initReg);
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
@@ -1107,7 +1107,7 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
         JITDUMP("Changing type of BITCAST source to load directly.");
         genCodeForTreeNode(op1);
     }
-    else if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
+    else if (varTypeUsesFloatReg(treeNode) != varTypeUsesFloatReg(op1))
     {
         regNumber srcReg = op1->GetRegNum();
         assert(genTypeSize(op1->TypeGet()) == genTypeSize(targetType));
@@ -2477,8 +2477,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
+#ifdef FEATURE_READYTORUN_COMPILER
         assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+#endif // FEATURE_READYTORUN_COMPILER
         assert(call->gtControlExpr == nullptr);
         assert(!call->IsTailCall());
 

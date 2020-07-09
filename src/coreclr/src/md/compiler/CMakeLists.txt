@@ -58,7 +58,7 @@ add_library_clr(mdcompiler_dac ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdcompiler_dac HEADER stdafx.h)
 
-add_library_clr(mdcompiler_wks ${MDCOMPILER_SOURCES})
+add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_SOURCES})
 target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdcompiler_wks HEADER stdafx.h)
 

@@ -1124,7 +1124,10 @@ AC_ARG_WITH(csc, [  --with-csc=mcs,roslyn,default      Configures the CSharp com
 
 if test $csc_compiler = default; then
    if test $endian = big; then
-      csc_compiler=mcs
+      case "$host" in
+        s390x*) csc_compiler=roslyn ;;
+        *) csc_compiler=mcs
+      esac
    elif test $endian = little; then
       case "$host" in
         powerpc*) csc_compiler=mcs ;;
@@ -6166,8 +6169,8 @@ fi
 AC_SUBST(mono_runtime)
 AC_SUBST(mono_runtime_wrapper)
 
-CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/csc.exe
-VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/VBCSCompiler.exe
+CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.7.0/csc.exe
+VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.7.0/VBCSCompiler.exe
 
 if test $csc_compiler = mcs; then
   CSC=$mcs_topdir/class/lib/build/mcs.exe

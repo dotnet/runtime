@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.CPP
 // ===========================================================================
@@ -240,8 +239,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
 #endif // !CROSSGEN_COMPILE
 
-
-
+// g_coreclr_embedded indicates that coreclr is linked directly into the program
+#ifdef CORECLR_EMBEDDED
+bool g_coreclr_embedded = true;
+#else
+bool g_coreclr_embedded = false;
+#endif
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
@@ -480,6 +483,13 @@ void InitGSCookie()
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#if defined(TARGET_OSX) && defined(CORECLR_EMBEDDED)
+    // OSX does not like the way we change section protection when running in a superhost bundle
+    // disabling this for now
+    // https://github.com/dotnet/runtime/issues/38184
+    return;
+#endif
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 

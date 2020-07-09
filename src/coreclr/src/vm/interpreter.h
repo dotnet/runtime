@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef INTERPRETER_H_DEFINED
@@ -90,8 +89,12 @@ bool CorInfoTypeIsIntegral(CorInfoType cit);
 // Returns true iff "cet" is an unsigned integral type.
 bool CorElemTypeIsUnsigned(CorElementType cet);
 
-// Returns true iff "cit" is an integral type.
+// Returns true iff "cit" is a floating-point type.
 bool CorInfoTypeIsFloatingPoint(CorInfoType cit);
+
+// Returns true iff "cihet" is a floating-point type (float or double).
+// TODO: Handle Vector64, Vector128?
+bool CorInfoTypeIsFloatingPoint(CorInfoHFAElemType cihet);
 
 // Returns true iff "cit" is a pointer type (mgd/unmgd pointer, or native int).
 bool CorInfoTypeIsPointer(CorInfoType cit);
@@ -99,7 +102,7 @@ bool CorInfoTypeIsPointer(CorInfoType cit);
 // Requires that "cit" is stack-normal; returns its (byte) size.
 inline size_t CorInfoTypeStackNormalSize(CorInfoType cit)
 {
-    assert(IsStackNormalType(cit));
+    _ASSERTE(IsStackNormalType(cit));
     return CorInfoTypeSize(cit);
 }
 
@@ -161,14 +164,14 @@ public:
     InterpreterType(CorInfoType cit)
         : m_tp(reinterpret_cast<CORINFO_CLASS_HANDLE>((static_cast<intptr_t>(cit) << 2)))
     {
-        assert(cit != CORINFO_TYPE_VALUECLASS);
+        _ASSERTE(cit != CORINFO_TYPE_VALUECLASS);
     }
 
     // Requires that "cet" is not ELEMENT_TYPE_VALUETYPE.
     InterpreterType(CorElementType cet)
         : m_tp(reinterpret_cast<CORINFO_CLASS_HANDLE>((static_cast<intptr_t>(CEEInfo::asCorInfoType(cet)) << 2)))
     {
-        assert(cet != ELEMENT_TYPE_VALUETYPE);
+        _ASSERTE(cet != ELEMENT_TYPE_VALUETYPE);
     }
 
     InterpreterType(CEEInfo* comp, CORINFO_CLASS_HANDLE sh)
@@ -180,7 +183,7 @@ public:
         if (typHnd.IsNativeValueType())
         {
             intptr_t shAsInt = reinterpret_cast<intptr_t>(sh);
-            assert((shAsInt & 0x1) == 0); // The 0x2 bit might already be set by the VM! This is ok, because it's only set for native value types. This is a bit slimey...
+            _ASSERTE((shAsInt & 0x1) == 0); // The 0x2 bit might already be set by the VM! This is ok, because it's only set for native value types. This is a bit slimey...
             m_tp = reinterpret_cast<CORINFO_CLASS_HANDLE>(shAsInt | 0x2);
         }
         else
@@ -192,9 +195,9 @@ public:
             }
             else
             {
-                assert((comp->getClassAttribs(sh) & CORINFO_FLG_VALUECLASS) != 0);
+                _ASSERTE((comp->getClassAttribs(sh) & CORINFO_FLG_VALUECLASS) != 0);
                 intptr_t shAsInt = reinterpret_cast<intptr_t>(sh);
-                assert((shAsInt & 0x3) == 0);
+                _ASSERTE((shAsInt & 0x3) == 0);
                 intptr_t bits = 0x1;                            // All value classes (structs) get 0x1 set.
                 if (getClassSize(sh) > sizeof(INT64))
                 {
@@ -248,7 +251,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         intptr_t asInt = reinterpret_cast<intptr_t>(m_tp);
-        assert((asInt & 0x3) != 0);
+        _ASSERTE((asInt & 0x3) != 0);
         return reinterpret_cast<CORINFO_CLASS_HANDLE>(asInt & (~0x3));
     }
 
@@ -279,7 +282,7 @@ public:
             // is the low-bit encoding of "native struct type" both for InterpreterType and for
             // TypeHandle.
             TypeHandle typHnd(m_tp);
-            assert(typHnd.IsNativeValueType());
+            _ASSERTE(typHnd.IsNativeValueType());
             return typHnd.AsNativeValueType()->GetNativeSize();
         }
         else
@@ -300,7 +303,7 @@ public:
     size_t StackNormalSize() const
     {
         CorInfoType cit = ToCorInfoType();
-        assert(IsStackNormalType(cit)); // Precondition.
+        _ASSERTE(IsStackNormalType(cit)); // Precondition.
         return CorInfoTypeStackNormalSize(cit);
     }
 
@@ -702,7 +705,7 @@ struct InterpreterMethodInfo
     void SetPinningBit(unsigned locNum);
     bool GetPinningBit(unsigned locNum);
 
-    CORINFO_METHOD_HANDLE GetPreciseGenericsContext(Object* thisArg, void* genericsCtxtArg);
+    CORINFO_CONTEXT_HANDLE GetPreciseGenericsContext(Object* thisArg, void* genericsCtxtArg);
 
 #ifndef DACCESS_COMPILE
     // Gets the proper cache for a call to a method with the current InterpreterMethodInfo, with the given
@@ -1042,8 +1045,8 @@ public:
 private:
     unsigned CurOffset()
     {
-        assert(m_methInfo->m_ILCode <= m_ILCodePtr &&
-                                       m_ILCodePtr < m_methInfo->m_ILCodeEnd);
+        _ASSERTE(m_methInfo->m_ILCode <= m_ILCodePtr &&
+                                         m_ILCodePtr < m_methInfo->m_ILCodeEnd);
         unsigned res = static_cast<unsigned>(m_ILCodePtr - m_methInfo->m_ILCode);
         return res;
     }
@@ -1149,7 +1152,7 @@ private:
     {
         BYTE* base = GetFrameBase();
         BYTE* addr = base + m_methInfo->m_localDescs[locNum].m_offset;
-        assert(IsInLargeStructLocalArea(addr));
+        _ASSERTE(IsInLargeStructLocalArea(addr));
         return addr;
     }
 
@@ -1226,7 +1229,7 @@ private:
 
     __forceinline INT64 GetSmallStructValue(void* src, size_t sz)
     {
-        assert(sz <= sizeof(INT64));
+        _ASSERTE(sz <= sizeof(INT64));
 
         INT64 ret = 0;
         memcpy(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&ret), sz), src, sz);
@@ -1274,7 +1277,7 @@ private:
 
     __forceinline void OpStackTypeSet(unsigned ind, InterpreterType it)
     {
-        assert(IsStackNormalType(it.ToCorInfoType()));
+        _ASSERTE(IsStackNormalType(it.ToCorInfoType()));
         m_operandStackX[ind].m_type = it;
     }
 #endif
@@ -1286,7 +1289,7 @@ private:
 
     __forceinline void OpStackTypeSet(unsigned ind, InterpreterType it)
     {
-        assert(IsStackNormalType(it.ToCorInfoType()));
+        _ASSERTE(IsStackNormalType(it.ToCorInfoType()));
         m_operandStackTypes[ind] = it;
     }
 #endif
@@ -1358,7 +1361,7 @@ private:
         {
             m_thisExecCache = m_methInfo->GetCacheForCall(m_thisArg, m_genericsCtxtArg, alloc);
         }
-        assert(!alloc || m_thisExecCache != NULL);
+        _ASSERTE(!alloc || m_thisExecCache != NULL);
         return m_thisExecCache;
     }
 
@@ -1773,9 +1776,9 @@ private:
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).
-    CORINFO_METHOD_HANDLE m_preciseGenericsContext;
+    CORINFO_CONTEXT_HANDLE m_preciseGenericsContext;
 
-    CORINFO_METHOD_HANDLE GetPreciseGenericsContext()
+    CORINFO_CONTEXT_HANDLE GetPreciseGenericsContext()
     {
         if (m_preciseGenericsContext == NULL)
         {

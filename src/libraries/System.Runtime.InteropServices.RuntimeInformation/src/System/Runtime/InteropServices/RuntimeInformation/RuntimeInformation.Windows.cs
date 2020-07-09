@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -8,11 +7,11 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string? s_osDescription = null;
+        private static string? s_osDescription;
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static Architecture? s_osArch = null;
-        private static Architecture? s_processArch = null;
+        private static Architecture? s_osArch;
+        private static Architecture? s_processArch;
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {

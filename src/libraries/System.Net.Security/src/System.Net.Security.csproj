@@ -2,12 +2,12 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Security</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -28,6 +28,7 @@
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.Implementation.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
@@ -92,14 +93,14 @@
     </Compile>
     <None Include="System\Net\Security\TlsCipherSuiteNameParser.ttinclude" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' != 'true' ">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -125,6 +126,7 @@
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Windows.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.Windows.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Windows.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Windows.cs" />
@@ -203,7 +205,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs"
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -242,11 +244,12 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Linux.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
@@ -328,6 +331,7 @@
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeFreeSslCredentials.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.OSX.cs" />
     <Compile Include="System\Net\Security\StreamSizes.OSX.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.OSX.cs" />
@@ -353,7 +357,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.Algorithms" />

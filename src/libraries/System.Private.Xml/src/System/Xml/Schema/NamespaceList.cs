@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -19,7 +18,7 @@ namespace System.Xml.Schema
         };
 
         private ListType _type = ListType.Any;
-        private Hashtable? _set = null;
+        private Hashtable? _set;
         private readonly string? _targetNamespace;
 
         public NamespaceList()

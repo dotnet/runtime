@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Composition.Diagnostics;
@@ -44,9 +43,9 @@ namespace System.ComponentModel.Composition.Hosting
         private ConditionalWeakTable<object, List<ComposablePart>>? _gcRoots;
         private readonly HashSet<IDisposable> _partsToDispose = new HashSet<IDisposable>();
         private ComposablePartCatalog _catalog;
-        private volatile bool _isDisposed = false;
-        private volatile bool _isRunning = false;
-        private readonly bool _disableSilentRejection = false;
+        private volatile bool _isDisposed;
+        private volatile bool _isRunning;
+        private readonly bool _disableSilentRejection;
         private ExportProvider? _sourceProvider;
         private ImportEngine? _importEngine;
         private readonly CompositionOptions _compositionOptions;
@@ -1051,7 +1050,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private class CatalogPart
         {
-            private volatile bool _importsSatisfied = false;
+            private volatile bool _importsSatisfied;
             public CatalogPart(ComposablePart part)
             {
                 Part = part;

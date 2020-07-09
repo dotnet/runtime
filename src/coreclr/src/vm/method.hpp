@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // method.hpp
 //
@@ -207,7 +206,7 @@ class MethodDesc
 
 public:
 
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     static const int ALIGNMENT_SHIFT = 3;
 #else
     static const int ALIGNMENT_SHIFT = 2;
@@ -2509,7 +2508,7 @@ class StoredSigMethodDesc : public MethodDesc
 
     RelativePointer<TADDR>           m_pSig;
     DWORD           m_cSig;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
@@ -2568,7 +2567,7 @@ class FCallMethodDesc : public MethodDesc
 #endif
 
     DWORD   m_dwECallID;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     DWORD   m_padding;
 #endif
 
@@ -2608,7 +2607,7 @@ protected:
     RelativePointer<PTR_CUTF8>           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
     DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
 #endif
@@ -2675,7 +2674,7 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % sizeof(SLOT)) == 0);
+        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 

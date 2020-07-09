@@ -40,7 +40,7 @@
   </PropertyGroup>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
-  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
