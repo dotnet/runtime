@@ -159,5 +159,49 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.SetObjectProperty("myString", "qwerty", createIfNotExist);
             obj.SetObjectProperty("myBoolean", true, createIfNotExist);
         }
+
+        private static void MarshalByteBufferToInts(ArrayBuffer buffer)
+        {
+            using (var bytes = new Uint8Array(buffer))
+            {
+                var byteBuffer = bytes.ToArray();
+                _intBuffer = new int[bytes.Length / sizeof(int)];
+                for (int i = 0; i < bytes.Length; i += sizeof(int))
+                    _intBuffer[i / sizeof(int)] = BitConverter.ToInt32(byteBuffer, i);
+            }
+        }
+
+        private static void MarshalInt32Array(Int32Array buffer)
+        {
+            _intBuffer = buffer.ToArray();
+        }
+
+        internal static float[] _floatBuffer;
+        private static void MarshalFloat32Array(Float32Array buffer)
+        {
+            _floatBuffer = buffer.ToArray();
+        }
+        private static void MarshalArrayBufferToFloat32Array(ArrayBuffer buffer)
+        {
+            using (var floats = new Float32Array(buffer))
+                _floatBuffer = floats.ToArray();
+        }
+
+        internal static double[] _doubleBuffer;
+        private static void MarshalFloat64Array(Float64Array buffer)
+        {
+            _doubleBuffer = buffer.ToArray();
+        }
+
+        private static void MarshalArrayBufferToFloat64Array(ArrayBuffer buffer)
+        {
+            using (var doubles = new Float64Array(buffer))
+                _doubleBuffer = doubles.ToArray();
+        }
+        private static void MarshalByteBufferToDoubles(ArrayBuffer buffer)
+        {
+            using (var doubles = new Float64Array(buffer))
+                _doubleBuffer = doubles.ToArray();
+        }
     }
 }

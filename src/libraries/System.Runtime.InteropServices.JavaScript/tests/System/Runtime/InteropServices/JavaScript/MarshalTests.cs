@@ -30,18 +30,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalTypedArray()
-        {
-            Runtime.InvokeJS(@"
-                var buffer = new ArrayBuffer(16);
-                var uint8View = new Uint8Array(buffer);
-                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);
-            ");
-
-            Assert.Equal(16, HelperMarshal._byteBuffer.Length);
-        }
-
-        [Fact]
         public static void MarshalArrayBuffer()
         {
             Runtime.InvokeJS(@"
@@ -61,6 +49,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     int32View[i] = i * 2;
                 }
                 App.call_test_method (""MarshalArrayBufferToInt32Array"", [ buffer ]);
+            ");
+
+            Assert.Equal(4, HelperMarshal._intBuffer.Length);
+            Assert.Equal(0, HelperMarshal._intBuffer[0]);
+            Assert.Equal(2, HelperMarshal._intBuffer[1]);
+            Assert.Equal(4, HelperMarshal._intBuffer[2]);
+            Assert.Equal(6, HelperMarshal._intBuffer[3]);
+        }
+
+        [Fact]
+        public static void MarshalArrayBuffer2Int2()
+        {
+
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(16);
+                var int32View = new Int32Array(buffer);
+                for (var i = 0; i < int32View.length; i++) {
+                    int32View[i] = i * 2;
+                }
+                App.call_test_method (""MarshalByteBufferToInts"", [ buffer ]);		
             ");
 
             Assert.Equal(4, HelperMarshal._intBuffer.Length);
@@ -313,5 +321,124 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("qwerty", HelperMarshal._jsProperties[2]);
             Assert.Equal(true, HelperMarshal._jsProperties[3]);
         }
+
+        [Fact]
+        public static void MarshalTypedArray()
+        {
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(16);
+                var uint8View = new Uint8Array(buffer);
+                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);		
+            ");
+
+            Assert.Equal(16, HelperMarshal._byteBuffer.Length);
+        }
+
+        [Fact]
+        public static void MarshalTypedArray2Int()
+        {
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(16);
+                var int32View = new Int32Array(buffer);
+                for (var i = 0; i < int32View.length; i++) {
+                    int32View[i] = i * 2;
+                }
+                App.call_test_method (""MarshalInt32Array"", [ int32View ]);
+            ");
+
+            Assert.Equal(4, HelperMarshal._intBuffer.Length);
+            Assert.Equal(0, HelperMarshal._intBuffer[0]);
+            Assert.Equal(2, HelperMarshal._intBuffer[1]);
+            Assert.Equal(4, HelperMarshal._intBuffer[2]);
+            Assert.Equal(6, HelperMarshal._intBuffer[3]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArray2Float()
+        {
+            Runtime.InvokeJS(@"
+                var typedArray = new Float32Array([1, 2.1334, 3, 4.2, 5]);
+                App.call_test_method (""MarshalFloat32Array"", [ typedArray ]);		
+            ");
+
+            Assert.Equal(1, HelperMarshal._floatBuffer[0]);
+            Assert.Equal(2.1334f, HelperMarshal._floatBuffer[1]);
+            Assert.Equal(3, HelperMarshal._floatBuffer[2]);
+            Assert.Equal(4.2f, HelperMarshal._floatBuffer[3]);
+            Assert.Equal(5, HelperMarshal._floatBuffer[4]);
+        }
+
+        [Fact]
+        public static void MarshalArrayBuffer2Float2()
+        {
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(16);
+                var float32View = new Float32Array(buffer);
+                for (var i = 0; i < float32View.length; i++) {
+                    float32View[i] = i * 2.5;
+                }
+                App.call_test_method (""MarshalArrayBufferToFloat32Array"", [ buffer ]);		
+            ");
+
+            Assert.Equal(4, HelperMarshal._floatBuffer.Length);
+            Assert.Equal(0, HelperMarshal._floatBuffer[0]);
+            Assert.Equal(2.5f, HelperMarshal._floatBuffer[1]);
+            Assert.Equal(5, HelperMarshal._floatBuffer[2]);
+            Assert.Equal(7.5f, HelperMarshal._floatBuffer[3]);
+        }
+
+        [Fact]
+        public static void MarshalTypedArray2Double()
+        {
+            Runtime.InvokeJS(@"
+			var typedArray = new Float64Array([1, 2.1334, 3, 4.2, 5]);
+			App.call_test_method (""MarshalFloat64Array"", [ typedArray ]);		
+		");
+
+            Assert.Equal(1, HelperMarshal._doubleBuffer[0]);
+            Assert.Equal(2.1334d, HelperMarshal._doubleBuffer[1]);
+            Assert.Equal(3, HelperMarshal._doubleBuffer[2]);
+            Assert.Equal(4.2d, HelperMarshal._doubleBuffer[3]);
+            Assert.Equal(5, HelperMarshal._doubleBuffer[4]);
+        }
+
+        [Fact]
+        public static void MarshalArrayBuffer2Double()
+        {
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(32);
+                var float64View = new Float64Array(buffer);
+                for (var i = 0; i < float64View.length; i++) {
+                    float64View[i] = i * 2.5;
+                }
+                App.call_test_method (""MarshalByteBufferToDoubles"", [ buffer ]);		
+            ");
+
+            Assert.Equal(4, HelperMarshal._doubleBuffer.Length);
+            Assert.Equal(0, HelperMarshal._doubleBuffer[0]);
+            Assert.Equal(2.5d, HelperMarshal._doubleBuffer[1]);
+            Assert.Equal(5, HelperMarshal._doubleBuffer[2]);
+            Assert.Equal(7.5d, HelperMarshal._doubleBuffer[3]);
+        }
+
+        [Fact]
+        public static void MarshalArrayBuffer2Double2()
+        {
+            Runtime.InvokeJS(@"
+                var buffer = new ArrayBuffer(32);
+                var float64View = new Float64Array(buffer);
+                for (var i = 0; i < float64View.length; i++) {
+                    float64View[i] = i * 2.5;
+                }
+                App.call_test_method (""MarshalArrayBufferToFloat64Array"", [ buffer ]);		
+            ");
+
+            Assert.Equal(4, HelperMarshal._doubleBuffer.Length);
+            Assert.Equal(0, HelperMarshal._doubleBuffer[0]);
+            Assert.Equal(2.5f, HelperMarshal._doubleBuffer[1]);
+            Assert.Equal(5, HelperMarshal._doubleBuffer[2]);
+            Assert.Equal(7.5f, HelperMarshal._doubleBuffer[3]);
+        }
+
     }
 }
