@@ -45,6 +45,7 @@
     <Message Text="Running Serialization Tool" Importance="normal" />
     <Exec Command="$(GeneratorCommand) $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll --force --quiet" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs" />
+    <Copy SourceFiles="$(OutputPath)$(SerializerName).cs" DestinationFiles="$(OutputPath)LKG.$(SerializerName).cs" />
     <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll" />
     <ItemGroup>
