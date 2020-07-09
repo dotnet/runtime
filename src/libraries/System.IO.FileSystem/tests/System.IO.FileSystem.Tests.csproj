@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base\BaseGetSetAttributes.cs" />
@@ -46,7 +46,7 @@
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1642,13 +1641,13 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 
     if(state == Thread::AS_InSTA)
     {
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
         _ASSERTE(pState == Thread::AS_InSTA);
     }
     else
     {
         // If an apartment state was not explicitly requested, default to MTA
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
 }

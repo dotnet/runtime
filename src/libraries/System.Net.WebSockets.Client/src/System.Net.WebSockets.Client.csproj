@@ -7,10 +7,8 @@
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition="'$(TargetsBrowser)' != 'true'" />
-    <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />

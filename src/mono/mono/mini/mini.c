@@ -968,7 +968,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 	GSList *tmp, *res;
 	gboolean is_fulltrust;
 
-	if (method->verification_success)
+	if (mono_method_get_verification_success (method))
 		return FALSE;
 
 	if (!mono_verifier_is_enabled_for_method (method))
@@ -1018,7 +1018,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 		}
 		mono_free_verify_list (res);
 	}
-	method->verification_success = 1;
+	mono_method_set_verification_success (method);
 	return FALSE;
 }
 

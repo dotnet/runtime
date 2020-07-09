@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: stubhelpers.cpp
 //
@@ -493,13 +492,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
     FCALL_CONTRACT;
 
     ::SetLastError(0);
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StubHelpers::IsQCall, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(pNMD->IsQCall());
 }
 FCIMPLEND
 

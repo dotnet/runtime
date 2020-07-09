@@ -5,7 +5,7 @@
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
@@ -340,7 +340,7 @@
     </Compile>
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
@@ -379,7 +379,7 @@
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -546,7 +546,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs"
              Link="Common\Interop\Unix\StrongToWeakReference.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
@@ -596,7 +596,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
@@ -686,7 +686,7 @@
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsBrowser)' != 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />

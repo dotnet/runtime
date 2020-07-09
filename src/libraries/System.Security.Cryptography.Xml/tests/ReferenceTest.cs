@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // ReferenceTest.cs - Test Cases for Reference
 //
 // Author:
@@ -8,9 +8,6 @@
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Defines the functions understood by the value-numbering system.
 // ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>,

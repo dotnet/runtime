@@ -248,11 +248,13 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 {
 	ERROR_DECL (error);
 	EventPipeSessionID session_id = 0;
+	char *output_file_utf8 = NULL;
 
 	if (circular_buffer_size_mb == 0 || format > EP_SERIALIZATION_FORMAT_COUNT || providers_len == 0 || providers == NULL)
 		return 0;
 
-	char *output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
+	if (output_file)
+		output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
 
 	EventPipeProviderConfigurationNative *native_config_providers = (EventPipeProviderConfigurationNative *)providers;
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
