@@ -3,6 +3,7 @@
 
 namespace System.Data.Odbc
 {
+    // This type is required for Desktop to Core serialization.
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static class ODBC32
     {
