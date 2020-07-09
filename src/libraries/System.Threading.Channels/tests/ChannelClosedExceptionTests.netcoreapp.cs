@@ -10,7 +10,6 @@ namespace System.Threading.Channels.Tests
     public partial class ChannelClosedExceptionTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37648", TestPlatforms.Browser)]
         public void Serialization_Roundtrip()
         {
             var s = new MemoryStream();
