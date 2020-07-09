@@ -8,7 +8,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemDrawingCommon_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
