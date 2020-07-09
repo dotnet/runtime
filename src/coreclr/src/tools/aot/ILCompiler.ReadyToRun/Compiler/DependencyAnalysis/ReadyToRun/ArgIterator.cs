@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
 // utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 

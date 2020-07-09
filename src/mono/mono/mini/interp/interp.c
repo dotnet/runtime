@@ -328,10 +328,6 @@ int mono_interp_traceopt = 0;
 
 #endif
 
-#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP && !ENABLE_CHECKED_BUILD
-#define USE_COMPUTED_GOTO 1
-#endif
-
 #if USE_COMPUTED_GOTO
 
 #define MINT_IN_DISPATCH(op) goto *in_labels [opcode = (MintOpcode)(op)]
@@ -444,7 +440,7 @@ ves_real_abort (int line, MonoMethod *mh,
 #define ves_abort() \
 	do {\
 		ves_real_abort(__LINE__, frame->imethod->method, ip, frame->stack, sp); \
-		goto abort_label; \
+		THROW_EX (mono_get_exception_execution_engine (NULL), ip); \
 	} while (0);
 
 static InterpMethod*
@@ -1089,7 +1085,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 
 #define NULL_CHECK(o) do { \
 	if (G_UNLIKELY (!(o))) \
-		goto null_label; \
+		THROW_EX (mono_get_exception_null_reference (), ip); \
 	} while (0)
 
 #define EXCEPTION_CHECKPOINT	\
@@ -2920,18 +2916,10 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
-#ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
-	if (mono_llvm_only)
-		return (gpointer)no_llvmonly_interp_method_pointer;
-	return (gpointer)interp_no_native_to_managed;
-#else
 	gpointer addr, entry_func, entry_wrapper = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *info;
 	InterpMethod *imethod = mono_interp_get_imethod (domain, method, error);
-
-	if (mono_llvm_only)
-		return (gpointer)no_llvmonly_interp_method_pointer;
 
 	if (imethod->jit_entry)
 		return imethod->jit_entry;
@@ -2950,9 +2938,49 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		sig = newsig;
 	}
 
-	if (mono_llvm_only)
+	if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
+		entry_func = (gpointer)interp_entry_general;
+	} else if (sig->hasthis) {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_instance [sig->param_count];
+		else
+			entry_func = entry_funcs_instance_ret [sig->param_count];
+	} else {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_static [sig->param_count];
+		else
+			entry_func = entry_funcs_static_ret [sig->param_count];
+	}
+
+#ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
+#ifdef HOST_WASM
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		MonoMethod *orig_method = info->d.native_to_managed.method;
+
+		/*
+		 * These are called from native code. Ask the host app for a trampoline.
+		 */
+		MonoFtnDesc *ftndesc = g_new0 (MonoFtnDesc, 1);
+		ftndesc->addr = entry_func;
+		ftndesc->arg = imethod;
+
+		addr = mono_wasm_get_native_to_interp_trampoline (orig_method, ftndesc);
+		if (addr) {
+			mono_memory_barrier ();
+			imethod->jit_entry = addr;
+			return addr;
+		}
+	}
+#endif
+	return (gpointer)interp_no_native_to_managed;
+#endif
+
+	if (mono_llvm_only) {
 		/* The caller should call interp_create_method_pointer_llvmonly */
-		g_assert_not_reached ();
+		//g_assert_not_reached ();
+		return (gpointer)no_llvmonly_interp_method_pointer;
+	}
 
 	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		return imethod;
@@ -2969,21 +2997,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 
 	entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
 #endif
-	if (entry_wrapper) {
-		if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
-			entry_func = (gpointer)interp_entry_general;
-		} else if (sig->hasthis) {
-			if (sig->ret->type == MONO_TYPE_VOID)
-				entry_func = entry_funcs_instance [sig->param_count];
-			else
-				entry_func = entry_funcs_instance_ret [sig->param_count];
-		} else {
-			if (sig->ret->type == MONO_TYPE_VOID)
-				entry_func = entry_funcs_static [sig->param_count];
-			else
-				entry_func = entry_funcs_static_ret [sig->param_count];
-		}
-	} else {
+	if (!entry_wrapper) {
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 		g_assertion_message ("couldn't compile wrapper \"%s\" for \"%s\"",
 				mono_method_get_name_full (wrapper, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL),
@@ -3040,7 +3054,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	imethod->jit_entry = addr;
 
 	return addr;
-#endif
 }
 
 static void
@@ -3089,7 +3102,7 @@ static long opcode_counts[MINT_LASTOP];
 		if (G_UNLIKELY (!(vtable)->initialized)) { \
 			mono_runtime_class_init_full ((vtable), error); \
 			if (!is_ok (error)) \
-				goto throw_error_label; \
+				THROW_EX (mono_error_convert_to_exception (error), ip); \
 		} \
 	} while (0);
 
@@ -3311,7 +3324,7 @@ g_warning_d (const char *format, int d)
 
 #if !USE_COMPUTED_GOTO
 static void
-g_error_xsx (const char *format, int x1, const char *s, int x2)
+interp_error_xsx (const char *format, int x1, const char *s, int x2)
 {
 	g_error (format, x1, s, x2);
 }
@@ -4684,9 +4697,9 @@ call:
 			gint32 l1 = sp [-1].data.i;
 			gint32 l2 = sp [-2].data.i;
 			if (l1 == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			if (l1 == (-1) && l2 == G_MININT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, /);
 			MINT_IN_BREAK;
 		}
@@ -4694,9 +4707,9 @@ call:
 			gint64 l1 = sp [-1].data.l;
 			gint64 l2 = sp [-2].data.l;
 			if (l1 == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			if (l1 == (-1) && l2 == G_MININT64)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, /);
 			MINT_IN_BREAK;
 			}
@@ -4713,21 +4726,21 @@ call:
 	++ip;
 		MINT_IN_CASE(MINT_DIV_UN_I4)
 			if (sp [-1].data.i == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			BINOP_CAST(i, /, guint32);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_DIV_UN_I8)
 			if (sp [-1].data.l == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			BINOP_CAST(l, /, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_I4) {
 			int i1 = sp [-1].data.i;
 			int i2 = sp [-2].data.i;
 			if (i1 == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			if (i1 == (-1) && i2 == G_MININT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, %);
 			MINT_IN_BREAK;
 		}
@@ -4735,9 +4748,9 @@ call:
 			gint64 l1 = sp [-1].data.l;
 			gint64 l2 = sp [-2].data.l;
 			if (l1 == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			if (l1 == (-1) && l2 == G_MININT64)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, %);
 			MINT_IN_BREAK;
 		}
@@ -4755,12 +4768,12 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_UN_I4)
 			if (sp [-1].data.i == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			BINOP_CAST(i, %, guint32);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_UN_I8)
 			if (sp [-1].data.l == 0)
-				goto div_zero_label;
+				THROW_EX (mono_get_exception_divide_by_zero (), ip);
 			BINOP_CAST(l, %, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_AND_I4)
@@ -5058,7 +5071,7 @@ call:
 			sp -= param_count;
 			sp->data.o = ves_array_create (frame->imethod->domain, newobj_class, param_count, sp, error);
 			if (!is_ok (error))
-				goto throw_error_label;
+				THROW_EX (mono_error_convert_to_exception (error), ip);
 
 			++sp;
 			ip += 3;
@@ -5098,7 +5111,7 @@ call:
 			OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
-				goto throw_error_label;
+				THROW_EX (mono_error_convert_to_exception (error), ip);
 			}
 
 			// Store o next to and before the parameters on the stack so GC will see it,
@@ -5286,7 +5299,7 @@ call_newobj:
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
-						goto invalid_cast_label;
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
 				}
 			}
 			ip += 2;
@@ -5304,7 +5317,7 @@ call_newobj:
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
-						goto invalid_cast_label;
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
 				}
 			}
 			ip += 2;
@@ -5320,7 +5333,7 @@ call_newobj:
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
-						goto invalid_cast_label;
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
 				}
 			}
 			ip += 2;
@@ -5340,7 +5353,7 @@ call_newobj:
 			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 
 			if (!(m_class_get_rank (o->vtable->klass) == 0 && m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (c)))
-				goto invalid_cast_label;
+				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
 			sp [-1].data.p = mono_object_unbox_internal (o);
 			ip += 2;
@@ -5775,30 +5788,30 @@ call_newobj:
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_I4)
 			if (sp [-1].data.i < 0)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = sp [-1].data.i;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_I8)
 			if (sp [-1].data.l < 0)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I8_U8)
 			if ((guint64) sp [-1].data.l > G_MAXINT64)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
 			guint64 res = (guint64)sp [-1].data.f_r4;
 			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5806,7 +5819,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
 			guint64 res = (guint64)sp [-1].data.f;
 			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5814,7 +5827,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8) {
 			gint64 res = (gint64)sp [-1].data.f;
 			if (res < 0 || mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5822,7 +5835,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4) {
 			gint64 res = (gint64)sp [-1].data.f_r4;
 			if (res < 0 || mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5830,7 +5843,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
 			gint64 res = (gint64)sp [-1].data.f_r4;
 			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5838,7 +5851,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
 			gint64 res = (gint64)sp [-1].data.f;
 			if (mono_isnan (sp [-1].data.f) || mono_trunc (sp [-1].data.f) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = res;
 			++ip;
 			MINT_IN_BREAK;
@@ -5862,7 +5875,7 @@ call_newobj:
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items[ip [1]];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
 			if (!is_ok (error)) {
-				goto throw_error_label;
+				THROW_EX (mono_error_convert_to_exception (error), ip);
 			}
 			ip += 2;
 			/*if (profiling_classes) {
@@ -6098,195 +6111,195 @@ call_newobj:
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U4)
 			if (sp [-1].data.i < 0)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_I8)
 			if (sp [-1].data.l < G_MININT32 || sp [-1].data.l > G_MAXINT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U8)
 			if ((guint64)sp [-1].data.l > G_MAXINT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
 			gint32 res = (gint32)sp [-1].data.f_r4;
 			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8)
 			if (sp [-1].data.f < G_MININT32 || sp [-1].data.f > G_MAXINT32 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U4_I4)
 			if (sp [-1].data.i < 0)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U4_I8)
 			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT32)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
 			guint32 res = (guint32)sp [-1].data.f_r4;
 			if (mono_isnan (sp [-1].data.f_r4) || mono_trunc (sp [-1].data.f_r4) != res)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = res;
 			++ip;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT32 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint32) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I4)
 			if (sp [-1].data.i < G_MININT16 || sp [-1].data.i > G_MAXINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_U4)
 			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I8)
 			if (sp [-1].data.l < G_MININT16 || sp [-1].data.l > G_MAXINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_U8)
 			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R4)
 			if (sp [-1].data.f_r4 < G_MININT16 || sp [-1].data.f_r4 > G_MAXINT16 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R8)
 			if (sp [-1].data.f < G_MININT16 || sp [-1].data.f > G_MAXINT16 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_UN_R4)
 			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXINT16 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_UN_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT16 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I4)
 			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXUINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I8)
 			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT16)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint16) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R4)
 			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT16 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint16) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT16 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint16) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I4)
 			if (sp [-1].data.i < G_MININT8 || sp [-1].data.i > G_MAXINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_U4)
 			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I8)
 			if (sp [-1].data.l < G_MININT8 || sp [-1].data.l > G_MAXINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_U8)
 			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R4)
 			if (sp [-1].data.f_r4 < G_MININT8 || sp [-1].data.f_r4 > G_MAXINT8 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R8)
 			if (sp [-1].data.f < G_MININT8 || sp [-1].data.f > G_MAXINT8 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_UN_R4)
 			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXINT8 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_UN_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT8 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I4)
 			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXUINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I8)
 			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT8)
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint8) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R4)
 			if (sp [-1].data.f_r4 < 0 || sp [-1].data.f_r4 > G_MAXUINT8 || isnan (sp [-1].data.f_r4))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint8) sp [-1].data.f_r4;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R8)
 			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT8 || isnan (sp [-1].data.f))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint8) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
@@ -6329,7 +6342,7 @@ call_newobj:
 
 			MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 			if (c != tref->klass)
-				goto invalid_cast_label;
+				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
 			vt_sp -= ALIGN_TO (sizeof (MonoTypedRef), MINT_VT_ALIGNMENT);
 
@@ -6346,62 +6359,62 @@ call_newobj:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_I4)
 			if (CHECK_ADD_OVERFLOW (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, +);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_I8)
 			if (CHECK_ADD_OVERFLOW64 (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, +);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_UN_I4)
 			if (CHECK_ADD_OVERFLOW_UN (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(i, +, guint32);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_UN_I8)
 			if (CHECK_ADD_OVERFLOW64_UN (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(l, +, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_OVF_I4)
 			if (CHECK_MUL_OVERFLOW (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, *);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_OVF_I8)
 			if (CHECK_MUL_OVERFLOW64 (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, *);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_OVF_UN_I4)
 			if (CHECK_MUL_OVERFLOW_UN (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(i, *, guint32);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_OVF_UN_I8)
 			if (CHECK_MUL_OVERFLOW64_UN (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(l, *, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_OVF_I4)
 			if (CHECK_SUB_OVERFLOW (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, -);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_OVF_I8)
 			if (CHECK_SUB_OVERFLOW64 (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, -);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_OVF_UN_I4)
 			if (CHECK_SUB_OVERFLOW_UN (sp [-2].data.i, sp [-1].data.i))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(i, -, guint32);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_OVF_UN_I8)
 			if (CHECK_SUB_OVERFLOW64_UN (sp [-2].data.l, sp [-1].data.l))
-				goto overflow_label;
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(l, -, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_START_ABORT_PROT)
@@ -6964,7 +6977,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			stackval *sp_start = (stackval*)(locals + frame->imethod->total_locals_size + frame->imethod->vt_stack_size);
 			if (sp != sp_start + 1) /*FIX?*/
-				goto abort_label;
+				THROW_EX (mono_get_exception_execution_engine (NULL), ip);
 
 			int len = sp [-1].data.i;
 			// FIXME we need a separate allocator for localloc sections
@@ -7208,25 +7221,13 @@ call_newobj:
 
 #if !USE_COMPUTED_GOTO
 		default:
-			g_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
+			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
 #endif
 		}
 	}
 
 	g_assert_not_reached ();
 
-abort_label:
-	THROW_EX (mono_get_exception_execution_engine (NULL), ip);
-null_label:
-	THROW_EX (mono_get_exception_null_reference (), ip);
-div_zero_label:
-	THROW_EX (mono_get_exception_divide_by_zero (), ip);
-overflow_label:
-	THROW_EX (mono_get_exception_overflow (), ip);
-throw_error_label:
-	THROW_EX (mono_error_convert_to_exception (error), ip);
-invalid_cast_label:
-	THROW_EX (mono_get_exception_invalid_cast (), ip);
 resume:
 	g_assert (context->has_resume_state);
 	g_assert (frame->imethod);

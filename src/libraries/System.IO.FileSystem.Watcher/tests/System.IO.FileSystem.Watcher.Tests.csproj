@@ -32,7 +32,7 @@
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="FileSystemWatcher.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />

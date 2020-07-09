@@ -3,6 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Only CLS-compliant members can be abstract -->
+    <NoWarn>$(NoWarn);CS3011</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

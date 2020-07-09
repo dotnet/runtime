@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectAssetsFile>$(RepoRoot)src\coreclr\tests\src\Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CoreclrTestWrapperLib.cs" />
+  </ItemGroup>
+
+</Project>
