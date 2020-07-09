@@ -147,6 +147,12 @@ control options listed below.
 | Substition  | ILLink.Substitutions.xml  |  --ignore-substitutions |
 | LinkAttributes  | ILLink.LinkAttributes.xml    |  --ignore-link-attributes |
 
+### Turning off warnings
+
+The `--nowarn` option prevents the linker from displaying one or more linker warnings by
+specifying its warning codes. All warning codes must be prepended with `IL` and multiple
+warnings should be separated with a comma or semicolon.
+
 ### Generating warning suppressions
 
 For each of the linked assemblies that triggered any warnings during the linking, the

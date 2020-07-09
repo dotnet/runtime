@@ -438,6 +438,14 @@ namespace Mono.Linker
 						context.OutputWarningSuppressions = true;
 						continue;
 
+					case "--nowarn":
+						string noWarnArgument = null;
+						if (!GetStringParam (token, l => noWarnArgument = l))
+							return -1;
+
+						context.NoWarn.UnionWith (ParseWarnings (noWarnArgument));
+						continue;
+
 					case "--version":
 						Version ();
 						return 1;
@@ -714,6 +722,32 @@ namespace Mono.Linker
 		}
 
 		partial void PreProcessPipeline (Pipeline pipeline);
+
+		private static HashSet<uint> ParseWarnings (string value)
+		{
+			string Unquote (string arg)
+			{
+				if (arg.Length > 1 && arg[0] == '"' && arg[arg.Length - 1] == '"')
+					return arg.Substring (1, arg.Length - 2);
+
+				return arg;
+			}
+
+			value = Unquote (value);
+			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			HashSet<uint> noWarnCodes = new HashSet<uint> ();
+			foreach (string id in values) {
+				if (!id.StartsWith ("IL", StringComparison.Ordinal))
+					continue;
+
+				var warningCode = id.Substring (2);
+				if (ushort.TryParse (warningCode, out ushort code)
+					&& code > 2000 && code <= 6000)
+					noWarnCodes.Add (code);
+			}
+
+			return noWarnCodes;
+		}
 
 		private static Assembly GetCustomAssembly (string arg)
 		{
@@ -998,6 +1032,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
 			Console.WriteLine ("  --about             About the {0}", _linker);
 			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");
+			Console.WriteLine ("  --nowarn WARN-LIST  Disable specific warning messages");
 			Console.WriteLine ("  --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("  -help               Lists all linker options");
 			Console.WriteLine ("  @FILE               Read response file for more options");

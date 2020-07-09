@@ -174,6 +174,8 @@ namespace Mono.Linker
 
 		public WarningSuppressionWriter WarningSuppressionWriter { get; }
 
+		public HashSet<uint> NoWarn { get; set; }
+
 		public bool OutputWarningSuppressions { get; set; }
 
 		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
@@ -229,6 +231,7 @@ namespace Mono.Linker
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
 			WarningSuppressionWriter = new WarningSuppressionWriter (this);
+			NoWarn = new HashSet<uint> ();
 
 			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
@@ -486,6 +489,12 @@ namespace Mono.Linker
 		{
 			if (!LogMessages || message == MessageContainer.Empty)
 				return;
+
+			if (message.Category == MessageCategory.Warning &&
+				NoWarn.Contains ((uint) message.Code)) {
+				// This warning was turned off by --nowarn.
+				return;
+			}
 
 			if (OutputWarningSuppressions && message.Category == MessageCategory.Warning && message.Origin?.MemberDefinition != null)
 				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.MemberDefinition);

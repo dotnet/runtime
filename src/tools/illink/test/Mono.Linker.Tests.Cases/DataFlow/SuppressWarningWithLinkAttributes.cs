@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("SuppressWarningWithLinkAttributes.xml")]
-	[LogDoesNotContain ("Unrecognized reflection pattern warning IL2006: Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes::ReadFromInstanceField()")]
+	[LogDoesNotContain ("Trim analysis warning IL2006: Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes::ReadFromInstanceField()")]
 	class SuppressWarningWithLinkAttributes
 	{
 		public static void Main ()
