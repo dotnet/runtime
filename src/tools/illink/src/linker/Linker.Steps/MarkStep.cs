@@ -1249,6 +1249,17 @@ namespace Mono.Linker.Steps
 			MarkMarshalSpec (field, new DependencyInfo (DependencyKind.FieldMarshalSpec, field), field);
 			DoAdditionalFieldProcessing (field);
 
+			// If we accessed a field on a type and the type has explicit/sequential layout, make sure to keep
+			// all the other fields.
+			//
+			// We normally do this when the type is seen as instantiated, but one can get into a situation
+			// where the type is not seen as instantiated and the offsets still matter (usually when type safety
+			// is violated with Unsafe.As).
+			//
+			// This won't do too much work because classes are rarely tagged for explicit/sequential layout.
+			if (!field.DeclaringType.IsValueType)
+				MarkImplicitlyUsedFields (field.DeclaringType);
+
 			var parent = field.DeclaringType;
 			if (!Annotations.HasPreservedStaticCtor (parent)) {
 				var cctorReason = reason.Kind switch

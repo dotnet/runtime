@@ -29,10 +29,24 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 		public int never_used;
 	}
 
+	[Kept]
+	[StructLayout (LayoutKind.Sequential)]
+	class UnallocatedButWithSingleFieldUsedSequentialClassData
+	{
+		[Kept]
+		public int never_used;
+
+		[Kept]
+		public int used;
+	}
+
 	public class SequentialClass
 	{
 		[Kept]
 		static UnallocatedSequentialClassData _field;
+
+		[Kept]
+		static UnallocatedButWithSingleFieldUsedSequentialClassData _otherField;
 
 		public static void Main ()
 		{
@@ -44,6 +58,10 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 			_field = null;
 
 			typeof (UnallocatedButReferencedWithReflectionSequentialClassData).ToString ();
+
+			if (string.Empty.Length > 0) {
+				_otherField.used = 123;
+			}
 		}
 	}
 }
