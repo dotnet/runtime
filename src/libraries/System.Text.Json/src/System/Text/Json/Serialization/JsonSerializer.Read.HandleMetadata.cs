@@ -251,10 +251,16 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                string key = reader.GetString()!;
+                string referenceId = reader.GetString()!;
+                object value = state.ReferenceResolver.ResolveReference(referenceId);
+                Type typeOfValue = value.GetType();
 
-                // todo: https://github.com/dotnet/runtime/issues/32354
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(key);
+                if (!converter.TypeToConvert.IsAssignableFrom(value.GetType()))
+                {
+                    ThrowHelper.ThrowJsonException_MetadataReferenceOfTypeCannotBeAssignedToType(referenceId, typeOfValue, converter.TypeToConvert);
+                }
+
+                state.Current.ReturnValue = value;
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadIdValue)
