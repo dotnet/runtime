@@ -1350,20 +1350,15 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		/* emit call to managed conversion method */
 		return FALSE;
 	} else if (!strcmp (".cctor", tm)) {
-		/* allow list */
 		return FALSE;
 	} else if (!strcmp ("Parse", tm)) {
-		/* allow list */
 		return FALSE;
 	} else if (!strcmp ("ToString", tm)) {
-		/* allow list */
 		return FALSE;
 	} else if (!strcmp ("GetHashCode", tm)) {
-		/* allow list */
 		return FALSE;
 	} else if (!strcmp ("IsNaN", tm) || !strcmp ("IsInfinity", tm) || !strcmp ("IsNegativeInfinity", tm) || !strcmp ("IsPositiveInfinity", tm)) {
 		g_assert (type_index == 2); // nfloat only
-		/* allow list */
 		return FALSE;
 	}
 
