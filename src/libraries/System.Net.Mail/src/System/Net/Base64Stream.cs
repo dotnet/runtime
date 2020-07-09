@@ -249,12 +249,17 @@ namespace System.Net
                 }
                 else
                 {
-                    if (!char.IsSurrogatePair(value[i], value[i + 1]))
+                    if (i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]))
                     {
-                        throw new ArgumentException(nameof(value));
+                        bytes = encoding.GetBytes(value, i, 2);
+                        ++i; // transformed both chars, so shifting the index to account for that
                     }
-                    bytes = encoding.GetBytes(value, i, 2);
-                    ++i;
+                    else
+                    {
+                        // TODO: illegal state. throw exception?
+                        // for now just encoding char as-is
+                        bytes = encoding.GetBytes(value, i, 1);
+                    }
                 }
                 AppendEncodedCodepoint(bytes, true);
                 bytesCount += bytes.Length;
