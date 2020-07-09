@@ -166,6 +166,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
+        /* Enable when C# 9.0 'records' feature works in CI
         private record MyRecord(int Prop);
 
         [Fact]
@@ -178,6 +179,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyRecord>(@"{""Prop"":5}");
             Assert.Equal(5, obj.Prop);
         }
+        */
 
         [Fact]
         public void AnonymousObject_NamingPolicy()
@@ -203,6 +205,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
+        /* Enable when C# 9.0 'records' feature works in CI
         [Fact]
         public void Record_NamingPolicy()
         {
@@ -223,6 +226,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyRecord>(Json, options);
             Assert.Equal(5, obj.Prop);
         }
+        */
 
         [Fact]
         public async Task DeserializePathForObjectFails()
