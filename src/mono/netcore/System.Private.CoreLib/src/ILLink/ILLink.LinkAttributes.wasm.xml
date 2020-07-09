@@ -12,6 +12,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
