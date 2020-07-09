@@ -44,6 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -371,6 +372,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);

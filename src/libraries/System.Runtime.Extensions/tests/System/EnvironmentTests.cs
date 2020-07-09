@@ -218,6 +218,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE
         public void WorkingSet_Valid()
         {
             Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
