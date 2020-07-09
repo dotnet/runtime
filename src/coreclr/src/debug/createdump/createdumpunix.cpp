@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
 
@@ -19,6 +18,8 @@ CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
     {
         goto exit;
     }
+    printf("Process %d %s\n", crashInfo->Pid(), crashInfo->Name().c_str());
+
     // Suspend all the threads in the target process and build the list of threads
     if (!crashInfo->EnumerateAndSuspendThreads())
     {

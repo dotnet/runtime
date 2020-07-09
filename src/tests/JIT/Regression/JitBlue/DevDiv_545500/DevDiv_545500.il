@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The bug that this test captures was a case where a call to a divide helper
 // was being removed as dead code, but the GT_FIELD_LIST node for the int64

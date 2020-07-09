@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
@@ -49,7 +48,7 @@ namespace System.Net.Http
             {
                 CheckDisposed();
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     if (value == null)
                     {
@@ -131,14 +130,14 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public HttpRequestMessage(HttpMethod method, string? requestUri)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, method, requestUri);
 
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
@@ -152,7 +151,7 @@ namespace System.Net.Http
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public override string ToString()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -134,7 +133,7 @@ namespace System.Net.Security
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
                 Interop.SspiCli.SCHANNEL_CRED.CurrentVersion,
                 certificate,
@@ -214,7 +213,7 @@ namespace System.Net.Security
 
                 if (errorCode != 0)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Info(securityContext, $"Encrypt ERROR {errorCode:X}");
                     resultSize = 0;
                     return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);

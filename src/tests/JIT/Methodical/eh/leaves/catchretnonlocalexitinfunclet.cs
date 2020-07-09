@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // A nonlocal exit and a catchret in a funclet where the destination label is also in the same funclet 
 // cause confusion when we're building FG for the funclet (114611)

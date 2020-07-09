@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Ensure that the jit doesn't rely on final methods for devirtualization
 // since a final method can be overridden by an explicit .override

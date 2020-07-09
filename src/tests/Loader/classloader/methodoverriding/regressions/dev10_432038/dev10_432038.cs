@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //Introducing a new virtual method (A) in a derived class (Foo2) via newslot 
 //when a virtual method of the same name exists in the base class (Foo1), 

@@ -1,12 +1,10 @@
-// Licensed to the.NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The test came from https://github.com/dotnet/corefx/issues/20085.
 // It tests that we do access overlapping fields with the correct types. 
 // Espessialy if the stuct was casted by 'Unsafe.As` from a promoted type
 // and the promoted type had another field on the same offset but with a different type/size.
-
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

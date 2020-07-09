@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test case illustrates a bug where the JIT_ByRefWriteBarrier was not
 // included in IsIPInMarkedJitHelper on non-32-bit-x86 platforms.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Allocate nested objects of increasing size ranging from 200 KB to ~ 25 MB
 // If memory is low, after every loop, the large objects should be collected

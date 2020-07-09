@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Passing a very large struct by value on the stack, on arm32 and x86,
 // can cause it to be copied from a temp to the outgoing space without

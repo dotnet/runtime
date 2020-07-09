@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test is a reduced repro case for DevDiv VSO bug 278372.
 // The failure mode is that the RyuJIT/x86 backend was not correctly

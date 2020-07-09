@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Security;
@@ -161,9 +160,27 @@ namespace System
             }
         }
 
-        private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(GetIsInvariantGlobalization);
+
+        private static bool GetIsInvariantGlobalization()
+        {
+            Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
+            if (globalizationMode != null)
+            {
+                MethodInfo methodInfo = globalizationMode.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
+                if (methodInfo != null)
+                {
+                    return (bool)methodInfo.Invoke(null, null);
+                }
+            }
+
+            return false;
+        }
+
+        private static readonly Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
 
+        public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => !IsIcuGlobalization;
 

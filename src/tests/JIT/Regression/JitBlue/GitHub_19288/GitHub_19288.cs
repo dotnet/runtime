@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // This test exhibits a case where the JIT was passing a 3-byte struct
 // by loading 4-bytes, which is not always safe.
