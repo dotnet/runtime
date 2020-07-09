@@ -22,12 +22,11 @@ namespace System.Net.Mail.Tests
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
         }
 
-
         [Fact]
         public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets()
         {
             MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithDoubleQuotes);
-            Assert.Equal(DisplayNameWithDoubleQuotes,_mailAddress.DisplayName );
+            Assert.Equal(DisplayNameWithDoubleQuotes, _mailAddress.DisplayName);
 
             Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithDoubleQuotes.Replace("\"", "\\\""), Address), _mailAddress.ToString());
         }
