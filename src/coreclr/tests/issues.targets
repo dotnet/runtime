@@ -1625,6 +1625,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/tracelogging/tracelogging/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/gcdump/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
