@@ -9,6 +9,7 @@ namespace System.Tests
     public class Environment_MachineName
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws EntryPointNotFoundException : SystemNative_GetNodeName
         public void TestMachineNameProperty()
         {
             string computerName = GetComputerName();
