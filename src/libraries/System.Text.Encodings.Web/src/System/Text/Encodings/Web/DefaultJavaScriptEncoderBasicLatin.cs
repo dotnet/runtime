@@ -147,8 +147,8 @@ namespace System.Text.Encodings.Web
                     {
                         Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-                        Vector64<sbyte> tmp = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
-                        sourceValue = AdvSimd.ExtractNarrowingSaturateUpper(tmp, AdvSimd.LoadVector128(ptr + Vector128<short>.Count));
+                        Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
+                        sourceValue = AdvSimd.ExtractNarrowingSaturateUpper(lower, AdvSimd.LoadVector128(ptr + Vector128<short>.Count));
                     }
 
                     // Check if any of the 16 characters need to be escaped.

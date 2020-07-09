@@ -85,7 +85,7 @@ namespace System.Text.Encodings.Web
 
         // Encodes an operation equivalent to Sse2.MoveMask
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort MoveMask(Vector128<byte> value)
+        public static int MoveMask(Vector128<byte> value)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
@@ -98,7 +98,7 @@ namespace System.Text.Encodings.Web
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsUInt16().ToScalar();
+            return extractedBits.AsInt32().ToScalar();
         }
 
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;
