@@ -7,9 +7,6 @@
     <type fullname="System.ObsoleteAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.ParamArrayAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
 
     <!-- System.Diagnostics.CodeAnalysis -->
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
@@ -57,9 +54,6 @@
     <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
 
     <!-- System.Runtime.CompilerServices -->
     <type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderAttribute">
@@ -84,9 +78,6 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.CompilerServices.CompilerGeneratedAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.DynamicAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.CompilerServices.EnumeratorCancellationAttribute">
