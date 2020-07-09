@@ -83,7 +83,14 @@ namespace Microsoft.Extensions.Logging
         {
             return color switch
             {
-                ConsoleColor.Red => "\x1B[41m",
+                ConsoleColor.Black => "\x1B[40m",
+                ConsoleColor.DarkRed => "\x1B[41m",
+                ConsoleColor.DarkGreen => "\x1B[42m",
+                ConsoleColor.DarkYellow => "\x1B[43m",
+                ConsoleColor.DarkBlue => "\x1B[44m",
+                ConsoleColor.DarkMagenta => "\x1B[45m",
+                ConsoleColor.DarkCyan => "\x1B[46m",
+                ConsoleColor.Gray => "\x1B[47m",
                 _ => "\x1B[49m"
             };
         }
