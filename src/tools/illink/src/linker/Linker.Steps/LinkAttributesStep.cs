@@ -39,6 +39,7 @@ namespace Mono.Linker.Steps
 				if (internalAttribute == "RemoveAttributeInstances" && provider != null) {
 					IEnumerable<Attribute> removeAttributeInstance = new List<Attribute> { new RemoveAttributeInstancesAttribute () };
 					Context.CustomAttributes.AddInternalAttributes (provider, removeAttributeInstance);
+					continue;
 				}
 
 				string attributeFullName = GetFullName (iterator.Current);
