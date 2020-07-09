@@ -26,12 +26,12 @@ static bool IsNullOrWhiteSpace(LPCWSTR value)
 
 static inline uint32_t GetStringLength(const char *&value)
 {
-        return static_cast<uint32_t>(strlen(value) + 1);
+    return static_cast<uint32_t>(strlen(value) + 1);
 }
 
 static inline uint32_t GetStringLength(const WCHAR *&value)
 {
-        return static_cast<uint32_t>(wcslen(value) + 1);
+    return static_cast<uint32_t>(wcslen(value) + 1);
 }
 
 template <typename T>
@@ -42,8 +42,10 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const T
         "Can only be instantiated with char and WCHAR types.");
 
     uint32_t stringLen = GetStringLength(value);
-    ASSERT(bufferLen >= (stringLen * sizeof(T)) + sizeof(uint32_t));
-    if (bufferLen < stringLen + sizeof(uint32_t))
+    S_UINT16 totalStringSizeInBytes(stringLen * sizeof(T) + sizeof(uint32_t));
+    ASSERT(!totalStringSizeInBytes.IsOverflow());
+    ASSERT(bufferLen >= totalStringSizeInBytes.Value());
+    if (bufferLen < totalStringSizeInBytes.Value() || totalStringSizeInBytes.IsOverflow())
         return false;
 
     memcpy(bufferCursor, &stringLen, sizeof(stringLen));
@@ -52,7 +54,7 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const T
     memcpy(bufferCursor, value, stringLen * sizeof(T));
     bufferCursor += stringLen * sizeof(T);
 
-    bufferLen -= (stringLen * sizeof(T) + sizeof(uint32_t));
+    bufferLen -= totalStringSizeInBytes.Value();
     return true;
 }
 
@@ -81,18 +83,18 @@ uint16_t ProcessInfoPayload::GetSize()
 
     size += sizeof(uint32_t);
     size += CommandLine != nullptr ?
-        GetStringLength(CommandLine) * sizeof(WCHAR) :
-        0;
+        S_UINT16(GetStringLength(CommandLine) * sizeof(WCHAR)) :
+        S_UINT16(0);
 
     size += sizeof(uint32_t);
     size += OS != nullptr ?
-        GetStringLength(OS) * sizeof(WCHAR) :
-        0;
+        S_UINT16(GetStringLength(OS) * sizeof(WCHAR)) :
+        S_UINT16(0);
 
     size += sizeof(uint32_t);
     size += Arch != nullptr ?
-        GetStringLength(Arch) * sizeof(WCHAR) :
-        0;
+        S_UINT16(GetStringLength(Arch) * sizeof(WCHAR)) :
+        S_UINT16(0);
 
     ASSERT(!size.IsOverflow());
     return size.Value();
@@ -131,6 +133,9 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     // LPCWSTR Arch;
     if (fSuccess)
         fSuccess &= TryWriteString(lpBuffer, cbSize, Arch);
+
+    // Assert we've used the whole buffer we were given
+    ASSERT(cbSize == 0);
 
     return fSuccess;
 }
