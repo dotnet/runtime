@@ -416,6 +416,18 @@ function(disable_pax_mprotect targetName)
   endif()
 endfunction()
 
+if (CMAKE_VERSION VERSION_LESS "3.12")
+  # Polyfill add_compile_definitions when it is unavailable
+  function(add_compile_definitions)
+    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+    message("Current compile definitions: ${DIR_COMPILE_DEFINITIONS}")
+    message("Adding compile definitions: ${ARGV}")
+    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
+    message("New compile definitions: ${DIR_COMPILE_DEFINITIONS}")
+    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
+  endfunction()
+endif()
+
 function(_add_executable)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
