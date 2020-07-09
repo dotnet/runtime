@@ -51,9 +51,9 @@
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
-  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
+  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
-  --> 
+  -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceTargetFramework Include="$(BuildSettings)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
@@ -111,11 +111,11 @@
   <ItemGroup Condition="'$(GenerateResourcesSubstitutions)' == 'true'">
     <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
   </ItemGroup>
-  
+
   <!-- If a library uses string resources, the following target generates a substitution xml that will be embedded on the
   library so that if a consumer wants to run the linker they can specify a feature switch to strip out all resources
   from the assembly. -->
-  <Target Name="GenerateResourcesSubstitutionFile"  
+  <Target Name="GenerateResourcesSubstitutionFile"
           Condition="'$(GenerateResourcesSubstitutions)' == 'true'"
           Inputs="$(MSBuildProjectFullPath)"
           Outputs="$(ILLinkResourcesSubstitutionIntermediatePath)">
@@ -152,7 +152,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_SetILLinkTrimAssembly" 
+  <Target Name="_SetILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == ''"
           DependsOnTargets="GetBinPlaceTargetFramework">
     <PropertyGroup>
@@ -186,6 +186,8 @@
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
       <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
+      <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs Condition="'$(ILLinkLinkAttributes)' != ''">$(ILLinkArgs) --strip-link-attributes false</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
@@ -235,7 +237,7 @@
       <_DotNetHostFileName>dotnet</_DotNetHostFileName>
       <_DotNetHostFileName Condition=" '$(OS)' == 'Windows_NT' ">dotnet.exe</_DotNetHostFileName>
     </PropertyGroup>
-    
+
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
@@ -272,10 +274,10 @@
     <Exec Command="$(AsmDiffCmd) $(AsmDiffListArgs)" />
     <Message Text="Assembly trimming report: $(AsmDiffList)" />
   </Target>
-  
-  <!-- Similar to _CheckForCompileOutputs and runs in the same places, 
+
+  <!-- Similar to _CheckForCompileOutputs and runs in the same places,
        always set these even if compile didn't run. -->
-  <Target Name="_CheckForILLinkTrimAssemblyOutputs" 
+  <Target Name="_CheckForILLinkTrimAssemblyOutputs"
           BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>
