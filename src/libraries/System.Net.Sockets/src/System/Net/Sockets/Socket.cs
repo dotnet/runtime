@@ -84,7 +84,7 @@ namespace System.Net.Sockets
         // Initializes a new instance of the Sockets.Socket class.
         public Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addressFamily);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, addressFamily);
 
             InitializeSockets();
 
@@ -103,7 +103,7 @@ namespace System.Net.Sockets
             _socketType = socketType;
             _protocolType = protocolType;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         /// <summary>Initializes a new instance of the <see cref="Socket"/> class for the specified socket handle.</summary>
@@ -293,7 +293,7 @@ namespace System.Net.Sockets
                 // This may throw ObjectDisposedException.
                 SocketError errorCode = SocketPal.GetAvailable(_handle, out argp);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetAvailable returns errorCode:{errorCode}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetAvailable returns errorCode:{errorCode}");
 
                 // Throw an appropriate SocketException if the native call fails.
                 if (errorCode != SocketError.Success)
@@ -421,7 +421,7 @@ namespace System.Net.Sockets
             {
                 ThrowIfDisposed();
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"value:{value} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"value:{value} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
                 bool current;
 
@@ -463,7 +463,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_isConnected:{_isConnected}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_isConnected:{_isConnected}");
 
                 if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
                 {
@@ -791,7 +791,7 @@ namespace System.Net.Sockets
         // Associates a socket with an end point.
         public void Bind(EndPoint localEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, localEP);
 
             ThrowIfDisposed();
 
@@ -801,12 +801,12 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(localEP));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"localEP:{localEP}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"localEP:{localEP}");
 
             Internals.SocketAddress socketAddress = Serialize(ref localEP);
             DoBind(localEP, socketAddress);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private void DoBind(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
@@ -866,9 +866,9 @@ namespace System.Net.Sockets
 
             ValidateBlockingMode();
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"DST:{remoteEP}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DST:{remoteEP}");
             }
 
             DnsEndPoint? dnsEP = remoteEP as DnsEndPoint;
@@ -900,7 +900,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress address, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, address);
 
             ThrowIfDisposed();
 
@@ -928,12 +928,12 @@ namespace System.Net.Sockets
 
             IPEndPoint remoteEP = new IPEndPoint(address, port);
             Connect(remoteEP);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Connect(string host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host);
 
             ThrowIfDisposed();
 
@@ -964,12 +964,12 @@ namespace System.Net.Sockets
                 Connect(addresses, port);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Connect(IPAddress[] addresses, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, addresses);
 
             ThrowIfDisposed();
 
@@ -1023,12 +1023,12 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Close()
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, $"timeout = {_closeTimeout}");
@@ -1036,12 +1036,12 @@ namespace System.Net.Sockets
 
             Dispose();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public void Close(int timeout)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, timeout);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, timeout);
             if (timeout < -1)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout));
@@ -1049,11 +1049,11 @@ namespace System.Net.Sockets
 
             _closeTimeout = timeout;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"timeout = {_closeTimeout}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"timeout = {_closeTimeout}");
 
             Dispose();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, timeout);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, timeout);
         }
 
         /// <summary>
@@ -1070,7 +1070,7 @@ namespace System.Net.Sockets
         /// <param name="backlog">The maximum length of the pending connections queue.</param>
         public void Listen(int backlog)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, backlog);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, backlog);
             ThrowIfDisposed();
 
             // This may throw ObjectDisposedException.
@@ -1082,13 +1082,13 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
             _isListening = true;
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Creates a new Sockets.Socket instance to handle an incoming connection.
         public Socket Accept()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             // Validate input parameters.
 
@@ -1110,7 +1110,7 @@ namespace System.Net.Sockets
             }
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint}");
 
             Internals.SocketAddress socketAddress =
                 _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
@@ -1136,7 +1136,7 @@ namespace System.Net.Sockets
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
             Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
                 NetEventSource.Exit(this, socket);
@@ -1178,7 +1178,7 @@ namespace System.Net.Sockets
 
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             if (buffers == null)
@@ -1192,7 +1192,7 @@ namespace System.Net.Sockets
             }
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
@@ -1203,7 +1203,7 @@ namespace System.Net.Sockets
 
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
@@ -1211,7 +1211,7 @@ namespace System.Net.Sockets
                 return 0;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -1229,7 +1229,7 @@ namespace System.Net.Sockets
 
         public int Send(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -1249,7 +1249,7 @@ namespace System.Net.Sockets
 
             errorCode = SocketError.Success;
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
@@ -1261,7 +1261,7 @@ namespace System.Net.Sockets
 
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
@@ -1269,7 +1269,7 @@ namespace System.Net.Sockets
                 return 0;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"Send returns:{bytesTransferred}");
                 NetEventSource.DumpBuffer(this, buffer, offset, bytesTransferred);
@@ -1291,7 +1291,7 @@ namespace System.Net.Sockets
 
         public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ValidateBlockingMode();
 
@@ -1303,11 +1303,11 @@ namespace System.Net.Sockets
                 UpdateSendSocketErrorForDisposed(ref errorCode);
 
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, new SocketException((int)errorCode));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 bytesTransferred = 0;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -1318,7 +1318,7 @@ namespace System.Net.Sockets
 
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -1329,17 +1329,17 @@ namespace System.Net.Sockets
 
             ValidateBlockingMode();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
             SendFileInternal(fileName, preBuffer, postBuffer, flags);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Sends data to a specific end point, starting at the indicated location in the buffer.
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -1362,7 +1362,7 @@ namespace System.Net.Sockets
             }
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
 
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
@@ -1383,7 +1383,7 @@ namespace System.Net.Sockets
                 _rightEndPoint = remoteEP;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, size);
                 NetEventSource.Exit(this, bytesTransferred);
@@ -1437,7 +1437,7 @@ namespace System.Net.Sockets
 
         public int Receive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -1455,7 +1455,7 @@ namespace System.Net.Sockets
             }
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
@@ -1466,7 +1466,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
@@ -1474,7 +1474,7 @@ namespace System.Net.Sockets
                 return 0;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, bytesTransferred);
                 NetEventSource.Exit(this, bytesTransferred);
@@ -1495,7 +1495,7 @@ namespace System.Net.Sockets
 
         public int Receive(Span<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ValidateBlockingMode();
 
@@ -1507,11 +1507,11 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, new SocketException((int)errorCode));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 bytesTransferred = 0;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -1533,7 +1533,7 @@ namespace System.Net.Sockets
 
         public int Receive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -1549,7 +1549,7 @@ namespace System.Net.Sockets
 
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
@@ -1559,7 +1559,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
@@ -1567,7 +1567,7 @@ namespace System.Net.Sockets
                 return 0;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
 
             return bytesTransferred;
         }
@@ -1576,7 +1576,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveMessageFrom(byte[] buffer, int offset, int size, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
             if (buffer == null)
             {
@@ -1645,7 +1645,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Error(this, errorCode);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
             return bytesTransferred;
         }
 
@@ -1653,7 +1653,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -1686,7 +1686,7 @@ namespace System.Net.Sockets
             SocketPal.CheckDualModeReceiveSupport(this);
 
             ValidateBlockingMode();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
             // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
@@ -1706,7 +1706,7 @@ namespace System.Net.Sockets
             {
                 socketException = new SocketException((int)errorCode);
                 UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
 
                 if (socketException.SocketErrorCode != SocketError.MessageSize)
                 {
@@ -1735,7 +1735,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, size);
                 NetEventSource.Exit(this, bytesTransferred);
@@ -1771,7 +1771,7 @@ namespace System.Net.Sockets
             // platforms, however.
             SocketError errorCode = SocketPal.WindowsIoctl(_handle, ioControlCode, optionInValue, optionOutValue, out realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WindowsIoctl returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"WindowsIoctl returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1791,7 +1791,7 @@ namespace System.Net.Sockets
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             ThrowIfDisposed();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             SetSocketOption(optionLevel, optionName, optionValue, false);
         }
@@ -1800,12 +1800,12 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1831,7 +1831,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(optionValue));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             if (optionLevel == SocketOptionLevel.Socket && optionName == SocketOptionName.Linger)
             {
@@ -1888,7 +1888,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode = SocketPal.SetRawSockOpt(_handle, optionLevel, optionName, optionValue);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt optionLevel:{optionLevel} optionName:{optionName} returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetSockOpt optionLevel:{optionLevel} optionName:{optionName} returns errorCode:{errorCode}");
 
             if (errorCode != SocketError.Success)
             {
@@ -1923,7 +1923,7 @@ namespace System.Net.Sockets
                 optionName,
                 out optionValue);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1948,7 +1948,7 @@ namespace System.Net.Sockets
                 optionValue!,
                 ref optionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1972,7 +1972,7 @@ namespace System.Net.Sockets
                 optionValue,
                 ref realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -2009,7 +2009,7 @@ namespace System.Net.Sockets
             int realOptionLength = optionValue.Length;
             SocketError errorCode = SocketPal.GetRawSockOpt(_handle, optionLevel, optionName, optionValue, ref realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetRawSockOpt optionLevel:{optionLevel} optionName:{optionName} returned errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetRawSockOpt optionLevel:{optionLevel} optionName:{optionName} returned errorCode:{errorCode}");
 
             if (errorCode != SocketError.Success)
             {
@@ -2047,7 +2047,7 @@ namespace System.Net.Sockets
 
             bool status;
             SocketError errorCode = SocketPal.Poll(_handle, microSeconds, mode, out status);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Poll returns socketCount:{(int)errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Poll returns socketCount:{(int)errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -2105,7 +2105,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             // Validate input parameters.
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, remoteEP);
             ThrowIfDisposed();
 
             if (remoteEP == null)
@@ -2176,7 +2176,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, host);
             ThrowIfDisposed();
 
             if (host == null)
@@ -2206,7 +2206,7 @@ namespace System.Net.Sockets
             if (IPAddress.TryParse(host, out parsedAddress))
             {
                 IAsyncResult r = BeginConnect(parsedAddress, port, requestCallback, state);
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, r);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, r);
                 return r;
             }
 
@@ -2228,13 +2228,13 @@ namespace System.Net.Sockets
             // Done posting.
             result.FinishPostingAsyncOp(ref Caches.ConnectClosureCache);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, result);
             return result;
         }
 
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, address);
             ThrowIfDisposed();
 
             if (address == null)
@@ -2259,13 +2259,13 @@ namespace System.Net.Sockets
             }
 
             IAsyncResult result = BeginConnect(new IPEndPoint(address, port), requestCallback, state);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, result);
             return result;
         }
 
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, addresses);
             ThrowIfDisposed();
 
             if (addresses == null)
@@ -2310,13 +2310,13 @@ namespace System.Net.Sockets
             // Finished posting async op.  Possibly will call callback.
             result.FinishPostingAsyncOp(ref Caches.ConnectClosureCache);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, result);
             return result;
         }
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Start context-flowing op.  No need to lock - we don't use the context till the callback.
@@ -2333,7 +2333,7 @@ namespace System.Net.Sockets
 
         private void DoBeginDisconnect(bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             SocketError errorCode = SocketError.Success;
 
             errorCode = SocketPal.DisconnectAsync(this, _handle, reuseSocket, asyncResult);
@@ -2344,7 +2344,7 @@ namespace System.Net.Sockets
                 _remoteEndPoint = null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
 
             // If the call failed, update our status and throw
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -2352,12 +2352,12 @@ namespace System.Net.Sockets
                 throw new SocketException((int)errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
         }
 
         public void Disconnect(bool reuseSocket)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             SocketError errorCode = SocketError.Success;
@@ -2365,7 +2365,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
             errorCode = SocketPal.Disconnect(this, _handle, reuseSocket);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
 
             if (errorCode != SocketError.Success)
             {
@@ -2375,7 +2375,7 @@ namespace System.Net.Sockets
             SetToDisconnected();
             _remoteEndPoint = null;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Routine Description:
@@ -2392,7 +2392,7 @@ namespace System.Net.Sockets
         //    int - Return code from async Connect, 0 for success, SocketError.NotConnected otherwise
         public void EndConnect(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -2418,7 +2418,7 @@ namespace System.Net.Sockets
             castedAsyncResult.InternalWaitForCompletion();
             castedAsyncResult.EndCalled = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
 
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
@@ -2433,11 +2433,11 @@ namespace System.Net.Sockets
                     ex = se;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 ExceptionDispatchInfo.Throw(ex);
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
                 NetEventSource.Exit(this, "");
@@ -2446,7 +2446,7 @@ namespace System.Net.Sockets
 
         public void EndDisconnect(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
             ThrowIfDisposed();
 
             if (asyncResult == null)
@@ -2469,7 +2469,7 @@ namespace System.Net.Sockets
             castedAsyncResult.InternalWaitForCompletion();
             castedAsyncResult.EndCalled = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             //
             // if the asynchronous native call failed asynchronously
@@ -2480,7 +2480,7 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException((SocketError)castedAsyncResult.ErrorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Routine Description:
@@ -2513,7 +2513,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -2548,17 +2548,17 @@ namespace System.Net.Sockets
                 asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
         private SocketError DoBeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size} asyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size} asyncResult:{asyncResult}");
 
             SocketError errorCode = SocketPal.SendAsync(_handle, buffer, offset, size, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendAsync returns:{errorCode} size:{size} AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SendAsync returns:{errorCode} size:{size} AsyncResult:{asyncResult}");
 
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -2582,7 +2582,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -2612,17 +2612,17 @@ namespace System.Net.Sockets
                 asyncResult = null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
         private SocketError DoBeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} buffers:{buffers} asyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} buffers:{buffers} asyncResult:{asyncResult}");
 
             SocketError errorCode = SocketPal.SendAsync(_handle, buffers, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SendAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -2658,7 +2658,7 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -2680,7 +2680,7 @@ namespace System.Net.Sockets
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"bytesTransffered:{bytesTransferred}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransffered:{bytesTransferred}");
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -2689,7 +2689,7 @@ namespace System.Net.Sockets
                 UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
@@ -2697,7 +2697,7 @@ namespace System.Net.Sockets
                 return 0;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -2708,7 +2708,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -2717,17 +2717,17 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_notconnected);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
             IAsyncResult asyncResult = BeginSendFileInternal(fileName, preBuffer, postBuffer, flags, callback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
         public void EndSendFile(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             ThrowIfDisposed();
 
@@ -2738,7 +2738,7 @@ namespace System.Net.Sockets
 
             EndSendFileInternal(asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Routine Description:
@@ -2763,7 +2763,7 @@ namespace System.Net.Sockets
         //    IAsyncResult - Async result used to retrieve result
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -2796,13 +2796,13 @@ namespace System.Net.Sockets
             // Finish, possibly posting the callback.  The callback won't be posted before this point is reached.
             asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
         private void DoBeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"size:{size}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
             EndPoint? oldEndPoint = _rightEndPoint;
 
@@ -2818,7 +2818,7 @@ namespace System.Net.Sockets
 
                 errorCode = SocketPal.SendToAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendToAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SendToAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -2836,7 +2836,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"size:{size} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size} returning AsyncResult:{asyncResult}");
         }
 
         // Routine Description:
@@ -2853,7 +2853,7 @@ namespace System.Net.Sockets
         //    int - Number of bytes transferred
         public int EndSendTo(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             ThrowIfDisposed();
 
@@ -2876,7 +2876,7 @@ namespace System.Net.Sockets
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -2886,7 +2886,7 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -2925,7 +2925,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -2961,20 +2961,20 @@ namespace System.Net.Sockets
                 asyncResult.FinishPostingAsyncOp(ref Caches.ReceiveClosureCache);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
         private SocketError DoBeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"size:{size}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
 #if DEBUG
             IntPtr lastHandle = _handle.DangerousGetHandle();
 #endif
             SocketError errorCode = SocketPal.ReceiveAsync(_handle, buffer, offset, size, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (CheckErrorAndUpdateStatus(errorCode))
@@ -3002,7 +3002,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -3035,7 +3035,7 @@ namespace System.Net.Sockets
                 asyncResult.FinishPostingAsyncOp(ref Caches.ReceiveClosureCache);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
@@ -3046,7 +3046,7 @@ namespace System.Net.Sockets
 #endif
             SocketError errorCode = SocketPal.ReceiveAsync(_handle, buffers, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -3096,7 +3096,7 @@ namespace System.Net.Sockets
 
         public int EndReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             ThrowIfDisposed();
 
@@ -3127,20 +3127,20 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, new SocketException((int)errorCode));
                     NetEventSource.Exit(this, 0);
                 }
                 return 0;
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
         public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, $"size:{size}");
@@ -3216,7 +3216,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveMessageFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReceiveMessageFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -3248,7 +3248,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"size:{size} returning AsyncResult:{asyncResult}");
                 NetEventSource.Exit(this, asyncResult);
@@ -3258,7 +3258,7 @@ namespace System.Net.Sockets
 
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             ThrowIfDisposed();
             if (endPoint == null)
@@ -3303,7 +3303,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
 
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
@@ -3316,7 +3316,7 @@ namespace System.Net.Sockets
             socketFlags = castedAsyncResult.SocketFlags;
             ipPacketInformation = castedAsyncResult.IPPacketInformation;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -3346,7 +3346,7 @@ namespace System.Net.Sockets
         //    IAsyncResult - Async result used to retrieve result
         public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             ThrowIfDisposed();
 
@@ -3404,7 +3404,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
@@ -3412,7 +3412,7 @@ namespace System.Net.Sockets
         {
             EndPoint? oldEndPoint = _rightEndPoint;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"size:{size}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
             // Guarantee to call CheckAsyncCallOverlappedResult if we call SetUnamangedStructures with a cache in order to
             // avoid a Socket leak in case of error.
@@ -3429,7 +3429,7 @@ namespace System.Net.Sockets
 
                 errorCode = SocketPal.ReceiveFromAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReceiveFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -3447,7 +3447,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)errorCode);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"size:{size} return AsyncResult:{asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size} return AsyncResult:{asyncResult}");
         }
 
         // Routine Description:
@@ -3465,7 +3465,7 @@ namespace System.Net.Sockets
         //    int - Number of bytes transferred
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
 
             ThrowIfDisposed();
 
@@ -3512,7 +3512,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -3521,7 +3521,7 @@ namespace System.Net.Sockets
             {
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -3550,7 +3550,7 @@ namespace System.Net.Sockets
                 return BeginAccept(0, callback, state);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             Debug.Assert(Disposed);
             ThrowObjectDisposedException();
@@ -3565,7 +3565,7 @@ namespace System.Net.Sockets
         // This is the truly async version that uses AcceptEx.
         public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -3584,7 +3584,7 @@ namespace System.Net.Sockets
             // Finish the flow capture, maybe complete here.
             asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncResult);
             return asyncResult;
         }
 
@@ -3603,12 +3603,12 @@ namespace System.Net.Sockets
             SafeSocketHandle? acceptHandle;
             asyncResult.AcceptSocket = GetOrCreateAcceptSocket(acceptSocket, false, nameof(acceptSocket), out acceptHandle);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
 
             int socketAddressSize = GetAddressSize(_rightEndPoint);
             SocketError errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
 
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -3652,7 +3652,7 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, asyncResult);
             ThrowIfDisposed();
 
             // Validate input parameters.
@@ -3684,7 +3684,7 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
                 NetEventSource.Exit(this, socket);
@@ -3695,15 +3695,15 @@ namespace System.Net.Sockets
         // Disables sends and receives on a socket.
         public void Shutdown(SocketShutdown how)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, how);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, how);
             ThrowIfDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"how:{how}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"how:{how}");
 
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, how);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Shutdown returns errorCode:{errorCode}");
 
             // Skip good cases: success, socket already closed.
             if (errorCode != SocketError.Success && errorCode != SocketError.NotSocket)
@@ -3713,13 +3713,13 @@ namespace System.Net.Sockets
 
             SetToDisconnected();
             InternalSetBlocking(_willBlockInternal);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         #region Async methods
         public bool AcceptAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -3760,7 +3760,7 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
@@ -3769,7 +3769,7 @@ namespace System.Net.Sockets
 
         private bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
             bool pending;
 
             ThrowIfDisposed();
@@ -3802,7 +3802,7 @@ namespace System.Net.Sockets
 
             if (dnsEP != null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.ConnectedAsyncDns(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.ConnectedAsyncDns(this);
 
                 ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
 
@@ -3877,13 +3877,13 @@ namespace System.Net.Sockets
                 pending = (socketError == SocketError.IOPending);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
         public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
             bool pending;
 
             if (e == null)
@@ -3938,7 +3938,7 @@ namespace System.Net.Sockets
                 pending = attemptSocket.ConnectAsync(e, userSocket: false);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, pending);
             return pending;
         }
 
@@ -3956,7 +3956,7 @@ namespace System.Net.Sockets
 
         public bool DisconnectAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             // Throw if socket disposed
             ThrowIfDisposed();
@@ -3981,7 +3981,7 @@ namespace System.Net.Sockets
             }
 
             bool retval = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, retval);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, retval);
             return retval;
         }
 
@@ -3989,7 +3989,7 @@ namespace System.Net.Sockets
 
         private bool ReceiveAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4013,13 +4013,13 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
         public bool ReceiveFromAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4063,13 +4063,13 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
         public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4115,7 +4115,7 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
@@ -4123,7 +4123,7 @@ namespace System.Net.Sockets
 
         private bool SendAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4147,13 +4147,13 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
         public bool SendPacketsAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4185,13 +4185,13 @@ namespace System.Net.Sockets
             }
 
             bool pending = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, pending);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, pending);
             return pending;
         }
 
         public bool SendToAsync(SocketAsyncEventArgs e)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, e);
 
             ThrowIfDisposed();
 
@@ -4236,7 +4236,7 @@ namespace System.Net.Sockets
             }
 
             bool retval = (socketError == SocketError.IOPending);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, retval);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, retval);
             return retval;
         }
         #endregion
@@ -4330,7 +4330,7 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, endPointSnapshot);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, endPointSnapshot);
 
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 
@@ -4341,7 +4341,7 @@ namespace System.Net.Sockets
                 // Update the internal state of this socket according to the error before throwing.
                 SocketException socketException = SocketExceptionFactory.CreateSocketException((int)errorCode, endPointSnapshot);
                 UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
                 throw socketException;
             }
 
@@ -4351,11 +4351,11 @@ namespace System.Net.Sockets
                 _rightEndPoint = endPointSnapshot;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
             // Update state and performance counters.
             SetToConnected();
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
                 NetEventSource.Exit(this);
@@ -4364,7 +4364,7 @@ namespace System.Net.Sockets
 
         protected virtual void Dispose(bool disposing)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 try
                 {
@@ -4377,7 +4377,7 @@ namespace System.Net.Sockets
             // Make sure we're the first call to Dispose
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 1)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
 
@@ -4398,7 +4398,7 @@ namespace System.Net.Sockets
                 if (timeout == 0 || !disposing)
                 {
                     // Abortive.
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
                     _handle?.CloseAsIs(abortive: true);
                 }
                 else
@@ -4410,20 +4410,20 @@ namespace System.Net.Sockets
                     {
                         bool willBlock;
                         errorCode = SocketPal.SetBlocking(_handle, false, out willBlock);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONBIO):{errorCode}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONBIO):{errorCode}");
                     }
 
                     if (timeout < 0)
                     {
                         // Close with existing user-specified linger option.
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
                         _handle.CloseAsIs(abortive: false);
                     }
                     else
                     {
                         // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
                         errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} shutdown():{errorCode}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} shutdown():{errorCode}");
 
                         // This should give us a timeout in milliseconds.
                         errorCode = SocketPal.SetSockOpt(
@@ -4431,7 +4431,7 @@ namespace System.Net.Sockets
                             SocketOptionLevel.Socket,
                             SocketOptionName.ReceiveTimeout,
                             timeout);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} setsockopt():{errorCode}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} setsockopt():{errorCode}");
 
                         if (errorCode != SocketError.Success)
                         {
@@ -4441,7 +4441,7 @@ namespace System.Net.Sockets
                         {
                             int unused;
                             errorCode = SocketPal.Receive(_handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
 
                             if (errorCode != (SocketError)0)
                             {
@@ -4453,7 +4453,7 @@ namespace System.Net.Sockets
                                 // We got a FIN or data.  Use ioctlsocket to find out which.
                                 int dataAvailable = 0;
                                 errorCode = SocketPal.GetAvailable(_handle, out dataAvailable);
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONREAD):{errorCode}");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONREAD):{errorCode}");
 
                                 if (errorCode != SocketError.Success || dataAvailable != 0)
                                 {
@@ -4483,14 +4483,14 @@ namespace System.Net.Sockets
 
         public void Dispose()
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"timeout = {_closeTimeout}");
                 NetEventSource.Enter(this);
             }
             Dispose(true);
             GC.SuppressFinalize(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         ~Socket()
@@ -4501,7 +4501,7 @@ namespace System.Net.Sockets
         // This version does not throw.
         internal void InternalShutdown(SocketShutdown how)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"how:{how}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"how:{how}");
 
             if (Disposed || _handle.IsInvalid)
             {
@@ -4548,18 +4548,18 @@ namespace System.Net.Sockets
 
         internal unsafe void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue, bool silent)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue} silent:{silent}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue} silent:{silent}");
 
             if (silent && (Disposed || _handle.IsInvalid))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "skipping the call");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "skipping the call");
                 return;
             }
             SocketError errorCode = SocketError.Success;
             try
             {
                 errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
             }
             catch
             {
@@ -4593,7 +4593,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetMulticastOption(_handle, optionName, MR);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetMulticastOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetMulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4607,7 +4607,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetIPv6MulticastOption(_handle, optionName, MR);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetIPv6MulticastOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetIPv6MulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4620,7 +4620,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetLingerOption(_handle, lref);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetLingerOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetLingerOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4634,7 +4634,7 @@ namespace System.Net.Sockets
             LingerOption? lingerOption;
             SocketError errorCode = SocketPal.GetLingerOption(_handle, out lingerOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetLingerOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetLingerOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4650,7 +4650,7 @@ namespace System.Net.Sockets
             MulticastOption? multicastOption;
             SocketError errorCode = SocketPal.GetMulticastOption(_handle, optionName, out multicastOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetMulticastOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetMulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4667,7 +4667,7 @@ namespace System.Net.Sockets
             IPv6MulticastOption? multicastOption;
             SocketError errorCode = SocketPal.GetIPv6MulticastOption(_handle, optionName, out multicastOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetIPv6MulticastOption returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetIPv6MulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4682,11 +4682,11 @@ namespace System.Net.Sockets
         // error code, and will update internal state on success.
         private SocketError InternalSetBlocking(bool desired, out bool current)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"desired:{desired} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"desired:{desired} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
             if (Disposed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "ObjectDisposed");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "ObjectDisposed");
                 current = _willBlock;
                 return SocketError.Success;
             }
@@ -4703,7 +4703,7 @@ namespace System.Net.Sockets
                 errorCode = SocketError.NotSocket;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetBlocking returns errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SetBlocking returns errorCode:{errorCode}");
 
             // We will update only internal state but only on successful win32 call
             // so if the native call fails, the state will remain the same.
@@ -4712,7 +4712,7 @@ namespace System.Net.Sockets
                 _willBlockInternal = willBlock;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"errorCode:{errorCode} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"errorCode:{errorCode} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
             current = _willBlockInternal;
             return errorCode;
@@ -4729,7 +4729,7 @@ namespace System.Net.Sockets
         // Since this is private, the unsafe mode is specified with a flag instead of an overload.
         private IAsyncResult BeginConnectEx(EndPoint remoteEP, bool flowContext, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             EndPoint endPointSnapshot = remoteEP;
             Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
@@ -4763,7 +4763,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ConnectAsync returns:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ConnectAsync returns:{errorCode}");
 
             if (errorCode == SocketError.Success)
             {
@@ -4784,7 +4784,7 @@ namespace System.Net.Sockets
             // This is a nop if the context isn't being flowed.
             asyncResult.FinishPostingAsyncOp(ref Caches.ConnectClosureCache);
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"{endPointSnapshot} returning AsyncResult:{asyncResult}");
                 NetEventSource.Exit(this, asyncResult);
@@ -5034,12 +5034,12 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "now connected");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
         }
 
         internal void SetToDisconnected()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (!_isConnected)
             {
@@ -5054,7 +5054,7 @@ namespace System.Net.Sockets
 
             if (!Disposed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "!Disposed");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "!Disposed");
             }
         }
 
@@ -5063,7 +5063,7 @@ namespace System.Net.Sockets
             // Update the internal state of this socket according to the error before throwing.
             var socketException = new SocketException((int)error);
             UpdateStatusAfterSocketError(socketException);
-            if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException, memberName: callerName);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException, memberName: callerName);
             throw socketException;
         }
 
@@ -5079,15 +5079,15 @@ namespace System.Net.Sockets
         {
             // If we already know the socket is disconnected
             // we don't need to do anything else.
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}");
 
             if (_isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
                     errorCode != SocketError.TimedOut)))
             {
                 // The socket is no longer a valid socket.
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Invalidating socket.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invalidating socket.");
                 SetToDisconnected();
             }
         }

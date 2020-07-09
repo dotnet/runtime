@@ -52,7 +52,7 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(securityContext);
 
             X509Certificate2? result = null;
             SafeFreeCertContext? remoteContext = null;
@@ -108,7 +108,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Log.RemoteCertificate(result);
                 NetEventSource.Exit(securityContext, result);

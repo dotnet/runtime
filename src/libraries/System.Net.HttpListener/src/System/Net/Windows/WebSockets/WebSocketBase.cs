@@ -65,7 +65,7 @@ namespace System.Net.WebSockets
 
             string parameters = string.Empty;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 parameters = string.Format(CultureInfo.InvariantCulture,
                     "ReceiveBufferSize: {0}, SendBufferSize: {1},  Protocols: {2}, KeepAliveInterval: {3}, innerStream: {4}, internalBuffer: {5}",
@@ -85,7 +85,7 @@ namespace System.Net.WebSockets
             {
                 _innerStream = innerStream;
                 _internalBuffer = internalBuffer;
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Associate(this, _innerStream);
                     NetEventSource.Associate(this, _internalBuffer);
@@ -109,7 +109,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this, parameters);
                 }
@@ -181,7 +181,7 @@ namespace System.Net.WebSockets
         private async Task<WebSocketReceiveResult> ReceiveAsyncCore(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
             }
@@ -217,7 +217,7 @@ namespace System.Net.WebSockets
                     EnsureReceiveOperation();
                     receiveResult = await _receiveOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
 
-                    if (NetEventSource.IsEnabled && receiveResult.Count > 0)
+                    if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
                     {
                         NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, receiveResult.Count);
                     }
@@ -236,7 +236,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this);
                 }
@@ -278,7 +278,7 @@ namespace System.Net.WebSockets
             Debug.Assert(buffer.Array != null);
 
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "messageType: {0}, endOfMessage: {1}",
@@ -329,7 +329,7 @@ namespace System.Net.WebSockets
                         _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
                     }
 
-                    if (NetEventSource.IsEnabled && buffer.Count > 0)
+                    if (NetEventSource.Log.IsEnabled() && buffer.Count > 0)
                     {
                         NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, buffer.Count);
                     }
@@ -352,7 +352,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this, inputParameter);
                 }
@@ -405,7 +405,7 @@ namespace System.Net.WebSockets
         // MultiThreading: ThreadSafe; No-op if already in a terminal state
         public override void Abort()
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
             }
@@ -446,7 +446,7 @@ namespace System.Net.WebSockets
             finally
             {
                 ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this);
                 }
@@ -468,7 +468,7 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, statusDescription: {1}",
@@ -598,7 +598,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this, inputParameter);
                 }
@@ -706,7 +706,7 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, statusDescription: {1}",
@@ -857,7 +857,7 @@ namespace System.Net.WebSockets
                         // skip the statements in the if-block.
                         if (receiveResult != null)
                         {
-                            if (NetEventSource.IsEnabled && receiveResult.Count > 0)
+                            if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
                             {
                                 NetEventSource.DumpBuffer(this, closeMessageBuffer.Array, closeMessageBuffer.Offset, receiveResult.Count);
                             }
@@ -940,7 +940,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(this, inputParameter);
                 }
@@ -1199,7 +1199,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(exception != null, "'exception' MUST NOT be NULL.");
 
-            if (NetEventSource.IsEnabled && !string.IsNullOrEmpty(methodName))
+            if (NetEventSource.Log.IsEnabled() && !string.IsNullOrEmpty(methodName))
             {
                 NetEventSource.Error(this, $"methodName: {methodName}, exception: {exception}");
             }
@@ -1337,7 +1337,7 @@ namespace System.Net.WebSockets
         {
             if (Interlocked.CompareExchange<Exception>(ref _pendingException, exception, null) == null)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, exception.ToString());
                 }
@@ -1405,7 +1405,7 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 string parameters = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, closeStatusDescription: {1}, _State: {2}",
@@ -1423,7 +1423,7 @@ namespace System.Net.WebSockets
             WebSocketBase thisPtr = sender as WebSocketBase;
             bool lockTaken = false;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(thisPtr);
             }
@@ -1486,7 +1486,7 @@ namespace System.Net.WebSockets
             {
                 ReleaseLock(thisPtr.SessionHandle, ref lockTaken);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(thisPtr);
                 }

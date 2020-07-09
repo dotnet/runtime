@@ -1046,13 +1046,16 @@ namespace System
         internal bool IsAmbiguousDaylightSavingTime() =>
             InternalKind == KindLocalAmbiguousDst;
 
-        public DateTimeKind Kind =>
-            InternalKind switch
+        public DateTimeKind Kind
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalKind switch
             {
                 KindUnspecified => DateTimeKind.Unspecified,
                 KindUtc => DateTimeKind.Utc,
                 _ => DateTimeKind.Local,
             };
+        }
 
         // Returns the millisecond part of this DateTime. The returned value
         // is an integer between 0 and 999.

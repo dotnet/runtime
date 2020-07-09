@@ -24,6 +24,7 @@ public partial class CancelKeyPressTests
         HandlerInvokedForSignal(SIGINT);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/38998", TestPlatforms.OSX)]
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnMono("Mono doesn't call CancelKeyPress for SIGQUIT.")]
     public void HandlerInvokedForSigQuit()

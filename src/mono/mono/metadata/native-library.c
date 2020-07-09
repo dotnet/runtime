@@ -23,16 +23,16 @@ static char **pinvoke_search_directories;
 static MonoCoopMutex native_library_module_lock;
 static GHashTable *native_library_module_map;
 /*
- * This blacklist is used as a set for cache invalidation purposes with netcore pinvokes.
+ * This blocklist is used as a set for cache invalidation purposes with netcore pinvokes.
  * When pinvokes are resolved with anything other than the last-chance managed event,
  * the results of that lookup are added to an ALC-level cache. However, if a library is then
  * unloaded with NativeLibrary.Free(), this cache should be invalidated so that a newly called
- * pinvoke will not attempt to use it, hence the blacklist. This design means that if another
+ * pinvoke will not attempt to use it, hence the blocklist. This design means that if another
  * library is loaded at the same address, it will function with a perf hit, as the entry will
- * repeatedly be added and removed from the cache due to its presence in the blacklist.
+ * repeatedly be added and removed from the cache due to its presence in the blocklist.
  * This is a rare scenario and considered a worthwhile tradeoff.
  */
-static GHashTable *native_library_module_blacklist;
+static GHashTable *native_library_module_blocklist;
 #endif
 
 #ifndef DISABLE_DLLMAP
@@ -319,8 +319,8 @@ mono_global_loader_cache_init (void)
 #ifdef ENABLE_NETCORE
 	if (!native_library_module_map)
 		native_library_module_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-	if (!native_library_module_blacklist)
-		native_library_module_blacklist = g_hash_table_new (g_direct_hash, g_direct_equal);
+	if (!native_library_module_blocklist)
+		native_library_module_blocklist = g_hash_table_new (g_direct_hash, g_direct_equal);
 	mono_coop_mutex_init (&native_library_module_lock);
 #endif
 }
@@ -472,9 +472,9 @@ netcore_handle_lookup (gpointer handle)
 
 // LOCKING: expects you to hold native_library_module_lock
 static gboolean
-netcore_check_blacklist (MonoDl *module)
+netcore_check_blocklist (MonoDl *module)
 {
-	return g_hash_table_contains (native_library_module_blacklist, module);
+	return g_hash_table_contains (native_library_module_blocklist, module);
 }
 
 static MonoDl *
@@ -720,13 +720,13 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	result = (MonoDl *)g_hash_table_lookup (alc->pinvoke_scopes, scope);
 
 	if (result) {
-		gboolean blacklisted;
+		gboolean blocklisted;
 
 		native_library_lock ();
-		blacklisted = netcore_check_blacklist (result);
+		blocklisted = netcore_check_blocklist (result);
 		native_library_unlock ();
 
-		if (blacklisted) {
+		if (blocklisted) {
 			g_hash_table_remove (alc->pinvoke_scopes, scope);
 			result = NULL;
 		}
@@ -1420,7 +1420,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		goto leave;
 
 	g_hash_table_remove (native_library_module_map, module->handle);
-	g_hash_table_add (native_library_module_blacklist, module);
+	g_hash_table_add (native_library_module_blocklist, module);
 	mono_dl_close (module);
 
 leave:
