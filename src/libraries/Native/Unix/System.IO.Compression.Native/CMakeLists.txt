@@ -15,7 +15,7 @@ set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
 )
 
-if (!CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER)
     add_definitions(-DBROTLI_SHARED_COMPILATION)
 
     #Include Brotli include files
