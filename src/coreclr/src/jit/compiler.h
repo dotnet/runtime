@@ -6328,7 +6328,7 @@ protected:
     {
         CSEdsc* csdNextInBucket; // used by the hash table
 
-        unsigned csdHashKey; // the orginal hashkey
+        size_t   csdHashKey;       // the orginal hashkey
 
         unsigned csdIndex; // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;
