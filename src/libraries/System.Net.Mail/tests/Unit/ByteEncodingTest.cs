@@ -63,9 +63,9 @@ namespace System.Net.Mime.Tests
         }
 
         [Fact]
-        public void EncodeHeader_ShouldSplitBetweenCodepoints()
+        public void EncodeHeader_Base64Encoding_ShouldSplitBetweenCodepoints()
         {
-            // header parts split by max line length = 70 with respect to codepoints
+            // header parts split by max line length in base64 encoding = 70 with respect to codepoints
             string headerPart1 = "Emoji subject : 🕐🕑🕒🕓🕔🕕";
             string headerPart2 = "🕖🕗🕘🕙🕚";
             string longEmojiHeader = headerPart1 + headerPart2;
@@ -78,6 +78,28 @@ namespace System.Net.Mime.Tests
             Assert.Equal("=?utf-8?B?8J+VlvCflZfwn5WY8J+VmfCflZo=?=", encodedPart2);
 
             string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2;
+            Assert.Equal(expectedEncodedHeader, encodedHeader);
+        }
+
+        [Fact]
+        public void EncodeHeader_QEncoding_ShouldSplitBetweenCodepoints()
+        {
+            // header parts split by max line length in q-encoding = 70 with respect to codepoints
+            string headerPart1 = "Emoji subject : 🕐🕑🕒";
+            string headerPart2 = "🕓🕔🕕🕖";
+            string headerPart3 = "🕗🕘🕙🕚";
+            string longEmojiHeader = headerPart1 + headerPart2 + headerPart3;
+
+            string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, false);
+
+            string encodedPart1 = MimeBasePart.EncodeHeaderValue(headerPart1, Encoding.UTF8, false);
+            string encodedPart2 = MimeBasePart.EncodeHeaderValue(headerPart2, Encoding.UTF8, false);
+            string encodedPart3 = MimeBasePart.EncodeHeaderValue(headerPart3, Encoding.UTF8, false);
+            Assert.Equal("=?utf-8?Q?Emoji_subject_=3A_=F0=9F=95=90=F0=9F=95=91=F0=9F=95=92?=", encodedPart1);
+            Assert.Equal("=?utf-8?Q?=F0=9F=95=93=F0=9F=95=94=F0=9F=95=95=F0=9F=95=96?=", encodedPart2);
+            Assert.Equal("=?utf-8?Q?=F0=9F=95=97=F0=9F=95=98=F0=9F=95=99=F0=9F=95=9A?=", encodedPart3);
+
+            string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2 + "\r\n " + encodedPart3;
             Assert.Equal(expectedEncodedHeader, encodedHeader);
         }
     }

@@ -187,7 +187,6 @@ namespace System.Net
             }
         }
 
-        // This method does not account for codepoint boundaries. If encoding a string, use EncodeString instead.
         public int EncodeBytes(byte[] buffer, int offset, int count) =>
             EncodeBytes(buffer, offset, count, true, true);
 
@@ -226,6 +225,12 @@ namespace System.Net
             Debug.Assert(_writeState != null, "writestate was null");
             Debug.Assert(_writeState.Buffer != null, "writestate.buffer was null");
 
+            if (encoding == Encoding.Latin1) // we don't need to check for codepoints
+            {
+                byte[] buffer = encoding.GetBytes(value);
+                return EncodeBytes(buffer, 0, buffer.Length);
+            }
+
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
@@ -233,23 +238,11 @@ namespace System.Net
             byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
             for (int i = 0; i < value.Length; ++i)
             {
-                int bytesCount;
-                if (!char.IsSurrogate(value[i]))
+                int codepointSize = GetCodepointSize(value, i);
+                int bytesCount = encoding.GetBytes(value, i, codepointSize, bytes, 0);
+                if (codepointSize == 2)
                 {
-                    bytesCount = encoding.GetBytes(value, i, 1, bytes, 0);
-                }
-                else
-                {
-                    if (i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]))
-                    {
-                        bytesCount = encoding.GetBytes(value, i, 2, bytes, 0);
-                        ++i; // Transformed both chars, so shift the index to account for that
-                    }
-                    else
-                    {
-                        // Ill-formed UTF-16 encoding in value. Transform char as-is (will get replacement char)
-                        bytesCount = encoding.GetBytes(value, i, 1, bytes, 0);
-                    }
+                    ++i; // Transformed two chars, so shift the index to account for that
                 }
                 AppendEncodedCodepoint(bytes, bytesCount, true);
                 totalBytesCount += bytesCount;
@@ -260,6 +253,15 @@ namespace System.Net
             WriteState.AppendFooter();
 
             return totalBytesCount;
+        }
+
+        private int GetCodepointSize(string value, int i)
+        {
+            if (char.IsSurrogate(value[i]) && i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]))
+            {
+                return 2;
+            }
+            return 1;
         }
 
         private int AppendEncodedCodepoint(byte[] bytes, int count, bool shouldAppendSpaceToCRLF)
