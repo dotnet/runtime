@@ -1731,6 +1731,21 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (Vector64<ulong> Value1, Vector64<ulong> Value2) LoadPairVector64NonTemporal(ulong* address) => LoadPairVector64NonTemporal(address);
 
             /// <summary>
+            ///   A64: LDNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairScalarVector64NonTemporal(int* address) => LoadPairScalarVector64NonTemporal(address);
+
+            /// <summary>
+            ///   A64: LDNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairScalarVector64NonTemporal(float* address) => LoadPairScalarVector64NonTemporal(address);
+
+            /// <summary>
+            ///   A64: LDNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairScalarVector64NonTemporal(uint* address) => LoadPairScalarVector64NonTemporal(address);
+
+            /// <summary>
             ///   A64: LDNP Qt1, Qt2, [Xn]
             /// </summary>
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadPairVector128NonTemporal(byte* address) => LoadPairVector128NonTemporal(address);
