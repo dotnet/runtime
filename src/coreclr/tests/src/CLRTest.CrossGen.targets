@@ -73,7 +73,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
 
     if [ ! -z ${LargeVersionBubble+x} ]%3B then
-        ExtraCrossGen2Args+= --inputbubble
+        ExtraCrossGen2Args+=" --inputbubble"
     fi
 
     __cg2ExitCode=0
@@ -113,19 +113,21 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
         ExtraCrossGen2Args+= --composite
-        OneFileCrossgen2("$PWD/composite-r2r.dll", "$PWD/IL/*.dll")
+        OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL/*.dll"
     else
         ExtraCrossGen2Args+= -r:$PWD/IL/*.dll
-      for dllFile in $PWD/IL/*.dll do
-        bareFileName = "${fullfile##*/}"
-        OneFileCrossgen2("$PWD/$bareFileName", "$dllFile")
-        if [ $__cg2ExitCode -ne 0 ] then
+      for dllFile in $PWD/IL/*.dll
+      do
+        echo $dllFile
+        bareFileName="${dllFile##*/}"
+        OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
+        if [ $__cg2ExitCode -ne 0 ]; then
           break
         fi
       done
     fi
 
-    then
+    if [ $__cg2ExitCode -ne 0 ]; then
       echo Crossgen2 failed with exitcode: $__cg2ExitCode
       ReleaseLock
       exit 1
