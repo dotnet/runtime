@@ -1234,7 +1234,7 @@ namespace System.Net.Http
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
-                        throw new HttpRequestException(SR.net_http_max_active_streams_number_reached, null, RequestRetryType.RetryOnNewConnection);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNewConnection);
                     }
                 }
                 else

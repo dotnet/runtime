@@ -519,7 +519,7 @@ namespace System.Net.Http
                 if (currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer)
                 {
                     // All connections are completely occupied. Retry request to make it wait until a stream slot gets available.
-                    throw new HttpRequestException(SR.net_http_max_active_streams_number_reached, null, RequestRetryType.RetryOnNewConnection);
+                    throw new HttpRequestException(null, null, RequestRetryType.RetryOnNewConnection);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
