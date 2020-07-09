@@ -24,14 +24,14 @@ namespace System.Net.Mime
 
             if (useBase64Encoding)
             {
-                Base64WriteStateInfo writeState = new Base64WriteStateInfo(InitialBufferSize, header, footer, DefaultMaxLineLength, 
+                Base64WriteStateInfo writeState = new Base64WriteStateInfo(InitialBufferSize, header, footer, DefaultMaxLineLength,
                     headerTextLength);
                 writeState.Encoding = encoding;
                 return new Base64Stream(writeState);
             }
             else
             {
-                WriteStateInfoBase writeState = new WriteStateInfoBase(InitialBufferSize, header, footer, DefaultMaxLineLength, 
+                WriteStateInfoBase writeState = new WriteStateInfoBase(InitialBufferSize, header, footer, DefaultMaxLineLength,
                     headerTextLength);
                 return new QEncodedStream(writeState);
             }
