@@ -4129,7 +4129,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         else
         {
             // for each NUMA node, give out the memory to its heaps 
-            for (uint16_t numa_node = 0; numa_node < memory_details.numa_reserved_block_count; numa_node++)
+            for (uint16_t numa_node = 0; numa_node < numa_node_count; numa_node++)
             {
                 numa_reserved_block * block = &memory_details.numa_reserved_block_table[numa_node];
 
@@ -4317,22 +4317,23 @@ void gc_heap::destroy_initial_memory()
 {
     if (memory_details.initial_memory != NULL)
     {
-        if (memory_details.allocation_pattern == initial_memory_details::ALLATONCE)
+        switch (memory_details.allocation_pattern)
         {
+        case    initial_memory_details::ALLATONCE:
             virtual_free (memory_details.initial_memory[0].memory_base,
                 memory_details.block_count*(memory_details.block_size_normal +
                 memory_details.block_size_large + memory_details.block_size_pinned));
-        }
-        else if (memory_details.allocation_pattern == initial_memory_details::ALLATONCE_SEPARATED_POH)
-        {
+            break;
+
+        case    initial_memory_details::ALLATONCE_SEPARATED_POH:
             virtual_free(memory_details.initial_memory[0].memory_base,
                 memory_details.block_count * (memory_details.block_size_normal +
                     memory_details.block_size_large));
             virtual_free(memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count * (memory_details.block_size_pinned));
-        }
-        else if (memory_details.allocation_pattern == initial_memory_details::EACH_GENERATION)
-        {
+            break;
+
+        case    initial_memory_details::EACH_GENERATION:
             virtual_free (memory_details.initial_normal_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_normal);
 
@@ -4341,11 +4342,12 @@ void gc_heap::destroy_initial_memory()
 
             virtual_free (memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_pinned);
-        }
-        else if (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK)
+            break;
+
+        case    initial_memory_details::EACH_BLOCK:
         {
-            imemory_data *current_block = memory_details.initial_memory;
-            for (int i = 0; i < (memory_details.block_count*(total_generation_count - ephemeral_generation_count)); i++, current_block++)
+            imemory_data* current_block = memory_details.initial_memory;
+            for (int i = 0; i < (memory_details.block_count * (total_generation_count - ephemeral_generation_count)); i++, current_block++)
             {
                 size_t block_size = memory_details.block_size (i);
                 if (current_block->memory_base != NULL)
@@ -4353,11 +4355,9 @@ void gc_heap::destroy_initial_memory()
                     virtual_free (current_block->memory_base, block_size);
                 }
             }
+            break;
         }
-        else
-        {
-            assert(memory_details.allocation_pattern == initial_memory_details::EACH_NUMA_NODE);
-
+        case    initial_memory_details::EACH_NUMA_NODE:
             for (int block_index = 0; block_index < memory_details.numa_reserved_block_count; block_index++)
             {
                 numa_reserved_block * block = &memory_details.numa_reserved_block_table[block_index];
@@ -4367,8 +4367,12 @@ void gc_heap::destroy_initial_memory()
                     virtual_free (block->memory_base, block->block_size);
                 }
             }
-
             delete [] memory_details.numa_reserved_block_table;
+            break;
+
+        default:
+            assert (!"unexpected allocation_pattern");
+            break;
         }
 
         delete [] memory_details.initial_memory;
@@ -35491,14 +35495,7 @@ HRESULT GCHeap::Initialize()
             }
             gc_heap::heap_hard_limit_oh[0] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             gc_heap::heap_hard_limit_oh[1] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
-            if (percent_of_mem_poh == 0)
-            {
-                gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
-            }
-            else
-            {
-                gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            }
+            gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
             gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
         }
     }
@@ -35600,6 +35597,11 @@ HRESULT GCHeap::Initialize()
             {
                 for (int i = 0; i < (total_oh_count - 1); i++)
                 {
+                    if (i == poh && gc_heap::heap_hard_limit_oh[poh] == 0)
+                    {
+                        // if size 0 was specified for POH, ignore it for the nhp computation
+                        continue;
+                    }
                     uint32_t nhp_oh = (uint32_t)(gc_heap::heap_hard_limit_oh[i] / min_segment_size_hard_limit);
                     nhp = min (nhp, nhp_oh);
                 }
@@ -35611,7 +35613,7 @@ HRESULT GCHeap::Initialize()
 #endif
             seg_size = gc_heap::heap_hard_limit_oh[0] / nhp;
             large_seg_size = gc_heap::heap_hard_limit_oh[1] / nhp;
-            pin_seg_size = gc_heap::heap_hard_limit_oh[2] / nhp;
+            pin_seg_size = (gc_heap::heap_hard_limit_oh[poh] != 0) ? (gc_heap::heap_hard_limit_oh[2] / nhp) : min_segment_size_hard_limit;
 
             size_t aligned_seg_size = align_on_segment_hard_limit (seg_size);
             size_t aligned_large_seg_size = align_on_segment_hard_limit (large_seg_size);
