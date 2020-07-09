@@ -16,6 +16,5 @@ namespace System.Net.Mime
 
         internal int Padding { get; set; }
         internal byte LastBits { get; set; }
-        internal Encoding? Encoding { get; set; }
     }
 }

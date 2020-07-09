@@ -187,6 +187,7 @@ namespace System.Net
             }
         }
 
+        // This method does not account for codepoint boundaries. If encoding a string, use EncodeString instead.
         public int EncodeBytes(byte[] buffer, int offset, int count) =>
             EncodeBytes(buffer, offset, count, true, true);
 
@@ -199,19 +200,14 @@ namespace System.Net
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
-            if (_writeState.Encoding == null)
+            for (int i = 0; i < count; ++i)
             {
-                for (int i = 0; i < count; ++i)
+                if (LineBreakNeeded(1))
                 {
-                    AppendEncodedCodepoint(buffer[offset + i], shouldAppendSpaceToCRLF);
+                    AppendPadding();
+                    WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
                 }
-            }
-            else
-            {
-                // unfortunately we need to transform bytes back to chars to obtain codepoints
-                // TODO: find way not to transform bytes back and forth
-                string value = _writeState.Encoding.GetString(buffer, offset, count);
-                AppendEncodedString(value, _writeState.Encoding);
+                ApppendEncodedByte(buffer[offset + i]);
             }
 
             if (dontDeferFinalBytes)
@@ -226,74 +222,113 @@ namespace System.Net
 
         public int EncodeString(string value, Encoding encoding)
         {
+            Debug.Assert(value != null, "value was null");
+            Debug.Assert(_writeState != null, "writestate was null");
+            Debug.Assert(_writeState.Buffer != null, "writestate.buffer was null");
+
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
-            int bytesCount = AppendEncodedString(value, encoding);
-            AppendPadding();
-
-            // Write out the last footer, if any.  e.g. ?=
-            WriteState.AppendFooter();
-            return bytesCount;
-        }
-
-        private int AppendEncodedString(string value, Encoding encoding)
-        {
-            int bytesCount = 0;
+            int totalBytesCount = 0;
+            byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
             for (int i = 0; i < value.Length; ++i)
             {
-                byte[] bytes;
+                int bytesCount;
                 if (!char.IsSurrogate(value[i]))
                 {
-                    bytes = encoding.GetBytes(value, i, 1);
+                    bytesCount = encoding.GetBytes(value, i, 1, bytes, 0);
                 }
                 else
                 {
                     if (i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]))
                     {
-                        bytes = encoding.GetBytes(value, i, 2);
-                        ++i; // transformed both chars, so shifting the index to account for that
+                        bytesCount = encoding.GetBytes(value, i, 2, bytes, 0);
+                        ++i; // Transformed both chars, so shift the index to account for that
                     }
                     else
                     {
-                        // TODO: illegal state. throw exception?
-                        // for now just encoding char as-is
-                        bytes = encoding.GetBytes(value, i, 1);
+                        // Ill-formed UTF-16 encoding in value. Transform char as-is (will get replacement char)
+                        bytesCount = encoding.GetBytes(value, i, 1, bytes, 0);
                     }
                 }
-                AppendEncodedCodepoint(bytes, true);
-                bytesCount += bytes.Length;
+                AppendEncodedCodepoint(bytes, bytesCount, true);
+                totalBytesCount += bytesCount;
             }
-            return bytesCount;
+            AppendPadding();
+
+            // Write out the last footer, if any.  e.g. ?=
+            WriteState.AppendFooter();
+
+            return totalBytesCount;
         }
 
-        private int AppendEncodedCodepoint(byte[] bytes, bool shouldAppendSpaceToCRLF)
+        private int AppendEncodedCodepoint(byte[] bytes, int count, bool shouldAppendSpaceToCRLF)
         {
-            if (LineBreakNeeded(bytes.Length)) {
+            if (LineBreakNeeded(count)) {
                 AppendPadding();
                 WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
             }
-            for (int i = 0; i < bytes.Length; ++i)
+            for (int i = 0; i < count; ++i)
             {
                 ApppendEncodedByte(bytes[i]);
             }
 
-            return bytes.Length;
+            return count;
         }
 
-        private int AppendEncodedCodepoint(byte b, bool shouldAppendSpaceToCRLF)
+        private int ApppendEncodedByte(byte b)
         {
-            if (LineBreakNeeded(1)) {
-                AppendPadding();
-                WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
+            Debug.Assert(0 <= WriteState.Padding && WriteState.Padding <= 2, "paddind was not in range [0,2]");
+
+            // Base64 encoding transforms a group of 3 bytes into a group of 4 Base64 characters
+            switch (WriteState.Padding)
+            {
+                case 0: // Add first byte of 3
+                    WriteState.Append(Base64EncodeMap[(b & 0xfc) >> 2]);
+                    WriteState.LastBits = (byte)((b & 0x03) << 4);
+                    WriteState.Padding = 2;
+                    return 1;
+                case 2: // Add second byte of 3
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xf0) >> 4)]);
+                    WriteState.LastBits = (byte)((b & 0x0f) << 2);
+                    WriteState.Padding = 1;
+                    return 1;
+                case 1: // Add third byte of 3
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xc0) >> 6)]);
+                    WriteState.Append(Base64EncodeMap[(b & 0x3f)]);
+                    WriteState.Padding = 0;
+                    return 1;
             }
-            ApppendEncodedByte(b);
-            return 1;
+
+            return 0;
+        }
+
+        private void AppendPadding()
+        {
+            Debug.Assert(0 <= WriteState.Padding && WriteState.Padding <= 2, "paddind was not in range [0,2]");
+
+            switch (WriteState.Padding)
+            {
+                case 0: // No padding needed
+                    break;
+                case 2: // 2 character padding needed (1 byte was encoded instead of 3)
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Padding = 0;
+                    break;
+                case 1: // 1 character padding needed (2 bytes were encoded instead of 3)
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
+                    WriteState.Append(Base64EncodeMap[64]);
+                    WriteState.Padding = 0;
+                    break;
+            }
         }
 
         private bool LineBreakNeeded(int numberOfBytesToAppend)
         {
-            if (_lineLength == -1) {
+            if (_lineLength == -1)
+            {
                 return false;
             }
 
@@ -321,52 +356,6 @@ namespace System.Net
             int numberOfCharsToAppend = numberOfCharsLeftInCurrentBlock + numberOfBlocksToAppend * SizeOfBase64EncodedBlock;
 
             return WriteState.CurrentLineLength + numberOfCharsToAppend + _writeState.FooterLength > _lineLength;
-        }
-
-        private int ApppendEncodedByte(byte b)
-        {
-            switch (WriteState.Padding)
-            {
-                case 0: // add first byte of 3
-                    WriteState.Append(Base64EncodeMap[(b & 0xfc) >> 2]);
-                    WriteState.LastBits = (byte)((b & 0x03) << 4);
-                    WriteState.Padding = 2;
-                    return 1;
-                case 2: // add second byte of 3
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xf0) >> 4)]);
-                    WriteState.LastBits = (byte)((b & 0x0f) << 2);
-                    WriteState.Padding = 1;
-                    return 1;
-                case 1: // add third byte of 3
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((b & 0xc0) >> 6)]);
-                    WriteState.Append(Base64EncodeMap[(b & 0x3f)]);
-                    WriteState.Padding = 0;
-                    return 1;
-                default:
-                    return 0; // TODO: illegal state. throw exception?
-            }
-        }
-
-        private void AppendPadding()
-        {
-            switch (WriteState.Padding)
-            {
-                case 0: // no padding needed
-                    break;
-                case 2: // 2 character padding needed (1 byte was encoded instead of 3)
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
-                    WriteState.Append(Base64EncodeMap[64]);
-                    WriteState.Append(Base64EncodeMap[64]);
-                    WriteState.Padding = 0;
-                    break;
-                case 1: // 1 character padding needed (2 bytes were encoded instead of 3)
-                    WriteState.Append(Base64EncodeMap[WriteState.LastBits]);
-                    WriteState.Append(Base64EncodeMap[64]);
-                    WriteState.Padding = 0;
-                    break;
-                default:
-                    break; // TODO: illegal state. throw exception?
-            }
         }
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
