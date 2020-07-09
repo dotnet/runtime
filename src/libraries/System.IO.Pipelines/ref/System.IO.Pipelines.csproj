@@ -4,10 +4,15 @@
     <Nullable>enable</Nullable>
     <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks
     we should use the lib asset instead. -->
-    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
+    <PackageTargetFramework>netcoreapp2.0;net461;$(NetFrameworkCurrent)</PackageTargetFramework>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipelines.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
