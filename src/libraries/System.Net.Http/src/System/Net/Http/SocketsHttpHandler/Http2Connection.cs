@@ -46,7 +46,13 @@ namespace System.Net.Http
         private long _idleSinceTickCount;
         private int _pendingWriters;
         private bool _lastPendingWriterShouldFlush;
-        private volatile bool _canAddNewStream = true;
+        private int _freeStreamSlots;
+        private long _freeStreamSlotsExpiration;
+        private const int SlotExpirationPeriod = 1000;
+        // _maxConcurrentStreams == 0 in the beginning because SETTINGS frame is sent asynchronously, so allow requests under the most commont stream limit to proceed.
+        // Once SETTINGS is received, _freeStreamSlots will be set to the actual value and requests above the limit will be retried.
+        // It takes an effect only if multiple HTTP/2 connections is enabled on the pool.
+        private const int InitialSlotsLimit = 100;
 
         // This means that the pool has disposed us, but there may still be
         // requests in flight that will continue to be processed.
@@ -118,12 +124,60 @@ namespace System.Net.Http
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
 
+            if (_pool.EnableMultipleHttp2Connections)
+            {
+                _freeStreamSlots = InitialSlotsLimit;
+            }
+
             if (NetEventSource.IsEnabled) TraceConnection(stream);
         }
 
         private object SyncObject => _httpStreams;
 
-        public bool CanAddNewStream => _canAddNewStream;
+        public bool AcquireStreamSlot()
+        {
+            while (true)
+            {
+                int currentSlots = _freeStreamSlots;
+                if (currentSlots == 0)
+                {
+                    long currentExpiration = _freeStreamSlotsExpiration;
+                    if (currentExpiration > Environment.TickCount64)
+                    {
+                        // No empty slots and it's too soon to request the latest value from the credit manager.
+                        return false;
+                    }
+
+                    _freeStreamSlotsExpiration = Environment.TickCount64 + SlotExpirationPeriod;
+
+                    int refreshedSlots = _concurrentStreams.Current;
+                    if (refreshedSlots == 0)
+                    {
+                        // Credit manager reported no available slots.
+                        return false;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _freeStreamSlots, refreshedSlots, 0) != 0)
+                    {
+                        // Other thread already updated _freeStreamSlots, so let's try acquiring a free slot again.
+                        continue;
+                    }
+                    currentSlots = refreshedSlots;
+                }
+                int reducedSlots = currentSlots - 1;
+                if (Interlocked.CompareExchange(ref _freeStreamSlots, reducedSlots, currentSlots) == currentSlots)
+                {
+                    // Slot was successfully acquired.
+                    return true;
+                }
+                // Other thread already updated _freeStreamSlots, so let's try acquiring a free slot again.
+            }
+        }
+
+        private void ReleaseStreamSlot()
+        {
+            Interlocked.Increment(ref _freeStreamSlots);
+        }
 
         public async ValueTask SetupAsync()
         {
@@ -589,6 +643,16 @@ namespace System.Net.Http
             int delta = effectiveValue - _maxConcurrentStreams;
             _maxConcurrentStreams = effectiveValue;
 
+            // On the initial settings frame we have to set the value received from the server
+            // because delta calculation doesn't make sense in this case.
+            if (_expectingSettingsAck)
+            {
+                Volatile.Write(ref _freeStreamSlots, effectiveValue);
+            }
+            else
+            {
+                Interlocked.Add(ref _freeStreamSlots, delta);
+            }
             _concurrentStreams.AdjustCredit(delta);
         }
 
@@ -1166,12 +1230,10 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                if (_pool.ThrowOnStreamLimitReached)
+                if (_pool.EnableMultipleHttp2Connections)
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
-                        // Maximum number of streams reached
-                        _canAddNewStream = false;
                         throw new HttpRequestException(SR.net_http_max_active_streams_number_reached, null, RequestRetryType.RetryOnNewConnection);
                     }
                 }
@@ -1294,7 +1356,9 @@ namespace System.Net.Http
             }
             catch
             {
+                ReleaseStreamSlot();
                 _concurrentStreams.AdjustCredit(1);
+                _pool.StreamSlotAvailable();
                 throw;
             }
             finally
@@ -1779,8 +1843,9 @@ namespace System.Net.Http
                 }
             }
 
+            ReleaseStreamSlot();
             _concurrentStreams.AdjustCredit(1);
-            _canAddNewStream = true;
+            _pool.StreamSlotAvailable();
         }
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes

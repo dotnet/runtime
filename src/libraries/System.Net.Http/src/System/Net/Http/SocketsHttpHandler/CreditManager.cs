@@ -29,6 +29,8 @@ namespace System.Net.Http
             _current = initialCredit;
         }
 
+        public int Current => _current;
+
         private object SyncObject
         {
             // Generally locking on "this" is considered poor form, but this type is internal,

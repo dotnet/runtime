@@ -69,6 +69,8 @@ namespace System.Net.Http
         private bool _http2Enabled;
         // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
         private Http2Connection[]? _http2Connections;
+        private SemaphoreSlim? _freeStreamSlots;
+        private int _waitingRequestCount;
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
@@ -325,7 +327,7 @@ namespace System.Net.Http
             }
         }
 
-        public bool ThrowOnStreamLimitReached => _http2Connections != null && _http2Connections.Length < _poolManager.Settings._maxHttp2ConnectionsPerServer;
+        public bool EnableMultipleHttp2Connections => _poolManager.Settings.EnableMultipleHttp2Connections;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
@@ -464,7 +466,7 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
             // See if we have an HTTP2 connection
-            Http2Connection? http2Connection = GetHttp2ConnectionAcceptingNewStreams();
+            Http2Connection? http2Connection = await GetHttp2ConnectionAcceptingNewStreams().ConfigureAwait(false);
 
             if (http2Connection != null)
             {
@@ -496,23 +498,28 @@ namespace System.Net.Http
             await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                IReadOnlyList<Http2Connection>? currentHttp2Connections = _http2Connections;
+                Http2Connection[]? currentHttp2Connections = _http2Connections;
                 if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
                 {
                     // Someone beat us to it
 
-                    for (int i = 0; i < currentHttp2Connections.Count; i++)
+                    if (!EnableMultipleHttp2Connections)
                     {
-                        if (currentHttp2Connections[i].CanAddNewStream)
-                        {
-                            if (NetEventSource.IsEnabled)
-                            {
-                                Trace("Using existing HTTP2 connection.");
-                            }
-
-                            return (currentHttp2Connections[i], false, null);
-                        }
+                        // Fast shortcut for the most common case
+                        return (currentHttp2Connections[0], false, null);
                     }
+
+                    http2Connection = FindHttp2ConnectionWithFreeStreamSlot(currentHttp2Connections);
+                    if (http2Connection != null)
+                    {
+                        return (http2Connection, false, null);
+                    }
+                }
+
+                if (currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer)
+                {
+                    // All connections are completely occupied. Retry request to make it wait until a stream slot gets available.
+                    throw new HttpRequestException(SR.net_http_max_active_streams_number_reached, null, RequestRetryType.RetryOnNewConnection);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -625,36 +632,103 @@ namespace System.Net.Http
             return await GetHttpConnectionAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        private Http2Connection? GetHttp2ConnectionAcceptingNewStreams()
+        private Http2Connection? FindHttp2ConnectionWithFreeStreamSlot(Http2Connection[]? connections)
         {
-            IReadOnlyList<Http2Connection>? localConnections = _http2Connections;
-
-            if (localConnections == null)
+            if (connections == null)
             {
                 return null;
             }
 
-            for (int i = 0; i < localConnections.Count; i++)
+            // Try finding an existing connection with available stream's quota.
+            for (int i = 0; i < connections.Length; i++)
             {
-                Http2Connection http2Connection = localConnections[i];
-
-                if (!_poolManager.Settings.EnableMultipleHttp2Connections || http2Connection.CanAddNewStream)
+                if (connections[i].AcquireStreamSlot())
                 {
-                    TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                    if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
+                    if (NetEventSource.IsEnabled)
                     {
-                        // Connection expired.
-                        http2Connection.Dispose();
-                        InvalidateHttp2Connection(http2Connection);
+                        Trace("Using existing HTTP2 connection.");
                     }
-                    else
+
+                    return connections[i];
+                }
+            }
+            return null;
+        }
+
+        private async Task<Http2Connection?> GetHttp2ConnectionAcceptingNewStreams()
+        {
+            if (!_poolManager.Settings.EnableMultipleHttp2Connections)
+            {
+                // Fast shortcut for the most common case.
+                Http2Connection[]? localConnections = _http2Connections;
+                return localConnections != null && IsAlive(localConnections[0]) ? localConnections[0] : null;
+            }
+
+            while (true)
+            {
+                Http2Connection[]? localConnections = _http2Connections;
+
+                if (localConnections == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < localConnections.Length; i++)
+                {
+                    Http2Connection http2Connection = localConnections[i];
+
+                    if (IsAlive(http2Connection) && http2Connection.AcquireStreamSlot())
                     {
                         return http2Connection;
                     }
                 }
-            }
 
-            return null;
+                // No connection with a free stream slot found.
+
+                if (localConnections.Length < _poolManager.Settings._maxHttp2ConnectionsPerServer)
+                {
+                    // Procceed to a new connection construction.
+                    return null;
+                }
+
+                // Connection maximum is reached. Wait for a free slot on any existing connection.
+
+                SemaphoreSlim? localfreeConnections;
+                lock (SyncObj)
+                {
+                    _waitingRequestCount++;
+                    if (_freeStreamSlots == null)
+                    {
+                        _freeStreamSlots = new SemaphoreSlim(0);
+                    }
+                    localfreeConnections = _freeStreamSlots;
+                }
+
+                await localfreeConnections.WaitAsync().ConfigureAwait(false);
+
+                lock (SyncObj)
+                {
+                    _waitingRequestCount--;
+                    if (_waitingRequestCount == 0)
+                    {
+                        // No more waiting requests. Stop tracking available stream slots.
+                        _freeStreamSlots = null;
+                    }
+                }
+            }
+        }
+
+        private bool IsAlive(Http2Connection http2Connection)
+        {
+            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+            if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
+            {
+                // Connection expired.
+                http2Connection.Dispose();
+                InvalidateHttp2Connection(http2Connection);
+                return false;
+            }
+            return true;
         }
 
         private void AddHttp2Connection(Http2Connection newConnection)
@@ -672,6 +746,15 @@ namespace System.Net.Http
                 }
 
                 _http2Connections = newHttp2Connections;
+            }
+        }
+
+        public void StreamSlotAvailable()
+        {
+            if (EnableMultipleHttp2Connections)
+            {
+                SemaphoreSlim? localFreeConnections = Volatile.Read(ref _freeStreamSlots);
+                localFreeConnections?.Release();
             }
         }
 
@@ -1405,6 +1488,7 @@ namespace System.Net.Http
                     if (localHttp2Connections[0] == connection)
                     {
                         _http2Connections = null;
+                        _freeStreamSlots?.Release(int.MaxValue);
                     }
                     return;
                 }
@@ -1422,10 +1506,12 @@ namespace System.Net.Http
 
                     if (invalidatedIndex < localHttp2Connections.Length - 1)
                     {
-                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - i);
+                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
                     }
 
                     _http2Connections = newHttp2Connections;
+                    // Wake up all waiting requests to create a new connection that will handle them.
+                    _freeStreamSlots?.Release(int.MaxValue);
                 }
             }
         }
