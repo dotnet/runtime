@@ -1566,6 +1566,106 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe Vector128<ulong> LoadAndReplicateToVector128(ulong* address) => LoadAndReplicateToVector128(address);
 
             /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadPairVector64(byte* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<double> Value1, Vector64<double> Value2) LoadPairVector64(double* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadPairVector64(short* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairVector64(int* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<long> Value1, Vector64<long> Value2) LoadPairVector64(long* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadPairVector64(sbyte* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairVector64(float* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadPairVector64(ushort* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairVector64(uint* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<ulong> Value1, Vector64<ulong> Value2) LoadPairVector64(ulong* address) => LoadPairVector64(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadPairVector128(byte* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadPairVector128(double* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadPairVector128(short* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadPairVector128(int* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadPairVector128(long* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadPairVector128(sbyte* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadPairVector128(float* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadPairVector128(ushort* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadPairVector128(uint* address) => LoadPairVector128(address);
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128(ulong* address) => LoadPairVector128(address);
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
