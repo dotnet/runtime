@@ -19,7 +19,7 @@ namespace Tracing.Tests.ProcessInfoValidation
 {
     public class ProcessInfoValidation
     {
-        public static IEnumerable<string> ParseCommandLine(string cmdline)
+        public static string NormalizeCommandLine(string cmdline)
         {
             // ASSUMPTION: double quotes (") and single quotes (') are used for paths with spaces
             // ASSUMPTION: This test will only have two parts to the commandline
@@ -55,7 +55,16 @@ namespace Tracing.Tests.ProcessInfoValidation
                 }
             }
 
-            return parts;
+            string normalizedCommandLine = parts
+                .Select(part => (new FileInfo(part)).FullName)
+                .Aggregate((s1, s2) => string.Join(' ', s1, s2));
+
+            // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
+            // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && normalizedCommandLine.StartsWith("/tmp/"))
+                normalizedCommandLine = "/private" + normalizedCommandLine;
+
+            return normalizedCommandLine;
         }
 
         public static int Main(string[] args)
@@ -117,8 +126,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             // or
             // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
             string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
-            IEnumerable<FileInfo> commandLineParts = ParseCommandLine(commandLine).Select(part => new FileInfo(part));
-            string receivedCommandLine = commandLineParts.Select(f => f.FullName).Aggregate((s1, s2) => string.Join(' ', s1, s2));
+            string receivedCommandLine = NormalizeCommandLine(commandLine);
+
             Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
 
             // VALIDATE OS
