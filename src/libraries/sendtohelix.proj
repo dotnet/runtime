@@ -80,8 +80,8 @@
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' != 'true'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -144,7 +144,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' != 'true'">
+          Condition="'$(TestPackages)' != 'true' and '$(TargetsMobile)' != 'true'">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 
