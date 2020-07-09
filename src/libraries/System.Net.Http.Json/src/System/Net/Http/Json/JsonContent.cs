@@ -78,7 +78,7 @@ namespace System.Net.Http.Json
                     {
                         // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                         // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                        using Utf8JsonWriter writer = new Utf8JsonWriter(transcodingStream);
+                        using var writer = new Utf8JsonWriter(transcodingStream);
                         JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
@@ -119,10 +119,10 @@ namespace System.Net.Http.Json
 #if NETCOREAPP
                     // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                     // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                    using Utf8JsonWriter writer = new Utf8JsonWriter(targetStream);
+                    using var writer = new Utf8JsonWriter(targetStream);
                     JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
 #else
-                    Debug.Assert(async);
+                    Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }

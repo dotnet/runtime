@@ -16,7 +16,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public static void Ctor_CopyTo_GetStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            var memoryStream = new MemoryStream();
 
             new Utf8StringContent(u8("Hello")).CopyTo(memoryStream, default, default);
 
@@ -26,10 +26,10 @@ namespace System.Net.Http.Tests
         [Fact]
         public static void Ctor_ReadAsStream()
         {
-            Utf8StringContent content = new Utf8StringContent(u8("Hello"));
+            var content = new Utf8StringContent(u8("Hello"));
             Stream stream = content.ReadAsStream();
 
-            MemoryStream memoryStream = new MemoryStream();
+            var memoryStream = new MemoryStream();
             stream.CopyTo(memoryStream);
             memoryStream.Seek(0, SeekOrigin.Begin);
             Assert.Equal(u8("Hello").ToByteArray(), memoryStream.ToArray());

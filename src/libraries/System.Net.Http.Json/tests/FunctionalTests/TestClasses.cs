@@ -17,15 +17,15 @@ namespace System.Net.Http.Json.Functional.Tests
 
         public void Validate()
         {
-            Assert.Equal("David", Name);
-            Assert.Equal(24, Age);
+            Assert.Equal("R. Daneel Olivaw", Name);
+            Assert.Equal(19_230, Age);
             Assert.Equal("Horní Dolní", PlaceOfBirth);
             Assert.Null(Parent);
         }
 
         public static Person Create()
         {
-            return new Person { Name = "David", Age = 24, PlaceOfBirth = "Horní Dolní"};
+            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horní Dolní"};
         }
 
         public string Serialize(JsonSerializerOptions options = null)

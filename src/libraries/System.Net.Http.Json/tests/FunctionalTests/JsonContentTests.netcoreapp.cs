@@ -24,7 +24,7 @@ namespace System.Net.Http.Json.Functional.Tests
             using JsonContent content = JsonContent.Create(person);
             using MemoryStream stream = new MemoryStream();
             // HttpContent.CopyTo internally calls overriden JsonContent.SerializeToStream, which is the targeted method of this test.
-            content.CopyTo(stream, null, default);
+            content.CopyTo(stream, context: null, cancellationToken: default);
             stream.Seek(0, SeekOrigin.Begin);
             using StreamReader reader = new StreamReader(stream);
             string json = reader.ReadToEnd();
