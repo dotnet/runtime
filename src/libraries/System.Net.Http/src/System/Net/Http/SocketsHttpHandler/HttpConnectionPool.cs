@@ -44,21 +44,21 @@ namespace System.Net.Http
         private bool _persistAuthority;
 
         /// <summary>
-        /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blacklist to be ignored
-        /// for <see cref="AltSvcBlacklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
+        /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
+        /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
         /// </summary>
-        private volatile HashSet<HttpAuthority>? _altSvcBlacklist;
-        private CancellationTokenSource? _altSvcBlacklistTimerCancellation;
+        private volatile HashSet<HttpAuthority>? _altSvcBlocklist;
+        private CancellationTokenSource? _altSvcBlocklistTimerCancellation;
         private volatile bool _altSvcEnabled = true;
 
         /// <summary>
-        /// If <see cref="_altSvcBlacklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlacklistTimeoutInMilliseconds"/> milliseconds.
+        /// If <see cref="_altSvcBlocklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds.
         /// This is to prevent a failing server from bloating the dictionary beyond a reasonable value.
         /// </summary>
         private const int MaxAltSvcIgnoreListSize = 8;
 
-        /// <summary>The time, in milliseconds, that an authority should remain in <see cref="_altSvcBlacklist"/>.</summary>
-        private const int AltSvcBlacklistTimeoutInMilliseconds = 10 * 60 * 1000;
+        /// <summary>The time, in milliseconds, that an authority should remain in <see cref="_altSvcBlocklist"/>.</summary>
+        private const int AltSvcBlocklistTimeoutInMilliseconds = 10 * 60 * 1000;
 
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
@@ -712,7 +712,7 @@ namespace System.Net.Http
 #if false
                 if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                 {
-                    BlacklistAuthority(authority);
+                    BlocklistAuthority(authority);
                     throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 #endif
@@ -803,11 +803,11 @@ namespace System.Net.Http
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blacklist the authority and retry the request at the origin.
+                // In this case, we blocklist the authority and retry the request at the origin.
                 if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
                 {
                     response.Dispose();
-                    BlacklistAuthority(h3Connection.Authority);
+                    BlocklistAuthority(h3Connection.Authority);
                     continue;
                 }
 
@@ -846,13 +846,13 @@ namespace System.Net.Http
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 
-                        if (_altSvcBlacklist != null)
+                        if (_altSvcBlocklist != null)
                         {
-                            lock (_altSvcBlacklist)
+                            lock (_altSvcBlocklist)
                             {
-                                if (_altSvcBlacklist.Contains(authority))
+                                if (_altSvcBlocklist.Contains(authority))
                                 {
-                                    // Skip authorities in our blacklist.
+                                    // Skip authorities in our blocklist.
                                     continue;
                                 }
                             }
@@ -940,46 +940,46 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Blacklists an authority and resets the current authority back to origin.
-        /// If the number of blacklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
+        /// Blocklists an authority and resets the current authority back to origin.
+        /// If the number of blocklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
         /// Alt-Svc will be disabled entirely for a period of time.
         /// </summary>
         /// <remarks>
         /// This is called when we get a "421 Misdirected Request" from an alternate authority.
         /// A future strategy would be to retry the individual request on an older protocol, we'd want to have
-        /// some logic to blacklist after some number of failures to avoid doubling our request latency.
+        /// some logic to blocklist after some number of failures to avoid doubling our request latency.
         ///
         /// For now, the spec states alternate authorities should be able to handle ALL requests, so this
-        /// is treated as an exceptional error by immediately blacklisting the authority.
+        /// is treated as an exceptional error by immediately blocklisting the authority.
         /// </remarks>
-        internal void BlacklistAuthority(HttpAuthority badAuthority)
+        internal void BlocklistAuthority(HttpAuthority badAuthority)
         {
             Debug.Assert(badAuthority != null);
             Debug.Assert(badAuthority != _originAuthority);
 
-            HashSet<HttpAuthority>? altSvcBlacklist = _altSvcBlacklist;
+            HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
 
-            if (altSvcBlacklist == null)
+            if (altSvcBlocklist == null)
             {
                 lock (SyncObj)
                 {
-                    altSvcBlacklist = _altSvcBlacklist;
-                    if (altSvcBlacklist == null)
+                    altSvcBlocklist = _altSvcBlocklist;
+                    if (altSvcBlocklist == null)
                     {
-                        altSvcBlacklist = new HashSet<HttpAuthority>();
-                        _altSvcBlacklistTimerCancellation = new CancellationTokenSource();
-                        _altSvcBlacklist = altSvcBlacklist;
+                        altSvcBlocklist = new HashSet<HttpAuthority>();
+                        _altSvcBlocklistTimerCancellation = new CancellationTokenSource();
+                        _altSvcBlocklist = altSvcBlocklist;
                     }
                 }
             }
 
             bool added, disabled = false;
 
-            lock (altSvcBlacklist)
+            lock (altSvcBlocklist)
             {
-                added = altSvcBlacklist.Add(badAuthority);
+                added = altSvcBlocklist.Add(badAuthority);
 
-                if (added && altSvcBlacklist.Count >= MaxAltSvcIgnoreListSize && _altSvcEnabled)
+                if (added && altSvcBlocklist.Count >= MaxAltSvcIgnoreListSize && _altSvcEnabled)
                 {
                     _altSvcEnabled = false;
                     disabled = true;
@@ -996,26 +996,26 @@ namespace System.Net.Http
                 }
             }
 
-            Debug.Assert(_altSvcBlacklistTimerCancellation != null);
+            Debug.Assert(_altSvcBlocklistTimerCancellation != null);
             if (added)
             {
-               _ = Task.Delay(AltSvcBlacklistTimeoutInMilliseconds)
+               _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
                     .ContinueWith(t =>
                     {
-                        lock (altSvcBlacklist)
+                        lock (altSvcBlocklist)
                         {
-                            altSvcBlacklist.Remove(badAuthority);
+                            altSvcBlocklist.Remove(badAuthority);
                         }
-                    }, _altSvcBlacklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
             if (disabled)
             {
-                _ = Task.Delay(AltSvcBlacklistTimeoutInMilliseconds)
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
                     .ContinueWith(t =>
                     {
                         _altSvcEnabled = true;
-                    }, _altSvcBlacklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -1401,11 +1401,11 @@ namespace System.Net.Http
                         _authorityExpireTimer = null;
                     }
 
-                    if (_altSvcBlacklistTimerCancellation != null)
+                    if (_altSvcBlocklistTimerCancellation != null)
                     {
-                        _altSvcBlacklistTimerCancellation.Cancel();
-                        _altSvcBlacklistTimerCancellation.Dispose();
-                        _altSvcBlacklistTimerCancellation = null;
+                        _altSvcBlocklistTimerCancellation.Cancel();
+                        _altSvcBlocklistTimerCancellation.Dispose();
+                        _altSvcBlocklistTimerCancellation = null;
                     }
                 }
                 Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
