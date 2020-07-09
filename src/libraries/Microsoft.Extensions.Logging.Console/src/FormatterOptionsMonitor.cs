@@ -12,8 +12,6 @@ namespace Microsoft.Extensions.Logging.Console
     internal class FormatterOptionsMonitor<TOptions> : IOptionsMonitor<TOptions> where TOptions : ConsoleFormatterOptions
     {
         private TOptions _options;
-        private event Action<TOptions, string> _onChange;
-
         public FormatterOptionsMonitor(TOptions options)
         {
             _options = options;
@@ -23,16 +21,9 @@ namespace Microsoft.Extensions.Logging.Console
 
         public IDisposable OnChange(Action<TOptions, string> listener)
         {
-            _onChange += listener;
             return null;
         }
 
         public TOptions CurrentValue => _options;
-
-        public void Set(TOptions options)
-        {
-            _options = options;
-            _onChange?.Invoke(options, "");
-        }
     }
 }
