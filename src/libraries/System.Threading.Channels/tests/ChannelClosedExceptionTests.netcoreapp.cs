@@ -10,6 +10,7 @@ namespace System.Threading.Channels.Tests
     public partial class ChannelClosedExceptionTests
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in wasm
         public void Serialization_Roundtrip()
         {
             var s = new MemoryStream();
