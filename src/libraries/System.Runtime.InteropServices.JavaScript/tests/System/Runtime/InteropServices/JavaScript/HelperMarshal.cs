@@ -110,5 +110,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _jsAddAsFunctionResult = (int)func.Call(null, 20, 30);
         }
+
+        internal static int _functionResultValue;
+        private static Func<int, int, int> CreateFunctionDelegate()
+        {
+            return (a, b) =>
+            {
+                _functionResultValue = a + b;
+                return _functionResultValue;
+            };
+        }
     }
 }
