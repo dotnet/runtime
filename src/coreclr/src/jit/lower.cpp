@@ -5098,6 +5098,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         divMod->SetOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
+        assert(divMod->MarkedDivideByConstOptimized());
         return true;
     }
     if (isDiv)
@@ -5110,6 +5111,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divMod->SetOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
+            assert(divMod->MarkedDivideByConstOptimized());
             return true;
         }
     }
@@ -5134,6 +5136,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
+        assert(divMod->MarkedDivideByConstOptimized());
 
         // Depending on the "add" flag returned by GetUnsignedMagicNumberForDivide we need to generate:
         // add == false (when divisor == 3 for example):
@@ -5207,7 +5210,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, div, divisor, mul, dividend);
         }
         ContainCheckRange(firstNode, divMod);
-
         return true;
     }
 #endif
