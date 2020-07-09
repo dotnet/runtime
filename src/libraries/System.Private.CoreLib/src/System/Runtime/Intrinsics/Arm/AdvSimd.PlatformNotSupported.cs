@@ -1568,6 +1568,106 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadPairVector64(byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<double> Value1, Vector64<double> Value2) LoadPairVector64(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadPairVector64(short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairVector64(int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<long> Value1, Vector64<long> Value2) LoadPairVector64(long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadPairVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairVector64(float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadPairVector64(ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairVector64(uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector64<ulong> Value1, Vector64<ulong> Value2) LoadPairVector64(ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadPairVector128(byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadPairVector128(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadPairVector128(short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadPairVector128(int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadPairVector128(long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadPairVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadPairVector128(float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadPairVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadPairVector128(uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LDP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
