@@ -3260,7 +3260,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 }
             }
 
-            // We really don't need this check anymore.
             if (rank > MAX_RANK)
             {
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);
