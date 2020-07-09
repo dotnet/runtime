@@ -488,3 +488,6 @@ example:
   </assembly>
 </linker>
 ```
+Notice that a descriptor file containing the custom attribute type overrides this behavior. In case the
+custom attribute type is being referenced in a descriptor xml file and in the linkattributes xml file
+for removal, the custom attribute will not be removed
