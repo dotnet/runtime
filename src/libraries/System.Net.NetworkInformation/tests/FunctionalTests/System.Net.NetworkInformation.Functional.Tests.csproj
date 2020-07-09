@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <!-- Shared code with src assembly -->
     <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs"
              Link="SharedSource\StringParsingHelpers.Addresses.cs" />
