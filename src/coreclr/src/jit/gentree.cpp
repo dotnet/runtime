@@ -6676,8 +6676,8 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 //    optimization for this node.
 //
 // Arguments:
-//    this       - a GenTreeOp node
-//    comp       - the compiler instance
+//    this - a GenTreeOp node
+//    comp - the compiler instance
 //
 // Return Value:
 //    Return true iff the node is a GT_DIV,GT_UDIV, GT_MOD or GT_UMOD with
@@ -6686,6 +6686,11 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 //
 bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 {
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     if (!OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD))
     {
         return false;
@@ -6807,7 +6812,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 
 //------------------------------------------------------------------------
 // CheckDivideByConstOptimized:
-//      Checks if we will can use the division by constant optimization
+//      Checks if we can use the division by constant optimization
 //      on this node
 //      and if so sets the flag GTF_DIV_BY_CNS_OPT and
 //      set GTF_DONT_CSE on the constant node
