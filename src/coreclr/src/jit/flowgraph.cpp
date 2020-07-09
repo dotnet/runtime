@@ -8683,19 +8683,19 @@ private:
             comp->genReturnLocal      = returnLocalNum;
             LclVarDsc& returnLocalDsc = comp->lvaTable[returnLocalNum];
 
-            if (comp->compMethodReturnsNativeScalarType())
+            if (comp->compMethodReturnsSingleRegType())
             {
                 if (!comp->compDoOldStructRetyping())
                 {
                     returnLocalDsc.lvType = genActualType(comp->info.compRetType);
-                    if (varTypeIsStruct(returnLocalDsc.lvType))
-                    {
-                        comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
-                    }
                 }
                 else
                 {
                     returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+                }
+                if (varTypeIsStruct(returnLocalDsc.lvType))
+                {
+                    comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
                 }
             }
             else if (comp->compMethodReturnsRetBufAddr())

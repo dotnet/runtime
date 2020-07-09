@@ -1076,7 +1076,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
                 var_types regType = use.GetNode()->TypeGet();
                 // Account for the possibility that float fields may be passed in integer registers.
-                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(regIndex)))
+                if (varTypeUsesFloatReg(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(regIndex)))
                 {
                     regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
                 }
@@ -1305,17 +1305,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
             }
         }
     }
-#elif defined(TARGET_AMD64)
-    // TYP_SIMD8 parameters that are passed as longs
-    if (type == TYP_SIMD8 && genIsValidIntReg(info->GetRegNum()))
-    {
-        GenTree* bitcast = comp->gtNewBitCastNode(TYP_LONG, arg);
-        BlockRange().InsertAfter(arg, bitcast);
-
-        *ppArg = arg = bitcast;
-        assert(info->GetNode() == arg);
-        type = TYP_LONG;
-    }
 #endif // defined(TARGET_X86)
 #endif // defined(FEATURE_SIMD)
 
@@ -1358,6 +1347,30 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     else
 #endif // !defined(TARGET_64BIT)
     {
+        if (info->isPassedInRegisters() && (info->argType != TYP_STRUCT))
+        {
+            var_types argType = info->argType;
+            if (type == TYP_STRUCT)
+            {
+                // We can have a SIMD type argument that is not recognized by the JIT as a SIMD type.
+                // This happens for Vector*<__Canon>. We must handle this as an enregisterable SIMD
+                // type.
+                assert(arg->OperIs(GT_OBJ));
+                arg->ChangeOper(GT_IND);
+                arg->gtType = argType;
+                type        = argType;
+            }
+            else if (varTypeUsesFloatReg(type) != genIsValidFloatReg(info->GetRegNum()))
+            {
+                assert(genIsValidFloatReg(info->GetRegNum()) == varTypeUsesFloatReg(argType));
+                GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, argType, arg, nullptr);
+                BlockRange().InsertAfter(arg, bitcast);
+
+                *ppArg = arg = bitcast;
+                assert(info->GetNode() == arg);
+                type = argType;
+            }
+        }
 
 #ifdef TARGET_ARMARCH
         if (call->IsVarargs() || comp->opts.compUseSoftFP)
@@ -3447,7 +3460,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     }
 #endif // FEATURE_HFA
 
-    assert(!comp->compDoOldStructRetyping());
+    assert(!comp->compDoOldStructRetyping() || varTypeIsSIMD(call));
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
     var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
@@ -3459,6 +3472,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     if (BlockRange().TryGetUse(call, &callUse))
     {
         GenTree* user = callUse.User();
+
         switch (user->OperGet())
         {
             case GT_RETURN:
@@ -6342,13 +6356,15 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     if (ret->TypeIs(TYP_STRUCT))
     {
         GenTree* op1 = ret->gtGetOp1();
-        // op1 must be either a lclvar or a multi-reg returning call
+        // op1 must be either a lclvar or a call returned in one or more registers.
         if (op1->OperGet() == GT_LCL_VAR)
         {
             GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
             LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->GetLclNum()]);
-            // This must be a multi-reg return or an HFA of a single element.
-            assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
+            // This must be a multi-reg return, a SIMD type or an HFA of a single element.
+            // Note that the returned variable may be TYP_STRUCT even if it's returned as a SIMD type.
+            assert(varDsc->lvIsMultiRegRet || varTypeIsSIMD(comp->info.compRetNativeType) ||
+                   (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
             // Mark var as contained if not enregisterable.
             if (!varTypeIsEnregisterable(op1))

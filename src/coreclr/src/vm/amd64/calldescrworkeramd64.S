@@ -85,14 +85,14 @@ LOCAL_LABEL(NoStackArguments):
         mov     rax, [rbx + CallDescrData__pFloatArgumentRegisters]
         and     rax, rax
         jz      LOCAL_LABEL(NoFloatArguments)
-        movsd   xmm0, [rax + 0]
-        movsd   xmm1, [rax + 16]
-        movsd   xmm2, [rax + 32]
-        movsd   xmm3, [rax + 48]
-        movsd   xmm4, [rax + 64]
-        movsd   xmm5, [rax + 80]
-        movsd   xmm6, [rax + 96]
-        movsd   xmm7, [rax + 112]
+        movapd  xmm0, [rax + 0]
+        movapd  xmm1, [rax + 16]
+        movapd  xmm2, [rax + 32]
+        movapd  xmm3, [rax + 48]
+        movapd  xmm4, [rax + 64]
+        movapd  xmm5, [rax + 80]
+        movapd  xmm6, [rax + 96]
+        movapd  xmm7, [rax + 112]
 LOCAL_LABEL(NoFloatArguments):
         call    qword ptr [rbx + CallDescrData__pTarget]     // call target function
 
@@ -134,9 +134,16 @@ LOCAL_LABEL(NotFirstSSESecondIntegerEightbyte):
 LOCAL_LABEL(NotFirstIntegerSecondSSEEightbyte):
         // Struct with two SSE eightbytes
         cmp     ecx, 16 + 3
-        jne     LOCAL_LABEL(Epilog) // unexpected
+        jne     LOCAL_LABEL(NotTwoSSEEightBytes) // unexpected
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
         movsd   real8 ptr [rbx+CallDescrData__returnValue + 8], xmm1
+
+LOCAL_LABEL(NotTwoSSEEightBytes):
+        // Struct with one 16 byte vector
+        cmp     ecx, 16 + 4
+        jne     LOCAL_LABEL(Epilog) // unexpected
+        movapd  xmmword ptr [rbx+CallDescrData__returnValue], xmm0
+
 #endif // UNIX_AMD64_ABI
 
         jmp     LOCAL_LABEL(Epilog)

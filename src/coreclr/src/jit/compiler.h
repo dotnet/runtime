@@ -764,7 +764,7 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeIsFloating(TypeGet()))
+        if (varTypeUsesFloatReg(TypeGet()))
         {
             if (GetRegNum() != REG_STK)
             {
@@ -900,7 +900,7 @@ public:
                     bool                 propagate = true);
     bool IsFloatRegType() const
     {
-        return isFloatRegType(lvType) || lvIsHfaRegArg();
+        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
     }
 
     var_types GetHfaType() const
@@ -1727,6 +1727,14 @@ public:
 #endif // TARGET_ARM64
         }
 #endif // FEATURE_HFA
+#ifdef UNIX_AMD64_ABI
+        if (varTypeIsSIMD(argType))
+        {
+            // We don't yet support passing 32-byte vectors in registers.
+            assert(argType == TYP_SIMD16);
+            size = 2;
+        }
+#endif // UNIX_AMD64_ABI
         return size;
     }
 
@@ -7868,7 +7876,6 @@ private:
         CORINFO_CLASS_HANDLE SIMDVectorHandle;
 
 #ifdef FEATURE_HW_INTRINSICS
-#if defined(TARGET_ARM64)
         CORINFO_CLASS_HANDLE Vector64FloatHandle;
         CORINFO_CLASS_HANDLE Vector64DoubleHandle;
         CORINFO_CLASS_HANDLE Vector64IntHandle;
@@ -7879,7 +7886,7 @@ private:
         CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
         CORINFO_CLASS_HANDLE Vector64ULongHandle;
-#endif // defined(TARGET_ARM64)
+
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;
         CORINFO_CLASS_HANDLE Vector128IntHandle;
@@ -9125,9 +9132,9 @@ public:
     // 4 or 8 gets normalized to TYP_BYTE/TYP_SHORT/TYP_INT/TYP_LONG; On Arm HFA structs).
     // Methods returning such structs are considered to return non-struct return value and
     // this method returns true in that case.
-    bool compMethodReturnsNativeScalarType()
+    bool compMethodReturnsSingleRegType()
     {
-        return (info.compRetType != TYP_VOID) && !varTypeIsStruct(info.compRetNativeType);
+        return ((info.compRetType != TYP_VOID) && (info.compRetNativeType != TYP_STRUCT));
     }
 
     // Returns true if the method being compiled returns RetBuf addr as its return value
@@ -9174,7 +9181,7 @@ public:
         // On all other targets that support multireg return values:
         // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
-        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
+        return (info.compRetNativeType == TYP_STRUCT) && (info.compRetBuffArg == BAD_VAR_NUM);
 #endif // TARGET_XXX
 
 #else // not FEATURE_MULTIREG_RET
@@ -9206,7 +9213,7 @@ public:
         // On all other targets that support multireg return values:
         // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
-        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
+        return (info.compRetNativeType == TYP_STRUCT) && (info.compRetBuffArg == BAD_VAR_NUM);
 #endif // TARGET_XXX
 
 #else // not FEATURE_MULTIREG_RET
@@ -9220,8 +9227,7 @@ public:
     // Returns true if the method being compiled returns a value
     bool compMethodHasRetVal()
     {
-        return compMethodReturnsNativeScalarType() || compMethodReturnsRetBufAddr() ||
-               compMethodReturnsMultiRegRetType();
+        return compMethodReturnsSingleRegType() || compMethodReturnsRetBufAddr() || compMethodReturnsMultiRegRetType();
     }
 
     // Returns true if the method requires a PInvoke prolog and epilog

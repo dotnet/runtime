@@ -1099,6 +1099,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                     case SystemVClassificationTypeSSE:
                         cFPRegs++;
                         break;
+                    case SystemVClassificationTypeSSEUp:
+                        // No additional register used.
+                        break;
                     default:
                         _ASSERTE(false);
                         break;
@@ -1499,31 +1502,43 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if (pMT->IsRegPassedStruct())
             {
                 EEClass* eeClass = pMT->GetClass();
+                int eightByteCount = eeClass->GetNumberEightBytes();
 
-                if (eeClass->GetNumberEightBytes() == 1)
+                switch (eightByteCount)
                 {
+                case 1:
                     // Structs occupying just one eightbyte are treated as int / double
                     if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
                     {
                         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
                     }
-                }
-                else
-                {
+                    break;
+                case 2:
                     // Size of the struct is 16 bytes
                     flags |= (16 << RETURN_FP_SIZE_SHIFT);
-                    // The lowest two bits of the size encode the order of the int and SSE fields
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    // The lowest three bits of the size encode the mix of SSE/SSEUp and integer fields.
+                    //   - 1 indicates that the first eightByte is integral
+                    //   - 2 indicates that the second eightByte is integral
+                    //   - 4 indicates that this is a single-register vector
+                    // Both the 1 and 2 bit may be set, but neither can be set in conjunction with 4. 
+                    if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSEUp)
                     {
-                        flags |= (1 << RETURN_FP_SIZE_SHIFT);
+                        flags |= (4 << RETURN_FP_SIZE_SHIFT);
                     }
+                    else
+                    {
+                        if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                        {
+                            flags |= (1 << RETURN_FP_SIZE_SHIFT);
+                        }
 
-                    if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
-                    {
-                        flags |= (2 << RETURN_FP_SIZE_SHIFT);
+                        if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
+                        {
+                            flags |= (2 << RETURN_FP_SIZE_SHIFT);
+                        }
                     }
+                    break;
                 }
-
                 break;
             }
 #else // UNIX_AMD64_ABI

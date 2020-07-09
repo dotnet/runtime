@@ -1579,6 +1579,11 @@ void CodeGen::psiBegProlog()
                         regType = compiler->mangleVarArgsType(regType);
                         assert(genMapRegNumToRegArgNum((nCnt == 0 ? regNum : otherRegNum), regType) != (unsigned)-1);
 #endif // DEBUG
+                        // If we have a SIMD type, the only remaining eightBytes will be SSEUp.
+                        if (varTypeIsSIMD(regType))
+                        {
+                            break;
+                        }
                     }
 #ifdef USING_SCOPE_INFO
                     newScope->scRegister    = true;

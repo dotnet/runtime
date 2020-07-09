@@ -511,7 +511,6 @@ typedef unsigned char   regNumberSmall;
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
-  #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #ifdef    UNIX_AMD64_ABI
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
@@ -524,6 +523,7 @@ typedef unsigned char   regNumberSmall;
 
   #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
+  #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (double).
 #else // !UNIX_AMD64_ABI
   #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
@@ -538,6 +538,7 @@ typedef unsigned char   regNumberSmall;
                                            // This is also the maximum number of registers for a MultiReg node.
                                            // Note that this must be greater than 1 so that GenTreeLclVar can have an array of
                                            // MAX_MULTIREG_COUNT - 1.
+  #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #endif // !UNIX_AMD64_ABI
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -1590,7 +1591,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #define BITS_PER_BYTE              8
 #define REGNUM_MASK              ((1 << REGNUM_BITS) - 1)     // a n-bit mask use to encode multiple REGNUMs into a unsigned int
-#define RBM_ALL(type) (varTypeIsFloating(type) ? RBM_ALLFLOAT : RBM_ALLINT)
+#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -1896,7 +1897,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
 #else
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         regMask = genRegMaskFloat(regNum, type);
     }
@@ -1944,7 +1945,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         if (regReturn > REG_FP_LAST)
         {

@@ -16787,11 +16787,9 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                 if (retRegCount != 0)
                 {
-                    // If single eightbyte, the return type would have been normalized and there won't be a temp var.
-                    // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes -
-                    // max allowed.)
-                    assert(retRegCount == MAX_RET_REG_COUNT);
-                    // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
+                    // If this is a single register, it must be a SIMD type that spans multiple eightbytes.
+                    // Otherwise, the return type would have been normalized and there won't be a temp var.
+                    // This code will be called only if the struct return has not been normalized.
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #endif // defined(UNIX_AMD64_ABI)
 

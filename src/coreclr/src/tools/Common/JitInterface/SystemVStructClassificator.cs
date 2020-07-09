@@ -239,7 +239,9 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
+            int typeSize = typeDesc.GetElementSize().AsInt;
+
+            // The SIMD Intrinsic opaque vector types are handled specially.
             if (typeDesc.IsIntrinsic)
             {
                 InstantiatedType instantiatedType = typeDesc as InstantiatedType;
@@ -248,7 +250,22 @@ namespace Internal.JitInterface
                     if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
                         VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
                     {
-                        return false;
+                        if (typeSize == 32)
+                        {
+                            // We don't support 32-byte vectors passed in registers yet.
+                            return false;
+                        }
+                        Debug.Assert(typeSize == 8 || typeSize == 16);
+                        helper.FieldSizes[0] = typeSize;
+                        helper.FieldClassifications[0] = SystemVClassificationTypeSSE;
+                        if (typeSize > 8)
+                        {
+                            helper.FieldClassifications[1] = SystemVClassificationTypeSSEUp;
+                        }
+                        // Just one field.
+                        helper.CurrentUniqueOffsetField = 1;
+                        AssignClassifiedEightByteTypes(ref helper);
+                        return true;
                     }
                 }
             }
@@ -497,7 +514,7 @@ namespace Internal.JitInterface
                         {
                             helper.EightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeIntegerByRef;
                         }
-                        else
+                        else if (helper.EightByteClassifications[currentFieldEightByte] != SystemVClassificationTypeSSEUp)
                         {
                             helper.EightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeSSE;
                         }

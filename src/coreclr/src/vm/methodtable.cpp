@@ -2304,6 +2304,60 @@ static SystemVClassificationType ReClassifyField(SystemVClassificationType origi
     }
 }
 
+// Returns 'true' if the struct is a vector passed in registers, 'false' otherwise.
+bool MethodTable::ClassifyEightBytesVectorType(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel)
+{
+    if (helperPtr->currentUniqueOffsetField != 0)
+    {
+        return false;
+    }
+    if (IsIntrinsicType())
+    {
+        LPCUTF8 namespaceName;
+        LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
+        unsigned vectorSize = 0;
+
+        if (strcmp(className, "Vector128`1") == 0)
+        {
+            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
+            vectorSize = 16;
+            helperPtr->eightByteCount = 2;
+        }
+        else if (strcmp(className, "Vector64`1") == 0)
+        {
+            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
+            vectorSize = 8;
+            helperPtr->eightByteCount = 1;
+        }
+        else if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            vectorSize = helperPtr->structSize;
+        }
+        if ((vectorSize != 0) && (helperPtr->structSize == vectorSize))
+        {
+            if ((helperPtr->largestFieldOffset != -1) && (helperPtr->fieldSizes[0] != vectorSize))
+            {
+                return false;
+            }
+            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is an opaque vector, size %d:\n",
+                nestingLevel * 5, "", this->GetDebugClassName(), vectorSize));
+            helperPtr->fieldSizes[0] = vectorSize;
+            helperPtr->fieldOffsets[0] = 0;
+            helperPtr->fieldClassifications[0] = SystemVClassificationTypeSSE;
+            if (vectorSize > 8)
+            {
+                helperPtr->fieldClassifications[1] = SystemVClassificationTypeSSEUp;
+            }
+            // Just one field.
+            helperPtr->largestFieldOffset = 0;
+            helperPtr->currentUniqueOffsetField = 1;
+            AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+            return true;
+        }
+    }
+    return false;
+}
+
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
 bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                      unsigned int nestingLevel,
@@ -2327,30 +2381,10 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         return false;
     }
 
-    // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-    if (IsIntrinsicType())
+    // The SIMD Intrinsic opaque vector types are handled specially.
+    if (ClassifyEightBytesVectorType(helperPtr, nestingLevel))
     {
-        LPCUTF8 namespaceName;
-        LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
-
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
-        {
-            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
-        }
-
-        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-        {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
-        }
+        return true;
     }
 
 #ifdef _DEBUG
@@ -2596,30 +2630,10 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
 
-    // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-    if (IsIntrinsicType())
+    // The SIMD Intrinsic opaque vector types are handled specially.
+    if (ClassifyEightBytesVectorType(helperPtr, nestingLevel))
     {
-        LPCUTF8 namespaceName;
-        LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
-
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
-        {
-            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
-        }
-
-        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-        {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
-        }
+        return true;
     }
 
 #ifdef _DEBUG
@@ -2889,6 +2903,10 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 if (helperPtr->eightByteClassifications[currentFieldEightByte] == fieldClassificationType)
                 {
                     // Do nothing. The eight-byte already has this classification.
+                }
+                else if ((fieldClassificationType == SystemVClassificationTypeSSE) && (currentFieldEightByte != fieldStartEightByte))
+                {
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeSSEUp;
                 }
                 else if (helperPtr->eightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeNoClass)
                 {

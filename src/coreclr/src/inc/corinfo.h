@@ -247,7 +247,7 @@ enum SystemVClassificationType : unsigned __int8
     SystemVClassificationTypeIntegerReference   = 5,
     SystemVClassificationTypeIntegerByRef       = 6,
     SystemVClassificationTypeSSE                = 7,
-    // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
+    SystemVClassificationTypeSSEUp              = 8,
     // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.

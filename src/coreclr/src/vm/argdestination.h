@@ -155,7 +155,8 @@ public:
         _ASSERTE(eeClass != NULL);
 
         // We start at the first eightByte that the destOffset didn't skip completely.
-        for (int i = destOffset / 8; i < eeClass->GetNumberEightBytes(); i++)
+        int eightByteCount = eeClass->GetNumberEightBytes();
+        for (int i = destOffset / 8; i < eightByteCount; i++)
         {
             int eightByteSize = eeClass->GetEightByteSize(i);
             SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
@@ -171,6 +172,10 @@ public:
                 if (eightByteSize == 8)
                 {
                     *(UINT64*)floatRegDest = *(UINT64*)src;
+                    if ((i == 0) && (eightByteCount == 2) && (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSEUp))
+                    {
+                        *(UINT64*)(floatRegDest + 8) = *(UINT64*)(((char *)src) + 8);
+                    }
                 }
                 else
                 {
@@ -179,7 +184,7 @@ public:
                 }
                 floatRegDest += 16;
             }
-            else
+            else if (eightByteClassification != SystemVClassificationTypeSSEUp)
             {
                 if (eightByteSize == 8)
                 {
