@@ -162,9 +162,6 @@ Helper scripts are available at https://github.com/dotnet/runtime/tree/master/sr
 * `*Microsoft-System-Net-Requests {3763dc7e-7046-5576-9041-5616e21cc2cf}`: WebRequest-related traces.
 * `*Microsoft-System-Net-Sockets {e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b}`: Sockets-related traces.
 * `*Microsoft-System-Net-Security {066c0e27-a02d-5a98-9a4d-078cc3b1a896}`: Security-related traces.
-* `*Microsoft-System-Net-WebHeaderCollection {fd36452f-9f2b-5850-d212-6c436231e3dc}`: WebHeaderCollection-related traces.
-* `*Microsoft-System-Net-WebSockets-Client {71cddde3-cf58-52d5-094f-927828a09337}`: ClientWebSocket-related traces.
-* `*Microsoft-System-Net-TestLogging {18579866-5c03-5954-91ff-bdc63681458c}`: [__TestCode__] Test-code tracing (I/O async completions, performance test reporting).
 
 #### System.Threading
 * `*System.Threading.SynchronizationEventSource {EC631D38-466B-4290-9306-834971BA0217}`: Provides an event source for tracing Coordination Data Structure synchronization information.
