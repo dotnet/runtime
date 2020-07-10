@@ -4400,9 +4400,7 @@ public:
     size_t GetPromotedCount();
 
     //Methods used by the shutdown code to call every finalizer
-    void SetSegForShutDown(BOOL fHasLock);
     size_t GetNumberFinalizableObjects();
-    void DiscardNonCriticalObjects();
 
     void CheckFinalizerObjects();
 };

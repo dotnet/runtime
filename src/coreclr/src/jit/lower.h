@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -134,9 +133,9 @@ private:
     void LowerRet(GenTreeUnOp* ret);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
-    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void LowerCallStruct(GenTreeCall* call);
-    void LowerStoreCallStruct(GenTreeBlk* store);
+    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI

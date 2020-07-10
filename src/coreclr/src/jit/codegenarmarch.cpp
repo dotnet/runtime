@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1108,7 +1107,7 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
         JITDUMP("Changing type of BITCAST source to load directly.");
         genCodeForTreeNode(op1);
     }
-    else if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
+    else if (varTypeUsesFloatReg(treeNode) != varTypeUsesFloatReg(op1))
     {
         regNumber srcReg = op1->GetRegNum();
         assert(genTypeSize(op1->TypeGet()) == genTypeSize(targetType));
