@@ -38,6 +38,7 @@ char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
+char *mono_method_get_full_name (MonoMethod *method);
 
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
@@ -311,9 +312,15 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 	const char *name = mono_assembly_name_get_name (aname);
 	char key [128];
+	int len;
 
 	assert (strlen (name) < 100);
 	sprintf (key, "%s_%d", name, token);
+	len = strlen (key);
+	for (int i = 0; i < len; ++i) {
+		if (key [i] == '.')
+			key [i] = '_';
+	}
 
 	void *addr = wasm_dl_get_native_to_interp (key, extra_arg);
 	return addr;
