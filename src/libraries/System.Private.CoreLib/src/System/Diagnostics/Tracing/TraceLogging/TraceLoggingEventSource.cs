@@ -675,7 +675,6 @@ namespace System.Diagnostics.Tracing
                                 (IntPtr)descriptors);
 #endif // FEATURE_MANAGED_ETW
 
-                            // TODO enable filtering for listeners.
                             if (m_Dispatchers != null)
                             {
                                 var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
