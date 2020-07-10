@@ -121,7 +121,8 @@ namespace System.Text.Unicode
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
                         uint mask;
 
-                        Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80);
+                        Vector128<byte> initialMask = Vector128.Create((ushort)0x1001).AsByte();
+                        Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80).AsByte();
 
                         do
                         {
@@ -132,7 +133,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = AdvSimdMoveMask(AdvSimd.LoadVector128(pInputBuffer), mostSignficantBitMask);
+                                mask = Arm64MoveMask(AdvSimd.LoadVector128(pInputBuffer), initialMask, mostSignficantBitMask);
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -733,13 +734,12 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint AdvSimdMoveMask(Vector128<byte> value, Vector128<byte> mostSignficantBitMask)
+        private static uint Arm64MoveMask(Vector128<byte> value, Vector128<byte> initialMask, Vector128<byte> mostSignficantBitMask)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-            Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, mask);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, initialMask);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             return extractedBits.AsUInt16().ToScalar();
         }
