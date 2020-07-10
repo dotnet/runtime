@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef TAILCALL_HELP_H
 #define TAILCALL_HELP_H
@@ -24,7 +23,7 @@ public:
         MethodDesc** storeArgsStub, bool* storeArgsNeedsTarget,
         MethodDesc** callTargetStub);
 
-    static MethodDesc* GetOrCreateTailCallDispatcherMD();
+    static MethodDesc* GetOrLoadTailCallDispatcherMD();
     static MethodDesc* GetTailCallDispatcherMD();
 private:
 

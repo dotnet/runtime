@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*++
@@ -1895,7 +1894,7 @@ Work:
             pThread->ChooseThreadCPUGroupAffinity();
 
             #ifdef FEATURE_COMINTEROP
-            if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+            if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
             {
                 // counts volatile read paired with CompareExchangeCounts loop set
                 counts = WorkerCounter.DangerousGetDirtyCounts();
@@ -2142,7 +2141,7 @@ Exit:
 
 #ifdef FEATURE_COMINTEROP
     if (pThread) {
-        pThread->SetApartment(Thread::AS_Unknown, TRUE);
+        pThread->SetApartment(Thread::AS_Unknown);
         pThread->CoUninitialize();
     }
 
@@ -3254,7 +3253,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
         }
     }
 
-    if (pThread && pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+    if (pThread && pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
     {
         // @todo: should we log the failure
         goto Exit;
@@ -3279,7 +3278,7 @@ Top:
                 pThread->ChooseThreadCPUGroupAffinity();
 
 #ifdef FEATURE_COMINTEROP
-                if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+                if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
                 {
                     // @todo: should we log the failure
                     goto Exit;
@@ -3617,7 +3616,7 @@ Exit:
 
 #ifdef FEATURE_COMINTEROP
     if (pThread) {
-        pThread->SetApartment(Thread::AS_Unknown, TRUE);
+        pThread->SetApartment(Thread::AS_Unknown);
         pThread->CoUninitialize();
     }
     // Couninit the worker thread
@@ -4517,10 +4516,10 @@ DWORD WINAPI ThreadpoolMgr::TimerThreadStart(LPVOID p)
     LastTickCount = GetTickCount();
 
 #ifdef FEATURE_COMINTEROP
-    if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
+    if (pThread->SetApartment(Thread::AS_InMTA) != Thread::AS_InMTA)
     {
         // @todo: should we log the failure
-        goto Exit;
+        return 0;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -4536,16 +4535,7 @@ DWORD WINAPI ThreadpoolMgr::TimerThreadStart(LPVOID p)
 #endif
     }
 
-#ifdef FEATURE_COMINTEROP
-// unreachable code
-//    if (pThread) {
-//        pThread->SetApartment(Thread::AS_Unknown, TRUE);
-//    }
-Exit:
-
-    // @todo: replace with host provided ExitThread
-    return 0;
-#endif
+    // unreachable
 }
 
 void ThreadpoolMgr::TimerThreadFire()

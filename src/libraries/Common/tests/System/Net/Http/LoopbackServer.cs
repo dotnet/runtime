@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -94,7 +93,12 @@ namespace System.Net.Test.Common
             Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false);
             try
             {
-                s.NoDelay = true;
+                try
+                {
+                    s.NoDelay = true;
+                }
+                // OSX can throw if socket is in weird state during close or cancellation
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
 
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (_options.UseSsl)
