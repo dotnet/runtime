@@ -280,7 +280,7 @@ namespace Microsoft.Extensions.Logging.Test
             // Assert
             Assert.Equal(2, sink.Writes.Count);
             var write = sink.Writes[0];
-            Assert.Equal(ConsoleColor.Red, write.BackgroundColor);
+            Assert.Equal(ConsoleColor.DarkRed, write.BackgroundColor);
             Assert.Equal(ConsoleColor.White, write.ForegroundColor);
             write = sink.Writes[1];
             Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
@@ -301,7 +301,7 @@ namespace Microsoft.Extensions.Logging.Test
             // Assert
             Assert.Equal(2, sink.Writes.Count);
             var write = sink.Writes[0];
-            Assert.Equal(ConsoleColor.Red, write.BackgroundColor);
+            Assert.Equal(ConsoleColor.DarkRed, write.BackgroundColor);
             Assert.Equal(ConsoleColor.Black, write.ForegroundColor);
             write = sink.Writes[1];
             Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
@@ -1090,6 +1090,12 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.True(logger.Options.DisableColors);
             monitor.Set(new ConsoleLoggerOptions() { DisableColors = false });
             Assert.False(logger.Options.DisableColors);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConsoleLoggerOptions_InvalidFormat_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { Format = (ConsoleLoggerFormat)10 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

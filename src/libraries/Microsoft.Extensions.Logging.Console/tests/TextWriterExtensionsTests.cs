@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         {
             // Arrange
             var message = "Request received";
-            var expectedMessage = GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
+            var expectedMessage = AnsiParser.GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
                 + message
                 + "\x1B[39m\x1B[22m"; //resets foreground color
             var textWriter = new StringWriter();
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging
         {
             // Arrange
             var message = "Request received";
-            var expectedMessage = GetBackgroundColorEscapeCode(ConsoleColor.Red)
+            var expectedMessage = AnsiParser.GetBackgroundColorEscapeCode(ConsoleColor.Red)
                 + message
                 + "\x1B[49m"; //resets background color
             var textWriter = new StringWriter();
@@ -54,8 +54,8 @@ namespace Microsoft.Extensions.Logging
         {
             // Arrange
             var message = "Request received";
-            var expectedMessage = GetBackgroundColorEscapeCode(ConsoleColor.Red)
-                + GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
+            var expectedMessage = AnsiParser.GetBackgroundColorEscapeCode(ConsoleColor.Red)
+                + AnsiParser.GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
                 + "Request received"
                 + "\x1B[39m\x1B[22m" //resets foreground color
                 + "\x1B[49m"; //resets background color
@@ -66,33 +66,6 @@ namespace Microsoft.Extensions.Logging
 
             // Assert
             Assert.Equal(expectedMessage, textWriter.ToString());
-        }
-
-        private static string GetForegroundColorEscapeCode(ConsoleColor color)
-        {
-            return color switch
-            {
-                ConsoleColor.DarkGreen => "\x1B[32m",
-                ConsoleColor.DarkYellow => "\x1B[33m",
-                ConsoleColor.Gray => "\x1B[37m",
-                _ => "\x1B[39m\x1B[22m" // default foreground color
-            };
-        }
-
-        private static string GetBackgroundColorEscapeCode(ConsoleColor color)
-        {
-            return color switch
-            {
-                ConsoleColor.Black => "\x1B[40m",
-                ConsoleColor.DarkRed => "\x1B[41m",
-                ConsoleColor.DarkGreen => "\x1B[42m",
-                ConsoleColor.DarkYellow => "\x1B[43m",
-                ConsoleColor.DarkBlue => "\x1B[44m",
-                ConsoleColor.DarkMagenta => "\x1B[45m",
-                ConsoleColor.DarkCyan => "\x1B[46m",
-                ConsoleColor.Gray => "\x1B[47m",
-                _ => "\x1B[49m"
-            };
         }
     }
 }
