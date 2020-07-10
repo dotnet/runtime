@@ -218,7 +218,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE
         public void WorkingSet_Valid()
         {
             if (PlatformDetection.IsBrowser)
