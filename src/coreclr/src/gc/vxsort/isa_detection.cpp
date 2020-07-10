@@ -132,7 +132,7 @@ bool IsSupportedInstructionSet (InstructionSet instructionSet)
 void InitSupportedInstructionSet (int32_t configSetting)
 {
     s_supportedISA = (SupportedISA)((int)DetermineSupportedISA() & configSetting);
-    // we are assuming that AVX2 can be used if AVX521F can,
+    // we are assuming that AVX2 can be used if AVX512F can,
     // so if AVX2 is disabled, we need to disable AVX512F as well
     if (!((int)s_supportedISA & (int)SupportedISA::AVX2))
         s_supportedISA = SupportedISA::None;

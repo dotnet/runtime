@@ -8315,6 +8315,11 @@ private:
 NOINLINE
 void gc_heap::sort_mark_list()
 {
+    if (settings.condemned_generation >= max_generation)
+    {
+        return;
+    }
+
     // if this heap had a mark list overflow, we don't do anything
     if (mark_list_index > mark_list_end)
     {
@@ -8363,7 +8368,7 @@ void gc_heap::sort_mark_list()
     }
 
     // give up if this is not an ephemeral GC or the mark list size is unreasonably large
-    if (settings.condemned_generation > 1 || total_mark_list_size > total_ephemeral_size/256)
+    if (total_mark_list_size > total_ephemeral_size/256)
     {
         mark_list_index = mark_list_end + 1;
         // let's not count this as a mark list overflow
@@ -22313,8 +22318,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (entry_count > AVX2_THRESHOLD_SIZE && IsSupportedInstructionSet (InstructionSet::AVX2))
         {
             int32_t* mark_list_32 = (int32_t*)mark_list;
-            uint8_t* low = gc_low;
-            ptrdiff_t range = heap_segment_allocated (ephemeral_heap_segment) - low;
+            uint8_t* low = slow;
+            ptrdiff_t range = shigh - low;
             if ((uint32_t)range == range)
             {
                 do_pack_avx2 (mark_list, entry_count, low);
