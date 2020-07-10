@@ -32,6 +32,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [InlineData("ios")] // missing version number
         [InlineData("ios14")] // ios14.0 is fine, ios14 is not: https://github.com/dotnet/runtime/pull/39005#discussion_r452541491
         [InlineData("ios14.0.0.0.0.0")] // too many numbers
+        [InlineData("ios.14.0")] // version should not start with dot
+        [InlineData("ios14.0.")] // version should not end with dot
         public void IsOSPlatformOrLater_InvalidVersionNumber_ThrowsArgumentExceptionWithArgumentName(string platformName)
         {
             Assert.Throws<ArgumentException>("platformName", () => RuntimeInformation.IsOSPlatformOrLater(platformName));
