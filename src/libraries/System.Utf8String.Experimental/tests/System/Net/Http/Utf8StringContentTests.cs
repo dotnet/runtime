@@ -32,7 +32,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public static async Task Ctor_GetStream()
+        public static async Task Ctor_CopyToAsync_GetStream()
         {
             MemoryStream memoryStream = new MemoryStream();
 

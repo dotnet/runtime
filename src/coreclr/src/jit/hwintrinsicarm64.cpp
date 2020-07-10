@@ -20,10 +20,16 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_AdvSimd:
             return InstructionSet_AdvSimd_Arm64;
+        case InstructionSet_Aes:
+            return InstructionSet_Aes_Arm64;
         case InstructionSet_ArmBase:
             return InstructionSet_ArmBase_Arm64;
         case InstructionSet_Crc32:
             return InstructionSet_Crc32_Arm64;
+        case InstructionSet_Sha1:
+            return InstructionSet_Sha1_Arm64;
+        case InstructionSet_Sha256:
+            return InstructionSet_Sha256_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -129,12 +135,15 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AdvSimd:
         case InstructionSet_AdvSimd_Arm64:
         case InstructionSet_Aes:
+        case InstructionSet_Aes_Arm64:
         case InstructionSet_ArmBase:
         case InstructionSet_ArmBase_Arm64:
         case InstructionSet_Crc32:
         case InstructionSet_Crc32_Arm64:
         case InstructionSet_Sha1:
+        case InstructionSet_Sha1_Arm64:
         case InstructionSet_Sha256:
+        case InstructionSet_Sha256_Arm64:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
         {

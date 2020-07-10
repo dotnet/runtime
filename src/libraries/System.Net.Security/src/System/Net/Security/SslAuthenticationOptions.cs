@@ -42,7 +42,7 @@ namespace System.Net.Security
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             IsServer = true;
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"Server RemoteCertRequired: {RemoteCertRequired}.");
             }

@@ -23,7 +23,7 @@ namespace System.Net
             object result = null;
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}]");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}]");
 
                 if (errorCode != Interop.HttpApi.ERROR_SUCCESS &&
                     errorCode != Interop.HttpApi.ERROR_MORE_DATA)
@@ -83,11 +83,11 @@ namespace System.Net
                 }
 
                 // complete the async IO and invoke the callback
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Calling Complete()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Calling Complete()");
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Caught exception: {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Caught exception: {exception}");
                 result = exception;
             }
             asyncResult.InvokeCallback(result);
@@ -104,7 +104,7 @@ namespace System.Net
             uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
             while (true)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {_requestContext.RequestBlob->RequestId}Buffer:0x {((IntPtr)_requestContext.RequestBlob).ToString("x")} Size: {_requestContext.Size}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {_requestContext.RequestBlob->RequestId}Buffer:0x {((IntPtr)_requestContext.RequestBlob).ToString("x")} Size: {_requestContext.Size}");
                 uint bytesTransferred = 0;
                 HttpListenerSession listenerSession = (HttpListenerSession)AsyncObject;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
@@ -116,7 +116,7 @@ namespace System.Net
                     &bytesTransferred,
                     _requestContext.NativeOverlapped);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
                 if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && _requestContext.RequestBlob->RequestId != 0)
                 {
                     // we might get this if somebody stole our RequestId,

@@ -15,7 +15,7 @@ namespace System.Net
         [NonEvent]
         public static void DumpBuffer(object thisOrContextObject, ReadOnlyMemory<byte> buffer, [CallerMemberName] string? memberName = null)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 int count = Math.Min(buffer.Length, MaxDumpSize);
 

@@ -62,7 +62,7 @@ namespace System.Net
             _asyncState = myState;
             _asyncCallback = myCallBack;
             _result = DBNull.Value;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
         }
 
         // Interface method to return the original async object.
@@ -106,8 +106,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -135,7 +133,6 @@ namespace System.Net
                     LazilyCreateEvent(out asyncEvent);
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncEvent);
                 return asyncEvent;
             }
         }
@@ -191,8 +188,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -208,7 +203,6 @@ namespace System.Net
                     result = Interlocked.CompareExchange(ref _intCompleted, HighBit, 0);
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result > 0);
                 return result > 0;
             }
         }
@@ -218,8 +212,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -309,8 +301,6 @@ namespace System.Net
         // the equivalent of InvokeCallback().
         protected void ProtectedInvokeCallback(object? result, IntPtr userToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, result, userToken);
-
             // Critical to disallow DBNull here - it could result in a stuck spinlock in WaitForCompletion.
             if (result == DBNull.Value)
             {
@@ -374,11 +364,11 @@ namespace System.Net
                 ++threadContext._nestedIOCount;
                 if (_asyncCallback != null)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Invoking callback");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invoking callback");
 
                     if (threadContext._nestedIOCount >= ForceAsyncCount)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "*** OFFLOADED the user callback ****");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "*** OFFLOADED the user callback ****");
 
                         Task.Factory.StartNew(
                             s => WorkerThreadComplete(s!),
@@ -396,7 +386,7 @@ namespace System.Net
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "No callback to invoke");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "No callback to invoke");
                 }
             }
             finally
@@ -459,7 +449,7 @@ namespace System.Net
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Waiting for completion event {waitHandle}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for completion event {waitHandle}");
                     waitHandle.WaitOne(Timeout.Infinite);
                 }
                 catch (ObjectDisposedException)
@@ -494,7 +484,6 @@ namespace System.Net
                 sw.SpinOnce();
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _result);
             return _result;
         }
 

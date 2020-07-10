@@ -946,9 +946,7 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberAssignment : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberAssignment() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Linq.Expressions.Expression Expression { get { throw null; } }
         public System.Linq.Expressions.MemberAssignment Update(System.Linq.Expressions.Expression expression) { throw null; }
     }
@@ -989,17 +987,13 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberListBinding : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberListBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ElementInit> Initializers { get { throw null; } }
         public System.Linq.Expressions.MemberListBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
     }
     public sealed partial class MemberMemberBinding : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberMemberBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.MemberBinding> Bindings { get { throw null; } }
         public System.Linq.Expressions.MemberMemberBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
     }

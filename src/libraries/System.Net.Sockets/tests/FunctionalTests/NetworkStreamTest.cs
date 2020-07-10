@@ -633,14 +633,14 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        public static IEnumerable<object[]> CopyToAsync_AllDataCopied_MemberData() =>
+            from asyncWrite in new bool[] { true, false }
+            from byteCount in new int[] { 0, 1, 1024, 4096, 4095, 1024 * 1024 }
+            select new object[] { byteCount, asyncWrite };
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(1024)]
-        [InlineData(4096)]
-        [InlineData(4095)]
-        [InlineData(1024*1024)]
-        public async Task CopyToAsync_AllDataCopied(int byteCount)
+        [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
+        public async Task CopyToAsync_AllDataCopied(int byteCount, bool asyncWrite)
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
             {
@@ -649,7 +649,16 @@ namespace System.Net.Sockets.Tests
                 new Random().NextBytes(dataToCopy);
 
                 Task copyTask = client.CopyToAsync(results);
-                await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
+
+                if (asyncWrite)
+                {
+                    await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
+                }
+                else
+                {
+                    server.Write(new ReadOnlySpan<byte>(dataToCopy, 0, dataToCopy.Length));
+                }
+
                 server.Dispose();
                 await copyTask;
 

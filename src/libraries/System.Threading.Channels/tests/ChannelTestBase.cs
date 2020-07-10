@@ -66,7 +66,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(TaskStatus.RanToCompletion, completion.Status);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_AfterEmpty_NoWaiters_TriggersCompletion()
         {
             Channel<int> c = CreateChannel();
@@ -74,7 +74,7 @@ namespace System.Threading.Channels.Tests
             await c.Reader.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_AfterEmpty_WaitingReader_TriggersCompletion()
         {
             Channel<int> c = CreateChannel();
@@ -84,7 +84,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAnyAsync<InvalidOperationException>(() => r);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_BeforeEmpty_WaitingReaders_TriggersCompletion()
         {
             Channel<int> c = CreateChannel();
@@ -111,7 +111,7 @@ namespace System.Threading.Channels.Tests
             Assert.False(c.Writer.TryComplete());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TryComplete_ErrorsPropage()
         {
             Channel<int> c;
@@ -325,7 +325,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(write.Result);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToWriteAsync_ManyConcurrent_SatisifedByReaders()
         {
             if (RequiresSingleReader || RequiresSingleWriter)
@@ -374,7 +374,7 @@ namespace System.Threading.Channels.Tests
             Assert.False(c.Writer.TryWrite(42));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WriteAsync_AfterComplete_ThrowsException()
         {
             Channel<int> c = CreateChannel();
@@ -382,7 +382,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await c.Writer.WriteAsync(42));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToCompletion()
         {
             Channel<int> c = CreateChannel();
@@ -391,7 +391,7 @@ namespace System.Threading.Channels.Tests
             Assert.Same(exc, await Assert.ThrowsAsync<FormatException>(() => c.Reader.Completion));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithCancellationException_PropagatesToCompletion()
         {
             Channel<int> c = CreateChannel();
@@ -406,7 +406,7 @@ namespace System.Threading.Channels.Tests
             await AssertCanceled(c.Reader.Completion, cts.Token);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToExistingWriter()
         {
             Channel<int> c = CreateFullChannel();
@@ -419,7 +419,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToNewWriter()
         {
             Channel<int> c = CreateChannel();
@@ -429,7 +429,7 @@ namespace System.Threading.Channels.Tests
             Assert.Same(exc, (await Assert.ThrowsAsync<ChannelClosedException>(async () => await write)).InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToExistingWaitingReader()
         {
             Channel<int> c = CreateChannel();
@@ -439,7 +439,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await read);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToNewWaitingReader()
         {
             Channel<int> c = CreateChannel();
@@ -449,7 +449,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await read);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task Complete_WithException_PropagatesToNewWaitingWriter()
         {
             Channel<int> c = CreateChannel();
@@ -523,7 +523,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(waitTask.IsCanceled);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task WaitToReadAsync_DataWritten_CompletesSuccessfully(bool cancelable)
@@ -539,7 +539,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(await read);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToReadAsync_NoDataWritten_Canceled_CompletesAsCanceled()
         {
             Channel<int> c = CreateChannel();
@@ -551,7 +551,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await read);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_ThenWriteAsync_Succeeds()
         {
             Channel<int> c = CreateChannel();
@@ -565,7 +565,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await r);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WriteAsync_ReadAsync_Succeeds()
         {
             Channel<int> c = CreateChannel();
@@ -593,7 +593,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(readTask.IsCanceled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_Canceled_CanceledAsynchronously()
         {
             Channel<int> c = CreateChannel();
@@ -612,7 +612,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_WriteAsync_ManyConcurrentReaders_SerializedWriters_Success()
         {
             if (RequiresSingleReader)
@@ -632,7 +632,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal((Items * (Items - 1)) / 2, Enumerable.Sum(await Task.WhenAll(readers.Select(r => r.AsTask()))));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_TryWrite_ManyConcurrentReaders_SerializedWriters_Success()
         {
             if (RequiresSingleReader)
@@ -657,7 +657,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal((Items * (Items - 1)) / 2, Enumerable.Sum(await Task.WhenAll(readers)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_AlreadyCompleted_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -665,7 +665,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<ChannelClosedException>(() => c.Reader.ReadAsync().AsTask());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_SubsequentlyCompleted_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -675,7 +675,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<ChannelClosedException>(() => r);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_AfterFaultedChannel_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -688,7 +688,7 @@ namespace System.Threading.Channels.Tests
             Assert.Same(e, cce.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_AfterCanceledChannel_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -700,7 +700,7 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => c.Reader.ReadAsync().AsTask());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_Canceled_WriteAsyncCompletesNextReader()
         {
             Channel<int> c = CreateChannel();
@@ -721,7 +721,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_ConsecutiveReadsSucceed()
         {
             Channel<int> c = CreateChannel();
@@ -733,7 +733,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToReadAsync_ConsecutiveReadsSucceed()
         {
             Channel<int> c = CreateChannel();
@@ -831,7 +831,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToReadAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -844,7 +844,7 @@ namespace System.Threading.Channels.Tests
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().GetResult());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateChannel();
@@ -857,7 +857,7 @@ namespace System.Threading.Channels.Tests
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().GetResult());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WaitToWriteAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateFullChannel();
@@ -874,7 +874,7 @@ namespace System.Threading.Channels.Tests
             Assert.Throws<InvalidOperationException>(() => write.GetAwaiter().GetResult());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WriteAsync_AwaitThenGetResult_Throws()
         {
             Channel<int> c = CreateFullChannel();
@@ -991,7 +991,7 @@ namespace System.Threading.Channels.Tests
             from setNonDefaultTaskScheduler in new[] { true, false }
             select new object[] { readOrWait, completeBeforeOnCompleted, flowExecutionContext, continueOnCapturedContext, setNonDefaultTaskScheduler };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [MemberData(nameof(Reader_ContinuesOnCurrentContextIfDesired_MemberData))]
         public async Task Reader_ContinuesOnCurrentSynchronizationContextIfDesired(
             bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext, bool setNonDefaultTaskScheduler)
@@ -1087,7 +1087,7 @@ namespace System.Threading.Channels.Tests
             from setDefaultSyncContext in new[] { true, false }
             select new object[] { readOrWait, completeBeforeOnCompleted, flowExecutionContext, continueOnCapturedContext, setDefaultSyncContext };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [MemberData(nameof(Reader_ContinuesOnCurrentSchedulerIfDesired_MemberData))]
         public async Task Reader_ContinuesOnCurrentTaskSchedulerIfDesired(
             bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext, bool setDefaultSyncContext)

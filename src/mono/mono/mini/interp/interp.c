@@ -328,6 +328,10 @@ int mono_interp_traceopt = 0;
 
 #endif
 
+#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP && !ENABLE_CHECKED_BUILD && !PROFILE_INTERP
+#define USE_COMPUTED_GOTO 1
+#endif
+
 #if USE_COMPUTED_GOTO
 
 #define MINT_IN_DISPATCH(op) goto *in_labels [opcode = (MintOpcode)(op)]
@@ -3342,6 +3346,9 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 #if DEBUG_INTERP
 	debug_enter (frame, out_tracing);
 #endif
+#if PROFILE_INTERP
+	frame->imethod->calls++;
+#endif
 
 	*out_ex = NULL;
 	if (!G_UNLIKELY (frame->imethod->transformed)) {
@@ -3387,6 +3394,10 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	sp = (stackval*)(vt_sp + (frame)->imethod->vt_stack_size); \
 	finally_ips = NULL; \
 	} while (0)
+
+#if PROFILE_INTERP
+static long total_executed_opcodes;
+#endif
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -3460,6 +3471,10 @@ main_loop:
 	 * but it may be useful for debug
 	 */
 	while (1) {
+#if PROFILE_INTERP
+		frame->imethod->opcounts++;
+		total_executed_opcodes++;
+#endif
 		MintOpcode opcode;
 #ifdef ENABLE_CHECKED_BUILD
 		guchar *vt_start = (guchar*)frame->stack + frame->imethod->total_locals_size;
@@ -7705,6 +7720,48 @@ interp_print_op_count (void)
 }
 #endif
 
+#if PROFILE_INTERP
+
+static InterpMethod **imethods;
+static int num_methods;
+const int opcount_threshold = 100000;
+
+static void
+interp_add_imethod (gpointer method)
+{
+	InterpMethod *imethod = (InterpMethod*) method;
+	if (imethod->opcounts > opcount_threshold)
+		imethods [num_methods++] = imethod;
+}
+
+static int
+imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
+{
+	return (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
+}
+
+static void
+interp_print_method_counts (void)
+{
+	MonoDomain *domain = mono_get_root_domain ();
+	MonoJitDomainInfo *info = domain_jit_info (domain);
+
+	mono_domain_jit_code_hash_lock (domain);
+	imethods = (InterpMethod**) malloc (info->interp_code_hash.num_entries * sizeof (InterpMethod*));
+	mono_internal_hash_table_apply (&info->interp_code_hash, interp_add_imethod);
+	mono_domain_jit_code_hash_unlock (domain);
+
+	qsort (imethods, num_methods, sizeof (InterpMethod*), imethod_opcount_comparer);
+
+	printf ("Total executed opcodes %ld\n", total_executed_opcodes);
+	long cumulative_executed_opcodes = 0;
+	for (int i = 0; i < num_methods; i++) {
+		cumulative_executed_opcodes += imethods [i]->opcounts;
+		printf ("%d%% Opcounts %ld, calls %ld, Method %s, imethod ptr %p\n", (int)(cumulative_executed_opcodes * 100 / total_executed_opcodes), imethods [i]->opcounts, imethods [i]->calls, mono_method_full_name (imethods [i]->method, TRUE), imethods [i]);
+	}
+}
+#endif
+
 static void
 interp_set_optimizations (guint32 opts)
 {
@@ -7732,6 +7789,9 @@ interp_cleanup (void)
 {
 #if COUNT_OPS
 	interp_print_op_count ();
+#endif
+#if PROFILE_INTERP
+	interp_print_method_counts ();
 #endif
 }
 

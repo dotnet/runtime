@@ -1379,6 +1379,133 @@ mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* con
 	mono_image_property_insert (mono_method_get_image (method), method, MONO_METHOD_PROP_GENERIC_CONTAINER, container);
 }
 
+/**
+ * mono_method_set_verification_success:
+ *
+ * Sets a bit indicating that the method has been verified.
+ *
+ * LOCKING: acquires the image lock.
+ */
+void
+mono_method_set_verification_success (MonoMethod *method)
+{
+	g_assert (!method->is_inflated);
+
+	mono_image_property_insert (mono_method_get_image (method), method, MONO_METHOD_PROP_VERIFICATION_SUCCESS, GUINT_TO_POINTER(1));
+}
+
+/**
+ * mono_method_get_verification_sucess:
+ *
+ * Returns \c TRUE if the method has been verified successfully.
+ *
+ * LOCKING: acquires the image lock.
+ */
+gboolean
+mono_method_get_verification_success (MonoMethod *method)
+{
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *)method)->declaring;
+
+	gpointer value = mono_image_property_lookup (mono_method_get_image (method), method, MONO_METHOD_PROP_VERIFICATION_SUCCESS);
+
+	return value != NULL;
+}
+
+/**
+ * mono_method_lookup_infrequent_bits:
+ *
+ * Looks for existing \c MonoMethodDefInfrequentBits struct associated with
+ * this method definition.  Unlike \c mono_method_get_infrequent bits, this
+ * does not allocate a new struct if one doesn't exist.
+ *
+ * LOCKING: Acquires the image lock
+ */
+const MonoMethodDefInfrequentBits*
+mono_method_lookup_infrequent_bits (MonoMethod *method)
+{
+	g_assert (!method->is_inflated);
+
+	return (const MonoMethodDefInfrequentBits*)mono_image_property_lookup (mono_method_get_image (method), method, MONO_METHOD_PROP_INFREQUENT_BITS);
+}
+
+/**
+ * mono_method_get_infrequent_bits:
+ *
+ * Looks for an existing, or allocates a new \c MonoMethodDefInfrequentBits struct for this method definition.
+ * Method must not be inflated.
+ *
+ * Unlike \c mono_method_lookup_infrequent_bits, this will allocate a new
+ * struct if the method didn't have one.
+ *
+ * LOCKING: Acquires the image lock
+ */
+MonoMethodDefInfrequentBits *
+mono_method_get_infrequent_bits (MonoMethod *method)
+{
+	g_assert (!method->is_inflated);
+	MonoImage *image = mono_method_get_image (method);
+	MonoMethodDefInfrequentBits *infrequent_bits = NULL;
+	mono_image_lock (image);
+	infrequent_bits = (MonoMethodDefInfrequentBits *)mono_image_property_lookup (image, method, MONO_METHOD_PROP_INFREQUENT_BITS);
+	if (!infrequent_bits) {
+		infrequent_bits = (MonoMethodDefInfrequentBits *)mono_image_alloc0 (image, sizeof (MonoMethodDefInfrequentBits));
+		mono_image_property_insert (image, method, MONO_METHOD_PROP_INFREQUENT_BITS, infrequent_bits);
+	}
+	mono_image_unlock (image);
+	return infrequent_bits;
+}
+
+gboolean
+mono_method_get_is_reabstracted (MonoMethod *method)
+{
+	if (method->is_inflated)
+		method = ((MonoMethodInflated*)method)->declaring;
+	const MonoMethodDefInfrequentBits *infrequent_bits = mono_method_lookup_infrequent_bits (method);
+	return infrequent_bits != NULL && infrequent_bits->is_reabstracted;
+}
+
+gboolean
+mono_method_get_is_covariant_override_impl (MonoMethod *method)
+{
+	if (method->is_inflated)
+		method = ((MonoMethodInflated*)method)->declaring;
+	const MonoMethodDefInfrequentBits *infrequent_bits = mono_method_lookup_infrequent_bits (method);
+	return infrequent_bits != NULL && infrequent_bits->is_covariant_override_impl;
+}
+
+/**
+ * mono_method_set_is_reabstracted:
+ *
+ * Sets the \c MonoMethodDefInfrequentBits:is_reabstracted bit for this method
+ * definition.  The bit means that the method is a default interface method
+ * that used to have a default implementation in an ancestor interface, but is
+ * now abstract once again.
+ *
+ * LOCKING: Assumes the loader lock is held
+ */
+void
+mono_method_set_is_reabstracted (MonoMethod *method)
+{
+	mono_method_get_infrequent_bits (method)->is_reabstracted = 1;
+}
+
+/**
+ * mono_method_set_is_covariant_override_impl:
+ *
+ * Sets the \c MonoMethodDefInfrequentBits:is_covariant_override_impl bit for
+ * this method definition.  The bit means that the method is an override with a
+ * signature that is not equal to the signature of the method that it is
+ * overriding.
+ *
+ * LOCKING: Assumes the loader lock is held
+ */
+void
+mono_method_set_is_covariant_override_impl (MonoMethod *method)
+{
+	mono_method_get_infrequent_bits (method)->is_covariant_override_impl = 1;
+}
+
 /** 
  * mono_class_find_enum_basetype:
  * \param class The enum class
