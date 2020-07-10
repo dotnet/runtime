@@ -4,6 +4,10 @@
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
+    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Http.Json.cs" />
   </ItemGroup>
