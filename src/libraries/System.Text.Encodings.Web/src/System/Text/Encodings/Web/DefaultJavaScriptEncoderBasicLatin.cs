@@ -91,7 +91,7 @@ namespace System.Text.Encodings.Web
             short* end = ptr + (uint)textLength;
 
 #if NETCOREAPP
-            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
             {
                 if (textLength >= Vector128<short>.Count)
                 {
@@ -259,7 +259,7 @@ namespace System.Text.Encodings.Web
                 byte* end = ptr + textLength;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
+                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                 {
                     if (textLength >= Vector128<sbyte>.Count)
                     {

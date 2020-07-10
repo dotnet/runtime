@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NETCOREAPP
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -101,4 +100,3 @@ namespace System.Text.Encodings.Web
         private static readonly Vector128<sbyte> s_tildeMaskSByte = Vector128.Create((sbyte)'~');
     }
 }
-#endif

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if NETCOREAPP
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -87,7 +86,7 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int MoveMask(Vector128<byte> value)
         {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
+            Debug.Assert(AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian);
 
             // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
             Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
@@ -98,7 +97,7 @@ namespace System.Text.Encodings.Web
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsInt32().ToScalar();
+            return extractedBits.AsUInt16().ToScalar();
         }
 
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;
@@ -125,4 +124,3 @@ namespace System.Text.Encodings.Web
                                         Vector128.Create(0x01020408_10204080).AsByte();
     }
 }
-#endif

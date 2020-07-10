@@ -7,7 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Text\Encodings\Web\AdvSimdHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
@@ -18,14 +17,17 @@
     <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
     <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
-    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="System\Text\Encodings\Web\AdvSimdHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System\Runtime\Intrinsics\ArmIntrinsics.Shims.cs" />
