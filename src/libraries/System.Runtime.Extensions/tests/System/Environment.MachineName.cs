@@ -16,6 +16,15 @@ namespace System.Tests
             Assert.Equal(computerName, Environment.MachineName);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public void WasmTestMachineNameProperty()
+        {
+            // no good way to get the computer name straight up.
+            string computerName = "emscripten";
+            Assert.Equal(computerName, Environment.MachineName);
+        }
+
         internal static string GetComputerName()
         {
 #if !Unix

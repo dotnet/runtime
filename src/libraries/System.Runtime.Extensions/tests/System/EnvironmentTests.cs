@@ -221,7 +221,10 @@ namespace System.Tests
         [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE
         public void WorkingSet_Valid()
         {
-            Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
+            if (PlatformDetection.IsBrowser)
+                Assert.True(Environment.WorkingSet == 0, "Expected 0 WorkingSet value");
+            else
+                Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
