@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -950,21 +951,26 @@ namespace System.Text.Unicode
                         for (i = 0; (uint)i < maxIters; i++)
                         {
                             utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
-                            if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
-                            {
-                                goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
-                            }
 
                             if (AdvSimd.IsSupported)
                             {
+                                if (AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask).ToScalar() == 0)
+                                {
+                                    goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                }
+
                                 Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(utf16Data);
                                 Vector128<sbyte> source = AdvSimd.ExtractNarrowingSaturateUpper(lower, AdvSimd.LoadVector128((short*)pInputBuffer));
                                 AdvSimd.Store((ulong*)pOutputBuffer, source.AsUInt64());
                             }
                             else
                             {
-                                // narrow and write
+                                if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
+                                {
+                                    goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                }
 
+                                // narrow and write
                                 Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
                             }
 
