@@ -20,7 +20,6 @@ namespace ILLink.Tasks
 		///       BeforeFieldInit
 		///       OverrideRemoval
 		///       UnreachableBodies
-		///       ClearInitLocals
 		///       UnusedInterfaces
 		///       IPConstProp
 		///       Sealer
@@ -92,13 +91,6 @@ namespace ILLink.Tasks
 		bool? _unreachableBodies;
 
 		/// <summary>
-		///   Boolean specifying whether to enable clearinitlocals optimization globally.
-		///   Maps to '--enable-opt clearinitlocals' or '--disable-opt clearinitlocals'.
-		/// </summary>
-		public bool ClearInitLocals { set => _clearInitLocals = value; }
-		bool? _clearInitLocals;
-
-		/// <summary>
 		///   Boolean specifying whether to enable unusedinterfaces optimization globally.
 		///   Maps to '--enable-opt unusedinterfaces' or '--disable-opt unusedinterfaces'.
 		/// </summary>
@@ -131,7 +123,6 @@ namespace ILLink.Tasks
 			"BeforeFieldInit",
 			"OverrideRemoval",
 			"UnreachableBodies",
-			"ClearInitLocals",
 			"UnusedInterfaces",
 			"IPConstProp",
 			"Sealer"
@@ -324,10 +315,6 @@ namespace ILLink.Tasks
 
 			if (_unreachableBodies is bool unreachableBodies)
 				SetOpt (args, "unreachablebodies", unreachableBodies);
-
-			if (_clearInitLocals is bool clearInitLocals) {
-				SetOpt (args, "clearinitlocals", clearInitLocals);
-			}
 
 			if (_unusedInterfaces is bool unusedInterfaces)
 				SetOpt (args, "unusedinterfaces", unusedInterfaces);

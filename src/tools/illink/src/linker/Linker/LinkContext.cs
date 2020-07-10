@@ -666,23 +666,18 @@ namespace Mono.Linker
 		UnreachableBodies = 1 << 2,
 
 		/// <summary>
-		/// Option to clear the initlocals flag on methods
-		/// </summary>
-		ClearInitLocals = 1 << 3,
-
-		/// <summary>
 		/// Option to remove .interfaceimpl for interface types that are not used
 		/// </summary>
-		UnusedInterfaces = 1 << 4,
+		UnusedInterfaces = 1 << 3,
 
 		/// <summary>
 		/// Option to do interprocedural constant propagation on return values
 		/// </summary>
-		IPConstantPropagation = 1 << 5,
+		IPConstantPropagation = 1 << 4,
 
 		/// <summary>
 		/// Devirtualizes methods and seals types
 		/// </summary>
-		Sealer = 1 << 6
+		Sealer = 1 << 5
 	}
 }
