@@ -9,14 +9,14 @@ namespace System.Runtime.InteropServices
     {
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static string? s_osPlatformName;
+        private static OSPlatform? s_osPlatform;
         private static string? s_osDescription;
         private static Architecture? s_osArch;
         private static Architecture? s_processArch;
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
-            string name = s_osPlatformName ??= Interop.Sys.GetUnixName();
+            OSPlatform name = s_osPlatform ??= OSPlatform.Create(Interop.Sys.GetUnixName());
             return osPlatform.Equals(name);
         }
 

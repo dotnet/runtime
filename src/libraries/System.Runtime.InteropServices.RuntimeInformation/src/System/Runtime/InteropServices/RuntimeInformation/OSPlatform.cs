@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
@@ -50,6 +51,8 @@ namespace System.Runtime.InteropServices
 
         public override bool Equals(object? obj)
         {
+            Debug.Fail("The non generic method should not be used by BCL");
+
             return obj is OSPlatform osPlatform && Equals(osPlatform);
         }
 
