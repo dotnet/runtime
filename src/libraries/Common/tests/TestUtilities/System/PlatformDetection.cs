@@ -183,8 +183,9 @@ namespace System
         public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
+        public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
-        public static bool IsNlsGlobalization => !IsIcuGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         private static Version GetICUVersion()
         {

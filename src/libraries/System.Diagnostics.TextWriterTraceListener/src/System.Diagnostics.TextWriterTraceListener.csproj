@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Diagnostics.TextWriterTraceListener</RootNamespace>
-    <AssemblyName>System.Diagnostics.TextWriterTraceListener</AssemblyName>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
