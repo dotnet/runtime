@@ -11,21 +11,21 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task NonPublicCtors_NotSupported()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeAsync<T>("{}"));
                 Assert.Contains("JsonConstructorAttribute", ex.ToString());
             }
 
-            await RunTest<PrivateParameterlessCtor>();
-            await RunTest<InternalParameterlessCtor>();
-            await RunTest<ProtectedParameterlessCtor>();
-            await RunTest<PrivateParameterizedCtor>();
-            await RunTest<InternalParameterizedCtor>();
-            await RunTest<ProtectedParameterizedCtor>();
-            await RunTest<PrivateParameterizedCtor_WithAttribute>();
-            await RunTest<InternalParameterizedCtor_WithAttribute>();
-            await RunTest<ProtectedParameterizedCtor_WithAttribute>();
+            await RunTestAsync<PrivateParameterlessCtor>();
+            await RunTestAsync<InternalParameterlessCtor>();
+            await RunTestAsync<ProtectedParameterlessCtor>();
+            await RunTestAsync<PrivateParameterizedCtor>();
+            await RunTestAsync<InternalParameterizedCtor>();
+            await RunTestAsync<ProtectedParameterizedCtor>();
+            await RunTestAsync<PrivateParameterizedCtor_WithAttribute>();
+            await RunTestAsync<InternalParameterizedCtor_WithAttribute>();
+            await RunTestAsync<ProtectedParameterizedCtor_WithAttribute>();
         }
 
         [Fact]
@@ -38,47 +38,47 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task MultiplePublicParameterizedCtors_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 var obj1 = await Serializer.DeserializeAsync<T>(@"{""MyInt"":1,""MyString"":""1""}");
                 Assert.Equal(@"{""MyInt"":0,""MyString"":null}", JsonSerializer.Serialize(obj1));
             }
 
-            await RunTest<SingleParameterlessCtor_MultiplePublicParameterizedCtor>();
-            await RunTest<SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct>();
+            await RunTestAsync<SingleParameterlessCtor_MultiplePublicParameterizedCtor>();
+            await RunTestAsync<SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct>();
         }
 
         [Fact]
         public async Task SinglePublicParameterizedCtor_NoPublicParameterlessCtor_NoAttribute_Supported()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 var obj1 = await Serializer.DeserializeAsync<T>(@"{""MyInt"":1}");
                 Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
             }
 
-            await RunTest<PublicParameterizedCtor>();
-            await RunTest<PrivateParameterlessConstructor_PublicParameterizedCtor>();
+            await RunTestAsync<PublicParameterizedCtor>();
+            await RunTestAsync<PrivateParameterlessConstructor_PublicParameterizedCtor>();
         }
 
         [Fact]
         public async Task SinglePublicParameterizedCtor_NoPublicParameterlessCtor_WithAttribute_Supported()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 var obj1 = await Serializer.DeserializeAsync<T>(@"{""MyInt"":1}");
                 Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
             }
 
-            await RunTest<PublicParameterizedCtor_WithAttribute>();
-            await RunTest<Struct_PublicParameterizedConstructor_WithAttribute>();
-            await RunTest<PrivateParameterlessConstructor_PublicParameterizedCtor_WithAttribute>();
+            await RunTestAsync<PublicParameterizedCtor_WithAttribute>();
+            await RunTestAsync<Struct_PublicParameterizedConstructor_WithAttribute>();
+            await RunTestAsync<PrivateParameterlessConstructor_PublicParameterizedCtor_WithAttribute>();
         }
 
         [Fact]
-        public async Task Class_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_NotSupported()
+        public Task Class_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_NotSupported()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeAsync<MultiplePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}"));
+            return Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeAsync<MultiplePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}"));
         }
 
         [Fact]
@@ -116,32 +116,32 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task MultipleAttributes_NotSupported()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeAsync<T>("{}"));
             }
 
-            await RunTest<MultiplePublicParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<PublicParameterlessConstructor_PublicParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<PrivateParameterlessCtor_InternalParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<ProtectedParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<PublicParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<PublicParameterizedCtor_PublicParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<Struct_PublicParameterizedCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
-            await RunTest<Point_2D_Struct_WithMultipleAttributes>();
-            await RunTest<Point_2D_Struct_WithMultipleAttributes_OneNonPublic>();
+            await RunTestAsync<MultiplePublicParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<PublicParameterlessConstructor_PublicParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<PrivateParameterlessCtor_InternalParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<ProtectedParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<PublicParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<PublicParameterizedCtor_PublicParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<Struct_PublicParameterizedCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            await RunTestAsync<Point_2D_Struct_WithMultipleAttributes>();
+            await RunTestAsync<Point_2D_Struct_WithMultipleAttributes_OneNonPublic>();
         }
 
         [Fact]
         public async Task AttributeIgnoredOnIEnumerable()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeAsync<T>("[]"));
             }
 
-            await RunTest<Parameterized_StackWrapper>();
-            await RunTest<Parameterized_WrapperForICollection>();
+            await RunTestAsync<Parameterized_StackWrapper>();
+            await RunTestAsync<Parameterized_WrapperForICollection>();
         }
 
         [Fact]

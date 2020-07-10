@@ -3646,8 +3646,8 @@ namespace System.Text.Json.Tests
             return s_compactJson[testCaseType] = existing;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void VerifyMultiThreadedDispose()
+        [Fact]
+        public static async Task VerifyMultiThreadedDispose()
         {
             Action<object> disposeAction = (object document) => ((JsonDocument)document).Dispose();
 
@@ -3666,7 +3666,7 @@ namespace System.Text.Json.Tests
                 }
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             // When ArrayPool gets corrupted, the Rent method might return an already rented array, which is incorrect.
             // So we will rent as many arrays as calls to JsonElement.Dispose and check they are unique.

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -35,9 +35,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task JsonExceptionWhenAssigningNullToStruct()
+        public Task JsonExceptionWhenAssigningNullToStruct()
         {
-            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeAsync<Point_2D_With_ExtData>("null"));
+            return Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeAsync<Point_2D_With_ExtData>("null"));
         }
 
         [Fact]
@@ -695,7 +695,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CanDeserialize_ObjectWith_Ctor_With_64_Params()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 StringBuilder sb = new StringBuilder();
                 sb.Append("{");
@@ -715,14 +715,14 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            await RunTest<Struct_With_Ctor_With_64_Params>();
-            await RunTest<Class_With_Ctor_With_64_Params>();
+            await RunTestAsync<Struct_With_Ctor_With_64_Params>();
+            await RunTestAsync<Class_With_Ctor_With_64_Params>();
         }
 
         [Fact]
         public async Task Cannot_Deserialize_ObjectWith_Ctor_With_65_Params()
         {
-            async Task RunTest<T>()
+            async Task RunTestAsync<T>()
             {
                 Type type = typeof(T);
 
@@ -759,8 +759,8 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(type.ToString(), strEx);
             }
 
-            await RunTest<Class_With_Ctor_With_65_Params>();
-            await RunTest<Struct_With_Ctor_With_65_Params>();
+            await RunTestAsync<Class_With_Ctor_With_65_Params>();
+            await RunTestAsync<Struct_With_Ctor_With_65_Params>();
         }
 
         [Fact]
