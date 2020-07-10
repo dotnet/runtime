@@ -30,6 +30,8 @@ class Runtime_34587
         succeeded &= ValidateAdvSimd();
         succeeded &= ValidateAes();
         succeeded &= ValidateCrc32();
+        succeeded &= ValidateDp();
+        succeeded &= ValidateRdm();
         succeeded &= ValidateSha1();
         succeeded &= ValidateSha256();
 
@@ -102,6 +104,42 @@ class Runtime_34587
             {
                 succeeded &= Crc32.IsSupported;
                 succeeded &= ArmBase.Arm64.IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateDp()
+        {
+            bool succeeded = true;
+
+            if (Dp.IsSupported)
+            {
+                succeeded &= AdvSimd.IsSupported;
+            }
+
+            if (Dp.Arm64.IsSupported)
+            {
+                succeeded &= Dp.IsSupported;
+                succeeded &= AdvSimd.Arm64.IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateRdm()
+        {
+            bool succeeded = true;
+
+            if (Rdm.IsSupported)
+            {
+                succeeded &= AdvSimd.IsSupported;
+            }
+
+            if (Rdm.Arm64.IsSupported)
+            {
+                succeeded &= Rdm.IsSupported;
+                succeeded &= AdvSimd.Arm64.IsSupported;
             }
 
             return succeeded;
