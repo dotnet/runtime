@@ -80,6 +80,30 @@
 #endif
 #include <mono/metadata/icall-decl.h>
 
+#if PROFILE_INTERP
+
+#define PROFILE_INTERP_OPS_THRESHOLD 1000
+
+static long total_executed_opcodes;
+static FILE* profile_trace;
+
+static void ensure_all_open_stack_frames_logged (InterpFrame *frame) {
+	if (frame->has_logged_entry) {
+		return;
+	}
+
+	if (frame->parent) {
+		ensure_all_open_stack_frames_logged (frame->parent);
+	}
+
+	if (frame->total_opcount_before_entry) {
+		fprintf (profile_trace, "  { \"ts\": %ld, \"name\": \"%s\", \"cat\": \"PERF\", \"ph\": \"B\", \"pid\": 0, \"tid\": 0 },\n", frame->total_opcount_before_entry, mono_method_full_name (frame->imethod->method, TRUE));
+	}
+
+	frame->has_logged_entry = TRUE;
+}
+#endif
+
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 struct FrameClauseArgs {
 	/* Where we start the frame execution from */
@@ -227,6 +251,15 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	frame->imethod = imethod;
 	frame->stack = sp;
 	frame->state.ip = NULL;
+	frame->total_opcount_before_entry = 0;
+	frame->has_logged_entry = FALSE;
+
+	// Decide whether to include this frame in the trace
+	// A nonzero total_opcount_before_entry indicates it will be included
+	char* method_full_name = mono_method_full_name (imethod->method, TRUE);
+	if (strstr (method_full_name, "Microsoft.AspNetCore.")) {
+		frame->total_opcount_before_entry = total_executed_opcodes;
+	}
 }
 
 /*
@@ -3355,9 +3388,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 #if DEBUG_INTERP
 	debug_enter (frame, out_tracing);
 #endif
-#if PROFILE_INTERP
-	frame->imethod->calls++;
-#endif
 
 	*out_ex = NULL;
 	if (!G_UNLIKELY (frame->imethod->transformed)) {
@@ -3403,10 +3433,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	sp = (stackval*)(vt_sp + (frame)->imethod->vt_stack_size); \
 	finally_ips = NULL; \
 	} while (0)
-
-#if PROFILE_INTERP
-static long total_executed_opcodes;
-#endif
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -3481,7 +3507,6 @@ main_loop:
 	 */
 	while (1) {
 #if PROFILE_INTERP
-		frame->imethod->opcounts++;
 		total_executed_opcodes++;
 #endif
 		MintOpcode opcode;
@@ -7348,6 +7373,13 @@ resume:
 exit_frame:
 	g_assert_checked (frame->imethod);
 
+	#if PROFILE_INTERP
+	if (frame->total_opcount_before_entry) {
+		ensure_all_open_stack_frames_logged(frame);
+		fprintf (profile_trace, "  { \"ts\": %ld, \"name\": \"%s\", \"cat\": \"PERF\", \"ph\": \"E\", \"pid\": 0, \"tid\": 0 },\n", total_executed_opcodes, mono_method_full_name (frame->imethod->method, TRUE));
+	}
+	#endif
+
 	if (frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */
 		//printf ("R: %s -> %s %p\n", mono_method_get_full_name (frame->imethod->method), mono_method_get_full_name (frame->parent->imethod->method), frame->parent->state.ip);
@@ -7782,48 +7814,6 @@ interp_print_op_count (void)
 }
 #endif
 
-#if PROFILE_INTERP
-
-static InterpMethod **imethods;
-static int num_methods;
-const int opcount_threshold = 100000;
-
-static void
-interp_add_imethod (gpointer method)
-{
-	InterpMethod *imethod = (InterpMethod*) method;
-	if (imethod->opcounts > opcount_threshold)
-		imethods [num_methods++] = imethod;
-}
-
-static int
-imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
-{
-	return (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
-}
-
-static void
-interp_print_method_counts (void)
-{
-	MonoDomain *domain = mono_get_root_domain ();
-	MonoJitDomainInfo *info = domain_jit_info (domain);
-
-	mono_domain_jit_code_hash_lock (domain);
-	imethods = (InterpMethod**) malloc (info->interp_code_hash.num_entries * sizeof (InterpMethod*));
-	mono_internal_hash_table_apply (&info->interp_code_hash, interp_add_imethod);
-	mono_domain_jit_code_hash_unlock (domain);
-
-	qsort (imethods, num_methods, sizeof (InterpMethod*), imethod_opcount_comparer);
-
-	printf ("Total executed opcodes %ld\n", total_executed_opcodes);
-	long cumulative_executed_opcodes = 0;
-	for (int i = 0; i < num_methods; i++) {
-		cumulative_executed_opcodes += imethods [i]->opcounts;
-		printf ("%d%% Opcounts %ld, calls %ld, Method %s, imethod ptr %p\n", (int)(cumulative_executed_opcodes * 100 / total_executed_opcodes), imethods [i]->opcounts, imethods [i]->calls, mono_method_full_name (imethods [i]->method, TRUE), imethods [i]);
-	}
-}
-#endif
-
 static void
 interp_set_optimizations (guint32 opts)
 {
@@ -7853,7 +7843,7 @@ interp_cleanup (void)
 	interp_print_op_count ();
 #endif
 #if PROFILE_INTERP
-	interp_print_method_counts ();
+	fclose (profile_trace);
 #endif
 }
 
@@ -7888,6 +7878,11 @@ static const MonoEECallbacks mono_interp_callbacks = {
 void
 mono_ee_interp_init (const char *opts)
 {
+#if PROFILE_INTERP
+	profile_trace = fopen ("trace.json", "w");
+	fprintf (profile_trace, "[\n");
+#endif
+
 	g_assert (mono_ee_api_version () == MONO_EE_API_VERSION);
 	g_assert (!interp_init_done);
 	interp_init_done = TRUE;

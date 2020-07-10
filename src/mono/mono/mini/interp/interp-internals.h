@@ -129,7 +129,7 @@ typedef enum {
 	IMETHOD_CODE_UNKNOWN
 } InterpMethodCodeType;
 
-#define PROFILE_INTERP 0
+#define PROFILE_INTERP 1
 
 /* 
  * Structure representing a method transformed for the interpreter 
@@ -176,10 +176,6 @@ struct InterpMethod {
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
 	unsigned int needs_thread_attach : 1;
-#if PROFILE_INTERP
-	long calls;
-	long opcounts;
-#endif
 };
 
 /* Used for localloc memory allocation */
@@ -234,6 +230,9 @@ struct InterpFrame {
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;
+
+	long total_opcount_before_entry;
+	gboolean has_logged_entry;
 };
 
 #define frame_locals(frame) ((guchar*)(frame)->stack)
