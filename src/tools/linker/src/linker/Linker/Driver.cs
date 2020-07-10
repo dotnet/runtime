@@ -533,6 +533,11 @@ namespace Mono.Linker
 							return -1;
 
 						continue;
+					case "v":
+						if (!GetBoolParam (token, l => context.KeepMembersForDebugger = l))
+							return -1;
+
+						continue;
 #endif
 					case "b":
 						if (!GetBoolParam (token, l => context.LinkSymbols = l))
@@ -546,11 +551,6 @@ namespace Mono.Linker
 						continue;
 					case "z":
 						if (!GetBoolParam (token, l => context.IgnoreDescriptors = !l))
-							return -1;
-
-						continue;
-					case "v":
-						if (!GetBoolParam (token, l => context.KeepMembersForDebugger = l))
 							return -1;
 
 						continue;
@@ -1019,8 +1019,8 @@ namespace Mono.Linker
 			Console.WriteLine ("  -d PATH             Specify additional directories to search in for references");
 			Console.WriteLine ("  -reference FILE     Specify additional assemblies to use as references");
 			Console.WriteLine ("  -b                  Update debug symbols for each linked module. Defaults to false");
-			Console.WriteLine ("  -v                  Keep members and types used by debugger. Defaults to false");
 #if !FEATURE_ILLINK
+			Console.WriteLine ("  -v                  Keep members and types used by debugger. Defaults to false");
 			Console.WriteLine ("  -l <name>,<name>    List of i18n assemblies to copy to the output directory. Defaults to 'all'");
 			Console.WriteLine ("                        Valid names are 'none', 'all', 'cjk', 'mideast', 'other', 'rare', 'west'");
 #endif

@@ -1525,6 +1525,10 @@ namespace Mono.Linker.Steps
 
 			foreach (CustomAttribute attribute in type.CustomAttributes) {
 				var attrType = attribute.Constructor.DeclaringType;
+
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (attrType.Resolve ()) && Annotations.GetAction (type.Module.Assembly) == AssemblyAction.Link)
+					continue;
+
 				switch (attrType.Name) {
 				case "XmlSchemaProviderAttribute" when attrType.Namespace == "System.Xml.Serialization":
 					MarkXmlSchemaProvider (type, attribute);

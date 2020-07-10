@@ -4,11 +4,16 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
+#if NETCOREAPP
+	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
+	[SetupLinkerCoreAction ("copy")]
+#else
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
+#endif
 	public class DebuggerDisplayAttributeOnTypeThatIsNotUsed
 	{
 		public static void Main ()
