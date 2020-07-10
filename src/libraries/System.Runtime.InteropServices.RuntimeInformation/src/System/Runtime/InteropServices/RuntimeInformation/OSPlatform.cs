@@ -17,6 +17,16 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
+        public static OSPlatform Android { get; } = new OSPlatform(nameof(Android));
+
+        public static OSPlatform iOS { get; } = new OSPlatform(nameof(iOS));
+
+        public static OSPlatform macOS { get; } = new OSPlatform(nameof(macOS));
+
+        public static OSPlatform tvOS { get; } = new OSPlatform(nameof(tvOS));
+
+        public static OSPlatform watchOS { get; } = new OSPlatform(nameof(watchOS));
+
         private OSPlatform(string osPlatform)
         {
             if (osPlatform == null) throw new ArgumentNullException(nameof(osPlatform));
