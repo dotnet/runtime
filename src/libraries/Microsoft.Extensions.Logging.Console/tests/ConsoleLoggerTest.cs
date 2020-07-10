@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        private static string LogLevelAsStringDefault(LogLevel level)
+        internal static string LogLevelAsStringDefault(LogLevel level)
         {
             switch (level)
             {
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        private static string GetSyslogSeverityString(LogLevel level)
+        internal static string GetSyslogSeverityString(LogLevel level)
         {
             switch (level)
             {
@@ -134,6 +134,20 @@ namespace Microsoft.Extensions.Logging.Test
                 default:
                     throw new ArgumentOutOfRangeException(nameof(level));
             }
+        }
+
+        internal static string GetJsonLogLevelString(LogLevel logLevel)
+        {
+            return logLevel switch
+            {
+                LogLevel.Trace => "Trace",
+                LogLevel.Debug => "Debug",
+                LogLevel.Information => "Information",
+                LogLevel.Warning => "Warning",
+                LogLevel.Error => "Error",
+                LogLevel.Critical => "Critical",
+                _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+            };
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1281,18 +1295,17 @@ namespace Microsoft.Extensions.Logging.Test
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
         }
+    }
 
-
-        private class TestLoggerProcessor : ConsoleLoggerProcessor
+    internal class TestLoggerProcessor : ConsoleLoggerProcessor
+    {
+        public TestLoggerProcessor()
         {
-            public TestLoggerProcessor()
-            {
-            }
+        }
 
-            public override void EnqueueMessage(LogMessageEntry message)
-            {
-                WriteMessage(message);
-            }
+        public override void EnqueueMessage(LogMessageEntry message)
+        {
+            WriteMessage(message);
         }
     }
 

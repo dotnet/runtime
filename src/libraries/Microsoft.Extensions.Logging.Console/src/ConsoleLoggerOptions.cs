@@ -16,21 +16,22 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.DisableColors instead.", false)]
         public bool DisableColors { get; set; }
 
+#pragma warning disable CS0618
+        private ConsoleLoggerFormat _format = ConsoleLoggerFormat.Default;
         /// <summary>
         /// Gets or sets log message format. Defaults to <see cref="ConsoleLoggerFormat.Default" />.
         /// </summary>
         [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Please use ConsoleLoggerOptions.FormatterName instead.", false)]
         public ConsoleLoggerFormat Format
         {
-#pragma warning disable CS0618
-            get
-            {
-                if (FormatterName != null && FormatterName.Equals(ConsoleFormatterNames.Systemd, StringComparison.OrdinalIgnoreCase))
-                    return ConsoleLoggerFormat.Systemd;
-                return ConsoleLoggerFormat.Default;
-            }
+            get => _format;
             set
             {
+                if (value < ConsoleLoggerFormat.Default || value > ConsoleLoggerFormat.Systemd)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                _format = value;
                 if (value == ConsoleLoggerFormat.Systemd)
                 {
                     FormatterName = ConsoleFormatterNames.Systemd;
