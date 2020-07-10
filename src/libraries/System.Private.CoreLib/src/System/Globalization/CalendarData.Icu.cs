@@ -424,13 +424,20 @@ namespace System.Globalization
 
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
+#if TARGET_BROWSER
+            // Temp workaround for pinvoke callbacks for Mono-Wasm-Interpreter
+            // https://github.com/dotnet/runtime/issues/39100
+            return Interop.Globalization.EnumCalendarInfo(Marshal.GetFunctionPointerForDelegate(EnumCalendarInfoCallback), localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+#else
             return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+#endif
         }
 
-        private static unsafe void EnumCalendarInfoCallback(string calendarString, IntPtr context)
+        private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
         {
             try
             {
+                var calendarString = new string(calendarStringPtr);
                 ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)

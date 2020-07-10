@@ -1046,12 +1046,6 @@
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
-    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="$(CommonPath)Interop\Interop.Calendar.EnumCalendarInfo.cs">
-      <Link>Common\Interop\Interop.Calendar.EnumCalendarInfo.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetsBrowser)' == 'true'" Include="$(CommonPath)Interop\Interop.Calendar.EnumCalendarInfo.Stub.cs">
-      <Link>Common\Interop\Interop.Calendar.EnumCalendarInfo.Stub.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
       <Link>Common\Interop\Interop.Casing.cs</Link>
     </Compile>
