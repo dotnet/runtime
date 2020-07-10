@@ -232,8 +232,7 @@ struct InterpFrame {
 	InterpState state;
 
 #if PROFILE_INTERP
-	long total_opcount_before_entry;
-	gboolean has_logged_entry;
+	gboolean include_in_profile;
 #endif
 };
 

@@ -83,22 +83,6 @@
 #if PROFILE_INTERP
 static long total_executed_opcodes;
 static FILE* profile_trace;
-
-static void ensure_all_open_stack_frames_logged (InterpFrame *frame) {
-	if (frame->has_logged_entry) {
-		return;
-	}
-
-	if (frame->parent) {
-		ensure_all_open_stack_frames_logged (frame->parent);
-	}
-
-	if (frame->total_opcount_before_entry) {
-		fprintf (profile_trace, "  { \"ts\": %ld, \"name\": \"%s\", \"cat\": \"PERF\", \"ph\": \"B\", \"pid\": 0, \"tid\": 0 },\n", frame->total_opcount_before_entry, mono_method_full_name (frame->imethod->method, TRUE));
-	}
-
-	frame->has_logged_entry = TRUE;
-}
 #endif
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
@@ -250,14 +234,13 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	frame->state.ip = NULL;
 
 #if PROFILE_INTERP
-	frame->total_opcount_before_entry = 0;
-	frame->has_logged_entry = FALSE;
-
 	// Decide whether to include this frame in the trace
-	// A nonzero total_opcount_before_entry indicates it will be included
 	char* method_full_name = mono_method_full_name (imethod->method, TRUE);
 	if (strstr (method_full_name, "Microsoft.AspNetCore.")) {
-		frame->total_opcount_before_entry = total_executed_opcodes;
+		frame->include_in_profile = TRUE;
+		fprintf (profile_trace, "  { \"ts\": %ld, \"name\": \"%s\", \"cat\": \"PERF\", \"ph\": \"B\", \"pid\": 0, \"tid\": 0 },\n", total_executed_opcodes, method_full_name);
+	} else {
+		frame->include_in_profile = FALSE;
 	}
 #endif
 }
@@ -7374,8 +7357,7 @@ exit_frame:
 	g_assert_checked (frame->imethod);
 
 	#if PROFILE_INTERP
-	if (frame->total_opcount_before_entry) {
-		ensure_all_open_stack_frames_logged(frame);
+	if (frame->include_in_profile) {
 		fprintf (profile_trace, "  { \"ts\": %ld, \"name\": \"%s\", \"cat\": \"PERF\", \"ph\": \"E\", \"pid\": 0, \"tid\": 0 },\n", total_executed_opcodes, mono_method_full_name (frame->imethod->method, TRUE));
 	}
 	#endif
