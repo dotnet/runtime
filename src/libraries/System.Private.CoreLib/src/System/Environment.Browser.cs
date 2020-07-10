@@ -12,10 +12,11 @@ namespace System
         // Returning the value here allows us to exclude more of the runtime.
         public static string MachineName => "emscripten";
 
-        // 3.2 provides no context, so return the same value.
+        // Matching what we returned for an earlier release.  There isn't an established equivalent
+        // on wasm.
         public static long WorkingSet => 0;
 
-        // 3.2 provides no context, so return the same value.
+        // Matching what we returned for an earlier release
         public static string UserName => "web_user";
     }
 }
