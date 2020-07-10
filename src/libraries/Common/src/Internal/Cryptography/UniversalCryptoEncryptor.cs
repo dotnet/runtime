@@ -30,6 +30,10 @@ namespace Internal.Cryptography
 
         protected override int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
+            // The only caller of this method is the array-allocating overload, outputBuffer is
+            // always new memory, not a user-provided buffer.
+            Debug.Assert(!inputBuffer.Overlaps(outputBuffer));
+
             int padWritten = PadBlock(inputBuffer, outputBuffer);
             int transformWritten = BasicSymmetricCipher.TransformFinal(outputBuffer.Slice(0, padWritten), outputBuffer);
 
