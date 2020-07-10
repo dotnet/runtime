@@ -2163,7 +2163,8 @@ namespace System.Diagnostics.Tracing
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
-                if (dispatcher.m_EventEnabled[eventId] && dispatcher.m_Listener.IsEventEnabled(eventCallbackArgs))
+                if (LocalAppContextSwitches.DisableEventListenerFiltering ||
+                    (dispatcher.m_EventEnabled[eventId] && dispatcher.m_Listener.IsEventEnabled(eventCallbackArgs)))
                 {
                     {
                         try
