@@ -171,7 +171,9 @@ namespace System.Text.Json
 
     internal static partial class ThrowHelper
     {
+#if NULLABLE
         [DoesNotReturn]
+#endif
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity)
         {

@@ -17,6 +17,11 @@ namespace Microsoft.Extensions.Logging.Console
             _parser = new AnsiParser(WriteToConsole);
         }
 
+        public void Write(string message)
+        {
+            _parser.Parse(message);
+        }
+
         private bool SetColor(ConsoleColor? background, ConsoleColor? foreground)
         {
             var backgroundChanged = SetBackgroundColor(background);
@@ -57,11 +62,6 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 ResetColor();
             }
-        }
-
-        public void Write(string message)
-        {
-            _parser.Parse(message);
         }
     }
 }

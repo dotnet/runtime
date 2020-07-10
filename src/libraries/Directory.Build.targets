@@ -240,6 +240,10 @@
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Nullable)' != ''">
+    <DefineConstants>$(DefineConstants),NULLABLE</DefineConstants>
+  </PropertyGroup>
+
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
         This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup>
