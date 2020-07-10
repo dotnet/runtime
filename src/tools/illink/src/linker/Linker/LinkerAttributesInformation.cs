@@ -14,7 +14,7 @@ namespace Mono.Linker
 	{
 		readonly Dictionary<Type, List<Attribute>> _linkerAttributes;
 
-		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider, bool removable = false)
+		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider)
 		{
 			_linkerAttributes = null;
 			if (context.CustomAttributes.HasCustomAttributes (provider)) {

@@ -36,7 +36,7 @@ namespace Mono.Linker.Steps
 				TypeDefinition attributeType;
 
 				string internalAttribute = GetAttribute (iterator.Current, "internal");
-				if (internalAttribute == "RemoveAttributeInstances" && provider != null) {
+				if (internalAttribute == "RemoveAttributeInstances" && provider != null && !Annotations.IsMarked (provider)) {
 					IEnumerable<Attribute> removeAttributeInstance = new List<Attribute> { new RemoveAttributeInstancesAttribute () };
 					Context.CustomAttributes.AddInternalAttributes (provider, removeAttributeInstance);
 					continue;
