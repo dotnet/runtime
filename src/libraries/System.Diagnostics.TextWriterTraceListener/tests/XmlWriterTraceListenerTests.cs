@@ -102,12 +102,9 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         {
             // Ensure we use an arbitrary ID that doesn't match the process ID or thread ID.
             int traceTransferId = 1;
-            using (Process p = Process.GetCurrentProcess())
+            while (traceTransferId == Environment.ProcessId || traceTransferId == Environment.CurrentManagedThreadId)
             {
-                while (traceTransferId == p.Id || traceTransferId == Environment.CurrentManagedThreadId)
-                {
-                    traceTransferId++;
-                }
+                traceTransferId++;
             }
 
             string file = GetTestFilePath();

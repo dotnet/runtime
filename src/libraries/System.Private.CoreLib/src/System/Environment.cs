@@ -117,6 +117,24 @@ namespace System
             return GetFolderPathCore(folder, option);
         }
 
+        private static int s_processId;
+        private static volatile bool s_haveProcessId;
+
+        /// <summary>Gets the unique identifier for the current process.</summary>
+        public static int ProcessId
+        {
+            get
+            {
+                if (!s_haveProcessId)
+                {
+                    s_processId = GetCurrentProcessId();
+                    s_haveProcessId = true;
+                }
+
+                return s_processId;
+            }
+        }
+
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;

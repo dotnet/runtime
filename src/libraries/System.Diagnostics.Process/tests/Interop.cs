@@ -55,9 +55,6 @@ namespace System.Diagnostics.Tests
         public static extern bool GetProcessWorkingSetSizeEx(SafeProcessHandle hProcess, out IntPtr lpMinimumWorkingSetSize, out IntPtr lpMaximumWorkingSetSize, out uint flags);
 
         [DllImport("kernel32.dll")]
-        internal static extern int GetCurrentProcessId();
-
-        [DllImport("kernel32.dll")]
         internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
 
         [DllImport("kernel32.dll")]

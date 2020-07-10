@@ -19869,10 +19869,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
             int align_const = get_alignment_constant (i < uoh_start_generation);
 
             PREFIX_ASSUME(seg != NULL);
-            uint8_t*  o = max (heap_segment_mem (seg), min_add);
 
             while (seg)
             {
+                uint8_t*  o = max (heap_segment_mem (seg), min_add);
                 uint8_t*  end = heap_segment_allocated (seg);
 
                 while ((o < end) && (o <= max_add))
