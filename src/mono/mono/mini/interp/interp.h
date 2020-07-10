@@ -49,6 +49,9 @@ MONO_API void mono_ee_interp_init (const char *);
 gpointer
 mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig);
 
+gpointer
+mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_arg);
+
 #endif
 
 #endif /* __MONO_MINI_INTERPRETER_H__ */

@@ -158,7 +158,6 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
 
-	guint32 locals_size;
 	guint32 total_locals_size;
 	guint32 stack_size;
 	guint32 vt_stack_size;
@@ -223,7 +222,6 @@ typedef struct {
 struct InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
-	stackval       *stack_args; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack;
 	InterpFrame    *next_free;

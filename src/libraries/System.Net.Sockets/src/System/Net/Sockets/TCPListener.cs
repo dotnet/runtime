@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 
@@ -20,21 +19,21 @@ namespace System.Net.Sockets
         // Initializes a new instance of the TcpListener class with the specified local end point.
         public TcpListener(IPEndPoint localEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, localEP);
             if (localEP == null)
             {
                 throw new ArgumentNullException(nameof(localEP));
             }
             _serverSocketEP = localEP;
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the TcpListener class that listens to the specified IP address
         // and port.
         public TcpListener(IPAddress localaddr, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localaddr);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, localaddr);
             if (localaddr == null)
             {
                 throw new ArgumentNullException(nameof(localaddr));
@@ -46,7 +45,7 @@ namespace System.Net.Sockets
 
             _serverSocketEP = new IPEndPoint(localaddr, port);
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Initiailizes a new instance of the TcpListener class that listens on the specified port.
@@ -142,12 +141,12 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(backlog));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             // Already listening.
             if (_active)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
 
@@ -166,19 +165,19 @@ namespace System.Net.Sockets
             }
 
             _active = true;
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Closes the network connection.
         public void Stop()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             _serverSocket?.Dispose();
             _active = false;
             _serverSocket = null;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         // Determine if there are pending connection requests.
@@ -195,7 +194,7 @@ namespace System.Net.Sockets
         // Accept the first pending connection
         public Socket AcceptSocket()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (!_active)
             {
@@ -204,13 +203,13 @@ namespace System.Net.Sockets
 
             Socket socket = _serverSocket!.Accept();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, socket);
             return socket;
         }
 
         public TcpClient AcceptTcpClient()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (!_active)
             {
@@ -220,13 +219,13 @@ namespace System.Net.Sockets
             Socket acceptedSocket = _serverSocket!.Accept();
             TcpClient returnValue = new TcpClient(acceptedSocket);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, returnValue);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, returnValue);
             return returnValue;
         }
 
         public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (!_active)
             {
@@ -235,13 +234,13 @@ namespace System.Net.Sockets
 
             IAsyncResult result = _serverSocket!.BeginAccept(callback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return result;
         }
 
         public Socket EndAcceptSocket(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (asyncResult == null)
             {
@@ -258,7 +257,7 @@ namespace System.Net.Sockets
             // This will throw ObjectDisposedException if Stop() has been called.
             Socket socket = asyncSocket.EndAccept(asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, socket);
             return socket;
         }
 
@@ -270,7 +269,7 @@ namespace System.Net.Sockets
 
         public Task<Socket> AcceptSocketAsync()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             if (!_active)
             {
@@ -279,7 +278,7 @@ namespace System.Net.Sockets
 
             Task<Socket> result = _serverSocket!.AcceptAsync();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
 
             return result;
         }
@@ -296,7 +295,7 @@ namespace System.Net.Sockets
         // This creates a TcpListener that listens on both IPv4 and IPv6 on the given port.
         public static TcpListener Create(int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, port);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, port);
 
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
@@ -316,7 +315,7 @@ namespace System.Net.Sockets
                 listener = new TcpListener(IPAddress.Any, port);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, port);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, port);
 
             return listener;
         }

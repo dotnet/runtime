@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Enable CHECK_ACCURATE_ENSURE to ensure that the AsnWriter is not ever
 // abusing the normal EnsureWriteCapacity + ArrayPool behaviors of rounding up.

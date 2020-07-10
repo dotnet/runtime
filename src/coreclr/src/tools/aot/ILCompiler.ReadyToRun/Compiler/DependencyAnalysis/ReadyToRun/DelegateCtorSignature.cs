@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
@@ -44,11 +43,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
-                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
+                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null, unboxing: false),
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);

@@ -4,7 +4,7 @@
     <NoWarn>1718</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
@@ -232,7 +232,7 @@
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

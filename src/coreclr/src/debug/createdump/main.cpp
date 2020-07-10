@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
 
@@ -151,6 +150,8 @@ int __cdecl main(const int argc, const char* argv[])
         {
             exitCode = -1;
         }
+        fflush(stdout);
+        fflush(stderr);
     }
     else
     {
@@ -163,3 +164,17 @@ int __cdecl main(const int argc, const char* argv[])
 #endif
     return exitCode;
 }
+
+void
+trace_printf(const char* format, ...)
+{
+    if (g_diagnostics)
+    { 
+        va_list args;
+        va_start(args, format);
+        vfprintf(stdout, format, args);
+        fflush(stdout);
+        va_end(args);
+    }
+}
+
