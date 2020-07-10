@@ -89,8 +89,7 @@ namespace System.Text.Encodings.Web
             Debug.Assert(AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian);
 
             // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
-            Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, s_mostSignficantBitMask), s_mostSignficantBitMask);
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
 
             // self-pairwise add until all flags have moved to the first two bytes of the vector
