@@ -19,6 +19,9 @@ typedef long long __v4di __attribute__ ((__vector_size__ (32)));
 typedef float __v8sf __attribute__ ((__vector_size__ (32)));
 typedef unsigned char __v16qu __attribute__((__vector_size__(16)));
 typedef unsigned long long __v4du __attribute__ ((__vector_size__ (32)));
+typedef unsigned int __v4su __attribute__((__vector_size__(16)));
+typedef int __v4si __attribute__((__vector_size__(16)));
+typedef unsigned int __v8su __attribute__ ((__vector_size__ (32)));
 
 typedef float __m256 __attribute__ ((__vector_size__ (32), __aligned__(32)));
 typedef double __m256d __attribute__((__vector_size__(32), __aligned__(32)));
@@ -698,6 +701,80 @@ _mm256_storeu_pd(double *__p, __m256d __a)
   ((struct __storeu_pd*)__p)->__v = __a;
 }
 
+/* Arithmetic */
+/// Adds two 256-bit vectors of [4 x double].
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VADDPD </c> instruction.
+///
+/// \param __a
+///    A 256-bit vector of [4 x double] containing one of the source operands.
+/// \param __b
+///    A 256-bit vector of [4 x double] containing one of the source operands.
+/// \returns A 256-bit vector of [4 x double] containing the sums of both
+///    operands.
+static __inline __m256d __DEFAULT_FN_ATTRS
+_mm256_add_pd(__m256d __a, __m256d __b)
+{
+  return (__m256d)((__v4df)__a+(__v4df)__b);
+}
+
+/// Subtracts two 256-bit vectors of [4 x double].
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VSUBPD </c> instruction.
+///
+/// \param __a
+///    A 256-bit vector of [4 x double] containing the minuend.
+/// \param __b
+///    A 256-bit vector of [4 x double] containing the subtrahend.
+/// \returns A 256-bit vector of [4 x double] containing the differences between
+///    both operands.
+static __inline __m256d __DEFAULT_FN_ATTRS
+_mm256_sub_pd(__m256d __a, __m256d __b)
+{
+  return (__m256d)((__v4df)__a-(__v4df)__b);
+}
+
+/// Adds two 256-bit vectors of [8 x float].
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VADDPS </c> instruction.
+///
+/// \param __a
+///    A 256-bit vector of [8 x float] containing one of the source operands.
+/// \param __b
+///    A 256-bit vector of [8 x float] containing one of the source operands.
+/// \returns A 256-bit vector of [8 x float] containing the sums of both
+///    operands.
+static __inline __m256 __DEFAULT_FN_ATTRS
+_mm256_add_ps(__m256 __a, __m256 __b)
+{
+  return (__m256)((__v8sf)__a+(__v8sf)__b);
+}
+
+/// Subtracts two 256-bit vectors of [8 x float].
+///
+/// \headerfile <x86intrin.h>
+///
+/// This intrinsic corresponds to the <c> VSUBPS </c> instruction.
+///
+/// \param __a
+///    A 256-bit vector of [8 x float] containing the minuend.
+/// \param __b
+///    A 256-bit vector of [8 x float] containing the subtrahend.
+/// \returns A 256-bit vector of [8 x float] containing the differences between
+///    both operands.
+static __inline __m256 __DEFAULT_FN_ATTRS
+_mm256_sub_ps(__m256 __a, __m256 __b)
+{
+  return (__m256)((__v8sf)__a-(__v8sf)__b);
+}
+
+
 #undef __DEFAULT_FN_ATTRS128
 
 /*===---- avx2intrin.h - AVX2 intrinsics -----------------------------------===
@@ -723,6 +800,18 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256
 _mm256_max_epu32(__m256i __a, __m256i __b)
 {
   return (__m256i)__builtin_ia32_pmaxud256((__v8si)__a, (__v8si)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_min_epi32(__m256i __a, __m256i __b)
+{
+  return (__m256i)__builtin_ia32_pminsd256((__v8si)__a, (__v8si)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_max_epi32(__m256i __a, __m256i __b)
+{
+  return (__m256i)__builtin_ia32_pmaxsd256((__v8si)__a, (__v8si)__b);
 }
 
 #define _mm256_blend_epi32(V1, V2, M) \
@@ -765,6 +854,72 @@ static __inline__ __m256 __DEFAULT_FN_ATTRS256
 _mm256_permutevar8x32_ps(__m256 __a, __m256i __b)
 {
   return (__m256)__builtin_ia32_permvarsf256((__v8sf)__a, (__v8si)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_add_epi64(__m256i __a, __m256i __b)
+{
+  return (__m256i)((__v4du)__a + (__v4du)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_sub_epi64(__m256i __a, __m256i __b)
+{
+  return (__m256i)((__v4du)__a - (__v4du)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_slli_epi64(__m256i __a, int __count)
+{
+  return __builtin_ia32_psllqi256((__v4di)__a, __count);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_srli_epi64(__m256i __a, int __count)
+{
+  return __builtin_ia32_psrlqi256((__v4di)__a, __count);
+}
+
+#define _mm256_extracti128_si256(V, M) \
+  (__m128i)__builtin_ia32_extract128i256((__v4di)(__m256i)(V), (int)(M))
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_cvtepu32_epi64(__m128i __V)
+{
+  return (__m256i)__builtin_convertvector((__v4su)__V, __v4di);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_cvtepi32_epi64(__m128i __V)
+{
+  return (__m256i)__builtin_convertvector((__v4si)__V, __v4di);
+}
+
+#define _mm256_permute4x64_epi64(V, M) \
+  (__m256i)__builtin_ia32_permdi256((__v4di)(__m256i)(V), (int)(M))
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_add_epi32(__m256i __a, __m256i __b)
+{
+  return (__m256i)((__v8su)__a + (__v8su)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_sub_epi32(__m256i __a, __m256i __b)
+{
+  return (__m256i)((__v8su)__a - (__v8su)__b);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_slli_epi32(__m256i __a, int __count)
+{
+  return (__m256i)__builtin_ia32_pslldi256((__v8si)__a, __count);
+}
+
+static __inline__ __m256i __DEFAULT_FN_ATTRS256
+_mm256_srli_epi32(__m256i __a, int __count)
+{
+  return (__m256i)__builtin_ia32_psrldi256((__v8si)__a, __count);
 }
 
 #undef __DEFAULT_FN_ATTRS
@@ -962,6 +1117,18 @@ _mm512_storeu_si512 (void *__P, __m512i __A)
 }
 
 static __inline __m512i __DEFAULT_FN_ATTRS512
+_mm512_min_epi32(__m512i __A, __m512i __B)
+{
+  return (__m512i)__builtin_ia32_pminsd512((__v16si)__A, (__v16si)__B);
+}
+
+static __inline __m512i __DEFAULT_FN_ATTRS512
+_mm512_max_epi32(__m512i __A, __m512i __B)
+{
+  return (__m512i)__builtin_ia32_pmaxsd512((__v16si)__A, (__v16si)__B);
+}
+
+static __inline __m512i __DEFAULT_FN_ATTRS512
 _mm512_min_epi64(__m512i __A, __m512i __B)
 {
   return (__m512i)__builtin_ia32_pminsq512((__v8di)__A, (__v8di)__B);
@@ -989,6 +1156,14 @@ static __inline __m512i __DEFAULT_FN_ATTRS512
 _mm512_max_epu32(__m512i __A, __m512i __B)
 {
   return (__m512i)__builtin_ia32_pmaxud512((__v16si)__A, (__v16si)__B);
+}
+
+static __inline__ __m512i __DEFAULT_FN_ATTRS512
+_mm512_mask_max_epi32 (__m512i __W, __mmask16 __M, __m512i __A, __m512i __B)
+{
+  return (__m512i)__builtin_ia32_selectd_512((__mmask16)__M,
+                                            (__v16si)_mm512_max_epi32(__A, __B),
+                                            (__v16si)__W);
 }
 
 static __inline__ __m512i __DEFAULT_FN_ATTRS512
