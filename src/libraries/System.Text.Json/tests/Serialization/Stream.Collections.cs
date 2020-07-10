@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         public static async Task HandleCollectionsAsync()
         {
             await RunTestAsync<string>();
