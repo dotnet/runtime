@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test is checking to see if the AV in the if is hoisted out of the loop
 // The code in the if should not hit.  Thus there should be no AV

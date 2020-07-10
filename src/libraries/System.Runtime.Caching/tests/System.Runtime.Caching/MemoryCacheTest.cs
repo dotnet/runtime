@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
 //
@@ -42,7 +42,6 @@ using MonoTests.Common;
 
 namespace MonoTests.System.Runtime.Caching
 {
-    [SkipOnMono("MemoryCache is not supported on Browser", TestPlatforms.Browser)]
     public class MemoryCacheTest
     {
         [Fact]

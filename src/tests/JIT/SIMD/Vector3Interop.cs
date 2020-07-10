@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The native type of Vector3 is struct {float x,y,z} whose size is 12 bytes. RyuJit uses 16-byte
 // register or stack location to store a Vector3 variable with the assumptions below. New testcases

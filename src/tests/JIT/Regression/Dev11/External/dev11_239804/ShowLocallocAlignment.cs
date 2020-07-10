@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Check that localloc return properly aligned memory.
 // The JIT guarantees that the localloc return value is at least as aligned as the platform stack alignment, which is:

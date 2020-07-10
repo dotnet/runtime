@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,18 +11,18 @@ namespace System.Text.Json.Serialization.Tests
     public static class CacheTests
     {
         [Fact, OuterLoop]
-        public static void MultipleThreads_SameType_DifferentJson_Looping()
+        public static async Task MultipleThreads_SameType_DifferentJson_Looping()
         {
             const int Iterations = 100;
 
             for (int i = 0; i < Iterations; i++)
             {
-                MultipleThreads_SameType_DifferentJson();
+                await MultipleThreads_SameType_DifferentJson();
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void MultipleThreads_SameType_DifferentJson()
+        [Fact]
+        public static async Task MultipleThreads_SameType_DifferentJson()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -70,22 +69,22 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i + 3] = Task.Run(() => SerializeObject());
             };
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         [Fact, OuterLoop]
-        public static void MultipleThreads_DifferentTypes_Looping()
+        public static async Task MultipleThreads_DifferentTypes_Looping()
         {
             const int Iterations = 100;
 
             for (int i = 0; i < Iterations; i++)
             {
-                MultipleThreads_DifferentTypes();
+                await MultipleThreads_DifferentTypes();
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void MultipleThreads_DifferentTypes()
+        [Fact]
+        public static async Task MultipleThreads_DifferentTypes()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -122,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i + 1] = Task.Run(() => Test(TestClassCount - 2));
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         [Fact]
@@ -165,9 +164,9 @@ namespace System.Text.Json.Serialization.Tests
         // this options is not the default options instance the tests will not use previously cached metadata.
         private static JsonSerializerOptions s_options = new JsonSerializerOptions();
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [MemberData(nameof(WriteSuccessCases))]
-        public static void MultipleTypes(ITestClass testObj)
+        public static async Task MultipleTypes(ITestClass testObj)
         {
             Type type = testObj.GetType();
 
@@ -200,7 +199,7 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i + 1] = Task.Run(() => Serialize());
             };
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         public static IEnumerable<object[]> WriteSuccessCases

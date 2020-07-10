@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // DEFAULT_MIN_OPTS_LV_REF_COUNT  8000
 // New refCnts for V00: refCnt = 8001

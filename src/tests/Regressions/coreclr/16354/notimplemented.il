@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Makes sure that a type that implements IFoo<string> through a default
 // interface method and declares it also implements IFoo<ValueType>

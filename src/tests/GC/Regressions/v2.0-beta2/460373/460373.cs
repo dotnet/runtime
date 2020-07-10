@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // seg 4MB, gen0 4MB: regression test for 424916
 // seg 8MB, gen0 4MB regression test for 460373

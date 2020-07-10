@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.InteropServices
 {
     public readonly struct OSPlatform : IEquatable<OSPlatform>
     {
         private readonly string _osPlatform;
+
+        public static OSPlatform Android { get; } = new OSPlatform("ANDROID");
 
         public static OSPlatform Browser { get; } = new OSPlatform("BROWSER");
 
@@ -15,6 +16,12 @@ namespace System.Runtime.InteropServices
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
+
+        public static OSPlatform iOS { get; } = new OSPlatform("IOS");
+
+        public static OSPlatform tvOS { get; } = new OSPlatform("TVOS");
+
+        public static OSPlatform watchOS { get; } = new OSPlatform("WATCHOS");
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 

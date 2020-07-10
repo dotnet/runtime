@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Tests Pinned handle for array of Objects...
 // Pinning of "Object" type is not allowed and should throw an exception.

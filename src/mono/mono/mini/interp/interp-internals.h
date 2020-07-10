@@ -129,6 +129,8 @@ typedef enum {
 	IMETHOD_CODE_UNKNOWN
 } InterpMethodCodeType;
 
+#define PROFILE_INTERP 0
+
 /* 
  * Structure representing a method transformed for the interpreter 
  * This is domain specific
@@ -174,6 +176,10 @@ struct InterpMethod {
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
 	unsigned int needs_thread_attach : 1;
+#if PROFILE_INTERP
+	long calls;
+	long opcounts;
+#endif
 };
 
 /* Used for localloc memory allocation */

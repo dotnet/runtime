@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -10,7 +9,12 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM AdvSIMD hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class AdvSimd : ArmBase
+#if USE_INTERNAL_ACCESSIBILITY
+    internal
+#else
+    public
+#endif
+        abstract class AdvSimd : ArmBase
     {
         internal AdvSimd() { }
 

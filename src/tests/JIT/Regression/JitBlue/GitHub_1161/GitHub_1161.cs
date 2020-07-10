@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This test illustrates a limitation in the JIT in that it will not promote
 // a struct that has a single double register. See https://github.com/dotnet/coreclr/issues/1161.

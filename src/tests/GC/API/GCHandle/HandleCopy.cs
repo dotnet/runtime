@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Tests Copy of GCHandleType.Weak .. the object with GCHandleType Weak 
 // will be collected. The handle and it's copy remain allocated even after the object is collected.

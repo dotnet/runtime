@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubCache.cpp
 //
@@ -255,11 +254,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsTailCallCallTargetStub(dwStubFlags))
     {
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
-    }
-    else
-    if (SF_IsTailCallDispatcherStub(dwStubFlags))
-    {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallDispatcherStub);
     }
     else
 #ifdef FEATURE_COMINTEROP

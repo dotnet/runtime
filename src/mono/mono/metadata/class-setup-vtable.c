@@ -1568,9 +1568,9 @@ check_signature_covariant (MonoClass *klass, MonoMethod *impl, MonoMethod *decl)
  * \param vtable_size the number of slots in the vtable
  *
  * Given a provisional vtable for a class, check that any methods that come from \p klass that have the \c
- * MonoMethod:is_covariant_override_impl bit have the most specific signature of any method in that slot in the ancestor
- * classes.  This checks that if the current class is overriding a method, it is doing so with the most specific
- * signature.
+ * MonoMethodDefInfrequentBits:is_covariant_override_impl bit have the most specific signature of any method in that
+ * slot in the ancestor classes.  This checks that if the current class is overriding a method, it is doing so with the
+ * most specific signature.
  *
  * Because classes can override methods either explicitly using an .override directive or implicitly by matching the
  * signature of some virtual method of some ancestor class, you could get into a situation where a class incorrectly
@@ -1598,7 +1598,7 @@ check_vtable_covariant_override_impls (MonoClass *klass, MonoMethod **vtable, in
 	/* we only need to check the slots that the parent class has, too. Everything else is new. */
 	for (int slot = 0; slot < parent_class->vtable_size; ++slot) {
 		MonoMethod *impl = vtable[slot];
-		if (!impl || !impl->is_covariant_override_impl || impl->klass != klass)
+		if (!impl || !mono_method_get_is_covariant_override_impl (impl) || impl->klass != klass)
 			continue;
 		MonoMethod *last_checked_prev_override = NULL;
 		for (MonoClass *cur_class = parent_class; cur_class ; cur_class = cur_class->parent) {
@@ -1867,7 +1867,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				
 				if (im->flags & METHOD_ATTRIBUTE_STATIC)
 					continue;
-				if (im->is_reabstracted == 1)
+				if (mono_method_get_is_reabstracted (im))
 					continue;
 
 				TRACE_INTERFACE_VTABLE (printf ("      [class is not abstract, checking slot %d for interface '%s'.'%s', method %s, slot check is %d]\n",
@@ -1914,10 +1914,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 							goto fail;
 
 #ifdef FEATURE_COVARIANT_RETURNS
-						if (vtable[slot] && vtable[slot]->is_covariant_override_impl) {
+						if (vtable[slot] && mono_method_get_is_covariant_override_impl (vtable[slot])) {
 							TRACE_INTERFACE_VTABLE (printf ("  in class %s, implicit override %s overrides %s in slot %d, which contained %s which had the covariant return bit\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (cm, 1), mono_method_full_name (m1, 1), slot,  mono_method_full_name (vtable[slot], 1)));
 							/* Mark the current method as overriding a covariant return method; after the explicit overloads are applied, if this method is still in its slot in the vtable, we will check that it's the most specific implementation */
-							cm->is_covariant_override_impl = TRUE;
+							mono_method_set_is_covariant_override_impl (cm);
 						}
 #endif /* FEATURE_COVARIANT_RETURNS */
 
@@ -2006,9 +2006,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			/* Historically, mono didn't do a signature equivalence check for explicit overrides, but we need one for covariant returns */
 			/* If the previous impl in the slot had the covariant signature bit set, or if the signature of the proposed impl doesn't match the signature of the previous impl, check for covariance */
 			if (prev_impl != NULL &&
-			    (prev_impl->is_covariant_override_impl ||
+			    (mono_method_get_is_covariant_override_impl (prev_impl) ||
 			     !mono_metadata_signature_equal (mono_method_signature_internal (impl), mono_method_signature_internal (prev_impl)))) {
-				impl->is_covariant_override_impl = TRUE;
+				mono_method_set_is_covariant_override_impl (impl);
 			}
 
 			/* if we saw the attribute or if we think we need to check impl sigs, we will need to traverse the class hierarchy. */
@@ -2085,7 +2085,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < cur_slot; ++i) {
 			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
-				if (vtable [i] != NULL && vtable [i]->is_reabstracted == 1)
+				if (vtable [i] != NULL && mono_method_get_is_reabstracted (vtable [i]))
 					continue;
 				char *type_name = mono_type_get_full_name (klass);
 				char *method_name = vtable [i] ? mono_method_full_name (vtable [i], TRUE) : g_strdup ("none");
