@@ -30,24 +30,26 @@ namespace Mono.Linker
 					AppendArrayType (arrayType, sb);
 					break;
 				case GenericInstanceType genericInstanceType:
-					int arguments = int.Parse (genericInstanceType.Name.Substring (genericInstanceType.Name.IndexOf ('`') + 1));
 					genericArguments = new Stack<TypeReference> (genericInstanceType.GenericArguments);
-					PrependGenericArguments (genericArguments, arguments, sb);
-					sb.Insert (0, genericInstanceType.Name.Substring (0, genericInstanceType.Name.IndexOf ('`')));
-					break;
+					type = genericInstanceType.ElementType;
+					continue;
 				default:
 					if (type.HasGenericParameters) {
-						if (!int.TryParse (type.Name.Substring (type.Name.IndexOf ('`') + 1), out int arity)) {
-							sb.Insert (0, type.Name);
-							break;
-						}
+						int genericParametersCount = type.GenericParameters.Count;
+						int declaringTypeGenericParametersCount = type.DeclaringType?.GenericParameters?.Count ?? 0;
 
-						if (genericArguments?.Count > 0)
-							PrependGenericArguments (genericArguments, arity, sb);
-						else
-							PrependGenericParameters (type.GenericParameters.Skip (type.GenericParameters.Count - arity).ToList (), sb);
+						string simpleName;
+						if (genericParametersCount > declaringTypeGenericParametersCount) {
+							if (genericArguments?.Count > 0)
+								PrependGenericArguments (genericArguments, genericParametersCount - declaringTypeGenericParametersCount, sb);
+							else
+								PrependGenericParameters (type.GenericParameters.Skip (declaringTypeGenericParametersCount).ToList (), sb);
 
-						sb.Insert (0, type.Name.Substring (0, type.Name.IndexOf ('`')));
+							simpleName = type.Name.Substring (0, type.Name.IndexOf ('`'));
+						} else
+							simpleName = type.Name;
+
+						sb.Insert (0, simpleName);
 						break;
 					}
 

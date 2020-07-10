@@ -169,6 +169,9 @@ namespace Mono.Linker.Tests
 			}
 		}
 
+		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithNestedGenericTypeArgumentsNoArgumentsOnLeaf(GetDisplayNameTests.GenericClassOneParameter<Int32>.B)")]
+		public void MethodWithNestedGenericTypeArgumentsNoArgumentsOnLeaf (GenericClassOneParameter<int>.B p) { }
+
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.GenericClassMultipleParameters<T,S>")]
 		public class GenericClassMultipleParameters<T, S>
 		{
@@ -191,6 +194,13 @@ namespace Mono.Linker.Tests
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithNestedGenericTypeArguments" +
 			"(GetDisplayNameTests.GenericClassMultipleParameters<Char*[],Int32[,][]>.NestedGenericClassMultipleParameters<Char*[],Int32[,][]>)")]
 		public void MethodWithNestedGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]>.NestedGenericClassMultipleParameters<char*[], int[,][]> p)
+		{
+		}
+
+		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithPartiallyInstantiatedNestedGenericTypeArguments<MethodT,MethodV>" +
+			"(GetDisplayNameTests.GenericClassMultipleParameters<MethodT,String>.NestedGenericClassMultipleParameters<Int32,MethodV>)")]
+		public void MethodWithPartiallyInstantiatedNestedGenericTypeArguments<MethodT, MethodV> (
+			GenericClassMultipleParameters<MethodT, string>.NestedGenericClassMultipleParameters<int, MethodV> p)
 		{
 		}
 	}
