@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode()
         {
-            return _osPlatform == null ? 0 : _osPlatform.GetHashCode();
+            return _osPlatform == null ? 0 : _osPlatform.GetHashCode(StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
