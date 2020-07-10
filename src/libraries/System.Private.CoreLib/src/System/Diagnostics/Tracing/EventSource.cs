@@ -3961,7 +3961,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventListener()
         {
-            // Initialize dictionaries that keep track of the EventSources' states that are enabled in this instance of EventListener.
+            // Initialize dictionary that keep track of the EventSources' states that are enabled in this instance of EventListener.
             _EnabledEventSourceStates = new Dictionary<string, EventListenerEventSourceState>();
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
@@ -4134,10 +4134,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventData"></param>
         protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            if (IsEventEnabled(eventData))
-            {
-                this.EventWritten?.Invoke(this, eventData);
-            }
+            this.EventWritten?.Invoke(this, eventData);
         }
 
         internal virtual bool IsEventEnabled(EventWrittenEventArgs eventData)
@@ -4146,7 +4143,7 @@ namespace System.Diagnostics.Tracing
             if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceName))
             {
                 EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceName];
-                return ((state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0));
+                return (state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0);
             }
             return false;
         }
