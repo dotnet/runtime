@@ -206,12 +206,12 @@ namespace ILLink.Tasks.Tests
 			yield return new object[] {
 				new ITaskItem [] {
 					new TaskItem ("path/to/Assembly1.dll", new Dictionary<string, string> {
-						{ "ClearInitLocals", "True" },
+						{ "Sealer", "True" },
 						{ "BeforeFieldInit", "False" }
 					}),
 					new TaskItem ("path/to/Assembly2.dll", new Dictionary<string, string> {
-						{ "ClearInitLocals", "False" },
-						{ "Sealer", "True" }
+						{ "Sealer", "False" },
+						{ "BeforeFieldInit", "True" }
 					})
 				}
 			};
@@ -246,7 +246,7 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				AssemblyPaths = new ITaskItem[] {
 					new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
-						{ "ClearInitLocals", "invalid" }
+						{ "Sealer", "invalid" }
 					})
 				}
 			};
@@ -271,20 +271,6 @@ namespace ILLink.Tasks.Tests
 			var optimizationMetadataNames = MockTask.OptimizationNames;
 			var optimizationPropertyNames = MockTask.GetOptimizationPropertyNames ();
 			Assert.Equal (optimizationMetadataNames.OrderBy (o => o), optimizationPropertyNames.OrderBy (o => o));
-		}
-
-		[Theory]
-		[InlineData (true)]
-		[InlineData (false)]
-		public void TestClearInitLocals (bool clearInitLocals)
-		{
-			var task = new MockTask () {
-				ClearInitLocals = clearInitLocals
-			};
-			using (var driver = task.CreateDriver ()) {
-				var actualClearInitLocals = driver.Context.Optimizations.IsEnabled (CodeOptimizations.ClearInitLocals, assemblyName: null);
-				Assert.Equal (clearInitLocals, actualClearInitLocals);
-			}
 		}
 
 		[Theory]

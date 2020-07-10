@@ -648,7 +648,6 @@ namespace Mono.Linker
 #endif
 
 			p.AddStepBefore (typeof (MarkStep), new RemoveUnreachableBlocksStep ());
-			p.AddStepBefore (typeof (OutputStep), new ClearInitLocalsStep ());
 			p.AddStepBefore (typeof (OutputStep), new SealerStep ());
 
 			//
@@ -679,7 +678,6 @@ namespace Mono.Linker
 			// CodeRewriterStep
 			// CleanStep
 			// RegenerateGuidStep [optional]
-			// ClearInitLocalsStep
 			// SealerStep
 			// OutputStep
 			//
@@ -919,9 +917,6 @@ namespace Mono.Linker
 			case "unreachablebodies":
 				optimization = CodeOptimizations.UnreachableBodies;
 				return true;
-			case "clearinitlocals":
-				optimization = CodeOptimizations.ClearInitLocals;
-				return true;
 			case "unusedinterfaces":
 				optimization = CodeOptimizations.UnusedInterfaces;
 				return true;
@@ -1076,7 +1071,6 @@ namespace Mono.Linker
 			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("  --enable-opt NAME [ASM]   Enable one of the additional optimizations globaly or for a specific assembly name");
-			Console.WriteLine ("                              clearinitlocals: Remove initlocals");
 			Console.WriteLine ("                              sealer: Any method or type which does not have override is marked as sealed");
 #if !FEATURE_ILLINK
 			Console.WriteLine ("  --exclude-feature NAME    Any code which has a feature <name> in linked assemblies will be removed");
