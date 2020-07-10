@@ -15,6 +15,11 @@
       linker repo here: https://github.com/mono/linker/issues/1285 -->
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
+      <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
+      as this test will ensure exceptions are using Resource keys -->
+      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -156,27 +155,13 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
-            Decode(new ReadOnlyMemory<byte>(encodedMessage));
+            Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
-        internal void Decode(ReadOnlyMemory<byte> encodedMessage)
+        public void Decode(ReadOnlySpan<byte> encodedMessage)
         {
-            AsnValueReader reader = new AsnValueReader(encodedMessage.Span, AsnEncodingRules.BER);
-
-            // Windows (and thus NetFx) reads the leading data and ignores extra.
-            // So use the Decode overload which doesn't throw on extra data.
-            ContentInfoAsn.Decode(
-                ref reader,
-                encodedMessage,
-                out ContentInfoAsn contentInfo);
-
-            if (contentInfo.ContentType != Oids.Pkcs7Signed)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
-            }
-
             // Hold a copy of the SignedData memory so we are protected against memory reuse by the caller.
-            _heldData = contentInfo.Content.ToArray();
+            _heldData = CopyContent(encodedMessage);
             _signedData = SignedDataAsn.Decode(_heldData, AsnEncodingRules.BER);
             _contentType = _signedData.EncapContentInfo.ContentType;
             _hasPkcs7Content = false;
@@ -215,6 +200,34 @@ namespace System.Security.Cryptography.Pkcs
 
             Version = _signedData.Version;
             _hasData = true;
+
+            static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)
+            {
+                unsafe
+                {
+                    fixed (byte* pin = encodedMessage)
+                    {
+                        using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
+                        {
+                            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
+
+                            // Windows (and thus NetFx) reads the leading data and ignores extra.
+                            // So use the Decode overload which doesn't throw on extra data.
+                            ContentInfoAsn.Decode(
+                                ref reader,
+                                manager.Memory,
+                                out ContentInfoAsn contentInfo);
+
+                            if (contentInfo.ContentType != Oids.Pkcs7Signed)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
+                            }
+
+                            return contentInfo.Content.ToArray();
+                        }
+                    }
+                }
+            }
         }
 
         internal static ReadOnlyMemory<byte> GetContent(

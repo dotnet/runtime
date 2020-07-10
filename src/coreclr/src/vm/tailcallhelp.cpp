@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "corpriv.h"
@@ -109,225 +108,28 @@ struct TailCallInfo
 };
 
 static MethodDesc* s_tailCallDispatcherMD;
+MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(ThrowOutOfMemory());
+    }
+    CONTRACTL_END;
+
+    if (s_tailCallDispatcherMD == NULL)
+        s_tailCallDispatcherMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
+
+    return s_tailCallDispatcherMD;
+}
+
 MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
 {
     LIMITED_METHOD_CONTRACT;
-    
     return s_tailCallDispatcherMD;
 }
 
-
-// This creates the dispatcher used to dispatch sequences of tailcalls. In C#
-// code it is the following function. Once C# gets function pointer support this
-// function can be put in System.Private.CoreLib.
-// private static unsafe void DispatchTailCalls(
-//     IntPtr callersRetAddrSlot, IntPtr callTarget, IntPtr retVal)
-// {
-//     IntPtr callersRetAddr;
-//     TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
-//     PortableTailCallFrame* prevFrame = tls->Frame;
-//     if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
-//     {
-//         prevFrame->NextCall = callTarget;
-//         return;
-//     }
-//
-//     PortableTailCallFrame newFrame;
-//     newFrame.Prev = prevFrame;
-//
-//     try
-//     {
-//         tls->Frame = &newFrame;
-//
-//         do
-//         {
-//             newFrame.NextCall = IntPtr.Zero;
-//             var fptr = (func* void(IntPtr, IntPtr, void*))callTarget;
-//             fptr(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
-//             callTarget = newFrame.NextCall;
-//         } while (callTarget != IntPtr.Zero);
-//     }
-//     finally
-//     {
-//         tls->Frame = prevFrame;
-//     }
-// }
-MethodDesc* TailCallHelp::GetOrCreateTailCallDispatcherMD()
-{
-    STANDARD_VM_CONTRACT;
-    
-    if (s_tailCallDispatcherMD != NULL)
-        return s_tailCallDispatcherMD;
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-
-    sigBuilder.AppendData(3);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_VOID);
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-
-    const int ARG_CALLERS_RET_ADDR_SLOT = 0;
-    const int ARG_CALL_TARGET = 1;
-    const int ARG_RET_VAL = 2;
-
-    DWORD cbSig;
-    PCCOR_SIGNATURE pSig = AllocateSignature(
-        MscorlibBinder::GetModule()->GetLoaderAllocator(), sigBuilder, &cbSig);
-
-    SigTypeContext emptyCtx;
-
-    ILStubLinker sl(MscorlibBinder::GetModule(),
-                    Signature(pSig, cbSig),
-                    &emptyCtx,
-                    NULL,
-                    FALSE,
-                    FALSE);
-
-    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-    DWORD retAddrLcl = pCode->NewLocal(ELEMENT_TYPE_I);
-    DWORD tlsLcl = pCode->NewLocal(ELEMENT_TYPE_I);
-    DWORD prevFrameLcl = pCode->NewLocal(ELEMENT_TYPE_I);
-    TypeHandle frameTyHnd = MscorlibBinder::GetClass(CLASS__PORTABLE_TAIL_CALL_FRAME);
-    DWORD newFrameEntryLcl = pCode->NewLocal(LocalDesc(frameTyHnd));
-    DWORD argsLcl = pCode->NewLocal(ELEMENT_TYPE_I);
-    ILCodeLabel* noUnwindLbl = pCode->NewCodeLabel();
-    ILCodeLabel* loopStart = pCode->NewCodeLabel();
-    ILCodeLabel* afterTryFinally = pCode->NewCodeLabel();
-
-    // tls = RuntimeHelpers.GetTailcallInfo(callersRetAddrSlot, &retAddr);
-    pCode->EmitLDARG(ARG_CALLERS_RET_ADDR_SLOT);
-    pCode->EmitLDLOCA(retAddrLcl);
-    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_TAILCALL_INFO, 2, 1);
-    pCode->EmitSTLOC(tlsLcl);
-
-    // prevFrame = tls.Frame;
-    pCode->EmitLDLOC(tlsLcl);
-    pCode->EmitLDFLD(FIELD__TAIL_CALL_TLS__FRAME);
-    pCode->EmitSTLOC(prevFrameLcl);
-
-    // if (retAddr != prevFrame.TailCallAwareReturnAddress) goto noUnwindLbl;
-    pCode->EmitLDLOC(retAddrLcl);
-    pCode->EmitLDLOC(prevFrameLcl);
-    pCode->EmitLDFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__TAILCALL_AWARE_RETURN_ADDRESS);
-    pCode->EmitBNE_UN(noUnwindLbl);
-
-    // prevFrame->NextCall = callTarget;
-    pCode->EmitLDLOC(prevFrameLcl);
-    pCode->EmitLDARG(ARG_CALL_TARGET);
-    pCode->EmitSTFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__NEXT_CALL);
-
-    // return;
-    pCode->EmitRET();
-
-    // Ok, we are the "first" dispatcher.
-    pCode->EmitLabel(noUnwindLbl);
-
-    // newFrameEntry.Prev = prevFrame;
-    pCode->EmitLDLOCA(newFrameEntryLcl);
-    pCode->EmitLDLOC(prevFrameLcl);
-    pCode->EmitSTFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__PREV);
-
-    // try {
-    pCode->BeginTryBlock();
-
-    // tls->Frame = &newFrameEntry;
-    pCode->EmitLDLOC(tlsLcl);
-    pCode->EmitLDLOCA(newFrameEntryLcl);
-    pCode->EmitSTFLD(FIELD__TAIL_CALL_TLS__FRAME);
-
-    // do {
-    pCode->EmitLabel(loopStart);
-
-    // newFrameEntry.NextCall = 0
-    pCode->EmitLDLOCA(newFrameEntryLcl);
-    pCode->EmitLDC(0);
-    pCode->EmitCONV_I();
-    pCode->EmitSTFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__NEXT_CALL);
-
-    SigBuilder calliSig;
-    calliSig.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    calliSig.AppendData(3);
-    calliSig.AppendElementType(ELEMENT_TYPE_VOID);
-    calliSig.AppendElementType(ELEMENT_TYPE_I);
-    calliSig.AppendElementType(ELEMENT_TYPE_I);
-    calliSig.AppendElementType(ELEMENT_TYPE_I);
-
-    DWORD cbCalliSig;
-    PCCOR_SIGNATURE pCalliSig = (PCCOR_SIGNATURE)calliSig.GetSignature(&cbCalliSig);
-
-    // callTarget(tls->ArgBuffer, retVal, &newFrameEntry.TailCallAwareReturnAddress)
-    // arg buffer
-    pCode->EmitLDLOC(tlsLcl);
-    pCode->EmitLDFLD(FIELD__TAIL_CALL_TLS__ARG_BUFFER);
-
-    // ret val
-    pCode->EmitLDARG(ARG_RET_VAL);
-
-    // TailCallAwareReturnAddress
-    pCode->EmitLDLOCA(newFrameEntryLcl);
-    pCode->EmitLDFLDA(FIELD__PORTABLE_TAIL_CALL_FRAME__TAILCALL_AWARE_RETURN_ADDRESS);
-
-    // callTarget
-    pCode->EmitLDARG(ARG_CALL_TARGET);
-
-    pCode->EmitCALLI(pCode->GetSigToken(pCalliSig, cbCalliSig), 2, 0);
-
-    // callTarget = newFrameEntry.NextCall;
-    pCode->EmitLDLOC(newFrameEntryLcl);
-    pCode->EmitLDFLD(FIELD__PORTABLE_TAIL_CALL_FRAME__NEXT_CALL);
-    pCode->EmitSTARG(ARG_CALL_TARGET);
-
-    // } while (callTarget != IntPtr.Zero);
-    pCode->EmitLDARG(ARG_CALL_TARGET);
-    pCode->EmitBRTRUE(loopStart);
-
-    // }
-    pCode->EmitLEAVE(afterTryFinally);
-    pCode->EndTryBlock();
-
-    // finally {
-    pCode->BeginFinallyBlock();
-
-    // tls->Frame = prevFrame;
-    pCode->EmitLDLOC(tlsLcl);
-    pCode->EmitLDLOC(prevFrameLcl);
-    pCode->EmitSTFLD(FIELD__TAIL_CALL_TLS__FRAME);
-
-    // }
-    pCode->EmitENDFINALLY();
-    pCode->EndFinallyBlock();
-
-    // afterTryFinally:
-    pCode->EmitLabel(afterTryFinally);
-
-    // return;
-    pCode->EmitRET();
-
-    Module* mscorlib = MscorlibBinder::GetModule();
-    MethodDesc* pDispatchTailCallsMD =
-        ILStubCache::CreateAndLinkNewILStubMethodDesc(
-            MscorlibBinder::GetModule()->GetLoaderAllocator(),
-            mscorlib->GetILStubCache()->GetOrCreateStubMethodTable(mscorlib),
-            ILSTUB_TAILCALL_DISPATCH,
-            mscorlib,
-            pSig, cbSig,
-            &emptyCtx,
-            &sl);
-
-#ifdef _DEBUG
-    LOG((LF_STUBS, LL_INFO1000, "TAILCALLHELP: DispatchTailCalls IL created\n"));
-    sl.LogILStub(CORJIT_FLAGS());
-#endif
-
-    // We might waste a MethodDesc here if we lose the race, but that is very
-    // unlikely and since this initialization only happens once not a big deal.
-    InterlockedCompareExchangeT(&s_tailCallDispatcherMD, pDispatchTailCallsMD, NULL);
-    return s_tailCallDispatcherMD;
-}
 
 void TailCallHelp::CreateTailCallHelperStubs(
     MethodDesc* pCallerMD, MethodDesc* pCalleeMD,

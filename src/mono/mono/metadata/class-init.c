@@ -3394,7 +3394,8 @@ mono_class_setup_methods (MonoClass *klass)
 			if (methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
 			{
 				if (method_is_reabstracted (methods[i]->flags)) {
-					methods [i]->is_reabstracted = 1;
+					if (!methods [i]->is_inflated)
+						mono_method_set_is_reabstracted (methods [i]);
 					continue;
 				}
 				methods [i]->slot = slot++;

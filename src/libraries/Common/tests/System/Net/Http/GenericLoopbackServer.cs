@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -124,6 +123,36 @@ namespace System.Net.Test.Common
         public HttpRequestData()
         {
             Headers = new List<HttpHeaderData>();
+        }
+
+        public static async Task<HttpRequestData> FromHttpRequestMessageAsync(System.Net.Http.HttpRequestMessage request)
+        {
+            var result = new HttpRequestData();
+            result.Method = request.Method.ToString();
+            result.Path = request.RequestUri?.AbsolutePath;
+
+            foreach (var header in request.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    result.Headers.Add(new HttpHeaderData(header.Key, value));
+                }
+            }
+
+            if (request.Content != null)
+            {
+                result.Body = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+
+                foreach (var header in request.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        result.Headers.Add(new HttpHeaderData(header.Key, value));
+                    }
+                }
+            }
+
+            return result;
         }
 
         public string[] GetHeaderValues(string headerName)

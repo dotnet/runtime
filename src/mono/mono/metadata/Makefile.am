@@ -418,7 +418,8 @@ common_sources = \
 	abi.c	\
 	native-library.c \
 	native-library.h \
-	native-library-qcall.c
+	native-library-qcall.c \
+	qcall-def.h 
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

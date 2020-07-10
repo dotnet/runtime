@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection;
@@ -8,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Threading.Tasks.Sources;
 using System.Threading.Tasks.Sources.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -371,6 +371,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Success(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0) : ManualResetValueTaskSourceFactory.Delay(1, 0), 0);
@@ -385,6 +386,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Success(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42) : ManualResetValueTaskSourceFactory.Delay(1, 42), 0);
@@ -399,6 +401,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Faulted(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
@@ -417,6 +420,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Faulted(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
@@ -435,6 +439,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Canceled(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
@@ -453,6 +458,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Canceled(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
@@ -572,6 +578,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask(Task.Delay(1));
@@ -586,6 +593,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask<int>(Task.Delay(1).ContinueWith(_ => 42));
@@ -600,6 +608,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -616,6 +625,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -774,8 +784,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource)]
         public async Task NonGeneric_Awaiter_ContinuesOnCapturedContext(CtorMode mode)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -785,15 +797,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                         new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -803,10 +815,13 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, true)]
         [InlineData(CtorMode.Task, true)]
         [InlineData(CtorMode.ValueTaskSource, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_Awaiter_ContinuesOnCapturedContext(CtorMode mode, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -816,15 +831,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -839,10 +854,13 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -852,15 +870,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(sync ? Task.CompletedTask : Task.Delay(1)) :
                         new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, null) : ManualResetValueTaskSourceFactory.Delay(42, 0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 
@@ -875,10 +893,13 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -888,15 +909,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 

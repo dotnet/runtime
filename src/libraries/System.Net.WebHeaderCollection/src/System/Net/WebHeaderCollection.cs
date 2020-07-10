@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -144,7 +143,6 @@ namespace System.Net
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Set() key:[{name}], value:[{value}]");
             if (_type == WebHeaderCollectionType.WebResponse)
             {
                 if (value != null && value.Length > ushort.MaxValue)
@@ -373,7 +371,6 @@ namespace System.Net
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Add({header}) calling InnerCollection.Add() key:[{name}], value:[{value}]");
             if (_type == WebHeaderCollectionType.WebResponse)
             {
                 if (value != null && value.Length > ushort.MaxValue)
@@ -401,7 +398,6 @@ namespace System.Net
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Add() key:[{name}], value:[{value}]");
             if (_type == WebHeaderCollectionType.WebResponse)
             {
                 if (value != null && value.Length > ushort.MaxValue)
@@ -417,7 +413,6 @@ namespace System.Net
         {
             headerName = HttpValidationHelpers.CheckBadHeaderNameChars(headerName);
             headerValue = HttpValidationHelpers.CheckBadHeaderValueChars(headerValue);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Add() key:[{headerName}], value:[{headerValue}]");
             if (_type == WebHeaderCollectionType.WebResponse)
             {
                 if (headerValue != null && headerValue.Length > ushort.MaxValue)
@@ -470,7 +465,6 @@ namespace System.Net
             }
             ThrowOnRestrictedHeader(name);
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"calling InnerCollection.Remove() key:[{name}]");
             if (_innerCollection != null)
             {
                 InvalidateCachedArrays();
@@ -513,7 +507,6 @@ namespace System.Net
             }
 
             sb.Append("\r\n");
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ToString: {sb}");
             return sb.ToString();
         }
 

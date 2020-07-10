@@ -10,7 +10,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
-    <TestSourceDir>$(MSBuildThisFileDirectory)src\</TestSourceDir>
+    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
   </PropertyGroup>
 
   <!-- Common properties -->

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -43,7 +42,7 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
@@ -62,7 +61,7 @@ namespace System.Net
             }
             if (_closed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
 
@@ -71,7 +70,7 @@ namespace System.Net
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -90,7 +89,7 @@ namespace System.Net
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, $"asyncResult:{asyncResult}");
@@ -105,15 +104,15 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 if (disposing)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_closed:" + _closed);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_closed:" + _closed);
                     if (_closed)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                         return;
                     }
                     _closed = true;
@@ -124,7 +123,7 @@ namespace System.Net
             {
                 base.Dispose(disposing);
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
     }
 }

@@ -348,4 +348,7 @@
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
   </data>
+  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
+    <value>System.Security.Cryptography is not supported on Browser.</value>
+  </data>
 </root>

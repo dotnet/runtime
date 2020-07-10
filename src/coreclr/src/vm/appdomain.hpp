@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -1950,18 +1949,6 @@ public:
     virtual PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
         BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
-
-    HRESULT BindAssemblySpecForHostedBinder(
-        AssemblySpec *   pSpec,
-        IAssemblyName *  pAssemblyName,
-        ICLRPrivBinder * pBinder,
-        PEAssembly **    ppAssembly) DAC_EMPTY_RET(E_FAIL);
-
-    HRESULT BindHostedPrivAssembly(
-        PEAssembly *       pParentPEAssembly,
-        ICLRPrivAssembly * pPrivAssembly,
-        IAssemblyName *    pAssemblyName,
-        PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
 
     //****************************************************************************************
     //

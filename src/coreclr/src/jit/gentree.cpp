@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -5921,17 +5920,26 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
         case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
-            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
+#ifdef DEBUG
+            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
+            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
 
             // Create the second indirection
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
@@ -6056,40 +6064,6 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
     baseType         = genActualType(baseType);
     GenTree* initVal = gtNewZeroConNode(baseType);
     initVal->gtType  = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-}
-
-//---------------------------------------------------------------------
-// gtNewSIMDVectorOne: create a GT_SIMD node for Vector<T>.One
-//
-// Arguments:
-//    simdType  -  simd vector type
-//    baseType  -  element type of vector
-//    size      -  size of vector in bytes
-GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
-{
-    GenTree* initVal;
-    if (varTypeIsSmallInt(baseType))
-    {
-        unsigned baseSize = genTypeSize(baseType);
-        int      val;
-        if (baseSize == 1)
-        {
-            val = 0x01010101;
-        }
-        else
-        {
-            val = 0x00010001;
-        }
-        initVal = gtNewIconNode(val);
-    }
-    else
-    {
-        initVal = gtNewOneConNode(baseType);
-    }
-
-    baseType        = genActualType(baseType);
-    initVal->gtType = baseType;
     return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
 }
 #endif // FEATURE_SIMD
@@ -7187,7 +7161,10 @@ GenTree* Compiler::gtCloneExpr(
                 else
 #endif
                 {
-                    copy                                  = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+                    copy = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+#ifdef DEBUG
+                    copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
+#endif
                     copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
                 }
@@ -18463,11 +18440,9 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     assert(gtOper == GT_SIMD);
     switch (AsSIMD()->gtSIMDIntrinsicID)
     {
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMul:
             return true;
         default:
             return false;
@@ -18628,6 +18603,43 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(
+    var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic)
+{
+    NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
+
+#if defined(TARGET_XARCH)
+#if defined(TARGET_X86)
+    if (varTypeIsLong(baseType) && !op1->IsIntegralConst())
+    {
+        // TODO-XARCH-CQ: It may be beneficial to emit the movq
+        // instruction, which takes a 64-bit memory address and
+        // works on 32-bit x86 systems.
+        unreached();
+    }
+#endif // TARGET_X86
+
+    if (size == 32)
+    {
+        hwIntrinsicID = NI_Vector256_Create;
+    }
+#elif defined(TARGET_ARM64)
+    if (size == 8)
+    {
+        hwIntrinsicID = NI_Vector64_Create;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)

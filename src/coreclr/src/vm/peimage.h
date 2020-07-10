@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.h
 //
@@ -119,12 +118,6 @@ public:
             *ppImage = PEImage::OpenImage(GetPath(), flags);
 
     };
-
-    // pUnkResource must be one of the ICLRPrivResource* interfaces defined in CLRPrivBinding.IDL.
-    // pUnkResource will be queried for each of these to find a match and
-    static PEImage * OpenImage(
-        ICLRPrivResource * pIResource,
-        MDInternalImportFlags flags = MDInternalImport_Default);
 
     static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
     static PTR_PEImage FindByPath(LPCWSTR pPath);

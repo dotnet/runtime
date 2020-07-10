@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1536,7 +1535,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public static string SetDescription(string set)
         {
             int setLength = set[SetLengthIndex];
@@ -1635,7 +1634,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a single character.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public static string CharDescription(char ch)
         {
             if (ch == '\\')
@@ -1671,7 +1670,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private static string CategoryDescription(char ch)
         {
             if (ch == SpaceConst)
