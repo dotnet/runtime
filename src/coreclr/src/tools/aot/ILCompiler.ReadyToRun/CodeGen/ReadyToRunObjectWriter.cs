@@ -200,7 +200,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
                 r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
-                r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
+                if (firstImportThunk != null)
+                {
+                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
+                }
+                
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {
