@@ -6575,6 +6575,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 
@@ -6596,6 +6597,10 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         src->AsIntCon()->FixupInitBlkValue(regType);
         blkNode->SetData(src);
         BlockRange().Remove(initVal);
+    }
+    else
+    {
+        assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
     LowerStoreIndirCommon(blkNode);
     return true;

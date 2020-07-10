@@ -10265,13 +10265,13 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                 if (indirTree->OperIsBlk() && !isBlkReqd)
                 {
                     effectiveVal->SetOper(GT_IND);
-                    effectiveVal->gtType = asgType;
                 }
                 else
                 {
                     // If we have an indirection and a block is required, it should already be a block.
                     assert(indirTree->OperIsBlk() || !isBlkReqd);
                 }
+                effectiveVal->gtType = asgType;
             }
             else
             {
@@ -10298,6 +10298,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             }
         }
     }
+    assert(effectiveVal->TypeIs(asgType) || (varTypeIsSIMD(asgType) && varTypeIsStruct(effectiveVal)));
     tree = effectiveVal;
     return tree;
 }
