@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices
 
         internal bool Equals(string? other)
         {
-            return string.Equals(_osPlatform, other, StringComparison.Ordinal);
+            return string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)
