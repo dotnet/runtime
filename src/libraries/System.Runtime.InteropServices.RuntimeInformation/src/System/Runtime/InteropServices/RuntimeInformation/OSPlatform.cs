@@ -17,10 +17,10 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
-        [EditorBrowsable(EditorBrowsableState.Never)] // https://github.com/dotnet/runtime/issues/33331#issuecomment-650326500
-        public static OSPlatform OSX { get; } = new OSPlatform("OSX");
+        public static OSPlatform macOS { get; } = new OSPlatform("MACOS");
 
-        public static OSPlatform macOS { get; } = new OSPlatform(nameof(macOS));
+        [EditorBrowsable(EditorBrowsableState.Never)] // https://github.com/dotnet/runtime/issues/33331#issuecomment-650326500
+        public static OSPlatform OSX { get; } = macOS;
 
         public static OSPlatform iOS { get; } = new OSPlatform("IOS");
 
@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices
             if (osPlatform == null) throw new ArgumentNullException(nameof(osPlatform));
             if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, nameof(osPlatform));
 
-            _osPlatform = osPlatform;
+            _osPlatform = osPlatform.Equals("OSX", StringComparison.OrdinalIgnoreCase) ? "MACOS" : osPlatform;
         }
 
         public static OSPlatform Create(string osPlatform)
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
 
         public bool Equals(OSPlatform other)
         {
-            return string.Equals(_osPlatform, other._osPlatform, StringComparison.OrdinalIgnoreCase) || AreOSXAndMacOS(_osPlatform, other._osPlatform);
+            return string.Equals(_osPlatform, other._osPlatform, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)
@@ -71,32 +71,6 @@ namespace System.Runtime.InteropServices
         public static bool operator !=(OSPlatform left, OSPlatform right)
         {
             return !(left == right);
-        }
-
-        // this ugly method exists to not break backward compatibility
-        // for cases where users use the old `OSX` property on macOS
-        private bool AreOSXAndMacOS(string left, string right)
-        {
-            if (left == null || right == null)
-            {
-                return false;
-            }
-
-            const string OSX = "OSX";
-            const string macOS = "macOS";
-
-            if (left.Length == OSX.Length && right.Length == macOS.Length)
-            {
-                return string.Equals(left, OSX, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(right, macOS, StringComparison.OrdinalIgnoreCase);
-            }
-            else if (left.Length == macOS.Length && right.Length == OSX.Length)
-            {
-                return string.Equals(left, macOS, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(right, OSX, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
         }
     }
 }
