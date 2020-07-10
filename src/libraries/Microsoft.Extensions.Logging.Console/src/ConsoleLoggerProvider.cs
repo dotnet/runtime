@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static bool DoesConsoleSupportAnsi()
         {
-#if TargetsWindows
+#if TARGETS_WINDOWS
             // for Windows, check the console mode
             var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
             if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
