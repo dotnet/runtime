@@ -6175,7 +6175,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
         if (RelativePc < pNextFunctionEntry->BeginAddress)
         {
             PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
-            if (RelativePc >= pFunctionEntry->BeginAddress)
+            if (RelativePc >= pFunctionEntry->BeginAddress && RelativePc <= pFunctionEntry->EndAddress)
             {
                 return i;
             }
