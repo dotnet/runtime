@@ -663,13 +663,13 @@ internal static partial class Interop
 
         private static unsafe string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            if (NetEventSource.IsEnabled) { NetEventSource.Enter(null); }
+            if (NetEventSource.Log.IsEnabled()) { NetEventSource.Enter(null); }
 
             string header = null;
 
             HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader}");
                 NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue} RawValueLength:{pKnownHeader->RawValueLength}");
@@ -682,7 +682,7 @@ internal static partial class Interop
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
 
-            if (NetEventSource.IsEnabled) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
+            if (NetEventSource.Log.IsEnabled()) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
             return header;
         }
 
@@ -776,7 +776,7 @@ internal static partial class Interop
 
         internal static unsafe uint GetChunks(IntPtr memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(null, $"HttpApi::GetChunks() memoryBlob:{memoryBlob}");
             }
@@ -828,7 +828,7 @@ internal static partial class Interop
                 dataChunkIndex = -1;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Exit(null);
             }
@@ -854,7 +854,7 @@ internal static partial class Interop
 
         internal static unsafe IPEndPoint GetRemoteEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
 
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
@@ -874,13 +874,13 @@ internal static partial class Interop
                 endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             return endpoint;
         }
 
         internal static unsafe IPEndPoint GetLocalEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
 
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
@@ -900,7 +900,7 @@ internal static partial class Interop
                 endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             return endpoint;
         }
 

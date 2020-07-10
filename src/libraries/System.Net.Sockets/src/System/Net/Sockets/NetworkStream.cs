@@ -739,7 +739,7 @@ namespace System.Net.Sockets
         private int _currentWriteTimeout = -1;
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, mode, timeout, silent);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, mode, timeout, silent);
 
             if (timeout < 0)
             {

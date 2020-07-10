@@ -217,6 +217,12 @@ DumpWriter::WriteDump()
                     return false;
                 }
 
+                // This can happen if the target process dies before createdump is finished
+                if (read == 0) {
+                    TRACE("ReadProcessMemory(%" PRIA PRIx64 ", %08x) return 0 bytes read\n", address, bytesToRead);
+                    break;
+                }
+
                 if (!WriteData(m_tempBuffer, read)) {
                     return false;
                 }

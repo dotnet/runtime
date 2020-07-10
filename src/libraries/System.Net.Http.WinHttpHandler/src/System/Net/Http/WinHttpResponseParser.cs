@@ -344,7 +344,7 @@ namespace System.Net.Http
             {
                 if ((data & Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2) != 0)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(requestHandle, nameof(Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(requestHandle, nameof(Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2));
                     return true;
                 }
             }
