@@ -9623,19 +9623,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             _ASSERTE(g_pByReferenceClass != NULL);
             _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
-#ifdef TARGET_X86
-            if (GetCl() == g_pByReferenceClass->GetCl())
-            {
-                // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
-                // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
-                // treated as a value type so that its field can be considered as a byref pointer.
-                _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
-                pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
-                pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
-                return;
-            }
-#endif
-
             _ASSERTE(g_pNullableClass->IsNullable());
 
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
@@ -9703,17 +9690,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-#ifdef TARGET_X86
-        else if (strcmp(name, g_ByReferenceName) == 0)
-        {
-            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
-            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
-            // treated as a value type so that its field can be considered as a byref pointer.
-            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
-            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
-            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
-        }
-#endif
 #ifndef TARGET_X86
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
         {
@@ -10378,15 +10354,7 @@ MethodTableBuilder::SetupMethodTable2(
         }
         else
         {
-#ifdef TARGET_X86
-            // JIT64 is not aware of normalized value types and this
-            // optimization (return small value types by value in registers)
-            // is already done in JIT64.
-            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            normalizedType = EEClass::ComputeInternalCorElementTypeForValueType(pMT);
-#else
             normalizedType = ELEMENT_TYPE_VALUETYPE;
-#endif
         }
     }
     pMT->SetInternalCorElementType(normalizedType);
