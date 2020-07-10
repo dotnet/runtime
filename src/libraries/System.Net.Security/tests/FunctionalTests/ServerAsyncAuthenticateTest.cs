@@ -127,13 +127,13 @@ namespace System.Net.Security.Tests
 
         private async Task<SslServerAuthenticationOptions> FailedTask()
         {
-            await Task.Delay(10);
+            await Task.Yield();
             throw new InvalidOperationException("foo");
         }
 
         private async Task<SslServerAuthenticationOptions> OptionsTask(SslServerAuthenticationOptions value)
         {
-            await Task.Delay(10);
+            await Task.Yield();
             return value;
         }
 

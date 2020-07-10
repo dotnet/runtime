@@ -113,7 +113,6 @@ namespace System.Net.Security
     public delegate bool RemoteCertificateValidationCallback(object sender, System.Security.Cryptography.X509Certificates.X509Certificate? certificate, System.Security.Cryptography.X509Certificates.X509Chain? chain, System.Net.Security.SslPolicyErrors sslPolicyErrors);
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
     public delegate System.Threading.Tasks.ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, System.Threading.CancellationToken cancellationToken);
-
     public readonly partial struct SslApplicationProtocol : System.IEquatable<System.Net.Security.SslApplicationProtocol>
     {
         private readonly object _dummy;
@@ -244,7 +243,7 @@ namespace System.Net.Security
         public override void Write(byte[] buffer, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task AuthenticateAsServerAsync( ServerOptionsSelectionCallback optionCallback, object? state, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     public enum TlsCipherSuite : ushort

@@ -104,9 +104,8 @@ namespace System.Net.Security
             }
             else if (sslServerAuthenticationOptions.ServerCertificate != null)
             {
-                X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
-
-                if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
+                if (sslServerAuthenticationOptions.ServerCertificate is X509Certificate2 certificateWithKey &&
+                    certificateWithKey.HasPrivateKey)
                 {
                     // given cert is X509Certificate2 with key. We can use it directly.
                     CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);

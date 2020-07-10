@@ -429,19 +429,10 @@ namespace System.Net.Security
 
                         if (_sslAuthenticationOptions.ServerOptionDelegate != null)
                         {
-                            ValueTask<SslServerAuthenticationOptions> t =
-                                _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_lastFrame.TargetName, _lastFrame.SupportedVersions),
-                                                                            _sslAuthenticationOptions.UserState, adapter.CancellationToken);
-
-                            if (t.IsCompletedSuccessfully)
-                            {
-                                _sslAuthenticationOptions.UpdateOptions(t.Result);
-                            }
-                            else
-                            {
-                                SslServerAuthenticationOptions userOptions = await t.ConfigureAwait(false);
-                                _sslAuthenticationOptions.UpdateOptions(userOptions);
-                            }
+                            SslServerAuthenticationOptions userOptions =
+                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_lastFrame.TargetName, _lastFrame.SupportedVersions),
+                                                                                    _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
+                            _sslAuthenticationOptions.UpdateOptions(userOptions);
                         }
                     }
 
