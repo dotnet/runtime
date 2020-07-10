@@ -5134,6 +5134,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
+        assert(divMod->MarkedDivideByConstOptimized());
 
         // Depending on the "add" flag returned by GetUnsignedMagicNumberForDivide we need to generate:
         // add == false (when divisor == 3 for example):
@@ -5207,7 +5208,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, div, divisor, mul, dividend);
         }
         ContainCheckRange(firstNode, divMod);
-
         return true;
     }
 #endif
