@@ -83,7 +83,10 @@
     <type fullname="System.Runtime.CompilerServices.CallerMemberNameAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.CompilerServices.CompilerGeneratedAttribute">
+    <type fullname="System.Runtime.CompilerServices.CompilerGeneratedAttribute" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
+      <!--
+        The attribute is used during pretty stack trace printing
+        -->          
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.CompilerServices.CompilerGlobalScopeAttribute">
