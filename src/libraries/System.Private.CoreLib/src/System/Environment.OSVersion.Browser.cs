@@ -8,7 +8,7 @@ namespace System
     {
         private static OperatingSystem GetOSVersion()
         {
-            return new OperatingSystem(PlatformID.Unknown, new Version(1, 0, 0, 0));
+            return new OperatingSystem(PlatformID.Other, new Version(1, 0, 0, 0));
         }
     }
 }

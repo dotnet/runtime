@@ -15,6 +15,6 @@ namespace System
         Unix = 4,
         [EditorBrowsable(EditorBrowsableState.Never)] Xbox = 5,
         [EditorBrowsable(EditorBrowsableState.Never)] MacOSX = 6,
-        Unknown = 7
+        Other = 7
     }
 }
