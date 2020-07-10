@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetcoreAppCurrent)-Windows_NT;$(NetcoreAppCurrent);netstandard2.0-Windows_NT;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
@@ -44,6 +45,11 @@
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs"
              Link="Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
   <ItemGroup>

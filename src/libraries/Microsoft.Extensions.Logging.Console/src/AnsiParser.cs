@@ -69,7 +69,11 @@ namespace Microsoft.Extensions.Logging.Console
                 }
                 else if (span[i + 3] == 'm')
                 {
+#if NETSTANDARD2_0
+                    if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
+#else
                     if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
+#endif
                     {
                         if (escapeCode == 1)
                             isBright = true;
@@ -78,7 +82,11 @@ namespace Microsoft.Extensions.Logging.Console
                 }
                 else if (span.Length >= i + 5 && span[i + 4] == 'm')
                 {
+#if NETSTANDARD2_0
+                    if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
+#else
                     if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
+#endif
                     {
                         if (SetsForegroundColor(escapeCode, isBright, out color))
                         {
