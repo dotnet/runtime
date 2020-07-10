@@ -87,7 +87,7 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
-            if (PlatformDetection.IsIcuGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                 yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -192,7 +192,7 @@ namespace System.Tests
             { "abcd", "ABcd", "en-US", CompareOptions.StringSort, false },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
@@ -204,7 +204,7 @@ namespace System.Tests
             Assert.Equal(result, sc.Equals((object)actualString, (object)expectedString));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
