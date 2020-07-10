@@ -52,7 +52,6 @@ namespace System.Net
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (size == 0 && _leftToWrite != 0)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
             if (_leftToWrite >= 0 && size > _leftToWrite)
@@ -145,7 +144,6 @@ namespace System.Net
             }
             UpdateAfterWrite(dataToWrite);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, (int)dataToWrite);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
@@ -153,7 +151,6 @@ namespace System.Net
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 HttpResponseStreamAsyncResult result = new HttpResponseStreamAsyncResult(this, state, callback);
                 result.InvokeCallback((uint)0);
                 return result;
@@ -236,7 +233,6 @@ namespace System.Net
                 _lastWrite = asyncResult;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return asyncResult;
         }
 
@@ -264,7 +260,6 @@ namespace System.Net
                 ExceptionDispatchInfo.Throw(exception);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private void UpdateAfterWrite(uint dataWritten)
@@ -298,8 +293,6 @@ namespace System.Net
             bool sentHeaders = _httpContext.Response.SentHeaders;
             if (sentHeaders && _leftToWrite == 0)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(this);
                 return;
             }
 

@@ -23,6 +23,8 @@ namespace Internal.Cryptography.Pal
         private SafeEvpPKeyHandle? _privateKey;
         private X500DistinguishedName? _subjectName;
         private X500DistinguishedName? _issuerName;
+        private string? _subject;
+        private string? _issuer;
 
         public static ICertificatePal FromHandle(IntPtr handle)
         {
@@ -258,9 +260,37 @@ namespace Internal.Cryptography.Pal
             get { return _cert; }
         }
 
-        public string Issuer => IssuerName.Name;
+        public string Issuer
+        {
+            get
+            {
+                if (_issuer == null)
+                {
+                    // IssuerName is mutable to callers in X509Certificate. We want to be
+                    // able to get the issuer even if IssuerName has been mutated, so we
+                    // don't use it here.
+                    _issuer = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert)).Name;
+                }
 
-        public string Subject => SubjectName.Name;
+                return _issuer;
+            }
+        }
+
+        public string Subject
+        {
+            get
+            {
+                if (_subject == null)
+                {
+                    // SubjectName is mutable to callers in X509Certificate. We want to be
+                    // able to get the subject even if SubjectName has been mutated, so we
+                    // don't use it here.
+                    _subject = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert)).Name;
+                }
+
+                return _subject;
+            }
+        }
 
         public string LegacyIssuer => IssuerName.Decode(X500DistinguishedNameFlags.None);
 

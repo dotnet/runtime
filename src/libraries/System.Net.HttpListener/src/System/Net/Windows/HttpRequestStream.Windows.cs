@@ -103,7 +103,6 @@ namespace System.Net
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, (int)dataRead);
                 NetEventSource.Info(this, "returning dataRead:" + dataRead);
-                NetEventSource.Exit(this, "dataRead:" + dataRead);
             }
             return (int)dataRead;
         }
@@ -122,7 +121,6 @@ namespace System.Net
         {
             if (size == 0 || _closed)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 HttpRequestStreamAsyncResult result = new HttpRequestStreamAsyncResult(this, state, callback);
                 result.InvokeCallback((uint)0);
                 return result;
@@ -214,17 +212,13 @@ namespace System.Net
                     asyncResult.IOCompleted(statusCode, bytesReturned);
                 }
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return asyncResult;
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"asyncResult: {asyncResult}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
+
             if (asyncResult == null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
@@ -254,11 +248,7 @@ namespace System.Net
 
             uint dataRead = (uint)returnValue;
             UpdateAfterRead((uint)castedAsyncResult.ErrorCode, dataRead);
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(this, $"returnValue:{returnValue}");
-                NetEventSource.Exit(this);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"returnValue:{returnValue}");
 
             return (int)dataRead + (int)castedAsyncResult._dataAlreadyRead;
         }
