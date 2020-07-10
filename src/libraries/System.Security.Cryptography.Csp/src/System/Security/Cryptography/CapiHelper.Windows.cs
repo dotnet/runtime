@@ -819,13 +819,13 @@ namespace Internal.NativeCrypto
             Debug.Assert(encryptedData != null, "Encrypted Data is null");
             Debug.Assert(encryptedDataLength >= 0, "Encrypted data length is less than 0");
 
-            byte[] dataTobeDecrypted = new byte[encryptedDataLength];
-            Buffer.BlockCopy(encryptedData, 0, dataTobeDecrypted, 0, encryptedDataLength);
-            Array.Reverse(dataTobeDecrypted);
+            byte[] dataToBeDecrypted = new byte[encryptedDataLength];
+            Buffer.BlockCopy(encryptedData, 0, dataToBeDecrypted, 0, encryptedDataLength);
+            Array.Reverse(dataToBeDecrypted);
 
             int dwFlags = fOAEP ? (int)Interop.Advapi32.CryptDecryptFlags.CRYPT_OAEP : 0;
             int decryptedDataLength = encryptedDataLength;
-            if (!Interop.Advapi32.CryptDecrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwFlags, dataTobeDecrypted, ref decryptedDataLength))
+            if (!Interop.Advapi32.CryptDecrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwFlags, dataToBeDecrypted, ref decryptedDataLength))
             {
                 int ErrCode = GetErrorCode();
                 // If we're using OAEP mode and we received an NTE_BAD_FLAGS error, then OAEP is not supported on
@@ -853,7 +853,7 @@ namespace Internal.NativeCrypto
 
 
             decryptedData = new byte[decryptedDataLength];
-            Buffer.BlockCopy(dataTobeDecrypted, 0, decryptedData, 0, decryptedDataLength);
+            Buffer.BlockCopy(dataToBeDecrypted, 0, decryptedData, 0, decryptedDataLength);
             return;
         }
 
@@ -952,18 +952,18 @@ namespace Internal.NativeCrypto
             VerifyValidHandle(hKey);
             Debug.Assert((input.Length % 8) == 0);
 
-            byte[] dataTobeDecrypted = new byte[input.Length];
-            input.CopyTo(dataTobeDecrypted);
+            byte[] dataToBeDecrypted = new byte[input.Length];
+            input.CopyTo(dataToBeDecrypted);
 
             int decryptedDataLength = input.Length;
 
             // Always call decryption with false (not final); deal with padding manually
-            if (!Interop.Advapi32.CryptDecrypt(hKey, SafeHashHandle.InvalidHandle, false, 0, dataTobeDecrypted, ref decryptedDataLength))
+            if (!Interop.Advapi32.CryptDecrypt(hKey, SafeHashHandle.InvalidHandle, false, 0, dataToBeDecrypted, ref decryptedDataLength))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
 
-            dataTobeDecrypted.AsSpan(0, decryptedDataLength).CopyTo(output);
+            dataToBeDecrypted.AsSpan(0, decryptedDataLength).CopyTo(output);
             return decryptedDataLength;
         }
 
