@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Test
+namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class SimpleConsoleFormatterTests : ConsoleFormatterTests
     {

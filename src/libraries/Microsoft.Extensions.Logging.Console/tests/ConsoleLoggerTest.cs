@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 using Xunit;
 #pragma warning disable CS0618
 
-namespace Microsoft.Extensions.Logging.Test
+namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class ConsoleLoggerTest
     {
