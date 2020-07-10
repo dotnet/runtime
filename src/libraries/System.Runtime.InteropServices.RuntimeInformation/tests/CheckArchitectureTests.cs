@@ -32,6 +32,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(IntPtr.Size == 4 ? Architecture.Arm : Architecture.Arm64, processArch);
                     break;
 
+                case Architecture.Wasm:
+                    Assert.Equal(Architecture.Wasm, processArch);
+                    break;
+
                 default:
                     Assert.False(true, "Unexpected Architecture.");
                     break;
