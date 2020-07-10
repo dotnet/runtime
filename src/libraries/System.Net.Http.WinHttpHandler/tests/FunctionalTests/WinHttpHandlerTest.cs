@@ -179,46 +179,42 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             // Warm up thread pool since the full .NET Framework calls synchronous Stream.Read and we need to delay those calls thus threads will get blocked.
             ThreadPool.GetMinThreads(out _, out int completionPortThreads);
             ThreadPool.SetMinThreads(401, completionPortThreads);
-            using (WinHttpHandler handler = new WinHttpHandler())
+            using var handler = new WinHttpHandler();
+            handler.EnableMultipleHttp2Connections = true;
+            handler.ServerCertificateValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            const int maxActiveStreamsLimit = 100 * 3;
+            const string payloadText = "Multiple HTTP/2 connections test.";
+            TaskCompletionSource<bool> delaySource = new TaskCompletionSource<bool>();
+            using var client = new HttpClient(handler);
+            List<(Task<HttpResponseMessage> task, DelayedStream stream)> requests = new List<(Task<HttpResponseMessage> task, DelayedStream stream)>();
+            for (int i = 0; i < maxActiveStreamsLimit; i++)
             {
-                handler.EnableMultipleHttp2Connections = true;
-                handler.ServerCertificateValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                const int maxActiveStreamsLimit = 100 * 3;
-                const string payloadText = "Multiple HTTP/2 connections test.";
-                TaskCompletionSource<bool> delaySource = new TaskCompletionSource<bool>();
-                using (HttpClient client = new HttpClient(handler))
-                {
-                    List<(Task<HttpResponseMessage> task, DelayedStream stream)> requests = new List<(Task<HttpResponseMessage> task, DelayedStream stream)>();
-                    for (int i = 0; i < maxActiveStreamsLimit; i++)
-                    {
-                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
-                        byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadText);
-                        DelayedStream content = new DelayedStream(payloadBytes, delaySource.Task);
-                        request.Content = new StreamContent(content);
-                        requests.Add((client.SendAsync(request, HttpCompletionOption.ResponseContentRead), content));
-                    }
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+                byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadText);
+                DelayedStream content = new DelayedStream(payloadBytes, delaySource.Task);
+                request.Content = new StreamContent(content);
+                requests.Add((client.SendAsync(request, HttpCompletionOption.ResponseContentRead), content));
+            }
 
-                    HttpRequestMessage aboveLimitRequest = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
-                    aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
-                    Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
+            HttpRequestMessage aboveLimitRequest = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+            aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
+            Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
 
-                    await aboveLimitResponseTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
-                    await VerifyResponse(aboveLimitResponseTask, $"{payloadText}-{maxActiveStreamsLimit + 1}");
+            await aboveLimitResponseTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            await VerifyResponse(aboveLimitResponseTask, $"{payloadText}-{maxActiveStreamsLimit + 1}");
 
-                    delaySource.SetResult(true);
+            delaySource.SetResult(true);
 
-                    await Task.WhenAll(requests.Select(r => r.task).ToArray()).TimeoutAfter(15000);
+            await Task.WhenAll(requests.Select(r => r.task).ToArray()).TimeoutAfter(15000);
 
-                    foreach ((Task<HttpResponseMessage> task, DelayedStream stream) in requests)
-                    {
-                        Assert.True(task.IsCompleted);
-                        HttpResponseMessage response = task.Result;
-                        Assert.True(response.IsSuccessStatusCode);
-                        Assert.Equal(HttpVersion20.Value, response.Version);
-                        string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
-                        Assert.Contains(payloadText, responsePayload);
-                    }
-                }
+            foreach ((Task<HttpResponseMessage> task, DelayedStream stream) in requests)
+            {
+                Assert.True(task.IsCompleted);
+                HttpResponseMessage response = task.Result;
+                Assert.True(response.IsSuccessStatusCode);
+                Assert.Equal(HttpVersion20.Value, response.Version);
+                string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                Assert.Contains(payloadText, responsePayload);
             }
         }
 
@@ -238,28 +234,27 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             return message.Contains(pattern);
         }
 
-        private class DelayedStream : MemoryStream
+        private sealed class DelayedStream : MemoryStream
         {
             private readonly Task _delayTask;
             private readonly TaskCompletionSource<bool> _waitReadSource = new TaskCompletionSource<bool>();
-            private bool _completed;
+            private bool _delayed;
 
-            public Task WaitRead { get; }
+            public Task WaitRead => _waitReadSource.Task;
 
             public DelayedStream(byte[] buffer, Task delayTask)
                 : base(buffer)
             {
                 _delayTask = delayTask;
-                WaitRead = _waitReadSource.Task;
             }
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                if (!_completed)
+                if (!_delayed)
                 {
                     _waitReadSource.SetResult(true);
                     _delayTask.Wait();
-                    _completed = true;
+                    _delayed = true;
                 }
                 return base.Read(buffer, offset, count);
             }

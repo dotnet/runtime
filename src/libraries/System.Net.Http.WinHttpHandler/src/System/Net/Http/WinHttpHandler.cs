@@ -800,7 +800,6 @@ namespace System.Net.Http
                 EnsureSessionHandleExists(state);
 
                 SetEnableHttp2PlusClientCertificate(state.RequestMessage.RequestUri, state.RequestMessage.Version);
-                SetDisableHttp2StreamQueue();
 
                 // Specify an HTTP server.
                 connectHandle = Interop.WinHttp.WinHttpConnect(
@@ -936,6 +935,7 @@ namespace System.Net.Http
             SetSessionHandleConnectionOptions(sessionHandle);
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
+            SetDisableHttp2StreamQueue(sessionHandle);
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1223,12 +1223,12 @@ namespace System.Net.Http
             }
         }
 
-        private void SetDisableHttp2StreamQueue()
+        private void SetDisableHttp2StreamQueue(SafeWinHttpHandle sessionHandle)
         {
             if (_enableMultipleHttp2Connections)
             {
                 uint optionData = 1;
-                if (Interop.WinHttp.WinHttpSetOption(_sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
+                if (Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
                 {
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
                 }
