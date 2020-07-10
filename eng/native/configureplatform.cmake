@@ -382,7 +382,8 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     # The default linker on Solaris also does not support PIE.
     if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS AND NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fpie")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fpic")
+        add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIE>)
+        add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:-fPIC>)
     endif()
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
