@@ -221,7 +221,7 @@ namespace System.Tests
         public void WorkingSet_Valid()
         {
             if (PlatformDetection.IsBrowser)
-                Assert.True(Environment.WorkingSet == 0, "Expected 0 WorkingSet value");
+                Assert.Equal(0, Environment.WorkingSet);
             else
                 Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
