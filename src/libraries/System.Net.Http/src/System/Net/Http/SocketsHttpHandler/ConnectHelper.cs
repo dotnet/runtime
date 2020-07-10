@@ -206,6 +206,8 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
+                // ToDo: let this exception buuble up to the caller, or should we somehow recognize that server didn't allow
+                //       particular HTTP version in ALPN (how? Furtik will know) and use NSE instead.
                 throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
             }
 

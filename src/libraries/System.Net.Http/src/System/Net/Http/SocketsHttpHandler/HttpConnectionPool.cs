@@ -81,6 +81,8 @@ namespace System.Net.Http
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
+        // ToDo: can we forgo ALPN completely if we now that downgrade is forbiden by VersionPolicy?
+        private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
@@ -115,6 +117,7 @@ namespace System.Net.Http
             {
                 _originAuthority = new HttpAuthority(host, port);
 
+                // ToDo: what about this?
                 if (_poolManager.Settings._assumePrenegotiatedHttp3ForTesting)
                 {
                     _http3Authority = _originAuthority;
@@ -131,7 +134,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
-                    _http2Enabled = _poolManager.Settings._allowUnencryptedHttp2;
+
                     _http3Enabled = false;
                     break;
 
@@ -148,7 +151,7 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    _http2Enabled = false; // ToDo: why?
                     _http3Enabled = false;
                     break;
 
@@ -158,7 +161,7 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    _http2Enabled = false; // ToDo: why?
                     _http3Enabled = false;
                     break;
 
@@ -167,6 +170,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
+
                     _http3Enabled = false; // TODO: how do we tunnel HTTP3?
                     break;
 
@@ -220,6 +224,8 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = s_http2ApplicationProtocols;
+                    _sslOptionsHttp2Only = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp2Only.ApplicationProtocols = s_http2OnlyApplicationProtocols;
 
                     // Note:
                     // The HTTP/2 specification states:
@@ -238,7 +244,6 @@ namespace System.Net.Http
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-
                 }
 
                 if (_http3Enabled)
@@ -259,6 +264,9 @@ namespace System.Net.Http
 
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+
+        // ToDo: can we forgo ALPN completely if we now that downgrade is forbiden by VersionPolicy?
+        private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -335,8 +343,22 @@ namespace System.Net.Http
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
+            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                if (request.Version.Major >= 3 && !_http3Enabled)
+                {
+                    throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled. See '{3}' AppContext switch.");
+                }
+                if (request.Version.Major >= 2 && !_http2Enabled)
+                {
+                    throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled. See '{3}' AppContext switch.");
+                }
+            }
+
             if (_http3Enabled && request.Version.Major >= 3)
             {
+                // ToDo: this depends on _assumePrenegotiatedHttp3ForTesting, why is the H3 connection under this condition?
                 HttpAuthority? authority = _http3Authority;
                 if (authority != null)
                 {
@@ -344,9 +366,24 @@ namespace System.Net.Http
                 }
             }
 
-            if (_http2Enabled && request.Version.Major >= 2)
+            // What about retry? Should we move this check into SendWithRetry?
+            // If we got here, we cannot provide HTTP/3 connection so do not continue to attempt at getting/creating a lowered one.
+            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
+            }
+
+            if (_http2Enabled && request.Version.Major >= 2 &&
+               (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
+            }
+
+            // What about retry? Should we move this check into SendWithRetry?
+            // If we got here, we cannot provide HTTP/2 connection so do not continue to attempt at getting/creating a lowered one.
+            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);
@@ -547,7 +584,7 @@ namespace System.Net.Http
                     Stream? stream;
                     HttpResponseMessage? failureResponse;
                     (socket, stream, transportContext, failureResponse) =
-                        await ConnectAsync(request, async, true, cancellationToken).ConfigureAwait(false);
+                        await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
                     if (failureResponse != null)
                     {
                         return (null, true, failureResponse);
@@ -612,6 +649,12 @@ namespace System.Net.Http
                 lock (SyncObj)
                 {
                     _http2Enabled = false;
+
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        // ToDo: Could this even happen if we do not allow HTTP/1.1 in ALPN for different version policies?
+                        throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.");
+                    }
 
                     if (_associatedConnectionCount < _maxConnections)
                     {
@@ -773,13 +816,18 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
+                    // Throw NSE, since fallback is not allowed by the version policy.
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while server offers only version fallback.", e);
+                    }
+
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again on a lower protocol version.
-
                     Debug.Assert(connection is HttpConnection == false, $"{nameof(RequestRetryType.RetryOnLowerHttpVersion)} should not be thrown by HTTP/1 connections.");
                     request.Version = HttpVersion.Version11;
                     continue;
@@ -1082,7 +1130,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -1128,7 +1176,20 @@ namespace System.Net.Http
                 TransportContext? transportContext = null;
                 if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, async, stream!, cancellationToken).ConfigureAwait(false);
+                    // SslOptions based on request version and version policy.
+                    SslClientAuthenticationOptions sslOptions = _sslOptionsHttp11!;
+                    if (_http2Enabled && request.Version.Major >= 2)
+                    {
+                        if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
+                        {
+                            sslOptions = _sslOptionsHttp2!;
+                        }
+                        else
+                        {
+                            sslOptions = _sslOptionsHttp2Only!;
+                        }
+                    }
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(sslOptions, request, async, stream!, cancellationToken).ConfigureAwait(false);
                     stream = sslStream;
                     transportContext = sslStream.TransportContext;
                 }
@@ -1144,7 +1205,7 @@ namespace System.Net.Http
         internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             (Socket? socket, Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
-                await ConnectAsync(request, async, false, cancellationToken).ConfigureAwait(false);
+                await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
             {
