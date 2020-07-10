@@ -11,6 +11,12 @@
 #include "defs.h"
 #include "machine_traits.h"
 
+#ifdef _DEBUG
+// in _DEBUG, we #define return to be something more complicated,
+// containing a statement, so #define away constexpr for _DEBUG
+#define constexpr
+#endif //_DEBUG
+
 namespace vxsort {
 template <>
 class vxsort_machine_traits<int32_t, AVX512> {
@@ -117,7 +123,7 @@ class vxsort_machine_traits<int64_t, AVX512> {
   typedef __m512i TV;
   typedef __mmask8 TMASK;
 
-  static constexpr bool supports_compress_writes() { return true; }
+  static bool supports_compress_writes() { return true; }
 
   static INLINE TV load_vec(TV* p) {
     return _mm512_loadu_si512(p);
@@ -211,6 +217,10 @@ class vxsort_machine_traits<double, AVX512> {
 };
 
 }
+
+#ifdef _DEBUG
+#undef constexpr
+#endif //_DEBUG
 
 #include "vxsort_targets_disable.h"
 

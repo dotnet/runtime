@@ -1,7 +1,6 @@
 // ISA_Detection.cpp : Diese Datei enthält die Funktion "main". Hier beginnt und endet die Ausführung des Programms.
 //
 #include "common.h"
-#include <intrin.h>
 
 #include "do_vxsort.h"
 

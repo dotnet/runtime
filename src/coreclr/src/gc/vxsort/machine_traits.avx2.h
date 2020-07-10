@@ -30,6 +30,12 @@ static void not_supported()
     assert(!"operation is unsupported");
 }
 
+#ifdef _DEBUG
+// in _DEBUG, we #define return to be something more complicated,
+// containing a statement, so #define away constexpr for _DEBUG
+#define constexpr
+#endif //_DEBUG
+
 template <>
 class vxsort_machine_traits<int32_t, AVX2> {
  public:
@@ -136,7 +142,7 @@ class vxsort_machine_traits<int64_t, AVX2> {
   typedef __m256i TV;
   typedef uint32_t TMASK;
 
-  static constexpr bool supports_compress_writes() { return false; }
+  static bool supports_compress_writes() { return false; }
 
   static INLINE TV load_vec(TV* p) {
     return _mm256_lddqu_si256(p);
@@ -236,6 +242,10 @@ class vxsort_machine_traits<double, AVX2> {
 #undef s2i
 #undef s2d
 #undef d2s
+
+#ifdef _DEBUG
+#undef constexpr
+#endif //_DEBUG
 
 #include "vxsort_targets_disable.h"
 

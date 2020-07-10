@@ -24,7 +24,7 @@ set(SOURCES
     ../softwarewritewatch.cpp
 )
 
-if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
   set ( SOURCES
     ${SOURCES}
     ../vxsort/isa_detection_dummy.cpp

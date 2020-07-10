@@ -542,7 +542,7 @@ set(GC_SOURCES_WKS
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
-if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
   set ( GC_SOURCES_WKS
     ${GC_SOURCES_WKS}
     ../gc/vxsort/isa_detection.cpp
