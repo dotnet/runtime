@@ -1933,6 +1933,9 @@ namespace System.Data.Common
         public virtual System.Data.DataTable GetSchema() { throw null; }
         public virtual System.Data.DataTable GetSchema(string collectionName) { throw null; }
         public virtual System.Data.DataTable GetSchema(string collectionName, string?[] restrictionValues) { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaAsync(string collectionName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaAsync(string collectionName, string?[] restrictionValues, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         protected virtual void OnStateChange(System.Data.StateChangeEventArgs stateChange) { }
         public abstract void Open();
         public System.Threading.Tasks.Task OpenAsync() { throw null; }
@@ -2111,6 +2114,8 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual int GetProviderSpecificValues(object[] values) { throw null; }
         public virtual System.Data.DataTable GetSchemaTable() { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn>> GetColumnSchemaAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
         public abstract string GetString(int ordinal);
         public virtual System.IO.TextReader GetTextReader(int ordinal) { throw null; }
