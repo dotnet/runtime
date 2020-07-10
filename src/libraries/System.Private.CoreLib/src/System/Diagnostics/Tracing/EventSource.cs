@@ -2163,7 +2163,7 @@ namespace System.Diagnostics.Tracing
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
-                if (eventId == -1 || dispatcher.m_EventEnabled[eventId])
+                if (dispatcher.m_EventEnabled[eventId] && dispatcher.m_Listener.IsEventEnabled(eventCallbackArgs))
                 {
                     {
                         try
@@ -3912,7 +3912,7 @@ namespace System.Diagnostics.Tracing
         }
 
         private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
-        private Dictionary<int, EventListenerEventSourceState>? _EnabledEventSourceStates;
+        private Dictionary<string, EventListenerEventSourceState>? _EnabledEventSourceStates;
         /// <summary>
         /// This event is raised whenever a new eventSource is 'attached' to the dispatcher.
         /// This can happen for all existing EventSources when the EventListener is created
@@ -3962,7 +3962,7 @@ namespace System.Diagnostics.Tracing
         public EventListener()
         {
             // Initialize dictionaries that keep track of the EventSources' states that are enabled in this instance of EventListener.
-            _EnabledEventSourceStates = new Dictionary<int, EventListenerEventSourceState>();
+            _EnabledEventSourceStates = new Dictionary<string, EventListenerEventSourceState>();
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
                 args.EventSource!.AddListener((EventListener)obj!));
@@ -4061,7 +4061,7 @@ namespace System.Diagnostics.Tracing
             }
 
             if (_EnabledEventSourceStates != null)
-                _EnabledEventSourceStates[EventSourceIndex(eventSource)] = new EventListenerEventSourceState{ Level = level, Keyword = matchAnyKeyword };
+                _EnabledEventSourceStates[eventSource.Name] = new EventListenerEventSourceState{ Level = level, Keyword = matchAnyKeyword };
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
@@ -4134,15 +4134,21 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventData"></param>
         protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            int eventSourceId = EventListener.EventSourceIndex(eventData.EventSource);
-            if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceId))
+            if (IsEventEnabled(eventData))
             {
-                EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceId];
-                if ((state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0))
-                {
-                    this.EventWritten?.Invoke(this, eventData);
-                }
+                this.EventWritten?.Invoke(this, eventData);
             }
+        }
+
+        internal virtual bool IsEventEnabled(EventWrittenEventArgs eventData)
+        {
+            string eventSourceName = eventData.EventSource.Name;
+            if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceName))
+            {
+                EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceName];
+                return ((state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0));
+            }
+            return false;
         }
 
 #region private
