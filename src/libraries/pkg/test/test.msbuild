@@ -1,6 +1,6 @@
 <Project DefaultTargets="Restore;Test">
   <ItemGroup>
-    <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+    <TestPackageOverride Condition="'$(TestPackageOverride)' != ''" Include="$(TestPackageOverride)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,8 +11,8 @@
 
   <Target Name="GetProjects">
     <ItemGroup>
-      <Project Condition="'@(TestPackages)' == ''" Include="$(PackageTestProjectsDir)\**\*.csproj" />
-      <Project Condition="'@(TestPackages)' != ''" Include="$(PackageTestProjectsDir)\%(TestPackages.Identity)\**\*.csproj" />
+      <Project Condition="'@(TestPackageOverride)' == ''" Include="$(PackageTestProjectsDir)\**\*.csproj" />
+      <Project Condition="'@(TestPackageOverride)' != ''" Include="$(PackageTestProjectsDir)\%(TestPackageOverride.Identity)\**\*.csproj" />
     </ItemGroup>
   </Target>
 

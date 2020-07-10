@@ -102,7 +102,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Windows_NT_x64
+    - Linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_LibrariesTests_AllConfigurations
