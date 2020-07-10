@@ -58,7 +58,7 @@
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20330.3</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20353.2</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20330.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20330.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20358.2</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20330.3</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20330.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
