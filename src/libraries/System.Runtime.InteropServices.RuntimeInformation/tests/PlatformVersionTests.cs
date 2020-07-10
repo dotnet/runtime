@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
         [Theory]
         [InlineData("ios")] // missing version number
-        [InlineData("ios14")] // ios14.0 is fine, ios14 is not
+        [InlineData("ios14")] // ios14.0 is fine, ios14 is not: https://github.com/dotnet/runtime/pull/39005#discussion_r452541491
         [InlineData("ios14.0.0.0.0.0")] // too many numbers
         public void IsOSPlatformOrLater_InvalidVersionNumber_ThrowsArgumentExceptionWithArgumentName(string platformName)
         {

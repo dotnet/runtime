@@ -5,6 +5,12 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
+        /// <param name="platformName">OS name concatenated with a version number.</param>
+        /// <remarks>The version number must contain at least major and minor numbers separated with a dot.
+        /// Example: "ios14.0" is OK, "ios14" is NOT OK.</remarks>
         public static bool IsOSPlatformOrLater(string platformName)
         {
             (OSPlatform platform, Version version) = Parse(platformName);
@@ -12,18 +18,36 @@ namespace System.Runtime.InteropServices
             return IsOSPlatformOrLater(platform, version.Major, version.Minor, version.Build, version.Revision);
         }
 
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major)
             => IsOSPlatform(osPlatform) && Environment.OSVersion.Version.Major >= major;
 
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor)
             => IsOSPlatform(osPlatform) && IsOSVersionOrLater(major, minor, int.MinValue, int.MinValue);
 
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build)
             => IsOSPlatform(osPlatform) && IsOSVersionOrLater(major, minor, build, int.MinValue);
 
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build, int revision)
             => IsOSPlatform(osPlatform) && IsOSVersionOrLater(major, minor, build, revision);
 
+        /// <summary>
+        /// Check for the OS with a &lt; version comparison. Used to guard APIs that were obsoleted or removed in the given OS release.
+        /// </summary>
+        /// <param name="platformName">OS name concatenated with a version number.</param>
+        /// <remarks>The version number must contain at least major and minor numbers separated with a dot.
+        /// Example: "ios14.0" is OK, "ios14" is NOT OK.</remarks>
         public static bool IsOSPlatformEarlierThan(string platformName)
         {
             (OSPlatform platform, Version version) = Parse(platformName);
@@ -31,15 +55,27 @@ namespace System.Runtime.InteropServices
             return IsOSPlatformEarlierThan(platform, version.Major, version.Minor, version.Build, version.Revision);
         }
 
+        /// <summary>
+        /// Check for the OS with a &lt; version comparison. Used to guard APIs that were obsoleted or removed in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major)
             => IsOSPlatform(osPlatform) && Environment.OSVersion.Version.Major < major;
 
+        /// <summary>
+        /// Check for the OS with a &lt; version comparison. Used to guard APIs that were obsoleted or removed in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor)
             => IsOSPlatform(osPlatform) && !IsOSVersionOrLater(major, minor, int.MinValue, int.MinValue);
 
+        /// <summary>
+        /// Check for the OS with a &lt; version comparison. Used to guard APIs that were obsoleted or removed in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build)
             => IsOSPlatform(osPlatform) && !IsOSVersionOrLater(major, minor, build, int.MinValue);
 
+        /// <summary>
+        /// Check for the OS with a &lt; version comparison. Used to guard APIs that were obsoleted or removed in the given OS release.
+        /// </summary>
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build, int revision)
             => IsOSPlatform(osPlatform) && !IsOSVersionOrLater(major, minor, build, revision);
 

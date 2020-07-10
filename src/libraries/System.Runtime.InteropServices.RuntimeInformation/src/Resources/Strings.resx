@@ -61,7 +61,7 @@
     <value>Value cannot be empty.</value>
   </data>
   <data name="Argument_InvalidPlatfromName" xml:space="preserve">
-    <value>"{0}" is not valid platform name. It must contain both name and version. Example: "ios14.0".</value>
+    <value>"{0}" is not a valid platform name. It must contain both name and version (with at least major and minor number specified). Example: "ios14.0".</value>
   </data>
   <data name="PlatformNotSupported_RuntimeInformation" xml:space="preserve">
     <value>RuntimeInformation is not supported for Portable Class Libraries.</value>
