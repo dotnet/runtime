@@ -232,7 +232,7 @@ namespace System.IO.Tests
                     { root + new string(Path.DirectorySeparatorChar, 3), root },
                 };
 
-                if (!PlatformDetection.IsBrowser)
+                if (currentDirectory != Path.GetPathRoot(currentDirectory))
                 {
                     // ".." => up a directory
                     data.Add("..", Path.GetDirectoryName(currentDirectory));
