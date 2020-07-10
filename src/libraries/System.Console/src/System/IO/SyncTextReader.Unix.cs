@@ -39,5 +39,8 @@ namespace System.IO
                 }
             }
         }
+
+        public int ReadLine(byte[] buffer, int offset, int count)
+            => Inner.ReadLine(buffer, offset, count);
     }
 }
