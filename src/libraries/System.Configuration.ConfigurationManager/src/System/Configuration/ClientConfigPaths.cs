@@ -65,11 +65,18 @@ namespace System.Configuration
                 }
                 else
                 {
-                    // An EntryAssembly may not be found when running from a custom host.
-                    // Try to find the native entry point.
-                    using (Process currentProcess = Process.GetCurrentProcess())
+                    try
                     {
-                        ApplicationUri = currentProcess.MainModule?.FileName;
+                        // An EntryAssembly may not be found when running from a custom host.
+                        // Try to find the native entry point.
+                        using (Process currentProcess = Process.GetCurrentProcess())
+                        {
+                            ApplicationUri = currentProcess.MainModule?.FileName;
+                        }
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        ApplicationUri = string.Empty;
                     }
                 }
             }

@@ -252,7 +252,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
 </Project>
