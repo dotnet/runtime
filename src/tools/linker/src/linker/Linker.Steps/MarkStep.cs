@@ -806,13 +806,17 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		void LazyMarkCustomAttributes (ICustomAttributeProvider provider, ModuleDefinition module)
+		void LazyMarkCustomAttributes (ICustomAttributeProvider provider)
 		{
 			if (!provider.HasCustomAttributes)
 				return;
 
-			foreach (CustomAttribute ca in provider.CustomAttributes)
-				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (ca, module));
+			foreach (CustomAttribute ca in provider.CustomAttributes) {
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()))
+					continue;
+
+				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (ca, provider));
+			}
 		}
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca, in DependencyInfo reason, IMemberDefinition source)
@@ -1092,12 +1096,12 @@ namespace Mono.Linker.Steps
 
 			ProcessModule (assembly);
 
-			MarkAssemblyCustomAttributes (assembly);
+			LazyMarkCustomAttributes (assembly);
 
 			MarkSecurityDeclarations (assembly, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, assembly), null);
 
 			foreach (ModuleDefinition module in assembly.Modules)
-				LazyMarkCustomAttributes (module, module);
+				LazyMarkCustomAttributes (module);
 		}
 
 		void MarkEntireAssembly (AssemblyDefinition assembly)
@@ -1489,15 +1493,6 @@ namespace Mono.Linker.Steps
 		// Allow subclassers to mark additional things
 		protected virtual void DoAdditionalInstantiatedTypeProcessing (TypeDefinition type)
 		{
-		}
-
-		void MarkAssemblyCustomAttributes (AssemblyDefinition assembly)
-		{
-			if (!assembly.HasCustomAttributes)
-				return;
-
-			foreach (CustomAttribute attribute in assembly.CustomAttributes)
-				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (attribute, assembly));
 		}
 
 		TypeDefinition GetDebuggerAttributeTargetType (CustomAttribute ca, AssemblyDefinition asm)
