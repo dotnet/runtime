@@ -54,7 +54,6 @@ namespace Mono.Linker
 		readonly Dictionary<string, string> _parameters;
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
-		bool _keepMembersForDebugger;
 		bool _ignoreUnresolved;
 
 		readonly AssemblyResolver _resolver;
@@ -105,10 +104,11 @@ namespace Mono.Linker
 			set { _keepTypeForwarderOnlyAssemblies = value; }
 		}
 
-		public bool KeepMembersForDebugger {
-			get { return _keepMembersForDebugger; }
-			set { _keepMembersForDebugger = value; }
-		}
+#if FEATURE_ILLINK
+		public readonly bool KeepMembersForDebugger = true;
+#else
+		public bool KeepMembersForDebugger { get; set; }
+#endif
 
 		public bool IgnoreUnresolved {
 			get { return _ignoreUnresolved; }
