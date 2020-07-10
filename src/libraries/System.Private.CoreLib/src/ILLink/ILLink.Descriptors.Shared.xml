@@ -33,7 +33,7 @@
       <property name="ObjectIdForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
-    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder&lt;TResult&gt;">
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1">
       <property name="ObjectIdForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
