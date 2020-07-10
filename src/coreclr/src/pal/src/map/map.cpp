@@ -2522,9 +2522,17 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
             palError = ERROR_INVALID_PARAMETER;
             goto doneReleaseMappingCriticalSection;
         }
+
         if (currentHeader.Misc.VirtualSize > currentHeader.SizeOfRawData)
         {
             ERROR_(LOADER)( "no support for zero-padded sections, section %d\n", i );
+            palError = ERROR_INVALID_PARAMETER;
+            goto doneReleaseMappingCriticalSection;
+        }
+
+        if (OffsetWithinPage((off_t)sectionBase) != OffsetWithinPage(offset + currentHeader.PointerToRawData))
+        {
+            ERROR_(LOADER)("can't map section if data and VA hint have different page alignment %d\n", i);
             palError = ERROR_INVALID_PARAMETER;
             goto doneReleaseMappingCriticalSection;
         }
@@ -2558,7 +2566,6 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
             flags = readWriteFlags;
         }
 
-        _ASSERTE(OffsetWithinPage((off_t)sectionBase) == OffsetWithinPage(offset + currentHeader.PointerToRawData));
         palError = MAPmmapAndRecord(pFileObject, loadedBase,
                         sectionBase,
                         currentHeader.SizeOfRawData,
