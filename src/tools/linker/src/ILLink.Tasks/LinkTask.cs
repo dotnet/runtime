@@ -14,7 +14,7 @@ namespace ILLink.Tasks
 		///   Paths to the assembly files that should be considered as
 		///   input to the linker.
 		///   Optional metadata:
-		///       Action ("copy", "link", etc...): sets the illink action to take for this assembly.
+		///       TrimMode ("copy", "link", etc...): sets the illink action to take for this assembly.
 		///   There is an optional metadata for each optimization that can be set to "True" or "False" to
 		///   enable or disable it per-assembly:
 		///       BeforeFieldInit
@@ -159,7 +159,7 @@ namespace ILLink.Tasks
 		///   Sets the default action for assemblies.
 		///   Maps to '-c' and '-u'.
 		/// </summary>
-		public string DefaultAction { get; set; }
+		public string TrimMode { get; set; }
 
 		/// <summary>
 		///   A list of custom steps to insert into the linker pipeline.
@@ -261,10 +261,10 @@ namespace ILLink.Tasks
 
 				args.Append ("-reference ").AppendLine (Quote (assemblyPath));
 
-				string action = assembly.GetMetadata ("Action");
-				if (!String.IsNullOrEmpty (action)) {
+				string trimMode = assembly.GetMetadata ("TrimMode");
+				if (!String.IsNullOrEmpty (trimMode)) {
 					args.Append ("-p ");
-					args.Append (action);
+					args.Append (trimMode);
 					args.Append (" ").AppendLine (Quote (assemblyName));
 				}
 
@@ -348,8 +348,8 @@ namespace ILLink.Tasks
 			if (_removeSymbols == false)
 				args.AppendLine ("-b");
 
-			if (DefaultAction != null)
-				args.Append ("-c ").Append (DefaultAction).Append (" -u ").AppendLine (DefaultAction);
+			if (TrimMode != null)
+				args.Append ("-c ").Append (TrimMode).Append (" -u ").AppendLine (TrimMode);
 
 			if (CustomSteps != null) {
 				foreach (var customStep in CustomSteps) {

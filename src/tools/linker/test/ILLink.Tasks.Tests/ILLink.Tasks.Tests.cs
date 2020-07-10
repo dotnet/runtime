@@ -21,12 +21,12 @@ namespace ILLink.Tasks.Tests
 		public static IEnumerable<object[]> AssemblyPathsCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
-					new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "action", "copy" } })
+					new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "trimmode", "copy" } })
 				}
 			},
 			new object [] {
 				new ITaskItem [] {
-					new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "Action", "Copy" } })
+					new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "TrimMode", "Copy" } })
 				}
 			},
 			new object [] {
@@ -75,10 +75,10 @@ namespace ILLink.Tasks.Tests
 
 				foreach (var item in assemblyPaths) {
 					var assemblyPath = item.ItemSpec;
-					var action = item.GetMetadata ("action");
-					if (String.IsNullOrEmpty (action))
+					var trimMode = item.GetMetadata ("TrimMode");
+					if (String.IsNullOrEmpty (trimMode))
 						continue;
-					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), action, ignoreCase: true);
+					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
 					AssemblyAction actualAction = (AssemblyAction) context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
 					Assert.Equal (expectedAction, actualAction);
 				}
@@ -89,7 +89,7 @@ namespace ILLink.Tasks.Tests
 		public void TestAssemblyPathsWithInvalidAction ()
 		{
 			var task = new MockTask () {
-				AssemblyPaths = new ITaskItem[] { new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "action", "invalid" } }) }
+				AssemblyPaths = new ITaskItem[] { new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "TrimMode", "invalid" } }) }
 			};
 			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
@@ -384,12 +384,12 @@ namespace ILLink.Tasks.Tests
 		public void TestExtraArgs ()
 		{
 			var task = new MockTask () {
-				DefaultAction = "copy",
+				TrimMode = "copy",
 				ExtraArgs = "-c link"
 			};
 			using (var driver = task.CreateDriver ()) {
 				Assert.Equal (AssemblyAction.Copy, driver.Context.UserAction);
-				// Check that ExtraArgs can override DefaultAction
+				// Check that ExtraArgs can override TrimMode
 				Assert.Equal (AssemblyAction.Link, driver.Context.CoreAction);
 			}
 		}
@@ -433,13 +433,13 @@ namespace ILLink.Tasks.Tests
 		[InlineData ("copy")]
 		[InlineData ("link")]
 		[InlineData ("copyused")]
-		public void TestDefaultAction (string defaultAction)
+		public void TestGlobalTrimMode (string trimMode)
 		{
 			var task = new MockTask () {
-				DefaultAction = defaultAction
+				TrimMode = trimMode
 			};
 			using (var driver = task.CreateDriver ()) {
-				var expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), defaultAction, ignoreCase: true);
+				var expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
 				Assert.Equal (expectedAction, driver.Context.CoreAction);
 				Assert.Equal (expectedAction, driver.Context.UserAction);
 			}
@@ -449,7 +449,7 @@ namespace ILLink.Tasks.Tests
 		public void TestInvalidDefaultAction ()
 		{
 			var task = new MockTask () {
-				DefaultAction = "invalid"
+				TrimMode = "invalid"
 			};
 			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
