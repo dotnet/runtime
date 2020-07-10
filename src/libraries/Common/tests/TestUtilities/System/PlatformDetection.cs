@@ -42,6 +42,8 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsThreadingSupported => !IsBrowser;
+        public static bool IsBinaryFormatterSupported => !IsBrowser;
+
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
@@ -181,8 +183,9 @@ namespace System
         public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
+        public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
-        public static bool IsNlsGlobalization => !IsIcuGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         private static Version GetICUVersion()
         {
