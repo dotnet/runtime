@@ -5098,7 +5098,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         divMod->SetOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
-        assert(divMod->MarkedDivideByConstOptimized());
         return true;
     }
     if (isDiv)
@@ -5111,7 +5110,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divMod->SetOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
-            assert(divMod->MarkedDivideByConstOptimized());
             return true;
         }
     }
