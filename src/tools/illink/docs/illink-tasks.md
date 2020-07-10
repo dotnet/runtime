@@ -61,20 +61,19 @@ The linker can be invoked as an MSBuild task, `ILLink`. We recommend not using t
         ExtraArgs="-t -c link" />
 ```
 
-## Default Linking Behaviour
+## Default Linking Behavior
 
-### .NET 5.0
+The default in the .NET Core SDK is to trim framework assemblies only, in a conservative assembly-level mode (`copyused` action). Third-party libraries and the app will be analyzed but not trimmed. Other SDKs may modify these defaults.
 
-By default, the linker will operate in a full linking mode for all framework or 
-core managed assemblies. The 3rd party libraries or final app will be analyzed but not linked.
-This setting can be altered by setting `_TrimmerDefaultAction` property to different
-linker action mode.
+## Customizing Linking Behavior
 
-### .NET 3.x
+`TrimMode` can be used to set the trimming behavior for framework assemblies. Additional assemblies can be given
+metadata `IsTrimmable` and they will also be trimmed using this mode, or they can have per-assembly `TrimMode` which
+takes precedence over the global `TrimMode`.
 
-By default, the linker will operate in a conservative mode that keeps
-all managed assemblies that aren't part of the framework (they are
-kept intact, and the linker simply copies them).
+## Reflection
+
+Note: this section is out-of-date. New versions of the linker can understand some of these reflection patterns.
 
 Applications or frameworks (including ASP<span />.NET Core and WPF) that use reflection or related dynamic features will often break when trimmed, because the linker does not know about this dynamic behavior, and can not determine in general which framework types will be required for reflection at runtime. To trim such apps, you will need to tell the linker about any types needed by reflection in your code, and in packages or frameworks that you depend on. Be sure to test your apps after trimming.
 
