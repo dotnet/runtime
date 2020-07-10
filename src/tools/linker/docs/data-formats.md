@@ -1,6 +1,6 @@
 # Data Formats
 
-ILLinker uses several data formats to control or influnce the linking process. The data formats are not versioned but are backward compatible.
+IL linker uses several data formats to control or influence the linking process. The data formats are not versioned but are backward compatible.
 
 ## Descriptor Format
 

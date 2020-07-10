@@ -47,7 +47,7 @@ namespace Mono.Linker
 						int warningCode = warning.Code;
 						IMemberDefinition warningOrigin = warning.Member;
 						sb.Append ("[assembly: UnconditionalSuppressMessage (\"");
-						sb.Append (Constants.ILLinker);
+						sb.Append (Constants.ILLink);
 						sb.Append ("\", \"IL");
 						sb.Append (warningCode).Append ("\", Scope = \"");
 						switch (warningOrigin.MetadataToken.TokenType) {
