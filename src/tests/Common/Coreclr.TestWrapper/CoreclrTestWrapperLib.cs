@@ -20,6 +20,7 @@ namespace CoreclrTestLib
     {
         public const int MAX_PATH = 260;
         public const int ERROR_NO_MORE_FILES = 0x12;
+        public const long INVALID_HANDLE = -1;
 
         public enum Toolhelp32Flags : uint
         {
@@ -96,7 +97,7 @@ namespace CoreclrTestLib
         {
             var children = new List<Process>();
             IntPtr snapshot = Kernel32.CreateToolhelp32Snapshot(Kernel32.Toolhelp32Flags.TH32CS_SNAPPROCESS, 0);
-            if (snapshot != IntPtr.Zero)
+            if (snapshot != IntPtr.Zero && snapshot.ToInt64() != Kernel32.INVALID_HANDLE)
             {
                 try
                 {
@@ -197,7 +198,7 @@ namespace CoreclrTestLib
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
         
         // Default timeout set to 10 minutes
-        public const int DEFAULT_TIMEOUT = 1000 * 60*10;
+        public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
@@ -230,7 +231,7 @@ namespace CoreclrTestLib
 
             Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
             Task<string> copyError = createdump.StandardError.ReadToEndAsync();
-            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT * 2);
+            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT_MS);
 
             if (fSuccess)
             {
@@ -242,6 +243,10 @@ namespace CoreclrTestLib
                 Console.WriteLine(output);
                 Console.WriteLine("createdump stderr:");
                 Console.WriteLine(error);
+            }
+            else
+            {
+                createdump.Kill(true);
             }
 
             return fSuccess && createdump.ExitCode == 0;
@@ -288,7 +293,7 @@ namespace CoreclrTestLib
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
-            int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT;
+            int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT_MS;
             bool collectCrashDumps = Environment.GetEnvironmentVariable(COLLECT_DUMPS_ENVIRONMENT_VAR) != null;
             string crashDumpFolder = Environment.GetEnvironmentVariable(CRASH_DUMP_FOLDER_ENVIRONMENT_VAR);
 
@@ -358,6 +363,9 @@ namespace CoreclrTestLib
                             }
                         }
                     }
+
+                    // kill the timed out processes after we've collected dumps
+                    process.Kill(entireProcessTree: true);
                 }
 
                outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
