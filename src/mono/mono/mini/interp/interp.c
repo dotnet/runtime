@@ -81,9 +81,6 @@
 #include <mono/metadata/icall-decl.h>
 
 #if PROFILE_INTERP
-
-#define PROFILE_INTERP_OPS_THRESHOLD 1000
-
 static long total_executed_opcodes;
 static FILE* profile_trace;
 
@@ -251,6 +248,8 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	frame->imethod = imethod;
 	frame->stack = sp;
 	frame->state.ip = NULL;
+
+#if PROFILE_INTERP
 	frame->total_opcount_before_entry = 0;
 	frame->has_logged_entry = FALSE;
 
@@ -260,6 +259,7 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	if (strstr (method_full_name, "Microsoft.AspNetCore.")) {
 		frame->total_opcount_before_entry = total_executed_opcodes;
 	}
+#endif
 }
 
 /*

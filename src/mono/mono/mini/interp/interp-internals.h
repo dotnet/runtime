@@ -231,8 +231,10 @@ struct InterpFrame {
 	/* This is valid if state.ip != NULL */
 	InterpState state;
 
+#if PROFILE_INTERP
 	long total_opcount_before_entry;
 	gboolean has_logged_entry;
+#endif
 };
 
 #define frame_locals(frame) ((guchar*)(frame)->stack)
