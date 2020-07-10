@@ -424,13 +424,22 @@ namespace ILLink.Tasks.Tests
 		[Theory]
 		[InlineData (true)]
 		[InlineData (false)]
-		public void TestLinkSymbols (bool linkSymbols)
+		public void TestRemoveSymbols (bool removeSymbols)
 		{
 			var task = new MockTask () {
-				LinkSymbols = linkSymbols
+				RemoveSymbols = removeSymbols
 			};
 			using (var driver = task.CreateDriver ()) {
-				Assert.Equal (linkSymbols, driver.Context.LinkSymbols);
+				Assert.NotEqual (removeSymbols, driver.Context.LinkSymbols);
+			}
+		}
+
+		[Fact]
+		public void TestRemoveSymbolsDefault ()
+		{
+			var task = new MockTask ();
+			using (var driver = task.CreateDriver ()) {
+				Assert.False (driver.Context.LinkSymbols);
 			}
 		}
 
