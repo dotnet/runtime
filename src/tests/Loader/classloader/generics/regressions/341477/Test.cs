@@ -8,7 +8,7 @@ using System;
 
 class Test
 {
-	
+
 	static int Main(string[] args)
 	{
 		Hello<string> mystr = new Hello<string>("PASS");
@@ -16,7 +16,7 @@ class Test
 		mystr.InstanceMethod<A>();
 
 		return 100;
-		
+
 	}
 }
 
@@ -25,19 +25,18 @@ public class A
 	public A() {}
 }
 
-public class Hello<li??>
+public class Hello<liıİ>
 {
-	public li?? a;		
-	public Hello (li?? t)
+	public liıİ a;
+	public Hello (liıİ t)
 	{
 		a = t;
 		Console.WriteLine (a.ToString ());
 	}
 
-	public ???? InstanceMethod<????> () where ???? : new()
+	public один InstanceMethod<один> () where один : new()
 	{
-		return new ????();
-		
+		return new один();
+
 	}
 }
-
