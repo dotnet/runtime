@@ -1191,9 +1191,34 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
-            if ((srcCall->gtFlags & GTF_CALL_UNMANAGED) && (srcCall->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL))
+            if (srcCall->IsUnmanaged())
             {
-                GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+                if (srcCall->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL)
+                {
+                    GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+                }
+                else
+                {
+#ifdef TARGET_X86
+                    // The argument list has already been reversed.
+                    // Insert the return buffer as the last node so it will be pushed on to the stack last
+                    // as required by the native ABI.
+                    assert(srcCall->gtCallType == CT_INDIRECT);
+                    GenTreeCall::Use* lastArg = srcCall->gtCallArgs;
+                    if (lastArg == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+                    }
+                    else
+                    {
+                        for(; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext());
+                        lastArg->SetNext(gtPrependNewCallArg(destAddr, lastArg->GetNext()));
+                    }
+#else
+                    // insert the return value buffer into the argument list as first byref parameter
+                    srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+#endif
+                }
             }
             else
 #endif
