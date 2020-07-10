@@ -1460,6 +1460,10 @@ protected:
     // Returns CCW pointer based on a target address.
     PTR_ComCallWrapper DACGetCCWFromAddress(CLRDATA_ADDRESS addr);
 
+    // Populates a DacpJitCodeHeapInfo with proper information about the
+    // code heap type and the information needed to locate it.
+    DacpJitCodeHeapInfo DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr);
+
 private:
     // Returns COM interface pointer corresponding to a given CCW and internal vtable
     // index. Returns NULL if the vtable is unused or not fully laid out.
