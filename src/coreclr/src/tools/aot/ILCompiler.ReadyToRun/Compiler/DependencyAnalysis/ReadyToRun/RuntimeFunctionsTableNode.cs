@@ -113,10 +113,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             get
             {
                 Debug.Assert(_tableSize >= 0);
-                return _tableSize - 4;
+                return _tableSize + SentinelSizeAdjustment;
             }
         }
 
         public override int ClassCode => -855231428;
+
+        internal const int SentinelSizeAdjustment = -4;
     }
 }

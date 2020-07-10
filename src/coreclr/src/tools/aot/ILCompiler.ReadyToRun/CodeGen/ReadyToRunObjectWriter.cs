@@ -140,6 +140,7 @@ namespace ILCompiler.DependencyAnalysis
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
                 ISymbolDefinitionNode firstImportThunk = null;
                 ISymbolDefinitionNode lastImportThunk = null;
+                ObjectNode lastWrittenObjectNode = null;
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
@@ -166,7 +167,9 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node is ImportThunk importThunkNode)
                     {
-                        // All the import thunks are in a single contiguous run
+                        Debug.Assert(firstImportThunk == null || lastWrittenObjectNode is ImportThunk,
+                            "All the import thunks must be in single contiguous run");
+
                         if (firstImportThunk == null)
                         {
                             firstImportThunk = importThunkNode;
@@ -192,6 +195,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
+                    lastWrittenObjectNode = node;
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);

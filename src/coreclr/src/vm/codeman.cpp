@@ -5591,7 +5591,7 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     if (iRange == 2)
     {
-        int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
+        int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase, RelativePc,
                                                                                pLayoutInfo->m_pRuntimeFunctions[2],
                                                                                0,
                                                                                pLayoutInfo->m_nRuntimeFunctions[2] - 1);
@@ -5680,7 +5680,8 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         PTR_RUNTIME_FUNCTION FunctionTable = pLayoutInfo->m_pRuntimeFunctions[iRange];
         PTR_DWORD pMethodDescs = pLayoutInfo->m_MethodDescs[iRange];
 
-        int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
+        int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase,
+                                                                               RelativePc,
                                                                                FunctionTable,
                                                                                Low,
                                                                                High);
@@ -5808,6 +5809,7 @@ DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodTok
         NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
 
         int iColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(
+                                                    moduleBase,
                                                     (DWORD)(regionInfo.coldStartAddress - moduleBase),
                                                     pLayoutInfo->m_pRuntimeFunctions[2],
                                                     0,
@@ -6131,7 +6133,8 @@ DWORD NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(PTR_CORCOM
     return 0;
 }
 
-int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
+int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(TADDR ImageBase,
+                                                           DWORD RelativePc,
                                                            PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                                            int Low,
                                                            int High)
@@ -6175,7 +6178,8 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
         if (RelativePc < pNextFunctionEntry->BeginAddress)
         {
             PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
-            if (RelativePc >= pFunctionEntry->BeginAddress && RelativePc <= pFunctionEntry->EndAddress)
+            
+            if (RelativePc >= pFunctionEntry->BeginAddress && RelativePc < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, ImageBase))
             {
                 return i;
             }
@@ -6790,7 +6794,8 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
     PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
 
-    int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
+    int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase,
+                                                                             RelativePc,
                                                                              pRuntimeFunctions,
                                                                              0,
                                                                              nRuntimeFunctions - 1);
