@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
     [ProviderAlias("Console")]
-    public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
+    public partial class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
@@ -57,22 +56,6 @@ namespace Microsoft.Extensions.Logging.Console
                 _messageQueue.Console = new AnsiLogConsole(new AnsiSystemConsole());
                 _messageQueue.ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
             }
-        }
-
-        private static bool DoesConsoleSupportAnsi()
-        {
-#if TARGETS_WINDOWS
-            // for Windows, check the console mode
-            var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
-            if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
-            {
-                return false;
-            }
-
-            return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-#else
-            return true;
-#endif
         }
 
         private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
