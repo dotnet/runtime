@@ -319,13 +319,8 @@ namespace Mono.Linker.Steps
 		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
 			var assembly = context.Resolve (assemblyName);
-			ProcessReferences (assembly, context);
+			ProcessReferences (assembly);
 			return assembly;
-		}
-
-		static void ProcessReferences (AssemblyDefinition assembly, LinkContext context)
-		{
-			context.ResolveReferences (assembly);
 		}
 
 		static bool IsRequired (XPathNavigator nav)

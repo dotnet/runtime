@@ -72,5 +72,8 @@ namespace Mono.Linker
 		{
 			return _internalAttributes.ContainsKey (provider) ? true : false;
 		}
+
+		public bool HasAttributes (ICustomAttributeProvider provider) =>
+			HasCustomAttributes (provider) || HasInternalAttributes (provider);
 	}
 }

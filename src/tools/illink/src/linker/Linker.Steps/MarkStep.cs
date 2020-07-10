@@ -531,33 +531,31 @@ namespace Mono.Linker.Steps
 
 		void MarkCustomAttributes (ICustomAttributeProvider provider, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
-			if (!provider.HasCustomAttributes)
-				return;
+			if (provider.HasCustomAttributes) {
+				bool providerInLinkedAssembly = Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
+				bool markOnUse = _context.KeepUsedAttributeTypesOnly && providerInLinkedAssembly;
 
-			bool markOnUse = _context.KeepUsedAttributeTypesOnly && Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
+				foreach (CustomAttribute ca in provider.CustomAttributes) {
+					if (ProcessLinkerSpecialAttribute (ca, provider, reason, sourceLocationMember))
+						continue;
 
-			foreach (CustomAttribute ca in provider.CustomAttributes) {
-				if (ProcessLinkerSpecialAttribute (ca, provider, reason, sourceLocationMember))
-					continue;
+					if (markOnUse) {
+						_lateMarkedAttributes.Enqueue ((new AttributeProviderPair (ca, provider), reason, sourceLocationMember));
+						continue;
+					}
 
-				if (markOnUse) {
-					_lateMarkedAttributes.Enqueue ((new AttributeProviderPair (ca, provider), reason, sourceLocationMember));
-					continue;
+					if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()) && providerInLinkedAssembly)
+						continue;
+
+					MarkCustomAttribute (ca, reason, sourceLocationMember);
+					MarkSpecialCustomAttributeDependencies (ca, provider, sourceLocationMember);
 				}
-
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()))
-					continue;
-
-				MarkCustomAttribute (ca, reason, sourceLocationMember);
-				MarkSpecialCustomAttributeDependencies (ca, provider, sourceLocationMember);
 			}
 
 			if (!(provider is MethodDefinition || provider is FieldDefinition))
 				return;
 
-			var dynamicDependencies = _context.Annotations.GetLinkerAttributes<DynamicDependency> ((IMemberDefinition) provider);
-
-			foreach (var dynamicDependency in dynamicDependencies)
+			foreach (var dynamicDependency in _context.Annotations.GetLinkerAttributes<DynamicDependency> ((IMemberDefinition) provider))
 				MarkDynamicDependency (dynamicDependency, (IMemberDefinition) provider);
 		}
 
@@ -811,8 +809,10 @@ namespace Mono.Linker.Steps
 			if (!provider.HasCustomAttributes)
 				return;
 
+			bool providerInLinkedAssembly = Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
+
 			foreach (CustomAttribute ca in provider.CustomAttributes) {
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()))
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()) && providerInLinkedAssembly)
 					continue;
 
 				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (ca, provider));
