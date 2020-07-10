@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Data.ProviderBase;
@@ -15,9 +14,9 @@ namespace System.Data.Common
 
         private bool _acceptChangesDuringUpdate = true;
         private bool _acceptChangesDuringUpdateAfterInsert = true;
-        private bool _continueUpdateOnError = false;
-        private bool _hasFillErrorHandler = false;
-        private bool _returnProviderSpecificTypes = false;
+        private bool _continueUpdateOnError;
+        private bool _hasFillErrorHandler;
+        private bool _returnProviderSpecificTypes;
 
         private bool _acceptChangesDuringFill = true;
         private LoadOption _fillLoadOption;
@@ -29,28 +28,11 @@ namespace System.Data.Common
         private static int s_objectTypeCount; // Bid counter
         internal readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
-#if DEBUG
-        // if true, we are asserting that the caller has provided a select command
-        // which should not return an empty result set
-        private readonly bool _debugHookNonEmptySelectCommand = false;
-#endif
-
         [Conditional("DEBUG")]
         private void AssertReaderHandleFieldCount(DataReaderContainer readerHandler)
         {
 #if DEBUG
-            Debug.Assert(!_debugHookNonEmptySelectCommand || readerHandler.FieldCount > 0, "Scenario expects non-empty results but no fields reported by reader");
-#endif
-        }
-
-        [Conditional("DEBUG")]
-        private void AssertSchemaMapping(SchemaMapping mapping)
-        {
-#if DEBUG
-            if (_debugHookNonEmptySelectCommand)
-            {
-                Debug.Assert(mapping != null && mapping.DataValues != null && mapping.DataTable != null, "Debug hook specifies that non-empty results are not expected");
-            }
+            Debug.Assert(readerHandler.FieldCount > 0, "Scenario expects non-empty results but no fields reported by reader");
 #endif
         }
 
@@ -460,9 +442,6 @@ namespace System.Data.Common
 
                         if (dataReader.IsClosed)
                         {
-#if DEBUG
-                            Debug.Assert(!_debugHookNonEmptySelectCommand, "Debug hook asserts data reader should be open");
-#endif
                             break;
                         }
                         DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
@@ -534,8 +513,6 @@ namespace System.Data.Common
 
                 SchemaMapping mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
                 schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
-
-                AssertSchemaMapping(mapping);
 
                 if (null == mapping)
                 {

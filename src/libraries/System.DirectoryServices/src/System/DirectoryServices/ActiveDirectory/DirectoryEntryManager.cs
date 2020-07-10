@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -85,9 +84,9 @@ namespace System.DirectoryServices.ActiveDirectory
     internal class DirectoryEntryManager
     {
         private readonly Hashtable _directoryEntries = new Hashtable();
-        private string _bindingPrefix = null;
-        private readonly DirectoryContext _context = null;
-        private readonly NativeComInterfaces.IAdsPathname _pathCracker = null;
+        private string _bindingPrefix;
+        private readonly DirectoryContext _context;
+        private readonly NativeComInterfaces.IAdsPathname _pathCracker;
 
         internal DirectoryEntryManager(DirectoryContext context)
         {

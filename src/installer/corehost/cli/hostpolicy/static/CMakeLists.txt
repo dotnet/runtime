@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(hostpolicy_static)
 
@@ -24,6 +23,7 @@ set(SOURCES
     ../../bundle/file_entry.cpp
     ../../bundle/manifest.cpp
     ../../bundle/runner.cpp
+    ./coreclr_resolver.cpp
 )
 
 set(HEADERS
@@ -40,6 +40,7 @@ set(HEADERS
     ../../bundle/file_entry.h
     ../../bundle/manifest.h
     ../../bundle/runner.h
+    ../../../coreclr_resolver.h
 )
 
 set(SKIP_VERSIONING 1)

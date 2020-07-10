@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -24,10 +23,6 @@ public:
     static FCDECL0(Object*, GetLoadedAssemblies);
     static FCDECL1(Object*, GetOrInternString, StringObject* pStringUNSAFE);
     static FCDECL1(Object*, IsStringInterned, StringObject* pString);
-
-#ifdef FEATURE_APPX
-    static INT32 QCALLTYPE IsAppXProcess();
-#endif
 };
 
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
 //
@@ -504,10 +503,6 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
-        if (loadContext == nullptr)
-        {
-            loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
-        }
         return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
     

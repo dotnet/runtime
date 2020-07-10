@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -142,7 +141,7 @@ namespace System.Linq.Parallel
         protected abstract QueryOperatorEnumerator<TIntermediate, int> CreateEnumerator<TKey>(
             int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object? sharedData, CancellationToken cancellationToken);
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "This method should never be called. Associative aggregation can always be parallelized")]
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("This method should never be called. Associative aggregation can always be parallelized.");

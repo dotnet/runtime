@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -86,11 +85,11 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private volatile SubjectIdentifier? _lazyRecipientIdentifier = null;
-        private volatile AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm = null;
-        private volatile byte[]? _lazyEncryptedKey = null;
-        private volatile SubjectIdentifierOrKey? _lazyOriginatorIdentifierKey = null;
-        private DateTime? _lazyDate = default(DateTime?);
-        private volatile CryptographicAttributeObject? _lazyOtherKeyAttribute = null;
+        private volatile SubjectIdentifier? _lazyRecipientIdentifier;
+        private volatile AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm;
+        private volatile byte[]? _lazyEncryptedKey;
+        private volatile SubjectIdentifierOrKey? _lazyOriginatorIdentifierKey;
+        private DateTime? _lazyDate;
+        private volatile CryptographicAttributeObject? _lazyOtherKeyAttribute;
     }
 }

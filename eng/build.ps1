@@ -93,9 +93,12 @@ function Get-Help() {
   Write-Host "* Build Mono runtime for Windows x64 on Release configuration."
   Write-Host ".\build.cmd mono -c release"
   Write-Host ""
-  Write-Host "It's important to mention that to build Mono for the first time,"
-  Write-Host "you need to build the CLR and Libs subsets beforehand."
-  Write-Host "This is done automatically if a full build is performed at first."
+  Write-Host "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
+  Write-Host ".\build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc release"
+  Write-Host ""
+  Write-Host "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
+  Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
+  Write-Host ""
   Write-Host ""
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
@@ -132,7 +135,7 @@ if ($vs) {
   }
 
   # This tells .NET Core to use the bootstrapped runtime
-  $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
+  $env:DOTNET_ROOT=InitializeDotNetCli -install:$true -createSdkLocationFile:$true
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=$env:DOTNET_ROOT
@@ -148,6 +151,9 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
+  
+  # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
+  Invoke-Expression "& dotnet restore $vs"
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"

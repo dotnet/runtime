@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -182,13 +181,6 @@ namespace System.Net.Security
             _handle = default;
         }
 
-#if TRACE_VERBOSE
-        public override string ToString()
-        {
-            return "0x" + _handle.ToString();
-        }
-#endif
-
         public override bool IsInvalid
         {
             get { return IsClosed || _handle.IsZero; }
@@ -207,7 +199,7 @@ namespace System.Net.Security
             Interop.SspiCli.CredentialUse intent,
             out SafeFreeCredentials outCredential)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, package, intent);
 
             int errorCode = -1;
             long timeStamp;
@@ -225,9 +217,7 @@ namespace System.Net.Security
                             ref outCredential._handle,
                             out timeStamp);
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
-#endif
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -272,7 +262,7 @@ namespace System.Net.Security
             ref Interop.SspiCli.SCHANNEL_CRED authdata,
             out SafeFreeCredentials outCredential)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, package, intent, authdata);
 
             int errorCode = -1;
             long timeStamp;
@@ -307,9 +297,7 @@ namespace System.Net.Security
                 authdata.paCred = copiedPtr;
             }
 
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
-#endif
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -401,13 +389,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
-                NetEventSource.Info(null, $"inSecBuffers.Length = {inSecBuffers.Length}");
-            }
-#endif
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
 
             if (inCredentials == null)
             {
@@ -516,7 +498,7 @@ namespace System.Net.Security
                                             outFreeContextBuffer);
                         }
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshalling OUT buffer");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Marshalling OUT buffer");
 
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer.cbBuffer;
@@ -532,7 +514,7 @@ namespace System.Net.Security
                 outFreeContextBuffer?.Dispose();
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -639,13 +621,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-#if TRACE_VERBOSE
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
-                NetEventSource.Info(null, $"inSecBuffers.Length = {inSecBuffers.Length}");
-            }
-#endif
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
 
             if (inCredentials == null)
             {
@@ -751,7 +727,7 @@ namespace System.Net.Security
                                         ref outFlags,
                                         outFreeContextBuffer);
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Marshaling OUT buffer");
 
                         // No data written out but there is Alert
                         if (outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0)
@@ -780,7 +756,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -878,7 +854,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(null, "SafeDeleteContext::CompleteAuthToken");
                 NetEventSource.Info(null, $"    refContext       = {refContext}");
@@ -900,9 +876,6 @@ namespace System.Net.Security
                     inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
                     inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedToken + inSecBuffer.offset);
-#if TRACE_VERBOSE
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{inSecBuffer.size} BufferType: {inSecBuffer.type}");
-#endif
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
                 if (refContext == null || refContext.IsInvalid)
@@ -933,7 +906,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"unmanaged CompleteAuthToken() errorCode:0x{errorCode:x8} refContext:{refContext}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"unmanaged CompleteAuthToken() errorCode:0x{errorCode:x8} refContext:{refContext}");
             return errorCode;
         }
 
@@ -941,7 +914,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(null);
                 NetEventSource.Info(null, $"    refContext       = {refContext}");
@@ -964,9 +937,6 @@ namespace System.Net.Security
                     inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
                     inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedInSecBufferToken + inSecBuffer.offset);
-#if TRACE_VERBOSE
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{inSecBuffer.size} BufferType:{inSecBuffer.type}");
-#endif
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
 
@@ -998,7 +968,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"unmanaged ApplyControlToken() errorCode:0x{errorCode:x8} refContext: {refContext}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"unmanaged ApplyControlToken() errorCode:0x{errorCode:x8} refContext: {refContext}");
             return errorCode;
         }
     }

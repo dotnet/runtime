@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -49,7 +48,7 @@ namespace MS.Internal.Xml.XPath
         //The recursive is like
         //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpression
         //So put 200 limitation here will max cause about 2000~3000 depth stack.
-        private int _parseDepth = 0;
+        private int _parseDepth;
         private const int MaxParseDepth = 200;
 
         private AstNode ParseExpression(AstNode qyInput)

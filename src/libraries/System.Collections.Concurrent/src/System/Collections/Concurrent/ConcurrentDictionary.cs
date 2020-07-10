@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -799,16 +798,87 @@ namespace System.Collections.Concurrent
         /// of the dictionary.  The contents exposed through the enumerator may contain modifications
         /// made to the dictionary after <see cref="GetEnumerator"/> was called.
         /// </remarks>
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => new Enumerator(this);
+
+        /// <summary>Provides an enumerator implementation for the dictionary.</summary>
+        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
-            Node?[] buckets = _tables._buckets;
-            for (int i = 0; i < buckets.Length; i++)
+            // Provides a manually-implemented version of (approximately) this iterator:
+            //     Node?[] buckets = _tables._buckets;
+            //     for (int i = 0; i < buckets.Length; i++)
+            //         for (Node? current = Volatile.Read(ref buckets[i]); current != null; current = current._next)
+            //             yield return new KeyValuePair<TKey, TValue>(current._key, current._value);
+
+            private readonly ConcurrentDictionary<TKey, TValue> _dictionary;
+
+            private ConcurrentDictionary<TKey, TValue>.Node?[]? _buckets;
+            private Node? _node;
+            private int _i;
+            private int _state;
+
+            private const int StateUninitialized = 0;
+            private const int StateOuterloop = 1;
+            private const int StateInnerLoop = 2;
+            private const int StateDone = 3;
+
+            public Enumerator(ConcurrentDictionary<TKey, TValue> dictionary)
             {
-                // The Volatile.Read ensures that we have a copy of the reference to buckets[i]:
-                // this protects us from reading fields ('_key', '_value' and '_next') of different instances.
-                for (Node? current = Volatile.Read(ref buckets[i]); current != null; current = current._next)
+                _dictionary = dictionary;
+                _i = -1;
+            }
+
+            public KeyValuePair<TKey, TValue> Current { get; private set; }
+
+            object IEnumerator.Current => Current;
+
+            public void Reset()
+            {
+                _buckets = null;
+                _node = null;
+                Current = default;
+                _i = -1;
+                _state = StateUninitialized;
+            }
+
+            public void Dispose() { }
+
+            public bool MoveNext()
+            {
+                switch (_state)
                 {
-                    yield return new KeyValuePair<TKey, TValue>(current._key, current._value);
+                    case StateUninitialized:
+                        _buckets = _dictionary._tables._buckets;
+                        _i = -1;
+                        goto case StateOuterloop;
+
+                    case StateOuterloop:
+                        ConcurrentDictionary<TKey, TValue>.Node?[]? buckets = _buckets;
+                        Debug.Assert(buckets != null);
+
+                        int i = ++_i;
+                        if ((uint)i < (uint)buckets.Length)
+                        {
+                            // The Volatile.Read ensures that we have a copy of the reference to buckets[i]:
+                            // this protects us from reading fields ('_key', '_value' and '_next') of different instances.
+                            _node = Volatile.Read(ref buckets[i]);
+                            _state = StateInnerLoop;
+                            goto case StateInnerLoop;
+                        }
+                        goto default;
+
+                    case StateInnerLoop:
+                        Node? node = _node;
+                        if (node != null)
+                        {
+                            Current = new KeyValuePair<TKey, TValue>(node._key, node._value);
+                            _node = node._next;
+                            return true;
+                        }
+                        goto case StateOuterloop;
+
+                    default:
+                        _state = StateDone;
+                        return false;
                 }
             }
         }

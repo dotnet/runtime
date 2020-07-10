@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -48,9 +47,11 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Oid firstCall = certBag.GetCertificateType();
             Oid secondCall = certBag.GetCertificateType();
 
+#if !NETCOREAPP
             Assert.NotSame(oid, firstCall);
             Assert.NotSame(oid, secondCall);
             Assert.NotSame(firstCall, secondCall);
+#endif
             Assert.Equal(oid.Value, firstCall.Value);
             Assert.Equal(oid.Value, secondCall.Value);
             Assert.Equal("Hello", firstCall.FriendlyName);

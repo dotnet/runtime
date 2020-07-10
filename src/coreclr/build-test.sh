@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\""
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
 
         local exitCode="$?"
@@ -51,7 +51,6 @@ generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -125,7 +124,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 
@@ -274,7 +273,6 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -514,7 +512,6 @@ usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
-usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
@@ -573,10 +570,6 @@ handle_arguments_local() {
             __CompositeBuildMode=1
             __DoCrossgen2=1
             __TestBuildMode=crossgen2
-            ;;
-
-        generatetesthostonly|-generatetesthostonly)
-            __GenerateTestHostOnly=1
             ;;
 
         generatelayoutonly|-generatelayoutonly)
@@ -645,7 +638,6 @@ __DoCrossgen2=0
 __CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
-__GenerateTestHostOnly=
 __IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
@@ -684,7 +676,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__TestDir="$__ProjectDir/tests"
+__TestDir="${__RepoRootDir}/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
@@ -711,7 +703,7 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers

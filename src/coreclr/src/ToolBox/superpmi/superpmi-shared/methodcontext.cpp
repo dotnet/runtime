@@ -908,7 +908,6 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
 void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,
                                  CORINFO_METHOD_HANDLE  method,
                                  CORINFO_CONTEXT_HANDLE context,
-                                 BOOL                   speculative,
                                  CorInfoInitClassResult result)
 {
     if (InitClass == nullptr)
@@ -920,20 +919,18 @@ void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,
     key.field       = (DWORDLONG)field;
     key.method      = (DWORDLONG)method;
     key.context     = (DWORDLONG)context;
-    key.speculative = (DWORD)speculative;
 
     InitClass->Add(key, (DWORD)result);
     DEBUG_REC(dmpInitClass(key, (DWORD)result));
 }
 void MethodContext::dmpInitClass(const Agnostic_InitClass& key, DWORD value)
 {
-    printf("InitClass key fld-%016llX meth-%016llX con-%016llX spec-%u, value res-%u", key.field, key.method,
-           key.context, key.speculative, value);
+    printf("InitClass key fld-%016llX meth-%016llX con-%016llX, value res-%u", key.field, key.method,
+           key.context, value);
 }
 CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
                                                    CORINFO_METHOD_HANDLE  method,
-                                                   CORINFO_CONTEXT_HANDLE context,
-                                                   BOOL                   speculative)
+                                                   CORINFO_CONTEXT_HANDLE context)
 {
     Agnostic_InitClass key;
     ZeroMemory(&key, sizeof(Agnostic_InitClass)); // We use the input structs as a key and use memcmp to compare.. so we
@@ -942,7 +939,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.field       = (DWORDLONG)field;
     key.method      = (DWORDLONG)method;
     key.context     = (DWORDLONG)context;
-    key.speculative = (DWORD)speculative;
 
     AssertCodeMsg(InitClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)key.method);
     AssertCodeMsg(InitClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)key.method);

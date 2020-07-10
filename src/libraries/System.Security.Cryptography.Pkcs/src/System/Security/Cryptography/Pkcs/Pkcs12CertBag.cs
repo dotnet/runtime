@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
@@ -41,7 +40,7 @@ namespace System.Security.Cryptography.Pkcs
                 EncodeBagValue(certificateType, encodedCertificate),
                 skipCopy: true)
         {
-            _certTypeOid = new Oid(certificateType);
+            _certTypeOid = certificateType.CopyOid();
 
             _decoded = CertBagAsn.Decode(EncodedBagValue, AsnEncodingRules.BER);
 
@@ -68,7 +67,7 @@ namespace System.Security.Cryptography.Pkcs
                 _certTypeOid = new Oid(_decoded.CertId);
             }
 
-            return new Oid(_certTypeOid);
+            return _certTypeOid.CopyOid();
         }
 
         public ReadOnlyMemory<byte> EncodedCertificate => _decoded.CertValue;

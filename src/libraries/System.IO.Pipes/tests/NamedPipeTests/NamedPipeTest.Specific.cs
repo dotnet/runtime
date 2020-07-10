@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +39,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -548,7 +547,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         public void NameTooLong_MaxLengthPerPlatform()
         {

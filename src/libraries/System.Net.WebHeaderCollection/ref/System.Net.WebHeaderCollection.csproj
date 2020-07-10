@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- Disable 8610 (Nullability of reference type doesn't match overridden member) warning so it doesn't turn into an error -->
-    <NoWarn>$(NoWarn);8610</NoWarn>
+     <!-- Nullability of parameter 'name' doesn't match overridden member -->
+    <NoWarn>$(NoWarn);CS8765</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.WebHeaderCollection.cs" />

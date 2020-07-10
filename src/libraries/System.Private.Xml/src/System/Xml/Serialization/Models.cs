@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -255,8 +254,8 @@ namespace System.Xml.Serialization
         private readonly MemberInfo _checkSpecifiedMemberInfo;
         private readonly MethodInfo _checkShouldPersistMethodInfo;
         private readonly bool _checkShouldPersist;
-        private readonly bool _readOnly = false;
-        private readonly bool _isProperty = false;
+        private readonly bool _readOnly;
+        private readonly bool _isProperty;
         private readonly Type _fieldType;
         private readonly string _name;
         private readonly TypeDesc _fieldTypeDesc;

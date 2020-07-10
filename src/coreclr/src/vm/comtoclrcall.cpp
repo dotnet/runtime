@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ==++==
 //
@@ -270,49 +269,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
     // target is. This is the same optimization that reverse P/Invoke stubs do.
     *ppManagedTargetOut = (PCODE)pDelObj->GetMethodPtr();
     return pDelObj->GetTarget();
-}
-
-// returns true on success, false otherwise
-NOINLINE // keep the EH tax out of our caller
-bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut,
-                                          OBJECTREF* pObjectOut, UINT64* pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Ctor is not virtual and operates on a newly created object.
-    _ASSERTE(!pCMD->IsVirtual());
-
-    *pObjectOut = NULL;
-    *ppManagedTargetOut = pRealMD->GetSingleCallableAddrOfCode();
-    MethodTable *pMT = pRealMD->GetMethodTable();
-
-    // We should not see a unsealed class here
-    _ASSERTE(pMT->IsSealed());
-
-    // we know for sure that we are allocating a new object
-
-    // @TODO: move this object allocation into the IL stub to avoid the try/catch and SO-intolerant region.
-
-    bool fSuccess = true;
-
-    EX_TRY
-    {
-        *pObjectOut = AllocateObject(pMT);
-    }
-    EX_CATCH
-    {
-        fSuccess = false;
-        *pRetValOut = SetupErrorInfo(GET_THROWABLE());
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return fSuccess;
 }
 
 FORCEINLINE_NONDEBUG
@@ -1535,90 +1491,6 @@ MethodDesc* ComCall::GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
                                             pFD->GetMemberDef(),
                                             dwStubFlags,
                                             pFD);
-}
-
-// static
-MethodDesc *ComCall::GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pClsMT->IsSealed());
-    }
-    CONTRACTL_END;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMD->GetSig(&pSig, &cSig);
-    SigParser sig(pSig, cSig);
-
-    ULONG numArgs;
-
-    IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
-    IfFailThrow(sig.GetData(&numArgs));    // number of args
-    IfFailThrow(sig.SkipExactlyOne());     // skip return type
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_HASTHIS);
-    sigBuilder.AppendData(numArgs);
-
-    // ctor returns void
-    sigBuilder.AppendElementType(ELEMENT_TYPE_VOID);
-
-    sig.GetSignature(&pSig, &cSig);
-
-    // parameter types are identical for sealed classes
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    MethodDesc *pCtorMD = MemberLoader::FindMethod(pClsMT, COR_CTOR_METHOD_NAME, pSig, cSig, pMD->GetModule());
-
-    if (pCtorMD == NULL)
-    {
-        SString ctorMethodName(SString::Utf8, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, ctorMethodName.GetUnicode());
-    }
-    return pCtorMD;
-}
-
-// static
-MethodDesc *ComCall::GetStaticForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMD->GetSig(&pSig, &cSig);
-    SigParser sig(pSig, cSig);
-
-    IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-
-    // number of parameters, return type, and parameter types are identical
-    sig.GetSignature(&pSig, &cSig);
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    MethodDesc *pStaticMD = MemberLoader::FindMethod(pClsMT, pMD->GetName(), pSig, cSig, pMD->GetModule());
-
-    if (pStaticMD == NULL)
-    {
-        SString staticMethodName(SString::Utf8, pMD->GetName());
-        COMPlusThrowNonLocalized(kMissingMethodException, staticMethodName.GetUnicode());
-    }
-    return pStaticMD;
 }
 
 #endif // DACCESS_COMPILE

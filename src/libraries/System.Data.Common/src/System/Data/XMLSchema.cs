@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Xml;
@@ -128,10 +127,10 @@ namespace System.Data
 
     internal sealed class XSDSchema : XMLSchema
     {
-        private XmlSchemaSet _schemaSet = null;
-        private XmlSchemaElement _dsElement = null;
-        private DataSet _ds = null;
-        private string _schemaName = null;
+        private XmlSchemaSet _schemaSet;
+        private XmlSchemaElement _dsElement;
+        private DataSet _ds;
+        private string _schemaName;
         private ArrayList _columnExpressions;
         private Hashtable _constraintNodes;
         private ArrayList _refTables;
@@ -149,7 +148,7 @@ namespace System.Data
 
         private Hashtable _existingSimpleTypeMap;
 
-        private bool _fromInference = false;
+        private bool _fromInference;
 
         internal bool FromInference
         {

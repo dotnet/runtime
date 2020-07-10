@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.IO;
@@ -70,7 +69,7 @@ namespace System.Security.Cryptography.Xml
         private CipherMode _mode;
         private Encoding _encoding;
         private string _recipient;
-        private int _xmlDsigSearchDepthCounter = 0;
+        private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
 
         //

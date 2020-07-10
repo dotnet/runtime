@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_BUFFERMANAGER_H__
 #define __EVENTPIPE_BUFFERMANAGER_H__
@@ -61,7 +60,6 @@ private:
 
     // Lock to protect access to the per-thread buffer list and total allocation size.
     SpinLock m_lock;
-    Volatile<BOOL> m_writeEventSuspending;
 
     // Event for synchronizing real time reading
     CLREvent m_waitEvent;

@@ -1,24 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
-    <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
-    <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
+    <Compile Include="System\Net\Http\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\EmptyContent.cs" />
@@ -32,7 +39,6 @@
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
@@ -43,6 +49,7 @@
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
+    <Compile Include="System\Net\Http\HttpTelemetry.cs" />
     <Compile Include="System\Net\Http\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
@@ -50,6 +57,7 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -83,6 +91,7 @@
     <Compile Include="System\Net\Http\Headers\ProductHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ProductInfoHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\QPackStaticTable.cs" />
     <Compile Include="System\Net\Http\Headers\RangeConditionHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\RangeItemHeaderValue.cs" />
@@ -114,16 +123,14 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-       <Link>Common\System\Net\ArrayBuffer.cs</Link>
-     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="Common\System\Net\ArrayBuffer.cs"/>
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
-  <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -339,9 +346,9 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
     </Compile>
-  </ItemGroup>    
+  </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
@@ -351,7 +358,7 @@
              Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
@@ -380,7 +387,7 @@
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -547,7 +554,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs"
              Link="Common\Interop\Unix\StrongToWeakReference.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
@@ -597,7 +604,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
@@ -643,6 +650,20 @@
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="System\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -673,7 +694,7 @@
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
@@ -699,42 +720,7 @@
   <ItemGroup>
     <None Include="Resources\SR.resx" />
   </ItemGroup>
-  <!-- Browser specific implementation -->
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-
-    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
-             Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
-             Link="Common\System\Net\HttpStatusDescription.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs"
-             Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
-             Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs"
-             Link="Common\System\Net\Security\CertificateHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Unix.cs"
-             Link="Common\System\Net\Security\CertificateHelper.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="System\System\Threading\Tasks\TaskToApm.cs" />
-    
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
-
-    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>  
+  </ItemGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -27,8 +26,8 @@ namespace System.Linq.Parallel
     /// <typeparam name="TSource"></typeparam>
     internal sealed class ConcatQueryOperator<TSource> : BinaryQueryOperator<TSource, TSource, TSource>
     {
-        private readonly bool _prematureMergeLeft = false; // Whether to prematurely merge the left data source
-        private readonly bool _prematureMergeRight = false; // Whether to prematurely merge the right data source
+        private readonly bool _prematureMergeLeft; // Whether to prematurely merge the left data source
+        private readonly bool _prematureMergeRight; // Whether to prematurely merge the right data source
 
         //---------------------------------------------------------------------------------------
         // Initializes a new concatenation operator.

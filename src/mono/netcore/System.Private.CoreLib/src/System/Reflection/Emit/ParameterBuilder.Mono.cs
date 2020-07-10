@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -33,13 +35,14 @@
 
 #if MONO_FEATURE_SRE
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public partial class ParameterBuilder
     {
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionParamBuilder in object-internals.h
         private MethodBase methodb; /* MethodBuilder, ConstructorBuilder or DynamicMethod */
         private string? name;
         private CustomAttributeBuilder[]? cattrs;
@@ -48,8 +51,9 @@ namespace System.Reflection.Emit
         private int position;
         private int table_idx;
         private object? def_value;
-#pragma warning restore 169, 414
+#endregion
 
+        [DynamicDependency(nameof(def_value))]  // Automatically keeps all previous fields too due to StructLayout
         internal ParameterBuilder(MethodBase mb, int pos, ParameterAttributes attributes, string? strParamName)
         {
             name = strParamName;

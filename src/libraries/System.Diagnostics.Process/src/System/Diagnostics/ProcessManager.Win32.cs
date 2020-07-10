@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -97,7 +96,7 @@ namespace System.Diagnostics
                     SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
                     try
                     {
-                        hCurProcess = ProcessManager.OpenProcess((int)Interop.Kernel32.GetCurrentProcessId(), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
+                        hCurProcess = ProcessManager.OpenProcess(Environment.ProcessId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
 
                         if (!Interop.Kernel32.IsWow64Process(hCurProcess, out bool sourceProcessIsWow64))
                         {

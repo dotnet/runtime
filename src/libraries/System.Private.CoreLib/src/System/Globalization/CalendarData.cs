@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -42,7 +41,7 @@ namespace System.Globalization
 
         // Integers at end to make marshaller happier
         internal int iTwoDigitYearMax = 2029; // Max 2 digit year (for Y2K bug data entry)
-        private int iCurrentEra = 0;  // current era # (usually 1)
+        private int iCurrentEra;  // current era # (usually 1)
 
         // Use overrides?
         internal bool bUseUserOverrides; // True if we want user overrides.
@@ -105,9 +104,7 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            bool loadedCalendarData = GlobalizationMode.UseNls ?
-                                        NlsLoadCalendarDataFromSystem(localeName, calendarId) :
-                                        IcuLoadCalendarDataFromSystem(localeName, calendarId);
+            bool loadedCalendarData = LoadCalendarDataFromSystemCore(localeName, calendarId);
 
             if (!loadedCalendarData)
             {

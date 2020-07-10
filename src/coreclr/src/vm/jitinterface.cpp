@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: JITinterface.CPP
 //
@@ -183,7 +182,7 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
 /*****************************************************************************/
 
 // Initialize from data we passed across to the JIT
-inline static void GetTypeContext(const CORINFO_SIG_INST *info, SigTypeContext *pTypeContext)
+void CEEInfo::GetTypeContext(const CORINFO_SIG_INST *info, SigTypeContext *pTypeContext)
 {
     LIMITED_METHOD_CONTRACT;
     SigTypeContext::InitTypeContext(
@@ -192,9 +191,13 @@ inline static void GetTypeContext(const CORINFO_SIG_INST *info, SigTypeContext *
         pTypeContext);
 }
 
-static MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context)
+MethodDesc* CEEInfo::GetMethodFromContext(CORINFO_CONTEXT_HANDLE context)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (context == METHOD_BEING_COMPILED_CONTEXT())
+        return m_pMethodBeingCompiled;
+
     if (((size_t) context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
     {
         return NULL;
@@ -205,24 +208,27 @@ static MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context)
     }
 }
 
-static TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context)
+TypeHandle CEEInfo::GetTypeFromContext(CORINFO_CONTEXT_HANDLE context)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (context == METHOD_BEING_COMPILED_CONTEXT())
+        return m_pMethodBeingCompiled->GetMethodTable();
+
     if (((size_t) context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
     {
         return TypeHandle((CORINFO_CLASS_HANDLE) ((size_t) context & ~CORINFO_CONTEXTFLAGS_MASK));
     }
     else
     {
-        MethodTable * pMT = GetMethodFromContext(context)->GetMethodTable();
-        return TypeHandle(pMT);
+        return GetMethod((CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK))->GetMethodTable();
     }
 }
 
 // Initialize from a context parameter passed to the JIT and back.  This is a parameter
 // that indicates which method is being jitted.
 
-inline static void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext *pTypeContext)
+void CEEInfo::GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext *pTypeContext)
 {
     CONTRACTL
     {
@@ -232,9 +238,10 @@ inline static void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext
         PRECONDITION(context != NULL);
     }
     CONTRACTL_END;
-    if (GetMethodFromContext(context))
+    MethodDesc* pMD = GetMethodFromContext(context);
+    if (pMD != NULL)
     {
-        SigTypeContext::InitTypeContext(GetMethodFromContext(context), pTypeContext);
+        SigTypeContext::InitTypeContext(pMD, pTypeContext);
     }
     else
     {
@@ -242,29 +249,14 @@ inline static void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext
     }
 }
 
-static BOOL ContextIsShared(CORINFO_CONTEXT_HANDLE context)
-{
-    LIMITED_METHOD_CONTRACT;
-    MethodDesc *pContextMD = GetMethodFromContext(context);
-    if (pContextMD != NULL)
-    {
-        return pContextMD->IsSharedByGenericInstantiations();
-    }
-    else
-    {
-        // Type handle contexts are non-shared and are used for inlining of
-        // non-generic methods in generic classes
-        return FALSE;
-    }
-}
-
 // Returns true if context is providing any generic variables
-static BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context)
+BOOL CEEInfo::ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context)
 {
     LIMITED_METHOD_CONTRACT;
-    if (GetMethodFromContext(context))
+    MethodDesc* pMD = GetMethodFromContext(context);
+    if (pMD != NULL)
     {
-        return GetMethodFromContext(context)->HasClassOrMethodInstantiation();
+        return pMD->HasClassOrMethodInstantiation();
     }
     else
     {
@@ -572,6 +564,11 @@ CEEInfo::ConvToJitSig(
         }
 
         sigRet->args = (CORINFO_ARG_LIST_HANDLE)sig.GetPtr();
+    }
+
+    if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
+    {
+        COMPlusThrowHR(E_NOTIMPL);
     }
 
     // Set computed flags
@@ -936,17 +933,20 @@ CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle
 
 CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE context)
 {
-    CHECK_MSG(scopeHnd != NULL, "Illegal null scope");
-    CHECK_MSG(((size_t) context & ~CORINFO_CONTEXTFLAGS_MASK) != NULL, "Illegal null context");
-    if (((size_t) context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+    if (context != METHOD_BEING_COMPILED_CONTEXT())
     {
-        TypeHandle handle((CORINFO_CLASS_HANDLE) ((size_t) context & ~CORINFO_CONTEXTFLAGS_MASK));
-        CHECK_MSG(handle.GetModule() == GetModule(scopeHnd), "Inconsistent scope and context");
-    }
-    else
-    {
-        MethodDesc* handle = (MethodDesc*) ((size_t) context & ~CORINFO_CONTEXTFLAGS_MASK);
-        CHECK_MSG(handle->GetModule() == GetModule(scopeHnd), "Inconsistent scope and context");
+        CHECK_MSG(scopeHnd != NULL, "Illegal null scope");
+        CHECK_MSG(((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK) != NULL, "Illegal null context");
+        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+        {
+            TypeHandle handle((CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK));
+            CHECK_MSG(handle.GetModule() == GetModule(scopeHnd), "Inconsistent scope and context");
+        }
+        else
+        {
+            MethodDesc* handle = (MethodDesc*)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
+            CHECK_MSG(handle->GetModule() == GetModule(scopeHnd), "Inconsistent scope and context");
+        }
     }
 
     CHECK_OK;
@@ -2653,9 +2653,7 @@ void CEEInfo::embedGenericHandle(
 
     _ASSERTE(pResult->compileTimeHandle);
 
-    if (fRuntimeLookup
-            // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-            && ContextIsShared(pResolvedToken->tokenContext))
+    if (fRuntimeLookup)
     {
         DictionaryEntryKind entryKind = EmptySlot;
         switch (pResult->handleType)
@@ -3051,19 +3049,19 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
 
-    MethodDesc *pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-    MethodTable *pContextMT = pContextMD->GetMethodTable();
-
-    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-    // to abort the inlining attempt anyway.
-    if (pContextMD != m_pMethodBeingCompiled)
+    // Runtime lookups in inlined contexts are not supported by the runtime for now
+    if (pResolvedToken->tokenContext != METHOD_BEING_COMPILED_CONTEXT())
     {
+        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
         return;
     }
 
+    MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    MethodTable* pContextMT = pContextMD->GetMethodTable();
+
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
-    // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-    _ASSERTE(pContextMD->IsSharedByGenericInstantiations());
+    if (!pContextMD->IsSharedByGenericInstantiations())
+        COMPlusThrow(kInvalidProgramException);
 
     BOOL fInstrument = FALSE;
 
@@ -3956,8 +3954,7 @@ DWORD CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 CorInfoInitClassResult CEEInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
     CONTRACTL {
         THROWS;
@@ -3980,7 +3977,7 @@ CorInfoInitClassResult CEEInfo::initClass(
     FieldDesc * pFD = (FieldDesc *)field;
     _ASSERTE(pFD == NULL || pFD->IsStatic());
 
-    MethodDesc * pMD = (MethodDesc *)method;
+    MethodDesc* pMD = (method != NULL) ? (MethodDesc*)method : m_pMethodBeingCompiled;
 
     TypeHandle typeToInitTH = (pFD != NULL) ? pFD->GetEnclosingMethodTable() : GetTypeFromContext(context);
 
@@ -4020,11 +4017,9 @@ CorInfoInitClassResult CEEInfo::initClass(
         goto exit;
     }
 
-    bool fIgnoreBeforeFieldInit = false;
-
     if (pFD == NULL)
     {
-        if (!fIgnoreBeforeFieldInit && pTypeToInitMT->GetClass()->IsBeforeFieldInit())
+        if (pTypeToInitMT->GetClass()->IsBeforeFieldInit())
         {
             // We can wait for field accesses to run .cctor
             result = CORINFO_INITCLASS_NOT_REQUIRED;
@@ -4059,6 +4054,15 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     if (pTypeToInitMT->IsSharedByGenericInstantiations())
     {
+        if ((pFD == NULL) && (method != NULL) && (context == METHOD_BEING_COMPILED_CONTEXT()))
+        {
+            _ASSERTE(pTypeToInitMT == methodBeingCompiled->GetMethodTable());
+            // If we're inling a call to a method in our own type, then we should already
+            // have triggered the .cctor when caller was itself called.
+            result = CORINFO_INITCLASS_NOT_REQUIRED;
+            goto exit;
+        }
+
         // Shared generic code has to use helper. Moreover, tell JIT not to inline since
         // inlining of generic dictionary lookups is not supported.
         result = CORINFO_INITCLASS_USE_HELPER | CORINFO_INITCLASS_DONT_INLINE;
@@ -4072,11 +4076,9 @@ CorInfoInitClassResult CEEInfo::initClass(
     if (pFD == NULL)
     {
         // Handled above
-        _ASSERTE(fIgnoreBeforeFieldInit || !pTypeToInitMT->GetClass()->IsBeforeFieldInit());
+        _ASSERTE(!pTypeToInitMT->GetClass()->IsBeforeFieldInit());
 
-        // Note that jit has both methods the same if asking whether to emit cctor
-        // for a given method's code (as opposed to inlining codegen).
-        if (context != MAKE_METHODCONTEXT(methodBeingCompiled) && pTypeToInitMT == methodBeingCompiled->GetMethodTable())
+        if (method != NULL && pTypeToInitMT == methodBeingCompiled->GetMethodTable())
         {
             // If we're inling a call to a method in our own type, then we should already
             // have triggered the .cctor when caller was itself called.
@@ -5255,6 +5257,19 @@ void CEEInfo::getCallInfo(
 
         pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
         pResult->exactContextNeedsRuntimeLookup = exactType.IsSharedByGenericInstantiations();
+
+        // Use main method as the context as long as the methods are called on the same type
+        if (pResult->exactContextNeedsRuntimeLookup &&
+            pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+            constrainedType.IsNull() &&
+            exactType == m_pMethodBeingCompiled->GetMethodTable() &&
+            ((pResolvedToken->cbTypeSpec  == 0) || IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec))))
+        {
+            // The typespec signature should be only missing for dynamic methods
+            _ASSERTE((pResolvedToken->cbTypeSpec != 0) || m_pMethodBeingCompiled->IsDynamicMethod());
+
+            pResult->contextHandle = METHOD_BEING_COMPILED_CONTEXT();
+        }
     }
 
     //
@@ -5373,9 +5388,7 @@ void CEEInfo::getCallInfo(
 
         bool unresolvedLdVirtFtn = (flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt;
 
-        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup)
-                // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                && ContextIsShared(pResolvedToken->tokenContext))
+        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup))
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
@@ -5459,10 +5472,7 @@ void CEEInfo::getCallInfo(
         // We can't make stub calls when we need exact information
         // for interface calls from shared code.
 
-        if (// If the token is not shared then we don't need a runtime lookup
-            pResult->exactContextNeedsRuntimeLookup
-            // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-            && ContextIsShared(pResolvedToken->tokenContext))
+        if (pResult->exactContextNeedsRuntimeLookup)
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
@@ -9813,7 +9823,15 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 
     JIT_TO_EE_TRANSITION();
 
-    if (method != 0)
+    if (method == NULL)
+    {
+        // check the call site signature
+        result = NDirect::MarshalingRequired(
+                    NULL,
+                    callSiteSig->pSig,
+                    GetModule(callSiteSig->scope));
+    }
+    else
     {
         MethodDesc* ftn = GetMethod(method);
         _ASSERTE(ftn->IsNDirect());
@@ -9842,14 +9860,6 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         // without NDirectImportPrecode.
         result = TRUE;
 #endif
-    }
-    else
-    {
-        // check the call site signature
-        result = NDirect::MarshalingRequired(
-                    GetMethod(method),
-                    callSiteSig->pSig,
-                    GetModule(callSiteSig->scope));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12248,15 +12258,19 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
+    static ConfigDWORD s_ForceInterpreter;
 
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
+    bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
 
     if (interpreterFallback == false)
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -12279,7 +12293,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -13747,13 +13763,30 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 
     case ENCODE_CHECK_TYPE_LAYOUT:
+    case ENCODE_VERIFY_TYPE_LAYOUT:
         {
             TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
             if (!TypeLayoutCheck(pMT, pBlob))
-                return FALSE;
+            {
+                if (kind == ENCODE_CHECK_TYPE_LAYOUT)
+                {
+                    return FALSE;
+                }
+                else
+                {
+                    // Verification failures are failfast events
+                    DefineFullyQualifiedNameForClassW();
+                    SString fatalErrorString;
+                    fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"), 
+                        GetFullyQualifiedNameForClassW(pMT));
+
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    return FALSE;
+                }
+            }
 
             result = 1;
         }
@@ -13776,6 +13809,49 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = 1;
         }
         break;
+
+    case ENCODE_VERIFY_FIELD_OFFSET:
+        {
+            DWORD baseOffset = CorSigUncompressData(pBlob);
+            DWORD fieldOffset = CorSigUncompressData(pBlob);
+            FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            pField->GetEnclosingMethodTable()->CheckRestore();
+            DWORD actualFieldOffset = pField->GetOffset();
+            if (!pField->IsStatic() && !pField->IsFieldOfValueType())
+            {
+                actualFieldOffset += sizeof(Object);
+            }
+
+            DWORD actualBaseOffset = 0;
+            if (!pField->IsStatic() && 
+                pField->GetEnclosingMethodTable()->GetParentMethodTable() != NULL &&
+                !pField->GetEnclosingMethodTable()->IsValueType())
+            {
+                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pField->GetEnclosingMethodTable());
+            }
+
+            if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
+            {
+                // Verification failures are failfast events
+                DefineFullyQualifiedNameForClassW();
+                SString ssFieldName(SString::Utf8, pField->GetName());
+
+                SString fatalErrorString;
+                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
+                    GetFullyQualifiedNameForClassW(pField->GetEnclosingMethodTable()),
+                    ssFieldName.GetUnicode(),
+                    fieldOffset,
+                    actualFieldOffset,
+                    baseOffset,
+                    actualBaseOffset);
+
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                return FALSE;
+            }
+            result = 1;
+        }
+        break;
+
 
     case ENCODE_CHECK_INSTRUCTION_SET_SUPPORT:
         {
@@ -13863,7 +13939,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
     pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
     pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
     pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
-    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrLoadTailCallDispatcherMD();
     return true;
 }
 

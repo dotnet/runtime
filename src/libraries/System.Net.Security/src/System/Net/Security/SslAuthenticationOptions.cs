@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -12,6 +12,8 @@ namespace System.Net.Security
     {
         internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
+            Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
+
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
@@ -21,7 +23,7 @@ namespace System.Net.Security
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
-            TargetHost = sslClientAuthenticationOptions.TargetHost;
+            TargetHost = sslClientAuthenticationOptions.TargetHost!;
 
             // Client specific options.
             CertSelectionDelegate = localCallback;
@@ -40,16 +42,42 @@ namespace System.Net.Security
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             IsServer = true;
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, $"Server RemoteCertRequired: {RemoteCertRequired}.");
             }
             TargetHost = string.Empty;
 
             // Server specific options.
-            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
-            ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
+            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+
+            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            {
+                CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+            }
+            else if (sslServerAuthenticationOptions.ServerCertificate != null)
+            {
+                X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
+
+                if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
+                {
+                    // given cert is X509Certificate2 with key. We can use it directly.
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
+                }
+                else
+                {
+                    // This is legacy fix-up. If the Certificate did not have key, we will search stores and we
+                    // will try to find one with matching hash.
+                    certificateWithKey = SecureChannel.FindCertificateWithPrivateKey(this, true, sslServerAuthenticationOptions.ServerCertificate);
+                    if (certificateWithKey == null)
+                    {
+                        throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
+                    }
+
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
+                }
+            }
         }
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
@@ -68,11 +96,11 @@ namespace System.Net.Security
         }
 
         internal bool AllowRenegotiation { get; set; }
-        internal string? TargetHost { get; set; }
+        internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; }
         internal bool IsServer { get; set; }
-        internal X509Certificate? ServerCertificate { get; set; }
+        internal SslStreamCertificateContext? CertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }

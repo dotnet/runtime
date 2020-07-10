@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -431,6 +430,19 @@ namespace System.Text.Json
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
+        }
+
+        internal void WritePropertyName(int value)
+            => WritePropertyName((long)value);
+
+        internal void WritePropertyName(long value)
+        {
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatInt64Length];
+
+            bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

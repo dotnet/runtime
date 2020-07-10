@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -424,15 +423,15 @@ namespace System.Data.OleDb
 
         internal IntPtr iOrdinal = (IntPtr)0;
 
-        internal int dwFlags = 0;
+        internal int dwFlags;
 
         internal IntPtr ulColumnSize = (IntPtr)0;
 
-        internal short wType = 0;
+        internal short wType;
 
-        internal byte bPrecision = 0;
+        internal byte bPrecision;
 
-        internal byte bScale = 0;
+        internal byte bScale;
 
         internal tagDBIDX columnid;
 

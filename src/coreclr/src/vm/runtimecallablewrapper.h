@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -79,182 +78,6 @@ class Thread;
 
 enum {INTERFACE_ENTRY_CACHE_SIZE = 8};
 
-struct RCWAuxiliaryData;
-typedef DPTR(RCWAuxiliaryData) PTR_RCWAuxiliaryData;
-
-#define VARIANCE_STUB_TARGET_USE_STRING        ((OBJECTHANDLE)(INT_PTR)0x1)
-#define VARIANCE_STUB_TARGET_USE_T             ((OBJECTHANDLE)(INT_PTR)0x2)
-#define VARIANCE_STUB_TARGET_IS_HANDLE(handle) (((INT_PTR)(handle) & ~0x3) != 0)
-
-// Additional RCW data used for generic interop and auxiliary interface pointer cache.
-// This structure is lazily allocated and associated with the RCW via the m_pAuxiliaryData
-// field. It's needed only if the RCW supports IEnumerable<T> or another interface with
-// variance, or if a QI result could not be saved in the inline interface pointer cache
-// (code:RCW.m_aInterfaceEntries).
-struct RCWAuxiliaryData
-{
-    RCWAuxiliaryData()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_pGetEnumeratorMethod = NULL;
-        m_prVariantInterfaces = NULL;
-        m_VarianceCacheCrst.Init(CrstLeafLock);
-        m_pInterfaceCache = NULL;
-        m_ohObjectVariantCallTarget_IEnumerable = NULL;
-        m_ohObjectVariantCallTarget_IReadOnlyList = NULL;
-        m_AuxFlags.m_dwFlags = 0;
-    }
-
-    ~RCWAuxiliaryData();
-
-    struct InterfaceEntryEx;
-    typedef DPTR(InterfaceEntryEx) PTR_InterfaceEntryEx;
-
-    // Augments code:InterfaceEntry with a next pointer and context entry field.
-    struct InterfaceEntryEx
-    {
-        PTR_InterfaceEntryEx m_pNext;
-
-        InterfaceEntry       m_BaseEntry;
-        PTR_CtxEntry         m_pCtxEntry;
-
-        ~InterfaceEntryEx()
-        {
-            WRAPPER_NO_CONTRACT;
-            if (m_pCtxEntry != NULL)
-            {
-                m_pCtxEntry->Release();
-            }
-        }
-    };
-
-    // Iterator for cached interface entries.
-    class InterfaceEntryIterator
-    {
-        PTR_InterfaceEntryEx m_pCurrent;
-        bool m_fFirst;
-
-    public:
-        inline InterfaceEntryIterator(PTR_RCWAuxiliaryData pAuxiliaryData)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_pCurrent = (pAuxiliaryData == NULL ? NULL : pAuxiliaryData->m_pInterfaceCache);
-            m_fFirst = true;
-        }
-
-        // Move to the next item returning TRUE if an item exists or FALSE if we've run off the end
-        inline bool Next()
-        {
-            LIMITED_METHOD_CONTRACT;
-            if (m_fFirst)
-            {
-                m_fFirst = false;
-            }
-            else
-            {
-                m_pCurrent = m_pCurrent->m_pNext;
-            }
-            return (m_pCurrent != NULL);
-        }
-
-        inline InterfaceEntry *GetEntry()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return &m_pCurrent->m_BaseEntry;
-        }
-
-        inline LPVOID GetCtxCookie()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_pCurrent->m_pCtxEntry == NULL ? NULL : m_pCurrent->m_pCtxEntry->GetCtxCookie());
-        }
-
-        inline CtxEntry *GetCtxEntry()
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            m_pCurrent->m_pCtxEntry->AddRef();
-            return m_pCurrent->m_pCtxEntry;
-        }
-
-        inline CtxEntry *GetCtxEntryNoAddRef()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_pCurrent->m_pCtxEntry;
-        }
-
-        inline void ResetCtxEntry()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_pCurrent->m_pCtxEntry = NULL;
-        }
-
-#ifndef DACCESS_COMPILE
-        inline void SetCtxCookie(LPVOID pCtxCookie)
-        {
-            CONTRACTL
-            {
-                THROWS;
-                GC_TRIGGERS;
-                MODE_ANY;
-            }
-            CONTRACTL_END;
-
-            CtxEntry *pCtxEntry = NULL;
-            if (pCtxCookie != NULL)
-            {
-                pCtxEntry = CtxEntryCache::GetCtxEntryCache()->FindCtxEntry(pCtxCookie, GetThread());
-            }
-            m_pCurrent->m_pCtxEntry = pCtxEntry;
-        }
-#endif // !DACCESS_COMPILE
-    };
-
-    void CacheVariantInterface(MethodTable *pMT);
-
-    void CacheInterfacePointer(MethodTable *pMT, IUnknown *pUnk, LPVOID pCtxCookie);
-    IUnknown *FindInterfacePointer(MethodTable *pMT, LPVOID pCtxCookie);
-
-    inline InterfaceEntryIterator IterateInterfacePointers()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return InterfaceEntryIterator(dac_cast<PTR_RCWAuxiliaryData>(this));
-    }
-
-    // GetEnumerator method of the first IEnumerable<T> interface we successfully QI'ed for
-    PTR_MethodDesc       m_pGetEnumeratorMethod;
-
-    // Interfaces with variance that we successfully QI'ed for
-    ArrayList           *m_prVariantInterfaces;
-
-    // Lock to protect concurrent access to m_prVariantInterfaces
-    CrstExplicitInit     m_VarianceCacheCrst;
-
-    // Linked list of cached interface pointers
-    PTR_InterfaceEntryEx m_pInterfaceCache;
-
-    // Cached object handles wrapping delegate objects that point to the right GetEnumerator/Indexer_Get
-    // stubs that should be used when calling these methods via IEnumerable<object>/IReadOnlyList<object>.
-    // Can also contain the special VARIANCE_STUB_TARGET_USE_STRING and VARIANCE_STUB_TARGET_USE_T values.
-    OBJECTHANDLE         m_ohObjectVariantCallTarget_IEnumerable;    // GetEnumerator
-    OBJECTHANDLE         m_ohObjectVariantCallTarget_IReadOnlyList;  // Indexer_Get
-
-    // Rarely used RCW flags (keep the commonly used ones in code:RCW::RCWFlags)
-    union RCWAuxFlags
-    {
-        DWORD       m_dwFlags;
-
-        struct
-        {
-            // InterfaceVarianceBehavior for rarely used instantiations that could be supported via string:
-            DWORD   m_InterfaceVarianceBehavior_OfIEnumerable:4;
-            DWORD   m_InterfaceVarianceBehavior_OfIEnumerableOfChar:4;
-        };
-    }
-    m_AuxFlags;
-};
-
 typedef DPTR(RCW) PTR_RCW;
 
 //----------------------------------------------------------------------------
@@ -285,11 +108,9 @@ struct RCW
     {
         PTR_RCW   m_pRCW;
         int       m_InlineCacheIndex;
-        RCWAuxiliaryData::InterfaceEntryIterator m_AuxIterator;
 
     public:
         inline CachedInterfaceEntryIterator(PTR_RCW pRCW)
-            : m_AuxIterator(pRCW->m_pAuxiliaryData)
         {
             LIMITED_METHOD_CONTRACT;
             m_pRCW = pRCW;
@@ -301,15 +122,14 @@ struct RCW
         {
             LIMITED_METHOD_CONTRACT;
 
-            if (m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
-            {
-                // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
-                if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
-                {
-                    return TRUE;
-                }
-            }
-            return m_AuxIterator.Next();
+            if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
+                return FALSE;
+    
+            // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
+            if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
+                return TRUE;
+
+            return FALSE;
         }
 
         inline InterfaceEntry *GetEntry()
@@ -317,11 +137,10 @@ struct RCW
             LIMITED_METHOD_CONTRACT;
 
             _ASSERTE_MSG(m_InlineCacheIndex >= 0, "Iterator starts before the first element, you need to call Next");
-            if (m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
-            {
-                return &m_pRCW->m_aInterfaceEntries[m_InlineCacheIndex];
-            }
-            return m_AuxIterator.GetEntry();
+            if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
+                return NULL;
+
+            return &m_pRCW->m_aInterfaceEntries[m_InlineCacheIndex];
         }
 
         inline LPVOID GetCtxCookie()
@@ -329,11 +148,10 @@ struct RCW
             LIMITED_METHOD_CONTRACT;
 
             _ASSERTE_MSG(m_InlineCacheIndex >= 0, "Iterator starts before the first element, you need to call Next");
-            if (m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
-            {
-                return m_pRCW->GetWrapperCtxCookie();
-            }
-            return m_AuxIterator.GetCtxCookie();
+            if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
+                return NULL;
+
+            return m_pRCW->GetWrapperCtxCookie();
         }
     };
 
@@ -390,11 +208,7 @@ struct RCW
         GCPressureSize_ProcessLocal = 1,
         GCPressureSize_MachineLocal = 2,
         GCPressureSize_Remote       = 3,
-        GCPressureSize_WinRT_Base   = 4,
-        GCPressureSize_WinRT_Low    = 5,
-        GCPressureSize_WinRT_Medium = 6,
-        GCPressureSize_WinRT_High   = 7,
-        GCPressureSize_COUNT        = 8
+        GCPressureSize_COUNT        = 4
     };
 
     //---------------------------------------------------
@@ -655,11 +469,6 @@ struct RCW
     }
 
     //---------------------------------------------------------------------
-    // Returns RCWAuxiliaryData associated with this RCW. Allocates the
-    // structure if it does not exist already.
-    PTR_RCWAuxiliaryData GetOrCreateAuxiliaryData();
-
-    //---------------------------------------------------------------------
     // Returns true iff pItfMT is a "standard managed" interface, such as
     // IEnumerator, and the RCW supports the interface through classic COM
     // interop mechanisms.
@@ -722,10 +531,6 @@ struct RCW
     }
 
 private:
-    //---------------------------------------------------------------------
-    // Callback called to release the interfaces in the auxiliary cache.
-    static HRESULT __stdcall ReleaseAuxInterfacesCallBack(LPVOID pData);
-
     //---------------------------------------------------------------------
     // Callback called to release the IUnkEntry and the InterfaceEntries,
     static HRESULT __stdcall ReleaseAllInterfacesCallBack(LPVOID pData);
@@ -792,9 +597,6 @@ public:
 
     // Tracks concurrent access to this RCW to prevent using RCW instances that have already been released
     LONG                m_cbUseCount;
-
-    // additional RCW data used for generic interop and advanced interface pointer caching (NULL unless needed)
-    PTR_RCWAuxiliaryData m_pAuxiliaryData;
 
     PTR_RCW             m_pNextRCW;
 
@@ -993,28 +795,6 @@ private:
 };
 
 //--------------------------------------------------------------
-// Special ComClassFactory for AppX scenarios only
-// Call CoCreateInstanceFromApp to ensure compatibility
-class AppXComClassFactory : public ComClassFactory
-{
-protected :
-    friend ComClassFactoryCreator;
-
-    AppXComClassFactory(REFCLSID rclsid)
-        :ComClassFactory(rclsid)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-protected :
-#ifndef CROSSGEN_COMPILE
-    //-------------------------------------------------------------
-    // Create instance using CoCreateInstanceFromApp
-    virtual IUnknown *CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment);
-#endif
-};
-
-//--------------------------------------------------------------
 // Creates the right ComClassFactory for you
 class ComClassFactoryCreator
 {
@@ -1029,12 +809,7 @@ public :
         }
         CONTRACT_END;
 
-#ifdef FEATURE_APPX
-        if (AppX::IsAppXProcess())
-            RETURN new AppXComClassFactory(rclsid);
-        else
-#endif
-            RETURN new ComClassFactory(rclsid);
+        RETURN new ComClassFactory(rclsid);
     }
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -1594,9 +1369,8 @@ class RCWCleanupList
 
 public:
     RCWCleanupList()
-        : m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE),
-          m_pFirstBucket(NULL)
+        : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
     {
         WRAPPER_NO_CONTRACT;
     }

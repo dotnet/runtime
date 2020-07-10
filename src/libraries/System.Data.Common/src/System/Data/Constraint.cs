@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Globalization;
@@ -15,10 +14,10 @@ namespace System.Data
     public abstract class Constraint
     {
         private string _schemaName = string.Empty;
-        private bool _inCollection = false;
-        private DataSet _dataSet = null;
+        private bool _inCollection;
+        private DataSet _dataSet;
         internal string _name = string.Empty;
-        internal PropertyCollection _extendedProperties = null;
+        internal PropertyCollection _extendedProperties;
 
         internal Constraint() { }
 

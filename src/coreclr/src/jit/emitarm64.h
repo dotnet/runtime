@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if defined(TARGET_ARM64)
 
@@ -88,6 +87,9 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 bool emitInsIsVectorRightShift(instruction ins);
+bool emitInsIsVectorLong(instruction ins);
+bool emitInsIsVectorNarrow(instruction ins);
+bool emitInsIsVectorWide(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
@@ -112,6 +114,10 @@ static UINT64 NOT_helper(UINT64 value, unsigned width);
 
 // A helper method to perform a bit Replicate operation
 static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
+
+// Method to do check if mov is redundant with respect to the last instruction.
+// If yes, the caller of this method can choose to omit current mov instruction.
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 /************************************************************************
 *
@@ -310,13 +316,13 @@ static code_t insEncodeElemsize(emitAttr size);
 // Returns the encoding to select the 4/8 byte elemsize for an Arm64 float vector instruction
 static code_t insEncodeFloatElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 float vector by elem instruction
+// Returns the encoding to select the index for an Arm64 float vector by element instruction
 static code_t insEncodeFloatIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the vector elemsize for an Arm64 ld/st# vector instruction
 static code_t insEncodeVLSElemsize(emitAttr size);
 
-// Returns the encoding to select the index for an Arm64 ld/st# vector by elem instruction
+// Returns the encoding to select the index for an Arm64 ld/st# vector by element instruction
 static code_t insEncodeVLSIndex(emitAttr elemsize, ssize_t index);
 
 // Returns the encoding to select the 'conversion' operation for a type 'fmt' Arm64 instruction
@@ -436,8 +442,11 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
-//  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
-static insOpts optWidenElemsize(insOpts arrangement);
+//  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
+static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given 'datasize' returns the one that is double that of the 'datasize'.
+static emitAttr widenDatasize(emitAttr datasize);
 
 //  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
 //  arrangement
@@ -810,7 +819,10 @@ void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int of
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
+void emitIns_R_AI(instruction ins,
+                  emitAttr    attr,
+                  regNumber   ireg,
+                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(unsigned gtFlags = 0));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 

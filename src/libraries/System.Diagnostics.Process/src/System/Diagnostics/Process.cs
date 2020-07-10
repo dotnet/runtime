@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.ObjectModel;
@@ -81,7 +80,7 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -1070,7 +1069,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetCurrentProcess()
         {
-            return new Process(".", false, GetCurrentProcessId(), null);
+            return new Process(".", false, Environment.ProcessId, null);
         }
 
         /// <devdoc>
@@ -1606,17 +1605,6 @@ namespace System.Diagnostics
                 else
                 {
                     errorDataReceived(this, e);
-                }
-            }
-        }
-
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
-                {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
                 }
             }
         }

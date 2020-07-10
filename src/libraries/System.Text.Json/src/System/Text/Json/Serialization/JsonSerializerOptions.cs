@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -21,6 +20,10 @@ namespace System.Text.Json
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
 
+        // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _classes.
+        // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
+        private JsonClassInfo? _lastClass { get; set; }
+
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
 
         private MemberAccessor? _memberAccessorStrategy;
@@ -28,7 +31,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
-        private JavaScriptEncoder? _encoder = null;
+        private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 
         private int _defaultBufferSize = BufferSizeDefault;
@@ -445,6 +448,22 @@ namespace System.Text.Json
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Return the ClassInfo for root API calls.
+        /// This has a LRU cache that is intended only for public API calls that specify the root type.
+        /// </summary>
+        internal JsonClassInfo GetOrAddClassForRootType(Type type)
+        {
+            JsonClassInfo? jsonClassInfo = _lastClass;
+            if (jsonClassInfo?.Type != type)
+            {
+                jsonClassInfo = GetOrAddClass(type);
+                _lastClass = jsonClassInfo;
+            }
+
+            return jsonClassInfo;
         }
 
         internal bool TypeIsCached(Type type)

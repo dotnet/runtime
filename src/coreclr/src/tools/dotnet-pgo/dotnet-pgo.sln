@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-pgo", "dotnet-pgo.csproj", "{7DA4CC22-F01D-4505-845F-57C06E5C3F9F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Reflection.ReadyToRun", "..\crossgen2\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj", "{ED3FE303-74EB-43D1-BEA1-14484A14B22E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Reflection.ReadyToRun", "..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj", "{ED3FE303-74EB-43D1-BEA1-14484A14B22E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem.ReadyToRun", "..\crossgen2\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj", "{D6BA6C4F-F7DF-4414-94BE-8E124CDDDEE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem.ReadyToRun", "..\aot\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj", "{D6BA6C4F-F7DF-4414-94BE-8E124CDDDEE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_evp.h"
 
@@ -55,6 +54,43 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
     }
 
     return ret;
+}
+
+static EVP_MD_CTX* CryptoNative_EvpDup(const EVP_MD_CTX* ctx)
+{
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    EVP_MD_CTX* dup = EVP_MD_CTX_new();
+
+    if (dup == NULL)
+    {
+        return NULL;
+    }
+
+    if (!EVP_MD_CTX_copy_ex(dup, ctx))
+    {
+        EVP_MD_CTX_free(dup);
+        return NULL;
+    }
+
+    return dup;
+}
+
+int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
+{
+    EVP_MD_CTX* dup = CryptoNative_EvpDup(ctx);
+
+    if (dup != NULL)
+    {
+        int ret = CryptoNative_EvpDigestFinalEx(dup, md, s);
+        EVP_MD_CTX_free(dup);
+        return ret;
+    }
+
+    return 0;
 }
 
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: COMtoCLRCall.h
 //
@@ -86,9 +85,6 @@ public:
     // that owns the stub; pFD is the target field
     static MethodDesc* GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags);
-
-    static MethodDesc *GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD);
-    static MethodDesc *GetStaticForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD);
 
 private:
     ComCall() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.CodeDom;
@@ -22,7 +21,7 @@ namespace Microsoft.CSharp
         private CodeGeneratorOptions _options;
         private CodeTypeDeclaration _currentClass;
         private CodeTypeMember _currentMember;
-        private bool _inNestedBinary = false;
+        private bool _inNestedBinary;
         private readonly IDictionary<string, string> _provOptions;
 
         private const int ParameterMultilineThreshold = 15;
@@ -61,7 +60,7 @@ namespace Microsoft.CSharp
             _provOptions = providerOptions;
         }
 
-        private bool _generatingForLoop = false;
+        private bool _generatingForLoop;
 
         private string FileExtension => ".cs";
 

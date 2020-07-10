@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -103,6 +102,7 @@ internal static partial class Interop
 
         // Custom Error codes to track errors beyond kernel interface.
         EHOSTNOTFOUND    = 0x20001,           // Name lookup failed
+        ESOCKETERROR     = 0x20002,           // Unspecified socket error
 
         // POSIX permits these to have the same value and we make them always equal so
         // that we do not introduce a dependency on distinguishing between them that

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Xunit;
@@ -177,7 +176,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TryWrite_DropNewest_WrappedAroundInternalQueue()
         {
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(3) { FullMode = BoundedChannelFullMode.DropNewest });
@@ -249,7 +248,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelPendingWrite_Reading_DataTransferredFromCorrectWriter()
         {
             var c = Channel.CreateBounded<int>(1);
@@ -288,7 +287,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
@@ -314,7 +313,7 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
@@ -371,7 +370,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal((NumItems * (NumItems + 1L)) / 2, readTotal);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WaitToWriteAsync_AfterFullThenRead_ReturnsTrue()
         {
             var c = Channel.CreateBounded<int>(1);
@@ -389,7 +388,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(await write2);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(ThreeBools))]
         public void AllowSynchronousContinuations_Reading_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations, bool cancelable, bool waitToReadAsync)
         {
@@ -409,7 +408,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
@@ -427,7 +426,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TryWrite_NoBlockedReaders_WaitingReader_WaiterNotified()
         {
             Channel<int> c = CreateChannel();

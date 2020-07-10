@@ -1,0 +1,86 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+
+
+
+
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+.assembly funcptr_gc
+{
+
+
+  //                                                                                bool) = ( 01 00 00 01 00 00 ) 
+  
+  
+}
+.module test.exe
+// MVID: {CF23CD68-3FF2-4D1F-B49B-866DA656D91D}
+
+
+.file alignment 512
+
+
+
+
+// =============== CLASS MEMBERS DECLARATION ===================
+//   note that class flags, 'extends' and 'implements' clauses
+//          are provided here for information only
+
+.class private explicit ansi sealed beforefieldinit AA
+       extends [mscorlib]System.Object
+{
+  .field [0] public unsigned int8 tmp1
+  .field [2] public unsigned int8 tmp2
+  .field [3] public unsigned int8 tmp3
+  .field [8] private native int func_ptr
+  .field [16] public unsigned int8 tmp4
+
+  .method private hidebysig static int32 ret_code() cil managed
+  {
+    // Code size       7 (0x7)
+    .maxstack  1
+    ldc.i4.s   100
+    ret
+  } // end of method AA::ret_code
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       7 (0x7)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  ret
+  } // end of method TestApp::.ctor
+  
+  .method private hidebysig static int32 
+          Main() cil managed
+  {
+    .entrypoint
+    // Code size       31 (0x1f)
+    .maxstack  3
+    .locals init (class AA V_0, int32 V_1)
+    newobj    instance void AA::.ctor()
+    stloc.0
+    ldloc.0
+    ldftn      int32 AA::ret_code()
+    stfld      native int AA::func_ptr
+    ldloc.0
+    ldfld      native int AA::func_ptr
+    calli       int32 *()
+    ret
+  } // end of method AA::Main
+
+} // end of class AA
+
+
+// =============================================================
+
+//*********** DISASSEMBLY COMPLETE ***********************
+// WARNING: Created Win32 resource file funcptr_val.res

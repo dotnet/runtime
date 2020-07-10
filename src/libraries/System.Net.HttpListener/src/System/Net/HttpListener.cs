@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Security.Authentication.ExtendedProtection;
@@ -30,7 +29,7 @@ namespace System.Net
 
         public HttpListener()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             _state = State.Stopped;
             _internalLock = new object();
@@ -43,7 +42,7 @@ namespace System.Net
             // config element
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
@@ -106,16 +105,16 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 CheckDisposed();
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 return _prefixes;
             }
         }
 
         internal void AddPrefix(string uriPrefix)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
             string registeredPrefix = null;
             try
             {
@@ -180,7 +179,7 @@ namespace System.Net
                     registeredPrefixBuilder[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)registeredPrefixBuilder[i]];
                 }
                 registeredPrefix = registeredPrefixBuilder.ToString();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
                 if (_state == State.Started)
                 {
                     AddPrefixCore(registeredPrefix);
@@ -190,12 +189,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
             }
         }
 
@@ -203,11 +202,11 @@ namespace System.Net
 
         internal bool RemovePrefix(string uriPrefix)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix: {uriPrefix}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"uriPrefix: {uriPrefix}");
             try
             {
                 CheckDisposed();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
                 if (uriPrefix == null)
                 {
                     throw new ArgumentNullException(nameof(uriPrefix));
@@ -228,19 +227,19 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"uriPrefix: {uriPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"uriPrefix: {uriPrefix}");
             }
             return true;
         }
 
         internal void RemoveAll(bool clear)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 CheckDisposed();
@@ -264,7 +263,7 @@ namespace System.Net
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -300,20 +299,20 @@ namespace System.Net
 
         public void Close()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, nameof(Close));
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, nameof(Close));
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info("HttpListenerRequest::Close()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("HttpListenerRequest::Close()");
                 ((IDisposable)this).Dispose();
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Close {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Close {exception}");
                 throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -97,14 +96,14 @@ namespace System.Data
         private readonly char _exponentU = 'E';
 
         internal char[] _text;
-        internal int _pos = 0;
-        internal int _start = 0;
+        internal int _pos;
+        internal int _start;
         internal Tokens _token;
         internal int _op = Operators.Noop;
 
         internal OperatorInfo[] _ops = new OperatorInfo[MaxPredicates];
-        internal int _topOperator = 0;
-        internal int _topNode = 0;
+        internal int _topOperator;
+        internal int _topNode;
 
         private readonly DataTable _table;
 
@@ -113,7 +112,7 @@ namespace System.Data
 
         internal int _prevOperand;
 
-        internal ExpressionNode _expression = null;
+        internal ExpressionNode _expression;
 
         internal ExpressionParser(DataTable table)
         {
@@ -1396,9 +1395,9 @@ namespace System.Data
     /// </summary>
     internal sealed class OperatorInfo
     {
-        internal Nodes _type = 0;
-        internal int _op = 0;
-        internal int _priority = 0;
+        internal Nodes _type;
+        internal int _op;
+        internal int _priority;
 
         internal OperatorInfo(Nodes type, int op, int pri)
         {

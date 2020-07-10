@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
@@ -97,7 +96,7 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(securityContext);
 
             X509Certificate2? result = null;
             SafeFreeCertContext? remoteContext = null;
@@ -122,7 +121,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Log.RemoteCertificate(result);
                 NetEventSource.Exit(null, result, securityContext);
@@ -158,7 +157,7 @@ namespace System.Net
                                 byte[] x = new Span<byte>((byte*)elements[i].pCertContext, checked((int)elements[i].cbSize)).ToArray();
                                 var x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(securityContext, $"IssuerListEx[{issuers[i]}]");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(securityContext, $"IssuerListEx[{issuers[i]}]");
                             }
                         }
                     }
@@ -197,7 +196,7 @@ namespace System.Net
 
         private static unsafe uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(chainContext, cpp.dwFlags);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(chainContext, cpp.dwFlags);
 
             Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
             status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
@@ -209,7 +208,7 @@ namespace System.Net
                     ref cpp,
                     ref status);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
             return status.dwError;
         }
     }

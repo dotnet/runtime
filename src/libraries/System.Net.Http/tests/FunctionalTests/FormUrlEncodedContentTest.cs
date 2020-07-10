@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -28,11 +27,13 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ArgumentNullException>(() => new FormUrlEncodedContent(null));
         }
 
-        [Fact]
-        public async Task Ctor_EmptySource_Succeed()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_EmptySource_Succeed(bool readStreamAsync)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>());
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(0, stream.Length);
         }
 
@@ -47,62 +48,72 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal($"{Key}={Uri.EscapeDataString(value)}", await content.ReadAsStringAsync());
         }
 
-        [Fact]
-        public async Task Ctor_OneEntry_SeparatedByEquals()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_OneEntry_SeparatedByEquals(bool readStreamAsync)
         {
             var data = new Dictionary<string, string>();
             data.Add("key", "value");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(9, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key=value", result);
         }
 
-        [Fact]
-        public async Task Ctor_OneUnicodeEntry_Encoded()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_OneUnicodeEntry_Encoded(bool readStreamAsync)
         {
             var data = new Dictionary<string, string>();
             data.Add("key", "value\u30AF");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(18, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key=value%E3%82%AF", result);
         }
 
-        [Fact]
-        public async Task Ctor_TwoEntries_SeparatedByAnd()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_TwoEntries_SeparatedByAnd(bool readStreamAsync)
         {
             var data = new Dictionary<string, string>();
             data.Add("key1", "value1");
             data.Add("key2", "value2");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(23, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key1=value1&key2=value2", result);
         }
 
-        [Fact]
-        public async Task Ctor_WithSpaces_EncodedAsPlus()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_WithSpaces_EncodedAsPlus(bool readStreamAsync)
         {
             var data = new Dictionary<string, string>();
             data.Add("key 1", "val%20ue 1"); // %20 is a percent-encoded space, make sure it survives.
             data.Add("key 2", "val%ue 2");
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(35, stream.Length);
             string result = new StreamReader(stream).ReadToEnd();
             Assert.Equal("key+1=val%2520ue+1&key+2=val%25ue+2", result);
         }
 
-        [Fact]
-        public async Task Ctor_AllAsciiChars_EncodingMatchesHttpUtilty()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Ctor_AllAsciiChars_EncodingMatchesHttpUtilty(bool readStreamAsync)
         {
             var builder = new StringBuilder();
             for (int ch = 0; ch < 128; ch++)
@@ -115,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
             data.Add("key", testString);
             var content = new FormUrlEncodedContent(data);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             string result = new StreamReader(stream).ReadToEnd().ToLowerInvariant();
 
             // Result of UrlEncode invoked in .NET Framework 4.6
