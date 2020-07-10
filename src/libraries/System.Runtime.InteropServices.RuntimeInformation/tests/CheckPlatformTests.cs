@@ -84,6 +84,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         public void CheckAndroid()
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android")));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("android")));
 
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));

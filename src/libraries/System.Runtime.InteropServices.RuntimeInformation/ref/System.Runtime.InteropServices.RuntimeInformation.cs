@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.OSPlatform iOS { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform macOS { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] // https://github.com/dotnet/runtime/issues/33331#issuecomment-650326500
         public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform tvOS { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform watchOS { get { throw null; } }
