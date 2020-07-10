@@ -109,16 +109,20 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_EmptyValue, nameof(platformName));
             }
 
-            int i = platformName.Length - 1;
-            while (i >= 0 && (char.IsDigit(platformName[i]) || platformName[i] == '.'))
+            // iterate from the begining, as digits in the middle of the names are not supported by design
+            for (int i = 0; i < platformName.Length; i++)
             {
-                i--;
-            }
-
-            i++;
-            if (i < platformName.Length - 1 && Version.TryParse(platformName.AsSpan(i), out Version? version))
-            {
-                return (OSPlatform.Create(platformName.Substring(0, i)), version);
+                if (char.IsDigit(platformName[i]))
+                {
+                    if (i > 0 && Version.TryParse(platformName.AsSpan(i), out Version? version))
+                    {
+                        return (OSPlatform.Create(platformName.Substring(0, i)), version);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
 
             throw new ArgumentException(SR.Format(SR.Argument_InvalidPlatfromName, platformName), nameof(platformName));
