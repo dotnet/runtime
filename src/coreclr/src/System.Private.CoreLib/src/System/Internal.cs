@@ -13,6 +13,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Resources;
 
 [assembly: CLSCompliant(true)]
 [assembly: ComVisible(false)]
@@ -21,3 +22,5 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyMetadata("Serviceable", "True")]
 [assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
+
+[assembly: NeutralResourcesLanguage("en-US")]
