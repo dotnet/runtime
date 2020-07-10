@@ -3835,13 +3835,13 @@ GenTree* Lowering::CreateReturnTrapSeq()
     GenTree* testTree;
     if (addrOfCaptureThreadGlobal != nullptr)
     {
-        testTree = Ind(AddrGen(addrOfCaptureThreadGlobal));
+        testTree = AddrGen(addrOfCaptureThreadGlobal);
     }
     else
     {
-        testTree = Ind(Ind(AddrGen(pAddrOfCaptureThreadGlobal)));
+        testTree = Ind(AddrGen(pAddrOfCaptureThreadGlobal));
     }
-    return comp->gtNewOperNode(GT_RETURNTRAP, TYP_INT, testTree);
+    return comp->gtNewOperNode(GT_RETURNTRAP, TYP_INT, Ind(testTree, TYP_INT));
 }
 
 //------------------------------------------------------------------------
