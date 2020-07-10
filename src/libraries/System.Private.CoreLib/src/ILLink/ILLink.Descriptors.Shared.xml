@@ -38,7 +38,11 @@
     <type fullname="System.Runtime.CompilerServices.AsyncVoidMethodBuilder">
       <property name="ObjectIdForDebugger" />
     </type>
-    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder*">
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+      <method name="SetNotificationForWaitCompletion" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1">
       <property name="ObjectIdForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
