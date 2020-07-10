@@ -51,7 +51,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64)
     vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
 )
-endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
