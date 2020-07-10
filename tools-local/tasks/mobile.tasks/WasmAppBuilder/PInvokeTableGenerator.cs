@@ -71,7 +71,8 @@ public class PInvokeTableGenerator : Task
             {
                 try
                 {
-                    if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute")
+                    if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
+                        cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
                         callbacks.Add(new PInvokeCallback(method));
                 }
                 catch
