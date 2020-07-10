@@ -65,7 +65,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, nameof(value));
                 CheckDisposedOrStarted();
 
-                if (NetEventSource.IsEnabled) NetEventSource.UriBaseAddress(this, value);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.UriBaseAddress(this, value);
 
                 _baseAddress = value;
             }
@@ -563,7 +563,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
             catch (Exception e)
@@ -595,20 +595,20 @@ namespace System.Net.Http
 
         private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
             // If the cancellation token was canceled, we consider the exception to be caused by the
             // cancellation (e.g. WebException when reading from canceled response stream).
             if (cts.IsCancellationRequested && e is HttpRequestException)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Canceled");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Canceled");
                 throw new OperationCanceledException(cts.Token);
             }
         }
 
         private void HandleSendTimeout(OperationCanceledException e)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Error(this, e);
                 NetEventSource.Error(this, "Canceled due to timeout");
@@ -645,7 +645,7 @@ namespace System.Net.Http
         public void CancelPendingRequests()
         {
             CheckDisposed();
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             // With every request we link this cancellation token source.
             CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts,
@@ -654,7 +654,7 @@ namespace System.Net.Http
             currentCts.Cancel();
             currentCts.Dispose();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         #endregion Advanced Send Overloads

@@ -128,7 +128,7 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             _exception = s_disposedSentinel;
             _context?.Close();
@@ -155,7 +155,7 @@ namespace System.Net.Security
                 GC.SuppressFinalize(this);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
@@ -252,7 +252,7 @@ namespace System.Net.Security
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, message.Payload);
                     }
 
@@ -298,13 +298,13 @@ namespace System.Net.Security
                         await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, payload);
                     }
 
                     if (message.Failed)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, message.Status);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, message.Status);
 
                         if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
@@ -345,7 +345,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Log.SspiSelectedCipherSuite(nameof(ForceAuthenticationAsync),
                                                                     SslProtocol,
                                                                     CipherAlgorithm,
@@ -385,7 +385,7 @@ namespace System.Net.Security
 
             if (_lastFrame.Header.Length < 0)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "invalid TLS frame size");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new IOException(SR.net_frame_read_size);
             }
 
@@ -402,23 +402,23 @@ namespace System.Net.Security
             {
                 if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
                 {
-                    if (NetEventSource.IsEnabled && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
+                    if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
                 }
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
                 if ((_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                     _sslAuthenticationOptions!.ServerCertSelectionDelegate != null) ||
-                     NetEventSource.IsEnabled)
+                     NetEventSource.Log.IsEnabled())
                 {
-                    TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
+                    TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                 TlsFrameHelper.ProcessingOptions.All :
                                                                 TlsFrameHelper.ProcessingOptions.ServerName;
 
                     // Process SNI from Client Hello message
                     if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Failed to parse TLS hello.");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
                     }
 
                     if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
@@ -427,7 +427,7 @@ namespace System.Net.Security
                         _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
                     }
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         NetEventSource.Log.ReceivedFrame(this, _lastFrame);
                     }
@@ -505,7 +505,7 @@ namespace System.Net.Security
         //
         private bool CompleteHandshake(ref ProtocolToken? alertToken)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Enter(this);
 
             _context!.ProcessHandshakeSuccess();
@@ -514,14 +514,14 @@ namespace System.Net.Security
             {
                 _handshakeCompleted = false;
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Exit(this, false);
                 return false;
             }
 
             _handshakeCompleted = true;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Exit(this, true);
             return true;
         }
@@ -786,7 +786,7 @@ namespace System.Net.Security
                             _decryptedBytesCount = 0;
                         }
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Info(null, $"***Processing an error Status = {status}");
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
@@ -794,7 +794,7 @@ namespace System.Net.Security
                             // We determine above that we will not process it.
                             if (_handshakeWaiter == null)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
@@ -1162,7 +1162,7 @@ namespace System.Net.Security
         // Returns TLS Frame size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Enter(this, buffer.Length);
 
             int payloadSize = -1;
@@ -1200,7 +1200,7 @@ namespace System.Net.Security
                     break;
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Exit(this, payloadSize);
 
             return payloadSize;

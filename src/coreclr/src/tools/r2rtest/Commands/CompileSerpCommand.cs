@@ -77,10 +77,10 @@ namespace R2RTest
                 throw new ArgumentException($"Error: InputDirectory must point at a SERP build. Could not find {Path.Combine(SerpDir, "runserp.cmd")}");
             }
 
-            string whiteListFilePath = Path.Combine(SerpDir, "WhitelistDlls.txt");
-            if (!File.Exists(whiteListFilePath))
+            string allowListFilePath = Path.Combine(SerpDir, "WhitelistDlls.txt");
+            if (!File.Exists(allowListFilePath))
             {
-                throw new ArgumentException($"File {whiteListFilePath} was not found");
+                throw new ArgumentException($"File {allowListFilePath} was not found");
             }
 
             // Add all assemblies from the various SERP packages (filtered by ShouldInclude)
@@ -106,8 +106,8 @@ namespace R2RTest
             _coreCompileAssemblies = new List<string>();
             _coreReferenceAssemblies = new List<string>();
             {
-                // Add a whitelist of assemblies from bin
-                foreach (string item in new HashSet<string>(File.ReadAllLines(whiteListFilePath)))
+                // Add an allowlist of assemblies from bin
+                foreach (string item in new HashSet<string>(File.ReadAllLines(allowListFilePath)))
                 {
                     string binAssembly = Path.Combine(BinDir, item);
                     _coreCompileAssemblies.Add(binAssembly);

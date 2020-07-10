@@ -18,12 +18,12 @@ namespace System.Net
         protected DebugCriticalHandleMinusOneIsInvalid() : base()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Creating SafeHandle");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Creating SafeHandle");
         }
 
         ~DebugCriticalHandleMinusOneIsInvalid()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG
