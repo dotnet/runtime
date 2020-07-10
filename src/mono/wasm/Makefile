@@ -15,6 +15,7 @@ PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
+ICU_LIBDIR?=
 
 all: build-native timezone-data
 
@@ -51,7 +52,9 @@ MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmono-ilgen.a \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \
 	${NATIVE_DIR}/System.Native/libSystem.Native.a \
-	${NATIVE_DIR}/System.IO.Compression.Native/libSystem.IO.Compression.Native.a
+	${NATIVE_DIR}/System.IO.Compression.Native/libSystem.IO.Compression.Native.a \
+	$(ICU_LIBDIR)/libicuuc.a \
+	$(ICU_LIBDIR)/libicui18n.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
@@ -112,7 +115,7 @@ timezone-data:
 	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
 
 runtime:
-	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
+	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true
 
 build-all:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono+libs --arch wasm --os Browser -c $(CONFIG)

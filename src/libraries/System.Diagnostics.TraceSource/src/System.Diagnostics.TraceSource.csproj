@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -29,11 +29,11 @@
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.IO.FileSystem" />
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.Collections.Specialized\src\System.Collections.Specialized.csproj " />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj " />
-    <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj " />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />
