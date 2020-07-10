@@ -4,4 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/38283", TestPlatforms.Browser)]
+[assembly: SkipOnMono("System.IO.Compression.Brotli is not supported on Browser", TestPlatforms.Browser)]

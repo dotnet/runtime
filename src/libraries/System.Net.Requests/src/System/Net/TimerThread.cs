@@ -313,7 +313,7 @@ namespace System.Net
                 }
                 _timerState = TimerState.Ready;
                 _queueLock = queueLock;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}");
             }
 
             // A sentinel node - both the head and tail are one, which prevent the head and tail from ever having to be updated.
@@ -361,13 +361,13 @@ namespace System.Net
 
                             _timerState = TimerState.Cancelled;
 
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (success)");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (success)");
                             return true;
                         }
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (failure)");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (failure)");
                 return false;
             }
 
@@ -379,7 +379,7 @@ namespace System.Net
             {
                 if (_timerState == TimerState.Sentinel)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "TimerQueue tried to Fire a Sentinel.");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "TimerQueue tried to Fire a Sentinel.");
                 }
 
                 if (_timerState != TimerState.Ready)
@@ -392,7 +392,7 @@ namespace System.Net
                 int nowMilliseconds = Environment.TickCount;
                 if (IsTickBetween(StartTime, Expiration, nowMilliseconds))
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Not firing ({StartTime} <= {nowMilliseconds} < {Expiration})");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Not firing ({StartTime} <= {nowMilliseconds} < {Expiration})");
                     return false;
                 }
 
@@ -401,7 +401,7 @@ namespace System.Net
                 {
                     if (_timerState == TimerState.Ready)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Firing ({StartTime} <= {nowMilliseconds} >= " + Expiration + ")");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Firing ({StartTime} <= {nowMilliseconds} >= " + Expiration + ")");
                         _timerState = TimerState.Fired;
 
                         // Remove it from the list.
@@ -429,7 +429,7 @@ namespace System.Net
                         if (ExceptionCheck.IsFatal(exception))
                             throw;
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"exception in callback: {exception}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"exception in callback: {exception}");
 
                         // This thread is not allowed to go into user code, so we should never get an exception here.
                         // So, in debug, throw it up, killing the AppDomain.  In release, we'll just ignore it.
@@ -483,7 +483,7 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
 
             // Set this thread as a background thread.  On AppDomain/Process shutdown, the thread will just be killed.
             Thread.CurrentThread.IsBackground = true;
@@ -556,19 +556,19 @@ namespace System.Net
                                     0) :
                                 ThreadIdleTimeoutMilliseconds;
 
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Waiting for {waitDuration}ms");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Waiting for {waitDuration}ms");
 
                             int waitResult = WaitHandle.WaitAny(s_threadEvents, waitDuration, false);
 
                             // 0 is s_ThreadShutdownEvent - die.
                             if (waitResult == 0)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Awoke, cause: Shutdown");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Awoke, cause: Shutdown");
                                 running = false;
                                 break;
                             }
 
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Awoke, cause {(waitResult == WaitHandle.WaitTimeout ? "Timeout" : "Prod")}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Awoke, cause {(waitResult == WaitHandle.WaitTimeout ? "Timeout" : "Prod")}");
 
                             // If we timed out with nothing to do, shut down.
                             if (waitResult == WaitHandle.WaitTimeout && !haveNextTick)
@@ -594,7 +594,7 @@ namespace System.Net
                         if (ExceptionCheck.IsFatal(exception))
                             throw;
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, exception);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, exception);
 
                         // The only options are to continue processing and likely enter an error-loop,
                         // shut down timers for this AppDomain, or shut down the AppDomain.  Go with shutting
@@ -610,7 +610,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Stop");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Stop");
         }
 
         /// <summary>

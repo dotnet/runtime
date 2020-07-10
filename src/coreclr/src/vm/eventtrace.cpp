@@ -3559,7 +3559,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     {
         CrstHolder _crst(GetHashCrst());
         // Like above, check if the type has been added from a different thread since we last looked it up.
-        if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+        if (!pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
         {
             *pfCreatedNew = FALSE;
             return fSucceeded;

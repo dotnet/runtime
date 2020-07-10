@@ -60,6 +60,8 @@ namespace System
             }
         }
 
+        private static int GetCurrentProcessId() => Interop.Sys.GetPid();
+
         internal const string NewLineConst = "\n";
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);

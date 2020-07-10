@@ -45,14 +45,7 @@ namespace System.Collections.Tests
         [InlineData(null, null, 0)]
         public void Ctor_CultureInfo_Compare(object a, object b, int expected)
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {
@@ -74,14 +67,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Ctor_CultureInfo_Compare_TurkishI()
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {
@@ -132,14 +118,7 @@ namespace System.Collections.Tests
         [InlineData(null, null, 0)]
         public void DefaultInvariant_Compare(object a, object b, int expected)
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             foreach (string cultureName in cultureNames)
             {

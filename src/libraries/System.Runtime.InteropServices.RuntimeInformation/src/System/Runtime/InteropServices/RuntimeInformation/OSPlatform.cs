@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices
     {
         private readonly string _osPlatform;
 
+        public static OSPlatform Android { get; } = new OSPlatform("ANDROID");
+
         public static OSPlatform Browser { get; } = new OSPlatform("BROWSER");
 
         public static OSPlatform FreeBSD { get; } = new OSPlatform("FREEBSD");
@@ -18,17 +20,15 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)] // https://github.com/dotnet/runtime/issues/33331#issuecomment-650326500
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
 
-        public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
-
-        public static OSPlatform Android { get; } = new OSPlatform(nameof(Android));
-
-        public static OSPlatform iOS { get; } = new OSPlatform(nameof(iOS));
-
         public static OSPlatform macOS { get; } = new OSPlatform(nameof(macOS));
 
-        public static OSPlatform tvOS { get; } = new OSPlatform(nameof(tvOS));
+        public static OSPlatform iOS { get; } = new OSPlatform("IOS");
 
-        public static OSPlatform watchOS { get; } = new OSPlatform(nameof(watchOS));
+        public static OSPlatform tvOS { get; } = new OSPlatform("TVOS");
+
+        public static OSPlatform watchOS { get; } = new OSPlatform("WATCHOS");
+
+        public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
         private OSPlatform(string osPlatform)
         {

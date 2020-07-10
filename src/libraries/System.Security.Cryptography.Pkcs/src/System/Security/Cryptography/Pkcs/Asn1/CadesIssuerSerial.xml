@@ -17,5 +17,5 @@
   <asn:SequenceOf name="Issuer">
     <asn:AsnType typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" />
   </asn:SequenceOf>
-  <asn:Integer name="SerialNumber"  backingType="ReadOnlyMemory" />
+  <asn:Integer name="SerialNumber" backingType="ReadOnlyMemory" />
 </asn:Sequence>

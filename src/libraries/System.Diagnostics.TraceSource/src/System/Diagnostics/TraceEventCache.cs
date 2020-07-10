@@ -29,7 +29,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return TraceListenerHelpers.GetProcessId();
+                return Environment.ProcessId;
             }
         }
 
@@ -37,7 +37,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return TraceListenerHelpers.GetThreadId().ToString(CultureInfo.InvariantCulture);
+                return Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture);
             }
         }
 

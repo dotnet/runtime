@@ -214,12 +214,8 @@ public:
     PER_HEAP_ISOLATED size_t GetNumberFinalizableObjects();
     PER_HEAP_ISOLATED size_t GetFinalizablePromotedCount();
 
-    void SetFinalizeQueueForShutdown(bool fHasLock);
-    bool ShouldRestartFinalizerWatchDog();
-
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);
     void DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context);
-    void SetFinalizeRunOnShutdown(bool value);
 
 public:	// FIX
 

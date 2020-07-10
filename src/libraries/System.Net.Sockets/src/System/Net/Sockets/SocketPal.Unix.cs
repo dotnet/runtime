@@ -94,7 +94,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(fd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -1027,7 +1027,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -2007,7 +2007,7 @@ namespace System.Net.Sockets
         {
             var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, res);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
         }
     }

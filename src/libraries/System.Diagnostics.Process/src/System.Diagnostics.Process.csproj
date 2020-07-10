@@ -152,8 +152,6 @@
              Link="Common\Interop\Windows\Advapi32\Interop.AdjustTokenPrivileges.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleCP.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetConsoleCP.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs"
@@ -243,8 +241,6 @@
              Link="Common\Interop\Unix\Interop.GetGroupList.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetLine.cs"
              Link="Common\Interop\Unix\Interop.GetLine.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPid.cs"
-             Link="Common\Interop\Unix\Interop.GetPid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSetPriority.cs"

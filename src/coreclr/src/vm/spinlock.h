@@ -61,7 +61,6 @@
 
 // non-zero return value if this function causes the OS to switch to another thread
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount);
-BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goThroughOS);
 
 
 //----------------------------------------------------------------------------

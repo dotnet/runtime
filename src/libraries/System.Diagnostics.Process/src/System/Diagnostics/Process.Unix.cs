@@ -305,12 +305,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
-        }
-
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
         private bool IsParentOf(Process possibleChildProcess) =>
             Id == possibleChildProcess.ParentProcessId;

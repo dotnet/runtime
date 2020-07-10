@@ -32,9 +32,7 @@ class FinalizerThread
 
     static void WaitForFinalizerEvent (CLREvent *event);
 
-    static void DoOneFinalization(Object* fobj, Thread* pThread);
-
-    static void FinalizeAllObjects(int bitToCheck);
+    static void FinalizeAllObjects();
 
 public:
     static Thread* GetFinalizerThread()
