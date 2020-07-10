@@ -45,7 +45,10 @@ namespace System.ComponentModel.DataAnnotations
                     OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
 
-                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+                string[] memberNames = validationContext.MemberName != null
+                   ? new[] { validationContext.MemberName }
+                   : null;
+                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
             }
 
             return null;
