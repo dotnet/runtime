@@ -266,6 +266,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Equal(OSPlatform.OSX, OSPlatform.Create("macOS"));
             Assert.Equal(OSPlatform.Create("OSX"), OSPlatform.macOS);
             Assert.Equal(OSPlatform.Create("OSX"), OSPlatform.Create("macOS"));
+            Assert.Equal(OSPlatform.Create("osx"), OSPlatform.Create("macOS"));
+            Assert.Equal(OSPlatform.Create("osx"), OSPlatform.Create("macos"));
+            Assert.Equal(OSPlatform.Create("OSX"), OSPlatform.Create("macos"));
         }
     }
 }
