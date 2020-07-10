@@ -935,7 +935,7 @@ namespace Internal.NativeCrypto
                 throw GetErrorCode().ToCryptographicException();
             }
 
-            // If isFinal, padding was added so ignore it by using outputCount as size
+            // If isFinal, padding was added so ignore it by using original input length as size
             int outputCount = isFinal ? input.Length : encryptedDataLength;
             Debug.Assert(encryptedDataLength == cbEncryptedData);
             Debug.Assert(outputCount <= output.Length);
