@@ -15,11 +15,8 @@ namespace System.Net
 
         public override int Read(byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
+
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -34,8 +31,6 @@ namespace System.Net
             }
             if (size == 0 || _closed)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(this, "dataRead:0");
                 return 0;
             }
 
@@ -44,11 +39,8 @@ namespace System.Net
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
+
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -93,17 +85,10 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "_closed:" + _closed);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_closed:" + _closed);
 
             _closed = true;
             base.Dispose(disposing);
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this);
         }
     }
 }

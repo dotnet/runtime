@@ -308,7 +308,6 @@ namespace System.Net.Http
         // a pending operation, it would cause random failures in the other threads when we expect a valid handle.
         private void CancelPendingResponseStreamReadOperation()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             lock (_state.Lock)
             {
                 if (_state.AsyncReadInProgress)
@@ -318,8 +317,6 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("after dispose");
                 }
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
     }
 }

@@ -305,17 +305,18 @@ icall_table_lookup_symbol (void *func)
 void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
-	uint32_t token = mono_method_get_token (method);
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
 	MonoAssembly *assembly = mono_image_get_assembly (image);
 	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 	const char *name = mono_assembly_name_get_name (aname);
+	const char *class_name = mono_class_get_name (klass);
+	const char *method_name = mono_method_get_name (method);
 	char key [128];
 	int len;
 
 	assert (strlen (name) < 100);
-	sprintf (key, "%s_%d", name, token);
+	sprintf (key, "%s_%s_%s", name, class_name, method_name);
 	len = strlen (key);
 	for (int i = 0; i < len; ++i) {
 		if (key [i] == '.')

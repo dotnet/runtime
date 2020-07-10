@@ -100,7 +100,7 @@ $(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 endif
 
 build:
-	EMSDK_PATH=$(PWD)/src/mono/wasm/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
+	EMSDK_PATH=$(PWD)/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)

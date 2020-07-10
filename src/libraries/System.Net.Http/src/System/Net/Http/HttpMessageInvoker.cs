@@ -21,8 +21,6 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, handler);
-
             if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
@@ -32,8 +30,6 @@ namespace System.Net.Http
 
             _handler = handler;
             _disposeHandler = disposeHandler;
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request,
@@ -45,13 +41,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request);
-
-            HttpResponseMessage response = _handler.Send(request, cancellationToken);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, response);
-
-            return response;
+            return _handler.Send(request, cancellationToken);
         }
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -63,13 +53,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request);
-
-            Task<HttpResponseMessage> task = _handler.SendAsync(request, cancellationToken);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, task);
-
-            return task;
+            return _handler.SendAsync(request, cancellationToken);
         }
 
         public void Dispose()

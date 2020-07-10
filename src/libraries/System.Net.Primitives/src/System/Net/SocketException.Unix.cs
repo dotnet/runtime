@@ -14,7 +14,6 @@ namespace System.Net.Sockets
 
         internal SocketException(SocketError errorCode, uint platformError) : base((int)platformError)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, errorCode, platformError);
             _errorCode = errorCode;
         }
 
