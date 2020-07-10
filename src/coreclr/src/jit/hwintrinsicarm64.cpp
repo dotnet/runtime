@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #include "hwintrinsic.h"
@@ -225,6 +224,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_Insert:
+            case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:

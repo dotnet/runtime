@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -454,7 +453,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => source.LinkTo(target, null, i => true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestLinkTo_TwoPhaseCommit()
         {
             var source1 = new BufferBlock<int>();
@@ -478,7 +477,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 43, actual: tuple.Item2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestLinkTo_DoubleLinking()
         {
             foreach (bool greedy in DataflowTestHelpers.BooleanValues)
@@ -971,7 +970,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: buffer.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestReceive_NotYetAvailable()
         {
             var buffer = new BufferBlock<int>();
@@ -1028,7 +1027,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestReceive_Cancellation()
         {
             var bb = new BufferBlock<int>();
@@ -1066,7 +1065,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestReceive_CanceledSource()
         {
             foreach (bool beforeReceive in DataflowTestHelpers.BooleanValues)
@@ -1121,6 +1120,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // uses a lot of stack
         public async Task TestReceiveAsync_LongChain()
         {
             const int Length = 10000;
@@ -1706,7 +1706,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 () => DataflowBlock.Encapsulate<int, int>(new BufferBlock<int>(), new BufferBlock<int>()).Fault(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestEncapsulate_LinkingAndUnlinking()
         {
             var buffer = new BufferBlock<int>();
@@ -1921,6 +1921,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // uses a lot of stack
         public async Task TestOutputAvailableAsync_LongSequence()
         {
             const int iterations = 10000; // enough to stack overflow if there's a problem

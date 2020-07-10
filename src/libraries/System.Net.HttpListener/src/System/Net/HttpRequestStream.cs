@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -16,7 +15,7 @@ namespace System.Net
 
         public override int Read(byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
@@ -35,7 +34,7 @@ namespace System.Net
             }
             if (size == 0 || _closed)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Exit(this, "dataRead:0");
                 return 0;
             }
@@ -45,7 +44,7 @@ namespace System.Net
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
@@ -94,7 +93,7 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(this);
                 NetEventSource.Info(this, "_closed:" + _closed);
@@ -103,7 +102,7 @@ namespace System.Net
             _closed = true;
             base.Dispose(disposing);
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Exit(this);
         }
     }

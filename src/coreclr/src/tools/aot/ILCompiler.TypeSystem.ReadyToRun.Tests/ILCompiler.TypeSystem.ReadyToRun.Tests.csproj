@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.TypeSystem.ReadyToRun.Tests</AssemblyName>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Configurations>Debug;Release;Checked</Configurations>
     <!-- This seems to be required for supporting assemblies to be copied into the output -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -11,6 +11,7 @@
     <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be 
          included in compilation of this project -->
     <EnableDefaultItems>false</EnableDefaultItems>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>    

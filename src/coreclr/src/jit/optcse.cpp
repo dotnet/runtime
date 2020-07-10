@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2638,17 +2637,15 @@ public:
             // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
             //
             CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
-            assert((structHnd != NO_CLASS_HANDLE) || (cseLclVarTyp != TYP_STRUCT));
-            if (structHnd != NO_CLASS_HANDLE)
+            if (structHnd == NO_CLASS_HANDLE)
             {
-                m_pCompiler->lvaSetStruct(cseLclVarNum, structHnd, false);
+                assert(varTypeIsSIMD(cseLclVarTyp));
+                // We are not setting it for `SIMD* indir` during the first path
+                // because it is not precise, see `optValnumCSE_Index`.
+                structHnd = m_pCompiler->gtGetStructHandle(successfulCandidate->CseDsc()->csdTree);
             }
-#ifdef FEATURE_SIMD
-            else if (varTypeIsSIMD(cseLclVarTyp))
-            {
-                m_pCompiler->lvaGetDesc(cseLclVarNum)->lvSIMDType = true;
-            }
-#endif // FEATURE_SIMD
+            assert(structHnd != NO_CLASS_HANDLE);
+            m_pCompiler->lvaSetStruct(cseLclVarNum, structHnd, false);
         }
         m_pCompiler->lvaTable[cseLclVarNum].lvType  = cseLclVarTyp;
         m_pCompiler->lvaTable[cseLclVarNum].lvIsCSE = true;
@@ -3214,9 +3211,9 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-    // If this is a struct type, we can only consider it for CSE-ing if we can get at
-    // its handle, so that we can create a temp.
-    if ((type == TYP_STRUCT) && (gtGetStructHandleIfPresent(tree) == NO_CLASS_HANDLE))
+    // If this is a struct type (including SIMD*), we can only consider it for CSE-ing
+    // if we can get its handle, so that we can create a temp.
+    if (varTypeIsStruct(type) && (gtGetStructHandleIfPresent(tree) == NO_CLASS_HANDLE))
     {
         return false;
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,7 +33,7 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             HttpListenerWebSocketContext webSocketContext = null;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Enter(null, context);
             }
@@ -85,7 +84,7 @@ namespace System.Net.WebSockets
                         hresult));
                 }
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.Origin} = {origin}");
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketVersion} = {secWebSocketVersion}");
@@ -124,7 +123,7 @@ namespace System.Net.WebSockets
                                                                     secWebSocketKey,
                                                                     webSocket);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Associate(context, webSocketContext);
                     NetEventSource.Associate(webSocketContext, webSocket);
@@ -132,7 +131,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(context, ex);
                 }
@@ -140,7 +139,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Exit(context);
                 }

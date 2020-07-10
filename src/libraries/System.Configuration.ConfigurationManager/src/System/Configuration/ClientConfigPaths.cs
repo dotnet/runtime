@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -66,11 +65,18 @@ namespace System.Configuration
                 }
                 else
                 {
-                    // An EntryAssembly may not be found when running from a custom host.
-                    // Try to find the native entry point.
-                    using (Process currentProcess = Process.GetCurrentProcess())
+                    try
                     {
-                        ApplicationUri = currentProcess.MainModule?.FileName;
+                        // An EntryAssembly may not be found when running from a custom host.
+                        // Try to find the native entry point.
+                        using (Process currentProcess = Process.GetCurrentProcess())
+                        {
+                            ApplicationUri = currentProcess.MainModule?.FileName;
+                        }
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        ApplicationUri = string.Empty;
                     }
                 }
             }

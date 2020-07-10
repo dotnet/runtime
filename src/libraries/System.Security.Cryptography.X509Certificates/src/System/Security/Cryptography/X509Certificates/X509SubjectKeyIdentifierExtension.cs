@@ -1,13 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
@@ -17,19 +9,24 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509SubjectKeyIdentifierExtension : X509Extension
     {
         public X509SubjectKeyIdentifierExtension()
-            : base(Oids.SubjectKeyIdentifier)
+            : base(Oids.SubjectKeyIdentifierOid)
         {
             _subjectKeyIdentifier = null;
             _decoded = true;
         }
 
         public X509SubjectKeyIdentifierExtension(AsnEncodedData encodedSubjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, encodedSubjectKeyIdentifier.RawData, critical)
+            : base(Oids.SubjectKeyIdentifierOid, encodedSubjectKeyIdentifier.RawData, critical)
         {
         }
 
         public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(subjectKeyIdentifier), critical)
+            : this(subjectKeyIdentifier.AsSpanParameter(nameof(subjectKeyIdentifier)), critical)
+        {
+        }
+
+        public X509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier, bool critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
@@ -39,12 +36,12 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509SubjectKeyIdentifierExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(key, algorithm), critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(key, algorithm), critical)
         {
         }
 
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(subjectKeyIdentifier), critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
@@ -69,12 +66,11 @@ namespace System.Security.Cryptography.X509Certificates
             _decoded = false;
         }
 
-        private static byte[] EncodeExtension(byte[] subjectKeyIdentifier)
+        private static byte[] EncodeExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
         {
-            if (subjectKeyIdentifier == null)
-                throw new ArgumentNullException(nameof(subjectKeyIdentifier));
             if (subjectKeyIdentifier.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(subjectKeyIdentifier));
+
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 

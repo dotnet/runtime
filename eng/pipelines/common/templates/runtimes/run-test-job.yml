@@ -48,9 +48,9 @@ jobs:
       continueOnError: true
 
     dependsOn:
-    - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+    - ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+    - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -58,11 +58,10 @@ jobs:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeVariant }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-
-    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
@@ -103,6 +102,9 @@ jobs:
     # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
     # xunit test dlls that invokes the actual tests).
     #
+    # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
+    # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
+    #
     # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
     # time needed to compile the test into native code with the Crossgen compiler.
 
@@ -139,6 +141,17 @@ jobs:
         value: 300
       - name: timeoutPerTestInMinutes
         value: 90
+    - ${{ if eq(parameters.testGroup, 'ilasm') }}:
+      # ilasm-ildasm round trip testing runs every test twice, plus runs ilasm and ildasm, so double the 'outerloop' timeout numbers.
+      - name: timeoutPerTestInMinutes
+        value: 20
+      - name: timeoutPerTestCollectionInMinutes
+        value: 240
+    - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+      - name: timeoutPerTestInMinutes
+        value: 30
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -156,9 +169,9 @@ jobs:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
-    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc') }}:
+    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'gcstress-extra', 'r2r-extra') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'gcstress-extra', 'r2r-extra', 'clrinterpreter') }}:
       timeoutInMinutes: 510
 
     steps:
@@ -427,6 +440,12 @@ jobs:
           - jitehwritethru
           - jitobjectstackallocation
           - jitpgo
+        ${{ if in(parameters.testGroup, 'ilasm') }}:
+          scenarios:
+          - ilasmroundtrip
+        ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
+          scenarios:
+          - clrinterpreter
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

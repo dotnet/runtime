@@ -1,4 +1,6 @@
 #include "mono/eventpipe/ep.h"
+#include "mono/eventpipe/ep-session.h"
+#include "mono/eventpipe/ep-thread.h"
 #include "eglib/test/test.h"
 
 #define TEST_FILE "./ep_test_create_file.txt"
@@ -379,7 +381,7 @@ test_thread_session_state (void)
 
 	test_location = 2;
 
-	EP_CONFIG_LOCK_ENTER
+	EP_LOCK_ENTER (section1)
 		session = ep_session_alloc (
 			1,
 			TEST_FILE,
@@ -391,7 +393,7 @@ test_thread_session_state (void)
 			provider_config,
 			1,
 			false);
-	EP_CONFIG_LOCK_EXIT
+	EP_LOCK_EXIT (section1)
 
 	if (!session) {
 		result = FAILED ("Failed to alloc session");

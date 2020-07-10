@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -49,7 +48,7 @@ namespace System.Net.Http
             {
                 CheckDisposed();
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     if (value == null)
                     {
@@ -155,7 +154,7 @@ namespace System.Net.Http
 
         public HttpResponseMessage(HttpStatusCode statusCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, statusCode);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, statusCode);
 
             if (((int)statusCode < 0) || ((int)statusCode > 999))
             {
@@ -165,7 +164,7 @@ namespace System.Net.Http
             _statusCode = statusCode;
             _version = HttpUtilities.DefaultResponseVersion;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public HttpResponseMessage EnsureSuccessStatusCode()
