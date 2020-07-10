@@ -159,6 +159,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Crc32:
         case InstructionSet_Crc32_Arm64:
         case InstructionSet_Dp:
+        case InstructionSet_Dp_Arm64:
         case InstructionSet_Rdm:
         case InstructionSet_Rdm_Arm64:
         case InstructionSet_Sha1:
