@@ -46,6 +46,12 @@
       <property name="ObjectIdForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder`1">
+      <property name="ObjectIdForDebugger" />
+    </type>
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
