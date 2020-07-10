@@ -56,6 +56,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             }
 
             string normalizedCommandLine = parts
+                .Where(part => !string.IsNullOrWhiteSpace(part))
                 .Select(part => (new FileInfo(part)).FullName)
                 .Aggregate((s1, s2) => string.Join(' ', s1, s2));
 
@@ -93,7 +94,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR Arch;
 
             int totalSize = response.Payload.Length;
-            Logger.logger.Log($"sizeof(char) == {sizeof(char)}");
+            Logger.logger.Log($"Total size of Payload == {totalSize} b");
 
             // VALIDATE PID
             int start = 0;
