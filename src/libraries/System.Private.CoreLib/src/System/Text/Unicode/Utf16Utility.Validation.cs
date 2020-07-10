@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.CompilerServices;
 #endif
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
@@ -26,6 +27,10 @@ namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf16Utility
     {
+        private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
+        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
+                                        Vector128.Create(0x80402010_08040201).AsByte() :
+                                        Vector128.Create(0x01020408_10204080).AsByte();
 #if DEBUG && SYSTEM_PRIVATE_CORELIB
         static Utf16Utility()
         {
@@ -78,7 +83,7 @@ namespace System.Text.Unicode
             long tempUtf8CodeUnitCountAdjustment = 0;
             int tempScalarCountAdjustment = 0;
 
-            if (Sse2.IsSupported)
+            if (AdvSimd.Arm64.IsSupported || Sse2.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {
@@ -89,15 +94,27 @@ namespace System.Text.Unicode
 
                     do
                     {
-                        Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
+                        Vector128<ushort> utf16Data;
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            utf16Data = AdvSimd.LoadVector128((ushort*)pInputBuffer);
+                        }
+                        else
+                        {
+                            utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
+                        }
                         uint mask;
 
                         Vector128<ushort> charIsNonAscii;
-                        if (Sse41.IsSupported)
-                        {
-                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
-                            // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
 
+                        // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
+                        // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            charIsNonAscii = AdvSimd.Min(utf16Data, vector0080);
+                        }
+                        else if (Sse41.IsSupported)
+                        {
                             charIsNonAscii = Sse41.Min(utf16Data, vector0080);
                         }
                         else
@@ -111,16 +128,33 @@ namespace System.Text.Unicode
 
 #if DEBUG
                         // Quick check to ensure we didn't accidentally set the 0x8000 bit of any element.
-                        uint debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
+                        uint debugMask;
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            debugMask = (uint)Arm64MoveMask(charIsNonAscii.AsByte());
+                        }
+                        else
+                        {
+                            debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
+                        }
                         Debug.Assert((debugMask & 0b_1010_1010_1010_1010) == 0, "Shouldn't have set the 0x8000 bit of any element in 'charIsNonAscii'.");
 #endif // DEBUG
 
                         // Sets the 0x8080 bits of each element in 'charIsNonAscii' if the corresponding
                         // input was 0x0800 <= [value]. This also handles the missing range a few lines above.
 
-                        Vector128<ushort> charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
+                        Vector128<ushort> charIsThreeByteUtf8Encoded;
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            charIsThreeByteUtf8Encoded = AdvSimd.Arm64.Subtract(vectorZero.AsDouble(), AdvSimd.ShiftRightLogical(utf16Data, 11).AsDouble()).AsUInt16();
+                            mask = (uint)Arm64MoveMask(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
+                        }
+                        else
+                        {
+                            charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
+                            mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
+                        }
 
-                        mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
 
                         // Each even bit of mask will be 1 only if the char was >= 0x0080,
                         // and each odd bit of mask will be 1 only if the char was >= 0x0800.
@@ -151,9 +185,16 @@ namespace System.Text.Unicode
                         // Surrogates need to be special-cased for two reasons: (a) we need
                         // to account for the fact that we over-counted in the addition above;
                         // and (b) they require separate validation.
-
-                        utf16Data = Sse2.Add(utf16Data, vectorA800);
-                        mask = (uint)Sse2.MoveMask(Sse2.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte());
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            utf16Data = AdvSimd.Add(utf16Data, vectorA800);
+                            mask = (uint)Arm64MoveMask(AdvSimd.Arm64.CompareLessThan(utf16Data.AsDouble(), vector8800.AsDouble()).AsByte());
+                        }
+                        else
+                        {
+                            utf16Data = Sse2.Add(utf16Data, vectorA800);
+                            mask = (uint)Sse2.MoveMask(Sse2.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte());
+                        }
 
                         if (mask != 0)
                         {
@@ -178,7 +219,15 @@ namespace System.Text.Unicode
                             //   Since 'mask' already has 00 in these positions (since the corresponding char
                             //   wasn't a surrogate), "mask AND mask2 == 00" holds for these positions.
 
-                            uint mask2 = (uint)Sse2.MoveMask(Sse2.ShiftRightLogical(utf16Data, 3).AsByte());
+                            uint mask2;
+                            if (AdvSimd.Arm64.IsSupported)
+                            {
+                                mask2 = (uint)Arm64MoveMask(AdvSimd.ShiftRightLogical(utf16Data, 3).AsByte());
+                            }
+                            else
+                            {
+                                mask2 = (uint)Sse2.MoveMask(Sse2.ShiftRightLogical(utf16Data, 3).AsByte());
+                            }
 
                             // 'lowSurrogatesMask' has its bits occur in pairs:
                             // - 01 if the corresponding char was a low surrogate char,
@@ -432,6 +481,23 @@ namespace System.Text.Unicode
             utf8CodeUnitCountAdjustment = tempUtf8CodeUnitCountAdjustment;
             scalarCountAdjustment = tempScalarCountAdjustment;
             return pInputBuffer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int Arm64MoveMask(Vector128<byte> value)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
+            Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
+
+            // self-pairwise add until all flags have moved to the first two bytes of the vector
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            return extractedBits.AsInt32().ToScalar();
         }
     }
 }
