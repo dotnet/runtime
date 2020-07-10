@@ -1,6 +1,6 @@
 # Documentation Index
 
-This folder includes several documents that explain both high-level and low-level concepts about the ILLinker and related tools.
+This folder includes several documents that explain both high-level and low-level concepts about the IL linker and related tools.
 
 ## Usage Docs
 - [MSBuild Integration](illink-tasks.md)

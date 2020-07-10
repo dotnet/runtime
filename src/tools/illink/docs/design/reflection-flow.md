@@ -1,4 +1,4 @@
-# Reflection Handling in ILLinker
+# Reflection Handling in ILLink
 
 Unconstrained reflection in .NET presents a challenge for discovering parts of .NET apps that are (or are not) used. We had multiple attempts to solve the problem – probably the most complex one was in .NET Native. .NET Native was trying to make arbitrary reflection "just work" by using a combination of:
 
@@ -11,7 +11,7 @@ Even with the level of investment in .NET Native it wasn't possible to make arbi
 
 Note: While this document mostly talks about reflection, this includes reflection-like APIs with impact on linker's analysis such as `RuntimeHelpers.GetUninitializedObject`, `Marshal.PtrToStructure`, or `RuntimeHelpers.RunClassConstructor`.
 
-In .NET 5, we would like to carve out a _subset_ of reflection patterns that can be made compatible in the presence of ILLinker. Since linking is optional, users do not have to adhere to this subset. They can still use ILLinker if they do not adhere to this subset, but we will not provide guarantees that linking won't change the semantics of their app. Linker will warn if a reflection pattern within the app is not compatible.
+In .NET 5, we would like to carve out a _subset_ of reflection patterns that can be made compatible in the presence of ILLink. Since linking is optional, users do not have to adhere to this subset. They can still use ILLink if they do not adhere to this subset, but we will not provide guarantees that linking won't change the semantics of their app. Linker will warn if a reflection pattern within the app is not compatible.
 
 To achieve compatibility, we'll logically classify methods into following categories:
 
@@ -28,7 +28,7 @@ It is our belief that _linker-friendly_ serialization and dependency injection w
 
 ## Analyzing calls to potentially unfriendly methods
 
-The most interesting category to discuss are the "potentially unfriendly" methods: reasoning about a parameter to a method call requires being able to trace the value of the parameter through the method body. ILLinker is currently capable of doing this in a limited way. We'll be expanding this functionality further so that it can cover patterns like:
+The most interesting category to discuss are the "potentially unfriendly" methods: reasoning about a parameter to a method call requires being able to trace the value of the parameter through the method body. ILLink is currently capable of doing this in a limited way. We'll be expanding this functionality further so that it can cover patterns like:
 
 ```csharp
 Type t;
@@ -161,8 +161,7 @@ public void RegisterInterface(Type intface, [DynamicallyAccessedMembers(Dynamica
     _interfaceToImpl.Add(intface, impl);
 }
 
-// Microsoft.ILLinker and IL000:UnsafeReflectionUse are made up values. Real values TBD.
-[UnconditionalSuppressMessage("Microsoft.ILLinker", "IL000:UnsafeReflectionUse", MessageId = "CreateInstance")]
+[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", MessageId = "CreateInstance")]
 public object Activate(Type intface)
 {
     // This would normally warn because value retrieved from the dictionary is not annotated, but since

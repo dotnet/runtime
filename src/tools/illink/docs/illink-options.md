@@ -2,7 +2,7 @@
 
 ## `illink` tool
 
-The `illink` is ILLinker version shipping with .NET Core or .NET 5 platforms. It's bundled with
+The `illink` is IL linker version shipping with .NET Core or .NET 5 platforms. It's bundled with
 the .NET SDK and most of the options are accessible using msbuild properties but any option
 can also be passed using `_ExtraTrimmerArgs` property.
 

@@ -4,8 +4,9 @@
 
 namespace Mono.Linker
 {
-	internal static class Constants
+	static class Constants
 	{
-		public const string ILLinker = "ILLinker";
+		// Prefix used in error/warning reporting to specify the tool it comes from
+		public const string ILLink = "ILLink";
 	}
 }
