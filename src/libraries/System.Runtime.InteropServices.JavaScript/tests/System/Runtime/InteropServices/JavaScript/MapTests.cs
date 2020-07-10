@@ -23,6 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(100)]
+        [InlineData(10000)]
         public static void Map_Add(int numberOfElements)
         {
             var map = new Map();
@@ -37,6 +38,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(1000)]
+        [InlineData(10000)]
         public static void Map_AddContains(int numberOfElements)
         {
             var map = new Map();
@@ -56,6 +58,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(1000)]
+        [InlineData(10000)]
         public static void Map_Iterator(int numberOfElements)
         {
             var map = new Map();
@@ -77,6 +80,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(1000)]
+        [InlineData(10000)]
         public static void Map_IteratorKeyValue(int numberOfElements)
         {
             var map = new Map();
@@ -98,6 +102,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
+        [InlineData(10000)]
         public static void Map_Contains(int numberOfElements)
         {
             var map = new Map();
