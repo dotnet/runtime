@@ -80,6 +80,54 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.watchOS));
         }
 
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public void CheckAndroid()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.iOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.tvOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.watchOS));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]
+        public void Check_tvOS()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.tvOS));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.iOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.watchOS));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        public void Check_iOS()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.iOS));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.tvOS));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.watchOS));
+        }
+
         [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Tests RuntimeInformation OS platform
         public void CheckWindows()
         {
