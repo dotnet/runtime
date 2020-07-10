@@ -506,8 +506,22 @@ namespace Mono.Linker.Dataflow
 					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
 					break;
 
-				case Code.Calli:
-					// TODO: currently not emitted by any mainstream compilers but we should implement
+				case Code.Calli: {
+						var signature = (CallSite) operation.Operand;
+						if (signature.HasThis && !signature.ExplicitThis) {
+							PopUnknown (currentStack, 1, methodBody, operation.Offset);
+						}
+
+						// Pop arguments
+						PopUnknown (currentStack, signature.Parameters.Count, methodBody, operation.Offset);
+
+						// Pop function pointer
+						PopUnknown (currentStack, 1, methodBody, operation.Offset);
+
+						// Push return value
+						if (signature.ReturnType.MetadataType != MetadataType.Void)
+							PushUnknown (currentStack);
+					}
 					break;
 
 				case Code.Call:
