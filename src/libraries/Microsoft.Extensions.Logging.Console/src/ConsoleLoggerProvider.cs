@@ -61,11 +61,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static bool DoesOperatingSystemSupportAnsi()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return true;
-            }
-
+#if TargetsWindows
             // for Windows, check the console mode
             var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
             if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
@@ -74,6 +70,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+#else
+            return true;
+#endif
         }
 
         private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
