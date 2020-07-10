@@ -1335,72 +1335,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh08_small/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbgaddress/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_reladdress/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relgcarr/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relinitializearray/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgfloat64_range1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgfloat64_range2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_0_5a/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_0_5b/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_m1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_neg_range/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_range1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_range2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relfloat64_range1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relfloat64_range2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_0_5a/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_0_5b/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_1/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_m1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_neg_range/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_range1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_range2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/morph/sin3double/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
@@ -1419,20 +1353,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray3_cs_do/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_rellcs/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_dbgdeep_array_nz/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reldeep_array_nz/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
+            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
             <Issue>needs triage</Issue>
