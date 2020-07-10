@@ -1,5 +1,6 @@
-// ISA_Detection.cpp : Diese Datei enthält die Funktion "main". Hier beginnt und endet die Ausführung des Programms.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include <intrin.h>
 
@@ -121,14 +122,19 @@ SupportedISA DetermineSupportedISA()
 static bool s_initialized;
 static SupportedISA s_supportedISA;
 
-bool SupportsInstructionSet(InstructionSet instructionSet)
+bool IsSupportedInstructionSet (InstructionSet instructionSet)
 {
+    assert(s_initialized);
     assert(instructionSet == InstructionSet::AVX2 || instructionSet == InstructionSet::AVX512F);
-    if (!s_initialized)
-    {
-        s_supportedISA = DetermineSupportedISA();
-        s_initialized = true;
-    }
     return ((int)s_supportedISA & (1 << (int)instructionSet)) != 0;
 }
 
+void InitSupportedInstructionSet (int32_t configSetting)
+{
+    s_supportedISA = (SupportedISA)((int)DetermineSupportedISA() & configSetting);
+    // we are assuming that AVX2 can be used if AVX512F can,
+    // so if AVX2 is disabled, we need to disable AVX512F as well
+    if (!((int)s_supportedISA & (int)SupportedISA::AVX2))
+        s_supportedISA = SupportedISA::None;
+    s_initialized = true;
+}

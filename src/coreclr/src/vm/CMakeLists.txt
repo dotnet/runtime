@@ -550,9 +550,9 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64)
     ../gc/vxsort/do_vxsort_avx512.cpp
     ../gc/vxsort/machine_traits.avx2.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX2.uint32_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX512.uint32_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
 )
 endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 

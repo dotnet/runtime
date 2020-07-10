@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
-#include "bitonic_sort.AVX2.uint32_t.generated.h"
+#include "bitonic_sort.AVX2.int32_t.generated.h"
 
 using namespace vxsort;
 
-void vxsort::smallsort::bitonic<uint32_t, vector_machine::AVX2 >::sort(uint32_t *ptr, size_t length) {
+void vxsort::smallsort::bitonic<int32_t, vector_machine::AVX2 >::sort(int32_t *ptr, size_t length) {
     const int N = 8;
 
     switch(length / N) {

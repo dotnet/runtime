@@ -1,3 +1,8 @@
+##
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+##
+
 from datetime import datetime
 
 from utils import native_size_map, next_power_of_2

@@ -1,3 +1,8 @@
+##
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+##
+
 from abc import ABC, ABCMeta, abstractmethod
 
 from utils import next_power_of_2

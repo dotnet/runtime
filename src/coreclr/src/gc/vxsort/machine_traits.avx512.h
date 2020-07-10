@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Created by dans on 6/1/20.
 //
@@ -42,7 +45,7 @@ class vxsort_machine_traits<int32_t, AVX512> {
     _mm512_mask_compressstoreu_epi32(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(int32_t pivot) {
+  static INLINE TV broadcast(int32_t pivot) {
     return _mm512_set1_epi32(pivot);
   }
 
@@ -75,7 +78,7 @@ class vxsort_machine_traits<uint32_t, AVX512> {
     _mm512_mask_compressstoreu_epi32(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(uint32_t pivot) {
+  static INLINE TV broadcast(uint32_t pivot) {
     return _mm512_set1_epi32(pivot);
   }
 
@@ -108,7 +111,7 @@ class vxsort_machine_traits<float, AVX512> {
     _mm512_mask_compressstoreu_ps(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(float pivot) {
+  static INLINE TV broadcast(float pivot) {
     return _mm512_set1_ps(pivot);
   }
 
@@ -141,7 +144,7 @@ class vxsort_machine_traits<int64_t, AVX512> {
     _mm512_mask_compressstoreu_epi64(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(int64_t pivot) {
+  static INLINE TV broadcast(int64_t pivot) {
     return _mm512_set1_epi64(pivot);
   }
 
@@ -174,7 +177,7 @@ class vxsort_machine_traits<uint64_t, AVX512> {
     _mm512_mask_compressstoreu_epi64(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(uint64_t pivot) {
+  static INLINE TV broadcast(uint64_t pivot) {
     return _mm512_set1_epi64(pivot);
   }
 
@@ -207,7 +210,7 @@ class vxsort_machine_traits<double, AVX512> {
     _mm512_mask_compressstoreu_pd(ptr, mask, v);
   }
 
-  static INLINE TV get_vec_pivot(double pivot) {
+  static INLINE TV broadcast(double pivot) {
     return _mm512_set1_pd(pivot);
   }
 
