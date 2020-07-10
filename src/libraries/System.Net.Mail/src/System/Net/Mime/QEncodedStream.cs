@@ -287,7 +287,7 @@ namespace System.Net.Mime
             }
 
             // specific encoding for CRLF
-            if (count == 2 && bytes[0] == '\r' && bytes[1] == '\n')
+            if (IsCRLF(bytes, count))
             {
                 AppendEncodedCRLF();
                 return 2;
@@ -346,7 +346,7 @@ namespace System.Net.Mime
 
         private bool LineBreakNeeded(byte[] bytes, int count)
         {
-            if (count == 1)
+            if (count == 1 || IsCRLF(bytes, count)) // preserve same behavior as in EncodeBytes
             {
                 return LineBreakNeeded(bytes[0]);
             }
@@ -354,6 +354,9 @@ namespace System.Net.Mime
             int numberOfCharsToAppend  = count * SizeOfQEncodedChar;
             return WriteState.CurrentLineLength + numberOfCharsToAppend + _writeState.FooterLength > WriteState.MaxLineLength;
         }
+
+        private static bool IsCRLF(byte[] bytes, int count) =>
+            count == 2 && bytes[0] == '\r' && bytes[1] == '\n';
 
         private static bool IsAsciiLetterOrDigit(char character) =>
             IsAsciiLetter(character) || (character >= '0' && character <= '9');

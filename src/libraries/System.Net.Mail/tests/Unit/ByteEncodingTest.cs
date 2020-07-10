@@ -102,5 +102,43 @@ namespace System.Net.Mime.Tests
             string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2 + "\r\n " + encodedPart3;
             Assert.Equal(expectedEncodedHeader, encodedHeader);
         }
+
+        [Theory]
+        [InlineData("🕐111111111111111111111111111111111111111111111:11")]
+        [InlineData("🕐11111111111111111111111111111111111111111\r\n11")]
+        public void QEncodedStream_WhenOneByteCodepointsOnLinewrap_EncodeStringSameAsEncodeBytes(string value)
+        {
+            var esf = new EncodedStreamFactory();
+            IEncodableStream streamForEncodeString = esf.GetEncoderForHeader(Encoding.UTF8, false, 0);
+            IEncodableStream streamForEncodeBytes = esf.GetEncoderForHeader(Encoding.UTF8, false, 0);
+
+            streamForEncodeString.EncodeString(value, Encoding.UTF8);
+            string encodeStringResult = streamForEncodeString.GetEncodedString();
+
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            streamForEncodeBytes.EncodeBytes(bytes, 0, bytes.Length);
+            string encodeBytesResult = streamForEncodeBytes.GetEncodedString();
+
+            Assert.Equal(encodeBytesResult, encodeStringResult);
+        }
+
+        [Theory]
+        [InlineData("🕐111111111111111111111111111111111111111111111:11")]
+        [InlineData("🕐11111111111111111111111111111111111111111\r\n11")]
+        public void Base64EncodedStream_WhenOneByteCodepointsOnLinewrap_EncodeStringSameAsEncodeBytes(string value)
+        {
+            var esf = new EncodedStreamFactory();
+            IEncodableStream streamForEncodeString = esf.GetEncoderForHeader(Encoding.UTF8, true, 0);
+            IEncodableStream streamForEncodeBytes = esf.GetEncoderForHeader(Encoding.UTF8, true, 0);
+
+            streamForEncodeString.EncodeString(value, Encoding.UTF8);
+            string encodeStringResult = streamForEncodeString.GetEncodedString();
+
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            streamForEncodeBytes.EncodeBytes(bytes, 0, bytes.Length);
+            string encodeBytesResult = streamForEncodeBytes.GetEncodedString();
+
+            Assert.Equal(encodeBytesResult, encodeStringResult);
+        }
     }
 }
