@@ -9,8 +9,10 @@ using System.Collections.Generic;
 
 namespace System.Text.Json.CodeGenerator
 {
-    // Base JsonSerializerSourceGenerator. This class will invoke CodeGenerator within Execute
-    // to generate wanted output code for JsonSerializers.
+    /// <summary>
+    /// Base JsonSerializerSourceGenerator. This class will invoke CodeGenerator within Execute
+    /// to generate wanted output code for JsonSerializers.
+    /// </summary>
     [Generator]
     public class JsonSerializerSourceGenerator : ISourceGenerator
     {
