@@ -412,7 +412,6 @@ namespace System.Buffers
         /// <param name="delimiter">The delimiter to look for.</param>
         /// <param name="advancePastDelimiter">True to move past the <paramref name="delimiter"/> if found.</param>
         /// <returns>True if the <paramref name="delimiter"/> was found.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryReadTo(out ReadOnlySpan<T> span, ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true)
         {
             ReadOnlySpan<T> remaining = UnreadSpan;
