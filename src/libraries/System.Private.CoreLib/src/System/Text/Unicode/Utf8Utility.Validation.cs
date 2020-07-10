@@ -16,11 +16,6 @@ namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
-        private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
-        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                        Vector128.Create(0x80402010_08040201).AsByte() :
-                                        Vector128.Create(0x01020408_10204080).AsByte();
-
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of byte length <paramref name="inputLength"/>,
@@ -126,6 +121,8 @@ namespace System.Text.Unicode
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
                         uint mask;
 
+                        Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80);
+
                         do
                         {
                             // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
@@ -135,7 +132,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = (uint)AdvSimdMoveMask(AdvSimd.LoadVector128(pInputBuffer));
+                                mask = AdvSimdMoveMask(AdvSimd.LoadVector128(pInputBuffer), mostSignficantBitMask);
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -736,20 +733,15 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int AdvSimdMoveMask(Vector128<byte> value)
+        private static uint AdvSimdMoveMask(Vector128<byte> value, Vector128<byte> mostSignficantBitMask)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-            // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
-            Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
+            Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
-
-            // self-pairwise add until all flags have moved to the first two bytes of the vector
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, mask);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsInt32().ToScalar();
+            return extractedBits.AsUInt16().ToScalar();
         }
     }
 }
