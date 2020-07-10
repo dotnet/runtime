@@ -30,11 +30,8 @@ namespace Tracing.Tests.ReverseValidation
                 currentAssembly: Assembly.GetExecutingAssembly(),
                 environment: new Dictionary<string,string> 
                 {
-                    { Utils.DiagnosticsMonitorAddressEnvKey, serverName }
-                    // with this commented out, the subprocess should pause on start
-                    // causing the subprocess to never exit
-                    // and the wait below to be indefinite
-                    // { Utils.DiagnosticsMonitorPauseOnStartEnvKey, "0" }
+                    { Utils.DiagnosticsMonitorAddressEnvKey, serverName },
+                    { Utils.DiagnosticsMonitorPauseOnStartEnvKey, "0" }
                 },
                 duringExecution: async (_) =>
                 {
@@ -46,6 +43,9 @@ namespace Tracing.Tests.ReverseValidation
                     Logger.logger.Log(ad3.ToString());
                     var ad4 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
                     Logger.logger.Log(ad4.ToString());
+                    
+                    // THIS WILL TIMEOUT THE TEST
+                    await Task.Delay(TimeSpan.FromMinutes(11));
                 }
             );
 
