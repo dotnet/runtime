@@ -5,7 +5,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public abstract class ProcessLinkerXmlStepBase : BaseStep
+	public abstract class ProcessLinkerXmlStepBase : LoadReferencesStep
 	{
 		const string FullNameAttributeName = "fullname";
 		const string LinkerElementName = "linker";
