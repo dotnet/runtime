@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Logging.Console
             int eventId = logEntry.EventId.Id;
             Exception exception = logEntry.Exception;
             const int DefaultBufferSize = 1024;
-            var output = new ArrayBufferWriter<byte>(DefaultBufferSize);
+            var output = new PooledByteBufferWriter(DefaultBufferSize);
             using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
             {
                 writer.WriteStartObject();

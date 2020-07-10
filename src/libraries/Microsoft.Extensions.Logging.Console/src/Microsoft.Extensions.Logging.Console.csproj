@@ -23,6 +23,8 @@
              Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
     <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
              Link="Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs"
+             Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
