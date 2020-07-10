@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -13,14 +14,63 @@ namespace System.Security.Cryptography
 
     public abstract class SHA256 : HashAlgorithm
     {
+        private const int HashSizeBits = 256;
+        private const int HashSizeBytes = HashSizeBits / 8;
+
         protected SHA256()
         {
-            HashSizeValue = 256;
+            HashSizeValue = HashSizeBits;
         }
 
         public static new SHA256 Create() => new Implementation();
 
         public static new SHA256? Create(string hashName) => (SHA256?)CryptoConfig.CreateFromName(hashName);
+
+        public static byte[] HashData(byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return HashData(new ReadOnlySpan<byte>(source));
+        }
+
+        public static byte[] HashData(ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+
+            int written = HashData(source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(source, destination, out int bytesWritten))
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return bytesWritten;
+        }
+
+        public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HashSizeBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (IncrementalHash ic = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
+            {
+                ic.AppendData(source);
+                bool result = ic.TryGetHashAndReset(destination, out bytesWritten);
+
+                Debug.Assert(bytesWritten == HashSizeBytes);
+                Debug.Assert(result);
+
+                return result;
+            }
+        }
 
         private sealed class Implementation : SHA256
         {
