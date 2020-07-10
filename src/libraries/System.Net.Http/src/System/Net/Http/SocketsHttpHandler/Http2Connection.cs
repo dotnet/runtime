@@ -136,19 +136,20 @@ namespace System.Net.Http
 
         public bool AcquireStreamSlot()
         {
+            int currentSlots = Volatile.Read(ref _freeStreamSlots);
+
             while (true)
             {
-                int currentSlots = _freeStreamSlots;
                 if (currentSlots == 0)
                 {
-                    long currentExpiration = _freeStreamSlotsExpiration;
+                    long currentExpiration = Interlocked.Read(ref _freeStreamSlotsExpiration);
                     if (currentExpiration > Environment.TickCount64)
                     {
                         // No empty slots and it's too soon to request the latest value from the credit manager.
                         return false;
                     }
 
-                    _freeStreamSlotsExpiration = Environment.TickCount64 + SlotExpirationPeriod;
+                    Interlocked.Exchange(ref _freeStreamSlotsExpiration, Environment.TickCount64 + SlotExpirationPeriod);
 
                     int refreshedSlots = _concurrentStreams.Current;
                     if (refreshedSlots == 0)
@@ -157,19 +158,23 @@ namespace System.Net.Http
                         return false;
                     }
 
-                    if (Interlocked.CompareExchange(ref _freeStreamSlots, refreshedSlots, 0) != 0)
+                    int prevFreeStreamSlots = Interlocked.CompareExchange(ref _freeStreamSlots, refreshedSlots, 0);
+                    if (prevFreeStreamSlots != 0)
                     {
                         // Other thread already updated _freeStreamSlots, so let's try acquiring a free slot again.
+                        currentSlots = prevFreeStreamSlots;
                         continue;
                     }
                     currentSlots = refreshedSlots;
                 }
                 int reducedSlots = currentSlots - 1;
-                if (Interlocked.CompareExchange(ref _freeStreamSlots, reducedSlots, currentSlots) == currentSlots)
+                int oldFreeStreamSlots = Interlocked.CompareExchange(ref _freeStreamSlots, reducedSlots, currentSlots);
+                if (oldFreeStreamSlots == currentSlots)
                 {
                     // Slot was successfully acquired.
                     return true;
                 }
+                currentSlots = oldFreeStreamSlots;
                 // Other thread already updated _freeStreamSlots, so let's try acquiring a free slot again.
             }
         }
@@ -1234,7 +1239,7 @@ namespace System.Net.Http
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNewConnection);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
                     }
                 }
                 else

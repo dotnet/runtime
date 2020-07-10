@@ -29,7 +29,7 @@ namespace System.Net.Http
             _current = initialCredit;
         }
 
-        public int Current => _current;
+        public int Current => Volatile.Read(ref _current);
 
         private object SyncObject
         {

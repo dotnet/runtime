@@ -68,7 +68,8 @@ namespace System.Net.Http
 
         private bool _http2Enabled;
         // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
-        private Http2Connection[]? _http2Connections;
+        // It's declared volatile to ensure read operations consistency outside locks.
+        private volatile Http2Connection[]? _http2Connections;
         private SemaphoreSlim? _freeStreamSlots;
         private int _waitingRequestCount;
         private SemaphoreSlim? _http2ConnectionCreateLock;
@@ -519,7 +520,7 @@ namespace System.Net.Http
                 if (currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer)
                 {
                     // All connections are completely occupied. Retry request to make it wait until a stream slot gets available.
-                    throw new HttpRequestException(null, null, RequestRetryType.RetryOnNewConnection);
+                    throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -899,16 +900,6 @@ namespace System.Net.Http
                     if (NetEventSource.IsEnabled)
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
-                    }
-
-                    // Eat exception and try again.
-                    continue;
-                }
-                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnNewConnection)
-                {
-                    if (NetEventSource.IsEnabled)
-                    {
-                        Trace($"Retrying request on a new connection after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again.
