@@ -239,6 +239,8 @@ namespace System.Net
             for (int i = 0; i < value.Length; ++i)
             {
                 int codepointSize = GetCodepointSize(value, i);
+                Debug.Assert(codepointSize == 1 || codepointSize == 2, "codepointSize was not 1 or 2");
+
                 int bytesCount = encoding.GetBytes(value, i, codepointSize, bytes, 0);
                 if (codepointSize == 2)
                 {
@@ -255,7 +257,7 @@ namespace System.Net
             return totalBytesCount;
         }
 
-        private int GetCodepointSize(string value, int i)
+        private static int GetCodepointSize(string value, int i)
         {
             if (char.IsSurrogate(value[i]) && i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]))
             {

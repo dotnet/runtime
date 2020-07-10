@@ -248,6 +248,8 @@ namespace System.Net.Mime
             for (int i = 0; i < value.Length; ++i)
             {
                 int codepointSize = GetCodepointSize(value, i);
+                Debug.Assert(codepointSize == 1 || codepointSize == 2, "codepointSize was not 1 or 2");
+
                 int bytesCount = encoding.GetBytes(value, i, codepointSize, bytes, 0);
                 if (codepointSize == 2)
                 {
@@ -263,7 +265,7 @@ namespace System.Net.Mime
             return totalBytesCount;
         }
 
-        private int GetCodepointSize(string value, int i)
+        private static int GetCodepointSize(string value, int i)
         {
             // specific encoding for CRLF
             if (value[i] == '\r' && i + 1 < value.Length && value[i + 1] == '\n')

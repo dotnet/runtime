@@ -104,32 +104,19 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
-        [InlineData("🕐111111111111111111111111111111111111111111111:11")]
-        [InlineData("🕐11111111111111111111111111111111111111111\r\n11")]
-        public void QEncodedStream_WhenOneByteCodepointsOnLinewrap_EncodeStringSameAsEncodeBytes(string value)
+        [InlineData(false, "🕐11111111111111111111111111111111111111111111:1111")]
+        [InlineData(false, "🕐111111111111111111111111111111111111111111111:111")]
+        [InlineData(false, "🕐1111111111111111111111111111111111111111111111:11")]
+        [InlineData(false, "🕐11111111111111111111111111111111111111111\r\n1111")]
+        [InlineData(false, "🕐111111111111111111111111111111111111111111\r\n111")]
+        [InlineData(false, "🕐1111111111111111111111111111111111111111111\r\n11")]
+        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕:11111")]
+        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕\r\n11")]
+        public void EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(bool useBase64Encoding, string value)
         {
-            var esf = new EncodedStreamFactory();
-            IEncodableStream streamForEncodeString = esf.GetEncoderForHeader(Encoding.UTF8, false, 0);
-            IEncodableStream streamForEncodeBytes = esf.GetEncoderForHeader(Encoding.UTF8, false, 0);
-
-            streamForEncodeString.EncodeString(value, Encoding.UTF8);
-            string encodeStringResult = streamForEncodeString.GetEncodedString();
-
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
-            streamForEncodeBytes.EncodeBytes(bytes, 0, bytes.Length);
-            string encodeBytesResult = streamForEncodeBytes.GetEncodedString();
-
-            Assert.Equal(encodeBytesResult, encodeStringResult);
-        }
-
-        [Theory]
-        [InlineData("🕐111111111111111111111111111111111111111111111:11")]
-        [InlineData("🕐11111111111111111111111111111111111111111\r\n11")]
-        public void Base64EncodedStream_WhenOneByteCodepointsOnLinewrap_EncodeStringSameAsEncodeBytes(string value)
-        {
-            var esf = new EncodedStreamFactory();
-            IEncodableStream streamForEncodeString = esf.GetEncoderForHeader(Encoding.UTF8, true, 0);
-            IEncodableStream streamForEncodeBytes = esf.GetEncoderForHeader(Encoding.UTF8, true, 0);
+            var factory = new EncodedStreamFactory();
+            IEncodableStream streamForEncodeString = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
+            IEncodableStream streamForEncodeBytes = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
 
             streamForEncodeString.EncodeString(value, Encoding.UTF8);
             string encodeStringResult = streamForEncodeString.GetEncodedString();

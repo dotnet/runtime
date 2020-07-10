@@ -8,7 +8,7 @@ namespace System.Net.Mime
     internal interface IEncodableStream
     {
         int DecodeBytes(byte[] buffer, int offset, int count);
-        // This method does not account for codepoint boundaries. If encoding a string, use EncodeString instead
+        // This method does not account for codepoint boundaries. If encoding a string, consider using EncodeString
         int EncodeBytes(byte[] buffer, int offset, int count);
         int EncodeString(string value, Encoding encoding);
         string GetEncodedString();
