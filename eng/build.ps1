@@ -100,6 +100,34 @@ function Get-Help() {
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
+function Assert-InstalledDependency($dependencyName)
+{
+  Write-Host "Checking for $dependencyName..."
+  if (((Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*).DisplayName -Match
+        $dependencyName).Length -le 0)
+  {
+    Write-Host "$dependencyName is required to build this repo. Make sure to install it and try again."
+    Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
+    exit 1
+  }
+}
+
+function Assert-GitLongPathsEnabled()
+{
+  Write-Host "Ensuring Git Long Paths are enabled..."
+  # This needs to be in a variable. Otherwise, Invoke-Command complains about
+  # an incompatible cast.
+  $gitscript = [scriptblock]::Create("git config --get core.longpaths")
+  $longpaths = Invoke-Command -scriptblock $gitscript
+
+  if (-Not $longpaths) {
+    Write-Host "Git Long Paths must be enabled to build this repo."
+    Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
+    exit 1
+  }
+  Write-Host "Done!"
+}
+
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
   Get-Help
   exit 0
@@ -109,6 +137,16 @@ if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
   exit 0
 }
+
+Write-Host ""
+Assert-InstalledDependency("Python 3")
+Assert-InstalledDependency("CMake")
+Assert-InstalledDependency("Git")
+Assert-InstalledDependency("Visual Studio")
+Assert-GitLongPathsEnabled
+Write-Host "All dependencies fulfilled! Initiating Build..."
+Write-Host ""
+exit 0
 
 if ($vs) {
   . $PSScriptRoot\common\tools.ps1
