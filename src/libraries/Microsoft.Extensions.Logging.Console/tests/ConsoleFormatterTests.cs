@@ -105,19 +105,6 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void NullFormatterName_Throws()
-        {
-            // Arrange
-            Assert.Throws<ArgumentNullException>(() => new NullNameConsoleFormatter());
-        }
-
-        private class NullNameConsoleFormatter : ConsoleFormatter
-        {
-            public NullNameConsoleFormatter() : base(null) { }
-            public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter) { }
-        }
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void InvalidLogLevel_Throws(string formatterName)
@@ -203,6 +190,19 @@ namespace Microsoft.Extensions.Logging.Test
                 default:
                     throw new ArgumentOutOfRangeException(nameof(formatterName));
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void NullFormatterName_Throws()
+        {
+            // Arrange
+            Assert.Throws<ArgumentNullException>(() => new NullNameConsoleFormatter());
+        }
+
+        private class NullNameConsoleFormatter : ConsoleFormatter
+        {
+            public NullNameConsoleFormatter() : base(null) { }
+            public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter) { }
         }
 
         public static TheoryData<string, LogLevel> FormatterNamesAndLevels

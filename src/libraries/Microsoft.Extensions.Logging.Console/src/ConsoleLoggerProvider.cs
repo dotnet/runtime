@@ -107,15 +107,11 @@ namespace Microsoft.Extensions.Logging.Console
             if (_options.CurrentValue.FormatterName == null || !_formatters.TryGetValue(_options.CurrentValue.FormatterName, out ConsoleFormatter logFormatter))
             {
 #pragma warning disable CS0618
-                switch (_options.CurrentValue.Format)
+                logFormatter = _options.CurrentValue.Format switch
                 {
-                    case ConsoleLoggerFormat.Systemd:
-                        logFormatter = _formatters[ConsoleFormatterNames.Systemd];
-                        break;
-                    default:
-                        logFormatter = _formatters[ConsoleFormatterNames.Simple];
-                        break;
-                }
+                    ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
+                    _ => _formatters[ConsoleFormatterNames.Simple],
+                };
                 UpdateFormatterOptions(logFormatter, _options.CurrentValue);
 #pragma warning disable CS0618
             }

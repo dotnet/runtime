@@ -55,18 +55,6 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        private static bool IsBackgroundColorNotSupported(ConsoleColor color)
-        {
-            return AnsiParser.GetBackgroundColorEscapeCode(color).Equals(
-                AnsiParser.DefaultBackgroundColor, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsForegroundColorNotSupported(ConsoleColor color)
-        {
-            return AnsiParser.GetForegroundColorEscapeCode(color).Equals(
-                AnsiParser.DefaultForegroundColor, StringComparison.OrdinalIgnoreCase);
-        }
-
         [Theory]
         [MemberData(nameof(Colors))]
         public void SetForeground_Parse_Success(ConsoleColor background, ConsoleColor foreground)
@@ -125,6 +113,18 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 Message = message;
             }
+        }
+
+        private static bool IsBackgroundColorNotSupported(ConsoleColor color)
+        {
+            return AnsiParser.GetBackgroundColorEscapeCode(color).Equals(
+                AnsiParser.DefaultBackgroundColor, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsForegroundColorNotSupported(ConsoleColor color)
+        {
+            return AnsiParser.GetForegroundColorEscapeCode(color).Equals(
+                AnsiParser.DefaultForegroundColor, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

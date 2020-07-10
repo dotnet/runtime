@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
@@ -68,32 +71,6 @@ namespace Microsoft.Extensions.Logging.Test
                 _options = options;
                 _onChange?.Invoke(options, "");
             }
-        }
-
-        // [Fact]
-        private void SampleTest_X_Y()
-        {
-            // var formatters = new List<ConsoleFormatter>() { systemdFormatter };
-            // var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions() { FormatterName = ConsoleFormatterNames.Systemd });
-            // var loggerProvider = new ConsoleLoggerProvider(monitor, formatters);
-            // var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
-            using var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder
-                    .AddConsoleFormatter<TestFormatter, SimpleConsoleFormatterOptions>()
-                    .AddConsole(o =>
-                    {
-                        o.LogToStandardErrorThreshold = LogLevel.Trace;
-                        o.FormatterName = "TestFormatter";
-                    });
-            });
-            var logger = loggerFactory.CreateLogger<ConsoleFormatterOptionsTests>();
-
-            // Act
-            logger.Log(LogLevel.Information, 0, "This log contains {0}", null, (state, error) => state.ToString());
-
-            FieldInfo writeCoreHook = typeof(ConsoleLogger).GetField("t_stringWriter", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.NotNull(writeCoreHook);
         }
     }
 }
