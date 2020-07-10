@@ -263,6 +263,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         public void OSX_equals_macOS()
         {
             Assert.Equal(OSPlatform.OSX, OSPlatform.macOS);
+            Assert.Equal(OSPlatform.OSX, OSPlatform.Create("macOS"));
+            Assert.Equal(OSPlatform.Create("OSX"), OSPlatform.macOS);
+            Assert.Equal(OSPlatform.Create("OSX"), OSPlatform.Create("macOS"));
         }
     }
 }
