@@ -33,11 +33,6 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             HttpListenerWebSocketContext webSocketContext = null;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(null, context);
-            }
-
             try
             {
                 // get property will create a new response if one doesn't exist.
@@ -136,13 +131,6 @@ namespace System.Net.WebSockets
                     NetEventSource.Error(context, ex);
                 }
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exit(context);
-                }
             }
 
             return webSocketContext;

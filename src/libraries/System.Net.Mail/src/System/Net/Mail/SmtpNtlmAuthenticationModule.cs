@@ -16,7 +16,6 @@ namespace System.Net.Mail
 
         public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
@@ -52,10 +51,6 @@ namespace System.Net.Mail
             catch (NullReferenceException)
             {
                 return null;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "Authenticate");
             }
         }
 

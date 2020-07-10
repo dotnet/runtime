@@ -51,8 +51,6 @@ namespace System.Net
 
         private static byte[] GetChunkHeader(int size, out int offset)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, $"size:{size}");
-
             uint Mask = 0xf0000000;
             byte[] Header = new byte[10];
             int i;
@@ -106,7 +104,6 @@ namespace System.Net
             Header[8] = (byte)'\r';
             Header[9] = (byte)'\n';
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             return Header;
         }
 

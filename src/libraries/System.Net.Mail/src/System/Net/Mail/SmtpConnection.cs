@@ -416,7 +416,6 @@ namespace System.Net.Mail
 
             internal void GetConnection()
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
