@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent);net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -17,7 +18,7 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
@@ -27,5 +28,10 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

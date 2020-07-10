@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -40,9 +41,15 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
 
 </Project>
