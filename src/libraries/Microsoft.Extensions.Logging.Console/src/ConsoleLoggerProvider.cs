@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
-            if (!DoesOperatingSystemSupportAnsi())
+            if (!DoesConsoleSupportAnsi())
             {
                 _messageQueue.Console = new AnsiParsingLogConsole();
                 _messageQueue.ErrorConsole = new AnsiParsingLogConsole(stdErr: true);
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static bool DoesOperatingSystemSupportAnsi()
+        private static bool DoesConsoleSupportAnsi()
         {
 #if TargetsWindows
             // for Windows, check the console mode
