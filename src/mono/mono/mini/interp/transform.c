@@ -841,6 +841,32 @@ interp_generate_bie_throw (TransformData *td)
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 }
 
+static void
+interp_generate_not_supported_throw (TransformData *td)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_not_supported;
+
+	interp_add_ins (td, MINT_ICALL_V_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
+static void
+interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
+
+	char *msg = mono_mempool_strdup (td->rtm->domain->mp, mono_error_get_message (error_msg));
+
+	interp_add_ins (td, MINT_MONO_LDPTR);
+	td->last_ins->data [0] = get_data_item_index (td, msg);
+	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+
+	interp_add_ins (td, MINT_ICALL_P_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
+	td->sp -= 1;
+}
+
 /*
  * These are additional locals that can be allocated as we transform the code.
  * They are allocated past the method locals so they are accessed in the same
@@ -6202,6 +6228,61 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (method->wrapper_type == MONO_WRAPPER_NONE && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					m = mono_marshal_get_synchronized_wrapper (m);
+
+				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
+						m->wrapper_type == MONO_WRAPPER_NONE &&
+						mono_method_has_unmanaged_callers_only_attribute (m))) {
+
+					if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+						interp_generate_not_supported_throw (td);
+						interp_add_ins (td, MINT_LDNULL);
+						td->ip += 5;
+						PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+						break;
+					}
+
+					MonoMethod *ctor_method;
+
+					const unsigned char *next_ip = td->ip + 5;
+					/* check for
+					 *    ldftn method_sig
+					 *    newobj Delegate::.ctor
+					 */
+					if (next_ip < end &&
+					    *next_ip == CEE_NEWOBJ &&
+					    ((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
+					    is_ok (error) &&
+					    m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
+					    !strcmp (ctor_method->name, ".ctor")) {
+						mono_error_set_not_supported (error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
+						goto exit;
+					}
+
+					MonoClass *delegate_klass = NULL;
+					MonoGCHandle target_handle = 0;
+					ERROR_DECL (wrapper_error);
+					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, wrapper_error);
+					if (!is_ok (wrapper_error)) {
+						/* Generate a call that will throw an exception if the
+						 * UnmanagedCallersOnly attribute is used incorrectly */
+						interp_generate_ipe_throw_with_msg (td, wrapper_error);
+						mono_error_cleanup (wrapper_error);
+						interp_add_ins (td, MINT_LDNULL);
+					} else {
+						/* push a pointer to a trampoline that calls m */
+						gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (m, TRUE, error);
+#if SIZEOF_VOID_P == 8
+						interp_add_ins (td, MINT_LDC_I8);
+						WRITE64_INS (td->last_ins, 0, &entry);
+#else
+						interp_add_ins (td, MINT_LDC_I4);
+						WRITE32_INS (td->last_ins, 0, &entry);
+#endif
+					}
+					td->ip += 5;
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+					break;
+				}
 
 				interp_add_ins (td, *td->ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
 				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
