@@ -1230,11 +1230,11 @@ namespace System.Net.Http
                 uint optionData = 1;
                 if (Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Multiple HTTP/2 connections cannot be enabled.");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections cannot be enabled.");
                 }
             }
         }
