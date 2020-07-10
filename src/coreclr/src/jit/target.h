@@ -2002,7 +2002,7 @@ typedef unsigned __int64 target_size_t;
 typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
-#else  // !TARGET_64BIT
+#else // !TARGET_64BIT
 typedef unsigned int target_size_t;
 typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
