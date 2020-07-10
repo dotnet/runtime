@@ -9,19 +9,9 @@ namespace System.Tests
     public class Environment_MachineName
     {
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws EntryPointNotFoundException : SystemNative_GetNodeName
         public void TestMachineNameProperty()
         {
             string computerName = GetComputerName();
-            Assert.Equal(computerName, Environment.MachineName);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Browser)]
-        public void WasmTestMachineNameProperty()
-        {
-            // no good way to get the computer name straight up.
-            string computerName = "emscripten";
             Assert.Equal(computerName, Environment.MachineName);
         }
 
@@ -30,6 +20,8 @@ namespace System.Tests
 #if !Unix
                 return Environment.GetEnvironmentVariable("COMPUTERNAME");
 #else
+                if (PlatformDetection.IsBrowser)
+                    return "emscripten";
                 string temp = Interop.Sys.GetNodeName();
                 int index = temp.IndexOf('.');
                 return index < 0 ? temp : temp.Substring(0, index);
