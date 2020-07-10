@@ -117,6 +117,8 @@
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200602.3</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20359.3</MicrosoftNETILLinkTasksVersion>
+    <!-- ICU -->
+    <MicrosoftNETCoreRuntimeICUTransportVersion>5.0.0-preview.8.20359.5</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20356.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.20356.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>

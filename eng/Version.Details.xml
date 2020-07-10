@@ -118,6 +118,10 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>629993236116221fba87fe1de6d7893dd02c3722</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20359.5">
+      <Uri>https://github.com/dotnet/icu</Uri>
+      <Sha />
+    </Dependency>
     <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20356.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>266c9f5b5c1e94333e01ca77fa74d76563969842</Sha>
