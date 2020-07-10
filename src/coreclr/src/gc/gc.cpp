@@ -5825,7 +5825,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
         check_commit_cs.Enter();
         bool exceeded_p = false;
 
-        if (heap_hard_limit_oh[0] != 0)
+        if (heap_hard_limit_oh[soh] != 0)
         {
             if ((oh != gc_oh_num::none) && (committed_by_oh[oh] + size) > heap_hard_limit_oh[oh])
             {
@@ -10228,7 +10228,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         check_commit_cs.Initialize();
     }
 
-    bool separated_poh_p = use_large_pages_p && heap_hard_limit_oh[0] && (GCConfig::GetGCHeapHardLimitPOH() == 0) && (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
+    bool separated_poh_p = use_large_pages_p && heap_hard_limit_oh[soh] && (GCConfig::GetGCHeapHardLimitPOH() == 0) && (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
 
@@ -35450,25 +35450,21 @@ HRESULT GCHeap::Initialize()
 
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
-    gc_heap::heap_hard_limit_oh[0] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
-    gc_heap::heap_hard_limit_oh[1] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
-    gc_heap::heap_hard_limit_oh[2] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
+    gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
+    gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
+    gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
-    if (gc_heap::heap_hard_limit_oh[0] || gc_heap::heap_hard_limit_oh[1] || gc_heap::heap_hard_limit_oh[2])
+    if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
     {
-        if (!gc_heap::heap_hard_limit_oh[0])
+        if (!gc_heap::heap_hard_limit_oh[soh])
         {
             return E_INVALIDARG;
         }
-        if (!gc_heap::heap_hard_limit_oh[1])
+        if (!gc_heap::heap_hard_limit_oh[loh])
         {
             return E_INVALIDARG;
         }
-        if (gc_heap::heap_hard_limit_oh[2] < min_segment_size_hard_limit)
-        {
-            gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
-        }
-        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
+        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
     }
     else
     {
@@ -35493,10 +35489,10 @@ HRESULT GCHeap::Initialize()
             {
                 return E_INVALIDARG;
             }
-            gc_heap::heap_hard_limit_oh[0] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[1] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
+            gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
+            gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
+            gc_heap::heap_hard_limit_oh[poh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
+            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
         }
     }
 
@@ -35590,7 +35586,7 @@ HRESULT GCHeap::Initialize()
     if (gc_heap::heap_hard_limit)
     {
         gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
-        if (gc_heap::heap_hard_limit_oh[0])
+        if (gc_heap::heap_hard_limit_oh[soh])
         {
 #ifdef MULTIPLE_HEAPS
             if (nhp_from_config == 0)
@@ -35611,8 +35607,8 @@ HRESULT GCHeap::Initialize()
                 }
             }
 #endif
-            seg_size = gc_heap::heap_hard_limit_oh[0] / nhp;
-            large_seg_size = gc_heap::heap_hard_limit_oh[1] / nhp;
+            seg_size = gc_heap::heap_hard_limit_oh[soh] / nhp;
+            large_seg_size = gc_heap::heap_hard_limit_oh[loh] / nhp;
             pin_seg_size = (gc_heap::heap_hard_limit_oh[poh] != 0) ? (gc_heap::heap_hard_limit_oh[2] / nhp) : min_segment_size_hard_limit;
 
             size_t aligned_seg_size = align_on_segment_hard_limit (seg_size);
