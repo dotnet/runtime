@@ -29,14 +29,14 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task DeserializeObjectAsync(string json, Type type, JsonSerializerOptions options)
             {
-                var obj = await Serializer.DeserializeAsync(json, type, options);
+                var obj = await Serializer.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).Verify();
             }
 
             async Task DeserializeObjectMinimalAsync(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
-                var obj = await Serializer.DeserializeAsync(json, type, options);
+                var obj = await Serializer.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
@@ -93,13 +93,13 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
 
             ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
             testObj.Verify();
 
             json = JsonSerializer.Serialize(testObj, options);
-            testObj = await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
         }
 
@@ -113,11 +113,11 @@ namespace System.Text.Json.Serialization.Tests
             testObj.Verify();
 
             string json = JsonSerializer.Serialize(testObj, options);
-            testObj = await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
 
             json = "{}";
-            await Serializer.DeserializeAsync<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task DeserializeAsync<T>(string json)
             {
-                ITestClass obj = (ITestClass)await Serializer.DeserializeAsync<T>(json, s_options);
+                ITestClass obj = (ITestClass)await Serializer.DeserializeWrapper<T>(json, s_options);
                 obj.Verify();
             };
 

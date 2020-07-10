@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -16,18 +16,18 @@ namespace System.Text.Json.Serialization.Tests
         public static DeserializationWrapper StringDeserializer => new StringDeserializerWrapper();
         public static DeserializationWrapper StreamDeserializer => new StreamDeserializerWrapper();
 
-        protected internal abstract Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null);
+        protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null);
 
-        protected internal abstract Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null);
+        protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null);
 
         private class StringDeserializerWrapper : DeserializationWrapper
         {
-            protected internal override Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null)
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
                 return Task.FromResult(JsonSerializer.Deserialize<T>(json, options));
             }
 
-            protected internal override Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null)
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
                 return Task.FromResult(JsonSerializer.Deserialize(json, type, options));
             }
@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class StreamDeserializerWrapper : DeserializationWrapper
         {
-            protected internal override async Task<T> DeserializeAsync<T>(string json, JsonSerializerOptions options = null)
+            protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
                 if (options == null)
                 {
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            protected internal override async Task<object> DeserializeAsync(string json, Type type, JsonSerializerOptions options = null)
+            protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
                 if (options == null)
                 {
