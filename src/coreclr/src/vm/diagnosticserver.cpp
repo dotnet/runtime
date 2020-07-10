@@ -276,7 +276,7 @@ void DiagnosticServer::PauseForDiagnosticsMonitor()
             {
                 wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a server at '%s'.\n"), (LPWSTR)pDotnetDiagnosticsMonitorAddress);
                 fflush(stdout);
-                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waitied 5 seconds.");
+                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waited 5 seconds.");
                 const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
             }
         }
