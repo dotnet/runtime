@@ -421,10 +421,14 @@ namespace System.Threading
                 try
                 {
                     // If this handle is not already pending removal and hasn't already been removed
-                    if (Array.IndexOf(_registeredWaits, handle) != -1 && Array.IndexOf(_pendingRemoves, handle) == -1)
+                    if (Array.IndexOf(_registeredWaits, handle) != -1)
                     {
-                        _pendingRemoves[_numPendingRemoves++] = handle;
-                        _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
+                        if (Array.IndexOf(_pendingRemoves, handle) == -1)
+                        {
+                            _pendingRemoves[_numPendingRemoves++] = handle;
+                            _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
+                        }
+
                         pendingRemoval = true;
                     }
                 }
