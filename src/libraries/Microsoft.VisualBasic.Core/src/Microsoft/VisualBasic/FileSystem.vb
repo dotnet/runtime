@@ -221,8 +221,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch e2 As Exception
                 Throw VbMakeException(e2, vbErrors.PathFileAccess)
             End Try
