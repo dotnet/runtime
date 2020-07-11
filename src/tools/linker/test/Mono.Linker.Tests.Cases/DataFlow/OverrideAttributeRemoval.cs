@@ -10,7 +10,7 @@ using System.Reflection;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SetupLinkAttributesFile ("LinkerAttributeRemoval.xml")]
+	[SetupLinkAttributesFile ("LinkerAttributeRemovalWithOverride.xml")]
 	[SetupLinkerDescriptorFile ("OverrideAttributeRemoval.xml")]
 	[IgnoreLinkAttributes (false)]
 	[KeptMember (".ctor()")]
