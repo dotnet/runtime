@@ -42,11 +42,7 @@ namespace System.Net.Security
 
         internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions, SslStream sslStream)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this, sslAuthenticationOptions.TargetHost, sslAuthenticationOptions.ClientCertificates);
-                NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
 
             SslStreamPal.VerifyPackageInfo();
 
@@ -58,9 +54,6 @@ namespace System.Net.Security
             _securityContext = null;
             _refreshCredentialNeeded = true;
             _sslAuthenticationOptions = sslAuthenticationOptions;
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this);
         }
 
         //
@@ -98,17 +91,12 @@ namespace System.Net.Security
 
         internal ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this, kind);
-
             ChannelBinding? result = null;
             if (_securityContext != null)
             {
                 result = SslStreamPal.QueryContextChannelBinding(_securityContext, kind);
             }
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, result);
             return result;
         }
 
@@ -331,9 +319,6 @@ namespace System.Net.Security
 
         private bool AcquireClientCredentials(ref byte[]? thumbPrint)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             // Acquire possible Client Certificate information and set it on the handle.
             X509Certificate? clientCertificate = null;        // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
             List<X509Certificate>? filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
@@ -613,8 +598,6 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, cachedCred, _credentialsHandle);
             return cachedCred;
         }
 
@@ -625,9 +608,6 @@ namespace System.Net.Security
         //
         private bool AcquireServerCredentials(ref byte[]? thumbPrint)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             X509Certificate? localCertificate = null;
             X509Certificate2? selectedCert = null;
             bool cachedCred = false;
@@ -716,17 +696,12 @@ namespace System.Net.Security
                 thumbPrint = guessedThumbPrint;
             }
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, cachedCred, _credentialsHandle);
             return cachedCred;
         }
 
         //
         internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             byte[]? nextmsg = null;
             SecurityStatusPal status = GenerateToken(incomingBuffer, ref nextmsg);
 
@@ -747,8 +722,6 @@ namespace System.Net.Security
                 {
                     NetEventSource.Error(this, $"Authentication failed. Status: {status.ToString()}, Exception message: {token.GetException()!.Message}");
                 }
-
-                NetEventSource.Exit(this, token);
             }
             return token;
         }
@@ -770,8 +743,6 @@ namespace System.Net.Security
         --*/
         private SecurityStatusPal GenerateToken(ReadOnlySpan<byte> inputBuffer, ref byte[]? output)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"_refreshCredentialNeeded = {_refreshCredentialNeeded}");
-
             byte[]? result = Array.Empty<byte>();
             SecurityStatusPal status = default;
             bool cachedCreds = false;
@@ -838,10 +809,6 @@ namespace System.Net.Security
             }
 
             output = result;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(this);
-            }
 
             return status;
         }
@@ -855,9 +822,6 @@ namespace System.Net.Security
         --*/
         internal void ProcessHandshakeSuccess()
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             if (_negotiatedApplicationProtocol == default)
             {
                 // try to get ALPN info unless we already have it. (renegotiation)
@@ -882,9 +846,6 @@ namespace System.Net.Security
             }
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, out _connectionInfo);
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this);
         }
 
         /*++
@@ -901,11 +862,7 @@ namespace System.Net.Security
         --*/
         internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this, buffer, buffer.Length);
-                NetEventSource.DumpBuffer(this, buffer);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer);
 
             byte[] writeBuffer = output;
 
@@ -919,14 +876,11 @@ namespace System.Net.Security
 
             if (secStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(this, $"ERROR {secStatus}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {secStatus}");
             }
             else
             {
                 output = writeBuffer;
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(this, $"OK data size:{resultSize}");
             }
 
             return secStatus;
@@ -934,9 +888,6 @@ namespace System.Net.Security
 
         internal SecurityStatusPal Decrypt(byte[]? payload, ref int offset, ref int count)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this, payload, offset, count);
-
             if ((uint)offset > (uint)(payload == null ? 0 : payload.Length))
             {
                 NetEventSource.Fail(this, "Argument 'offset' out of range.");
@@ -962,9 +913,6 @@ namespace System.Net.Security
         //This method validates a remote certificate.
         internal bool VerifyRemoteCertificate(RemoteCertValidationCallback? remoteCertValidationCallback, ref ProtocolToken? alertToken)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
             // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
@@ -980,8 +928,7 @@ namespace System.Net.Security
 
                 if (remoteCertificateEx == null)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Exit(this, $"No remote certificate received. RemoteCertRequired: {RemoteCertRequired}");
+                    if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
@@ -1063,17 +1010,11 @@ namespace System.Net.Security
                 remoteCertificateEx?.Dispose();
             }
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, success);
-
             return success;
         }
 
         public ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             TlsAlertMessage alertMessage;
 
             switch (sslPolicyErrors)
@@ -1109,17 +1050,11 @@ namespace System.Net.Security
                 return null;
             }
 
-            ProtocolToken token = GenerateAlertToken();
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, token);
-            return token;
+            return GenerateAlertToken();
         }
 
         public ProtocolToken? CreateShutdownToken()
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             SecurityStatusPal status;
             status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);
 
@@ -1136,10 +1071,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            ProtocolToken token = GenerateAlertToken();
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, token);
-            return token;
+            return GenerateAlertToken();
         }
 
         private ProtocolToken GenerateAlertToken()
@@ -1149,9 +1081,7 @@ namespace System.Net.Security
             SecurityStatusPal status;
             status = GenerateToken(default, ref nextmsg);
 
-            ProtocolToken token = new ProtocolToken(nextmsg, status);
-
-            return token;
+            return new ProtocolToken(nextmsg, status);
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)

@@ -97,26 +97,17 @@ namespace System.Net
 
         public void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            try
+            if (Disposed)
             {
-                if (Disposed)
-                {
-                    return;
-                }
+                return;
+            }
 
-                _responseState = ResponseState.Closed;
-                HttpListenerContext.Abort();
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
+            _responseState = ResponseState.Closed;
+            HttpListenerContext.Abort();
         }
 
         public void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
@@ -124,50 +115,41 @@ namespace System.Net
             }
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"responseEntity={responseEntity},willBlock={willBlock}");
-            try
+            CheckDisposed();
+            if (responseEntity == null)
             {
-                CheckDisposed();
-                if (responseEntity == null)
+                throw new ArgumentNullException(nameof(responseEntity));
+            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
+            if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
+            {
+                ContentLength64 = responseEntity.Length;
+            }
+            EnsureResponseStream();
+            if (willBlock)
+            {
+                try
                 {
-                    throw new ArgumentNullException(nameof(responseEntity));
+                    _responseStream.Write(responseEntity, 0, responseEntity.Length);
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
-                if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
+                catch (Win32Exception)
                 {
-                    ContentLength64 = responseEntity.Length;
                 }
-                EnsureResponseStream();
-                if (willBlock)
+                finally
                 {
-                    try
-                    {
-                        _responseStream.Write(responseEntity, 0, responseEntity.Length);
-                    }
-                    catch (Win32Exception)
-                    {
-                    }
-                    finally
-                    {
-                        _responseStream.Close();
-                        _responseState = ResponseState.Closed;
-                        HttpListenerContext.Close();
-                    }
-                }
-                else
-                {
-                    _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
+                    _responseStream.Close();
+                    _responseState = ResponseState.Closed;
+                    HttpListenerContext.Close();
                 }
             }
-            finally
+            else
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
+                _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
             }
         }
 

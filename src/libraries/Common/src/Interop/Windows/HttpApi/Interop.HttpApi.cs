@@ -663,8 +663,6 @@ internal static partial class Interop
 
         private static unsafe string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            if (NetEventSource.Log.IsEnabled()) { NetEventSource.Enter(null); }
-
             string header = null;
 
             HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
@@ -682,7 +680,6 @@ internal static partial class Interop
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
 
-            if (NetEventSource.Log.IsEnabled()) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
             return header;
         }
 
@@ -721,8 +718,6 @@ internal static partial class Interop
 
         internal static unsafe WebHeaderCollection GetHeaders(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
-
             // Return value.
             WebHeaderCollection headerCollection = new WebHeaderCollection();
             byte* pMemoryBlob = (byte*)memoryBlob;
@@ -770,17 +765,11 @@ internal static partial class Interop
                 pKnownHeader++;
             }
 
-            NetEventSource.Exit(null);
             return headerCollection;
         }
 
         internal static unsafe uint GetChunks(IntPtr memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(null, $"HttpApi::GetChunks() memoryBlob:{memoryBlob}");
-            }
-
             // Return value.
             uint dataRead = 0;
             byte* pMemoryBlob = (byte*)memoryBlob;
@@ -828,17 +817,11 @@ internal static partial class Interop
                 dataChunkIndex = -1;
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(null);
-            }
             return dataRead;
         }
 
         internal static unsafe HTTP_VERB GetKnownVerb(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
-
             // Return value.
             HTTP_VERB verb = HTTP_VERB.HttpVerbUnknown;
 
@@ -848,14 +831,11 @@ internal static partial class Interop
                 verb = request->Verb;
             }
 
-            NetEventSource.Exit(null);
             return verb;
         }
 
         internal static unsafe IPEndPoint GetRemoteEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
-
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
@@ -874,14 +854,11 @@ internal static partial class Interop
                 endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             return endpoint;
         }
 
         internal static unsafe IPEndPoint GetLocalEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
-
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
@@ -900,7 +877,6 @@ internal static partial class Interop
                 endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             return endpoint;
         }
 

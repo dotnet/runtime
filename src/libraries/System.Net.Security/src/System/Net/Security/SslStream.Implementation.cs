@@ -128,8 +128,6 @@ namespace System.Net.Security
         //
         private void CloseInternal()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             _exception = s_disposedSentinel;
             _context?.Close();
 
@@ -154,8 +152,6 @@ namespace System.Net.Security
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
@@ -505,24 +501,15 @@ namespace System.Net.Security
         //
         private bool CompleteHandshake(ref ProtocolToken? alertToken)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this);
-
             _context!.ProcessHandshakeSuccess();
 
             if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, ref alertToken))
             {
                 _handshakeCompleted = false;
-
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Exit(this, false);
                 return false;
             }
 
             _handshakeCompleted = true;
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, true);
             return true;
         }
 
@@ -1162,9 +1149,6 @@ namespace System.Net.Security
         // Returns TLS Frame size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(this, buffer.Length);
-
             int payloadSize = -1;
             switch (_framing)
             {
@@ -1199,9 +1183,6 @@ namespace System.Net.Security
                 default:
                     break;
             }
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Exit(this, payloadSize);
 
             return payloadSize;
         }

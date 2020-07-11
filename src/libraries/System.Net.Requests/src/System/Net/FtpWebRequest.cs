@@ -527,11 +527,7 @@ namespace System.Net
         //
         public override WebResponse GetResponse()
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             try
             {
@@ -607,10 +603,6 @@ namespace System.Net
                 }
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, _ftpWebResponse);
-            }
             return _ftpWebResponse!;
         }
 
@@ -619,11 +611,7 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             ContextAwareResult? asyncResult;
 
@@ -689,10 +677,6 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
 
             return asyncResult;
         }
@@ -702,7 +686,6 @@ namespace System.Net
         /// </summary>
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 // parameter validation
@@ -729,10 +712,6 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
 
             return _ftpWebResponse!;
         }
@@ -742,11 +721,7 @@ namespace System.Net
         /// </summary>
         public override Stream GetRequestStream()
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             try
             {
@@ -790,10 +765,6 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
             return _stream;
         }
 
@@ -802,11 +773,7 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             ContextAwareResult? asyncResult = null;
             try
@@ -837,17 +804,12 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
 
             return asyncResult;
         }
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             Stream? requestStream = null;
             try
             {
@@ -884,10 +846,6 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
             return requestStream;
         }
@@ -1220,7 +1178,6 @@ namespace System.Net
         //
         private void SyncRequestCallback(object? obj)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, obj);
 
             RequestStage stageMode = RequestStage.CheckForError;
             try
@@ -1261,7 +1218,6 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 CheckError(); //will throw on error
             }
         }
@@ -1271,7 +1227,6 @@ namespace System.Net
         //
         private void AsyncRequestCallback(object? obj)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, obj);
             RequestStage stageMode = RequestStage.CheckForError;
 
             try
@@ -1373,7 +1328,6 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
@@ -1502,7 +1456,6 @@ namespace System.Net
             if (_aborted)
                 return;
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             try
             {
@@ -1534,10 +1487,6 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 
