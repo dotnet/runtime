@@ -360,7 +360,7 @@ namespace System.Text.Json
         {
             if (jsonPropertyInfo.IsIgnored)
             {
-                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(jsonPropertyInfo, options);
+                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(jsonPropertyInfo);
             }
 
             JsonConverter converter = jsonPropertyInfo.ConverterBase;

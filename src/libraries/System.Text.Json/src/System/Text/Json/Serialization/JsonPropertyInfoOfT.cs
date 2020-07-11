@@ -65,7 +65,7 @@ namespace System.Text.Json
                 HasSetter = true;
             }
 
-            GetPolicies(ignoreCondition);
+            GetPolicies(ignoreCondition, isReferenceType: default(T) == null);
         }
 
         public override JsonConverter ConverterBase
@@ -97,7 +97,7 @@ namespace System.Text.Json
             T value = Get!(obj);
 
             // Since devirtualization only works in non-shared generics,
-            // the default comparer is uded only for value types for now.
+            // the default comparer is used only for value types for now.
             // For reference types there is a quick check for null.
             if (IgnoreDefaultValuesOnWrite && (
                 default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
