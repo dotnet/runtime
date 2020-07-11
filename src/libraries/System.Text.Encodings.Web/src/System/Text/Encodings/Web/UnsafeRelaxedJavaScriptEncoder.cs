@@ -79,14 +79,14 @@ namespace System.Text.Encodings.Web
                     {
                         sourceValue = Sse2.LoadVector128(startingAddress);
                         mask = Sse2Helper.CreateAsciiMask(sourceValue);
-                        containsNonAsciiChars = Sse2.MoveMask(mask.AsByte()) != 0;
+                        containsNonAsciiChars = Sse2Helper.ContainsNonAsciiByte(mask.AsSByte());
                     }
                     else
                     {
                         Debug.Assert(AdvSimd.Arm64.IsSupported);
                         sourceValue = AdvSimd.LoadVector128(startingAddress);
                         mask = AdvSimdHelper.CreateAsciiMask(sourceValue);
-                        containsNonAsciiChars = AdvSimd.Arm64.MinAcross(mask.AsSByte()).ToScalar() < 0;
+                        containsNonAsciiChars = AdvSimdHelper.ContainsNonAsciiByte(mask.AsSByte());
                     }
 
                     if (containsNonAsciiChars)
@@ -112,25 +112,22 @@ namespace System.Text.Encodings.Web
                         if (Sse2.IsSupported)
                         {
                             mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-                            index = Sse2.MoveMask(mask.AsByte());
+                            index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                         }
                         else
                         {
                             Debug.Assert(AdvSimd.Arm64.IsSupported);
                             mask = AdvSimdHelper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-                            index = AdvSimdHelper.MoveMask(mask.AsByte());
+                            index = AdvSimdHelper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                         }
 
-                        // If index == 0, that means none of the 8 characters needed to be escaped.
-                        // TrailingZeroCount is relatively expensive, avoid it if possible.
-                        if (index != 0)
+                        // If index >= 16, that means none of the 8 characters needed to be escaped.
+                        if (index < 16)
                         {
                             // Found at least one character that needs to be escaped, figure out the index of
                             // the first one found that needed to be escaped within the 8 characters.
-                            Debug.Assert(index > 0 && index <= 65_535);
-                            int tzc = BitOperations.TrailingZeroCount(index);
-                            Debug.Assert(tzc % 2 == 0 && tzc >= 0 && tzc <= 16);
-                            idx += tzc >> 1;
+                            Debug.Assert(index % 2 == 0);
+                            idx += index >> 1;
                             return idx;
                         }
                         idx += 8;
@@ -178,12 +175,12 @@ namespace System.Text.Encodings.Web
                         if (Sse2.IsSupported)
                         {
                             sourceValue = Sse2.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = Sse2.MoveMask(sourceValue) != 0;
+                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
                         }
                         else
                         {
                             sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
+                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
                         }
 
                         if (containsNonAsciiBytes)
@@ -229,24 +226,20 @@ namespace System.Text.Encodings.Web
                             if (Sse2.IsSupported)
                             {
                                 Vector128<sbyte> mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-                                index = Sse2.MoveMask(mask);
+                                index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                             }
                             else
                             {
                                 Vector128<sbyte> mask = AdvSimdHelper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-                                index = AdvSimdHelper.MoveMask(mask.AsByte());
+                                index = AdvSimdHelper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                             }
 
-                            // If index == 0, that means none of the 16 bytes needed to be escaped.
-                            // TrailingZeroCount is relatively expensive, avoid it if possible.
-                            if (index != 0)
+                            // If index >= 16, that means none of the 16 bytes needed to be escaped.
+                            if (index < 16)
                             {
                                 // Found at least one byte that needs to be escaped, figure out the index of
                                 // the first one found that needed to be escaped within the 16 bytes.
-                                Debug.Assert(index > 0 && index <= 65_535);
-                                int tzc = BitOperations.TrailingZeroCount(index);
-                                Debug.Assert(tzc >= 0 && tzc <= 16);
-                                idx += tzc;
+                                idx += index;
                                 return idx;
                             }
                             idx += 16;

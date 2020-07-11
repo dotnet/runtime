@@ -102,13 +102,13 @@ namespace System.Text.Encodings.Web
                         if (Sse2.IsSupported)
                         {
                             Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = Sse2.MoveMask(sourceValue) != 0;
+                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
                         }
                         else
                         {
                             Debug.Assert(AdvSimd.Arm64.IsSupported);
                             Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() < 0;
+                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
                         }
 
                         if (containsNonAsciiBytes)

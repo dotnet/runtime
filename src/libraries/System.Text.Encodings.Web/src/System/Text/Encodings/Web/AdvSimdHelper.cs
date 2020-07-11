@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -82,21 +83,30 @@ namespace System.Text.Encodings.Web
             return mask;
         }
 
-        // Encodes an operation equivalent to Sse2.MoveMask
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MoveMask(Vector128<byte> value)
+        public static bool ContainsNonAsciiByte(Vector128<sbyte> value)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+            return AdvSimd.Arm64.MinAcross(value).ToScalar() < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetIndexOfFirstNonAsciiByte(Vector128<byte> value)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian);
 
-            // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
+            // extractedBits[i] = (value[i] & 0x80 == 0x80) & (1 << (12 * (i % 2)))
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, s_mostSignficantBitMask), s_mostSignficantBitMask);
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitmask);
 
-            // self-pairwise add until all flags have moved to the first two bytes of the vector
+            // collapse mask to lower bits
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsUInt16().ToScalar();
+            ulong mask = extractedBits.AsUInt64().ToScalar();
+
+            // calculate the index
+            int index = BitOperations.TrailingZeroCount(mask) / 4;
+            Debug.Assert((mask != 0) ? index < 16 : index >= 16);
+            return index;
         }
 
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;
@@ -118,8 +128,8 @@ namespace System.Text.Encodings.Web
         private static readonly Vector128<sbyte> s_tildeMaskSByte = Vector128.Create((sbyte)'~');
 
         private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
-        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                        Vector128.Create(0x80402010_08040201).AsByte() :
-                                        Vector128.Create(0x01020408_10204080).AsByte();
+        private static readonly Vector128<byte> s_bitmask = BitConverter.IsLittleEndian ?
+            Vector128.Create((ushort)0x1001).AsByte() :
+            Vector128.Create((ushort)0x0110).AsByte();
     }
 }

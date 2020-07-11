@@ -729,34 +729,34 @@ namespace System.Text.Encodings.Web
 
                         // Load the next 16 bytes.
                         Vector128<sbyte> sourceValue;
-                        bool allBytesAreAscii;
+                        bool containsNonAsciiBytes;
 
                         // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                         // casted to signed byte.
                         if (Sse2.IsSupported)
                         {
                             sourceValue = Sse2.LoadVector128(startingAddress);
-                            allBytesAreAscii = Sse2.MoveMask(sourceValue) == 0;
+                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
                         }
                         else
                         {
                             Debug.Assert(AdvSimd.Arm64.IsSupported);
                             sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            allBytesAreAscii = AdvSimd.Arm64.MinAcross(sourceValue).ToScalar() >= 0;
+                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
                         }
 
-                        if (allBytesAreAscii)
+                        if (!containsNonAsciiBytes)
                         {
                             // All of the following 16 bytes is ASCII.
 
                             if (Ssse3.IsSupported)
                             {
                                 Vector128<sbyte> mask = Ssse3Helper.CreateEscapingMask(sourceValue, bitMaskLookupAsciiNeedsEscaping, bitPosLookup, nibbleMaskSByte, nullMaskSByte);
-                                int index = Sse2.MoveMask(mask);
+                                int index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
 
-                                if (index != 0)
+                                if (index < 16)
                                 {
-                                    idx += BitHelper.GetIndexOfFirstNeedToEscape(index);
+                                    idx += index;
                                     goto Return;
                                 }
                             }

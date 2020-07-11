@@ -91,7 +91,7 @@ namespace System.Text.Encodings.Web
             short* end = ptr + (uint)textLength;
 
 #if NETCOREAPP
-            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+            if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 if (textLength >= Vector128<short>.Count)
                 {
@@ -154,9 +154,8 @@ namespace System.Text.Encodings.Web
                     // Check if any of the 16 characters need to be escaped.
                     index = NeedsEscaping(sourceValue);
 
-                    // If index == 0, that means none of the 16 characters needed to be escaped.
-                    // TrailingZeroCount is relatively expensive, avoid it if possible.
-                    if (index != 0)
+                    // If index >= 16, that means none of the 16 characters needed to be escaped.
+                    if (index < 16)
                     {
                         goto VectorizedFound;
                     }
@@ -196,9 +195,8 @@ namespace System.Text.Encodings.Web
 
                     index = NeedsEscaping(sourceValue);
 
-                    // If index == 0, that means none of the 16 bytes needed to be escaped.
-                    // TrailingZeroCount is relatively expensive, avoid it if possible.
-                    if (index != 0)
+                    // If index >= 16, that means none of the 16 bytes needed to be escaped.
+                    if (index < 16)
                     {
                         goto VectorizedFound;
                     }
@@ -231,9 +229,8 @@ namespace System.Text.Encodings.Web
             return -1;
 
         VectorizedFound:
-            idx = BitHelper.GetIndexOfFirstNeedToEscape(index);
-            idx += CalculateIndex(ptr, text);
-            return idx;
+            index += CalculateIndex(ptr, text);
+            return index;
 
             static int CalculateIndex(short* ptr, char* text)
             {
@@ -259,7 +256,7 @@ namespace System.Text.Encodings.Web
                 byte* end = ptr + textLength;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+                if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                 {
                     if (textLength >= Vector128<sbyte>.Count)
                     {
@@ -303,9 +300,8 @@ namespace System.Text.Encodings.Web
 
                     index = NeedsEscaping(sourceValue);
 
-                    // If index == 0, that means none of the 16 bytes needed to be escaped.
-                    // TrailingZeroCount is relatively expensive, avoid it if possible.
-                    if (index != 0)
+                    // If index >= 16, that means none of the 16 bytes needed to be escaped.
+                    if (index < 16)
                     {
                         goto VectorizedFound;
                     }
@@ -333,8 +329,9 @@ namespace System.Text.Encodings.Web
                         Sse2.LoadVector128((sbyte*)vectorizedEnd) :
                         AdvSimd.LoadVector128((sbyte*)vectorizedEnd);
 
+                    // If index >= 16, that means none of the 16 bytes needed to be escaped.
                     index = NeedsEscaping(sourceValue);
-                    if (index != 0)
+                    if (index < 16)
                     {
                         ptr = vectorizedEnd;
                         goto VectorizedFound;
@@ -353,9 +350,8 @@ namespace System.Text.Encodings.Web
                 return -1;
 
             VectorizedFound:
-                idx = BitHelper.GetIndexOfFirstNeedToEscape(index);
-                idx += CalculateIndex(ptr, pValue);
-                return idx;
+                index += CalculateIndex(ptr, pValue);
+                return index;
 
                 static int CalculateIndex(byte* ptr, byte* pValue) => (int)(ptr - pValue);
 #endif
@@ -469,13 +465,13 @@ namespace System.Text.Encodings.Web
                     ? Ssse3Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue)
                     : Sse2Helper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue);
 
-                int index = Sse2.MoveMask(mask.AsByte());
+                int index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                 return index;
             }
             else
             {
                 Vector128<sbyte> mask = AdvSimdHelper.CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(sourceValue);
-                int index = AdvSimdHelper.MoveMask(mask.AsByte());
+                int index = AdvSimdHelper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                 return index;
             }
         }
