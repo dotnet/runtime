@@ -46,62 +46,64 @@ namespace Microsoft.Extensions.Logging.Console
             int eventId = logEntry.EventId.Id;
             Exception exception = logEntry.Exception;
             const int DefaultBufferSize = 1024;
-            var output = new PooledByteBufferWriter(DefaultBufferSize);
-            using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
+            using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
-                writer.WriteStartObject();
-                string timestamp = null;
-                var timestampFormat = FormatterOptions.TimestampFormat;
-                if (timestampFormat != null)
+                using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
                 {
-                    var dateTime = FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
-                    timestamp = dateTime.ToString(timestampFormat);
-                }
-                writer.WriteString("Timestamp", timestamp);
-                writer.WriteNumber(nameof(logEntry.EventId), eventId);
-                writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
-                writer.WriteString(nameof(logEntry.Category), category);
-                writer.WriteString("Message", message);
-
-                if (exception != null)
-                {
-                    writer.WriteStartObject(nameof(Exception));
-                    writer.WriteString(nameof(exception.Message), exception.Message.ToString());
-                    writer.WriteString("Type", exception.GetType().ToString());
-                    writer.WriteStartArray(nameof(exception.StackTrace));
-                    string stackTrace = exception?.StackTrace;
-                    if (stackTrace != null)
+                    writer.WriteStartObject();
+                    string timestamp = null;
+                    var timestampFormat = FormatterOptions.TimestampFormat;
+                    if (timestampFormat != null)
                     {
-#if NETSTANDARD2_0
-                        foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#else
-                        foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
-#endif
+                        var dateTime = FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+                        timestamp = dateTime.ToString(timestampFormat);
+                    }
+                    writer.WriteString("Timestamp", timestamp);
+                    writer.WriteNumber(nameof(logEntry.EventId), eventId);
+                    writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
+                    writer.WriteString(nameof(logEntry.Category), category);
+                    writer.WriteString("Message", message);
+
+                    if (exception != null)
+                    {
+                        writer.WriteStartObject(nameof(Exception));
+                        writer.WriteString(nameof(exception.Message), exception.Message.ToString());
+                        writer.WriteString("Type", exception.GetType().ToString());
+                        writer.WriteStartArray(nameof(exception.StackTrace));
+                        string stackTrace = exception?.StackTrace;
+                        if (stackTrace != null)
                         {
-                            writer.WriteStringValue(stackTraceLines);
+#if NETSTANDARD2_0
+                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
+#else
+                            foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
+#endif
+                            {
+                                writer.WriteStringValue(stackTraceLines);
+                            }
+                        }
+                        writer.WriteEndArray();
+                        writer.WriteNumber(nameof(exception.HResult), exception.HResult);
+                        writer.WriteEndObject();
+                    }
+
+                    if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateDictionary)
+                    {
+                        foreach (KeyValuePair<string, object> item in stateDictionary)
+                        {
+                            writer.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
                         }
                     }
-                    writer.WriteEndArray();
-                    writer.WriteNumber(nameof(exception.HResult), exception.HResult);
+                    WriteScopeInformation(writer, scopeProvider);
                     writer.WriteEndObject();
+                    writer.Flush();
                 }
-
-                if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateDictionary)
-                {
-                    foreach (KeyValuePair<string, object> item in stateDictionary)
-                    {
-                        writer.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
-                    }
-                }
-                GetScopeInformation(writer, scopeProvider);
-                writer.WriteEndObject();
-                writer.Flush();
-            }
 #if NETSTANDARD2_0
-            textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
+                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
 #else
-            textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
+                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
 #endif
+            }
             textWriter.Write(Environment.NewLine);
         }
 
@@ -119,7 +121,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void GetScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)
+        private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {

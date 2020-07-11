@@ -46,15 +46,15 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
-            if (!DoesConsoleSupportAnsi())
-            {
-                _messageQueue.Console = new AnsiParsingLogConsole();
-                _messageQueue.ErrorConsole = new AnsiParsingLogConsole(stdErr: true);
-            }
-            else
+            if (DoesConsoleSupportAnsi())
             {
                 _messageQueue.Console = new AnsiLogConsole(new AnsiSystemConsole());
                 _messageQueue.ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
+            }
+            else
+            {
+                _messageQueue.Console = new AnsiParsingLogConsole();
+                _messageQueue.ErrorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
         }
 

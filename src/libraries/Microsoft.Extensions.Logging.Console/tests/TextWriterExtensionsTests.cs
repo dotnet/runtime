@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var textWriter = new StringWriter();
 
             // Act
-            textWriter.WriteColoredMessage(message, background: null, foreground: ConsoleColor.DarkGreen, disableColors: false);
+            textWriter.WriteColoredMessage(message, background: null, foreground: ConsoleColor.DarkGreen);
 
             // Assert
             Assert.Equal(expectedMessage, textWriter.ToString());
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var textWriter = new StringWriter();
 
             // Act
-            textWriter.WriteColoredMessage(message, background: ConsoleColor.Red, foreground: null, disableColors: false);
+            textWriter.WriteColoredMessage(message, background: ConsoleColor.Red, foreground: null);
 
             // Assert
             Assert.Equal(expectedMessage, textWriter.ToString());
@@ -62,10 +62,24 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var textWriter = new StringWriter();
 
             // Act
-            textWriter.WriteColoredMessage(message, ConsoleColor.Red, ConsoleColor.DarkGreen, disableColors: false);
+            textWriter.WriteColoredMessage(message, ConsoleColor.Red, ConsoleColor.DarkGreen);
 
             // Assert
             Assert.Equal(expectedMessage, textWriter.ToString());
+        }
+
+        [Fact]
+        public void WriteColoredMessage_NullColors_NoAnsiEmbedded()
+        {
+            // Arrange
+            var message = "Request received";
+            var textWriter = new StringWriter();
+
+            // Act
+            textWriter.WriteColoredMessage(message, null, null);
+
+            // Assert
+            Assert.Equal(message, textWriter.ToString());
         }
     }
 }

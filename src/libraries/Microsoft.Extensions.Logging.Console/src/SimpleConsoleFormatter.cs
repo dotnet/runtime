@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
             if (logLevelString != null)
             {
-                textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground, FormatterOptions.DisableColors);
+                textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground);
             }
             CreateDefaultLogMessage(textWriter, logEntry, message, scopeProvider);
         }
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             // scope information
-            GetScopeInformation(textWriter, scopeProvider, singleLine);
+            WriteScopeInformation(textWriter, scopeProvider, singleLine);
             if (singleLine)
             {
                 textWriter.Write(' ');
@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void GetScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider, bool singleLine)
+        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider, bool singleLine)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {

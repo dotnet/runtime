@@ -11,13 +11,8 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal static class TextWriterExtensions
     {
-        public static bool WriteColoredMessage(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground, bool disableColors)
+        public static void WriteColoredMessage(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground)
         {
-            if (disableColors)
-            {
-                textWriter.Write(message);
-                return false;
-            }
             // Order: backgroundcolor, foregroundcolor, Message, reset foregroundcolor, reset backgroundcolor
             if (background.HasValue)
             {
@@ -36,7 +31,6 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 textWriter.Write(AnsiParser.DefaultBackgroundColor); // reset to the background color
             }
-            return background.HasValue || foreground.HasValue;
         }
     }
 }

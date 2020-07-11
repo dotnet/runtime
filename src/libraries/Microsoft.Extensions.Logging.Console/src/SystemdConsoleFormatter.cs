@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Logging.Console
             textWriter.Write(']');
 
             // scope information
-            GetScopeInformation(textWriter, scopeProvider);
+            WriteScopeInformation(textWriter, scopeProvider);
 
             // message
             if (!string.IsNullOrEmpty(message))
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void GetScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider)
+        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {

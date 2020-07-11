@@ -45,7 +45,10 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public void Parse(string message)
         {
-            (int startIndex, int length, ConsoleColor? bg, ConsoleColor? fg) content = (-1, 0, null, null);
+            int startIndex = -1;
+            int length = 0;
+            ConsoleColor? foreground = null;
+            ConsoleColor? background = null;
             var span = message.AsSpan();
             const char EscapeChar = '\x1B';
             ConsoleColor? color = null;
@@ -54,17 +57,17 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (span[i] != EscapeChar || span.Length < i + 4 || span[i + 1] != '[')
                 {
-                    if (content.startIndex == -1)
+                    if (startIndex == -1)
                     {
-                        content.startIndex = i;
+                        startIndex = i;
                     }
                     int nextEscapeIndex = span.Slice(i, span.Length - i).IndexOf(EscapeChar);
                     if (nextEscapeIndex == -1)
                     {
-                        content.length += span.Length - i;
+                        length += span.Length - i;
                         break;
                     }
-                    content.length += nextEscapeIndex;
+                    length += nextEscapeIndex;
                     i += nextEscapeIndex - 1;
                 }
                 else if (span[i + 3] == 'm')
@@ -88,34 +91,34 @@ namespace Microsoft.Extensions.Logging.Console
                     if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
 #endif
                     {
-                        if (SetsForegroundColor(escapeCode, isBright, out color))
+                        if (TryGetForegroundColor(escapeCode, isBright, out color))
                         {
-                            if (content.startIndex != -1)
+                            if (startIndex != -1)
                             {
-                                _onParseWrite(message, content.startIndex, content.length, content.bg, content.fg);
-                                content.startIndex = -1;
-                                content.length = 0;
+                                _onParseWrite(message, startIndex, length, background, foreground);
+                                startIndex = -1;
+                                length = 0;
                             }
-                            content.fg = color;
+                            foreground = color;
                             isBright = false;
                         }
-                        else if (SetsBackgroundColor(escapeCode, out color))
+                        else if (TryGetBackgroundColor(escapeCode, out color))
                         {
-                            if (content.startIndex != -1)
+                            if (startIndex != -1)
                             {
-                                _onParseWrite(message, content.startIndex, content.length, content.bg, content.fg);
-                                content.startIndex = -1;
-                                content.length = 0;
+                                _onParseWrite(message, startIndex, length, background, foreground);
+                                startIndex = -1;
+                                length = 0;
                             }
-                            content.bg = color;
+                            background = color;
                         }
                         i += 4;
                     }
                 }
             }
-            if (content.startIndex != -1)
+            if (startIndex != -1)
             {
-                _onParseWrite(message, content.startIndex, content.length, content.bg, content.fg);
+                _onParseWrite(message, startIndex, length, background, foreground);
             }
         }
 
@@ -161,7 +164,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private static bool SetsForegroundColor(int number, bool isBright, out ConsoleColor? color)
+        private static bool TryGetForegroundColor(int number, bool isBright, out ConsoleColor? color)
         {
             color = number switch
             {
@@ -178,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Console
             return color != null || number == 39;
         }
 
-        private static bool SetsBackgroundColor(int number, out ConsoleColor? color)
+        private static bool TryGetBackgroundColor(int number, out ConsoleColor? color)
         {
             color = number switch
             {
