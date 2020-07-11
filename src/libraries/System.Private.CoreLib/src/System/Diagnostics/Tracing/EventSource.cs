@@ -4140,11 +4140,15 @@ namespace System.Diagnostics.Tracing
 
         internal virtual bool IsEventEnabled(EventWrittenEventArgs eventData)
         {
-            string eventSourceName = eventData.EventSource.Name;
+            return IsEventEnabled(eventData.EventSource.Name, eventData.Level, eventData.Keywords);
+        }
+
+        internal virtual bool IsEventEnabled(string eventSourceName, EventLevel level, EventKeywords keywords)
+        {
             if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceName))
             {
                 EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceName];
-                return (state.Level <= eventData.Level) && ((state.Keyword & eventData.Keywords) != 0);
+                return (state.Level <= level) && ((state.Keyword & keywords) != 0);
             }
             return false;
         }
