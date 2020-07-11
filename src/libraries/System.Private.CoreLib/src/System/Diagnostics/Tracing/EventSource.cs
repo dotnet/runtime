@@ -4105,6 +4105,7 @@ namespace System.Diagnostics.Tracing
 
             if (_EnabledEventSourceStates != null)
                 _EnabledEventSourceStates[eventSource.Name] = new EventListenerEventSourceState{ Level = level, Keyword = matchAnyKeyword };
+            eventSource.UpdateListenerLevelAndKeywords(level, matchAnyKeyword);
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
