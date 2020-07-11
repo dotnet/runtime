@@ -127,9 +127,8 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            Assert.Equal(
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : PlatformID.Unix,
-                id);
+            PlatformID expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? PlatformID.Other : PlatformID.Unix;
+            Assert.Equal(expected, id);
         }
 
         [Fact]
@@ -142,12 +141,14 @@ namespace System.Tests
             Assert.True(version.Major > 0);
 
             Assert.Contains(version.ToString(2), versionString);
-            Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
+
+            string expectedOS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? "Other" : "Unix";
+            Assert.Contains(expectedOS, versionString);
         }
 
         // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]

@@ -6530,6 +6530,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    return false;
+#if 0 // the optimization is temporary disabled due to https://github.com/dotnet/wpf/issues/3226 issue.
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
@@ -6597,4 +6599,5 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     }
     LowerStoreIndirCommon(blkNode);
     return true;
+#endif
 }
