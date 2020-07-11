@@ -188,7 +188,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         if (callback != nullptr)
             callback(strerror(errno), errno);
 
-        const bool fCloseSuccess = ::close(clientSocket) != 0;
+        const bool fCloseSuccess = ::close(clientSocket) == 0;
         if (!fCloseSuccess && callback != nullptr)
             callback(strerror(errno), errno);
         return nullptr;
