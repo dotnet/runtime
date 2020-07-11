@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"
-          Condition="'$(TargetOS)' != 'Windows_NT'">
+          Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'">
 
     <PropertyGroup>
       <!--

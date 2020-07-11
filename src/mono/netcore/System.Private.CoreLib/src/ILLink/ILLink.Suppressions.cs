@@ -16,6 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Diagnostics.Tracing.NullableTypeInfo.#ctor(System.Type,System.Collections.Generic.List{System.Type})")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Diagnostics.Tracing.NullableTypeInfo.WriteData(System.Diagnostics.Tracing.TraceLoggingDataCollector,System.Diagnostics.Tracing.PropertyValue)")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.Diagnostics.Tracing.Statics.GetProperties(System.Type)")]
+[assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "T:System.Environment")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.LazyDebugView`1.#ctor(System.Lazy{`0})")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.LazyDebugView`1.get_IsValueCreated")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.LazyDebugView`1.get_IsValueFaulted")]

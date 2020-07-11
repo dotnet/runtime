@@ -16,30 +16,6 @@
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
 
-  <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>System.SR</ClassName>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
-    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
-    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.CommandLine">
-      <Version>$(SystemCommandLineVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
-
   <PropertyGroup>
     <CrossHostArch></CrossHostArch>
     <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
@@ -54,24 +30,69 @@
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
 
-    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+    <DefineConstants Condition="'$(ShouldRunCrossGen)' == 'true'">$(DefineConstants);SHOULD_RUN_CROSSGEN</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="$(BinDir)\$(JitInterfaceLibraryName)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="%(FileName)%(Extension)"
-     />
+  <Choose>
+    <When Condition="'$(ShouldRunCrossGen)' == 'true'">
+      <ItemGroup Label="Embedded Resources">
+        <EmbeddedResource Include="Properties\Resources.resx">
+          <GenerateSource>true</GenerateSource>
+          <ClassName>System.SR</ClassName>
+        </EmbeddedResource>
+      </ItemGroup>
 
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
-     />
-  </ItemGroup>
+      <ItemGroup>
+        <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+        <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+        <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
+      </ItemGroup>
 
-  <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">
+      <ItemGroup>
+        <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
+        <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <PackageReference Include="System.CommandLine">
+          <Version>$(SystemCommandLineVersion)</Version>
+        </PackageReference>
+      </ItemGroup>
+
+      <PropertyGroup>
+        <CrossHostArch></CrossHostArch>
+        <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
+
+        <TargetOSComponent>unix</TargetOSComponent>
+        <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+        <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+
+        <LibraryNamePrefix>lib</LibraryNamePrefix>
+        <LibraryNamePrefix Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))"></LibraryNamePrefix>
+        <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))">.dll</LibraryNameExtension>
+        <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
+        <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
+
+        <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <Content Include="$(BinDir)\$(JitInterfaceLibraryName)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          Link="%(FileName)%(Extension)"
+        />
+
+        <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
+        />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != '' and '$(ShouldRunCrossGen)' == 'true'">
 
     <PropertyGroup>
       <CrossPackageFolder>$(BinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
@@ -98,9 +119,9 @@
 
   </Target>
 
-  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
+  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" Condition="'$(ShouldRunCrossGen)' == 'true'" />
 
-  <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile">
+  <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile" Condition="'$(ShouldRunCrossGen)' == 'true'">
     <PropertyGroup>
       <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
       <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibraryFileExtension>

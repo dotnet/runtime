@@ -223,6 +223,11 @@
 			<field name="m_value"/>
 		</type>
 
+		<!-- domain.c: mono_defaults.int_class -->
+		<type fullname="System.IntPtr">
+			<field name="m_value"/>
+		</type>
+
 		<!-- exception.c (mono_get_exception_invalid_cast) -->
 		<type fullname="System.InvalidCastException">
 			<!-- mono_exception_from_name -->
@@ -270,6 +275,9 @@
 
 		<!-- mono-mlist.c (managed list): used in threadpool.c and gc.c -->
 		<type fullname="Mono.MonoListItem" preserve="fields" />
+
+		<!-- domain.c: mono_defaults.type_class -->
+		<type fullname="System.MonoType" preserve="nothing" />
 
 		<!-- domain.c: mono_defaults.multicastdelegate_class -->
 		<type fullname="System.MulticastDelegate" preserve="fields" />
@@ -447,6 +455,11 @@
 			<field name="m_value"/>
 		</type>
 
+		<!-- domain.c: mono_defaults.uint_class -->
+		<type fullname="System.UIntPtr">
+			<field name="m_value"/>
+		</type>
+
 		<!-- object.c: create_unhandled_exception_eventargs (assert) -->
 		<type fullname="System.UnhandledExceptionEventArgs">
 			<method signature="System.Void .ctor(System.Object,System.Boolean)" />
@@ -507,7 +520,10 @@
 
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 
-		<type fullname="System.Reflection.EventInfo" preserve="fields" />
+		<type fullname="System.Reflection.EventInfo" preserve="fields">
+			<method name="AddEventFrame" />
+			<method name="StaticAddEventAdapterFrame" />
+		</type>
 
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
@@ -564,6 +580,10 @@
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<!-- reflection.c: ves_icall_get_parameter_info -->
 		<type fullname="System.Reflection.RuntimeParameterInfo" >
+			<!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
+			<field name="MemberImpl" />
+			<field name="PositionImpl" />
+			<!-- reflection.c add_parameter_object_to_array -->
 			<method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
 		</type>
 
@@ -620,6 +640,8 @@
 		<!-- native-library.c: mono_class_get_native_library_class -->
 		<type fullname="System.Runtime.InteropServices.NativeLibrary">
 			<method name="MonoLoadLibraryCallbackStub" />
+			<method name="MonoResolveUnmanagedDll" />
+			<method name="MonoResolveUnmanagedDllUsingEvent" />
 		</type>
 
 		<!-- domain.c: mono_defaults.monitor_class -->
@@ -638,7 +660,9 @@
 
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread" preserve="fields" />
+		<type fullname="System.Threading.Thread" preserve="fields">
+			<method name="get_CurrentContext" />
+		</type>
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->

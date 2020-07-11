@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PackageTargetWindows>false</PackageTargetWindows>
+    <PackageTargetWindows Condition="'$(OS)' == 'Windows_NT' and '$(TargetOs)' == ''">true</PackageTargetWindows>
+  </PropertyGroup>
+
+  <Import Condition="'$(PackageTargetWindows)' == 'true'" Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
@@ -11,5 +16,8 @@
     <NativeBinary Include="$(BinDir)ilasm$(ApplicationFileExtension)" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+  <Import Condition="'$(PackageTargetWindows)' == 'true'" Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+
+  <!-- Avoid "There is no target in the project" error. -->
+  <Target Condition="'$(PackageTargetWindows)' == 'false'" Name="Empty" />
 </Project>

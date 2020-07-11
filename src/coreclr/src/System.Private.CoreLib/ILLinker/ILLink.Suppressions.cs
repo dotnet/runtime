@@ -60,6 +60,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.TypeNameParser.ResolveType(System.Reflection.Assembly,System.String[],System.Func{System.Reflection.Assembly,System.String,System.Boolean,System.Type},System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "M:System.__ComObject.CreateEventProvider(System.RuntimeType)")]
+[assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "T:System.Environment")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2006", Scope = "member", Target = "T:System.Resources.ResourceReader")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2009", Scope = "member", Target = "T:System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1")]
 [assembly: UnconditionalSuppressMessage ("ILLinker", "IL2026", Scope = "member", Target = "M:Internal.Runtime.InteropServices.ComActivator.FindClassType(System.Guid,System.String,System.String,System.String)")]

@@ -12,12 +12,12 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.cmd</_CoreClrBuildScript>
-      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.sh</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetOs)' == 'Windows_NT'">crossgen-corelib.cmd</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows)) and !$('$(TargetOs)' == 'Windows_NT')">crossgen-corelib.sh</_CoreClrBuildScript>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
+    <Exec Condition="'$(_CoreClrBuildScript)' != ''" Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
   </Target>
 
   <Target Name="Restore" />

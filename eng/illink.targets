@@ -218,11 +218,18 @@
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
       <!-- enable verbose output -->
       <ILLinkArgs>$(ILLinkArgs) --verbose</ILLinkArgs>
-      <!-- suppress "error IL2025: Duplicate preserve of" warnings from verbose output,
-           as we need both linker annotations and xml files
-           suppress "error IL2047: All overridden members must have the same DynamicallyAccessedMembersAttribute usage",
-           as we don't add suppression files for ref projects -->
-      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2025;IL2047</ILLinkArgs>
+      <!-- suprress warnings with the following codes:
+           CS0234:  The type or namespace name A does not exist in the namespace B
+           IL2008:  Could not find type A specified in resource B
+           IL2009:  Could not find method A in type B specified in resource C
+           IL2012:  Could not find field A in type B specified in resource C
+           IL2025:  Duplicate preserve of" warnings from verbose output,
+                    as we need both linker annotations and xml files
+           IL2047:  All overridden members must have the same DynamicallyAccessedMembersAttribute,
+                    usage as we don't add suppression files for ref projects
+           MSB3030: Could not copy the file A because it was not found.
+      -->
+      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2008;IL2009;IL2012;IL2025;IL2047</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
