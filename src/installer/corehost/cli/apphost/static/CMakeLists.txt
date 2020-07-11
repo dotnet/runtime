@@ -57,7 +57,7 @@ endif()
 
 # Path like: artifacts/bin/coreclr/Windows_NT.x64.Release/lib  or
 #            /root/runtime/artifacts/transport/coreclr/lib
-set(CORECLR_STATIC_LIB_LOCATION "$ENV{__CoreClrArtifacts}/lib")
+set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
 
 message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCATION}'.")
 
@@ -120,7 +120,7 @@ if(CLR_CMAKE_TARGET_NETBSD)
 endif(CLR_CMAKE_TARGET_NETBSD)
 
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
-set(NATIVE_LIBS_LOCATION "$ENV{__NativeLibsArtifacts}")
+set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
