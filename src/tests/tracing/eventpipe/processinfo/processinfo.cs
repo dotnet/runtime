@@ -37,6 +37,7 @@ namespace Tracing.Tests.ProcessInfoValidation
                     {
                         parts.Add(cmdline.Substring(start, i - start));
                         isQuoted = false;
+                        start = i + 1;
                     }
                 }
                 else if (cmdline[i] == '"' || cmdline[i] == '\'')
