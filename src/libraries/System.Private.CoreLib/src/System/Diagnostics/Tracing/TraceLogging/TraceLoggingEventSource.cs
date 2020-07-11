@@ -677,29 +677,12 @@ namespace System.Diagnostics.Tracing
 
                             if (m_Dispatchers != null)
                             {
-                                if (LocalAppContextSwitches.DisableEventListenerFiltering)
+                                if (LocalAppContextSwitches.DisableEventListenerFiltering ||
+                                    (((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0)))
                                 {
                                     var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
                                     WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
                                 }
-                                else
-                                {
-                                    bool isEnabledByAnyListener = false;
-                                    for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
-                                    {
-                                        if (dispatcher.m_Listener.IsEventEnabled(this.Name, (EventLevel)descriptor.Level, (EventKeywords)descriptor.Keywords))
-                                        {
-                                            isEnabledByAnyListener = true;
-                                            break;
-                                        }
-                                    }
-                                    if (isEnabledByAnyListener)
-                                    {
-                                        var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
-                                        WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
-                                    }
-                                }
-
                             }
                         }
                         catch (Exception ex)
