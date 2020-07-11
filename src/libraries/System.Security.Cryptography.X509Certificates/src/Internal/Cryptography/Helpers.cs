@@ -42,7 +42,7 @@ namespace Internal.Cryptography
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
+            Convert.ToHexString(bytes);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.

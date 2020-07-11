@@ -42,26 +42,7 @@ namespace System.Xml
 
         internal static string Encode(byte[] inArray, int offsetIn, int count)
         {
-            if (null == inArray)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
-            if (0 > offsetIn)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offsetIn));
-            }
-            if (0 > count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (count > inArray.Length - offsetIn)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            char[] outArray = new char[2 * count];
-            int lenOut = Encode(inArray, offsetIn, count, outArray);
-            return new string(outArray, 0, lenOut);
+            return Convert.ToHexString(inArray, offsetIn, count);
         }
 
         private static int Encode(byte[] inArray, int offsetIn, int count, char[] outArray)

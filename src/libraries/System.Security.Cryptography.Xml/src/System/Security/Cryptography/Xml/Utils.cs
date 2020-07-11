@@ -723,24 +723,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static string EncodeHexString(byte[] sArray)
         {
-            return EncodeHexString(sArray, 0, (uint)sArray.Length);
-        }
-
-        internal static string EncodeHexString(byte[] sArray, uint start, uint end)
-        {
-            string result = null;
-            if (sArray != null)
-            {
-                char[] hexOrder = new char[(end - start) * 2];
-                for (uint i = start, j = 0; i < end; i++)
-                {
-                    int digit = sArray[i];
-                    hexOrder[j++] = HexConverter.ToCharUpper(digit >> 4);
-                    hexOrder[j++] = HexConverter.ToCharUpper(digit);
-                }
-                result = new string(hexOrder);
-            }
-            return result;
+            return HexConverter.ToString(sArray);
         }
 
         internal static byte[] DecodeHexString(string s)
