@@ -57,7 +57,7 @@
         <_Parameter1>$(AssemblyName)</_Parameter1>
       </AssemblyAttribute>
 
-      <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage">
+      <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage" Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
         <_Parameter1>en-US</_Parameter1>
       </AssemblyAttribute>
 
