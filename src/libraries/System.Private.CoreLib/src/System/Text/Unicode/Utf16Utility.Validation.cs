@@ -143,9 +143,9 @@ namespace System.Text.Unicode
                         // input was 0x0800 <= [value]. This also handles the missing range a few lines above.
 
                         Vector128<ushort> charIsThreeByteUtf8Encoded;
-                        if (AdvSimd.Arm64.IsSupported)
+                        if (AdvSimd.IsSupported)
                         {
-                            charIsThreeByteUtf8Encoded = AdvSimd.Arm64.Subtract(vectorZero.AsDouble(), AdvSimd.ShiftRightLogical(utf16Data, 11).AsDouble()).AsUInt16();
+                            charIsThreeByteUtf8Encoded = AdvSimd.Subtract(vectorZero, AdvSimd.ShiftRightLogical(utf16Data, 11));
                             mask = Arm64MoveMask(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte(), initialMask, mostSignficantBitMask);
                         }
                         else
@@ -187,7 +187,7 @@ namespace System.Text.Unicode
                         if (AdvSimd.Arm64.IsSupported)
                         {
                             utf16Data = AdvSimd.Add(utf16Data, vectorA800);
-                            mask = Arm64MoveMask(AdvSimd.Arm64.CompareLessThan(utf16Data.AsDouble(), vector8800.AsDouble()).AsByte(), initialMask, mostSignficantBitMask);
+                            mask = Arm64MoveMask(AdvSimd.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte(), initialMask, mostSignficantBitMask);
                         }
                         else
                         {
