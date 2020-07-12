@@ -116,7 +116,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200602.3</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20360.3</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20361.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>5.0.0-preview.8.20359.5</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
@@ -144,7 +144,6 @@
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
     <MicrosoftNETCoreRuntimeICUTransportPackage>Microsoft.NETCore.Runtime.ICU.Transport</MicrosoftNETCoreRuntimeICUTransportPackage>
-
     <!-- XmlDocFileRoot needs to be defined here since we use it in packaging.props and docs.targets.
     It also uses Arcade defined property NuGetPackageRoot, this is the only codepath shared in between
     packaging.props and docs.targets with arcade properties defined. 
