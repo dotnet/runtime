@@ -7,12 +7,27 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.String &&
+                options != null &&
+                ((JsonConstants.ReadNumberOrFloatingConstantFromString) & options.NumberHandling) != 0)
+            {
+                return reader.GetSingleWithQuotes();
+            }
+
             return reader.GetSingle();
         }
 
         public override void Write(Utf8JsonWriter writer, float value, JsonSerializerOptions options)
         {
-            writer.WriteNumberValue(value);
+            if (options != null &&
+                ((JsonConstants.WriteNumberOrFloatingConstantAsString) & options.NumberHandling) != 0)
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else
+            {
+                writer.WriteNumberValue(value);
+            }
         }
 
         internal override float ReadWithQuotes(ref Utf8JsonReader reader)

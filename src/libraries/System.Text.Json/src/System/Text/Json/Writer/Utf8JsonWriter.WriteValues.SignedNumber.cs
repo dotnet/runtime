@@ -106,5 +106,16 @@ namespace System.Text.Json
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
+
+        internal void WriteNumberValueAsString(int value)
+            => WriteNumberValueAsString((long)value);
+
+        internal void WriteNumberValueAsString(long value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatInt64Length];
+            bool result = Utf8Formatter.TryFormat(value, utf8Number, out int bytesWritten);
+            Debug.Assert(result);
+            WriteNumberValueAsString(utf8Number.Slice(0, bytesWritten));
+        }
     }
 }

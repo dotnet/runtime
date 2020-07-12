@@ -7,12 +7,26 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.String &&
+                options != null &&
+                (JsonNumberHandling.AllowReadingFromString & options.NumberHandling) != 0)
+            {
+                return reader.GetInt64WithQuotes();
+            }
+
             return reader.GetInt64();
         }
 
         public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
         {
-            writer.WriteNumberValue(value);
+            if (options != null && ((JsonNumberHandling.WriteAsString & options.NumberHandling) != 0))
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else
+            {
+                writer.WriteNumberValue(value);
+            }
         }
 
         internal override long ReadWithQuotes(ref Utf8JsonReader reader)

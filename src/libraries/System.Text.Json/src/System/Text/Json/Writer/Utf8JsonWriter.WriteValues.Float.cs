@@ -143,5 +143,13 @@ namespace System.Text.Json
             }
 #endif
         }
+
+        internal void WriteNumberValueAsString(float value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatSingleLength];
+            bool result = TryFormatSingle(value, utf8Number, out int bytesWritten);
+            Debug.Assert(result);
+            WriteNumberValueAsString(utf8Number.Slice(0, bytesWritten));
+        }
     }
 }

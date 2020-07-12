@@ -321,5 +321,18 @@ namespace System.Text.Json
             value = default;
             return false;
         }
+
+        public static char GetFloatingPointStandardParseFormat(ReadOnlySpan<byte> span)
+        {
+            foreach (byte token in span)
+            {
+                if (token == 'E' || token == 'e')
+                {
+                    return JsonConstants.ScientificNotationFormat;
+                }
+            }
+
+            return default;
+        }
     }
 }

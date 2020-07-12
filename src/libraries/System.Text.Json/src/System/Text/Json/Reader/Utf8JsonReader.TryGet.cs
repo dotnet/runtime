@@ -416,11 +416,64 @@ namespace System.Text.Json
         internal float GetSingleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetSingleCore(out float value, span))
+
+            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
+            if (Utf8Parser.TryParse(span, out float value, out int bytesConsumed, numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Single);
+                bool shouldThrow = false;
+
+                // Enforce consistency between NETCOREAPP and NETFX given that
+                // Utf8Parser.TryParse behaves differently for these values.
+
+                if (float.IsNaN(value))
+                {
+                    if (!(span.Length == 3 && span[0] == (byte)'N' && span[1] == (byte)'a' && span[2] == (byte)'N'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+                else if (float.IsPositiveInfinity(value))
+                {
+                    if (!(
+                        span.Length == 8 &&
+                        span[0] == (byte)'I' &&
+                        span[1] == (byte)'n' &&
+                        span[2] == (byte)'f' &&
+                        span[3] == (byte)'i' &&
+                        span[4] == (byte)'n' &&
+                        span[5] == (byte)'i' &&
+                        span[6] == (byte)'t' &&
+                        span[7] == (byte)'y'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+                else if (float.IsNegativeInfinity(value))
+                {
+                    if (!(
+                        span.Length == 9 &&
+                        span[0] == (byte)'-' &&
+                        span[1] == (byte)'I' &&
+                        span[2] == (byte)'n' &&
+                        span[3] == (byte)'f' &&
+                        span[4] == (byte)'i' &&
+                        span[5] == (byte)'n' &&
+                        span[6] == (byte)'i' &&
+                        span[7] == (byte)'t' &&
+                        span[8] == (byte)'y'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+
+                if (!shouldThrow)
+                {
+                    return value;
+                }
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Single);
         }
 
         /// <summary>
@@ -449,11 +502,64 @@ namespace System.Text.Json
         internal double GetDoubleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetDoubleCore(out double value, span))
+
+            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
+            if (Utf8Parser.TryParse(span, out double value, out int bytesConsumed, numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Double);
+                bool shouldThrow = false;
+
+                // Enforce consistency between NETCOREAPP and NETFX given that
+                // Utf8Parser.TryParse behaves differently for these values.
+
+                if (double.IsNaN(value))
+                {
+                    if (!(span.Length == 3 && span[0] == (byte)'N' && span[1] == (byte)'a' && span[2] == (byte)'N'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+                else if (double.IsPositiveInfinity(value))
+                {
+                    if (!(
+                        span.Length == 8 &&
+                        span[0] == (byte)'I' &&
+                        span[1] == (byte)'n' &&
+                        span[2] == (byte)'f' &&
+                        span[3] == (byte)'i' &&
+                        span[4] == (byte)'n' &&
+                        span[5] == (byte)'i' &&
+                        span[6] == (byte)'t' &&
+                        span[7] == (byte)'y'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+                else if (double.IsNegativeInfinity(value))
+                {
+                    if (!(
+                        span.Length == 9 &&
+                        span[0] == (byte)'-' &&
+                        span[1] == (byte)'I' &&
+                        span[2] == (byte)'n' &&
+                        span[3] == (byte)'f' &&
+                        span[4] == (byte)'i' &&
+                        span[5] == (byte)'n' &&
+                        span[6] == (byte)'i' &&
+                        span[7] == (byte)'t' &&
+                        span[8] == (byte)'y'))
+                    {
+                        shouldThrow = true;
+                    }
+                }
+
+                if (!shouldThrow)
+                {
+                    return value;
+                }
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Double);
         }
 
         /// <summary>
@@ -482,11 +588,15 @@ namespace System.Text.Json
         internal decimal GetDecimalWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-            if (!TryGetDecimalCore(out decimal value, span))
+
+            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
+            if (Utf8Parser.TryParse(span, out decimal value, out int bytesConsumed, numberFormat)
+                && span.Length == bytesConsumed)
             {
-                throw ThrowHelper.GetFormatException(NumericType.Decimal);
+                return value;
             }
-            return value;
+
+            throw ThrowHelper.GetFormatException(NumericType.Decimal);
         }
 
         /// <summary>
@@ -919,13 +1029,8 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetSingleCore(out value, span);
-        }
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetSingleCore(out float value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {
@@ -955,12 +1060,7 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetDoubleCore(out value, span);
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDoubleCore(out double value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {
@@ -990,12 +1090,7 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return TryGetDecimalCore(out value, span);
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
-        {
             if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
             {

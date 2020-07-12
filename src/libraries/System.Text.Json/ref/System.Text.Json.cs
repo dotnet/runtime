@@ -244,6 +244,7 @@ namespace System.Text.Json
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
@@ -495,6 +496,14 @@ namespace System.Text.Json.Serialization
         Always = 1,
         WhenWritingDefault = 2,
         WhenWritingNull = 3,
+    }
+    [System.FlagsAttribute]
+    public enum JsonNumberHandling
+    {
+        Strict = 0,
+        AllowReadingFromString = 1,
+        WriteAsString = 2,
+        AllowNamedFloatingPointLiterals = 4,
     }
     public abstract partial class JsonAttribute : System.Attribute
     {

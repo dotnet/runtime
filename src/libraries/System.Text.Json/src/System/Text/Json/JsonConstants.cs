@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization;
+
 namespace System.Text.Json
 {
     internal static class JsonConstants
@@ -105,5 +107,8 @@ namespace System.Text.Json
 
         // The maximum number of parameters a constructor can have where it can be supported.
         public const int MaxParameterCount = 64;
+
+        public const JsonNumberHandling ReadNumberOrFloatingConstantFromString = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals;
+        public const JsonNumberHandling WriteNumberOrFloatingConstantAsString = JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals;
     }
 }
