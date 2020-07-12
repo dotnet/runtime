@@ -12,7 +12,6 @@
     <Compile Include="CompositeChangeToken.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IChangeToken.cs" />
-    <Compile Include="InplaceStringBuilder.cs" />
     <Compile Include="StringSegment.cs" />
     <Compile Include="StringSegmentComparer.cs" />
     <Compile Include="StringTokenizer.cs" />
