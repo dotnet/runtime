@@ -470,5 +470,49 @@ namespace System.Threading.ThreadPools.Tests
                 Assert.True(registeredWaitHandle.Unregister(null));
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void MultipleRegisteredWaitsUnregisterHandleShiftTest()
+        {
+            var handlePendingRemoval = new AutoResetEvent(false);
+            var completeWaitCallback = new AutoResetEvent(false);
+            WaitOrTimerCallback waitCallback = (_, __) =>
+            {
+                handlePendingRemoval.Set();
+                completeWaitCallback.CheckedWait();
+            };
+
+            var waitEvent = new AutoResetEvent(false);
+            RegisteredWaitHandle registeredWaitHandle =
+                ThreadPool.RegisterWaitForSingleObject(waitEvent, waitCallback, null, UnexpectedTimeoutMilliseconds, true);
+
+            var waitEvent2 = new AutoResetEvent(false);
+            RegisteredWaitHandle registeredWaitHandle2 =
+                ThreadPool.RegisterWaitForSingleObject(waitEvent2, waitCallback, null, UnexpectedTimeoutMilliseconds, true);
+
+            var waitEvent3 = new AutoResetEvent(false);
+            RegisteredWaitHandle registeredWaitHandle3 =
+                ThreadPool.RegisterWaitForSingleObject(waitEvent3, waitCallback, null, UnexpectedTimeoutMilliseconds, true);
+
+            void SetAndUnregister(AutoResetEvent waitEvent, RegisteredWaitHandle registeredWaitHandle)
+            {
+                waitEvent.Set();
+                handlePendingRemoval.CheckedWait();
+                Thread.Sleep(ExpectedTimeoutMilliseconds); // wait for removal
+                Assert.True(registeredWaitHandle.Unregister(null));
+                completeWaitCallback.Set();
+                waitEvent.Dispose();
+            }
+
+            SetAndUnregister(waitEvent, registeredWaitHandle);
+            SetAndUnregister(waitEvent2, registeredWaitHandle2);
+
+            var waitEvent4 = new AutoResetEvent(false);
+            RegisteredWaitHandle registeredWaitHandle4 =
+                ThreadPool.RegisterWaitForSingleObject(waitEvent4, waitCallback, null, UnexpectedTimeoutMilliseconds, true);
+
+            SetAndUnregister(waitEvent3, registeredWaitHandle3);
+            SetAndUnregister(waitEvent4, registeredWaitHandle4);
+        }
     }
 }

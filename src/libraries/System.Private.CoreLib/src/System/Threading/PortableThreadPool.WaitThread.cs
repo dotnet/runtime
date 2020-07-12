@@ -314,11 +314,13 @@ namespace System.Threading
                             int removeAt = j;
                             int count = numUserWaits;
                             Array.Copy(_registeredWaits, removeAt + 1, _registeredWaits, removeAt, count - (removeAt + 1));
+                            _registeredWaits[count - 1] = null!;
 
                             // Corresponding elements in the wait handles array are shifted up by one
                             removeAt++;
                             count++;
                             Array.Copy(_waitHandles, removeAt + 1, _waitHandles, removeAt, count - (removeAt + 1));
+                            _waitHandles[count - 1] = null!;
                         }
                         else
                         {
