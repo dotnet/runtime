@@ -116,6 +116,10 @@ namespace System.ServiceProcess.Tests
             }
         }
 
+        /// <summary>
+        /// This is called from <see cref="ServiceBase.Run(ServiceBase[])"/> when all services in the process
+        /// have entered the SERVICE_STOPPED state. It disposes the named pipe stream.
+        /// </summary>
         protected override void Dispose(bool disposing)
         {
             if (!_disposed)
