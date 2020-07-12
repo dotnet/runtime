@@ -536,4 +536,10 @@
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
   </data>
+  <data name="NumberHandlingConverterMustBeBuiltIn" xml:space="preserve">
+    <value>'JsonNumberHandlingAttribute' cannot be placed on a property, field, or type that is handled by a custom converter. See usage(s) of converter '{0}' on type '{1}'.</value>
+  </data>
+  <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
+    <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
+  </data>
 </root>
