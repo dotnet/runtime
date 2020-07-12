@@ -84,17 +84,21 @@ namespace System.ServiceProcess.Tests
         public void TestOnStartWithArgsThenStop()
         {
             ServiceController controller = ConnectToServer();
-
             controller.Stop();
             Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
 
             controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
+
+            // Start created a new TestService; dispose of our client stream and reconnect to it
             _testService.Client = null;
             _testService.Client.Connect();
-            Assert.Equal((int)(PipeMessageByteCode.Connected), _testService.GetByte());
 
-            Assert.Equal((int)(PipeMessageByteCode.Start), _testService.GetByte());           
+            // Test service does not mutually synchronize Connected and Start messages
+            var bytes = new byte[] { _testService.GetByte(), _testService.GetByte() };
+            Assert.Contains((byte)PipeMessageByteCode.Connected, bytes);
+            Assert.Contains((byte)PipeMessageByteCode.Start, bytes);
+
             controller.WaitForStatus(ServiceControllerStatus.Running);
 
             controller.Stop();
@@ -202,8 +206,10 @@ namespace System.ServiceProcess.Tests
 
         private ServiceController ConnectToServer()
         {
+            TestServiceProvider.DebugTrace("ServiceBaseTests.ConnectToServer: connecting");
             _testService.Client.Connect(connectionTimeout);
             Assert.Equal((int)PipeMessageByteCode.Connected, _testService.GetByte());
+            TestServiceProvider.DebugTrace("ServiceBaseTests.ConnectToServer: received connect byte");
 
             ServiceController controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
