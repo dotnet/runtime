@@ -10,13 +10,17 @@ namespace System
 
         // In the mono runtime, this maps to gethostname, which returns 'emscripten'.
         // Returning the value here allows us to exclude more of the runtime.
-        public static string MachineName => "emscripten";
+        public static string MachineName => "localhost";
 
         // Matching what we returned for an earlier release.  There isn't an established equivalent
         // on wasm.
         public static long WorkingSet => 0;
 
-        // Matching what we returned for an earlier release
-        public static string UserName => "web_user";
+        public static string UserName => "Browser";
+
+        private static OperatingSystem GetOSVersion()
+        {
+            return new OperatingSystem(PlatformID.Other, new Version(1, 0, 0, 0));
+        }
     }
 }

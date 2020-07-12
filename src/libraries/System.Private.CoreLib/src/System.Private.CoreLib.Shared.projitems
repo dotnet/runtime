@@ -1823,7 +1823,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Browser.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs">
