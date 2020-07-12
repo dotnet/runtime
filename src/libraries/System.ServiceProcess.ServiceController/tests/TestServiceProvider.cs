@@ -10,7 +10,7 @@ namespace System.ServiceProcess.Tests
 {
     internal sealed class TestServiceProvider
     {
-        // To view tracing, use DbgView from systinternals.com;
+        // To view tracing, use DbgView from sysinternals.com;
         // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
         // and filter to just messages beginning with "##"
         internal const bool DebugTracing = false;
