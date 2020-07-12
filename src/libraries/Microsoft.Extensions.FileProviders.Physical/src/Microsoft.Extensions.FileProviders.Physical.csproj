@@ -30,7 +30,10 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <!-- Adding this dependency as a package reference in order to not depend on version 4.3.0.0 that
+    comes from the NetStandard.Library.NETFramework package as we want intentionally to avoid the
+    requirement on that package. -->
+    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.1" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 
 </Project>
