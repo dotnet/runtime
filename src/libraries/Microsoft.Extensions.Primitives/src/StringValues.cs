@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP || NETSTANDARD2_1
+
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;
@@ -241,30 +241,6 @@ namespace Microsoft.Extensions.Primitives
                         }
                     }
                 });
-#else
-#pragma warning disable CS0618
-                var sb = new InplaceStringBuilder(length);
-#pragma warning restore CS0618
-                bool hasAdded = false;
-                // Skip null and empty values
-                for (int i = 0; i < values.Length; i++)
-                {
-                    string value = values[i];
-                    if (value != null && value.Length > 0)
-                    {
-                        if (hasAdded)
-                        {
-                            // Add seperator
-                            sb.Append(',');
-                        }
-
-                        sb.Append(value);
-                        hasAdded = true;
-                    }
-                }
-
-                return sb.ToString();
-#endif
             }
         }
 
