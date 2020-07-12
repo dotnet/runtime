@@ -126,13 +126,6 @@ namespace System.Linq.Parallel
                         {
                             accumulator = _finalReduce(accumulator, enumerator.Current);
                         }
-#if SUPPORT_THREAD_ABORT
-                        catch (ThreadAbortException)
-                        {
-                            // Do not wrap ThreadAbortExceptions
-                            throw;
-                        }
-#endif
                         catch (Exception ex)
                         {
                             // We need to wrap all exceptions into an aggregate.
@@ -166,13 +159,6 @@ namespace System.Linq.Parallel
             {
                 return _resultSelector(accumulator);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 // We need to wrap all exceptions into an aggregate.
