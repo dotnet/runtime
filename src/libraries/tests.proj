@@ -33,7 +33,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TextWriterTraceListener\tests\System.Diagnostics.TextWriterTraceListener.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
+
+    <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for these two it has "System.Globalization.Invariant": true) -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Invariant\Invariant.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.DriveInfo\tests\System.IO.FileSystem.DriveInfo.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
