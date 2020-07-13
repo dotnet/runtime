@@ -48,10 +48,9 @@ namespace System.Runtime.InteropServices
             return Equals(other._osPlatform);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool Equals(string? other)
         {
-            return other?.Length == _osPlatform?.Length && string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)
