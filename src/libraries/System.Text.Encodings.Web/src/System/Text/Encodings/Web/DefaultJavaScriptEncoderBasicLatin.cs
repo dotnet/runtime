@@ -99,11 +99,18 @@ namespace System.Text.Encodings.Web
 #endif
             Debug.Assert(textLength > 0 && ptr < end);
 
+            // For performance on certain platforms, avoid referencing the static table for every value.
+            ReadOnlySpan<byte> allowList = AllowList;
             do
             {
                 Debug.Assert(text <= ptr && ptr < (text + textLength));
 
-                if (NeedsEscaping(*(char*)ptr))
+                char value = *(char*)ptr;
+
+                // NeedsEscaping() is manually inlined below for perf; verify semantics remain consistent.
+                Debug.Assert((value > LastAsciiCharacter || allowList[value] == 0) == NeedsEscaping(value));
+
+                if (value > LastAsciiCharacter || allowList[value] == 0)
                 {
                     goto Return;
                 }
@@ -235,7 +242,6 @@ namespace System.Text.Encodings.Web
                 byte* end = ptr + textLength;
 
 #if NETCOREAPP
-
                 if (Sse2.IsSupported && textLength >= Vector128<sbyte>.Count)
                 {
                     goto Vectorized;
@@ -245,11 +251,16 @@ namespace System.Text.Encodings.Web
 #endif
                 Debug.Assert(textLength > 0 && ptr < end);
 
+                // For performance on certain platforms, avoid referencing the static table for every value.
+                ReadOnlySpan<byte> allowList = AllowList;
                 do
                 {
                     Debug.Assert(pValue <= ptr && ptr < (pValue + utf8Text.Length));
 
-                    if (NeedsEscaping(*ptr))
+                    // NeedsEscaping() is manually inlined below for perf; verify semantics remain consistent.
+                    Debug.Assert((allowList[*ptr] == 0) == NeedsEscaping(*ptr));
+
+                    if (allowList[*ptr] == 0)
                     {
                         goto Return;
                     }
