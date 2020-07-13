@@ -6,7 +6,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 
 ## Available Feature Switches
 
-| MSBuild property name | AppContext setting | Description |
+| MSBuild Property Name | AppContext Setting | Description |
 |-|-|-|
 | DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
 | EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding |  Insecure UTF-7 encoding is trimmed when set to false |
@@ -20,7 +20,7 @@ on the command line as any other MSBuild property. Those without predefined prop
 the value can be set with following XML tag in csproj file.
 
 ```xml
-<RuntimeHostConfigurationOption Include="<AppContext-setting>"
+<RuntimeHostConfigurationOption Include="<AppContext-Setting>"
                                 Value="false"
                                 Trim="true" />
 ```
@@ -47,7 +47,7 @@ Add MSBuild integration by adding new RuntimeHostConfigurationOption entry. The 
 other public feature-switches. You can add a new one by simply adding a new XML tag
 
 ```xml
-<RuntimeHostConfigurationOption Include="<AppContext-setting>"
+<RuntimeHostConfigurationOption Include="<AppContext-Setting>"
             Condition="'$(<msbuild-property-name>)' != ''"
             Value="$(<msbuild-property-name>)"
             Trim="true" />
