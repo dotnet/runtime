@@ -7,11 +7,10 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static readonly object s_lock = new object();
         private static string? s_osPlatformName;
         private static string? s_osDescription;
-        private static volatile int s_osArch = -1;
-        private static volatile int s_processArch = -1;
+        private static readonly Architecture s_osArch = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture());
+        private static readonly Architecture s_processArch = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture());
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
@@ -21,83 +20,24 @@ namespace System.Runtime.InteropServices
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
 
-        public static Architecture OSArchitecture
+        public static Architecture OSArchitecture => s_osArch;
+
+        public static Architecture ProcessArchitecture => s_processArch;
+
+        private static Architecture Map(Interop.Sys.ProcessorArchitecture arch)
         {
-            get
+            switch (arch)
             {
-                Debug.Assert(sizeof(Architecture) == sizeof(int));
-
-                if (s_osArch == -1)
-                {
-                    lock (s_lock)
-                    {
-                        if (s_osArch == -1)
-                        {
-                            Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture();
-                            switch (arch)
-                            {
-                                case Interop.Sys.ProcessorArchitecture.ARM:
-                                    s_osArch = (int)Architecture.Arm;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.x64:
-                                    s_osArch = (int)Architecture.X64;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.x86:
-                                    s_osArch = (int)Architecture.X86;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.ARM64:
-                                    s_osArch = (int)Architecture.Arm64;
-                                    break;
-                            }
-                        }
-                    }
-                }
-
-                Debug.Assert(s_osArch != -1);
-                return (Architecture)s_osArch;
-            }
-        }
-
-        public static Architecture ProcessArchitecture
-        {
-            get
-            {
-                Debug.Assert(sizeof(Architecture) == sizeof(int));
-
-                if (s_processArch == -1)
-                {
-                    lock (s_lock)
-                    {
-                        if (s_processArch == -1)
-                        {
-                            Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture();
-                            switch (arch)
-                            {
-                                case Interop.Sys.ProcessorArchitecture.ARM:
-                                    s_processArch = (int)Architecture.Arm;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.x64:
-                                    s_processArch = (int)Architecture.X64;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.x86:
-                                    s_processArch = (int)Architecture.X86;
-                                    break;
-
-                                case Interop.Sys.ProcessorArchitecture.ARM64:
-                                    s_processArch = (int)Architecture.Arm64;
-                                    break;
-                            }
-                        }
-                }
-                }
-
-                Debug.Assert(s_processArch != -1);
-                return (Architecture)s_processArch;
+                case Interop.Sys.ProcessorArchitecture.ARM:
+                    return Architecture.Arm;
+                case Interop.Sys.ProcessorArchitecture.x64:
+                    return Architecture.X64;
+                case Interop.Sys.ProcessorArchitecture.ARM64:
+                    return Architecture.Arm64;
+                case Interop.Sys.ProcessorArchitecture.x86:
+                default:
+                    Debug.Assert(arch == Interop.Sys.ProcessorArchitecture.x86, "Unidentified Architecture");
+                    return Architecture.X86;
             }
         }
     }
