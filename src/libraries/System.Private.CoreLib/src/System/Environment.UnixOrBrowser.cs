@@ -56,42 +56,6 @@ namespace System
 
         public static int SystemPageSize => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
 
-        private static unsafe bool TryGetUserNameFromPasswd(byte* buf, int bufLen, out string? username)
-        {
-            // Call getpwuid_r to get the passwd struct
-            Interop.Sys.Passwd passwd;
-            int error = Interop.Sys.GetPwUidR(Interop.Sys.GetEUid(), out passwd, buf, bufLen);
-
-            // If the call succeeds, give back the user name retrieved
-            if (error == 0)
-            {
-                Debug.Assert(passwd.Name != null);
-                username = Marshal.PtrToStringAnsi((IntPtr)passwd.Name);
-                return true;
-            }
-
-            // If the current user's entry could not be found, give back null,
-            // but still return true (false indicates the buffer was too small).
-            if (error == -1)
-            {
-                username = null;
-                return true;
-            }
-
-            var errorInfo = new Interop.ErrorInfo(error);
-
-            // If the call failed because the buffer was too small, return false to
-            // indicate the caller should try again with a larger buffer.
-            if (errorInfo.Error == Interop.Error.ERANGE)
-            {
-                username = null;
-                return false;
-            }
-
-            // Otherwise, fail.
-            throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
-        }
-
         public static string UserDomainName => MachineName;
 
         /// <summary>Invoke <see cref="Interop.Sys.SysConf"/>, throwing if it fails.</summary>
