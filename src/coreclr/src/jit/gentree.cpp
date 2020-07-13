@@ -18877,6 +18877,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_X86)
+
+            // an 8-byte struct returned using two registers
+            assert(structSize == 8);
+
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+            }
+
 #else //  TARGET_XXX
 
             // This target needs support here!

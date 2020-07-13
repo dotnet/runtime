@@ -1076,8 +1076,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     howToReturnStruct = SPK_ByReference;
                     useType           = TYP_UNKNOWN;
                 }
+#elif defined(TARGET_X86)
 
-#elif defined(TARGET_ARM) || defined(TARGET_X86)
+                // Only 8-byte structs are return in multiple registers
+                if (structSize == MAX_RET_MULTIREG_BYTES)
+                {
+                    // setup wbPassType and useType indicate that this is return by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType           = TYP_STRUCT;
+                }
+                else
+                {      
+                    // Otherwise we return this struct using a return buffer
+                    // setup wbPassType and useType indicate that this is returned using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType           = TYP_UNKNOWN;
+                }
+#elif defined(TARGET_ARM)
 
                 // Otherwise we return this struct using a return buffer
                 // setup wbPassType and useType indicate that this is returned using a return buffer register

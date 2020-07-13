@@ -9200,6 +9200,33 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 
         return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
+#elif defined(TARGET_X86)
+    // Is method returning a multi-reg struct?
+    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd))
+    {
+        // In case of multi-reg struct return, we force IR to be one of the following:
+        // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
+        // lclvar or call, it is assigned to a temp to create: temp = op and GT_RETURN(tmp).
+
+        if (op->gtOper == GT_LCL_VAR)
+        {
+            // Make sure that this struct stays in memory and doesn't get promoted.
+            unsigned lclNum                  = op->AsLclVarCommon()->GetLclNum();
+            lvaTable[lclNum].lvIsMultiRegRet = true;
+
+            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
+            op->gtFlags |= GTF_DONT_CSE;
+
+            return op;
+        }
+
+        if (op->gtOper == GT_CALL)
+        {
+            return op;
+        }
+
+        return impAssignMultiRegTypeToVar(op, retClsHnd);
+    }
 #else  // !UNIX_AMD64_ABI
     assert(info.compRetNativeType != TYP_STRUCT);
 #endif // !UNIX_AMD64_ABI
@@ -16834,6 +16861,30 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 {
                     assert(!iciCall->HasRetBufArg());
                     assert(retRegCount >= 2);
+                    if (fgNeedReturnSpillTemp())
+                    {
+                        if (!impInlineInfo->retExpr)
+                        {
+                            // The inlinee compiler has figured out the type of the temp already. Use it here.
+                            impInlineInfo->retExpr =
+                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
+                        }
+                    }
+                    else
+                    {
+                        impInlineInfo->retExpr = op2;
+                    }
+                }
+                else
+#elif defined(TARGET_X86)
+                ReturnTypeDesc retTypeDesc;
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+
+                if (retRegCount != 0)
+                {
+                    assert(!iciCall->HasRetBufArg());
+                    assert(retRegCount == MAX_RET_REG_COUNT);
                     if (fgNeedReturnSpillTemp())
                     {
                         if (!impInlineInfo->retExpr)
