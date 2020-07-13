@@ -2768,7 +2768,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                          call->gtCallArgs->GetNode()->gtOper ==
                              GT_NOP); // the arg was already morphed to a register (fgMorph called twice)
             maxRegArgs = 1;
-
         }
         else
         {
