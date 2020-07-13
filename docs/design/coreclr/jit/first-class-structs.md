@@ -195,7 +195,7 @@ These work items are organized in priority order. Each work item should be able 
 proceed independently, though the aggregate effect of multiple work items may be greater
 than the individual work items alone.
 
-### <a name="defer-abi-specific-transformations-to-lowering"/>Defer ABI-specific transformations to Lowering
+### <a name="defer-abi-specific-transformations-to-lowering"></a>Defer ABI-specific transformations to Lowering
 
 This includes all copies and IR transformations that are only required to pass or return the arguments
 as required by the ABI.
@@ -273,7 +273,7 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
  * Related: #6839, #9477, #16887
  * Also, #11888, which suggests adding a struct promotion stress mode.
 
-### <a name="Block-Assignments"/>Improve and Simplify Block and Block Assignment Morphing
+### <a name="Block-Assignments"></a>Improve and Simplify Block and Block Assignment Morphing
 
 * `fgMorphOneAsgBlockOp` should probably be eliminated, and its functionality either moved to
   `Lowering` or simply subsumed by the combination of the addition of fixed-size struct types and

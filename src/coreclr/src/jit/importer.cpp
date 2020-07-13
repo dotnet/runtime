@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1888,7 +1887,29 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         {
             pIndirection = pLookup->constLookup.addr;
         }
-        return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+        GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+
+#ifdef DEBUG
+        size_t handleToTrack;
+        if (handleFlags == GTF_ICON_TOKEN_HDL)
+        {
+            handleToTrack = 0;
+        }
+        else
+        {
+            handleToTrack = (size_t)compileTimeHandle;
+        }
+
+        if (handle != nullptr)
+        {
+            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+        }
+        else
+        {
+            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+        }
+#endif
+        return addr;
     }
 
     if (pLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
@@ -1922,7 +1943,19 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
     {
         pIndirection = pLookup->addr;
     }
-    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+    GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+#ifdef DEBUG
+    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
+    if (handle != nullptr)
+    {
+        addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+    }
+    else
+    {
+        addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+    }
+#endif //  DEBUG
+    return addr;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(
@@ -3396,6 +3429,9 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* dstAddr = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
     GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
+#ifdef DEBUG
+    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
+#endif
 
     return gtNewBlkOpNode(dst,   // dst
                           src,   // src
@@ -3519,7 +3555,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
             {
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+                // These intrinsics aren't defined recursively and so they will never be mustExpand
+                // Instead, they provide software fallbacks that will be executed instead.
+
+                assert(!mustExpand);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
 #endif // FEATURE_HW_INTRINSICS
         }
@@ -7149,6 +7189,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 /* Create the data member node */
                 op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
+#ifdef DEBUG
+                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
+#endif
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
@@ -9237,7 +9280,8 @@ REDO_RETURN_NODE:
     {
         // It is possible that we now have a lclVar of scalar type.
         // If so, don't transform it to GT_LCL_FLD.
-        if (lvaTable[op->AsLclVar()->GetLclNum()].lvType != info.compRetNativeType)
+        LclVarDsc* varDsc = lvaGetDesc(op->AsLclVarCommon());
+        if (genActualType(varDsc->TypeGet()) != genActualType(info.compRetNativeType))
         {
             op->ChangeOper(GT_LCL_FLD);
         }

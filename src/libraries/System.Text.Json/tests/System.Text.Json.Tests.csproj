@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -41,6 +41,7 @@
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />

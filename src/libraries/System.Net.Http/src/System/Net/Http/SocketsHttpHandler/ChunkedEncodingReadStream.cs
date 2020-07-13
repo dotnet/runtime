@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -57,7 +56,7 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
-                        if (HttpTelemetry.IsEnabled) LogRequestStop();
+                        if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                         return 0;
                     }
 
@@ -363,7 +362,7 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -384,7 +383,7 @@ namespace System.Net.Http
                         default:
                         case ParsingState.Done: // shouldn't be called once we're done
                             Debug.Fail($"Unexpected state: {_state}");
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Error(this, $"Unexpected state: {_state}");
                             }

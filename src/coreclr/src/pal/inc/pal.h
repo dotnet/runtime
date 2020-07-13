@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -449,12 +448,10 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
-#ifdef __APPLE__
 PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId();
-#endif
 
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 

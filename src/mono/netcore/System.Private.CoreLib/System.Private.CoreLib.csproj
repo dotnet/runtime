@@ -9,7 +9,6 @@
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
@@ -138,6 +137,7 @@
     <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);TARGET_OSX</DefineConstants>
     <DefineConstants Condition="'$(TargetsiOS)' == 'true'">$(DefineConstants);TARGET_IOS</DefineConstants>
     <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
+    <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
@@ -147,13 +147,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)System.Private.CoreLib.xml" />
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
-    
+
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
   </ItemGroup>
-  
+
   <!-- Sources -->
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />
@@ -278,7 +278,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelSpinWaiter.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
@@ -305,7 +305,11 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />

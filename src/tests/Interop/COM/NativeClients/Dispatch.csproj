@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
+    <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Dispatch/CMakeLists.txt" />
+    <ProjectReference Include="../NETServer/NETServer.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+</Project>

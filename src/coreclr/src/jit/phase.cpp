@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -75,7 +74,7 @@ void Phase::PrePhase()
 
     // To help in the incremental conversion of jit activity to phases
     // without greatly increasing dump size or checked jit time, we
-    // currently whitelist the phases that do pre-phase checks and
+    // currently allow the phases that do pre-phase checks and
     // dumps via the phase object, and not via explicit calls from
     // the various methods in the phase.
     //
@@ -85,12 +84,12 @@ void Phase::PrePhase()
     //
     // Currently the list is just the set of phases that have custom
     // derivations from the Phase class.
-    static Phases s_whitelist[] = {PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING, PHASE_STACK_LEVEL_SETTER};
+    static Phases s_allowlist[] = {PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING, PHASE_STACK_LEVEL_SETTER};
     bool          doPrePhase    = false;
 
-    for (size_t i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
+    for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
     {
-        if (m_phase == s_whitelist[i])
+        if (m_phase == s_allowlist[i])
         {
             doPrePhase = true;
             break;
@@ -146,7 +145,7 @@ void Phase::PostPhase(PhaseStatus status)
 
     // To help in the incremental conversion of jit activity to phases
     // without greatly increasing dump size or checked jit time, we
-    // currently whitelist the phases that do post-phase checks and
+    // currently allow the phases that do post-phase checks and
     // dumps via the phase object, and not via explicit calls from
     // the various methods in the phase.
     //
@@ -158,7 +157,7 @@ void Phase::PostPhase(PhaseStatus status)
     // well as the new-style phases that have been updated to return
     // PhaseStatus from their DoPhase methods.
     //
-    static Phases s_whitelist[] = {PHASE_IMPORTATION,
+    static Phases s_allowlist[] = {PHASE_IMPORTATION,
                                    PHASE_INDXCALL,
                                    PHASE_MORPH_INLINE,
                                    PHASE_ALLOCATE_OBJECTS,
@@ -175,9 +174,9 @@ void Phase::PostPhase(PhaseStatus status)
 
     if (madeChanges)
     {
-        for (size_t i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
+        for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
         {
-            if (m_phase == s_whitelist[i])
+            if (m_phase == s_allowlist[i])
             {
                 doPostPhase = true;
                 break;

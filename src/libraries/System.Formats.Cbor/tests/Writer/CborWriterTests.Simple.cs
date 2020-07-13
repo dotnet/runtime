@@ -1,9 +1,6 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
-using System;
 using Test.Cryptography;
 using Xunit;
 
@@ -15,16 +12,93 @@ namespace System.Formats.Cbor.Tests
         // Additional pairs generated using http://cbor.me/
 
         [Theory]
+        [InlineData(0.0, "f90000")]
+        [InlineData(-0.0, "f98000")]
+        [InlineData(1.0, "f93c00")]
+        [InlineData(1.5, "f93e00")]
+        [InlineData(65504.0, "f97bff")]
+        [InlineData(5.960464477539063e-8, "f90001")]
+        [InlineData(0.00006103515625, "f90400")]
+        [InlineData(-4.0, "f9c400")]
+        [InlineData(float.PositiveInfinity, "f97c00")]
+        [InlineData(float.NaN, "f9fe00")]
+        [InlineData(float.NegativeInfinity, "f9fc00")]
+        public static void WriteHalf_SingleValue_HappyPath(float input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter();
+            writer.WriteHalf((Half)input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
         [InlineData(100000.0, "fa47c35000")]
         [InlineData(3.4028234663852886e+38, "fa7f7fffff")]
-        [InlineData(float.PositiveInfinity, "fa7f800000")]
-        [InlineData(float.NegativeInfinity, "faff800000")]
-        [InlineData(float.NaN, "faffc00000")]
+        [InlineData(float.PositiveInfinity, "f97c00")]
+        [InlineData(float.NegativeInfinity, "f9fc00")]
+        [InlineData(float.NaN, "f9fe00")]
         public static void WriteSingle_SingleValue_HappyPath(float input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             var writer = new CborWriter();
             writer.WriteSingle(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(float.NaN, "f9fe00", CborConformanceMode.Lax)]
+        [InlineData(float.NaN, "f9fe00", CborConformanceMode.Strict)]
+        [InlineData(float.NaN, "f9fe00", CborConformanceMode.Canonical)]
+        public static void WriteSingle_NonCtapConformance_ShouldMinimizePrecision(float input, string hexExpectedEncoding, CborConformanceMode mode)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter(mode);
+            writer.WriteSingle(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(100000.0, "fa47c35000")]
+        [InlineData(3.4028234663852886e+38, "fa7f7fffff")]
+        [InlineData(float.PositiveInfinity, "fa7f800000")]
+        [InlineData(float.NegativeInfinity, "faff800000")]
+        [InlineData(float.NaN, "faffc00000")]
+        public static void WriteSingle_Ctap2Conformance_ShouldPreservePrecision(float input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter(CborConformanceMode.Ctap2Canonical);
+            writer.WriteSingle(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(1.1, "fb3ff199999999999a")]
+        [InlineData(1.0e+300, "fb7e37e43c8800759c")]
+        [InlineData(-4.1, "fbc010666666666666")]
+        [InlineData(3.1415926, "fb400921fb4d12d84a")]
+        [InlineData(double.PositiveInfinity, "f97c00")]
+        [InlineData(double.NegativeInfinity, "f9fc00")]
+        [InlineData(double.NaN, "f9fe00")]
+        public static void WriteDouble_SingleValue_HappyPath(double input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter();
+            writer.WriteDouble(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(double.NaN, "f9fe00", CborConformanceMode.Lax)]
+        [InlineData(double.NaN, "f9fe00", CborConformanceMode.Strict)]
+        [InlineData(double.NaN, "f9fe00", CborConformanceMode.Canonical)]
+        [InlineData(65505, "fa477fe100", CborConformanceMode.Lax)]
+        [InlineData(65505, "fa477fe100", CborConformanceMode.Strict)]
+        [InlineData(65505, "fa477fe100", CborConformanceMode.Canonical)]
+        public static void WriteDouble_NonCtapConformance_ShouldMinimizePrecision(double input, string hexExpectedEncoding, CborConformanceMode mode)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter(mode);
+            writer.WriteDouble(input);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
@@ -36,10 +110,10 @@ namespace System.Formats.Cbor.Tests
         [InlineData(double.PositiveInfinity, "fb7ff0000000000000")]
         [InlineData(double.NegativeInfinity, "fbfff0000000000000")]
         [InlineData(double.NaN, "fbfff8000000000000")]
-        public static void WriteDouble_SingleValue_HappyPath(double input, string hexExpectedEncoding)
+        public static void WriteDouble_Ctap2Conformance_ShouldPreservePrecision(double input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            var writer = new CborWriter();
+            var writer = new CborWriter(CborConformanceMode.Ctap2Canonical);
             writer.WriteDouble(input);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }

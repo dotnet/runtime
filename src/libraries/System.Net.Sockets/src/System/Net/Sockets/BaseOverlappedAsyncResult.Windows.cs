@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -23,7 +22,7 @@ namespace System.Net.Sockets
             : base(socket, asyncState, asyncCallback)
         {
             _cleanupCount = 1;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, socket);
         }
 
         // SetUnmanagedStructures
@@ -55,7 +54,7 @@ namespace System.Net.Sockets
                 _nativeOverlapped = new SafeNativeOverlapped(s.SafeHandle, overlapped);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{boundHandle}::AllocateNativeOverlapped. return={_nativeOverlapped}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{boundHandle}::AllocateNativeOverlapped. return={_nativeOverlapped}");
         }
 
         private static unsafe void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
@@ -66,7 +65,7 @@ namespace System.Net.Sockets
             {
                 NetEventSource.Fail(null, $"asyncResult.IsCompleted: {asyncResult}");
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
 
             // Complete the IO and invoke the user's callback.
             SocketError socketError = (SocketError)errorCode;
@@ -197,7 +196,6 @@ namespace System.Net.Sockets
         protected virtual void ForceReleaseUnmanagedStructures()
         {
             // Free the unmanaged memory if allocated.
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _nativeOverlapped!.Dispose();
             _nativeOverlapped = null;
             GC.SuppressFinalize(this);

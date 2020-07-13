@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -24,7 +23,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
         private long _cacheSize;
         private bool _disposed;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         // We store the delegates locally to prevent allocations
         // every time a new CacheEntry is created.

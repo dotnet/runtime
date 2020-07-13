@@ -306,7 +306,6 @@ set(VM_SOURCES_WKS
     callsiteinspect.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrprivbinderutil.cpp
     clrvarargs.cpp
     comdatetime.cpp
     comdependenthandle.cpp

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2318,8 +2317,8 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert((block->bbJumpKind != BBJ_COND) || (block->bbJumpKind != BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
-               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        assert(((block->bbJumpKind != BBJ_COND) && (block->bbJumpKind != BBJ_ALWAYS)) ||
+               (block->bbJumpDest != newNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 

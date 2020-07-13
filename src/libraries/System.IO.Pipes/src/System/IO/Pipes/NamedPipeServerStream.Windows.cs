@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -214,10 +213,6 @@ namespace System.IO.Pipes
 
             return HandleGetImpersonationUserNameError(Marshal.GetLastWin32Error(), UserNameMaxLength, userName);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         // This method calls a delegate while impersonating the client. Note that we will not have
         // access to the client's security token until it has written at least once to the pipe
