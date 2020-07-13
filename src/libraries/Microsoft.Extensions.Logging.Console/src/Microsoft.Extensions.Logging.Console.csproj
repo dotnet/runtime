@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetcoreAppCurrent)-Windows_NT;$(NetcoreAppCurrent);netstandard2.0-Windows_NT;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>annotations</Nullable>
@@ -28,12 +28,7 @@
              Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
-    <Compile Remove="ConsoleLoggerProvider.Windows.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Remove="ConsoleLoggerProvider.NonWindows.cs" />
+  <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs"
