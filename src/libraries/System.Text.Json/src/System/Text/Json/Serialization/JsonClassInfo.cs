@@ -221,7 +221,6 @@ namespace System.Text.Json
             }
         }
 
-<<<<<<< HEAD
         private void CacheMember(
             Type declaringType,
             Type memberType,
@@ -266,61 +265,45 @@ namespace System.Text.Json
             }
         }
 
-        private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
-=======
-        private class CamelCaseParameterLookupEntry
+        private class ParameterLookupEntry
         {
-            public CamelCaseParameterLookupEntry(JsonPropertyInfo jsonPropertyInfo)
+            public ParameterLookupEntry(JsonPropertyInfo jsonPropertyInfo)
             {
                 JsonPropertyInfo = jsonPropertyInfo;
             }
 
-            public JsonPropertyInfo JsonPropertyInfo { get; private set; }
-            public JsonPropertyInfo DuplicateJsonPropertyInfo { get; set; } = null!;
+            public JsonPropertyInfo JsonPropertyInfo { get; }
+            public JsonPropertyInfo? DuplicateJsonPropertyInfo { get; set; } = null!;
         }
 
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
->>>>>>> Allow ctor parameters to exactly match property name
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
             var parameterCache = new Dictionary<string, JsonParameterInfo>(
                 parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
-            // Delay-created cache for camel-case lookup.
-            Dictionary<string, CamelCaseParameterLookupEntry>? camelCaseLookup = null;
-
-            // Cache for exact-name lookup.
-            var exactNameLookup = new Dictionary<string, JsonPropertyInfo>(PropertyCacheArray!.Length);
+            // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
+            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C# record
+            // types or anonymous types are used.
+            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we are just binding the
+            // parameter name to the object property name and do not include the JSON version of the name here.
+            var nameLookup = new Dictionary<string, ParameterLookupEntry>(PropertyCacheArray!.Length, StringComparer.OrdinalIgnoreCase);
             foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
             {
-<<<<<<< HEAD
-                MemberInfo? firstMatch = null;
-                bool isBound = false;
-=======
                 string propertyName = jsonProperty.PropertyInfo!.Name;
-                exactNameLookup.Add(propertyName, jsonProperty);
+                var entry = new ParameterLookupEntry(jsonProperty);
+                if (!JsonHelpers.TryAdd(nameLookup, propertyName, entry))
+                {
+                    // More than one property has the same case-insensitive name.
+                    // Remember so we can throw a nice exception if this property is used as a parameter name.
+                    nameLookup[propertyName].DuplicateJsonPropertyInfo = jsonProperty;
+                }
             }
->>>>>>> Allow ctor parameters to exactly match property name
 
             foreach (ParameterInfo parameterInfo in parameters)
             {
                 void AddParameter(JsonPropertyInfo jsonPropertyInfo)
                 {
-<<<<<<< HEAD
-                    // This is not null because it is an actual
-                    // property on a type, not a "policy property".
-                    MemberInfo memberInfo = jsonPropertyInfo.MemberInfo!;
-                    Debug.Assert(memberInfo is PropertyInfo || memberInfo is FieldInfo);
-
-                    Type memberType = memberInfo is PropertyInfo propertyInfo
-                        ? propertyInfo.PropertyType
-                        : Unsafe.As<FieldInfo>(memberInfo).FieldType;
-
-                    string camelCasePropName = JsonNamingPolicy.CamelCase.ConvertName(memberInfo.Name);
-
-                    if (parameterInfo.Name == camelCasePropName &&
-                        parameterInfo.ParameterType == memberType)
-=======
                     JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
 
                     parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
@@ -331,42 +314,24 @@ namespace System.Text.Json
 
                 string parameterName = parameterInfo.Name!;
 
-                // Check for exact match.
-                if (exactNameLookup.TryGetValue(parameterName, out JsonPropertyInfo? matchingJsonProperty) &&
-                    parameterInfo.ParameterType == matchingJsonProperty.PropertyInfo!.PropertyType)
+                if (nameLookup.TryGetValue(parameterName, out ParameterLookupEntry? matchingEntry) &&
+                    (parameterInfo.ParameterType == matchingEntry.JsonPropertyInfo.PropertyInfo!.PropertyType))
                 {
                     AddParameter(matchingJsonProperty!);
                 }
                 else
                 {
                     if (camelCaseLookup == null)
->>>>>>> Allow ctor parameters to exactly match property name
                     {
                         // Initialize camel-case cache.
                         camelCaseLookup = new Dictionary<string, CamelCaseParameterLookupEntry>(PropertyCacheArray!.Length);
                         foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
                         {
-<<<<<<< HEAD
-                            Debug.Assert(firstMatch != null);
-
-                            // Multiple object properties cannot bind to the same
-                            // constructor parameter.
-                            ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
-                                Type,
-                                parameterInfo,
-                                firstMatch,
-                                memberInfo,
-                                constructorInfo);
-                        }
-
-                        JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
-=======
                             string propertyName = jsonProperty.PropertyInfo!.Name;
                             string camelCaseName = JsonNamingPolicy.CamelCase.ConvertName(propertyName);
                             if (!propertyName.Equals(camelCaseName, StringComparison.Ordinal))
                             {
                                 var entry = new CamelCaseParameterLookupEntry(jsonProperty);
->>>>>>> Allow ctor parameters to exactly match property name
 
                                 if (!JsonHelpers.TryAdd(camelCaseLookup, camelCaseName, entry))
                                 {
@@ -375,32 +340,20 @@ namespace System.Text.Json
                                 }
                             }
                         }
-                    }
 
-                    // Check for camel-case match.
-                    if (camelCaseLookup.TryGetValue(parameterName, out CamelCaseParameterLookupEntry? matchingEntry))
+                    if (matchingEntry.DuplicateJsonPropertyInfo != null)
                     {
-                        if (parameterInfo.ParameterType == matchingEntry!.JsonPropertyInfo!.PropertyInfo!.PropertyType)
-                        {
-                            if (matchingEntry.DuplicateJsonPropertyInfo != null)
-                            {
-                                // Multiple object properties cannot bind to the same constructor parameter.
-                                ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
-                                    Type,
-                                    parameterInfo,
-                                    matchingEntry.JsonPropertyInfo.PropertyInfo!,
-                                    matchingEntry.DuplicateJsonPropertyInfo.PropertyInfo!,
-                                    constructorInfo);
-                            }
-
-<<<<<<< HEAD
-                        isBound = true;
-                        firstMatch = memberInfo;
-=======
-                            AddParameter(matchingEntry.JsonPropertyInfo!);
-                        }
->>>>>>> Allow ctor parameters to exactly match property name
+                        // Multiple object properties cannot bind to the same constructor parameter.
+                        ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
+                            Type,
+                            parameterInfo,
+                            matchingEntry.JsonPropertyInfo.PropertyInfo!,
+                            matchingEntry.DuplicateJsonPropertyInfo.PropertyInfo!,
+                            constructorInfo);
                     }
+
+                    // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
+                    PropertyCache!.Remove(jsonPropertyInfo.NameAsString);
                 }
             }
 

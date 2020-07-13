@@ -2060,26 +2060,26 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class MultipleMembers_SameNameExceptCamelCasing
+    public class Point_MultipleMembers_BindTo_OneConstructorParameter
     {
         public int X { get; }
 
         public int x { get; }
 
-        public MultipleMembers_SameNameExceptCamelCasing(int X, int x)
+        public Point_MultipleMembers_BindTo_OneConstructorParameter(int X, int x)
         {
             this.X = X;
             this.x = x;
         }
     }
 
-    public class MultipleMembers_BindTo_OneConstructorParameter
+    public class Url_BindTo_OneConstructorParameter
     {
         public int URL { get; }
 
         public int Url { get; }
 
-        public MultipleMembers_BindTo_OneConstructorParameter(int url) { }
+        public Url_BindTo_OneConstructorParameter(int url) { }
     }
 
     public class Point_MultipleMembers_BindTo_OneConstructorParameter_Variant

@@ -10,48 +10,34 @@ namespace System.Text.Json.Serialization.Tests
     public abstract partial class ConstructorTests
     {
         [Fact]
-<<<<<<< HEAD
         public async Task MultipleProperties_Cannot_BindTo_TheSame_ConstructorParameter()
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<Point_MultipleMembers_BindTo_OneConstructorParameter>("{}"));
-=======
-        public void MultipleProperties_SameNameExceptCamelCase()
-        {
-            MultipleMembers_SameNameExceptCamelCasing obj =
-                Serializer.Deserialize<MultipleMembers_SameNameExceptCamelCasing>("{}");
-
-            obj = Serializer.Deserialize<MultipleMembers_SameNameExceptCamelCasing>(@"{""X"":1,""x"":2}");
-            Assert.Equal(1, obj.X);
-            Assert.Equal(2, obj.x);
-        }
-
-        [Fact]
-        public void MultipleProperties_Cannot_BindTo_TheSame_ConstructorParameter()
-        {
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-                () => Serializer.Deserialize<MultipleMembers_BindTo_OneConstructorParameter>("{}"));
->>>>>>> Allow ctor parameters to exactly match property name
 
             string exStr = ex.ToString();
-            Assert.Contains("'URL'", exStr);
-            Assert.Contains("'Url'", exStr);
-            Assert.Contains("(Int32)", exStr);
-            Assert.Contains("System.Text.Json.Serialization.Tests.MultipleMembers_BindTo_OneConstructorParameter", exStr);
+            Assert.Contains("'X'", exStr);
+            Assert.Contains("'x'", exStr);
+            Assert.Contains("(Int32, Int32)", exStr);
+            Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter", exStr);
 
-<<<<<<< HEAD
+            ex = Assert.Throws<InvalidOperationException>(
+                () => Serializer.Deserialize<Point_MultipleMembers_BindTo_OneConstructorParameter_Variant>("{}"));
+
+            exStr = ex.ToString();
+            Assert.Contains("'X'", exStr);
+            Assert.Contains("'x'", exStr);
+            Assert.Contains("(Int32)", exStr);
+            Assert.Contains("Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
+
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<Point_MultipleMembers_BindTo_OneConstructorParameter_Variant>("{}"));
-=======
-            ex = Assert.Throws<InvalidOperationException>(
-                () => Serializer.Deserialize<MultipleMembers_BindTo_OneConstructorParameter>("{}"));
->>>>>>> Allow ctor parameters to exactly match property name
 
             exStr = ex.ToString();
             Assert.Contains("'URL'", exStr);
             Assert.Contains("'Url'", exStr);
             Assert.Contains("(Int32)", exStr);
-            Assert.Contains("System.Text.Json.Serialization.Tests.MultipleMembers_BindTo_OneConstructorParameter", exStr);
+            Assert.Contains("Url_BindTo_OneConstructorParameter", exStr);
         }
 
         [Fact]
@@ -166,7 +152,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
-        /* Enable when C# 9.0 'records' feature works in CI
         private record MyRecord(int Prop);
 
         [Fact]
@@ -179,7 +164,24 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyRecord>(@"{""Prop"":5}");
             Assert.Equal(5, obj.Prop);
         }
-        */
+
+        private record MyRecordWithUnboundCtorProperty(int IntProp1, int IntProp2)
+        {
+            public string StringProp { get; set; }
+        }
+
+        [Fact]
+        public void RecordWithAdditionalProperty()
+        {
+            MyRecordWithUnboundCtorProperty obj = JsonSerializer.Deserialize<MyRecordWithUnboundCtorProperty>(
+                @"{""IntProp1"":1,""IntProp2"":2,""StringProp"":""hello""}");
+
+            Assert.Equal(1, obj.IntProp1);
+            Assert.Equal(2, obj.IntProp2);
+
+            // StringProp is not bound to any constructor property.
+            Assert.Equal("hello", obj.StringProp);
+        }
 
         [Fact]
         public void AnonymousObject_NamingPolicy()
@@ -205,7 +207,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
-        /* Enable when C# 9.0 'records' feature works in CI
         [Fact]
         public void Record_NamingPolicy()
         {
@@ -226,7 +227,6 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyRecord>(Json, options);
             Assert.Equal(5, obj.Prop);
         }
-        */
 
         [Fact]
         public async Task DeserializePathForObjectFails()
@@ -337,7 +337,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("JsonElement needs to support Path")]
         public async Task ExtensionPropertyRoundTripFails()
         {
             JsonException e = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
