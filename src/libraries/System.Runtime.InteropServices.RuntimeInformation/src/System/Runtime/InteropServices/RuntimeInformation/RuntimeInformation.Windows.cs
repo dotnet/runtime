@@ -8,7 +8,6 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string? s_osDescription;
-        private static readonly object s_lock = new object();
         private static volatile int s_osArch = -1;
         private static volatile int s_processArch = -1;
 
@@ -43,20 +42,15 @@ namespace System.Runtime.InteropServices
             {
                 Debug.Assert(sizeof(Architecture) == sizeof(int));
 
-                if (s_osArch == -1)
-                {
-                    lock (s_lock)
-                    {
-                        if (s_osArch == -1)
-                        {
-                            Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                int osArch = s_osArch;
 
-                            s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
-                        }
-                    }
+                if (osArch == -1)
+                {
+                    Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    osArch = s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
-                return (Architecture)s_osArch;
+                return (Architecture)osArch;
             }
         }
 
@@ -66,20 +60,15 @@ namespace System.Runtime.InteropServices
             {
                 Debug.Assert(sizeof(Architecture) == sizeof(int));
 
-                if (s_processArch == -1)
-                {
-                    lock (s_lock)
-                    {
-                        if (s_processArch == -1)
-                        {
-                            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                int processArch = s_processArch;
 
-                            s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
-                        }
-                    }
+                if (processArch == -1)
+                {
+                    Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    processArch = s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
-                return (Architecture)s_processArch;
+                return (Architecture)processArch;
             }
         }
 
