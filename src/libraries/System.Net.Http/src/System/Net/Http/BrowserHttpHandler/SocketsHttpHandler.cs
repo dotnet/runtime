@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Connections;
 
 namespace System.Net.Http
 {
@@ -122,6 +123,18 @@ namespace System.Net.Http
         }
 
         public TimeSpan Expect100ContinueTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public ConnectionFactory? ConnectionFactory
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

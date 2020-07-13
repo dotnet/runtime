@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -21,6 +22,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
+        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -94,10 +96,11 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Connection connection)
         {
             _pool = pool;
-            _stream = stream;
+            _stream = connection.Stream;
+            _connection = connection;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -116,7 +119,7 @@ namespace System.Net.Http
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
 
-            if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
+            if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
         private object SyncObject => _httpStreams;
@@ -1585,7 +1588,7 @@ namespace System.Net.Http
             }
 
             // Do shutdown.
-            _stream.Close();
+            _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
