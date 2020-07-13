@@ -556,5 +556,18 @@ namespace ILLink.Tasks.Tests
 			};
 			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
+
+		[Fact]
+		public void TestUnhandledException ()
+		{
+			var task = new MockTask () {
+				RootAssemblyNames = new ITaskItem[] { new TaskItem ("MissingAssembly.dll") }
+			};
+			task.BuildEngine = new MockBuildEngine ();
+			task.Execute ();
+			Assert.Contains (task.Messages, message =>
+				message.Importance == MessageImportance.High &&
+				message.Line.Contains ("Unable to find 'MissingAssembly.dll.dll'"));
+		}
 	}
 }

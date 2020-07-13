@@ -61,9 +61,8 @@ namespace Mono.Linker
 			if (_linkerAttributes == null || !_linkerAttributes.TryGetValue (typeof (T), out var attributeList))
 				return Enumerable.Empty<T> ();
 
-			if (attributeList == null || attributeList.Count == 0) {
-				throw new LinkerFatalErrorException ("Unexpected list of attributes.");
-			}
+			if (attributeList == null || attributeList.Count == 0)
+				throw new InvalidOperationException ("Unexpected list of attributes.");
 
 			return attributeList.Cast<T> ();
 		}

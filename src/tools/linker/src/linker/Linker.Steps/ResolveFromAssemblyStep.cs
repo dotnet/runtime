@@ -1,4 +1,4 @@
-﻿//
+//
 // ResolveFromAssemblyStep.cs
 //
 // Author:
@@ -64,15 +64,12 @@ namespace Mono.Linker.Steps
 				Context.Resolver.CacheAssembly (_assembly);
 
 			var ignoreUnresolved = Context.Resolver.IgnoreUnresolved;
-			if (_rootVisibility == RootVisibility.PublicAndFamily) {
-				Context.Resolver.IgnoreUnresolved = false;
-			}
-
+			Context.Resolver.IgnoreUnresolved = false;
 			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
 			Context.Resolver.IgnoreUnresolved = ignoreUnresolved;
-			if (_rootVisibility != RootVisibility.Any && HasInternalsVisibleTo (assembly)) {
+
+			if (_rootVisibility != RootVisibility.Any && HasInternalsVisibleTo (assembly))
 				_rootVisibility = RootVisibility.PublicAndFamilyAndAssembly;
-			}
 
 			switch (assembly.MainModule.Kind) {
 			case ModuleKind.Dll:

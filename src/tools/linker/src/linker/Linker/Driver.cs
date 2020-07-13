@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -50,11 +51,6 @@ namespace Mono.Linker
 
 		public static int Main (string[] args)
 		{
-			return Execute (args);
-		}
-
-		public static int Execute (string[] args, ILogger customLogger = null)
-		{
 			if (args.Length == 0) {
 				Console.Error.WriteLine ("No parameters specified");
 				return 1;
@@ -64,18 +60,13 @@ namespace Mono.Linker
 				return 1;
 
 			try {
-
 				using (Driver driver = new Driver (arguments)) {
-					if (!driver.Run (customLogger))
-						return 1;
+					return driver.Run ();
 				}
-
 			} catch {
 				Console.Error.WriteLine ("Fatal error in {0}", _linker);
 				throw;
 			}
-
-			return 0;
 		}
 
 		readonly Queue<string> arguments;
@@ -207,6 +198,10 @@ namespace Mono.Linker
 				//
 				if (token[0] == '-' && token[1] == '-') {
 					switch (token) {
+					case "--help":
+						Usage ();
+						return 1;
+
 					case "--skip-unresolved":
 						if (!GetBoolParam (token, l => context.IgnoreUnresolved = context.Resolver.IgnoreUnresolved = l))
 							return -1;
@@ -555,6 +550,7 @@ namespace Mono.Linker
 
 						continue;
 					case "?":
+					case "h":
 					case "help":
 						Usage ();
 						return 1;
@@ -690,33 +686,42 @@ namespace Mono.Linker
 			return 0;
 		}
 
-		public bool Run (ILogger customLogger = null)
+		// Returns the exit code of the process. 0 indicates success.
+		// Known non-recoverable errors (LinkerFatalErrorException) set the exit code
+		// to the error code.
+		// May propagate exceptions, which will result in the process getting an
+		// exit code determined by dotnet.
+		public int Run (ILogger customLogger = null)
 		{
 			int setupStatus = SetupContext (customLogger);
 			if (setupStatus > 0)
-				return true;
+				return 0;
 			if (setupStatus < 0)
-				return false;
+				return 1;
 
 			Pipeline p = context.Pipeline;
 			PreProcessPipeline (p);
 
 			try {
 				p.Process (context);
-			} catch (Exception ex) {
-				if (ex is LinkerFatalErrorException lex) {
-					context.LogMessage (lex.MessageContainer);
-					Console.Error.WriteLine (ex.ToString ());
-				} else {
-					context.LogError ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues \n{ex}", 1012);
-				}
-
-				return false;
+			} catch (LinkerFatalErrorException lex) {
+				context.LogMessage (lex.MessageContainer);
+				Console.Error.WriteLine (lex.ToString ());
+				Debug.Assert (lex.MessageContainer.Category == MessageCategory.Error);
+				Debug.Assert (lex.MessageContainer.Code != null);
+				Debug.Assert (lex.MessageContainer.Code.Value != 0);
+				return lex.MessageContainer.Code ?? 1;
+			} catch (Exception) {
+				// Unhandled exceptions are usually linker bugs. Ask the user to report it.
+				context.LogError ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues", 1012);
+				// Don't swallow the exception and exit code - rethrow it and let the surrounding tooling decide what to do.
+				// The stack trace will go to stderr, and the MSBuild task will surface it with High importance.
+				throw;
 			} finally {
 				context.Tracer.Finish ();
 			}
 
-			return true;
+			return 0;
 		}
 
 		partial void PreProcessPipeline (Pipeline pipeline);
@@ -1029,7 +1034,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");
 			Console.WriteLine ("  --nowarn WARN-LIST  Disable specific warning messages");
 			Console.WriteLine ("  --version           Print the version number of the {0}", _linker);
-			Console.WriteLine ("  -help               Lists all linker options");
+			Console.WriteLine ("  --help              Lists all linker options");
 			Console.WriteLine ("  @FILE               Read response file for more options");
 
 			Console.WriteLine ();

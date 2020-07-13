@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
@@ -11,6 +12,9 @@ namespace ILLink.Tasks.Tests
 {
 	public class MockTask : ILLink
 	{
+
+		public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)> ();
+
 		public MockTask ()
 		{
 			// Ensure that [Required] members are non-null
@@ -54,6 +58,21 @@ namespace ILLink.Tasks.Tests
 				yield return property.Name;
 			}
 		}
+
+		protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance) => Messages.Add ((messageImportance, singleLine));
+	}
+
+	public class MockBuildEngine : IBuildEngine
+	{
+		public void LogErrorEvent (BuildErrorEventArgs e) { }
+		public void LogWarningEvent (BuildWarningEventArgs e) { }
+		public void LogMessageEvent (BuildMessageEventArgs e) { }
+		public void LogCustomEvent (CustomBuildEventArgs e) { }
+		public bool BuildProjectFile (string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;
+		public bool ContinueOnError => false;
+		public int LineNumberOfTaskNode => 0;
+		public int ColumnNumberOfTaskNode => 0;
+		public string ProjectFileOfTaskNode => null;
 	}
 
 	public class MockDriver : Driver
