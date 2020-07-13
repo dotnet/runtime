@@ -125,9 +125,9 @@ set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_OSX)
     set(NATIVE_LIBS
-        # Disable superhost on Win32 for now.
+        # Disable native libs linking on Win32 and OSX for now.
         # ${NATIVE_LIBS_LOCATION}/libclrcompression.lib
     )
 else()
@@ -190,19 +190,20 @@ else()
             socket
         )
     endif ()
-endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
-if(CLR_CMAKE_TARGET_OSX)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -force_load)
-    set(END_WHOLE_ARCHIVE )
-endif(CLR_CMAKE_TARGET_OSX)
+    if(CLR_CMAKE_TARGET_OSX)
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -force_load)
+        set(END_WHOLE_ARCHIVE )
+    endif(CLR_CMAKE_TARGET_OSX)
+
+endif(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_OSX)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 

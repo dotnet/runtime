@@ -16,7 +16,12 @@
     <!-- UNIX -->
 
     <!-- OSX -->
-
+    <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.dylib" />
+    <SingleFileHostIncludeFilename Include="libSystem.Native.dylib" />
+    <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.dylib" />
+    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.Apple.dylib" />
+    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" />
+    
     <!-- Windows -->
     <SingleFileHostIncludeFilename Include="clrcompression.dll" />
     <SingleFileHostIncludeFilename Include="clrjit.dll" />
