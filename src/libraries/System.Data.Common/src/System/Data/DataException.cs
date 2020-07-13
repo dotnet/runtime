@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -22,12 +21,12 @@ namespace System.Data
             HResult = HResults.Data;
         }
 
-        public DataException(string s) : base(s)
+        public DataException(string? s) : base(s)
         {
             HResult = HResults.Data;
         }
 
-        public DataException(string s, Exception innerException) : base(s, innerException) { }
+        public DataException(string? s, Exception? innerException) : base(s, innerException) { }
     };
 
     [Serializable]
@@ -43,12 +42,12 @@ namespace System.Data
             HResult = HResults.DataConstraint;
         }
 
-        public ConstraintException(string s) : base(s)
+        public ConstraintException(string? s) : base(s)
         {
             HResult = HResults.DataConstraint;
         }
 
-        public ConstraintException(string message, Exception innerException) : base(message, innerException)
+        public ConstraintException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataConstraint;
         }
@@ -73,12 +72,12 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DeletedRowInaccessibleException'/> class with the specified string.
         /// </summary>
-        public DeletedRowInaccessibleException(string s) : base(s)
+        public DeletedRowInaccessibleException(string? s) : base(s)
         {
             HResult = HResults.DataDeletedRowInaccessible;
         }
 
-        public DeletedRowInaccessibleException(string message, Exception innerException) : base(message, innerException)
+        public DeletedRowInaccessibleException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataDeletedRowInaccessible;
         }
@@ -97,12 +96,12 @@ namespace System.Data
             HResult = HResults.DataDuplicateName;
         }
 
-        public DuplicateNameException(string s) : base(s)
+        public DuplicateNameException(string? s) : base(s)
         {
             HResult = HResults.DataDuplicateName;
         }
 
-        public DuplicateNameException(string message, Exception innerException) : base(message, innerException)
+        public DuplicateNameException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataDuplicateName;
         }
@@ -121,12 +120,12 @@ namespace System.Data
             HResult = HResults.DataInRowChangingEvent;
         }
 
-        public InRowChangingEventException(string s) : base(s)
+        public InRowChangingEventException(string? s) : base(s)
         {
             HResult = HResults.DataInRowChangingEvent;
         }
 
-        public InRowChangingEventException(string message, Exception innerException) : base(message, innerException)
+        public InRowChangingEventException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataInRowChangingEvent;
         }
@@ -145,12 +144,12 @@ namespace System.Data
             HResult = HResults.DataInvalidConstraint;
         }
 
-        public InvalidConstraintException(string s) : base(s)
+        public InvalidConstraintException(string? s) : base(s)
         {
             HResult = HResults.DataInvalidConstraint;
         }
 
-        public InvalidConstraintException(string message, Exception innerException) : base(message, innerException)
+        public InvalidConstraintException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataInvalidConstraint;
         }
@@ -169,12 +168,12 @@ namespace System.Data
             HResult = HResults.DataMissingPrimaryKey;
         }
 
-        public MissingPrimaryKeyException(string s) : base(s)
+        public MissingPrimaryKeyException(string? s) : base(s)
         {
             HResult = HResults.DataMissingPrimaryKey;
         }
 
-        public MissingPrimaryKeyException(string message, Exception innerException) : base(message, innerException)
+        public MissingPrimaryKeyException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataMissingPrimaryKey;
         }
@@ -193,12 +192,12 @@ namespace System.Data
             HResult = HResults.DataNoNullAllowed;
         }
 
-        public NoNullAllowedException(string s) : base(s)
+        public NoNullAllowedException(string? s) : base(s)
         {
             HResult = HResults.DataNoNullAllowed;
         }
 
-        public NoNullAllowedException(string message, Exception innerException) : base(message, innerException)
+        public NoNullAllowedException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataNoNullAllowed;
         }
@@ -217,12 +216,12 @@ namespace System.Data
             HResult = HResults.DataReadOnly;
         }
 
-        public ReadOnlyException(string s) : base(s)
+        public ReadOnlyException(string? s) : base(s)
         {
             HResult = HResults.DataReadOnly;
         }
 
-        public ReadOnlyException(string message, Exception innerException) : base(message, innerException)
+        public ReadOnlyException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataReadOnly;
         }
@@ -241,12 +240,12 @@ namespace System.Data
             HResult = HResults.DataRowNotInTable;
         }
 
-        public RowNotInTableException(string s) : base(s)
+        public RowNotInTableException(string? s) : base(s)
         {
             HResult = HResults.DataRowNotInTable;
         }
 
-        public RowNotInTableException(string message, Exception innerException) : base(message, innerException)
+        public RowNotInTableException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataRowNotInTable;
         }
@@ -265,12 +264,12 @@ namespace System.Data
             HResult = HResults.DataVersionNotFound;
         }
 
-        public VersionNotFoundException(string s) : base(s)
+        public VersionNotFoundException(string? s) : base(s)
         {
             HResult = HResults.DataVersionNotFound;
         }
 
-        public VersionNotFoundException(string message, Exception innerException) : base(message, innerException)
+        public VersionNotFoundException(string? message, Exception? innerException) : base(message, innerException)
         {
             HResult = HResults.DataVersionNotFound;
         }
@@ -316,19 +315,20 @@ namespace System.Data
 
         internal static Exception _Argument(string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
         internal static Exception _Argument(string paramName, string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
-        internal static Exception _Argument(string error, Exception innerException) => TraceExceptionAsReturnValue(new ArgumentException(error, innerException));
+        internal static Exception _Argument(string error, Exception? innerException) => TraceExceptionAsReturnValue(new ArgumentException(error, innerException));
         private static Exception _ArgumentNull(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentNullException(paramName, msg));
         internal static Exception _ArgumentOutOfRange(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentOutOfRangeException(paramName, msg));
         private static Exception _IndexOutOfRange(string error) => TraceExceptionAsReturnValue(new IndexOutOfRangeException(error));
         private static Exception _InvalidOperation(string error) => TraceExceptionAsReturnValue(new InvalidOperationException(error));
         private static Exception _InvalidEnumArgumentException(string error) => TraceExceptionAsReturnValue(new InvalidEnumArgumentException(error));
-        private static Exception _InvalidEnumArgumentException<T>(T value) => _InvalidEnumArgumentException(SR.Format(SR.ADP_InvalidEnumerationValue, typeof(T).Name, value.ToString()));
+        private static Exception _InvalidEnumArgumentException<T>(T value) where T : Enum
+            => _InvalidEnumArgumentException(SR.Format(SR.ADP_InvalidEnumerationValue, typeof(T).Name, value.ToString()));
 
         //
         // System.Data exceptions
         //
 
-        private static void ThrowDataException(string error, Exception innerException)
+        private static void ThrowDataException(string error, Exception? innerException)
         {
             throw TraceExceptionAsReturnValue(new DataException(error, innerException));
         }
@@ -467,7 +467,7 @@ namespace System.Data
         public static Exception ReadOnlyAndExpression() => _ReadOnly(SR.DataColumn_ReadOnlyAndExpression);
         public static Exception ReadOnly(string column) => _ReadOnly(SR.Format(SR.DataColumn_ReadOnly, column));
         public static Exception UniqueAndExpression() => _Argument(SR.DataColumn_UniqueAndExpression);
-        public static Exception SetFailed(object value, DataColumn column, Type type, Exception innerException) => _Argument(innerException.Message + SR.Format(SR.DataColumn_SetFailed, value.ToString(), column.ColumnName, type.Name), innerException);
+        public static Exception SetFailed(object? value, DataColumn column, Type type, Exception innerException) => _Argument(innerException.Message + SR.Format(SR.DataColumn_SetFailed, value?.ToString(), column.ColumnName, type.Name), innerException);
         public static Exception CannotSetToNull(DataColumn column) => _Argument(SR.Format(SR.DataColumn_CannotSetToNull, column.ColumnName));
         public static Exception LongerThanMaxLength(DataColumn column) => _Argument(SR.Format(SR.DataColumn_LongerThanMaxLength, column.ColumnName));
         public static Exception CannotSetMaxLength(DataColumn column, int value) => _Argument(SR.Format(SR.DataColumn_CannotSetMaxLength, column.ColumnName, value.ToString(CultureInfo.InvariantCulture)));
@@ -610,7 +610,7 @@ namespace System.Data
         public static Exception EnforceConstraint() => _Constraint(SR.Data_EnforceConstraints);
         public static Exception CaseLocaleMismatch() => _Argument(SR.DataRelation_CaseLocaleMismatch);
         public static Exception CannotChangeCaseLocale() => CannotChangeCaseLocale(null);
-        public static Exception CannotChangeCaseLocale(Exception innerException) => _Argument(SR.DataSet_CannotChangeCaseLocale, innerException);
+        public static Exception CannotChangeCaseLocale(Exception? innerException) => _Argument(SR.DataSet_CannotChangeCaseLocale, innerException);
         public static Exception CannotChangeSchemaSerializationMode() => _InvalidOperation(SR.DataSet_CannotChangeSchemaSerializationMode);
         public static Exception InvalidSchemaSerializationMode(Type enumType, string mode) => _InvalidEnumArgumentException(SR.Format(SR.ADP_InvalidEnumerationValue, enumType.Name, mode));
         public static Exception InvalidRemotingFormat(SerializationFormat mode) => _InvalidEnumArgumentException<SerializationFormat>(mode);
@@ -690,7 +690,7 @@ namespace System.Data
         public static Exception DataTableInferenceNotSupported() => _InvalidOperation(SR.Xml_DataTableInferenceNotSupported);
 
         /// <summary>throw DataException for multitarget failure</summary>
-        internal static void ThrowMultipleTargetConverter(Exception innerException)
+        internal static void ThrowMultipleTargetConverter(Exception? innerException)
         {
             string res = (null != innerException) ? SR.Xml_MultipleTargetConverterError : SR.Xml_MultipleTargetConverterEmpty;
             ThrowDataException(res, innerException);

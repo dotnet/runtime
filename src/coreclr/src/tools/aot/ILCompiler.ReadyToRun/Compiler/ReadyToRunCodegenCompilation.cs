@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -253,7 +252,8 @@ namespace ILCompiler
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment)
+            int? customPESectionAlignment,
+            bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -268,7 +268,7 @@ namespace ILCompiler
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             _customPESectionAlignment = customPESectionAlignment;
-            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
+            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;

@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -18,15 +17,16 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         public static async Task HandleCollectionsAsync()
         {
-            await RunTest<string>();
-            await RunTest<ClassWithKVP>();
-            await RunTest<ImmutableStructWithStrings>();
+            await RunTestAsync<string>();
+            await RunTestAsync<ClassWithKVP>();
+            await RunTestAsync<ImmutableStructWithStrings>();
         }
 
-        private static async Task RunTest<TElement>()
+        private static async Task RunTestAsync<TElement>()
         {
             foreach ((Type, int) pair in CollectionTestData<TElement>())
             {

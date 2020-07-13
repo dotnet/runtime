@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ==++==
 //
@@ -158,8 +157,8 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
         // Check return trap
         PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
-        ldr     x9, [x9]
-        cbnz    x9, LOCAL_LABEL(RarePath)
+        ldr     w9, [x9]
+        cbnz    w9, LOCAL_LABEL(RarePath)
 
         // pThread->m_pFrame = pFrame->m_Next
         ldr     x9, [x0, #Frame__m_Next]

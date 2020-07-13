@@ -36,12 +36,15 @@ jobs:
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.compilerName, 'gcc') }}:
+    ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if ne(parameters.compilerName, 'gcc') }}:
+    ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.testGroup, 'clrTools') }}:
+      name: ${{ format('coreclr_{0}_tools_unittests_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR {0} Tools Unit Tests {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -61,6 +64,9 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
+    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
+      - name: publishLogsArtifactPrefix
+        value: 'BuildLogs_CoreCLR_ToolsUnitTests'
     - ${{ if eq(parameters.compilerName, 'gcc') }}:
       - name: compilerArg
         value: '-gcc'
@@ -98,6 +104,12 @@ jobs:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
+    - name: clrInterpreterBuildArg
+      value: ''
+    - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
+      - name: clrInterpreterBuildArg
+        value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
+
     - ${{ parameters.variables }}
 
     steps:
@@ -129,10 +141,10 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -149,13 +161,18 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
+    # Run CoreCLR Tools unit tests
+    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.tools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
+        displayName: Run CoreCLR Tools unit tests
+
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
     # Sign on Windows
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:
       - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:Configuration=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Binaries
 
@@ -167,8 +184,8 @@ jobs:
         continueOnError: true
         condition: always()
 
-    # Builds using gcc are not tested.
-    - ${{ if ne(parameters.compilerName, 'gcc') }}:
+    # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
@@ -180,7 +197,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, '')) }}:
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if ne(parameters.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -202,10 +219,21 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools')) }}:
       - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
+
+    # Publish unit tests results if executing unit tests
+    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: 'xUnit'
+          testResultsFiles: '*.xml'
+          testRunTitle: CoreCLR-Tools-Unittests-$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)
+          searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
+        continueOnError: true
+        condition: always()
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

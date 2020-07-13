@@ -427,6 +427,8 @@ interp_sources =	\
 	interp/interp.h	\
 	interp/interp-internals.h	\
 	interp/interp.c	\
+	interp/interp-intrins.h	\
+	interp/interp-intrins.c	\
 	interp/mintops.h	\
 	interp/mintops.def	\
 	interp/mintops.c	\

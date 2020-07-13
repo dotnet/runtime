@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
@@ -21,7 +22,7 @@ namespace System.Text.Json.Serialization
         /// Initializes a new instance of <see cref="JsonConverterAttribute"/> with the specified converter type.
         /// </summary>
         /// <param name="converterType">The type of the converter.</param>
-        public JsonConverterAttribute(Type converterType)
+        public JsonConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
         {
             ConverterType = converterType;
         }
@@ -34,6 +35,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The type of the converter to create, or null if <see cref="CreateConverter(Type)"/> should be used to obtain the converter.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public Type? ConverterType { get; private set; }
 
         /// <summary>

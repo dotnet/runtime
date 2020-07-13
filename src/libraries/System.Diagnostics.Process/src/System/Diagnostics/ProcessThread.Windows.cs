@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
@@ -147,10 +146,6 @@ namespace System.Diagnostics
         {
             get { return GetThreadTimes().UserProcessorTime; }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Gets timing information for the thread.</summary>
         private ProcessThreadTimes GetThreadTimes()

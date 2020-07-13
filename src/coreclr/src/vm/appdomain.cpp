@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1642,13 +1641,13 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 
     if(state == Thread::AS_InSTA)
     {
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
         _ASSERTE(pState == Thread::AS_InSTA);
     }
     else
     {
         // If an apartment state was not explicitly requested, default to MTA
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
 }
@@ -3964,113 +3963,6 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
 
     return fFailure;
 }
-
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT AppDomain::BindAssemblySpecForHostedBinder(
-    AssemblySpec *   pSpec,
-    IAssemblyName *  pAssemblyName,
-    ICLRPrivBinder * pBinder,
-    PEAssembly **    ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
-    PRECONDITION(CheckPointer(ppAssembly));
-    PRECONDITION(pSpec->GetCodeBase() == nullptr);
-
-    HRESULT hr = S_OK;
-
-
-    // The Fusion binder can throw (to preserve compat, since it will actually perform an assembly
-    // load as part of it's bind), so we need to be careful here to catch any FileNotFoundException
-    // objects if fThrowIfNotFound is false.
-    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-
-    // We return HRESULTs here on failure instead of throwing as failures here are not necessarily indicative
-    // of an actual application problem. Returning an error code is substantially faster than throwing, and
-    // should be used when possible.
-    IfFailRet(pBinder->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-    IfFailRet(BindHostedPrivAssembly(nullptr, pPrivAssembly, pAssemblyName, ppAssembly));
-
-
-    return S_OK;
-}
-
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT
-AppDomain::BindHostedPrivAssembly(
-    PEAssembly *       pParentAssembly,
-    ICLRPrivAssembly * pPrivAssembly,
-    IAssemblyName *    pAssemblyName,
-    PEAssembly **      ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pPrivAssembly));
-    PRECONDITION(CheckPointer(ppAssembly));
-
-    HRESULT hr = S_OK;
-
-    *ppAssembly = nullptr;
-
-    // See if result has been previously loaded.
-    {
-        DomainAssembly* pDomainAssembly = FindAssembly(pPrivAssembly);
-        if (pDomainAssembly != nullptr)
-        {
-            *ppAssembly = clr::SafeAddRef(pDomainAssembly->GetFile());
-        }
-    }
-
-    if (*ppAssembly != nullptr)
-    {   // Already exists: return the assembly.
-        return S_OK;
-    }
-
-    // Get the IL PEFile.
-    PEImageHolder pPEImageIL;
-    {
-        // Does not already exist, so get the resource for the assembly and load it.
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceIL;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_IL, &dwImageType, &pIResourceIL));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_IL);
-
-        pPEImageIL = PEImage::OpenImage(pIResourceIL, MDInternalImport_Default);
-    }
-
-    // See if an NI is available.
-    DWORD dwAvailableImages;
-    IfFailRet(pPrivAssembly->GetAvailableImageTypes(&dwAvailableImages));
-    _ASSERTE(dwAvailableImages & ASSEMBLY_IMAGE_TYPE_IL); // Just double checking that IL bit is always set.
-
-    // Get the NI PEFile if available.
-    PEImageHolder pPEImageNI;
-#ifdef FEATURE_PREJIT
-    if (dwAvailableImages & ASSEMBLY_IMAGE_TYPE_NATIVE)
-    {
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceNI;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_NATIVE, &dwImageType, &pIResourceNI));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_NATIVE || FAILED(hr));
-
-        pPEImageNI = PEImage::OpenImage(pIResourceNI, MDInternalImport_TrustedNativeImage);
-    }
-#endif // FEATURE_PREJIT
-    _ASSERTE(pPEImageIL != nullptr);
-
-    // Create a PEAssembly using the IL and NI images.
-    PEAssemblyHolder pPEAssembly = PEAssembly::Open(pParentAssembly, pPEImageIL, pPEImageNI, pPrivAssembly);
-
-    // The result.
-    *ppAssembly = pPEAssembly.Extract();
-
-    return S_OK;
-} // AppDomain::BindHostedPrivAssembly
 
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(

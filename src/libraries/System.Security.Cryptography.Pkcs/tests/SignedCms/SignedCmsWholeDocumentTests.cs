@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -10,11 +9,27 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
     public static class SignedCmsWholeDocumentTests
     {
-        [Fact]
-        public static void ReadRsaPssDocument()
+        [Theory]
+#if !NET472
+        [InlineData(true)]
+#endif
+        [InlineData(false)]
+        public static void ReadRsaPssDocument(bool fromSpan)
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPssDocument);
+            if (fromSpan)
+            {
+#if !NET472
+                cms.Decode(SignedDocuments.RsaPssDocument.AsSpan());
+#else
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#endif
+            }
+            else
+            {
+                cms.Decode(SignedDocuments.RsaPssDocument);
+            }
 
             Assert.Equal(3, cms.Version);
 

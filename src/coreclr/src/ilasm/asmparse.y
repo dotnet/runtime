@@ -2,7 +2,6 @@
 
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // File asmparse.y
@@ -675,6 +674,7 @@ callKind                : /* EMPTY */                         { $$ = IMAGE_CEE_C
                         | UNMANAGED_ STDCALL_                 { $$ = IMAGE_CEE_CS_CALLCONV_STDCALL; }
                         | UNMANAGED_ THISCALL_                { $$ = IMAGE_CEE_CS_CALLCONV_THISCALL; }
                         | UNMANAGED_ FASTCALL_                { $$ = IMAGE_CEE_CS_CALLCONV_FASTCALL; }
+                        | UNMANAGED_                          { $$ = IMAGE_CEE_CS_CALLCONV_UNMANAGED; }
                         ;
 
 mdtoken                 : MDTOKEN_ '(' int32 ')'             { $$ = $3; }

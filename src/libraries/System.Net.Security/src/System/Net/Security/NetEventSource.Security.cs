@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
 using System.Globalization;
@@ -105,11 +104,11 @@ namespace System.Net
             WriteEvent(SecureChannelCtorId, sslStream, hostname, secureChannelHash, clientCertificatesCount, (int)encryptionPolicy);
 
         [NonEvent]
-        public void LocatingPrivateKey(X509Certificate x509Certificate, SecureChannel secureChannel)
+        public void LocatingPrivateKey(X509Certificate x509Certificate, object instance)
         {
             if (IsEnabled())
             {
-                LocatingPrivateKey(x509Certificate.ToString(true), GetHashCode(secureChannel));
+                LocatingPrivateKey(x509Certificate.ToString(true), GetHashCode(instance));
             }
         }
         [Event(LocatingPrivateKeyId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -117,11 +116,11 @@ namespace System.Net
             WriteEvent(LocatingPrivateKeyId, x509Certificate, secureChannelHash);
 
         [NonEvent]
-        public void CertIsType2(SecureChannel secureChannel)
+        public void CertIsType2(object instance)
         {
             if (IsEnabled())
             {
-                CertIsType2(GetHashCode(secureChannel));
+                CertIsType2(GetHashCode(instance));
             }
         }
         [Event(CertIsType2Id, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -129,11 +128,11 @@ namespace System.Net
             WriteEvent(CertIsType2Id, secureChannelHash);
 
         [NonEvent]
-        public void FoundCertInStore(bool serverMode, SecureChannel secureChannel)
+        public void FoundCertInStore(bool serverMode, object instance)
         {
             if (IsEnabled())
             {
-                FoundCertInStore(serverMode ? "LocalMachine" : "CurrentUser", GetHashCode(secureChannel));
+                FoundCertInStore(serverMode ? "LocalMachine" : "CurrentUser", GetHashCode(instance));
             }
         }
         [Event(FoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -141,11 +140,11 @@ namespace System.Net
             WriteEvent(FoundCertInStoreId, store, secureChannelHash);
 
         [NonEvent]
-        public void NotFoundCertInStore(SecureChannel secureChannel)
+        public void NotFoundCertInStore(object instance)
         {
             if (IsEnabled())
             {
-                NotFoundCertInStore(GetHashCode(secureChannel));
+                NotFoundCertInStore(GetHashCode(instance));
             }
         }
         [Event(NotFoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]

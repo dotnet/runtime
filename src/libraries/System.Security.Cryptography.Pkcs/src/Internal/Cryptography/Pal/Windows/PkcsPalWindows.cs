@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -24,19 +23,19 @@ namespace Internal.Cryptography.Pal.Windows
         {
         }
 
-        public sealed override DecryptorPal Decode(byte[] encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes)
+        public sealed override DecryptorPal Decode(ReadOnlySpan<byte> encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             return DecryptorPalWindows.Decode(encodedMessage, out version, out contentInfo, out contentEncryptionAlgorithm, out originatorCerts, out unprotectedAttributes);
         }
 
-        public sealed override Oid GetEncodedMessageType(byte[] encodedMessage)
+        public sealed override Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage)
         {
             using (SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToDecode(MsgEncodingType.All, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero))
             {
                 if (hCryptMsg == null || hCryptMsg.IsInvalid)
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-                if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedMessage, encodedMessage.Length, fFinal: true))
+                if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, ref MemoryMarshal.GetReference(encodedMessage), encodedMessage.Length, fFinal: true))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 int msgTypeAsInt;
