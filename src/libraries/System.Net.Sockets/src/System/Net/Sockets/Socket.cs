@@ -2159,7 +2159,7 @@ namespace System.Net.Sockets
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStart(remoteEP);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(remoteEP);
 
             if (CanUseConnectEx(remoteEP))
             {
@@ -2427,7 +2427,7 @@ namespace System.Net.Sockets
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.IsEnabled(EventLevel.Error)) SocketsTelemetry.Log.ConnectFailed();
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed();
 
                 if (ex == null)
                 {
@@ -2443,7 +2443,7 @@ namespace System.Net.Sockets
                 ExceptionDispatchInfo.Throw(ex);
             }
 
-            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStop();
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (NetEventSource.IsEnabled)
             {
@@ -4345,7 +4345,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.IsEnabled(EventLevel.Error)) SocketsTelemetry.Log.ConnectFailed();
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed();
 
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
@@ -4355,7 +4355,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStop();
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (_rightEndPoint == null)
             {

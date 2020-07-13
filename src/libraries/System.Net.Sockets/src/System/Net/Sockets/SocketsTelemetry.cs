@@ -12,12 +12,6 @@ namespace System.Net.Sockets
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
         [NonEvent]
-        public static bool IsEnabled(EventLevel level)
-        {
-            return Log.IsEnabled(level, EventKeywords.All);
-        }
-
-        [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
             ConnectStart(address.ToString());
@@ -32,7 +26,10 @@ namespace System.Net.Sockets
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string? address)
         {
-            WriteEvent(eventId: 1, address ?? "");
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 1, address ?? "");
+            }
         }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -44,21 +41,30 @@ namespace System.Net.Sockets
         [Event(3, Level = EventLevel.Error)]
         public void ConnectFailed()
         {
-            WriteEvent(eventId: 3);
-            ConnectStopInternal();
+            if (IsEnabled(EventLevel.Error, EventKeywords.All))
+            {
+                WriteEvent(eventId: 3);
+                ConnectStopInternal();
+            }
         }
 
         [Event(4, Level = EventLevel.Warning)]
         public void ConnectCanceled()
         {
-            WriteEvent(eventId: 4);
-            ConnectStopInternal();
+            if (IsEnabled(EventLevel.Warning, EventKeywords.All))
+            {
+                WriteEvent(eventId: 4);
+                ConnectStopInternal();
+            }
         }
 
         [NonEvent]
         private void ConnectStopInternal()
         {
-            WriteEvent(eventId: 2);
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 2);
+            }
         }
     }
 }
