@@ -241,6 +241,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
 
+    //make sure op1 is a reg
     switch (fmt)
     {
         case IF_RWR_CNS:
@@ -286,6 +287,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
             {
                 return false;
             }
+        // these always set OC to 0
         case INS_and:
         case INS_or:
         case INS_xor:
