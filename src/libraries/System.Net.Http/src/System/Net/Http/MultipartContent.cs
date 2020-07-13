@@ -687,9 +687,10 @@ namespace System.Net.Http
 
         private static void WriteToStream(Stream stream, string content, Encoding encoding)
         {
-            if (ReferenceEquals(encoding, Encoding.UTF8) && content.Length <= 128)
+            if (ReferenceEquals(encoding, Encoding.Latin1) ? content.Length <= 512
+                : (ReferenceEquals(encoding, Encoding.UTF8) && content.Length <= 128))
             {
-                // Fast-path for the expected common case
+                // Fast-path for the expected common cases
                 Span<byte> buffer = stackalloc byte[512];
                 int written = encoding.GetBytes(content, buffer);
                 stream.Write(buffer.Slice(0, written));
@@ -702,14 +703,9 @@ namespace System.Net.Http
 
         private static void WriteLatin1ToStream(Stream stream, string content)
         {
-            Span<byte> buffer = content.Length <= 512
-                ? stackalloc byte[512]
-                : new byte[content.Length];
+            Debug.Assert(ReferenceEquals(Encoding.Latin1, HttpRuleParser.DefaultHttpEncoding));
 
-            int written = Encoding.Latin1.GetBytes(content, buffer);
-            Debug.Assert(written == content.Length);
-
-            stream.Write(buffer.Slice(0, written));
+            WriteToStream(stream, content, HttpRuleParser.DefaultHttpEncoding);
         }
 
         #endregion Serialization
