@@ -375,13 +375,9 @@ else()
 endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
-    # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
-    # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
-    # but since we know that PIE is supported, we can safely skip this redundant check).
-    #
     # The default linker on Solaris also does not support PIE.
     if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS AND NOT MSVC)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fpie")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
         add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIE>)
         add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:-fPIC>)
     endif()

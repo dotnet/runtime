@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.6.3)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+     # CMake 3.14.5 contains bug fixes for iOS 
+     cmake_minimum_required(VERSION 3.14.5) 
+ endif() 
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
