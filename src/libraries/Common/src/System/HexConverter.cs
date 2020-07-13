@@ -163,6 +163,8 @@ namespace System
                 int byteLo = FromChar(chars[i + 1]);
                 int byteHi = FromChar(chars[i]);
 
+                // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
+                // is if either byteHi or byteLo was not a hex character.
                 if ((byteLo | byteHi) == 0xFF)
                     return false;
 
