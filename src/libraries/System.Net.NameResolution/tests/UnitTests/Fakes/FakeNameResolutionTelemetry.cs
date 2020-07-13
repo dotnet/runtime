@@ -10,7 +10,7 @@ namespace System.Net
     {
         public static NameResolutionTelemetry Log => new NameResolutionTelemetry();
 
-        public static readonly bool IsEnabled = false;
+        public bool IsEnabled() => false;
 
         public ValueStopwatch BeforeResolution(string hostNameOrAddress) => default;
 

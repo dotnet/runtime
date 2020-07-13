@@ -32,7 +32,8 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -337,7 +338,8 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -376,7 +378,8 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
             stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -406,7 +409,8 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -458,7 +462,7 @@ namespace System.Net
             {
                 ValidateHostName(hostName);
 
-                if (NameResolutionTelemetry.IsEnabled)
+                if (NameResolutionTelemetry.Log.IsEnabled())
                 {
                     ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
@@ -526,7 +530,9 @@ namespace System.Net
 
         private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
+
             return false;
         }
     }

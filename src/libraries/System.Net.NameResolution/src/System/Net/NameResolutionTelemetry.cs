@@ -15,8 +15,6 @@ namespace System.Net
     {
         public static readonly NameResolutionTelemetry Log = new NameResolutionTelemetry();
 
-        public static new bool IsEnabled => Log.IsEnabled();
-
         private const int ResolutionStartEventId = 1;
         private const int ResolutionStopEventId = 2;
         private const int ResolutionFailedEventId = 3;
