@@ -667,7 +667,7 @@ namespace System.Net.Http
             {
                 if (connections[i].AcquireStreamSlot())
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Using existing HTTP2 connection.");
                     }
