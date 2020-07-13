@@ -122,6 +122,14 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha />
     </Dependency>
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20356.1">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>266c9f5b5c1e94333e01ca77fa74d76563969842</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="9.0.1-alpha.1.20356.1">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>266c9f5b5c1e94333e01ca77fa74d76563969842</Sha>
+    </Dependency>
     <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20356.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>266c9f5b5c1e94333e01ca77fa74d76563969842</Sha>
@@ -174,9 +182,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20359.3">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20360.3">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>73c73a04bcb8b92e66554bccd8a6c2003c0ee3b2</Sha>
+      <Sha>095f30a37d740e5166d71ab2d2157c5bb2041efa</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20352.3">
       <Uri>https://github.com/dotnet/xharness</Uri>

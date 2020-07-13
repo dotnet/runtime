@@ -5281,13 +5281,30 @@ const int MAX_INDEX_COMPLEXITY = 4;
 GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 {
     noway_assert(tree->gtOper == GT_INDEX);
-    GenTreeIndex* asIndex = tree->AsIndex();
-
-    var_types            elemTyp        = tree->TypeGet();
-    unsigned             elemSize       = tree->AsIndex()->gtIndElemSize;
-    CORINFO_CLASS_HANDLE elemStructType = tree->AsIndex()->gtStructElemClass;
+    GenTreeIndex*        asIndex        = tree->AsIndex();
+    var_types            elemTyp        = asIndex->TypeGet();
+    unsigned             elemSize       = asIndex->gtIndElemSize;
+    CORINFO_CLASS_HANDLE elemStructType = asIndex->gtStructElemClass;
 
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
+
+    // Fold "cns_str"[cns_index] to ushort constant
+    if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
+    {
+        const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
+        if (cnsIndex >= 0)
+        {
+            int     length;
+            LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                             asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+            if ((cnsIndex < length) && (str != nullptr))
+            {
+                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
+                INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                return cnsCharNode;
+            }
+        }
+    }
 
 #ifdef FEATURE_SIMD
     if (featureSIMD && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))

@@ -152,6 +152,9 @@
 
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
+
+    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)/ILLink.LinkAttributes.$(Platform).xml"
+                              Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
 
   <!-- Sources -->

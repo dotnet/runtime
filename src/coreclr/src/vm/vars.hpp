@@ -694,7 +694,7 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #define READONLY_ATTR
 #else
 #ifdef __APPLE__
-#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#define READONLY_ATTR_ARGS section("__DATA,__const")
 #else
 #define READONLY_ATTR_ARGS section(".rodata")
 #endif

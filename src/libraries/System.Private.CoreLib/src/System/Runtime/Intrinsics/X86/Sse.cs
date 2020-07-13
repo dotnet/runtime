@@ -10,14 +10,14 @@ namespace System.Runtime.Intrinsics.X86
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class Sse
+    public abstract class Sse // : X86Base
     {
         internal Sse() { }
 
         public static bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public abstract class X64
+        public abstract class X64 // : X86Base.X64
         {
             internal X64() { }
 

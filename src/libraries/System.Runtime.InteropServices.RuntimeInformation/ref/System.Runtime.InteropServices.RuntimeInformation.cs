@@ -43,5 +43,15 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.Architecture ProcessArchitecture { get { throw null; } }
         public static string RuntimeIdentifier { get { throw null; } }
         public static bool IsOSPlatform(System.Runtime.InteropServices.OSPlatform osPlatform) { throw null; }
+        public static bool IsOSPlatformOrLater(string platformName) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build, int revision) { throw null; }
+        public static bool IsOSPlatformEarlierThan(string platformName) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build, int revision) { throw null; }
     }
 }

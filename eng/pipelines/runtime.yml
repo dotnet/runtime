@@ -356,6 +356,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -378,6 +379,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT

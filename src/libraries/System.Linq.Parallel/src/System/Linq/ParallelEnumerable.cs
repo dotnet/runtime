@@ -1579,13 +1579,6 @@ namespace System.Linq
                     {
                         acc = func(acc, elem);
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception e)
                     {
                         throw new AggregateException(e);
@@ -1718,13 +1711,6 @@ namespace System.Linq
             {
                 return resultSelector(acc);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception e)
             {
                 throw new AggregateException(e);
@@ -4375,13 +4361,6 @@ namespace System.Linq
                     }
                     if (e2.MoveNext()) return false;
                 }
-#if SUPPORT_THREAD_ABORT
-                catch (ThreadAbortException)
-                {
-                    // Do not wrap ThreadAbortExceptions
-                    throw;
-                }
-#endif
                 catch (Exception ex)
                 {
                     ExceptionAggregator.ThrowOCEorAggregateException(ex, settings.CancellationState);
@@ -4409,13 +4388,6 @@ namespace System.Linq
             {
                 e.Dispose();
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 ExceptionAggregator.ThrowOCEorAggregateException(ex, cancelState);
@@ -4968,13 +4940,6 @@ namespace System.Linq
                         key = keySelector(val);
                         result.Add(key, val);
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception ex)
                     {
                         throw new AggregateException(ex);
@@ -5072,13 +5037,6 @@ namespace System.Linq
                     {
                         result.Add(keySelector(src), elementSelector(src));
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception ex)
                     {
                         throw new AggregateException(ex);
