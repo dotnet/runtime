@@ -10,7 +10,12 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM base hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class ArmBase
+#if USE_INTERNAL_ACCESSIBILITY
+    internal
+#else
+    public
+#endif
+        abstract class ArmBase
     {
         internal ArmBase() { }
 

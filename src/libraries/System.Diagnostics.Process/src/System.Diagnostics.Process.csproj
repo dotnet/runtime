@@ -82,6 +82,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.PERF_INFO.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.PERF_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IsWow64Process_SafeProcessHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.IsWow64Process_SafeProcessHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetExitCodeProcess.cs"

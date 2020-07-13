@@ -100,7 +100,7 @@ namespace System.Net
         [MemberNotNull(nameof(_package))]
         private void Initialize(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, package, spn, requestedContextFlags);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
             _tokenSize = NegotiateStreamPal.QueryMaxTokenSize(package);
             _isServer = isServer;
@@ -212,8 +212,6 @@ namespace System.Net
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, incomingBlob);
-
             byte[]? result = new byte[_tokenSize];
 
             bool firstTime = _securityContext == null;
@@ -279,12 +277,9 @@ namespace System.Net
                 _isCompleted = true;
                 if (throwOnError)
                 {
-                    Exception exception = NegotiateStreamPal.CreateExceptionFromError(statusCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, exception);
-                    throw exception;
+                    throw NegotiateStreamPal.CreateExceptionFromError(statusCode);
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"null statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
                 return null;
             }
             else if (firstTime && _credentialsHandle != null)
@@ -300,15 +295,10 @@ namespace System.Net
                 // Success.
                 _isCompleted = true;
             }
-            else if (NetEventSource.Log.IsEnabled())
+            else
             {
                 // We need to continue.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"need continue statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode}) _securityContext:{_securityContext}");
-            }
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"IsCompleted: {IsCompleted}");
             }
 
             return result;

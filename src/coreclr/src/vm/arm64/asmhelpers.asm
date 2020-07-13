@@ -45,7 +45,6 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
-    IMPORT  g_TrapReturningThreads
     IMPORT  g_dispatch_cache_chain_success_counter
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA

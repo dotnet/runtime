@@ -29,8 +29,6 @@ namespace System.Net
 
         public HttpListener()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             _state = State.Stopped;
             _internalLock = new object();
             _defaultServiceNames = new ServiceNameStore();
@@ -41,8 +39,6 @@ namespace System.Net
             // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement
             // config element
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
@@ -105,16 +101,13 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 CheckDisposed();
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 return _prefixes;
             }
         }
 
         internal void AddPrefix(string uriPrefix)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
             string registeredPrefix = null;
             try
             {
@@ -192,17 +185,12 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
-            }
         }
 
         internal bool ContainsPrefix(string uriPrefix) => _uriPrefixes.Contains(uriPrefix);
 
         internal bool RemovePrefix(string uriPrefix)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, $"uriPrefix: {uriPrefix}");
             try
             {
                 CheckDisposed();
@@ -230,40 +218,28 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"uriPrefix: {uriPrefix}");
-            }
             return true;
         }
 
         internal void RemoveAll(bool clear)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            try
+            CheckDisposed();
+            // go through the uri list and unregister for each one of them
+            if (_uriPrefixes.Count > 0)
             {
-                CheckDisposed();
-                // go through the uri list and unregister for each one of them
-                if (_uriPrefixes.Count > 0)
+                if (_state == State.Started)
                 {
-                    if (_state == State.Started)
+                    foreach (string registeredPrefix in _uriPrefixes.Values)
                     {
-                        foreach (string registeredPrefix in _uriPrefixes.Values)
-                        {
-                            RemovePrefixCore(registeredPrefix);
-                        }
-                    }
-
-                    if (clear)
-                    {
-                        _uriPrefixes.Clear();
-                        _defaultServiceNames.Clear();
+                        RemovePrefixCore(registeredPrefix);
                     }
                 }
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
+
+                if (clear)
+                {
+                    _uriPrefixes.Clear();
+                    _defaultServiceNames.Clear();
+                }
             }
         }
 
@@ -299,7 +275,6 @@ namespace System.Net
 
         public void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, nameof(Close));
             try
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("HttpListenerRequest::Close()");
@@ -309,10 +284,6 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Close {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             }
         }
 

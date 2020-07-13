@@ -33,7 +33,6 @@ namespace System.Net
 
         public void Start()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             lock (_internalLock)
             {
                 try
@@ -52,10 +51,6 @@ namespace System.Net
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Start {exception}");
                     throw;
                 }
-                finally
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-                }
             }
         }
 
@@ -72,7 +67,6 @@ namespace System.Net
 
         public void Stop()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -94,14 +88,12 @@ namespace System.Net
                 finally
                 {
                     _state = State.Stopped;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
 
         public void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -126,14 +118,12 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
 
         private void Dispose()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -154,7 +144,6 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }

@@ -512,7 +512,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlMoney)
             {
@@ -520,7 +520,7 @@ namespace System.Data.SqlTypes
 
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlMoney));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlMoney));
         }
 
         public int CompareTo(SqlMoney value)
@@ -538,7 +538,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlMoney))
             {
@@ -560,7 +560,7 @@ namespace System.Data.SqlTypes
             return IsNull ? 0 : _value.GetHashCode();
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

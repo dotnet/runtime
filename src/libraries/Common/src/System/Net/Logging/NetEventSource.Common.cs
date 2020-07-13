@@ -30,14 +30,9 @@ namespace System.Net
     // Usage:
     // - Operations that may allocate (e.g. boxing a value type, using string interpolation, etc.) or that may have computations
     //   at call sites should guard access like:
-    //       if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, refArg1, valueTypeArg2); // entering an instance method with a value type arg
     //       if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Found certificate: {cert}"); // info logging with a formattable string
     // - Operations that have zero allocations / measurable computations at call sites can use a simpler pattern, calling methods like:
-    //       NetEventSource.Enter(this);                   // entering an instance method
     //       NetEventSource.Info(this, "literal string");  // arbitrary message with a literal string
-    //       NetEventSource.Enter(this, refArg1, regArg2); // entering an instance method with two reference type arguments
-    //       NetEventSource.Enter(null);                   // entering a static method
-    //       NetEventSource.Enter(null, refArg1);          // entering a static method with one reference type argument
     //   Debug.Asserts inside the logging methods will help to flag some misuse if the DEBUG_NETEVENTSOURCE_MISUSE compilation constant is defined.
     //   However, because it can be difficult by observation to understand all of the costs involved, guarding can be done everywhere.
     // - NetEventSource.Fail calls typically do not need to be prefixed with an IsEnabled check, even if they allocate, as FailMessage
@@ -61,7 +56,9 @@ namespace System.Net
         {
             public const EventKeywords Default = (EventKeywords)0x0001;
             public const EventKeywords Debug = (EventKeywords)0x0002;
-            public const EventKeywords EnterExit = (EventKeywords)0x0004;
+
+            // No longer used:
+            // EnterExit = (EventKeywords)0x0004;
         }
 
         private const string MissingMember = "(?)";
@@ -70,8 +67,10 @@ namespace System.Net
         private const string NoParameters = "";
         private const int MaxDumpSize = 1024;
 
-        private const int EnterEventId = 1;
-        private const int ExitEventId = 2;
+        // No longer used:
+        // EnterEventId = 1;
+        // ExitEventId = 2;
+
         private const int AssociateEventId = 3;
         private const int InfoEventId = 4;
         private const int ErrorEventId = 5;
@@ -94,110 +93,6 @@ namespace System.Net
         #endregion
 
         #region Events
-        #region Enter
-        /// <summary>Logs entrance to a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="formattableString">A description of the entrance, including any arguments to the call.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Enter(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.Enter(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
-        }
-
-        /// <summary>Logs entrance to a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="arg0">The object to log.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Enter(object? thisOrContextObject, object? arg0, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(arg0);
-            if (Log.IsEnabled()) Log.Enter(IdOf(thisOrContextObject), memberName, $"({Format(arg0)})");
-        }
-
-        /// <summary>Logs entrance to a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="arg0">The first object to log.</param>
-        /// <param name="arg1">The second object to log.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(arg0);
-            DebugValidateArg(arg1);
-            if (Log.IsEnabled()) Log.Enter(IdOf(thisOrContextObject), memberName, $"({Format(arg0)}, {Format(arg1)})");
-        }
-
-        /// <summary>Logs entrance to a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="arg0">The first object to log.</param>
-        /// <param name="arg1">The second object to log.</param>
-        /// <param name="arg2">The third object to log.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, object? arg2, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(arg0);
-            DebugValidateArg(arg1);
-            DebugValidateArg(arg2);
-            if (Log.IsEnabled()) Log.Enter(IdOf(thisOrContextObject), memberName, $"({Format(arg0)}, {Format(arg1)}, {Format(arg2)})");
-        }
-
-        [Event(EnterEventId, Level = EventLevel.Informational, Keywords = Keywords.EnterExit)]
-        private void Enter(string thisOrContextObject, string? memberName, string parameters) =>
-            WriteEvent(EnterEventId, thisOrContextObject, memberName ?? MissingMember, parameters);
-        #endregion
-
-        #region Exit
-        /// <summary>Logs exit from a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="formattableString">A description of the exit operation, including any return values.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Exit(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.Exit(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
-        }
-
-        /// <summary>Logs exit from a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="arg0">A return value from the member.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Exit(object? thisOrContextObject, object? arg0, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(arg0);
-            if (Log.IsEnabled()) Log.Exit(IdOf(thisOrContextObject), memberName, Format(arg0).ToString());
-        }
-
-        /// <summary>Logs exit from a method.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="arg0">A return value from the member.</param>
-        /// <param name="arg1">A second return value from the member.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Exit(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(arg0);
-            DebugValidateArg(arg1);
-            if (Log.IsEnabled()) Log.Exit(IdOf(thisOrContextObject), memberName, $"{Format(arg0)}, {Format(arg1)}");
-        }
-
-        [Event(ExitEventId, Level = EventLevel.Informational, Keywords = Keywords.EnterExit)]
-        private void Exit(string thisOrContextObject, string? memberName, string? result) =>
-            WriteEvent(ExitEventId, thisOrContextObject, memberName ?? MissingMember, result);
-        #endregion
-
         #region Info
         /// <summary>Logs an information message.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
@@ -208,7 +103,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.Info(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
+            if (IsEnabled) Log.Info(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
         }
 
         /// <summary>Logs an information message.</summary>
@@ -220,7 +115,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.Info(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+            if (IsEnabled) Log.Info(IdOf(thisOrContextObject), memberName, Format(message).ToString());
         }
 
         [Event(InfoEventId, Level = EventLevel.Informational, Keywords = Keywords.Default)]
@@ -238,7 +133,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
         }
 
         /// <summary>Logs an error message.</summary>
@@ -250,7 +145,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
         }
 
         [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
@@ -272,7 +167,7 @@ namespace System.Net
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
             // that should never happen in production, and thus we don't care about extra costs.
 
-            if (Log.IsEnabled()) Log.CriticalFailure(IdOf(thisOrContextObject), memberName, Format(formattableString));
+            if (IsEnabled) Log.CriticalFailure(IdOf(thisOrContextObject), memberName, Format(formattableString));
             Debug.Fail(Format(formattableString), $"{IdOf(thisOrContextObject)}.{memberName}");
         }
 
@@ -289,7 +184,7 @@ namespace System.Net
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
             // that should never happen in production, and thus we don't care about extra costs.
 
-            if (Log.IsEnabled()) Log.CriticalFailure(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+            if (IsEnabled) Log.CriticalFailure(IdOf(thisOrContextObject), memberName, Format(message).ToString());
             Debug.Fail(Format(message).ToString(), $"{IdOf(thisOrContextObject)}.{memberName}");
         }
 
@@ -308,7 +203,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+            if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
         }
 
         /// <summary>Logs an info at verbose mode.</summary>
@@ -320,7 +215,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
+            if (IsEnabled) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
         }
 
         [Event(ErrorEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
@@ -348,7 +243,7 @@ namespace System.Net
         [NonEvent]
         public static void DumpBuffer(object? thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string? memberName = null)
         {
-            if (Log.IsEnabled())
+            if (IsEnabled)
             {
                 if (offset < 0 || offset > buffer.Length - count)
                 {
@@ -380,7 +275,7 @@ namespace System.Net
             Debug.Assert(bufferPtr != IntPtr.Zero);
             Debug.Assert(count >= 0);
 
-            if (Log.IsEnabled())
+            if (IsEnabled)
             {
                 var buffer = new byte[Math.Min(count, MaxDumpSize)];
                 fixed (byte* targetPtr = buffer)
@@ -406,7 +301,7 @@ namespace System.Net
         {
             DebugValidateArg(first);
             DebugValidateArg(second);
-            if (Log.IsEnabled()) Log.Associate(IdOf(first), memberName, IdOf(first), IdOf(second));
+            if (IsEnabled) Log.Associate(IdOf(first), memberName, IdOf(first), IdOf(second));
         }
 
         /// <summary>Logs a relationship between two objects.</summary>
@@ -420,7 +315,7 @@ namespace System.Net
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(first);
             DebugValidateArg(second);
-            if (Log.IsEnabled()) Log.Associate(IdOf(thisOrContextObject), memberName, IdOf(first), IdOf(second));
+            if (IsEnabled) Log.Associate(IdOf(thisOrContextObject), memberName, IdOf(first), IdOf(second));
         }
 
         [Event(AssociateEventId, Level = EventLevel.Informational, Keywords = Keywords.Default, Message = "[{2}]<-->[{3}]")]
@@ -433,7 +328,7 @@ namespace System.Net
         [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
         private static void DebugValidateArg(object? arg)
         {
-            if (!Log.IsEnabled())
+            if (!IsEnabled)
             {
                 Debug.Assert(!(arg is ValueType), $"Should not be passing value type {arg?.GetType()} to logging without IsEnabled check");
                 Debug.Assert(!(arg is FormattableString), $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
@@ -443,8 +338,11 @@ namespace System.Net
         [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
         private static void DebugValidateArg(FormattableString? arg)
         {
-            Debug.Assert(Log.IsEnabled() || arg == null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
+            Debug.Assert(IsEnabled || arg == null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
         }
+
+        public static new bool IsEnabled =>
+            Log.IsEnabled();
 
         [NonEvent]
         public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;

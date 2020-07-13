@@ -196,7 +196,6 @@ namespace System.Net.Sockets
         protected virtual void ForceReleaseUnmanagedStructures()
         {
             // Free the unmanaged memory if allocated.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             _nativeOverlapped!.Dispose();
             _nativeOverlapped = null;
             GC.SuppressFinalize(this);
