@@ -11643,6 +11643,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
             {
                 op1->gtFlags |= GTF_DONT_CSE;
+
+                // If the left side of the assignment is a GT_IND we mark with GTF_IND_ASG_LHS
+                if (op1->OperIs(GT_IND))
+                {
+                    // Mark this GT_IND as a LHS, so that we know this is a store
+                    op1->gtFlags |= GTF_IND_ASG_LHS;
+                }
             }
             break;
 
@@ -13678,8 +13685,9 @@ DONE_MORPHING_CHILDREN:
                     }
                     else if (temp->OperIsLocal())
                     {
-                        unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
-                        LclVarDsc* varDsc = &lvaTable[lclNum];
+                        unsigned   lclNum  = temp->AsLclVarCommon()->GetLclNum();
+                        LclVarDsc* varDsc  = &lvaTable[lclNum];
+                        var_types  lclType = lvaTable[lclNum].lvType;
 
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
@@ -13705,22 +13713,38 @@ DONE_MORPHING_CHILDREN:
                                 }
                             }
                         }
+                        // For loads we can read and normalize using a small type
+                        else if (!varTypeIsStruct(typ) && (lclType == typ) &&
+                            ((tree->gtFlags & GTF_IND_ASG_LHS) == 0) &&
+                            !lvaTable[lclNum].lvNormalizeOnLoad())
+                        {
+                            tree->gtType = typ = temp->TypeGet();
+                            foldAndReturnTemp = true;
+                        }
                         // If the type of the IND (typ) is a "small int", and the type of the local has the
                         // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized, and signed/unsigned differences won't matter.
+                        // correctly normalized.
                         //
                         // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
+                        else if (varTypeIsSmall(typ) && (genTypeSize(lclType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
-                        }
-                        else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
+#if 0
+                            // For stores we can assign using a small type
+                            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+                            {
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp = true;
+                            }
+                            else
+#endif
+                            // for loads signed/unsigned differences do matter.
+                            if (varTypeIsUnsigned(lclType) == varTypeIsUnsigned(typ) &&
+                                ((tree->gtFlags & GTF_IND_ASG_LHS) == 0))
+                            {
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp  = true;
+                            }
                         }
                         else
                         {
