@@ -157,6 +157,8 @@ namespace System.Net.Http
 
         #region Serialization
 
+        public Func<string, HttpContent, Encoding?>? HeaderEncodingSelector { get; set; }
+
         // for-each content
         //   write "--" + boundary
         //   for-each content header
@@ -171,20 +173,19 @@ namespace System.Net.Http
             try
             {
                 // Write start boundary.
-                EncodeStringToStream(stream, "--" + _boundary + CrLf);
+                WriteLatin1ToStream(stream, "--" + _boundary + CrLf);
 
                 // Write each nested content.
-                var output = new StringBuilder();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
-                    EncodeStringToStream(stream, SerializeHeadersToString(output, contentIndex, content));
+                    SerializeHeadersToStream(stream, content, writeDivider: contentIndex != 0);
                     content.CopyTo(stream, context, cancellationToken);
                 }
 
                 // Write footer boundary.
-                EncodeStringToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+                WriteLatin1ToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
             }
             catch (Exception ex)
             {
@@ -219,12 +220,17 @@ namespace System.Net.Http
                 await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(false);
 
                 // Write each nested content.
-                var output = new StringBuilder();
+                var output = new MemoryStream();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
-                    await EncodeStringToStreamAsync(stream, SerializeHeadersToString(output, contentIndex, content), cancellationToken).ConfigureAwait(false);
+
+                    output.SetLength(0);
+                    SerializeHeadersToStream(output, content, writeDivider: contentIndex != 0);
+                    output.Position = 0;
+                    await output.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+
                     await content.CopyToAsync(stream, context, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -259,7 +265,6 @@ namespace System.Net.Http
             try
             {
                 var streams = new Stream[2 + (_nestedContent.Count * 2)];
-                var scratch = new StringBuilder();
                 int streamIndex = 0;
 
                 // Start boundary.
@@ -271,7 +276,7 @@ namespace System.Net.Http
                     cancellationToken.ThrowIfCancellationRequested();
 
                     HttpContent nestedContent = _nestedContent[contentIndex];
-                    streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
+                    streams[streamIndex++] = EncodeHeadersToNewStream(nestedContent, writeDivider: contentIndex != 0);
 
                     Stream readStream;
                     if (async)
@@ -312,43 +317,42 @@ namespace System.Net.Http
             }
         }
 
-        private string SerializeHeadersToString(StringBuilder scratch, int contentIndex, HttpContent content)
+        private void SerializeHeadersToStream(Stream stream, HttpContent content, bool writeDivider)
         {
-            scratch.Clear();
-
             // Add divider.
-            if (contentIndex != 0) // Write divider for all but the first content.
+            if (writeDivider) // Write divider for all but the first content.
             {
-                scratch.Append(CrLf + "--"); // const strings
-                scratch.Append(_boundary);
-                scratch.Append(CrLf);
+                WriteLatin1ToStream(stream, CrLf + "--"); // const strings
+                WriteLatin1ToStream(stream, _boundary);
+                WriteLatin1ToStream(stream, CrLf);
             }
 
             // Add headers.
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
             {
-                scratch.Append(headerPair.Key);
-                scratch.Append(": ");
+                Encoding? headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content);
+
+                WriteLatin1ToStream(stream, headerPair.Key);
+                WriteLatin1ToStream(stream, ": ");
                 string delim = string.Empty;
                 foreach (string value in headerPair.Value)
                 {
-                    scratch.Append(delim);
-                    scratch.Append(value);
+                    WriteLatin1ToStream(stream, delim);
+                    if (headerValueEncoding is null)
+                    {
+                        WriteLatin1ToStream(stream, value);
+                    }
+                    else
+                    {
+                        WriteToStream(stream, value, headerValueEncoding);
+                    }
                     delim = ", ";
                 }
-                scratch.Append(CrLf);
+                WriteLatin1ToStream(stream, CrLf);
             }
 
             // Extra CRLF to end headers (even if there are no headers).
-            scratch.Append(CrLf);
-
-            return scratch.ToString();
-        }
-
-        private static void EncodeStringToStream(Stream stream, string input)
-        {
-            byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
-            stream.Write(buffer);
+            WriteLatin1ToStream(stream, CrLf);
         }
 
         private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)
@@ -360,6 +364,14 @@ namespace System.Net.Http
         private static Stream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
+        }
+
+        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        {
+            var stream = new MemoryStream();
+            SerializeHeadersToStream(stream, content, writeDivider);
+            stream.Position = 0;
+            return stream;
         }
 
         internal override bool AllowDuplex => false;
@@ -671,6 +683,35 @@ namespace System.Net.Http
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
         }
+
+
+        private static void WriteToStream(Stream stream, string content, Encoding encoding)
+        {
+            if (ReferenceEquals(encoding, Encoding.UTF8) && content.Length <= 128)
+            {
+                // Fast-path for the expected common case
+                Span<byte> buffer = stackalloc byte[512];
+                int written = encoding.GetBytes(content, buffer);
+                stream.Write(buffer.Slice(0, written));
+            }
+            else
+            {
+                stream.Write(encoding.GetBytes(content));
+            }
+        }
+
+        private static void WriteLatin1ToStream(Stream stream, string content)
+        {
+            Span<byte> buffer = content.Length <= 512
+                ? stackalloc byte[512]
+                : new byte[content.Length];
+
+            int written = Encoding.Latin1.GetBytes(content, buffer);
+            Debug.Assert(written == content.Length);
+
+            stream.Write(buffer.Slice(0, written));
+        }
+
         #endregion Serialization
     }
 }
