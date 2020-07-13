@@ -10,8 +10,8 @@ namespace System.Runtime.InteropServices
         private static string? s_osDescription;
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static Architecture? s_osArch;
-        private static Architecture? s_processArch;
+        private static int s_osArch = -1;
+        private static int s_processArch = -1;
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
@@ -42,34 +42,38 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                lock (s_osLock)
+                Debug.Assert(sizeof(Architecture) == sizeof(int));
+
+                if (s_osArch == -1)
                 {
-                    if (null == s_osArch)
+                    lock (s_osLock)
                     {
-                        Interop.Kernel32.SYSTEM_INFO sysInfo;
-                        Interop.Kernel32.GetNativeSystemInfo(out sysInfo);
-
-                        switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                        if (s_osArch == -1)
                         {
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                s_osArch = Architecture.Arm64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                s_osArch = Architecture.Arm;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                s_osArch = Architecture.X64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                s_osArch = Architecture.X86;
-                                break;
-                        }
+                            Interop.Kernel32.SYSTEM_INFO sysInfo;
+                            Interop.Kernel32.GetNativeSystemInfo(out sysInfo);
 
+                            switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                            {
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
+                                    s_osArch = (int)Architecture.Arm64;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
+                                    s_osArch = (int)Architecture.Arm;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
+                                    s_osArch = (int)Architecture.X64;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
+                                    s_osArch = (int)Architecture.X86;
+                                    break;
+                            }
+                        }
                     }
                 }
 
-                Debug.Assert(s_osArch != null);
-                return s_osArch.Value;
+                Debug.Assert(s_osArch != -1);
+                return (Architecture)s_osArch;
             }
         }
 
@@ -77,33 +81,38 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                lock (s_processLock)
-                {
-                    if (null == s_processArch)
-                    {
-                        Interop.Kernel32.SYSTEM_INFO sysInfo;
-                        Interop.Kernel32.GetSystemInfo(out sysInfo);
+                Debug.Assert(sizeof(Architecture) == sizeof(int));
 
-                        switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                if (s_processArch == -1)
+                {
+                    lock (s_processLock)
+                    {
+                        if (s_processArch == -1)
                         {
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                s_processArch = Architecture.Arm64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                s_processArch = Architecture.Arm;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                s_processArch = Architecture.X64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                s_processArch = Architecture.X86;
-                                break;
+                            Interop.Kernel32.SYSTEM_INFO sysInfo;
+                            Interop.Kernel32.GetSystemInfo(out sysInfo);
+
+                            switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                            {
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
+                                    s_processArch = (int)Architecture.Arm64;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
+                                    s_processArch = (int)Architecture.Arm;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
+                                    s_processArch = (int)Architecture.X64;
+                                    break;
+                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
+                                    s_processArch = (int)Architecture.X86;
+                                    break;
+                            }
                         }
                     }
                 }
 
-                Debug.Assert(s_processArch != null);
-                return s_processArch.Value;
+                Debug.Assert(s_processArch != -1);
+                return (Architecture)s_processArch;
             }
         }
     }
