@@ -3062,6 +3062,18 @@ mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imetho
 	interp_method_compute_offsets (td, imethod, signature, header, error);
 }
 
+static gboolean
+type_has_references (MonoType *type)
+{
+	if (MONO_TYPE_IS_REFERENCE (type))
+		return TRUE;
+	if (MONO_TYPE_ISSTRUCT (type)) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		return m_class_has_references (klass);
+	}
+	return FALSE;
+}
+
 /* Return false is failure to init basic blocks due to being in inline method */
 static gboolean
 init_bb_start (TransformData *td, MonoMethodHeader *header, gboolean inlining)
@@ -4743,6 +4755,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* public ByReference(ref T value) */
 					g_assert (csignature->hasthis && csignature->param_count == 1);
 					interp_add_ins (td, MINT_INTRINS_BYREFERENCE_CTOR);
+				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
+						(!strcmp (m_class_get_name (m->klass), "Span`1") ||
+						!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
+						csignature->param_count == 2 &&
+						csignature->params [0]->type == MONO_TYPE_PTR &&
+						!type_has_references (mono_method_get_context (m)->class_inst->type_argv [0])) {
+					/* ctor frequently used with ReadOnlySpan over static arrays */
+					interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
@@ -4827,7 +4847,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 				}
 				if ((vt_stack_used != 0 || vt_res_size != 0) &&
-						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR) {
+						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR &&
+						td->last_ins->opcode != MINT_INTRINS_SPAN_CTOR) {
 					/* FIXME Remove this once vtsp and sp are unified */
 					interp_add_ins (td, MINT_VTRESULT);
 					td->last_ins->data [0] = vt_res_size;
