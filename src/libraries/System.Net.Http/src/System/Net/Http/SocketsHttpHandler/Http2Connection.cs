@@ -91,6 +91,9 @@ namespace System.Net.Http
         // this value, so this is not a hard maximum size.
         private const int UnflushedOutgoingBufferSize = 32 * 1024;
 
+        // Channel options for creating _writeChannel
+        private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
+
         public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
@@ -105,7 +108,7 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), int.MaxValue);
 
-            _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(new UnboundedChannelOptions() { SingleReader = true });
+            _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
