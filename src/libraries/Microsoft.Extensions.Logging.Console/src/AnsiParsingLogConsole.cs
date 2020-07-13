@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             ReadOnlySpan<char> span = message.AsSpan().Slice(startIndex, length);
             var colorChanged = SetColor(background, foreground);
-#if NETSTANDARD2_0
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
             _textWriter.Write(span.ToString());
 #else
             _textWriter.Write(span);
