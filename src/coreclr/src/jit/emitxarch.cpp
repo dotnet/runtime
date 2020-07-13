@@ -241,7 +241,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
 
-    //make sure op1 is a reg
+    // make sure op1 is a reg
     switch (fmt)
     {
         case IF_RWR_CNS:
