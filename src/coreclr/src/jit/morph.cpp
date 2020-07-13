@@ -9131,6 +9131,63 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     return fgMorphTree(tree);
 }
 
+//------------------------------------------------------------------------
+// fgMorphTryFoldObjAsLclVar: try to fold an Obj node as a LclVar.
+//
+// Arguments:
+//    obj - the obj node.
+//
+// Return value:
+//    GenTreeLclVar if the obj can be replaced by it, null otherwise.
+//
+// Notes:
+//    TODO-CQ: currently this transformation is done only under copy block,
+//    but it is benefitial to do for each OBJ node. However, `PUT_ARG_STACK`
+//    for some platforms does not expect struct `LCL_VAR` as a source, so
+//    it needs more work.
+//
+GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
+{
+    if (opts.OptimizationEnabled())
+    {
+        GenTree* op1 = obj->Addr();
+        if (op1->OperIs(GT_ADDR))
+        {
+            GenTreeUnOp* addr   = op1->AsUnOp();
+            GenTree*     addrOp = addr->gtGetOp1();
+            if (addrOp->TypeIs(obj->TypeGet()) && addrOp->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVar* lclVar = addrOp->AsLclVar();
+
+                ClassLayout* lclVarLayout = lvaGetDesc(lclVar)->GetLayout();
+                ClassLayout* objLayout    = obj->GetLayout();
+                if (ClassLayout::AreMatching(lclVarLayout, objLayout))
+                {
+#ifdef DEUBUG
+                    CORINFO_CLASS_HANDLE objClsHandle = obj->GetLayout()->GetClassHandle();
+                    assert(objClsHandle != NO_CLASS_HANDLE);
+                    if (canFoldAsLclVar && verbose)
+                    {
+                        CORINFO_CLASS_HANDLE lclClsHnd = gtGetStructHandle(lclVar);
+                        printf("fold OBJ(ADDR(X)) [%06u] into X [%06u], ", dspTreeID(tree), dspTreeID(addrOp));
+                        printf("with %s handles\n", (lclClsHnd == objClsHandle) ? "matching", "different");
+                    }
+#endif
+                    // Keep the DONT_CSE flag in sync
+                    // (as the addr always marks it for its op1)
+                    lclVar->gtFlags &= ~GTF_DONT_CSE;
+                    lclVar->gtFlags |= (obj->gtFlags & GTF_DONT_CSE);
+
+                    DEBUG_DESTROY_NODE(obj);
+                    DEBUG_DESTROY_NODE(addr);
+                    return lclVar;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_LEAF tree for code generation.
@@ -10363,13 +10420,26 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
     }
 #endif // FEATURE_MULTIREG_RET
 
-    if (src->IsCall() && dest->OperIs(GT_LCL_VAR) && !compDoOldStructRetyping())
+    if (src->IsCall() && !compDoOldStructRetyping())
     {
-        LclVarDsc* varDsc = lvaGetDesc(dest->AsLclVar());
-        if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(this))
+        if (dest->OperIs(GT_OBJ))
         {
-            JITDUMP(" not morphing a single reg call return\n");
-            return tree;
+            GenTreeLclVar* lclVar = fgMorphTryFoldObjAsLclVar(dest->AsObj());
+            if (lclVar != nullptr)
+            {
+                dest       = lclVar;
+                asg->gtOp1 = lclVar;
+            }
+        }
+
+        if (dest->OperIs(GT_LCL_VAR))
+        {
+            LclVarDsc* varDsc = lvaGetDesc(dest->AsLclVar());
+            if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(this))
+            {
+                JITDUMP(" not morphing a single reg call return\n");
+                return tree;
+            }
         }
     }
 

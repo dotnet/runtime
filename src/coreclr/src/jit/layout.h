@@ -195,6 +195,8 @@ public:
         }
     }
 
+    static bool AreMatching(const ClassLayout* layout1, const ClassLayout* layout2);
+
 private:
     const BYTE* GetGCPtrs() const
     {
