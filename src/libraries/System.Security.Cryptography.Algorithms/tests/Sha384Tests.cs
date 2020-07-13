@@ -12,6 +12,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return SHA384.Create();
         }
 
+        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            return SHA384.TryHashData(source, destination, out bytesWritten);
+        }
+
         [Fact]
         public void Sha384_Empty()
         {

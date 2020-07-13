@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -13,14 +14,57 @@ namespace System.Security.Cryptography
 
     public abstract class SHA384 : HashAlgorithm
     {
+        private const int HashSizeBits = 384;
+        private const int HashSizeBytes = HashSizeBits / 8;
+
         protected SHA384()
         {
-            HashSizeValue = 384;
+            HashSizeValue = HashSizeBits;
         }
 
         public static new SHA384 Create() => new Implementation();
 
         public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
+
+        public static byte[] HashData(byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return HashData(new ReadOnlySpan<byte>(source));
+        }
+
+        public static byte[] HashData(ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+
+            int written = HashData(source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(source, destination, out int bytesWritten))
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return bytesWritten;
+        }
+
+        public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HashSizeBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA384, source, destination);
+            Debug.Assert(bytesWritten == HashSizeBytes);
+
+            return true;
+        }
 
         private sealed class Implementation : SHA384
         {
