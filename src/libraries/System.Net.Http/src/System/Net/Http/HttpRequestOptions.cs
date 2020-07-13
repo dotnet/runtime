@@ -6,5 +6,5 @@ using System.Collections.Generic;
 
 namespace System.Net.Http
 {
-    public sealed class HttpRequestOptions : Dictionary<HttpRequestOptionsKey<string>, object?> { }
+    public sealed class HttpRequestOptions : Dictionary<string, object?> { }
 }

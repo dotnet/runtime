@@ -221,13 +221,13 @@ namespace System.Net.Http
         public override string ToString() { throw null; }
     }
 
-    public readonly struct HttpRequestOptionsKey<TKey>
+    public readonly struct HttpRequestOptionsKey<TValue>
     {
-        public HttpRequestOptionsKey(TKey key) {}
-        public TKey Key { get { throw null; } }
+        public HttpRequestOptionsKey(string key) {}
+        public string Key { get { throw null; } }
     }
-    
-    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<HttpRequestOptionsKey<string>, object> { }
+
+    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<string, object> { }
 
     public partial class HttpResponseMessage : System.IDisposable
     {

@@ -5,13 +5,13 @@ using System;
 
 namespace System.Net.Http
 {
-    public readonly struct HttpRequestOptionsKey<TKey>
+    public readonly struct HttpRequestOptionsKey<TValue>
     {
-        private readonly TKey _key;
-        public HttpRequestOptionsKey(TKey key)
+        private readonly string _key;
+        public HttpRequestOptionsKey(string key)
         {
             _key = key;
         }
-        public TKey Key => _key;
+        public string Key => _key;
     }
 }
