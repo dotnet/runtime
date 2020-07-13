@@ -60,16 +60,10 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            using (IncrementalHash ic = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
-            {
-                ic.AppendData(source);
-                bool result = ic.TryGetHashAndReset(destination, out bytesWritten);
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA256, source, destination);
+            Debug.Assert(bytesWritten == HashSizeBytes);
 
-                Debug.Assert(bytesWritten == HashSizeBytes);
-                Debug.Assert(result);
-
-                return result;
-            }
+            return true;
         }
 
         private sealed class Implementation : SHA256
