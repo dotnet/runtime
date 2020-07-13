@@ -432,7 +432,10 @@ namespace System.Globalization
         {
             // Temp workaround for pinvoke callbacks for Mono-Wasm-Interpreter
             // https://github.com/dotnet/runtime/issues/39100
-            return Interop.Globalization.EnumCalendarInfo(Marshal.GetFunctionPointerForDelegate(EnumCalendarInfoCallback), localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            var calendarInfoCallback = new Interop.Globalization.EnumCalendarInfoCallback(EnumCalendarInfoCallback);
+            return Interop.Globalization.EnumCalendarInfo(
+                System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(calendarInfoCallback),
+                localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
         [Mono.MonoPInvokeCallback(typeof(Interop.Globalization.EnumCalendarInfoCallback))]

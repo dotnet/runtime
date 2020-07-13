@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        internal delegate void EnumCalendarInfoCallback(
+        internal unsafe delegate void EnumCalendarInfoCallback(
            char* calendarString,
            IntPtr context);
 
