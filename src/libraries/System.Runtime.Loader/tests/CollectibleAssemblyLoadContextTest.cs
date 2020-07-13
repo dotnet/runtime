@@ -39,8 +39,7 @@ namespace System.Runtime.Loader.Tests
             checker.GcAndCheck();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39190", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void Finalizer_CollectibleWithNoAssemblyLoaded()
         {
             // Use a collectible ALC, let the finalizer call Unload
