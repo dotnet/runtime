@@ -49,8 +49,8 @@ namespace Microsoft.Extensions.Logging.Console
             _messageQueue = new ConsoleLoggerProcessor();
             if (DoesConsoleSupportAnsi())
             {
-                _messageQueue.Console = new AnsiLogConsole(new AnsiSystemConsole());
-                _messageQueue.ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
+                _messageQueue.Console = new AnsiLogConsole();
+                _messageQueue.ErrorConsole = new AnsiLogConsole(stdErr: true);
             }
             else
             {

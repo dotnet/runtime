@@ -7,15 +7,15 @@ using System.Text;
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// For non-Windows platform consoles which understand the ANSI escape code sequences to represent color
+    /// For consoles which understand the ANSI escape code sequences to represent color
     /// </summary>
     internal class AnsiLogConsole : IConsole
     {
         private readonly IAnsiSystemConsole _systemConsole;
 
-        public AnsiLogConsole(IAnsiSystemConsole systemConsole)
+        public AnsiLogConsole(bool stdErr = false)
         {
-            _systemConsole = systemConsole;
+            _systemConsole = new AnsiSystemConsole(stdErr);
         }
 
         public void Write(string message)
