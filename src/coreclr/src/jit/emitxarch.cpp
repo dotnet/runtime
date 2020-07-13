@@ -287,6 +287,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
             {
                 return false;
             }
+            __fallthrough;
         // these always set OC to 0
         case INS_and:
         case INS_or:
