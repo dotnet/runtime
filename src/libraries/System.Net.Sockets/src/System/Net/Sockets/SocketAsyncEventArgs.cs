@@ -556,7 +556,7 @@ namespace System.Net.Sockets
             _userSocket = userSocket;
 
             // Log only the actual connect operation to a remote endpoint.
-            if (SocketsTelemetry.IsEnabled(EventLevel.Informational) && multipleConnect == null) SocketsTelemetry.Log.ConnectStart(_socketAddress!);
+            if (SocketsTelemetry.Log.IsEnabled() && multipleConnect == null) SocketsTelemetry.Log.ConnectStart(_socketAddress!);
         }
 
         internal void CancelConnectAsync()
@@ -570,10 +570,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    if (SocketsTelemetry.IsEnabled(EventLevel.Warning))
-                    {
-                        SocketsTelemetry.Log.ConnectCanceled();
-                    }
+                    if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectCanceled();
 
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
                     // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
@@ -590,7 +587,7 @@ namespace System.Net.Sockets
         {
             SetResults(socketError, bytesTransferred, flags);
 
-            if (SocketsTelemetry.IsEnabled(EventLevel.Error) && _multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
+            if (SocketsTelemetry.Log.IsEnabled() && _multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
             {
                 SocketsTelemetry.Log.ConnectFailed();
             }
@@ -733,7 +730,7 @@ namespace System.Net.Sockets
                             catch (ObjectDisposedException) { }
                         }
 
-                        if (SocketsTelemetry.IsEnabled(EventLevel.Informational)) SocketsTelemetry.Log.ConnectStop();
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
                         // Mark socket connected.
                         _currentSocket!.SetToConnected();
@@ -741,7 +738,7 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        if (SocketsTelemetry.IsEnabled(EventLevel.Error)) SocketsTelemetry.Log.ConnectFailed();
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed();
 
                         SetResults(socketError, bytesTransferred, flags);
                         _currentSocket!.UpdateStatusAfterSocketError(socketError);
