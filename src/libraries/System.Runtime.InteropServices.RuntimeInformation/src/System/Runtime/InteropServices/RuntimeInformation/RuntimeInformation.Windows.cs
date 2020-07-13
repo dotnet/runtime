@@ -49,29 +49,13 @@ namespace System.Runtime.InteropServices
                     {
                         if (s_osArch == -1)
                         {
-                            Interop.Kernel32.SYSTEM_INFO sysInfo;
-                            Interop.Kernel32.GetNativeSystemInfo(out sysInfo);
+                            Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
 
-                            switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
-                            {
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                    s_osArch = (int)Architecture.Arm64;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                    s_osArch = (int)Architecture.Arm;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                    s_osArch = (int)Architecture.X64;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                    s_osArch = (int)Architecture.X86;
-                                    break;
-                            }
+                            s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                         }
                     }
                 }
 
-                Debug.Assert(s_osArch != -1);
                 return (Architecture)s_osArch;
             }
         }
@@ -88,30 +72,31 @@ namespace System.Runtime.InteropServices
                     {
                         if (s_processArch == -1)
                         {
-                            Interop.Kernel32.SYSTEM_INFO sysInfo;
-                            Interop.Kernel32.GetSystemInfo(out sysInfo);
+                            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
 
-                            switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
-                            {
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                    s_processArch = (int)Architecture.Arm64;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                    s_processArch = (int)Architecture.Arm;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                    s_processArch = (int)Architecture.X64;
-                                    break;
-                                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                    s_processArch = (int)Architecture.X86;
-                                    break;
-                            }
+                            s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                         }
                     }
                 }
 
-                Debug.Assert(s_processArch != -1);
                 return (Architecture)s_processArch;
+            }
+        }
+
+        private static Architecture Map(Interop.Kernel32.ProcessorArchitecture processorArchitecture)
+        {
+            switch (processorArchitecture)
+            {
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
+                    return Architecture.Arm64;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
+                    return Architecture.Arm;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
+                    return Architecture.X64;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
+                default:
+                    Debug.Assert(processorArchitecture == Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL, "Unidentified Architecture");
+                    return Architecture.X86;
             }
         }
     }
