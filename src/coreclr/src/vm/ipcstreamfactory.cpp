@@ -193,10 +193,10 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::NONE:
                         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - NON :: Poll attempt: %d, connection %d had no events.\n", nPollAttempts, i);
-                        fSawError = true;
                         break;
                     default:
                         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - UNK :: Poll attempt: %d, connection %d had invalid PollEvent.\n", nPollAttempts, i);
+                        fSawError = true;
                         break;
                 }
             }
