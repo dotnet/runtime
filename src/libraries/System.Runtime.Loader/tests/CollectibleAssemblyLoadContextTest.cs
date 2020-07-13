@@ -40,6 +40,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39190", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void Finalizer_CollectibleWithNoAssemblyLoaded()
         {
             // Use a collectible ALC, let the finalizer call Unload
