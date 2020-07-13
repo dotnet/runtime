@@ -1,0 +1,88 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <SharedFrameworkName>Microsoft.NETCore.App.Crossgen2</SharedFrameworkName>
+    <SharedFrameworkArchiveName>dotnet-crossgen2</SharedFrameworkArchiveName>
+    <RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64</RuntimeIdentifiers>
+    <GenerateInstallers>false</GenerateInstallers>
+    <GetSharedFrameworkFilesForReadyToRunDependsOn>
+        AddRuntimeFilesToPackage;
+        AddFrameworkFilesToPackage
+    </GetSharedFrameworkFilesForReadyToRunDependsOn>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <TargetOSComponent>unix</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
+    <Reference Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
+    <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
+    <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
+    <Reference Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
+    <!-- Include the native hosting layer  -->
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
+  </ItemGroup>
+
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
+      </RuntimeFiles>
+      <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
+      <RuntimeFiles Remove="@(CrossgenFile)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+    <_diaSymArch Condition="'$(_hostArch)' != ''">$(_hostArch)</_diaSymArch>
+    <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
+    <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
+    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+      <_crossTargetJit Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == '$(LibraryFilePrefix)clrjit' and '%(Extension)' == '$(LibraryFileExtension)'" />
+      <_clrjit Include="@(RuntimeFiles)" Condition="'%(FileName)' == '$(LibraryFilePrefix)clrjit' and '%(Extension)' == '$(LibraryFileExtension)'" />
+      <_crossTargetCrossgen Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ApplicationFileExtension)'" />
+      <_crossgen Include="@(RuntimeFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ApplicationFileExtension)'" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
+      <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
+                    JitPath="@(_crossTargetJit)"
+                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
+      <CrossgenTool Include="@(_crossgen->ClearMetadata())"
+                    JitPath="@(_clrjit)"
+                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+    </ItemGroup>
+  </Target>
+</Project>
