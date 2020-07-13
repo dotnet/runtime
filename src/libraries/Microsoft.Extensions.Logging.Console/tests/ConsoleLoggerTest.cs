@@ -24,13 +24,19 @@ namespace Microsoft.Extensions.Logging.Console.Test
         private const string _state = "This is a test, and {curly braces} are just fine!";
         private readonly Func<object, Exception, string> _defaultFormatter = (state, exception) => state.ToString();
 
-        internal static IEnumerable<ConsoleFormatter> GetFormatters()
+        internal static IEnumerable<ConsoleFormatter> GetFormatters(
+            SimpleConsoleFormatterOptions simpleOptions = null,
+            ConsoleFormatterOptions systemdOptions = null,
+            JsonConsoleFormatterOptions jsonOptions = null)
         {
-            var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions());
-            var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(new ConsoleFormatterOptions());
+            var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
+            var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
+            var jsonMonitor = new FormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
             var formatters = new List<ConsoleFormatter>() { 
                 new SimpleConsoleFormatter(defaultMonitor),
-                new SystemdConsoleFormatter(systemdMonitor) };
+                new SystemdConsoleFormatter(systemdMonitor),
+                new JsonConsoleFormatter(jsonMonitor)
+            };
             return formatters;
         }
 
@@ -208,6 +214,51 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(3 * t.WritesPerMsg, t.WritesPerMsg)));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(null)]
+        [InlineData("missingFormatter")]
+        public void Options_FormatterNameNull_PicksFormatterName(string formatterName)
+        {
+            // Arrange
+            ConsoleLoggerFormat format = ConsoleLoggerFormat.Systemd;
+            var options = new ConsoleLoggerOptions() { FormatterName = formatterName };
+            var monitor = new TestOptionsMonitor(options);
+            var loggerProvider = new ConsoleLoggerProvider(monitor, GetFormatters());
+            var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
+            string pickedFormatter = null;
+            var cleanup = monitor.OnChange((o, n) => pickedFormatter = o.FormatterName);
+
+            // Act
+            monitor.Set(new ConsoleLoggerOptions() { FormatterName = null, Format = format });
+
+            // Assert
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(ConsoleFormatterNames.Simple, pickedFormatter);
+                    Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
+                    Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
+                    Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                    var formatter = (SimpleConsoleFormatter)(logger.Formatter);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Equal(ConsoleFormatterNames.Systemd, pickedFormatter);
+                    Assert.Equal(ConsoleFormatterNames.Systemd, logger.Options.FormatterName);
+                    Assert.Equal(ConsoleFormatterNames.Systemd, logger.Formatter.Name);
+                    Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                    var formatter = (SystemdConsoleFormatter)(logger.Formatter);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
+            cleanup?.Dispose();
+            loggerProvider?.Dispose();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -418,7 +469,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
-        public void WriteCore_LogsCorrectTimestamp(ConsoleLoggerFormat format, LogLevel level)
+        public void Log_LogsCorrectTimestamp(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
             var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", Format = format, UseUtcTimestamp = false });

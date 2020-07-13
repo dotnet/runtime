@@ -30,22 +30,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return string.Join("", contexts.Select(c => c.Message));
         }
 
-        internal static IEnumerable<ConsoleFormatter> GetFormatters(
-            SimpleConsoleFormatterOptions simpleOptions = null,
-            ConsoleFormatterOptions systemdOptions = null,
-            JsonConsoleFormatterOptions jsonOptions = null)
-        {
-            var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
-            var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
-            var jsonMonitor = new FormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
-            var formatters = new List<ConsoleFormatter>() { 
-                new SimpleConsoleFormatter(defaultMonitor),
-                new SystemdConsoleFormatter(systemdMonitor),
-                new JsonConsoleFormatter(jsonMonitor)
-            };
-            return formatters;
-        }
-
         internal static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink, Func<LogLevel, string> GetLevelPrefix, int WritesPerMsg) SetUp(
             ConsoleLoggerOptions options = null,
             SimpleConsoleFormatterOptions simpleOptions = null,
@@ -64,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
             logger.ScopeProvider = new LoggerExternalScopeProvider();
             logger.Options = options ?? new ConsoleLoggerOptions();
-            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters(simpleOptions, systemdOptions, jsonOptions).ToDictionary(f => f.Name));
+            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(ConsoleLoggerTest.GetFormatters(simpleOptions, systemdOptions, jsonOptions).ToDictionary(f => f.Name));
 
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
@@ -97,7 +81,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         {
             // Arrange
             var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions() { FormatterName = "NonExistentFormatter" });
-            var loggerProvider = new ConsoleLoggerProvider(monitor, GetFormatters());
+            var loggerProvider = new ConsoleLoggerProvider(monitor, ConsoleLoggerTest.GetFormatters());
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
 
             // Act & Assert
@@ -140,7 +124,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
-        public void WriteCore_LogsCorrectTimestamp(string formatterName, LogLevel level)
+        public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
         {
             // Arrange
             var t = SetUp(
@@ -182,7 +166,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 {
                     Assert.Single(sink.Writes);
                     var regexMatch = Regex.Match(sink.Writes[0].Message, @"(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})");
-                    Assert.True(regexMatch.Success);
+                    Assert.True(regexMatch.Success, sink.Writes[0].Message);
                     var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
                     Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
                 }
