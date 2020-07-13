@@ -48,17 +48,17 @@ namespace System.Runtime.InteropServices
 
         internal bool Equals(string? other)
         {
-            return string.Equals(_osPlatform, other, StringComparison.Ordinal);
+            return string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)
         {
-            return obj is OSPlatform && Equals((OSPlatform)obj);
+            return obj is OSPlatform oSPlatform && Equals(oSPlatform);
         }
 
         public override int GetHashCode()
         {
-            return _osPlatform == null ? 0 : _osPlatform.GetHashCode();
+            return _osPlatform == null ? 0 : _osPlatform.GetHashCode(StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
