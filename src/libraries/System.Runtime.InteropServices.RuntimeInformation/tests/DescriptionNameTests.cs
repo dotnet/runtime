@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class DescriptionNameTests
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
         public void DumpRuntimeInformationToConsole()
         {
             // Not really a test, but useful to dump a variety of information to the test log to help

@@ -633,6 +633,12 @@ public:
         assert(_gtRegNum == reg);
     }
 
+    void ClearRegNum()
+    {
+        _gtRegNum = REG_NA;
+        INDEBUG(gtRegTag = GT_REGTAG_NONE;)
+    }
+
     // Copy the _gtRegNum/gtRegTag fields
     void CopyReg(GenTree* from);
     bool gtHasReg() const;
@@ -921,6 +927,8 @@ public:
 
 #define GTF_OVERFLOW                0x10000000 // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                                // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
+
+#define GTF_DIV_BY_CNS_OPT          0x80000000 // GT_DIV -- Uses the division by constant optimization to compute this division
 
 #define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
@@ -2851,6 +2859,19 @@ struct GenTreeOp : public GenTreeUnOp
     {
         // Unary operators with optional arguments:
         assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+    }
+
+    // returns true if we will use the division by constant optimization for this node.
+    bool UsesDivideByConstOptimized(Compiler* comp);
+
+    // checks if we will use the division by constant optimization this node
+    // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
+    void CheckDivideByConstOptimized(Compiler* comp);
+
+    // True if this node is marked as using the division by constant optimization
+    bool MarkedDivideByConstOptimized() const
+    {
+        return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
     }
 
 #if DEBUGGABLE_GENTREE

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
@@ -13,17 +13,10 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        private static readonly JsonSerializerOptions s_defaultSerializerOptions
-            = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
         [Fact]
         public async Task TestGetFromJsonAsync()
         {
-            const string json = @"{""Name"":""David"",""Age"":24}";
+            string json = Person.Create().Serialize();
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
 
@@ -89,7 +82,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request);
-                    Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                    Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                     per.Validate();
                 });
         }
@@ -121,7 +114,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request);
-                    Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                    Person obj = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                     obj.Validate();
                 });
         }

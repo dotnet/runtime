@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class RuntimeIdentifierTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39074", TestPlatforms.Browser)]
         public void VerifyOSRid()
         {
             Assert.NotNull(RuntimeInformation.RuntimeIdentifier);

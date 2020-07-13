@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BrotliEncoderTests.cs" />
     <Compile Include="BrotliGoogleTestData.cs" />
     <Compile Include="CompressionStreamUnitTests.Brotli.cs" />

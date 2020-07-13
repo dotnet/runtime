@@ -1869,6 +1869,7 @@ namespace System
         public static string MachineName { get { throw null; } }
         public static string NewLine { get { throw null; } }
         public static System.OperatingSystem OSVersion { get { throw null; } }
+        public static int ProcessId { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
         public static string StackTrace { get { throw null; } }
         public static string SystemDirectory { get { throw null; } }
@@ -3064,13 +3065,19 @@ namespace System
     }
     public enum PlatformID
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32S = 0,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32Windows = 1,
         Win32NT = 2,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         WinCE = 3,
         Unix = 4,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Xbox = 5,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         MacOSX = 6,
+        Other = 7,
     }
     public partial class PlatformNotSupportedException : System.NotSupportedException
     {

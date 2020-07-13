@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -18,14 +18,15 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         public static async Task HandleCollectionsAsync()
         {
-            await RunTest<string>();
-            await RunTest<ClassWithKVP>();
-            await RunTest<ImmutableStructWithStrings>();
+            await RunTestAsync<string>();
+            await RunTestAsync<ClassWithKVP>();
+            await RunTestAsync<ImmutableStructWithStrings>();
         }
 
-        private static async Task RunTest<TElement>()
+        private static async Task RunTestAsync<TElement>()
         {
             foreach ((Type, int) pair in CollectionTestData<TElement>())
             {

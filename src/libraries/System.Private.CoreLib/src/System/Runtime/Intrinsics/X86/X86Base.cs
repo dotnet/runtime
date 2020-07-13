@@ -9,12 +9,12 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to the x86 base hardware instructions via intrinsics
     /// </summary>
     [Intrinsic]
-    internal static class X86Base
+    internal abstract class X86Base
     {
         public static bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        internal static class X64
+        internal abstract class X64
         {
             public static bool IsSupported { get => IsSupported; }
 

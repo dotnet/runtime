@@ -38,7 +38,7 @@ namespace System.Net
                     {
                         errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
                     }
                 }
@@ -78,8 +78,6 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
-
             SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
 
             if (sslContext == null)
@@ -111,11 +109,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(securityContext, result);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
 
             return result;
         }

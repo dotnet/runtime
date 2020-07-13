@@ -56,7 +56,7 @@ namespace System.Net.Sockets.Tests
                         new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
                         new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096).GetAwaiter().GetResult();
+                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
                         new NetworkStreamTest().Timeout_ValidData_Roundtrips().GetAwaiter().GetResult();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself

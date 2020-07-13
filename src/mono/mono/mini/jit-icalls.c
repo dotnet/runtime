@@ -54,7 +54,12 @@ mono_ldftn (MonoMethod *method)
 		return addr;
 	}
 
-	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
+	 * variables that won't be there if we run on a thread that's not attached yet. */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		addr = mono_compile_method_checked (method, error);
+	else
+		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1587,6 +1592,22 @@ mono_throw_bad_image ()
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_invalid_program (const char *msg)
+{
+	ERROR_DECL (error);
+	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
 	mono_error_set_pending_exception (error);
 }
 
