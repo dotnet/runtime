@@ -153,29 +153,31 @@ namespace System
 
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
-            Debug.Assert(chars.Length / 2 == bytes.Length);
-            Debug.Assert(chars.Length % 2 == 0);
+            Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
+            Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
 
             int i = 0;
             int j = 0;
-
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
             while (j < bytes.Length)
             {
-                int byteHi;
-                int byteLo;
-                int charHi = chars[i++];
-                int charLo = chars[i++];
+                int byteLo = FromChar(chars[i + 1]);
+                int byteHi = FromChar(chars[i]);
 
-                if (charHi >= charToHexLookup.Length || (byteHi = charToHexLookup[charHi]) == 0xFF)
-                    return false;
-                if (charLo >= charToHexLookup.Length || (byteLo = charToHexLookup[charLo]) == 0xFF)
+                if ((byteLo | byteHi) == 0xFF)
                     return false;
 
                 bytes[j++] = (byte)((byteHi << 4) | byteLo);
+                i+=2;
             }
 
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromChar(int c)
+        {
+            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
+            return c >= charToHexLookup.Length ? 0xFF : charToHexLookup[c];
         }
 
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
