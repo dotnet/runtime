@@ -791,6 +791,10 @@ namespace System.Security.Cryptography
         protected SHA512() { }
         public static new System.Security.Cryptography.SHA512 Create() { throw null; }
         public static new System.Security.Cryptography.SHA512? Create(string hashName) { throw null; }
+        public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512Managed : System.Security.Cryptography.SHA512
