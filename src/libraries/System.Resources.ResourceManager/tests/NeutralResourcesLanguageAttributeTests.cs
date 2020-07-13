@@ -4,6 +4,7 @@
 using Xunit;
 using System.Linq;
 using System.Reflection;
+using System.Globalization;
 
 namespace System.Resources.Tests
 {
@@ -38,12 +39,11 @@ namespace System.Resources.Tests
         [InlineData(typeof(System.Net.Http.HttpClient))] // System.Net.Http
         [InlineData(typeof(System.Text.RegularExpressions.Regex))] // System.Text.RegularExpressions
         [InlineData(typeof(System.Threading.Barrier))] // System.Threading
-        public static void TestAttributeExistence(Type type)
+        public static void TestAttributeExistence(Type type) => Assert.Equal("en-US", ChildResourceManager.GetNeutralResourcesCulture(type.Assembly).Name);
+
+        public class ChildResourceManager : ResourceManager
         {
-            CustomAttributeData attribute = type.Assembly.CustomAttributes.FirstOrDefault(a => a.AttributeType.Name == "NeutralResourcesLanguageAttribute");
-            Assert.NotNull(attribute);
-            Assert.True(attribute.ConstructorArguments.Count() > 0);
-            Assert.Equal("en-US", attribute.ConstructorArguments[0].Value);
+            public static CultureInfo GetNeutralResourcesCulture(Assembly a) => ResourceManager.GetNeutralResourcesLanguage(a);
         }
     }
 }
