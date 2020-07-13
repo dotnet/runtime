@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices
 {
     public readonly struct OSPlatform : IEquatable<OSPlatform>
@@ -17,7 +19,7 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform macOS { get; } = new OSPlatform("MACOS");
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] // superseded by macOS
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
 
         public static OSPlatform iOS { get; } = new OSPlatform("IOS");
@@ -46,9 +48,10 @@ namespace System.Runtime.InteropServices
             return Equals(other._osPlatform);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool Equals(string? other)
         {
-            return string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
+            return other?.Length == _osPlatform?.Length && string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)

@@ -51,6 +51,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("OSX")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOS")));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macOS")));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macos")));
 
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
@@ -157,7 +161,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("netbsd")));
-            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("windows")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("Windows NT")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("win")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
