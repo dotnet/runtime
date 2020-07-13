@@ -6,13 +6,13 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 
 ## Available Feature Switches
 
-| MSBuild property name | C# property name | Description |
+| MSBuild property name | AppContext setting | Description |
 |-|-|-|
+| DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
 | EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding |  Insecure UTF-7 encoding is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
-| - | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
 | - | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
 
 Any feature-switch which defines property can be set in csproj file or
@@ -20,7 +20,7 @@ on the command line as any other MSBuild property. Those without predefined prop
 the value can be set with following XML tag in csproj file.
 
 ```xml
-<RuntimeHostConfigurationOption Include="<csharp-property-name>"
+<RuntimeHostConfigurationOption Include="<AppContext-setting>"
                                 Value="false"
                                 Trim="true" />
 ```
@@ -30,7 +30,7 @@ the value can be set with following XML tag in csproj file.
 The primary goal of features switches is to produce smaller output by removing code which is
 unreachable under feature condition. The typical approach is to introduce static bool like
 property which is used to guard the dependencies which can be trimmed when the value is flipped.
-Ideally, the static property should be located in type which does not have any static initialization
+Ideally, the static property should be located in type which does not have any static constructor
 logic. Once you are done with the code changes following steps connects the code with trimming
 settings.
 
@@ -47,7 +47,7 @@ Add MSBuild integration by adding new RuntimeHostConfigurationOption entry. The 
 other public feature-switches. You can add a new one by simply adding a new XML tag
 
 ```xml
-<RuntimeHostConfigurationOption Include="<full-name-of-csharp-property>"
+<RuntimeHostConfigurationOption Include="<AppContext-setting>"
             Condition="'$(<msbuild-property-name>)' != ''"
             Value="$(<msbuild-property-name>)"
             Trim="true" />
