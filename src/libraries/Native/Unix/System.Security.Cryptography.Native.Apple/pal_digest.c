@@ -46,7 +46,7 @@ DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* 
         case PAL_MD5:
             *pcbDigest = CC_MD5_DIGEST_LENGTH;
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations" 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
             CC_MD5_Init(&digestCtx->d.md5);
 #pragma clang diagnostic pop
             break;
@@ -170,4 +170,33 @@ int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, 
 
     DigestCtx dup = *ctx;
     return AppleCryptoNative_DigestFinal(&dup, pOutput, cbOutput);
+}
+
+int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pBuf, int32_t cbBuf, uint8_t* pOutput, int32_t cbOutput, int32_t* pcbDigest)
+{
+    if (pOutput == NULL || cbOutput <= 0 || pcbDigest == NULL)
+        return -1;
+
+    DigestCtx* ctx = AppleCryptoNative_DigestCreate(algorithm, pcbDigest);
+
+    if (ctx == NULL)
+        return -1;
+
+    if (cbOutput < *pcbDigest)
+    {
+        AppleCryptoNative_DigestFree(ctx);
+        return -1;
+    }
+
+    int32_t ret = AppleCryptoNative_DigestUpdate(ctx, pBuf, cbBuf);
+
+    if (ret != 1)
+    {
+        AppleCryptoNative_DigestFree(ctx);
+        return ret;
+    }
+
+    ret = AppleCryptoNative_DigestFinal(ctx, pOutput, cbOutput);
+    AppleCryptoNative_DigestFree(ctx);
+    return ret;
 }
