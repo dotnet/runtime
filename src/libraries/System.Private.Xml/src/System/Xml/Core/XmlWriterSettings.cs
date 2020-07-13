@@ -53,10 +53,6 @@ namespace System.Xml
         // Text settings
         private Encoding _encoding;
 
-#if FEATURE_LEGACYNETCF
-        private bool dontWriteEncodingTag;
-#endif
-
         private bool _omitXmlDecl;
         private NewLineHandling _newLineHandling;
         private string _newLineChars;
@@ -123,21 +119,6 @@ namespace System.Xml
                 _encoding = value;
             }
         }
-
-#if FEATURE_LEGACYNETCF
-        internal bool DontWriteEncodingTag
-        {
-            get
-            {
-                return dontWriteEncodingTag;
-            }
-            set
-            {
-                CheckReadOnly(nameof(DontWriteEncodingTag));
-                dontWriteEncodingTag = value;
-            }
-        }
-#endif
 
         // True if an xml declaration should *not* be written.
         public bool OmitXmlDeclaration

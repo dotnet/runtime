@@ -33,11 +33,6 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             HttpListenerWebSocketContext webSocketContext = null;
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, context);
-            }
-
             try
             {
                 // get property will create a new response if one doesn't exist.
@@ -84,7 +79,7 @@ namespace System.Net.WebSockets
                         hresult));
                 }
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.Origin} = {origin}");
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketVersion} = {secWebSocketVersion}");
@@ -123,7 +118,7 @@ namespace System.Net.WebSockets
                                                                     secWebSocketKey,
                                                                     webSocket);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Associate(context, webSocketContext);
                     NetEventSource.Associate(webSocketContext, webSocket);
@@ -131,18 +126,11 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(context, ex);
                 }
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(context);
-                }
             }
 
             return webSocketContext;

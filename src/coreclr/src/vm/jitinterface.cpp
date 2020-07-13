@@ -13939,7 +13939,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
     pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
     pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
     pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
-    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrLoadTailCallDispatcherMD();
     return true;
 }
 

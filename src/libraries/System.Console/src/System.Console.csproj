@@ -149,7 +149,7 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />

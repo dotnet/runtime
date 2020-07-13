@@ -78,7 +78,7 @@ namespace System.Data
             dataRowView.SetColumnValue(Column, DBNull.Value); // no need to ccheck for the col type and set Sql...Null!
         }
 
-        public override void SetValue(object component, object value)
+        public override void SetValue(object component, object? value)
         {
             DataRowView dataRowView = (DataRowView)component;
             dataRowView.SetColumnValue(Column, value);

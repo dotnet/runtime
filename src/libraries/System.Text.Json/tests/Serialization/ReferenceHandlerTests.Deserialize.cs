@@ -225,8 +225,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, root.ZeroLengthProperty);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void TestJsonPathDoesNotFailOnMultiThreads()
+        [Fact]
+        public static async Task TestJsonPathDoesNotFailOnMultiThreads()
         {
             const int ThreadCount = 8;
             const int ConcurrentTestsCount = 4;
@@ -240,7 +240,7 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i] = Task.Run(() => TestRefTask());
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         private static void TestIdTask()
