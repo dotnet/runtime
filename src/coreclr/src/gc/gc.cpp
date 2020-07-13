@@ -19,7 +19,7 @@
 
 #include "gcpriv.h"
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 #define USE_VXSORT
 #else
 #define USE_INTROSORT

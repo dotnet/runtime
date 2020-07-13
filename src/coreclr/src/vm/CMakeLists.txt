@@ -542,7 +542,7 @@ set(GC_SOURCES_WKS
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set ( GC_SOURCES_WKS
     ${GC_SOURCES_WKS}
     ../gc/vxsort/isa_detection.cpp
@@ -554,7 +554,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64)
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
 )
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 set(GC_HEADERS_WKS
     ${GC_HEADERS_DAC_AND_WKS_COMMON}
