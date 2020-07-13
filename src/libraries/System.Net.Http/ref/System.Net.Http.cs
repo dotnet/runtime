@@ -302,7 +302,9 @@ namespace System.Net.Http
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
+        public System.Net.Http.SocketsHttpHandler.HeaderEncodingSelector? RequestHeaderEncodingSelector { get { throw null; } set { } }
         public System.TimeSpan ResponseDrainTimeout { get { throw null; } set { } }
+        public System.Net.Http.SocketsHttpHandler.HeaderEncodingSelector? ResponseHeaderEncodingSelector { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public bool UseCookies { get { throw null; } set { } }
@@ -310,6 +312,7 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing) { }
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public delegate System.Text.Encoding? HeaderEncodingSelector(string headerName, System.Net.Http.HttpRequestMessage request);
     }
     public partial class StreamContent : System.Net.Http.HttpContent
     {

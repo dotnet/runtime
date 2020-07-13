@@ -43,6 +43,9 @@ namespace System.Net.Http
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
+        internal SocketsHttpHandler.HeaderEncodingSelector? _requestHeaderEncodingSelector;
+        internal SocketsHttpHandler.HeaderEncodingSelector? _responseHeaderEncodingSelector;
+
         internal Version _maxHttpVersion;
 
         internal bool _allowUnencryptedHttp2;
@@ -101,7 +104,9 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
-                _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting
+                _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting,
+                _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
+                _responseHeaderEncodingSelector = _responseHeaderEncodingSelector
             };
         }
 

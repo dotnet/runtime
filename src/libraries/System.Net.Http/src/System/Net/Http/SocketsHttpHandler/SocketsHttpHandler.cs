@@ -7,6 +7,7 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http
 {
@@ -275,6 +276,28 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+
+        public delegate Encoding? HeaderEncodingSelector(string headerName, HttpRequestMessage request);
+
+        public HeaderEncodingSelector? RequestHeaderEncodingSelector
+        {
+            get => _settings._requestHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._requestHeaderEncodingSelector = value;
+            }
+        }
+
+        public HeaderEncodingSelector? ResponseHeaderEncodingSelector
+        {
+            get => _settings._responseHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._responseHeaderEncodingSelector = value;
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
