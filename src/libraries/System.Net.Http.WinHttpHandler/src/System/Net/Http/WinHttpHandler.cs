@@ -55,6 +55,7 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly;
         private CookieContainer _cookieContainer;
+        private bool _enableMultipleHttp2Connections;
 
         private SslProtocols _sslProtocols = SslProtocols.None; // Use most secure protocols available.
         private Func<
@@ -457,6 +458,19 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxResponseDrainSize = value;
+            }
+        }
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get
+            {
+                return _enableMultipleHttp2Connections;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _enableMultipleHttp2Connections = value;
             }
         }
 
@@ -921,6 +935,7 @@ namespace System.Net.Http
             SetSessionHandleConnectionOptions(sessionHandle);
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
+            SetDisableHttp2StreamQueue(sessionHandle);
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1205,6 +1220,22 @@ namespace System.Net.Http
             else
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+            }
+        }
+
+        private void SetDisableHttp2StreamQueue(SafeWinHttpHandle sessionHandle)
+        {
+            if (_enableMultipleHttp2Connections)
+            {
+                uint optionData = 1;
+                if (Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections cannot be enabled.");
+                }
             }
         }
 
