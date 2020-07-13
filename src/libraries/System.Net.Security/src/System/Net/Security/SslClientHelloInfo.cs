@@ -6,6 +6,9 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
+    /// <summary>
+    /// This struct contains information from received TLS Client Hello frame.
+    /// </summary>
     public readonly struct SslClientHelloInfo
     {
         public readonly string ServerName { get; }

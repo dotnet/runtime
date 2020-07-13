@@ -102,14 +102,11 @@ namespace System.Net.Security
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
             }
-            else if (sslServerAuthenticationOptions.ServerCertificate != null)
-            {
-                if (sslServerAuthenticationOptions.ServerCertificate is X509Certificate2 certificateWithKey &&
+            else if (sslServerAuthenticationOptions.ServerCertificate is X509Certificate2 certificateWithKey &&
                     certificateWithKey.HasPrivateKey)
-                {
-                    // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
-                }
+            {
+                // given cert is X509Certificate2 with key. We can use it directly.
+                CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
             }
         }
 
@@ -143,7 +140,7 @@ namespace System.Net.Security
         internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
         internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
-        internal object? UserState { get; set; }
-        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
+        internal object? UserState { get; }
+        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; }
     }
 }

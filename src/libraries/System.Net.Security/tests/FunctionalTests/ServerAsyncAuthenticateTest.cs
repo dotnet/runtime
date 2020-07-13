@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -72,7 +73,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ServerAsyncAuthenticate_SimpleSniOptions_Success()
         {
-            var state = new Object();
+            var state = new object();
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate };
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -81,7 +82,7 @@ namespace System.Net.Security.Tests
             using (client)
             using (server)
             {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, default);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
@@ -90,7 +91,7 @@ namespace System.Net.Security.Tests
                         Assert.True(object.ReferenceEquals(state, userState));
                         return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
                     },
-                    state, default);
+                    state, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
@@ -102,14 +103,14 @@ namespace System.Net.Security.Tests
         public async Task ServerAsyncAuthenticate_SniSetVersion_Success(SslProtocols version)
         {
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, EnabledSslProtocols = version };
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false) };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
             using (server)
             {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, default);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
@@ -117,7 +118,7 @@ namespace System.Net.Security.Tests
                         Assert.Equal(clientOptions.TargetHost, clientHelloInfo.ServerName);
                         return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
                     },
-                    null, default);
+                    null, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
                 // Verify that the SNI callback can impact version.
@@ -140,7 +141,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ServerAsyncAuthenticate_AsyncOptions_Success()
         {
-            var state = new Object();
+            var state = new object();
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate };
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -149,7 +150,7 @@ namespace System.Net.Security.Tests
             using (client)
             using (server)
             {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, default);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
@@ -158,7 +159,7 @@ namespace System.Net.Security.Tests
                         Assert.True(object.ReferenceEquals(state, userState));
                         return new ValueTask<SslServerAuthenticationOptions>(OptionsTask(serverOptions));
                     },
-                    state, default);
+                    state, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
@@ -177,7 +178,7 @@ namespace System.Net.Security.Tests
             using (client)
             using (server)
             {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, default);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
@@ -188,7 +189,7 @@ namespace System.Net.Security.Tests
 
                         throw new InvalidOperationException("foo");
                     },
-                    null, default);
+                    null, CancellationToken.None);
                 await Assert.ThrowsAsync<InvalidOperationException>(() => t2);
             }
         }
@@ -206,7 +207,7 @@ namespace System.Net.Security.Tests
             using (client)
             using (server)
             {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, default);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
@@ -217,7 +218,7 @@ namespace System.Net.Security.Tests
 
                         return new ValueTask<SslServerAuthenticationOptions>(OptionsTask(serverOptions));
                     },
-                    null, default);
+                    null, CancellationToken.None);
                 await Assert.ThrowsAsync<System.NotSupportedException>(() => t2);
             }
         }
