@@ -27,6 +27,15 @@ namespace DllImportGenerator.Test
         public void ValidateSnippets(string source)
         {
             Compilation comp = CreateCompilation(source);
+            var compDiags = comp.GetDiagnostics();
+            foreach (var diag in compDiags)
+            {
+                Assert.True(
+                    "CS8795".Equals(diag.Id)        // Partial method impl missing
+                    || "CS0234".Equals(diag.Id)     // Missing type or namespace - GeneratedDllImportAttribute
+                    || "CS0246".Equals(diag.Id)     // Missing type or namespace - GeneratedDllImportAttribute
+                    || "CS8019".Equals(diag.Id));   // Unnecessary using
+            }
 
             var newComp = RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
             Assert.Empty(generatorDiags);
