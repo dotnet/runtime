@@ -159,35 +159,9 @@ nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 
 if STATIC_ICU
-
-ICU_INCLUDE_DIRECTORY = $(ICU_REPO)/icu4c/source/wasm-usr/include/
-ICU_LIB_DIRECTORY = $(ICU_REPO)/icu4c/source/wasm-build/lib/
-ICU_STUBDATA_DIRECTORY = $(ICU_REPO)/icu4c/source/wasm-build/stubdata
-
-# Check for the existence of the include and lib directories.
-# If they are missing we will get confusing errors later, so fail-fast is best.
-
-# The conditionals need a space before them to bypass automake's broken parser
-#  and reach gnu make to be evaluated. see https://patchwork.kernel.org/patch/6709921/
- ifeq (,$(wildcard $(ICU_INCLUDE_DIRECTORY)))
-$(error ICU include directory $(ICU_INCLUDE_DIRECTORY) does not exist)
- endif
- ifeq (,$(wildcard $(ICU_LIB_DIRECTORY)))
-$(error ICU lib directory $(ICU_LIB_DIRECTORY) does not exist)
- endif
- ifeq (,$(wildcard $(ICU_STUBDATA_DIRECTORY)))
-$(error ICU lib directory $(ICU_STUBDATA_DIRECTORY) does not exist)
- endif
-
 nodist_libmonoruntime_shimglobalization_la_SOURCES += @ICU_SHIM_PATH@/pal_icushim_static.c
-libmonoruntime_shimglobalization_la_CFLAGS += -I$(ICU_INCLUDE_DIRECTORY) \
--L$(ICU_LIB_DIRECTORY) -licui18n -licuuc -licutu -licuio \
--L$(ICU_STUBDATA_DIRECTORY) -licudata
-
 else
-
 nodist_libmonoruntime_shimglobalization_la_SOURCES += @ICU_SHIM_PATH@/pal_icushim.c
-
 endif # STATIC_ICU
 
 endif # HAVE_SYS_ICU

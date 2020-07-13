@@ -42,6 +42,8 @@
     <ItemGroup>
       <Assets Include="icudt.dat" />
     </ItemGroup>
+    <Copy SourceFiles="$(NuGetPackageRoot)\microsoft.netcore.runtime.icu.transport\$(MicrosoftNETCoreRuntimeICUTransportVersion)\runtimes\browser-wasm\native\lib\icudt.dat"
+          DestinationFiles="$(AppDir)\icudt.dat" SkipUnchangedFiles="true"/>
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"

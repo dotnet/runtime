@@ -153,7 +153,7 @@
       AssemblySearchPaths="@(AssemblySearchPaths)"
       AssetSources="@(AssetSources)"
       Assets="@(Assets)" />
-      <Copy SourceFiles="$(ICU_REPO)\icu4c\source\data\out\tmp\icudt67l.dat"
+      <Copy SourceFiles="$(NuGetPackageRoot)\microsoft.netcore.runtime.icu.transport\$(MicrosoftNETCoreRuntimeICUTransportVersion)\runtimes\browser-wasm\native\lib\icudt.dat"
             DestinationFiles="$(BundleDir)\icudt.dat" SkipUnchangedFiles="true"/>
   </Target>
 
