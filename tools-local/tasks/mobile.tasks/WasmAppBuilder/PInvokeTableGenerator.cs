@@ -176,7 +176,7 @@ public class PInvokeTableGenerator : Task
             bool isVoid = method.ReturnType.FullName == "System.Void";
 
             if (!isVoid && !IsBlittable(method.ReturnType))
-                Error($"The returnnn type '{method.ReturnType.FullName}' ('{isVoid}') of pinvoke callback method '{method}' needs to be blittable.");
+                Error($"The return type '{method.ReturnType.FullName}' ('{isVoid}') of pinvoke callback method '{method}' needs to be blittable.");
             foreach (var p in method.GetParameters()) {
                 if (!IsBlittable(p.ParameterType))
                     Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");

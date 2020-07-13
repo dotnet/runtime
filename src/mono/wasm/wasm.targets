@@ -13,7 +13,6 @@
     <WasmPInvokeModules Include="libSystem.Native"/>
     <WasmPInvokeModules Include="libSystem.IO.Compression.Native"/>
     <WasmPInvokeModules Include="libSystem.Globalization.Native"/>
-    <WasmPInvokeModules Include="__Internal"/>
     <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-$(Configuration)\System.Runtime.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
