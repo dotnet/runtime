@@ -11,11 +11,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     public abstract class HashAlgorithmTest
     {
         protected abstract HashAlgorithm Create();
-        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-        {
-            bytesWritten = 0;
-            return false;
-        }
+        protected abstract bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
 
         protected void Verify(string input, string output)
         {
