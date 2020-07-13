@@ -15503,8 +15503,8 @@ bool emitter::IsRedundantLdStr(instruction ins, regNumber dst, regNumber src, ss
         return false;
     }
 
-    regNumber prevDst = emitLastIns->idReg1();
-    regNumber prevSrc = emitLastIns->idReg2();
+    regNumber prevDst    = emitLastIns->idReg1();
+    regNumber prevSrc    = emitLastIns->idReg2();
     insFormat lastInsfmt = emitLastIns->idInsFmt();
     ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
 
