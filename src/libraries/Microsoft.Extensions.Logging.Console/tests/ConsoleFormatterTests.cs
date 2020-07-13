@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -131,7 +132,16 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
                 new ConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
-                new JsonConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false });
+                new JsonConsoleFormatterOptions {
+                    TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ",
+                    UseUtcTimestamp = false,
+                    JsonWriterOptions = new JsonWriterOptions()
+                    {
+                        // otherwise escapes for timezone formatting from + to \u002b
+                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                        Indented = true
+                    }
+                });
             var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
