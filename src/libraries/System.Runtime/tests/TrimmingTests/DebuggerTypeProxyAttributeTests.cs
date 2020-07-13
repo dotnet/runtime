@@ -10,23 +10,29 @@ class Program
     static int Main(string[] args)
     {
         MyClass myClass = new MyClass() { Name = "trimmed" };
+        MyClassWithProxyString myClassWithString = new MyClassWithProxyString() { Name = "trimmed" };
 
         Type[] allTypes = typeof(MyClass).Assembly.GetTypes();
+        bool foundDebuggerProxy = false;
+        bool foundStringDebuggerProxy = false;
         for (int i = 0; i < allTypes.Length; i++)
         {
-            if (allTypes[i].Name.Contains("DebuggerProxy"))
+            Type currentType = allTypes[i];
+            if (currentType.FullName == "Program+MyClass+DebuggerProxy" &&
+                currentType.GetProperties().Length == 1 &&
+                currentType.GetConstructors().Length == 1)
             {
-                Type proxyType = allTypes[i];
-                if (proxyType.GetProperties().Length == 1 &&
-                    proxyType.GetConstructors().Length == 1)
-                {
-                    return 100;
-                }
+                foundDebuggerProxy = true;
+            }
+            else if (currentType.FullName == "Program+MyClassWithProxyStringProxy" &&
+                currentType.GetProperties().Length == 1 &&
+                currentType.GetConstructors().Length == 1)
+            {
+                foundStringDebuggerProxy = true;
             }
         }
 
-        // didn't find the proxy type, or it wasn't preserved correctly
-        return -1;
+        return foundDebuggerProxy && foundStringDebuggerProxy ? 100 : -1;
     }
 
     [DebuggerTypeProxy(typeof(DebuggerProxy))]
@@ -43,7 +49,25 @@ class Program
                 _instance = instance;
             }
 
-            public string DebuggerName => _instance.Name;
+            public string DebuggerName => _instance.Name + " Proxy";
         }
+    }
+
+    [DebuggerTypeProxy("Program+MyClassWithProxyStringProxy")]
+    public class MyClassWithProxyString
+    {
+        public string Name { get; set; }
+    }
+
+    internal class MyClassWithProxyStringProxy
+    {
+        private MyClassWithProxyString _instance;
+
+        public MyClassWithProxyStringProxy(MyClassWithProxyString instance)
+        {
+            _instance = instance;
+        }
+
+        public string DebuggerName => _instance.Name + " StringProxy";
     }
 }
