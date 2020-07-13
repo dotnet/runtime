@@ -34,6 +34,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _i64Value = l;
         }
+
         internal static byte[] _byteBuffer;
         private static void MarshalArrayBuffer(ArrayBuffer buffer)
         {
@@ -45,6 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _byteBuffer = buffer.ToArray();
         }
+
         internal static int[] _intBuffer;
         private static void MarshalArrayBufferToInt32Array(ArrayBuffer buffer)
         {
@@ -57,12 +59,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _stringResource = s;
         }
+
         internal static string _marshalledString;
         private static string InvokeMarshalString()
         {
             _marshalledString = "Hic Sunt Dracones";
             return _marshalledString;
         }
+
         internal static object _object1;
         private static object InvokeObj1(object obj)
         {
@@ -87,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static int _valOne, _valTwo;
         private static void ManipulateObject(JSObject obj)
         {
-            _valOne = (int)obj.Invoke("inc"); ;
+            _valOne = (int)obj.Invoke("inc");
             _valTwo = (int)obj.Invoke("add", 20);
         }
 
@@ -199,6 +203,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             using (var doubles = new Float64Array(buffer))
                 _doubleBuffer = doubles.ToArray();
         }
+
         private static void MarshalByteBufferToDoubles(ArrayBuffer buffer)
         {
             using (var doubles = new Float64Array(buffer))
@@ -289,7 +294,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _taFloat = ((Float32Array)obj.GetObjectProperty("typedArray")).ToArray();
         }
-
 
         private static void SetTypedArrayDouble(JSObject obj)
         {

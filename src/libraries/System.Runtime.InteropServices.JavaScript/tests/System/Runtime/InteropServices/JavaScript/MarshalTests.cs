@@ -13,19 +13,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalPrimitivesToCS()
         {
             HelperMarshal._i32Value = 0;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeI32\", [10, 20])");
+            Runtime.InvokeJS("App.call_test_method (\"InvokeI32\", [10, 20])");
             Assert.Equal(30, HelperMarshal._i32Value);
 
             HelperMarshal._f32Value = 0;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeFloat\", [1.5])");
+            Runtime.InvokeJS("App.call_test_method (\"InvokeFloat\", [1.5])");
             Assert.Equal(1.5f, HelperMarshal._f32Value);
 
             HelperMarshal._f64Value = 0;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeDouble\", [4.5])");
+            Runtime.InvokeJS("App.call_test_method (\"InvokeDouble\", [4.5])");
             Assert.Equal(4.5, HelperMarshal._f64Value);
 
             HelperMarshal._i64Value = 0;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeLong\", [99])");
+            Runtime.InvokeJS("App.call_test_method (\"InvokeLong\", [99])");
             Assert.Equal(99, HelperMarshal._i64Value);
         }
 
@@ -61,7 +61,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void MarshalArrayBuffer2Int2()
         {
-
             Runtime.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 var int32View = new Int32Array(buffer);
@@ -172,7 +171,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void JSObjectApply()
         {
             Runtime.InvokeJS(@"
-                var do_add = function(a, b) { return a + b};
+                var do_add = function(a, b) { return a + b };
                 App.call_test_method (""UseFunction"", [ do_add ]);
             ");
             Assert.Equal(30, HelperMarshal._jsAddFunctionResult);
@@ -182,7 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void JSObjectAsFunction()
         {
             Runtime.InvokeJS(@"
-                var do_add = function(a, b) { return a + b};
+                var do_add = function(a, b) { return a + b };
                 App.call_test_method (""UseAsFunction"", [ do_add ]);
             ");
             Assert.Equal(50, HelperMarshal._jsAddAsFunctionResult);
@@ -531,7 +530,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(3.14f, HelperMarshal._taFloat[0]);
             Assert.Equal(3.14f, HelperMarshal._taFloat[HelperMarshal._taFloat.Length - 1]);
         }
-
 
         [Fact]
         public static void MarshalTypedArrayDouble()
