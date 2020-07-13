@@ -1261,8 +1261,15 @@ namespace Mono.Linker.Steps
 			// is violated with Unsafe.As).
 			//
 			// This won't do too much work because classes are rarely tagged for explicit/sequential layout.
-			if (!field.DeclaringType.IsValueType)
-				MarkImplicitlyUsedFields (field.DeclaringType);
+			if (!field.DeclaringType.IsValueType && !field.DeclaringType.IsAutoLayout) {
+				// We also need to walk the base hierarchy because the offset of the field depends on the
+				// layout of the base.
+				TypeDefinition typeWithFields = field.DeclaringType;
+				while (typeWithFields != null) {
+					MarkImplicitlyUsedFields (typeWithFields);
+					typeWithFields = typeWithFields.BaseType?.Resolve ();
+				}
+			}
 
 			var parent = field.DeclaringType;
 			if (!Annotations.HasPreservedStaticCtor (parent)) {

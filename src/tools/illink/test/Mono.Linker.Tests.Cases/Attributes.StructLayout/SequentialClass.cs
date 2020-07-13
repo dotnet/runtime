@@ -31,7 +31,21 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 
 	[Kept]
 	[StructLayout (LayoutKind.Sequential)]
-	class UnallocatedButWithSingleFieldUsedSequentialClassData
+	class UnallocatedButWithSingleFieldUsedSequentialClassDataBase
+	{
+		// We expect this to be kept because of the sequential layout.
+		// Code could do Unsafe.As tricks to alias a never allocated type
+		// with another type and access fields on it.
+		// Removing the base or fields on the base would shift the offsets
+		// and break the aliasing.
+		[Kept]
+		public int never_used_base;
+	}
+
+	[Kept]
+	[StructLayout (LayoutKind.Sequential)]
+	[KeptBaseType (typeof (UnallocatedButWithSingleFieldUsedSequentialClassDataBase))]
+	class UnallocatedButWithSingleFieldUsedSequentialClassData : UnallocatedButWithSingleFieldUsedSequentialClassDataBase
 	{
 		[Kept]
 		public int never_used;
