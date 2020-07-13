@@ -74,7 +74,11 @@ namespace System.Net.Mime
                     numberOfCharsLeftInCurrentBlock = 2;
                     break;
                 case 0: // all 3 bytes were encoded
+                    bytesLeftInCurrentBlock = 0;
+                    numberOfCharsLeftInCurrentBlock = 0;
+                    break;
                 default:
+                    Debug.Fail("paddind was not in range [0,2]");
                     bytesLeftInCurrentBlock = 0;
                     numberOfCharsLeftInCurrentBlock = 0;
                     break;
@@ -99,8 +103,6 @@ namespace System.Net.Mime
 
         public override void AppendPadding()
         {
-            Debug.Assert(0 <= _writeState.Padding && _writeState.Padding <= 2, "paddind was not in range [0,2]");
-
             switch (_writeState.Padding)
             {
                 case 0: // No padding needed
@@ -117,14 +119,13 @@ namespace System.Net.Mime
                     _writeState.Padding = 0;
                     break;
                 default:
+                    Debug.Fail("paddind was not in range [0,2]");
                     break;
             }
         }
 
         protected override void ApppendEncodedByte(byte b)
         {
-            Debug.Assert(0 <= _writeState.Padding && _writeState.Padding <= 2, "paddind was not in range [0,2]");
-
             // Base64 encoding transforms a group of 3 bytes into a group of 4 Base64 characters
             switch (_writeState.Padding)
             {
@@ -144,6 +145,7 @@ namespace System.Net.Mime
                     _writeState.Padding = 0;
                     break;
                 default:
+                    Debug.Fail("paddind was not in range [0,2]");
                     break;
             }
         }
