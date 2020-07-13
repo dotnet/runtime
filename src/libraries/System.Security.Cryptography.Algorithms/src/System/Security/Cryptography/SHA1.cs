@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -13,15 +14,58 @@ namespace System.Security.Cryptography
 
     public abstract class SHA1 : HashAlgorithm
     {
+        private const int HashSizeBits = 160;
+        private const int HashSizeBytes = HashSizeBits / 8;
+
         protected SHA1()
         {
-            HashSizeValue = 160;
+            HashSizeValue = HashSizeBits;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
         public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
+
+        public static byte[] HashData(byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return HashData(new ReadOnlySpan<byte>(source));
+        }
+
+        public static byte[] HashData(ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+
+            int written = HashData(source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(source, destination, out int bytesWritten))
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return bytesWritten;
+        }
+
+        public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HashSizeBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA1, source, destination);
+            Debug.Assert(bytesWritten == HashSizeBytes);
+
+            return true;
+        }
 
         private sealed class Implementation : SHA1
         {

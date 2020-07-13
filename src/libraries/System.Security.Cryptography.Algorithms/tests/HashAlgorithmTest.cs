@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             Assert.True(expected.SequenceEqual(destination.Slice(0, bytesWritten)), "expected equals destination");
 
             //too small
-            bool result = TryHashData(input, default, out int bytesWritten);
+            result = TryHashData(input, default, out bytesWritten);
             Assert.False(result, "TryHashData false");
             Assert.Equal(0, bytesWritten);
         }
