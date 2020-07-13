@@ -25,6 +25,7 @@ namespace System.Net.Http
         private HttpContent? _content;
         private bool _disposed;
         private IDictionary<string, object?>? _properties;
+        private HttpRequestOptions? _options;
 
         public Version Version
         {
@@ -111,6 +112,7 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
+        [Obsolete("Use Options instead.")]
         public IDictionary<string, object?> Properties
         {
             get
@@ -120,6 +122,18 @@ namespace System.Net.Http
                     _properties = new Dictionary<string, object?>();
                 }
                 return _properties;
+            }
+        }
+
+        public HttpRequestOptions Options
+        {
+            get
+            {
+                if (_options == null)
+                {
+                    _options = new HttpRequestOptions();
+                }
+                return _options;
             }
         }
 

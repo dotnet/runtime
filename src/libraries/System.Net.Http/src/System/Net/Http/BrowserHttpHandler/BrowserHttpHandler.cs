@@ -129,7 +129,7 @@ namespace System.Net.Http
             {
                 var requestObject = new JSObject();
 
-                if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
+                if (request.Options.TryGetValue(new HttpRequestOptionsKey<string>("WebAssemblyFetchOptions"), out object? fetchOptionsValue) &&
                     fetchOptionsValue is IDictionary<string, object> fetchOptions)
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
@@ -221,7 +221,7 @@ namespace System.Net.Http
 
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
-                bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                bool streamingEnabled = request.Options.TryGetValue(new HttpRequestOptionsKey<string>("WebAssemblyEnableStreamingResponse"), out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
                 httpResponse.Content = StreamingSupported && streamingEnabled
                     ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))

@@ -213,12 +213,22 @@ namespace System.Net.Http
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
+        public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
         public System.Version Version { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public override string ToString() { throw null; }
     }
+
+    public readonly struct HttpRequestOptionsKey<TKey>
+    {
+        public HttpRequestOptionsKey(TKey key) {}
+        public TKey Key { get { throw null; } }
+    }
+    
+    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<HttpRequestOptionsKey<string>, object> { }
+
     public partial class HttpResponseMessage : System.IDisposable
     {
         public HttpResponseMessage() { }
