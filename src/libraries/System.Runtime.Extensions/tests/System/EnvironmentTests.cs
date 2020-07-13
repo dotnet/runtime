@@ -142,7 +142,7 @@ namespace System.Tests
 
             Assert.Contains(version.ToString(2), versionString);
 
-            string expectedOS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? "Other" : "Unix";
+            string expectedOS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows " : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? "Other " : "Unix ";
             Assert.Contains(expectedOS, versionString);
         }
 
