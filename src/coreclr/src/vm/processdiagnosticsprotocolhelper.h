@@ -19,6 +19,7 @@ class IpcStream;
 enum class ProcessCommandId : uint8_t
 {
     GetProcessInfo = 0x00,
+    ResumeRuntime  = 0x01,
     // future
 };
 
@@ -50,6 +51,7 @@ public:
     // IPC event handlers.
     static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
     static void GetProcessInfo(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
+    static void ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
 };
 
 #endif // FEATURE_PERFTRACING

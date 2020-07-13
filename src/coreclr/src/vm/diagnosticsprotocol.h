@@ -75,21 +75,10 @@ namespace DiagnosticsIpc
         Server        = 0xFF,
     };
 
-    // Overlaps with DiagnosticServerResponseId
-    // DON'T create overlapping values
-    enum class DiagnosticServerCommandId : uint8_t
-    {
-        // 0x00 used in DiagnosticServerResponseId
-        ResumeRuntime = 0x01,
-        // 0xFF used DiagnosticServerResponseId
-    };
-
-    // Overlaps with DiagnosticServerCommandId
-    // DON'T create overlapping values
     enum class DiagnosticServerResponseId : uint8_t
     {
         OK            = 0x00,
-        // 0x01 used in DiagnosticServerCommandId
+        // future
         Error         = 0xFF,
     };
 

@@ -7,6 +7,7 @@
 #include "processdiagnosticsprotocolhelper.h"
 #include "eventpipeeventsource.h"
 #include "diagnosticsprotocol.h"
+#include "diagnosticserver.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -154,6 +155,31 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
         ProcessInfoResponse.Send(pStream) :
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
 
+    if (!fSuccess)
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, "Failed to send DiagnosticsIPC response");
+
+    delete pStream;
+}
+
+void ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+    }
+    CONTRACTL_END;
+
+    // no payload
+    DiagnosticServer::ResumeRuntimeStartup();
+    HRESULT res = S_OK;
+
+    DiagnosticsIpc::IpcMessage successResponse;
+    const bool fSuccess = successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, res) ?
+        successResponse.Send(pStream) :
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
     if (!fSuccess)
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, "Failed to send DiagnosticsIPC response");
 
