@@ -10,8 +10,8 @@ namespace System.Runtime.InteropServices
         private static string? s_osDescription;
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static int s_osArch = -1;
-        private static int s_processArch = -1;
+        private static volatile int s_osArch = -1;
+        private static volatile int s_processArch = -1;
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
