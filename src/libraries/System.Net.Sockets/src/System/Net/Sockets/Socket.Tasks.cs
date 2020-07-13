@@ -34,11 +34,6 @@ namespace System.Net.Sockets
         /// <summary>Handler for completed SendAsync operations.</summary>
         private static readonly EventHandler<SocketAsyncEventArgs> s_sendCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: false);
         /// <summary>
-        /// Sentinel that can be stored into one of the Socket cached fields to indicate that an instance
-        /// was previously created but is currently being used by another concurrent operation.
-        /// </summary>
-        private static readonly TaskSocketAsyncEventArgs<Socket> s_rentedSocketSentinel = new TaskSocketAsyncEventArgs<Socket>();
-        /// <summary>
         /// Sentinel that can be stored into one of the Int32 fields to indicate that an instance
         /// was previously created but is currently being used by another concurrent operation.
         /// </summary>
@@ -60,18 +55,9 @@ namespace System.Net.Sockets
         internal Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
-            TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref _taskAcceptEventArgs, s_rentedSocketSentinel);
-            if (saea == s_rentedSocketSentinel)
+            TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref _taskAcceptEventArgs, null);
+            if (saea is null)
             {
-                // An instance was once created (or is currently being created elsewhere), but some other
-                // concurrent operation is using it. Since we can store at most one, and since an individual
-                // APM operation is less expensive than creating a new SAEA and using it only once, we simply
-                // fall back to using an APM implementation.
-                return AcceptAsyncApm(acceptSocket);
-            }
-            else if (saea == null)
-            {
-                // No instance has been created yet, so create one.
                 saea = new TaskSocketAsyncEventArgs<Socket>();
                 saea.Completed += s_acceptCompletedHandler;
             }
@@ -107,19 +93,6 @@ namespace System.Net.Sockets
             }
 
             return t;
-        }
-
-        /// <summary>Implements Task-returning AcceptAsync on top of Begin/EndAsync.</summary>
-        private Task<Socket> AcceptAsyncApm(Socket? acceptSocket)
-        {
-            var tcs = new TaskCompletionSource<Socket>(this);
-            BeginAccept(acceptSocket, 0, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<Socket>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndAccept(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
         }
 
         internal Task ConnectAsync(EndPoint remoteEP)
@@ -708,24 +681,25 @@ namespace System.Net.Sockets
         /// <param name="saea">The instance to return.</param>
         private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<Socket> saea)
         {
-            Debug.Assert(saea != s_rentedSocketSentinel);
-
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea.AcceptSocket = null;
             saea._accessed = false;
-            saea._builder = default(AsyncTaskMethodBuilder<Socket>);
+            saea._builder = default;
 
-            // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
-            // never null or another instance.
-            Volatile.Write(ref _taskAcceptEventArgs, saea);
+            // Write this instance back as a cached instance, only if there isn't currently one cached.
+            if (Interlocked.CompareExchange(ref _taskAcceptEventArgs, saea, null) != null)
+            {
+                // Couldn't return it, so dispose it.
+                saea.Dispose();
+            }
         }
 
         /// <summary>Dispose of any cached <see cref="Int32TaskSocketAsyncEventArgs"/> instances.</summary>
         private void DisposeCachedTaskSocketAsyncEventArgs()
         {
-            Interlocked.Exchange(ref _taskAcceptEventArgs, s_rentedSocketSentinel)?.Dispose();
+            Interlocked.Exchange(ref _taskAcceptEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _taskReceiveEventArgs, s_rentedInt32Sentinel)?.Dispose();
             Interlocked.Exchange(ref _taskSendEventArgs, s_rentedInt32Sentinel)?.Dispose();
             Interlocked.Exchange(ref _valueTaskReceiveEventArgs, AwaitableSocketAsyncEventArgs.Reserved)?.Dispose();
