@@ -130,7 +130,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
             string receivedCommandLine = NormalizeCommandLine(commandLine);
 
-            Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
+            Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
 
             // VALIDATE OS
             start = end;
