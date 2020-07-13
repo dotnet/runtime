@@ -955,20 +955,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NoSetter()
-        {
-            var obj = new ClassWithNoSetter();
-
-            string json = JsonSerializer.Serialize(obj);
-            Assert.Contains(@"""MyString"":""DefaultValue""", json);
-            Assert.Contains(@"""MyInts"":[1,2]", json);
-
-            obj = JsonSerializer.Deserialize<ClassWithNoSetter>(@"{""MyString"":""IgnoreMe"",""MyInts"":[0]}");
-            Assert.Equal("DefaultValue", obj.MyString);
-            Assert.Equal(2, obj.MyInts.Length);
-        }
-
-        [Fact]
         public static void IgnoreReadOnlyProperties()
         {
             var options = new JsonSerializerOptions();
@@ -980,6 +966,35 @@ namespace System.Text.Json.Serialization.Tests
 
             // Collections are always serialized unless they have [JsonIgnore].
             Assert.Equal(@"{""MyInts"":[1,2]}", json);
+        }
+
+        [Fact]
+        public static void IgnoreReadOnlyFields()
+        {
+            var options = new JsonSerializerOptions();
+            options.IncludeFields = true;
+            options.IgnoreReadOnlyFields = true;
+
+            var obj = new ClassWithReadOnlyFields();
+
+            string json = JsonSerializer.Serialize(obj, options);
+
+            // Collections are always serialized unless they have [JsonIgnore].
+            Assert.Equal(@"{""MyInts"":[1,2]}", json);
+        }
+
+        [Fact]
+        public static void NoSetter()
+        {
+            var obj = new ClassWithNoSetter();
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Contains(@"""MyString"":""DefaultValue""", json);
+            Assert.Contains(@"""MyInts"":[1,2]", json);
+
+            obj = JsonSerializer.Deserialize<ClassWithNoSetter>(@"{""MyString"":""IgnoreMe"",""MyInts"":[0]}");
+            Assert.Equal("DefaultValue", obj.MyString);
+            Assert.Equal(2, obj.MyInts.Length);
         }
 
         [Fact]
@@ -1055,34 +1070,40 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonIgnoreAttribute()
         {
+            var options = new JsonSerializerOptions { IncludeFields = true };
+
             // Verify default state.
             var obj = new ClassWithIgnoreAttributeProperty();
             Assert.Equal(@"MyString", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
+            Assert.Equal(3.14M, obj.MyNumeric);
 
             // Verify serialize.
-            string json = JsonSerializer.Serialize(obj);
+            string json = JsonSerializer.Serialize(obj, options);
             Assert.Contains(@"""MyString""", json);
             Assert.DoesNotContain(@"MyStringWithIgnore", json);
             Assert.DoesNotContain(@"MyStringsWithIgnore", json);
             Assert.DoesNotContain(@"MyDictionaryWithIgnore", json);
+            Assert.DoesNotContain(@"MyNumeric", json);
 
             // Verify deserialize default.
-            obj = JsonSerializer.Deserialize<ClassWithIgnoreAttributeProperty>(@"{}");
+            obj = JsonSerializer.Deserialize<ClassWithIgnoreAttributeProperty>(@"{}", options);
             Assert.Equal(@"MyString", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
+            Assert.Equal(3.14M, obj.MyNumeric);
 
             // Verify deserialize ignores the json for MyStringWithIgnore and MyStringsWithIgnore.
             obj = JsonSerializer.Deserialize<ClassWithIgnoreAttributeProperty>(
-                @"{""MyString"":""Hello"", ""MyStringWithIgnore"":""IgnoreMe"", ""MyStringsWithIgnore"":[""IgnoreMe""], ""MyDictionaryWithIgnore"":{""Key"":9}}");
+                @"{""MyString"":""Hello"", ""MyStringWithIgnore"":""IgnoreMe"", ""MyStringsWithIgnore"":[""IgnoreMe""], ""MyDictionaryWithIgnore"":{""Key"":9}, ""MyNumeric"": 2.71828}", options);
             Assert.Contains(@"Hello", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
+            Assert.Equal(3.14M, obj.MyNumeric);
         }
 
         [Fact]
@@ -1257,6 +1278,18 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        public class ClassWithReadOnlyFields
+        {
+            public ClassWithReadOnlyFields()
+            {
+                MyString = "DefaultValue";
+                MyInts = new int[] { 1, 2 };
+            }
+
+            public readonly string MyString;
+            public readonly int[] MyInts;
+        }
+
         public class ClassWithNoSetter
         {
             public ClassWithNoSetter()
@@ -1323,6 +1356,7 @@ namespace System.Text.Json.Serialization.Tests
                 MyString = "MyString";
                 MyStringWithIgnore = "MyStringWithIgnore";
                 MyStringsWithIgnore = new string[] { "1", "2" };
+                MyNumeric = 3.14M;
             }
 
             [JsonIgnore]
@@ -1335,6 +1369,9 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonIgnore]
             public string[] MyStringsWithIgnore { get; set; }
+
+            [JsonIgnore]
+            public decimal MyNumeric;
         }
 
         private enum MyEnum
@@ -1760,60 +1797,117 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void IgnoreConditionNever_WinsOver_IgnoreReadOnlyValues()
+        public static void IgnoreConditionNever_WinsOver_IgnoreReadOnlyProperties()
         {
             var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
 
             // Baseline
-            string json = JsonSerializer.Serialize(new ClassWithReadOnlyString("Hello"), options);
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty("Hello"), options);
             Assert.Equal("{}", json);
 
             // With condition to never ignore
-            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreNever("Hello"), options);
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty_IgnoreNever("Hello"), options);
             Assert.Equal(@"{""MyString"":""Hello""}", json);
 
-            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreNever(null), options);
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty_IgnoreNever(null), options);
             Assert.Equal(@"{""MyString"":null}", json);
         }
 
         [Fact]
-        public static void IgnoreConditionWhenWritingDefault_WinsOver_IgnoreReadOnlyValues()
+        public static void IgnoreConditionWhenWritingDefault_WinsOver_IgnoreReadOnlyProperties()
         {
             var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
 
             // Baseline
-            string json = JsonSerializer.Serialize(new ClassWithReadOnlyString("Hello"), options);
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty("Hello"), options);
             Assert.Equal("{}", json);
 
             // With condition to ignore when null
-            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreWhenWritingDefault("Hello"), options);
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault("Hello"), options);
             Assert.Equal(@"{""MyString"":""Hello""}", json);
 
-            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreWhenWritingDefault(null), options);
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault(null), options);
             Assert.Equal(@"{}", json);
         }
 
-        private class ClassWithReadOnlyString
+        [Fact]
+        public static void IgnoreConditionNever_WinsOver_IgnoreReadOnlyFields()
+        {
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+
+            // Baseline
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField("Hello"), options);
+            Assert.Equal("{}", json);
+
+            // With condition to never ignore
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField_IgnoreNever("Hello"), options);
+            Assert.Equal(@"{""MyString"":""Hello""}", json);
+
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField_IgnoreNever(null), options);
+            Assert.Equal(@"{""MyString"":null}", json);
+        }
+
+        [Fact]
+        public static void IgnoreConditionWhenWritingDefault_WinsOver_IgnoreReadOnlyFields()
+        {
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+
+            // Baseline
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField("Hello"), options);
+            Assert.Equal("{}", json);
+
+            // With condition to ignore when null
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField_IgnoreWhenWritingDefault("Hello"), options);
+            Assert.Equal(@"{""MyString"":""Hello""}", json);
+
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyStringField_IgnoreWhenWritingDefault(null), options);
+            Assert.Equal(@"{}", json);
+        }
+
+        private class ClassWithReadOnlyStringProperty
         {
             public string MyString { get; }
 
-            public ClassWithReadOnlyString(string myString) => MyString = myString;
+            public ClassWithReadOnlyStringProperty(string myString) => MyString = myString;
         }
 
-        private class ClassWithReadOnlyString_IgnoreNever
+        private class ClassWithReadOnlyStringProperty_IgnoreNever
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
             public string MyString { get; }
 
-            public ClassWithReadOnlyString_IgnoreNever(string myString) => MyString = myString;
+            public ClassWithReadOnlyStringProperty_IgnoreNever(string myString) => MyString = myString;
         }
 
-        private class ClassWithReadOnlyString_IgnoreWhenWritingDefault
+        private class ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public string MyString { get; }
 
-            public ClassWithReadOnlyString_IgnoreWhenWritingDefault(string myString) => MyString = myString;
+            public ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault(string myString) => MyString = myString;
+        }
+
+        private class ClassWithReadOnlyStringField
+        {
+            public string MyString { get; }
+
+            public ClassWithReadOnlyStringField(string myString) => MyString = myString;
+        }
+
+        private class ClassWithReadOnlyStringField_IgnoreNever
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+            public string MyString { get; }
+
+            public ClassWithReadOnlyStringField_IgnoreNever(string myString) => MyString = myString;
+        }
+
+        private class ClassWithReadOnlyStringField_IgnoreWhenWritingDefault
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+            public string MyString { get; }
+
+            public ClassWithReadOnlyStringField_IgnoreWhenWritingDefault(string myString) => MyString = myString;
         }
 
         [Fact]

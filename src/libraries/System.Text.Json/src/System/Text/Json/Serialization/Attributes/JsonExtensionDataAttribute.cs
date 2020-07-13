@@ -6,7 +6,7 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// When placed on a property or field of type <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, any
-    /// properties that do not have a matching member are added to that Dictionary during deserialization and written during serialization.
+    /// properties that do not have a matching property or field are added to that Dictionary during deserialization and written during serialization.
     /// </summary>
     /// <remarks>
     /// The TKey value must be <see cref="string"/> and TValue must be <see cref="JsonElement"/> or <see cref="object"/>.
