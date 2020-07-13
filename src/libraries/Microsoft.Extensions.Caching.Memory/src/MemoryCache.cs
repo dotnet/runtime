@@ -215,8 +215,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
                 else
                 {
-                    // Entry could not be added due to being expired, reset cache size
-                    Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    if (_options.SizeLimit.HasValue)
+                    {
+                        // Entry could not be added due to being expired, reset cache size
+                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    }
                 }
 
                 entry.InvokeEvictionCallbacks();
