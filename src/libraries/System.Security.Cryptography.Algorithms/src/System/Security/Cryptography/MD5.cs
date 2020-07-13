@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -13,14 +14,57 @@ namespace System.Security.Cryptography
 
     public abstract class MD5 : HashAlgorithm
     {
+        private const int HashSizeBits = 128;
+        private const int HashSizeBytes = HashSizeBits / 8;
+
         protected MD5()
         {
-            HashSizeValue = 128;
+            HashSizeValue = HashSizeBits;
         }
 
         public static new MD5 Create() => new Implementation();
 
         public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
+
+        public static byte[] HashData(byte[] source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return HashData(new ReadOnlySpan<byte>(source));
+        }
+
+        public static byte[] HashData(ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+
+            int written = HashData(source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(source, destination, out int bytesWritten))
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            return bytesWritten;
+        }
+
+        public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HashSizeBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.MD5, source, destination);
+            Debug.Assert(bytesWritten == HashSizeBytes);
+
+            return true;
+        }
 
         private sealed class Implementation : MD5
         {

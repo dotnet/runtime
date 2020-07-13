@@ -488,6 +488,10 @@ namespace System.Security.Cryptography
         protected MD5() { }
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
         public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
+        public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {

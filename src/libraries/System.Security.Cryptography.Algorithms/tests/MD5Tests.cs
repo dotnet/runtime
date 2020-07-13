@@ -12,6 +12,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return MD5.Create();
         }
 
+        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            return MD5.TryHashData(source, destination, out bytesWritten);
+        }
+
         // Test cases are defined in RFC 1321, section A.5
 
         [Fact]
