@@ -2555,7 +2555,7 @@ namespace Mono.Linker.Steps
 				if (paramTypeReference is TypeSpecification) {
 					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
 				}
-				TypeDefinition paramTypeDefinition = paramTypeReference.Resolve ();
+				TypeDefinition paramTypeDefinition = paramTypeReference?.Resolve ();
 				if (paramTypeDefinition != null && !paramTypeDefinition.IsImport) {
 					MarkFields (paramTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
 					if (pd.ParameterType.IsByReference) {
