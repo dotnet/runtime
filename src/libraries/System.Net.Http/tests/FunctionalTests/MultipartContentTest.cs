@@ -391,7 +391,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ReadAsStream_CustomEncodingSelector_SelectorIsCalledWithCustomState(bool async)
+        public async Task ReadAsStreamAsync_CustomEncodingSelector_SelectorIsCalledWithCustomState(bool async)
         {
             var mc = new MultipartContent();
 
@@ -437,7 +437,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ReadAsStream_CustomEncodingSelector_CustomEncodingIsUsed(bool async)
+        public async Task ReadAsStreamAsync_CustomEncodingSelector_CustomEncodingIsUsed(bool async)
         {
             var mc = new MultipartContent("subtype", "fooBoundary");
 
@@ -499,13 +499,7 @@ namespace System.Net.Http.Functional.Tests
                 Encoding.Latin1.GetBytes("bar4"),
                 Encoding.Latin1.GetBytes("\r\n--fooBoundary--\r\n"));
 
-            byte[] actual = ms.ToArray();
-
-            Assert.Equal(expected.Length, actual.Length);
-            for (int i = 0; i < expected.Length; i++)
-            {
-                Assert.Equal(expected[i], actual[i]);
-            }
+            Assert.Equal(expected, ms.ToArray());
 
             static byte[] Concat(params byte[][] arrays) => arrays.SelectMany(b => b).ToArray();
         }
