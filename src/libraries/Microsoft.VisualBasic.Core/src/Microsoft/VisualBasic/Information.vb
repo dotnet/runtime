@@ -324,8 +324,6 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Return False
                 End Try

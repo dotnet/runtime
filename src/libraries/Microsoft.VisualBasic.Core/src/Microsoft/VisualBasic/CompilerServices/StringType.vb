@@ -739,8 +739,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Result = False
                 End Try

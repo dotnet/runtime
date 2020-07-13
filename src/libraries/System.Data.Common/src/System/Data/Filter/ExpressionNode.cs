@@ -8,9 +8,9 @@ namespace System.Data
 {
     internal abstract class ExpressionNode
     {
-        private DataTable _table;
+        private DataTable? _table;
 
-        protected ExpressionNode(DataTable table)
+        protected ExpressionNode(DataTable? table)
         {
             _table = table;
         }
@@ -31,7 +31,7 @@ namespace System.Data
             }
         }
 
-        protected DataTable table
+        protected DataTable? table
         {
             get { return _table; }
         }
@@ -44,7 +44,7 @@ namespace System.Data
 
         internal abstract void Bind(DataTable table, List<DataColumn> list);
         internal abstract object Eval();
-        internal abstract object Eval(DataRow row, DataRowVersion version);
+        internal abstract object Eval(DataRow? row, DataRowVersion version);
         internal abstract object Eval(int[] recordNos);
         internal abstract bool IsConstant();
         internal abstract bool IsTableConstant();
