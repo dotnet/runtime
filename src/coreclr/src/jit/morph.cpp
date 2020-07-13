@@ -5719,6 +5719,7 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         if (varTypeIsStruct(varType))
         {
             tree = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, ptrArg, typGetBlkLayout(varDsc->lvExactSize));
+            assert(!"Issue_877 hit");
         }
         else
         {
@@ -13579,6 +13580,7 @@ DONE_MORPHING_CHILDREN:
                         {
                             tree->gtType = typ = temp->TypeGet();
                             foldAndReturnTemp  = true;
+                            assert(!"Issue 620");
                         }
                         else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
