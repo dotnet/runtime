@@ -8,8 +8,7 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string? s_osDescription;
-        private static readonly object s_osLock = new object();
-        private static readonly object s_processLock = new object();
+        private static readonly object s_lock = new object();
         private static volatile int s_osArch = -1;
         private static volatile int s_processArch = -1;
 
@@ -46,7 +45,7 @@ namespace System.Runtime.InteropServices
 
                 if (s_osArch == -1)
                 {
-                    lock (s_osLock)
+                    lock (s_lock)
                     {
                         if (s_osArch == -1)
                         {
@@ -85,7 +84,7 @@ namespace System.Runtime.InteropServices
 
                 if (s_processArch == -1)
                 {
-                    lock (s_processLock)
+                    lock (s_lock)
                     {
                         if (s_processArch == -1)
                         {
