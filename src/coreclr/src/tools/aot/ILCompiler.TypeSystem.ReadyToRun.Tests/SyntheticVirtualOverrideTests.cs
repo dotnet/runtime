@@ -12,7 +12,7 @@ using Xunit;
 
 namespace TypeSystemTests
 {
-    public class SyntheticVirtualOverrideTests
+    public partial class SyntheticVirtualOverrideTests
     {
         TestTypeSystemContext _context;
         ModuleDesc _testModule;
@@ -155,7 +155,7 @@ namespace TypeSystemTests
             }
         }
 
-        private class SyntheticMethod : MethodDesc
+        private partial class SyntheticMethod : MethodDesc
         {
             private TypeDesc _owningType;
             private MethodSignature _signature;
