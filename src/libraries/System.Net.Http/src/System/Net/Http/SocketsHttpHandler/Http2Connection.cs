@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -43,8 +44,7 @@ namespace System.Net.Http
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
 
-        private readonly Queue<WriteQueueEntry> _writeQueue = new Queue<WriteQueueEntry>();
-        private TaskCompletionSource? _writeSignal;
+        private readonly Channel<WriteQueueEntry> _writeChannel;
         private bool _lastPendingWriterShouldFlush;
 
         // This means that the pool has disposed us, but there may still be
@@ -104,6 +104,8 @@ namespace System.Net.Http
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), int.MaxValue);
+
+            _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(new UnboundedChannelOptions() { SingleReader = true });
 
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
@@ -814,20 +816,10 @@ namespace System.Net.Http
         {
             WriteQueueEntry writeEntry = new WriteQueueEntry<T>(writeBytes, state, writeAction, cancellationToken);
 
-            lock (SyncObject)
+            if (!_writeChannel.Writer.TryWrite(writeEntry))
             {
-                if (_abortException is not null)
-                {
-                    ThrowRequestAborted(_abortException);
-                }
-
-                _writeQueue.Enqueue(writeEntry);
-
-                if (_writeSignal is not null)
-                {
-                    _writeSignal.SetResult();
-                    _writeSignal = null;
-                }
+                Debug.Assert(_abortException is not null);
+                ThrowRequestAborted(_abortException);
             }
 
             return writeEntry.Task;
@@ -837,100 +829,65 @@ namespace System.Net.Http
         {
             try
             {
-                while (true)
+                while (await _writeChannel.Reader.WaitToReadAsync().ConfigureAwait(false))
                 {
-                    WriteQueueEntry? writeEntry;
-                    Task? waitForSignal = null;
-
-                    lock (SyncObject)
-                    {
-                        Debug.Assert(_writeSignal is null);
-
-                        if (_abortException is not null)
-                        {
-                            // Connection is aborting, so stop processing
-                            break;
-                        }
-
-                        if (!_writeQueue.TryDequeue(out writeEntry))
-                        {
-                            _writeSignal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                            waitForSignal = _writeSignal.Task;
-                        }
-                    }
-
-                    if (waitForSignal is not null)
-                    {
-                        // Nothing left in the queue to process.
-                        // Flush the write buffer if we need to.
-                        if (_lastPendingWriterShouldFlush)
-                        {
-                            await FlushOutgoingBytesAsync().ConfigureAwait(false);
-                        }
-
-                        // Wait for work to be added.
-                        await waitForSignal.ConfigureAwait(false);
-
-#if DEBUG
-                        lock (SyncObject)
-                        {
-                            Debug.Assert(_abortException is not null || _writeQueue.Count > 0, "Write queue signalled but no work to do ??");
-                        }
-#endif
-                    }
-                    else
-                    {
-                        if (writeEntry!.TryDisableCancellation())
-                        {
-                            int writeBytes = writeEntry.WriteBytes;
-
-                            // If the buffer has already grown to 32k, does not have room for the next request,
-                            // and is non-empty, flush the current contents to the wire.
-                            int totalBufferLength = _outgoingBuffer.Capacity;
-                            if (totalBufferLength >= UnflushedOutgoingBufferSize)
-                            {
-                                int activeBufferLength = _outgoingBuffer.ActiveLength;
-                                if (writeBytes >= totalBufferLength - activeBufferLength)
-                                {
-                                    await FlushOutgoingBytesAsync().ConfigureAwait(false);
-                                }
-                            }
-
-                            _outgoingBuffer.EnsureAvailableSpace(writeBytes);
-
-                            try
-                            {
-                                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(writeBytes)}={writeBytes}");
-
-                                // Invoke the callback with the supplied state and the target write buffer.
-                                bool flush = writeEntry.InvokeWriteAction(_outgoingBuffer.AvailableMemorySliced(writeBytes));
-
-                                writeEntry.SetResult();
-
-                                _outgoingBuffer.Commit(writeBytes);
-                                _lastPendingWriterShouldFlush |= flush;
-                            }
-                            catch (Exception e)
-                            {
-                                writeEntry.SetException(e);
-                            }
-                        }
-                    }
-                }
-
-                // Connection is aborting, so fail any outstanding writes.
-                lock (SyncObject)
-                {
-                    Debug.Assert(_abortException is not null);
-
-                    while (_writeQueue.TryDequeue(out WriteQueueEntry? writeEntry))
+                    while (_writeChannel.Reader.TryRead(out WriteQueueEntry? writeEntry))
                     {
                         if (writeEntry.TryDisableCancellation())
                         {
-                            writeEntry.SetException(_abortException);
+                            if (_abortException is not null)
+                            {
+                                writeEntry.SetException(_abortException);
+                            }
+                            else
+                            {
+                                int writeBytes = writeEntry.WriteBytes;
+
+                                // If the buffer has already grown to 32k, does not have room for the next request,
+                                // and is non-empty, flush the current contents to the wire.
+                                int totalBufferLength = _outgoingBuffer.Capacity;
+                                if (totalBufferLength >= UnflushedOutgoingBufferSize)
+                                {
+                                    int activeBufferLength = _outgoingBuffer.ActiveLength;
+                                    if (writeBytes >= totalBufferLength - activeBufferLength)
+                                    {
+                                        await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                                    }
+                                }
+
+                                _outgoingBuffer.EnsureAvailableSpace(writeBytes);
+
+                                try
+                                {
+                                    if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(writeBytes)}={writeBytes}");
+
+                                    // Invoke the callback with the supplied state and the target write buffer.
+                                    bool flush = writeEntry.InvokeWriteAction(_outgoingBuffer.AvailableMemorySliced(writeBytes));
+
+                                    writeEntry.SetResult();
+
+                                    _outgoingBuffer.Commit(writeBytes);
+                                    _lastPendingWriterShouldFlush |= flush;
+                                }
+                                catch (Exception e)
+                                {
+                                    writeEntry.SetException(e);
+                                }
+                            }
+
                         }
                     }
+
+                    // Nothing left in the queue to process.
+                    // Flush the write buffer if we need to.
+                    if (_lastPendingWriterShouldFlush)
+                    {
+                        await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                    }
                 }
+
+                // Connection should be aborting at this point.
+                Debug.Assert(_abortException is not null);
             }
             catch (Exception e)
             {
@@ -1452,26 +1409,29 @@ namespace System.Net.Http
         private void Abort(Exception abortException)
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.
+            bool alreadyAborting = false;
             lock (SyncObject)
             {
                 if (_abortException is null)
                 {
                     _abortException = abortException;
-                    if (_writeSignal is not null)
-                    {
-                        _writeSignal.SetResult();
-                        _writeSignal = null;
-                    }
                 }
                 else
                 {
-                    // Lost the race to set the field to another exception, so just trace this one.
-                    if (NetEventSource.Log.IsEnabled() && !ReferenceEquals(_abortException, abortException))
-                    {
-                        Trace($"{nameof(abortException)}=={abortException}");
-                    }
+                    alreadyAborting = true;
                 }
             }
+
+            if (alreadyAborting)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Abort called while already aborting. {nameof(abortException)}=={abortException}");
+
+                return;
+            }
+
+            if (NetEventSource.Log.IsEnabled()) Trace($"Abort initiated. {nameof(abortException)}=={abortException}");
+
+            _writeChannel.Writer.Complete();
 
             AbortStreams(_abortException);
         }
