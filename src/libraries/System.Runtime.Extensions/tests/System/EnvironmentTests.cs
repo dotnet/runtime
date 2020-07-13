@@ -221,7 +221,10 @@ namespace System.Tests
         [Fact]
         public void WorkingSet_Valid()
         {
-            Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
+            if (PlatformDetection.IsBrowser)
+                Assert.Equal(0, Environment.WorkingSet);
+            else
+                Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process

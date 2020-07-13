@@ -68,6 +68,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38995", TestPlatforms.Browser)]
         public void StackTraceDoesNotStartWithInternalFrame()
         {
              string stackTrace = Environment.StackTrace;
