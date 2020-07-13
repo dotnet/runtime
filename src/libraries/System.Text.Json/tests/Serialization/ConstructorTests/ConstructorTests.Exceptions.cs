@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => Serializer.DeserializeWrapper<Point_MultipleMembers_BindTo_OneConstructorParameter_Variant>("{}"));
+                () => Serializer.DeserializeWrapper<Url_BindTo_OneConstructorParameter>("{}"));
 
             exStr = ex.ToString();
             Assert.Contains("'URL'", exStr);
@@ -339,7 +339,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ExtensionPropertyRoundTripFails()
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+
             Assert.Equal("$.MyNestedClass.UnknownProperty", e.Path);
         }
 
