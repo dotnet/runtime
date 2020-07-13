@@ -123,26 +123,20 @@ namespace System.Runtime.InteropServices
                 currentIndent += SingleDepth;
             }
 
-            // Clean up the parameters
-            //  - Remove default parameter values
-            var paramSyntaxNodes = new List<ParameterSyntax>();
-            foreach (var paramSyntax in userDeclaredMethod.ParameterList.Parameters)
-            {
-                if (paramSyntax.Default is null)
-                {
-                    paramSyntaxNodes.Add(paramSyntax);
-                }
-                else
-                {
-                    paramSyntaxNodes.Add(paramSyntax.WithDefault(null));
-                }
-            }
-            SeparatedSyntaxList<ParameterSyntax> newParams = SyntaxFactory.SeparatedList(paramSyntaxNodes);
-            var newParameterList = userDeclaredMethod.ParameterList.WithParameters(newParams);
+            // Begin declare function
+            builder.Append(
+$@"{currentIndent}{userDeclaredMethod.Modifiers} {stub.StubReturnType} {userDeclaredMethod.Identifier}(");
 
-            // Declare function
+            char delim = ' ';
+            foreach (var param in stub.StubParameters)
+            {
+                builder.Append($"{delim}{param.Type} {param.Name}");
+                delim = ',';
+            }
+
+            // End declare function
             builder.AppendLine(
-$@"{currentIndent}{userDeclaredMethod.Modifiers} {userDeclaredMethod.ReturnType} {userDeclaredMethod.Identifier}{newParameterList}
+$@")
 {currentIndent}{{");
 
             // Insert lines into function
@@ -164,7 +158,7 @@ $@"{ currentIndent}}}
             }
             else
             {
-                char delim = '(';
+                delim = '(';
                 foreach (var paramPair in stub.DllImportParameters)
                 {
                     builder.Append($"{delim}{paramPair.Type} {paramPair.Name}");

@@ -156,6 +156,22 @@ partial class Test
 ";
 
         /// <summary>
+        /// Declaration with basic parameters.
+        /// </summary>
+        public static readonly string BasicParametersAndModifiers = @"
+using System;
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method1(string s, IntPtr i, UIntPtr u);
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method2(in string s, ref IntPtr i, out UIntPtr u);
+}
+";
+
+        /// <summary>
         /// Declaration with default parameters.
         /// </summary>
         public static readonly string DefaultParameters = @"

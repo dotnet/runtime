@@ -30,6 +30,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>GENERATE_FORWARDER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
