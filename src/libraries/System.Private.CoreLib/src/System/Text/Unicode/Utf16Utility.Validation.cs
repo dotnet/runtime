@@ -90,7 +90,8 @@ namespace System.Text.Unicode
 
 
                     Vector128<byte> initialMask = Vector128.Create((ushort)0x1001).AsByte();
-                    Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80);
+                    Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80).AsByte();
+
                     do
                     {
                         Vector128<ushort> utf16Data;
