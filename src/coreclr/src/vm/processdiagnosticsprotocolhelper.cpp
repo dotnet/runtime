@@ -10,39 +10,15 @@
 
 #ifdef FEATURE_PERFTRACING
 
-static bool IsNullOrWhiteSpace(LPCWSTR value)
-{
-    if (value == nullptr)
-        return true;
-
-    while (*value)
-    {
-        if (!iswspace(*value))
-            return false;
-        ++value;
-    }
-    return true;
-}
-
-static inline uint32_t GetStringLength(const char *&value)
-{
-    return static_cast<uint32_t>(strlen(value) + 1);
-}
-
 static inline uint32_t GetStringLength(const WCHAR *&value)
 {
     return static_cast<uint32_t>(wcslen(value) + 1);
 }
 
-template <typename T>
-static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const T *&value)
+static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const WCHAR *&value)
 {
-    static_assert(
-        std::is_same<T, char>::value || std::is_same<T, WCHAR>::value,
-        "Can only be instantiated with char and WCHAR types.");
-
     uint32_t stringLen = GetStringLength(value);
-    S_UINT16 totalStringSizeInBytes(stringLen * sizeof(T) + sizeof(uint32_t));
+    S_UINT16 totalStringSizeInBytes(stringLen * sizeof(WCHAR) + sizeof(uint32_t));
     ASSERT(!totalStringSizeInBytes.IsOverflow());
     ASSERT(bufferLen >= totalStringSizeInBytes.Value());
     if (bufferLen < totalStringSizeInBytes.Value() || totalStringSizeInBytes.IsOverflow())
@@ -51,8 +27,8 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const T
     memcpy(bufferCursor, &stringLen, sizeof(stringLen));
     bufferCursor += sizeof(stringLen);
 
-    memcpy(bufferCursor, value, stringLen * sizeof(T));
-    bufferCursor += stringLen * sizeof(T);
+    memcpy(bufferCursor, value, stringLen * sizeof(WCHAR));
+    bufferCursor += stringLen * sizeof(WCHAR);
 
     bufferLen -= totalStringSizeInBytes.Value();
     return true;
@@ -174,10 +150,12 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
     payload.RuntimeCookie = DiagnosticsIpc::GetAdvertiseCookie_V1();
 
     DiagnosticsIpc::IpcMessage ProcessInfoResponse;
-    if (ProcessInfoResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload))
-        ProcessInfoResponse.Send(pStream);
-    else
+    const bool fSuccess = ProcessInfoResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
+        ProcessInfoResponse.Send(pStream) :
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
+
+    if (!fSuccess)
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, "Failed to send DiagnosticsIPC response");
 
     delete pStream;
 }
