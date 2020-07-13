@@ -172,7 +172,7 @@ pushd $EXECUTION_DIR >/dev/null
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
      have_sleep=$(which sleep)
-     if [ -x "$have_sleep" ] ; then
+     if [ -x "$have_sleep" ]; then
          echo Waiting a few seconds for any dump to be written..
           sleep 10s
      fi
