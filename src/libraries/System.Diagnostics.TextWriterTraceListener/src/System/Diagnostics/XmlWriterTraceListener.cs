@@ -263,7 +263,7 @@ namespace System.Diagnostics
                     using Process process = Process.GetCurrentProcess();
                     s_processName = processName = process.ProcessName;
                 }
-                catch (PlatformNotSupportedException)
+                catch (PlatformNotSupportedException) // Process isn't supported on Browser
                 {
                     s_processName = processName = string.Empty;
                 }

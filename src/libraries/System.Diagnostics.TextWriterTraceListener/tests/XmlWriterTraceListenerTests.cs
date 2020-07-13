@@ -25,7 +25,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                     _processName = process.ProcessName;
                 }
             }
-            catch (PlatformNotSupportedException)
+            catch (PlatformNotSupportedException) // Process isn't supported on Browser
             {
                 _processName = string.Empty;
             }
