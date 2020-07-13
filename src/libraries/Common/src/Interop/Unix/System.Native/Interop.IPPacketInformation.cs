@@ -17,6 +17,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]
+        [SuppressGCTransition]
         internal static extern int GetControlMessageBufferSize(bool isIPv4, bool isIPv6);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]

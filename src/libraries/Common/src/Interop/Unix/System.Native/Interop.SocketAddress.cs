@@ -10,30 +10,39 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPSocketAddressSizes")]
+        [SuppressGCTransition]
         internal static extern unsafe Error GetIPSocketAddressSizes(int* ipv4SocketAddressSize, int* ipv6SocketAddressSize);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAddressFamily")]
+        [SuppressGCTransition]
         internal static extern unsafe Error GetAddressFamily(byte* socketAddress, int socketAddressLen, int* addressFamily);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetAddressFamily")]
+        [SuppressGCTransition]
         internal static extern unsafe Error SetAddressFamily(byte* socketAddress, int socketAddressLen, int addressFamily);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPort")]
+        [SuppressGCTransition]
         internal static extern unsafe Error GetPort(byte* socketAddress, int socketAddressLen, ushort* port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPort")]
+        [SuppressGCTransition]
         internal static extern unsafe Error SetPort(byte* socketAddress, int socketAddressLen, ushort port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4Address")]
+        [SuppressGCTransition]
         internal static extern unsafe Error GetIPv4Address(byte* socketAddress, int socketAddressLen, uint* address);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv4Address")]
+        [SuppressGCTransition]
         internal static extern unsafe Error SetIPv4Address(byte* socketAddress, int socketAddressLen, uint address);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv6Address")]
+        [SuppressGCTransition]
         internal static extern unsafe Error GetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint* scopeId);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv6Address")]
+        [SuppressGCTransition]
         internal static extern unsafe Error SetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint scopeId);
     }
 }
