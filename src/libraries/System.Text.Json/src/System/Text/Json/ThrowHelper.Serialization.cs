@@ -475,9 +475,23 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataValueWasNotString(JsonValueKind valueKind)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataValueWasNotString, valueKind));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(ReadOnlySpan<byte> propertyName, ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
+            ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
+        {
             ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
         }
 
