@@ -302,7 +302,7 @@ if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_OSX)
         add_library(libunwind_dac
           OBJECT
-          mac/misc.c
+          ../../libunwind_mac/src/missing-functions.c
           ${libunwind_remote_la_SOURCES}
           ${libunwind_dwarf_common_la_SOURCES}
           ${libunwind_dwarf_generic_la_SOURCES}

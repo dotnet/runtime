@@ -87,7 +87,7 @@ if(CLR_CMAKE_HOST_UNIX)
         include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
         # files for macos compilation
-        include_directories(include/mac)
+        include_directories(../libunwind_mac/include)
     endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_UNIX)
