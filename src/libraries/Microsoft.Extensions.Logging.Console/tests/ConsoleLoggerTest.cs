@@ -29,9 +29,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
             ConsoleFormatterOptions systemdOptions = null,
             JsonConsoleFormatterOptions jsonOptions = null)
         {
-            var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
-            var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
-            var jsonMonitor = new FormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
+            var defaultMonitor = new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
+            var systemdMonitor = new TestFormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
+            var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
             var formatters = new List<ConsoleFormatter>() { 
                 new SimpleConsoleFormatter(defaultMonitor),
                 new SystemdConsoleFormatter(systemdMonitor),
@@ -241,8 +241,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(ConsoleFormatterNames.Simple, pickedFormatter);
                     Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
                     Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
-                    Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                    var formatter = (SimpleConsoleFormatter)(logger.Formatter);
+                    var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
                 }
                 break;
                 case ConsoleLoggerFormat.Systemd:
@@ -250,8 +249,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(ConsoleFormatterNames.Systemd, pickedFormatter);
                     Assert.Equal(ConsoleFormatterNames.Systemd, logger.Options.FormatterName);
                     Assert.Equal(ConsoleFormatterNames.Systemd, logger.Formatter.Name);
-                    Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                    var formatter = (SystemdConsoleFormatter)(logger.Formatter);
+                    var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
                 }
                 break;
                 default:

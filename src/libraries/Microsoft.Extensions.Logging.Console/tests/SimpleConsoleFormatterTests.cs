@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
     public class SimpleConsoleFormatterTests : ConsoleFormatterTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void WritingScopes_LogsWithCorrectColors()
+        public void Log_WritingScopes_LogsWithCorrectColors()
         {
             // Arrange
             var t = SetUp(
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void NoLogScope_DoesNotWriteAnyScopeContentToOutput()
+        public void Log_NoLogScope_DoesNotWriteAnyScopeContentToOutput()
         {
             // Arrange
             var t = SetUp(
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void LogsWhenMessageIsNotProvided_SingleLine()
+        public void Log_SingleLine_LogsWhenMessageIsNotProvided()
         {
             // Arrange
             var t = SetUp(

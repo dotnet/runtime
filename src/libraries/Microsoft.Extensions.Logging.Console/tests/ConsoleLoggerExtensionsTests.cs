@@ -6,8 +6,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -115,8 +117,7 @@ namespace Microsoft.Extensions.Logging.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.Equal("custom", logger.Options.FormatterName);
-            Assert.IsType<CustomFormatter>(logger.Formatter);
-            var formatter = (CustomFormatter)(logger.Formatter);
+            var formatter = Assert.IsType<CustomFormatter>(logger.Formatter);
             Assert.Equal("random", formatter.FormatterOptions.CustomLabel);
         }
 
@@ -157,10 +158,14 @@ namespace Microsoft.Extensions.Logging.Test
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
-        public void AddSimpleConsole_TimestampFormat_IsReadFromLoggingConfiguration()
+        public void AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
+                new KeyValuePair<string, string>("Console:FormatterOptions:DisableColors", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:SingleLine", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
             }).Build();
 
             var loggerProvider = new ServiceCollection()
@@ -174,17 +179,22 @@ namespace Microsoft.Extensions.Logging.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
-            Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-            var formatter = (SimpleConsoleFormatter)(logger.Formatter);
+            var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+            Assert.True(formatter.FormatterOptions.DisableColors);
+            Assert.True(formatter.FormatterOptions.SingleLine);
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
+            Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
+            Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
-        public void AddSystemdConsole_TimestampFormat_IsReadFromLoggingConfiguration()
+        public void AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
             }).Build();
 
             var loggerProvider = new ServiceCollection()
@@ -198,17 +208,21 @@ namespace Microsoft.Extensions.Logging.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.Equal(ConsoleFormatterNames.Systemd, logger.Options.FormatterName);
-            Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-            var formatter = (SystemdConsoleFormatter)(logger.Formatter);
+            var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
+            Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
+            Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
-        public void AddJsonConsole_TimestampFormat_IsReadFromLoggingConfiguration()
+        public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:JsonWriterOptions:Indented", "true"),
             }).Build();
 
             var loggerProvider = new ServiceCollection()
@@ -222,9 +236,46 @@ namespace Microsoft.Extensions.Logging.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.Equal(ConsoleFormatterNames.Json, logger.Options.FormatterName);
-            Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
-            var formatter = (JsonConsoleFormatter)(logger.Formatter);
+            var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
+            Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
+            Assert.True(formatter.FormatterOptions.IncludeScopes);
+            Assert.True(formatter.FormatterOptions.JsonWriterOptions.Indented);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
+        public void AddJsonConsole_OutsideConfig_TakesProperty()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
+                new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
+            }).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddJsonConsole(o => {
+                        o.JsonWriterOptions = new JsonWriterOptions()
+                        {
+                            Indented = false,
+                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                        };
+                    })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Equal(ConsoleFormatterNames.Json, logger.Options.FormatterName);
+            var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
+            Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
+            Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
+            Assert.True(formatter.FormatterOptions.IncludeScopes);
+            Assert.False(formatter.FormatterOptions.JsonWriterOptions.Indented);
+            Assert.Equal(JavaScriptEncoder.UnsafeRelaxedJsonEscaping, formatter.FormatterOptions.JsonWriterOptions.Encoder);
         }
 
         public static TheoryData<string> FormatterNames

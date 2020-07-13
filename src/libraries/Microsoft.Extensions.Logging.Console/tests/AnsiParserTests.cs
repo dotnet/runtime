@@ -39,22 +39,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(lastSegment, segments.Last().Message);
         }
 
-        public static TheoryData<ConsoleColor, ConsoleColor> Colors
-        {
-            get
-            {
-                var data = new TheoryData<ConsoleColor, ConsoleColor>();
-                foreach (ConsoleColor background in Enum.GetValues(typeof(ConsoleColor)))
-                {
-                    foreach (ConsoleColor foreground in Enum.GetValues(typeof(ConsoleColor)))
-                    {
-                        data.Add(background, foreground);
-                    }
-                }
-                return data;
-            }
-        }
-
         [Theory]
         [MemberData(nameof(Colors))]
         public void SetForeground_Parse_Success(ConsoleColor background, ConsoleColor foreground)
@@ -81,28 +65,54 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Assert
             Assert.Equal(1, segments.Count);
             Assert.Equal("Request received", segments[0].Message);
-            if (IsForegroundColorNotSupported(foreground))
-            {
-                Assert.Null(segments[0].ForegroundColor);
-            }
-            else
-            {
-                Assert.Equal(foreground, segments[0].ForegroundColor);
-            }
-            if (IsBackgroundColorNotSupported(background))
-            {
-                Assert.Null(segments[0].BackgroundColor);
-            }
-            else
-            {
-                Assert.Equal(background, segments[0].BackgroundColor);
-            }
+            VerifyForeground(foreground, segments[0]);
+            VerifyBackground(background, segments[0]);
         }
 
         [Fact]
         public void NullDelegate_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new AnsiParser(null));
+        }
+
+        public static TheoryData<ConsoleColor, ConsoleColor> Colors
+        {
+            get
+            {
+                var data = new TheoryData<ConsoleColor, ConsoleColor>();
+                foreach (ConsoleColor background in Enum.GetValues(typeof(ConsoleColor)))
+                {
+                    foreach (ConsoleColor foreground in Enum.GetValues(typeof(ConsoleColor)))
+                    {
+                        data.Add(background, foreground);
+                    }
+                }
+                return data;
+            }
+        }
+
+        private void VerifyBackground(ConsoleColor background, ConsoleContext segment)
+        {
+            if (IsBackgroundColorNotSupported(background))
+            {
+                Assert.Null(segment.BackgroundColor);
+            }
+            else
+            {
+                Assert.Equal(background, segment.BackgroundColor);
+            }
+        }
+
+        private void VerifyForeground(ConsoleColor foreground, ConsoleContext segment)
+        {
+            if (IsForegroundColorNotSupported(foreground))
+            {
+                Assert.Null(segment.ForegroundColor);
+            }
+            else
+            {
+                Assert.Equal(foreground, segment.ForegroundColor);
+            }
         }
 
         private class TestAnsiSystemConsole : IAnsiSystemConsole
