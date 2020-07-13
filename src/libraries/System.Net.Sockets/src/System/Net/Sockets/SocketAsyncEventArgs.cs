@@ -589,7 +589,7 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled() && _multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
             {
-                SocketsTelemetry.Log.ConnectFailed();
+                SocketsTelemetry.Log.ConnectFailed(socketError, null);
             }
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
@@ -738,7 +738,7 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed();
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed(socketError, null);
 
                         SetResults(socketError, bytesTransferred, flags);
                         _currentSocket!.UpdateStatusAfterSocketError(socketError);
