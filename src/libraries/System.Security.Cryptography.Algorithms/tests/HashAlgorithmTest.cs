@@ -11,6 +11,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     public abstract class HashAlgorithmTest
     {
         protected abstract HashAlgorithm Create();
+        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            bytesWritten = 0;
+            return false;
+        }
 
         protected void Verify(string input, string output)
         {
@@ -195,6 +200,23 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         {
             Verify_Array(input, output);
             Verify_Span(input, output);
+            Verify_OneShot(input, output);
+        }
+
+        private void Verify_OneShot(byte[] input, string output)
+        {
+            Span<byte> destination = stackalloc byte[1024 / 8];
+            ReadOnlySpan<byte> expected = ByteUtils.HexToByteArray(output);
+
+            // big enough
+            bool result = TryHashData(input, destination, out int bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(destination.Slice(0, bytesWritten)), "expected equals destination");
+
+            //too small
+            bool result = TryHashData(input, default, out int bytesWritten);
+            Assert.False(result, "TryHashData false");
+            Assert.Equal(0, bytesWritten);
         }
 
         private void Verify_Array(byte[] input, string output)
