@@ -9,8 +9,6 @@ namespace System.Runtime.InteropServices
     {
         private static string? s_osPlatformName;
         private static string? s_osDescription;
-        private static readonly Architecture s_osArch = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture());
-        private static readonly Architecture s_processArch = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture());
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
@@ -20,9 +18,9 @@ namespace System.Runtime.InteropServices
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
 
-        public static Architecture OSArchitecture => s_osArch;
+        public static Architecture OSArchitecture { get; } = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture());
 
-        public static Architecture ProcessArchitecture => s_processArch;
+        public static Architecture ProcessArchitecture { get; } = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture());
 
         private static Architecture Map(Interop.Sys.ProcessorArchitecture arch)
         {
