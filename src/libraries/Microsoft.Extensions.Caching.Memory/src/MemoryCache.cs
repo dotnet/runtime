@@ -213,6 +213,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     TriggerOvercapacityCompaction();
                 }
+                else
+                {
+                    // Entry could not be added due to being expired, reset cache size
+                    Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                }
 
                 entry.InvokeEvictionCallbacks();
                 if (priorEntry != null)
