@@ -15,6 +15,9 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
+        public static OSPlatform macOS { get; } = new OSPlatform("MACOS");
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
 
         public static OSPlatform iOS { get; } = new OSPlatform("IOS");
