@@ -61,7 +61,6 @@ namespace Internal.Cryptography
             }
         }
 
-
         private sealed class AppleHmacProvider : HashProvider
         {
             private readonly byte[] _key;
