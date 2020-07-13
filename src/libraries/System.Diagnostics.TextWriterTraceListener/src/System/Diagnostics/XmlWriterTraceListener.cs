@@ -258,8 +258,15 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                using Process process = Process.GetCurrentProcess();
-                s_processName = processName = process.ProcessName;
+                try
+                {
+                    using Process process = Process.GetCurrentProcess();
+                    s_processName = processName = process.ProcessName;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    s_processName = processName = string.Empty;
+                }
             }
 
             InternalWrite("\" />");
