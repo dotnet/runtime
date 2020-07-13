@@ -5,13 +5,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
     [ListBindable(false)]
     public sealed class DataTableMappingCollection : MarshalByRefObject, ITableMappingCollection
     {
-        private List<DataTableMapping> _items; // delay creation until AddWithoutEvents, Insert, CopyTo, GetEnumerator
+        private List<DataTableMapping>? _items; // delay creation until AddWithoutEvents, Insert, CopyTo, GetEnumerator
 
         public DataTableMappingCollection() { }
 
@@ -22,7 +23,7 @@ namespace System.Data.Common
         // explicit IList implementation
         bool IList.IsReadOnly => false;
         bool IList.IsFixedSize => false;
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return this[index]; }
             set
@@ -60,7 +61,7 @@ namespace System.Data.Common
             get
             {
                 RangeCheck(index);
-                return _items[index];
+                return _items![index];
             }
             set
             {
@@ -76,7 +77,7 @@ namespace System.Data.Common
             get
             {
                 int index = RangeCheck(sourceTable);
-                return _items[index];
+                return _items![index];
             }
             set
             {
@@ -85,7 +86,7 @@ namespace System.Data.Common
             }
         }
 
-        public int Add(object value)
+        public int Add(object? value)
         {
             ValidateType(value);
             Add((DataTableMapping)value);
@@ -130,10 +131,10 @@ namespace System.Data.Common
             }
         }
 
-        public DataTableMapping Add(string sourceTable, string dataSetTable) =>
+        public DataTableMapping Add(string? sourceTable, string? dataSetTable) =>
             Add(new DataTableMapping(sourceTable, dataSetTable));
 
-        private void AddWithoutEvents(DataTableMapping value)
+        private void AddWithoutEvents(DataTableMapping? value)
         {
             Validate(-1, value);
             value.Parent = this;
@@ -164,9 +165,9 @@ namespace System.Data.Common
             }
         }
 
-        public bool Contains(string value) => (-1 != IndexOf(value));
+        public bool Contains(string? value) => (-1 != IndexOf(value));
 
-        public bool Contains(object value) => (-1 != IndexOf(value));
+        public bool Contains(object? value) => (-1 != IndexOf(value));
 
         public void CopyTo(Array array, int index) => ((ICollection)ArrayList()).CopyTo(array, index);
 
@@ -179,19 +180,19 @@ namespace System.Data.Common
             {
                 throw ADP.TablesDataSetTable(dataSetTable);
             }
-            return _items[index];
+            return _items![index];
         }
 
         public IEnumerator GetEnumerator() => ArrayList().GetEnumerator();
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             if (null != value)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
                 {
-                    if (_items[i] == value)
+                    if (_items![i] == value)
                     {
                         return i;
                     }
@@ -200,13 +201,13 @@ namespace System.Data.Common
             return -1;
         }
 
-        public int IndexOf(string sourceTable)
+        public int IndexOf(string? sourceTable)
         {
             if (!string.IsNullOrEmpty(sourceTable))
             {
                 for (int i = 0; i < Count; ++i)
                 {
-                    string value = _items[i].SourceTable;
+                    string value = _items![i].SourceTable;
                     if ((null != value) && (0 == ADP.SrcCompare(sourceTable, value)))
                     {
                         return i;
@@ -216,13 +217,13 @@ namespace System.Data.Common
             return -1;
         }
 
-        public int IndexOfDataSetTable(string dataSetTable)
+        public int IndexOfDataSetTable(string? dataSetTable)
         {
             if (!string.IsNullOrEmpty(dataSetTable))
             {
                 for (int i = 0; i < Count; ++i)
                 {
-                    string value = _items[i].DataSetTable;
+                    string value = _items![i].DataSetTable;
                     if ((null != value) && (0 == ADP.DstCompare(dataSetTable, value)))
                     {
                         return i;
@@ -232,7 +233,7 @@ namespace System.Data.Common
             return -1;
         }
 
-        public void Insert(int index, object value)
+        public void Insert(int index, object? value)
         {
             ValidateType(value);
             Insert(index, (DataTableMapping)value);
@@ -286,7 +287,7 @@ namespace System.Data.Common
             _items.RemoveAt(index);
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             ValidateType(value);
             Remove((DataTableMapping)value);
@@ -313,12 +314,12 @@ namespace System.Data.Common
         private void Replace(int index, DataTableMapping newValue)
         {
             Validate(index, newValue);
-            _items[index].Parent = null;
+            _items![index].Parent = null;
             newValue.Parent = this;
             _items[index] = newValue;
         }
 
-        private void ValidateType(object value)
+        private void ValidateType([NotNull] object? value)
         {
             if (null == value)
             {
@@ -330,7 +331,7 @@ namespace System.Data.Common
             }
         }
 
-        private void Validate(int index, DataTableMapping value)
+        private void Validate(int index, [NotNull] DataTableMapping? value)
         {
             if (null == value)
             {
@@ -364,7 +365,7 @@ namespace System.Data.Common
             }
         }
 
-        internal void ValidateSourceTable(int index, string value)
+        internal void ValidateSourceTable(int index, string? value)
         {
             int pindex = IndexOf(value);
             if ((-1 != pindex) && (index != pindex))
@@ -375,14 +376,14 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataTableMapping GetTableMappingBySchemaAction(DataTableMappingCollection tableMappings, string sourceTable, string dataSetTable, MissingMappingAction mappingAction)
+        public static DataTableMapping? GetTableMappingBySchemaAction(DataTableMappingCollection? tableMappings, string sourceTable, string dataSetTable, MissingMappingAction mappingAction)
         {
             if (null != tableMappings)
             {
                 int index = tableMappings.IndexOf(sourceTable);
                 if (-1 != index)
                 {
-                    return tableMappings._items[index];
+                    return tableMappings._items![index];
                 }
             }
             if (string.IsNullOrEmpty(sourceTable))

@@ -13,5 +13,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />
     <!-- <Compile Include="System\Runtime\InteropServices\JavaScript\MapTests.cs" /> -->
+    <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
   </ItemGroup>
 </Project>

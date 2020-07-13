@@ -14,7 +14,7 @@ namespace System.Data
         internal readonly int _info = -1;
         internal int _argumentCount;
         internal const int initialCapacity = 1;
-        internal ExpressionNode[] _arguments;
+        internal ExpressionNode[]? _arguments;
 
         private static readonly Function[] s_funcs = new Function[] {
             new Function("Abs", FunctionId.Abs, typeof(object), true, false, 1, typeof(object), null, null),
@@ -37,7 +37,7 @@ namespace System.Data
             new Function("Avg", FunctionId.Avg, typeof(object), false, false, 1, null, null, null),
         };
 
-        internal FunctionNode(DataTable table, string name) : base(table)
+        internal FunctionNode(DataTable? table, string name) : base(table)
         {
             _name = name;
             for (int i = 0; i < s_funcs.Length; i++)
@@ -84,7 +84,7 @@ namespace System.Data
             {
                 if (_argumentCount != 2)
                     throw ExprException.FunctionArgumentCount(_name);
-                _arguments[0].Bind(table, list);
+                _arguments![0].Bind(table, list);
 
                 if (_arguments[1].GetType() == typeof(NameNode))
                 {
@@ -97,7 +97,7 @@ namespace System.Data
             {
                 for (int i = 0; i < _argumentCount; i++)
                 {
-                    _arguments[i].Bind(table, list);
+                    _arguments![i].Bind(table, list);
                 }
             }
         }
@@ -107,7 +107,7 @@ namespace System.Data
             return Eval(null, DataRowVersion.Default);
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             Debug.Assert(_info < s_funcs.Length && _info >= 0, "Invalid function info.");
 
@@ -121,14 +121,14 @@ namespace System.Data
                 if (_argumentCount != 2)
                     throw ExprException.FunctionArgumentCount(_name);
 
-                argumentValues[0] = _arguments[0].Eval(row, version);
+                argumentValues[0] = _arguments![0].Eval(row, version);
                 argumentValues[1] = GetDataType(_arguments[1]);
             }
             else if (s_funcs[_info]._id != FunctionId.Iif)
             { // We do not want to evaluate arguments of IIF, we will already do it in EvalFunction/ second point: we may go to div by 0
                 for (int i = 0; i < _argumentCount; i++)
                 {
-                    argumentValues[i] = _arguments[i].Eval(row, version);
+                    argumentValues[i] = _arguments![i].Eval(row, version);
 
                     if (s_funcs[_info]._isValidateArguments)
                     {
@@ -151,12 +151,12 @@ namespace System.Data
                             {
                                 if ((typeof(string) != (argumentValues[i].GetType())) && (typeof(SqlString) != (argumentValues[i].GetType())))
                                 {
-                                    throw ExprException.ArgumentType(s_funcs[_info]._name, i + 1, s_funcs[_info]._parameters[i]);
+                                    throw ExprException.ArgumentType(s_funcs[_info]._name, i + 1, s_funcs[_info]._parameters[i]!);
                                 }
                             }
                             else
                             {
-                                throw ExprException.ArgumentType(s_funcs[_info]._name, i + 1, s_funcs[_info]._parameters[i]);
+                                throw ExprException.ArgumentType(s_funcs[_info]._name, i + 1, s_funcs[_info]._parameters[i]!);
                             }
                         }
                     }
@@ -167,7 +167,7 @@ namespace System.Data
 
         internal override object Eval(int[] recordNos)
         {
-            throw ExprException.ComputeNotAggregate(ToString());
+            throw ExprException.ComputeNotAggregate(ToString()!);
         }
 
         internal override bool IsConstant()
@@ -180,7 +180,7 @@ namespace System.Data
 
             for (int i = 0; i < _argumentCount; i++)
             {
-                constant = constant && _arguments[i].IsConstant();
+                constant = constant && _arguments![i].IsConstant();
             }
 
             Debug.Assert(_info > -1, "All function nodes should be bound at this point.");  // default info is -1, it means if not bounded, it should be -1, not 0!!
@@ -192,7 +192,7 @@ namespace System.Data
         {
             for (int i = 0; i < _argumentCount; i++)
             {
-                if (!_arguments[i].IsTableConstant())
+                if (!_arguments![i].IsTableConstant())
                 {
                     return false;
                 }
@@ -204,7 +204,7 @@ namespace System.Data
         {
             for (int i = 0; i < _argumentCount; i++)
             {
-                if (_arguments[i].HasLocalAggregate())
+                if (_arguments![i].HasLocalAggregate())
                 {
                     return true;
                 }
@@ -216,7 +216,7 @@ namespace System.Data
         {
             for (int i = 0; i < _argumentCount; i++)
             {
-                if (_arguments[i].HasRemoteAggregate())
+                if (_arguments![i].HasRemoteAggregate())
                 {
                     return true;
                 }
@@ -228,7 +228,7 @@ namespace System.Data
         {
             for (int i = 0; i < _argumentCount; i++)
             {
-                if (_arguments[i].DependsOn(column))
+                if (_arguments![i].DependsOn(column))
                     return true;
             }
             return false;
@@ -238,7 +238,7 @@ namespace System.Data
         {
             for (int i = 0; i < _argumentCount; i++)
             {
-                _arguments[i] = _arguments[i].Optimize();
+                _arguments![i] = _arguments[i].Optimize();
             }
 
             Debug.Assert(_info > -1, "Optimizing unbound function "); // default info is -1, it means if not bounded, it should be -1, not 0!!
@@ -265,7 +265,7 @@ namespace System.Data
         private Type GetDataType(ExpressionNode node)
         {
             Type nodeType = node.GetType();
-            string typeName = null;
+            string? typeName = null;
 
             if (nodeType == typeof(NameNode))
             {
@@ -281,7 +281,7 @@ namespace System.Data
                 throw ExprException.ArgumentType(s_funcs[_info]._name, 2, typeof(Type));
             }
 
-            Type dataType = Type.GetType(typeName);
+            Type? dataType = Type.GetType(typeName);
 
             if (dataType == null)
             {
@@ -291,7 +291,7 @@ namespace System.Data
             return dataType;
         }
 
-        private object EvalFunction(FunctionId id, object[] argumentValues, DataRow row, DataRowVersion version)
+        private object EvalFunction(FunctionId id, object[] argumentValues, DataRow? row, DataRowVersion version)
         {
             StorageType storageType;
             switch (id)
@@ -333,7 +333,7 @@ namespace System.Data
 
                 case FunctionId.cStr:
                     Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
-                    return Convert.ToString(argumentValues[0], FormatProvider);
+                    return Convert.ToString(argumentValues[0], FormatProvider)!;
 
                 case FunctionId.Charindex:
                     Debug.Assert(_argumentCount == 2, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
@@ -355,7 +355,7 @@ namespace System.Data
                 case FunctionId.Iif:
                     Debug.Assert(_argumentCount == 3, "Invalid argument argumentCount: " + _argumentCount.ToString(FormatProvider));
 
-                    object first = _arguments[0].Eval(row, version);
+                    object first = _arguments![0].Eval(row, version);
 
                     if (DataExpression.ToBoolean(first) != false)
                     {
@@ -639,19 +639,20 @@ namespace System.Data
         internal readonly bool _isValidateArguments;
         internal readonly bool _isVariantArgumentList;
         internal readonly int _argumentCount;
-        internal readonly Type[] _parameters = new Type[] { null, null, null };
+        internal readonly Type?[] _parameters = new Type?[] { null, null, null };
 
+        // TODO: Unused, consider removing
         internal Function()
         {
-            _name = null;
+            _name = null!;
             _id = FunctionId.none;
-            _result = null;
+            _result = null!;
             _isValidateArguments = false;
             _argumentCount = 0;
         }
 
         internal Function(string name, FunctionId id, Type result, bool IsValidateArguments,
-                          bool IsVariantArgumentList, int argumentCount, Type a1, Type a2, Type a3)
+                          bool IsVariantArgumentList, int argumentCount, Type? a1, Type? a2, Type? a3)
         {
             _name = name;
             _id = id;

@@ -19,7 +19,7 @@ namespace System
 
         internal OperatingSystem(PlatformID platform, Version version, string? servicePack)
         {
-            if (platform < PlatformID.Win32S || platform > PlatformID.MacOSX)
+            if (platform < PlatformID.Win32S || platform > PlatformID.Other)
             {
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, SR.Format(SR.Arg_EnumIllegalVal, platform));
             }
@@ -65,6 +65,7 @@ namespace System
                         case PlatformID.Unix: os = "Unix "; break;
                         case PlatformID.Xbox: os = "Xbox "; break;
                         case PlatformID.MacOSX: os = "Mac OS X "; break;
+                        case PlatformID.Other: os = "Other"; break;
                         default:
                             Debug.Fail($"Unknown platform {_platform}");
                             os = "<unknown> "; break;

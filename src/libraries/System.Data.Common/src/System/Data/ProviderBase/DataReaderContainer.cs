@@ -15,7 +15,7 @@ namespace System.Data.ProviderBase
         {
             if (returnProviderSpecificTypes)
             {
-                DbDataReader providerSpecificDataReader = (dataReader as DbDataReader);
+                DbDataReader? providerSpecificDataReader = (dataReader as DbDataReader);
                 if (null != providerSpecificDataReader)
                 {
                     return new ProviderSpecificDataReader(dataReader, providerSpecificDataReader);

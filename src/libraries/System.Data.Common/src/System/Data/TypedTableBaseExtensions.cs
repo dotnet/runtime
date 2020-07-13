@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -91,6 +92,7 @@ namespace System.Data
             return new EnumerableRowCollection<TRow>(source as DataTable);
         }
 
+        [return: MaybeNull]
         public static TRow ElementAtOrDefault<TRow>(this TypedTableBase<TRow> source, int index) where TRow : DataRow
         {
             if ((index >= 0) && (index < source.Rows.Count))
