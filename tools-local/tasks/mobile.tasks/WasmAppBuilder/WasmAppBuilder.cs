@@ -29,8 +29,8 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
-    public ITaskItem[]? AssetSources { get; set; }
-    public ITaskItem[]? Assets { get; set; }
+    public ITaskItem[]? RemoteSources { get; set; }
+    public ITaskItem[]? ICUDataFiles { get; set; }
 
     Dictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
@@ -126,38 +126,33 @@ public class WasmAppBuilder : Task
             sw.WriteLine("\tvfs_prefix: \"managed\",");
             sw.WriteLine("\tdeploy_prefix: \"managed\",");
             sw.WriteLine("\tenable_debugging: 0,");
-            sw.WriteLine("\tassembly_list: [");
+            sw.WriteLine("\tassets: [");
             foreach (var assembly in _assemblies.Values)
             {
-                sw.Write("\t\t\"" + Path.GetFileName(assembly.Location) + "\"");
+                sw.Write($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }}");
                 sw.WriteLine(",");
             }
-            sw.WriteLine ("\t],");
-            sw.WriteLine("\tfiles_to_map: [");
             foreach (KeyValuePair<string, List<string>> keyValuePair in filesToMap)
             {
-                sw.WriteLine("\t{");
-                sw.WriteLine($"\t\tdirectory: \"{keyValuePair.Key}\",");
-                sw.WriteLine("\t\tfiles: [");
+                sw.WriteLine("\t\t{");
+                sw.WriteLine($"\t\t\tbehavior: \"vfs\",");
+                sw.WriteLine($"\t\t\tdirectory: \"{keyValuePair.Key}\",");
+                sw.WriteLine("\t\t\tfiles: [");
                 foreach (string file in keyValuePair.Value)
                 {
-                    sw.WriteLine($"\t\t\t\"{file}\",");
+                    sw.WriteLine($"\t\t\t\t\"{file}\",");
                 }
-                sw.WriteLine("\t\t],");
-                sw.WriteLine("\t},");
+                sw.WriteLine("\t\t\t],");
+                sw.WriteLine("\t\t},");
             }
+            foreach (var asset in ICUDataFiles!)
+                sw.Write($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: true }}");
             sw.WriteLine ("\t],");
 
-            if (AssetSources!.Length > 0) {
-                sw.WriteLine("\truntime_asset_sources: [");
-                foreach (var source in AssetSources!)
+            if (RemoteSources!.Length > 0) {
+                sw.WriteLine("\tremote_sources: [");
+                foreach (var source in RemoteSources!)
                     sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
-                sw.WriteLine ("],");
-            }
-            if (Assets!.Length > 0) {
-                sw.WriteLine("\truntime_assets: [");
-                foreach (var asset in Assets!)
-                    sw.WriteLine("\t\t\"" + asset.ItemSpec + "\", ");
                 sw.WriteLine ("],");
             }
             sw.WriteLine ("};");
