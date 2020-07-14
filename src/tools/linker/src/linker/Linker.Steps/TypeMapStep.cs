@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections.Generic;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -58,49 +57,23 @@ namespace Mono.Linker.Steps
 			if (!type.HasInterfaces)
 				return;
 
-			foreach (var @interface in type.Interfaces) {
-				var interfaceType = @interface.InterfaceType;
-				var iface = interfaceType.Resolve ();
-				if (iface == null || !iface.HasMethods)
-					continue;
-
-				foreach (MethodDefinition interfaceMethod in iface.Methods) {
-					if (TryMatchMethod (type, interfaceMethod) != null)
+			foreach (var interfaceImpl in type.GetInflatedInterfaces ()) {
+				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods ()) {
+					MethodDefinition resolvedInterfaceMethod = interfaceMethod.Resolve ();
+					if (resolvedInterfaceMethod == null)
 						continue;
+
+					MethodDefinition exactMatchOnType = TryMatchMethod (type, interfaceMethod);
+					if (exactMatchOnType != null) {
+						AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
+						continue;
+					}
 
 					var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
 					if (@base != null)
-						AnnotateMethods (interfaceMethod, @base, @interface);
-
-					if (interfaceType is GenericInstanceType genericInterfaceInstance) {
-						var genericContext = new Inflater.GenericContext (genericInterfaceInstance, null);
-						var baseInflated = GetBaseInflatedInterfaceMethodInTypeHierarchy (genericContext, type, interfaceMethod);
-						if (baseInflated != null)
-							Annotations.AddOverride (interfaceMethod, baseInflated, @interface);
-					}
+						AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
 				}
 			}
-		}
-
-		static MethodReference CreateGenericInstanceCandidate (Inflater.GenericContext context, TypeDefinition candidateType, MethodDefinition interfaceMethod)
-		{
-			var methodReference = new MethodReference (interfaceMethod.Name, interfaceMethod.ReturnType, candidateType) { HasThis = interfaceMethod.HasThis };
-
-			foreach (var genericMethodParameter in interfaceMethod.GenericParameters)
-				methodReference.GenericParameters.Add (new GenericParameter (genericMethodParameter.Name, methodReference));
-
-			if (interfaceMethod.ReturnType.IsGenericParameter || interfaceMethod.ReturnType.IsGenericInstance)
-				methodReference.ReturnType = Inflater.InflateType (context, interfaceMethod.ReturnType);
-
-			foreach (var p in interfaceMethod.Parameters) {
-				var parameterType = p.ParameterType;
-				if (parameterType.IsGenericParameter || parameterType.IsGenericInstance)
-					parameterType = Inflater.InflateType (context, parameterType);
-
-				methodReference.Parameters.Add (new ParameterDefinition (p.Name, p.Attributes, parameterType));
-			}
-
-			return methodReference;
 		}
 
 		void MapVirtualMethods (TypeDefinition type)
@@ -121,23 +94,11 @@ namespace Mono.Linker.Steps
 
 		void MapVirtualMethod (MethodDefinition method)
 		{
-			MapVirtualBaseMethod (method);
-			MapVirtualInterfaceMethod (method);
-		}
-
-		void MapVirtualBaseMethod (MethodDefinition method)
-		{
 			MethodDefinition @base = GetBaseMethodInTypeHierarchy (method);
 			if (@base == null)
 				return;
 
 			AnnotateMethods (@base, method);
-		}
-
-		void MapVirtualInterfaceMethod (MethodDefinition method)
-		{
-			foreach (MethodDefinition @base in GetBaseMethodsInInterfaceHierarchy (method))
-				AnnotateMethods (@base, method);
 		}
 
 		void MapOverrides (MethodDefinition method)
@@ -162,7 +123,7 @@ namespace Mono.Linker.Steps
 			return GetBaseMethodInTypeHierarchy (method.DeclaringType, method);
 		}
 
-		static MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodDefinition method)
+		static MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodReference method)
 		{
 			TypeReference @base = type.GetInflatedBaseType ();
 			while (@base != null) {
@@ -174,39 +135,6 @@ namespace Mono.Linker.Steps
 			}
 
 			return null;
-		}
-
-		static MethodDefinition GetBaseInflatedInterfaceMethodInTypeHierarchy (Inflater.GenericContext context, TypeDefinition type, MethodDefinition interfaceMethod)
-		{
-			TypeReference @base = type.GetInflatedBaseType ();
-			while (@base != null) {
-				var candidate = CreateGenericInstanceCandidate (context, @base.Resolve (), interfaceMethod);
-
-				MethodDefinition base_method = TryMatchMethod (@base, candidate);
-				if (base_method != null)
-					return base_method;
-
-				@base = @base.GetInflatedBaseType ();
-			}
-
-			return null;
-		}
-
-		static IEnumerable<MethodDefinition> GetBaseMethodsInInterfaceHierarchy (MethodDefinition method)
-		{
-			return GetBaseMethodsInInterfaceHierarchy (method.DeclaringType, method);
-		}
-
-		static IEnumerable<MethodDefinition> GetBaseMethodsInInterfaceHierarchy (TypeReference type, MethodDefinition method)
-		{
-			foreach (TypeReference @interface in type.GetInflatedInterfaces ()) {
-				MethodDefinition base_method = TryMatchMethod (@interface, method);
-				if (base_method != null)
-					yield return base_method;
-
-				foreach (MethodDefinition @base in GetBaseMethodsInInterfaceHierarchy (@interface, method))
-					yield return @base;
-			}
 		}
 
 		static MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)

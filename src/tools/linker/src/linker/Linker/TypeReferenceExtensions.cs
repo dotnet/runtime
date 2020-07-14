@@ -170,7 +170,7 @@ namespace Mono.Linker
 			return resolved?.DeclaringType;
 		}
 
-		public static IEnumerable<TypeReference> GetInflatedInterfaces (this TypeReference typeRef)
+		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef)
 		{
 			var typeDef = typeRef.Resolve ();
 
@@ -179,10 +179,10 @@ namespace Mono.Linker
 
 			if (typeRef is GenericInstanceType genericInstance) {
 				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return InflateGenericType (genericInstance, interfaceImpl.InterfaceType);
+					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType), interfaceImpl);
 			} else {
 				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return interfaceImpl.InterfaceType;
+					yield return (interfaceImpl.InterfaceType, interfaceImpl);
 			}
 		}
 
