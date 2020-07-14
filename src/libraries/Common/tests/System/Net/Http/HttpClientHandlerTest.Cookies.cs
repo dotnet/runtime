@@ -393,6 +393,63 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        // Default path should be calculated according to https://tools.ietf.org/html/rfc6265#section-5.1.4
+        [Fact]
+        public async Task GetAsync_NoPathDefined_CookieAddedWithDefaultPath()
+        {
+            await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
+            {
+                Uri requestUrl = new Uri(serverUrl + "path/sub");
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(requestUrl);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new HttpHeaderData[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1"),
+                        },
+                        s_simpleContent);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    CookieCollection collection = handler.CookieContainer.GetCookies(requestUrl);
+                    Cookie cookie = collection.Single();
+                    Assert.Equal("/path", cookie.Path);
+                }
+            });
+        }
+
+        // According to RFC6265, cookie path is not expected to match the request's path,
+        // these cookies should be accepted by the client.
+        [Fact]
+        public async Task GetAsync_CookiePathDoesNotMatchRequestPath_CookieAccepted()
+        {
+            await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
+            {
+                Uri requestUrl = new Uri(serverUrl + "original");
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(requestUrl);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new HttpHeaderData[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1; Path=/redirect"),
+                        },
+                        s_simpleContent);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    CookieCollection collection = handler.CookieContainer.GetCookies(new Uri(serverUrl + "redirect"));
+                    Cookie cookie = collection.Single();
+                    Assert.Equal("/redirect", cookie.Path);
+                }
+            });
+        }
+
         [Fact]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieUpdated()
         {
