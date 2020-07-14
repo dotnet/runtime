@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -16,7 +15,7 @@ namespace System.Data.ProviderBase
         {
             if (returnProviderSpecificTypes)
             {
-                DbDataReader providerSpecificDataReader = (dataReader as DbDataReader);
+                DbDataReader? providerSpecificDataReader = (dataReader as DbDataReader);
                 if (null != providerSpecificDataReader)
                 {
                     return new ProviderSpecificDataReader(dataReader, providerSpecificDataReader);

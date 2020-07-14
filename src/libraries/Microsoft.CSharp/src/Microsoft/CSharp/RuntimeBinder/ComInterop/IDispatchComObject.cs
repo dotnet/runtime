@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -271,7 +270,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return ComTypeDesc.GetMemberNames(dataOnly);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal override IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names)
         {
             if (names == null)
@@ -321,7 +319,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new IDispatchMetaObject(parameter, this);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
         {
             IntPtr pFuncDesc;

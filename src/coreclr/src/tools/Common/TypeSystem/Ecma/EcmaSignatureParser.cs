@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection.Metadata;
@@ -268,6 +267,8 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
+                // [TODO] Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == 9);
 
                 flags = (MethodSignatureFlags)signatureCallConv;
             }

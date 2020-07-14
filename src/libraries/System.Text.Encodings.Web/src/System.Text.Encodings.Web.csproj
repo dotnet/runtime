@@ -23,6 +23,7 @@
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>

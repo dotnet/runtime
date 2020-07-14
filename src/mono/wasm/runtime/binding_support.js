@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
@@ -762,6 +761,8 @@ var BindingSupportLib = {
 		},
 		
 		resolve_method_fqn: function (fqn) {
+			this.bindings_lazy_init ();
+			
 			var assembly = fqn.substring(fqn.indexOf ("[") + 1, fqn.indexOf ("]")).trim();
 			fqn = fqn.substring (fqn.indexOf ("]") + 1).trim();
 

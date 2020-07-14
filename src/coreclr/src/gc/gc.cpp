@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -80,8 +79,6 @@ int compact_ratio = 0;
 
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
-
-bool g_fFinalizerRunOnShutDown = false;
 
 #ifdef FEATURE_SVR_GC
 bool g_built_with_svr_gc = true;
@@ -12195,7 +12192,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 #endif //FEATURE_LOH_COMPACTION
 
             // must fit exactly or leave formattable space
-            if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
+            if ((diff == 0) || (diff >= (ptrdiff_t)Align (min_obj_size, align_const)))
             {
 #ifdef BACKGROUND_GC
                 cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
@@ -12407,7 +12404,7 @@ found_no_fit:
     return FALSE;
 }
 
-BOOL gc_heap::loh_a_fit_segment_end_p (int gen_number,
+BOOL gc_heap::uoh_a_fit_segment_end_p (int gen_number,
                                        size_t size,
                                        alloc_context* acontext,
                                        uint32_t flags,
@@ -12974,7 +12971,7 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 
     if (!a_fit_free_list_uoh_p (size, acontext, flags, align_const, gen_number))
     {
-        can_allocate = loh_a_fit_segment_end_p (gen_number, size,
+        can_allocate = uoh_a_fit_segment_end_p (gen_number, size,
                                                 acontext, flags, align_const,
                                                 commit_failed_p, oom_r);
 
@@ -19872,10 +19869,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
             int align_const = get_alignment_constant (i < uoh_start_generation);
 
             PREFIX_ASSUME(seg != NULL);
-            uint8_t*  o = max (heap_segment_mem (seg), min_add);
 
             while (seg)
             {
+                uint8_t*  o = max (heap_segment_mem (seg), min_add);
                 uint8_t*  end = heap_segment_allocated (seg);
 
                 while ((o < end) && (o <= max_add))
@@ -24126,17 +24123,24 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
     }
 
 #ifdef FEATURE_LOH_COMPACTION
-    if (loh_compacted_p)
+    if (settings.loh_compaction)
     {
         heap_segment* pSegment = seg_mapping_table_segment_of ((uint8_t*)old_address);
-        size_t flags = pSegment->flags;
-        if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
-            && !(flags & heap_segment_flags_readonly)
+#ifdef MULTIPLE_HEAPS
+        if (heap_segment_heap (pSegment)->loh_compacted_p)
+#else
+        if (loh_compacted_p)
 #endif
-            )
         {
-            *pold_address = old_address + loh_node_relocation_distance (old_address);
+            size_t flags = pSegment->flags;
+            if ((flags & heap_segment_flags_loh)
+#ifdef FEATURE_BASICFREEZE
+                && !(flags & heap_segment_flags_readonly)
+#endif
+                )
+            {
+                *pold_address = old_address + loh_node_relocation_distance (old_address);
+            }
         }
     }
 #endif //FEATURE_LOH_COMPACTION
@@ -37823,26 +37827,6 @@ size_t GCHeap::GetFinalizablePromotedCount()
 #endif //MULTIPLE_HEAPS
 }
 
-bool GCHeap::ShouldRestartFinalizerWatchDog()
-{
-    // This condition was historically used as part of the condition to detect finalizer thread timeouts
-    return gc_heap::gc_lock.lock != -1;
-}
-
-void GCHeap::SetFinalizeQueueForShutdown(bool fHasLock)
-{
-#ifdef MULTIPLE_HEAPS
-    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        gc_heap* hp = gc_heap::g_heaps [hn];
-        hp->finalize_queue->SetSegForShutDown(fHasLock);
-    }
-
-#else //MULTIPLE_HEAPS
-    pGenGCHeap->finalize_queue->SetSegForShutDown(fHasLock);
-#endif //MULTIPLE_HEAPS
-}
-
 //---------------------------------------------------------------------------
 // Finalized class tracking
 //---------------------------------------------------------------------------
@@ -37975,18 +37959,9 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     } CONTRACTL_END;
 
     EnterFinalizeLock();
+
     // Adjust gen
-    unsigned int dest = 0;
-
-    if (g_fFinalizerRunOnShutDown)
-    {
-        //put it in the finalizer queue and sort out when
-        //dequeueing
-        dest = FinalizerListSeg;
-    }
-
-    else
-        dest = gen_segment (gen);
+    unsigned int dest = gen_segment (gen);
 
     // Adjust boundary for segments so that GC will keep objects alive.
     Object*** s_i = &SegQueue (FreeList);
@@ -38042,24 +38017,9 @@ CFinalize::GetNextFinalizableObject (BOOL only_non_critical)
     Object* obj = 0;
     EnterFinalizeLock();
 
-retry:
     if (!IsSegEmpty(FinalizerListSeg))
     {
-        if (g_fFinalizerRunOnShutDown)
-        {
-            obj = *(SegQueueLimit (FinalizerListSeg)-1);
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem ((SegQueueLimit (FinalizerListSeg)-1),
-                          FinalizerListSeg, CriticalFinalizerListSeg);
-                goto retry;
-            }
-            else
-                --SegQueueLimit (FinalizerListSeg);
-        }
-        else
-            obj =  *(--SegQueueLimit (FinalizerListSeg));
-
+        obj =  *(--SegQueueLimit (FinalizerListSeg));
     }
     else if (!only_non_critical && !IsSegEmpty(CriticalFinalizerListSeg))
     {
@@ -38076,52 +38036,10 @@ retry:
     return obj;
 }
 
-void
-CFinalize::SetSegForShutDown(BOOL fHasLock)
-{
-    int i;
-
-    if (!fHasLock)
-        EnterFinalizeLock();
-    for (i = 0; i <= max_generation; i++)
-    {
-        unsigned int seg = gen_segment (i);
-        Object** startIndex = SegQueueLimit (seg)-1;
-        Object** stopIndex  = SegQueue (seg);
-        for (Object** po = startIndex; po >= stopIndex; po--)
-        {
-            Object* obj = *po;
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem (po, seg, CriticalFinalizerListSeg);
-            }
-            else
-            {
-                MoveItem (po, seg, FinalizerListSeg);
-            }
-        }
-    }
-    if (!fHasLock)
-        LeaveFinalizeLock();
-}
-
-void
-CFinalize::DiscardNonCriticalObjects()
-{
-    //empty the finalization queue
-    Object** startIndex = SegQueueLimit (FinalizerListSeg)-1;
-    Object** stopIndex  = SegQueue (FinalizerListSeg);
-    for (Object** po = startIndex; po >= stopIndex; po--)
-    {
-        MoveItem (po, FinalizerListSeg, FreeList);
-    }
-}
-
 size_t
 CFinalize::GetNumberFinalizableObjects()
 {
-    return SegQueueLimit (FinalizerListSeg) -
-        (g_fFinalizerRunOnShutDown ? m_Array : SegQueue(FinalizerListSeg));
+    return SegQueueLimit(FinalizerListSeg) - SegQueue(FinalizerListSeg);
 }
 
 void
@@ -38833,11 +38751,6 @@ bool GCHeap::IsConcurrentGCEnabled()
 #else
     return FALSE;
 #endif //BACKGROUND_GC
-}
-
-void GCHeap::SetFinalizeRunOnShutdown(bool value)
-{
-    g_fFinalizerRunOnShutDown = value;
 }
 
 void PopulateDacVars(GcDacVars *gcDacVars)

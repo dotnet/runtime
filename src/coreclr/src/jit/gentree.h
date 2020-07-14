@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -138,6 +137,20 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+#ifdef DEBUG
+/*****************************************************************************
+*
+*  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
+*  The values are such that they don't overlap with helper's or user function's handle.
+*/
+enum TargetHandleType : BYTE
+{
+    THT_Unknown                  = 2,
+    THT_GSCookieCheck            = 4,
+    THT_SetGSCookie              = 6,
+    THT_IntializeArrayIntrinsics = 8
+};
+#endif
 /*****************************************************************************/
 
 struct BasicBlock;
@@ -620,6 +633,12 @@ public:
         assert(_gtRegNum == reg);
     }
 
+    void ClearRegNum()
+    {
+        _gtRegNum = REG_NA;
+        INDEBUG(gtRegTag = GT_REGTAG_NONE;)
+    }
+
     // Copy the _gtRegNum/gtRegTag fields
     void CopyReg(GenTree* from);
     bool gtHasReg() const;
@@ -908,6 +927,8 @@ public:
 
 #define GTF_OVERFLOW                0x10000000 // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                                // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
+
+#define GTF_DIV_BY_CNS_OPT          0x80000000 // GT_DIV -- Uses the division by constant optimization to compute this division
 
 #define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
@@ -2840,6 +2861,19 @@ struct GenTreeOp : public GenTreeUnOp
         assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
     }
 
+    // returns true if we will use the division by constant optimization for this node.
+    bool UsesDivideByConstOptimized(Compiler* comp);
+
+    // checks if we will use the division by constant optimization this node
+    // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
+    void CheckDivideByConstOptimized(Compiler* comp);
+
+    // True if this node is marked as using the division by constant optimization
+    bool MarkedDivideByConstOptimized() const
+    {
+        return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeOp() : GenTreeUnOp(), gtOp2(nullptr)
     {
@@ -2958,6 +2992,12 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
     FieldSeqNode* gtFieldSeq;
+
+#ifdef DEBUG
+    // If the value represents target address, holds the method handle to that target which is used
+    // to fetch target method name and display in the disassembled code.
+    size_t gtTargetHandle = 0;
+#endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))

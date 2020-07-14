@@ -2,10 +2,13 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />

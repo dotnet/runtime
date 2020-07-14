@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit.Abstractions;
 
@@ -39,6 +38,12 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SyncHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
         public SyncHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
+    }
+
+    public sealed class SyncHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
+    {
+        public SyncHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
     }
 

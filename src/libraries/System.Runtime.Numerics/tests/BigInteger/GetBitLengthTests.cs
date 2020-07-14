@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -37,7 +36,12 @@ namespace System.Numerics.Tests
             // Random cases
             VerifyLoopGetBitLength(random, true);
             VerifyLoopGetBitLength(random, false);
+        }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // OOM on browser due to large array allocations
+        public static void RunGetBitLengthTestsLarge()
+        {
             // Very large cases
             VerifyGetBitLength(BigInteger.One << 32 << int.MaxValue, int.MaxValue + 32L + 1, 1);
             VerifyGetBitLength(BigInteger.One << 64 << int.MaxValue, int.MaxValue + 64L + 1, 1);

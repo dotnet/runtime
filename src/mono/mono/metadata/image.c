@@ -46,6 +46,7 @@
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/w32process-internals.h>
+#include <mono/metadata/debug-internals.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -832,21 +833,17 @@ mono_image_init (MonoImage *image)
 #define SWAPPDE(x)
 #endif
 
-/*
- * Returns < 0 to indicate an error.
- */
-static int
-do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
+static int 
+do_load_header_internal (const char *raw_data, guint32 raw_data_len, MonoDotNetHeader *header, int offset, gboolean image_is_module_handle)
 {
 	MonoDotNetHeader64 header64;
-
 #ifdef HOST_WIN32
-	if (!m_image_is_module_handle (image))
+	if (!image_is_module_handle)
 #endif
-	if (offset + sizeof (MonoDotNetHeader32) > image->raw_data_len)
+	if (offset + sizeof (MonoDotNetHeader32) > raw_data_len)
 		return -1;
 
-	memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
+	memcpy (header, raw_data + offset, sizeof (MonoDotNetHeader));
 
 	if (header->pesig [0] != 'P' || header->pesig [1] != 'E' || header->pesig [2] || header->pesig [3])
 		return -1;
@@ -884,7 +881,7 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 		/* PE32+ file format */
 		if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader64) - sizeof (MonoCOFFHeader) - 4))
 			return -1;
-		memcpy (&header64, image->raw_data + offset, sizeof (MonoDotNetHeader64));
+		memcpy (&header64, raw_data + offset, sizeof (MonoDotNetHeader64));
 		offset += sizeof (MonoDotNetHeader64);
 		/* copy the fields already swapped. the last field, pe_data_size, is missing */
 		memcpy (&header64, header, sizeof (MonoDotNetHeader) - 4);
@@ -961,12 +958,92 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
  	SWAPPDE (header->datadir.pe_cli_header);
 	SWAPPDE (header->datadir.pe_reserved);
 
+	return offset;
+}
+/*
+ * Returns < 0 to indicate an error.
+ */
+static int
+do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
+{
+	offset = do_load_header_internal (image->raw_data, image->raw_data_len, header, offset, 
+#ifdef HOST_WIN32
+	m_image_is_module_handle (image));
+#else
+	FALSE);
+#endif	
+
 #ifdef HOST_WIN32
 	if (m_image_is_module_handle (image))
 		image->storage->raw_data_len = header->nt.pe_image_size;
 #endif
-
 	return offset;
+}
+
+mono_bool 
+mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
+{
+	MonoDotNetHeader cli_header;
+	MonoMSDOSHeader msdos;
+	int idx;
+	guint8 *data;
+
+	int offset = 0;
+	memcpy (&msdos, raw_data + offset, sizeof (msdos));
+	
+	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z')) {
+		return FALSE;
+	}
+	
+	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
+
+	offset = msdos.pe_offset;
+
+	int ret = do_load_header_internal (raw_data, raw_data_len, &cli_header, offset, FALSE);
+	if ( ret >= 0 ) {
+		MonoPEDirEntry *debug_dir_entry = (MonoPEDirEntry *) &cli_header.datadir.pe_debug;
+		ImageDebugDirectory debug_dir;
+		if (!debug_dir_entry->size)
+			return FALSE;
+		else {
+			const int top = cli_header.coff.coff_sections;
+			int addr = debug_dir_entry->rva;
+			int i = 0;
+			for (i = 0; i < top; i++){
+				MonoSectionTable t;
+
+				if (ret + sizeof (MonoSectionTable) > raw_data_len) {
+					return FALSE;
+				}
+				
+				memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
+				ret += sizeof (MonoSectionTable);
+
+		#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+				t.st_virtual_address = GUINT32_FROM_LE (t.st_virtual_address);
+				t.st_raw_data_size = GUINT32_FROM_LE (t.st_raw_data_size);
+				t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
+		#endif
+				/* consistency checks here */
+				if ((addr >= t.st_virtual_address) &&
+					(addr < t.st_virtual_address + t.st_raw_data_size)){
+					addr = addr - t.st_virtual_address + t.st_raw_data_ptr;
+					break;
+				}
+			}
+			for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+				data = (guint8 *) ((ImageDebugDirectory *) (raw_data + addr) + idx);
+				debug_dir.characteristics = read32(data);
+				debug_dir.time_date_stamp = read32(data + 4);
+				debug_dir.major_version   = read16(data + 8);
+				debug_dir.minor_version   = read16(data + 10);
+				debug_dir.type            = read32(data + 12);
+				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_REPRODUCIBLE)
+					return TRUE;
+			}
+		}
+	}
+	return FALSE;
 }
 
 gboolean
@@ -991,6 +1068,7 @@ pe_image_load_pe_data (MonoImage *image)
 #endif
 	if (offset + sizeof (msdos) > image->raw_data_len)
 		goto invalid_image;
+
 	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
 	
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -144,12 +143,10 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync() =>
@@ -470,7 +467,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
@@ -553,7 +550,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
                 throw;
             }
         }
@@ -710,7 +707,7 @@ namespace System.Net.Http
             if (task == null)
             {
                 var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
                 throw e;
             }
         }

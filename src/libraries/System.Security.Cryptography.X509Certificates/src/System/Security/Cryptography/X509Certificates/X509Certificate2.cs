@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
@@ -75,6 +74,37 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Certificate2"/> class from certificate data.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to process.
+        /// </param>
+        /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
+        public X509Certificate2(ReadOnlySpan<byte> rawData)
+            : base(rawData)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509Certificate2"/> class from certificate data,
+        ///   a password, and key storage flags.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to process.
+        /// </param>
+        /// <param name="password">
+        ///   The password required to access the certificate data.
+        /// </param>
+        /// <param name="keyStorageFlags">
+        ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
+        /// </param>
+        /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
+        public X509Certificate2(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
+            : base(rawData, password, keyStorageFlags)
+        {
+        }
+
         public X509Certificate2(IntPtr handle)
             : base(handle)
         {
@@ -109,6 +139,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
+            : base(fileName, password, keyStorageFlags)
+        {
+        }
+
+        public X509Certificate2(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(fileName, password, keyStorageFlags)
         {
         }
@@ -348,6 +383,23 @@ namespace System.Security.Cryptography.X509Certificates
         public static X509ContentType GetCertContentType(byte[] rawData)
         {
             if (rawData == null || rawData.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
+
+            return X509Pal.Instance.GetCertContentType(rawData);
+        }
+
+        /// <summary>
+        ///   Indicates the type of certificate contained in the provided data.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The data to identify.
+        /// </param>
+        /// <returns>
+        ///   One of the enumeration values that indicate the content type of the provided data.
+        /// </returns>
+        public static X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
+        {
+            if (rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
 
             return X509Pal.Instance.GetCertContentType(rawData);
@@ -888,8 +940,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (label.SequenceEqual(PemLabels.X509Certificate))
                 {
-                    // We verify below that every byte is written to.
-                    byte[] certBytes = GC.AllocateUninitializedArray<byte>(fields.DecodedDataLength);
+                    byte[] certBytes = CryptoPool.Rent(fields.DecodedDataLength);
 
                     if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
                         || bytesWritten != fields.DecodedDataLength)
@@ -898,19 +949,24 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                     }
 
+                    ReadOnlyMemory<byte> certData = new ReadOnlyMemory<byte>(certBytes, 0, bytesWritten);
+
                     try
                     {
                         // Check that the contents are actually an X509 DER encoded
                         // certificate, not something else that the constructor will
                         // will otherwise be able to figure out.
-                        CertificateAsn.Decode(certBytes, AsnEncodingRules.DER);
+                        CertificateAsn.Decode(certData, AsnEncodingRules.DER);
                     }
                     catch (CryptographicException)
                     {
                         throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                     }
 
-                    return new X509Certificate2(certBytes);
+                    X509Certificate2 ret = new X509Certificate2(certData.Span);
+                    // Certs are public data, no need to clear.
+                    CryptoPool.Return(certBytes, clearSize: 0);
+                    return ret;
                 }
             }
 

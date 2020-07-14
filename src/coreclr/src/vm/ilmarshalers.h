@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILMarshalers.h
 //
@@ -1597,15 +1596,14 @@ class ILCopyMarshalerBase : public ILMarshaler
     }
 };
 
-template <CorElementType ELEMENT_TYPE, class PROMOTED_ELEMENT>
+template <CorElementType ELEMENT_TYPE, class PROMOTED_ELEMENT, UINT32 NATIVE_SIZE>
 class ILCopyMarshalerSimple : public ILCopyMarshalerBase
 {
 public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(PROMOTED_ELEMENT),
-        c_CLRSize               = sizeof(PROMOTED_ELEMENT),
+        c_nativeSize            = NATIVE_SIZE,
     };
 
     bool IsSmallValueTypeSpecialCase()
@@ -1617,11 +1615,11 @@ public:
         //
 
         return (ELEMENT_TYPE ==
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
                     ELEMENT_TYPE_I8
-#else // HOST_64BIT
+#else // TARGET_64BIT
                     ELEMENT_TYPE_I4
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
                     ) && (NULL != m_pargs->m_pMT);
     }
 
@@ -1744,15 +1742,15 @@ public:
     }
 };
 
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I1, INT_PTR>  ILCopyMarshaler1;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U1, UINT_PTR> ILCopyMarshalerU1;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I2, INT_PTR>  ILCopyMarshaler2;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U2, UINT_PTR> ILCopyMarshalerU2;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I4, INT_PTR>  ILCopyMarshaler4;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U4, UINT_PTR> ILCopyMarshalerU4;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I8, INT64>    ILCopyMarshaler8;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_R4, float>    ILFloatMarshaler;
-typedef ILCopyMarshalerSimple<ELEMENT_TYPE_R8, double>   ILDoubleMarshaler;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I1, INT_PTR,  TARGET_POINTER_SIZE> ILCopyMarshaler1;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U1, UINT_PTR, TARGET_POINTER_SIZE> ILCopyMarshalerU1;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I2, INT_PTR,  TARGET_POINTER_SIZE> ILCopyMarshaler2;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U2, UINT_PTR, TARGET_POINTER_SIZE> ILCopyMarshalerU2;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I4, INT_PTR,  TARGET_POINTER_SIZE> ILCopyMarshaler4;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_U4, UINT_PTR, TARGET_POINTER_SIZE> ILCopyMarshalerU4;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_I8, INT64,    8>                   ILCopyMarshaler8;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_R4, float,    4>                   ILFloatMarshaler;
+typedef ILCopyMarshalerSimple<ELEMENT_TYPE_R8, double,   8>                   ILDoubleMarshaler;
 
 template <BinderClassID CLASS__ID, class PROMOTED_ELEMENT>
 class ILCopyMarshalerKnownStruct : public ILCopyMarshalerBase
@@ -1762,7 +1760,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(PROMOTED_ELEMENT),
-        c_CLRSize               = sizeof(PROMOTED_ELEMENT),
     };
 
     virtual void EmitReInitNative(ILCodeStream* pslILEmit)
@@ -1791,7 +1788,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = VARIABLESIZE,
-        c_CLRSize               = VARIABLESIZE,
     };
 
     virtual void EmitReInitNative(ILCodeStream* pslILEmit)
@@ -1817,8 +1813,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -1834,8 +1829,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -1911,7 +1905,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(BOOL),
-        c_CLRSize               = sizeof(INT8),
     };
 
 protected:
@@ -1941,7 +1934,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(BYTE),
-        c_CLRSize               = sizeof(INT8),
     };
 
 protected:
@@ -1972,7 +1964,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(VARIANT_BOOL),
-        c_CLRSize               = sizeof(INT8),
     };
 
 protected:
@@ -2023,8 +2014,7 @@ public:
 	enum
 	{
 		c_fInOnly = FALSE,
-		c_nativeSize = sizeof(void *),
-		c_CLRSize = sizeof(OBJECTREF),
+		c_nativeSize = TARGET_POINTER_SIZE,
 	};
 
 	enum
@@ -2052,8 +2042,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2081,8 +2070,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2118,8 +2106,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(LPVOID),
-        c_CLRSize               = sizeof(HANDLEREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     LocalDesc GetManagedType()
@@ -2163,8 +2150,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(LPVOID),
-        c_CLRSize               = sizeof(SAFEHANDLE),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     LocalDesc GetManagedType() override
@@ -2206,8 +2192,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(LPVOID),
-        c_CLRSize               = sizeof(CRITICALHANDLE),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 public:
@@ -2251,7 +2236,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = VARIABLESIZE,
-        c_CLRSize               = VARIABLESIZE,
     };
 
 protected:
@@ -2271,8 +2255,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_CLRSize               = sizeof(OBJECTREF),
-        c_nativeSize            = sizeof(VARIANT),
+        c_nativeSize            = TARGET_POINTER_SIZE * 2 + 8, // sizeof(VARIANT)
     };
 
 protected:
@@ -2293,7 +2276,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(DATE),
-        c_CLRSize               = sizeof(INT64),
     };
 
 protected:
@@ -2312,7 +2294,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(CURRENCY),
-        c_CLRSize               = sizeof(DECIMAL),
     };
 
 protected:
@@ -2331,8 +2312,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -2353,7 +2333,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(UINT8),
-        c_CLRSize               = sizeof(UINT16),
     };
 
 protected:
@@ -2371,8 +2350,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(ELEMENT *),
-        c_CLRSize               = sizeof(ELEMENT),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     bool SupportsFieldMarshal(UINT* pErrorResID) override
@@ -2487,7 +2465,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = sizeof(OLE_COLOR),
-        c_CLRSize               = sizeof(SYSTEMCOLOR),
     };
 
 protected:
@@ -2503,8 +2480,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(BSTR),
-        c_CLRSize               = sizeof(OBJECTREF*),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2544,8 +2520,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(LPSTR),
-        c_CLRSize               = sizeof(OBJECTREF *),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     ILVBByValStrMarshaler() :
@@ -2577,8 +2552,7 @@ public:
 	enum
 	{
 		c_fInOnly = TRUE,
-		c_nativeSize = sizeof(void *),
-		c_CLRSize = sizeof(OBJECTREF),
+		c_nativeSize = TARGET_POINTER_SIZE,
 	};
 
 	enum
@@ -2605,8 +2579,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2662,8 +2635,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2690,8 +2662,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     enum
@@ -2718,8 +2689,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -2738,7 +2708,6 @@ public:
     {
         c_fInOnly = FALSE,
         c_nativeSize = VARIABLESIZE,
-        c_CLRSize = sizeof(OBJECTREF)
     };
 
     bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID) override
@@ -2775,7 +2744,6 @@ public:
     {
         c_fInOnly = FALSE,
         c_nativeSize = VARIABLESIZE,
-        c_CLRSize = sizeof(OBJECTREF)
     };
 
     bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID) override
@@ -2810,8 +2778,7 @@ class ILLayoutClassPtrMarshalerBase : public ILMarshaler
 public:
     enum
     {
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -2863,7 +2830,6 @@ public:
     {
         c_fInOnly = FALSE,
         c_nativeSize = VARIABLESIZE,
-        c_CLRSize = sizeof(OBJECTREF),
     };
 
     LocalDesc GetNativeType() override
@@ -2894,7 +2860,6 @@ public:
     {
         c_fInOnly = FALSE,
         c_nativeSize = VARIABLESIZE,
-        c_CLRSize = sizeof(OBJECTREF),
     };
 
     LocalDesc GetNativeType() override
@@ -2919,7 +2884,6 @@ public:
     {
         c_fInOnly               = TRUE,
         c_nativeSize            = VARIABLESIZE,
-        c_CLRSize               = sizeof(OBJECTREF),
     };
 
     LocalDesc GetManagedType()
@@ -2953,8 +2917,11 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(va_list),
-        c_CLRSize               = sizeof(VARARGS),
+#ifdef TARGET_64BIT
+        c_nativeSize            = 24, // sizeof(va_list)
+#else
+        c_nativeSize            = 4,  // sizeof(va_list)
+#endif
     };
 
 protected:
@@ -2974,8 +2941,7 @@ public:
     enum
     {
         c_fInOnly               = FALSE,
-        c_nativeSize            = sizeof(LPVOID),
-        c_CLRSize               = sizeof(ArrayWithOffsetData),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     ILArrayWithOffsetMarshaler() :
@@ -3006,8 +2972,7 @@ class ILAsAnyMarshalerBase : public ILMarshaler
 public:
     enum
     {
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
 protected:
@@ -3093,8 +3058,7 @@ class ILMngdMarshaler : public ILMarshaler
 public:
     enum
     {
-        c_nativeSize            = sizeof(void *),
-        c_CLRSize               = sizeof(OBJECTREF),
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
     ILMngdMarshaler(BinderMethodID space2Man,
@@ -3462,7 +3426,6 @@ public:
     BYTE            m_nolowerbounds;
 };
 #endif // FEATURE_COMINTEROP
-
 
 class ILReferenceCustomMarshaler : public ILMngdMarshaler
 {

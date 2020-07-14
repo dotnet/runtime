@@ -41,6 +41,8 @@
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Runtime\Intrinsics\Intrinsics.Shims.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Utf8Extensions.Portable.cs" />
     <Compile Include="System\Utf8String.Portable.cs" />
@@ -106,6 +108,9 @@
              Link="System\Text\Utf8Span.Manipulation.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs"
              Link="System\Text\Utf8Span.Searching.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Buffers" />

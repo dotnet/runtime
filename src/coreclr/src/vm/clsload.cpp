@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: clsload.cpp
 //
@@ -3261,7 +3260,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 }
             }
 
-            // We really don't need this check anymore.
             if (rank > MAX_RANK)
             {
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);

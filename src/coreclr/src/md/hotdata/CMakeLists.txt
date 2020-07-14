@@ -44,3 +44,7 @@ if(CLR_CMAKE_HOST_WIN32)
   add_library_clr(mdhotdata-staticcrt ${MDHOTDATA_SOURCES})
   target_precompile_header(TARGET mdhotdata-staticcrt HEADER external.h)
 endif(CLR_CMAKE_HOST_WIN32)
+
+add_library_clr(mdhotdata_ppdb ${MDHOTDATA_SOURCES})
+target_compile_definitions(mdhotdata_ppdb PRIVATE FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_precompile_header(TARGET mdhotdata_ppdb HEADER external.h)

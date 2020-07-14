@@ -1,5 +1,4 @@
-<Project DefaultTargets="Build">
-  <Import Project="Directory.Build.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Build">
 
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
@@ -38,6 +37,10 @@
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
@@ -84,9 +87,14 @@
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 
-    <!-- We build LLVM bits for x64 without C++11 ABI -->
-    <ItemGroup Condition="'$(HostArch)' == 'x64' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
+    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    </ItemGroup>
+
+    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
+      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
 
     <!-- tvOS device specific options -->
@@ -637,7 +645,10 @@
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
       <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,$(_MonoEnableMinimal)"/>
       <_MonoCFLAGS Include="-fexceptions" />
-      <_MonoCXXFLAGS Include="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0" />
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-fexceptions" />
+      <_MonoCXXFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-s DISABLE_EXCEPTION_CATCHING=0" />
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
 
       <!-- AOT cross-compiler configuration -->
@@ -921,11 +932,8 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
-  <Import Project="Directory.Build.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -18,7 +17,7 @@ namespace Internal.Cryptography.Pal.Windows
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
         internal static DecryptorPalWindows Decode(
-            byte[] encodedMessage,
+            ReadOnlySpan<byte> encodedMessage,
             out int version,
             out ContentInfo contentInfo,
             out AlgorithmIdentifier contentEncryptionAlgorithm,
@@ -30,8 +29,14 @@ namespace Internal.Cryptography.Pal.Windows
             if (hCryptMsg == null || hCryptMsg.IsInvalid)
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-            if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedMessage, encodedMessage.Length, fFinal: true))
+            if (!Interop.Crypt32.CryptMsgUpdate(
+                hCryptMsg,
+                ref MemoryMarshal.GetReference(encodedMessage),
+                encodedMessage.Length,
+                fFinal: true))
+            {
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
             CryptMsgType cryptMsgType = hCryptMsg.GetMessageType();
             if (cryptMsgType != CryptMsgType.CMSG_ENVELOPED)

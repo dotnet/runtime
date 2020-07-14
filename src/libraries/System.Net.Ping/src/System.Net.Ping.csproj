@@ -2,10 +2,13 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Ping</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Ping_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
     <Compile Include="System\Net\NetworkInformation\NetEventSource.Ping.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.cs" />
@@ -13,31 +16,25 @@
     <Compile Include="System\Net\NetworkInformation\PingException.cs" />
     <Compile Include="System\Net\NetworkInformation\PingOptions.cs" />
     <Compile Include="System\Net\NetworkInformation\PingReply.cs" />
-  </ItemGroup>
-  <!-- System.Net Common -->
-  <ItemGroup>
+    <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\ByteOrder.cs"
              Link="Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
              Link="Common\System\Net\SocketAddress.cs" />
-  </ItemGroup>
-  <!-- Logging -->
-  <ItemGroup>
+    <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
-  </ItemGroup>
-  <!-- System.Net.Internals -->
-  <ItemGroup>
+    <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
              Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\IcmpV6MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
@@ -66,8 +63,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
