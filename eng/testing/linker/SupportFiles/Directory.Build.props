@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
-    <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+    <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PlatformManifestFile />
