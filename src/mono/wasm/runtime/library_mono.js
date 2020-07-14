@@ -148,9 +148,8 @@ var MonoSupportLib = {
 			var numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
 			var ptr = Module._malloc(numBytes);
 			var heapBytes = new Int32Array(Module.HEAP32.buffer, ptr, numBytes);
-			for (let i=0; i<var_list.length; i++) {
-				heapBytes[i] = var_list[i]
-			}
+			for (let i=0; i<var_list.length; i++)
+				heapBytes[i] = var_list[i];
 
 			this._async_method_objectId = 0;
 			this.mono_wasm_get_var_info (scope, heapBytes.byteOffset, var_list.length);
@@ -613,7 +612,7 @@ var MonoSupportLib = {
 					break;
 
 				default:
-					throw new Error ("Unrecognized asset behavior:", asset.behavior);
+					throw new Error ("Unrecognized asset behavior:", asset.behavior, "for asset", asset.name);
 			}
 
 			if (asset.behavior === "assembly")
@@ -629,7 +628,7 @@ var MonoSupportLib = {
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
 		//    vfs_prefix: (required)
-		//    deploy_prefix: (required)
+		//    deploy_prefix: (required) the subfolder containing managed assemblies and pdbs
 		//    enable_debugging: (required)
 		//    assets: (required) a list of assets to load along with the runtime. each asset
 		//     is a dictionary-style Object with the following properties:
@@ -664,8 +663,16 @@ var MonoSupportLib = {
 		//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
 		//      "invariant": operate in invariant globalization mode.
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-
 		mono_load_runtime_and_bcl_args: function (args) {
+			try {
+				return this._load_assets_and_runtime (args);
+			} catch (exc) {
+				console.error ("error in mono_load_runtime_and_bcl_args:", exc);
+				throw exc;
+			}
+		},
+
+		_load_assets_and_runtime: function (args) {
 			if (args.assembly_list)
 				throw new Error ("Invalid args (assembly_list was replaced by assets)");
 			if (args.runtime_assets)
@@ -685,7 +692,7 @@ var MonoSupportLib = {
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
 				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
-				loaded_assets: Object.create (),
+				loaded_assets: Object.create (null),
 				num_icu_assets_loaded_successfully: 0
 			};
 
@@ -698,6 +705,9 @@ var MonoSupportLib = {
 					var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
 					console.log ("MONO_WASM: Initializing mono runtime");
+
+					this._globalization_init (args, ctx);
+
 					if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 						try {
 							load_runtime (args.vfs_prefix, args.enable_debugging);
@@ -723,7 +733,7 @@ var MonoSupportLib = {
 				try {
 					MONO._handle_loaded_asset (ctx, asset, blob);
 				} catch (exc) {
-					console.log ("Unhandled exception in processFetchResponseBuffer", exc);
+					console.error ("Unhandled exception in processFetchResponseBuffer", exc);
 					throw exc;
 				} finally {
 					onPendingRequestComplete ();
@@ -736,11 +746,16 @@ var MonoSupportLib = {
 				var sourcesList = asset.load_remote ? args.remote_sources : [""];
 
 				var handleFetchResponse = function (response) {
-					if (!response.ok) {
-						attemptNextSource ();
-					} else {
-						var bufferPromise = response ['arrayBuffer'] ();
-						bufferPromise.then (processFetchResponseBuffer.bind (this, asset));
+					try {
+						if (!response.ok) {
+							attemptNextSource ();
+						} else {
+							var bufferPromise = response ['arrayBuffer'] ();
+							bufferPromise.then (processFetchResponseBuffer.bind (this, asset));
+						}
+					} catch (exc) {
+						console.error ("Unhandled exception in handleFetchResponse", exc);
+						throw exc;
 					}
 				};
 
@@ -768,11 +783,15 @@ var MonoSupportLib = {
 						sourcePrefix = "";
 
 					var attemptUrl;
-					// FIXME: Unify this
-					if (sourcePrefix.trim() === "")
-						attemptUrl = locateFile (args.deploy_prefix + "/" + asset.name);
-					else
+					if (sourcePrefix.trim() === "") {
+						// FIXME: Disgusting magic to match old search behavior
+						if (asset.behavior === "assembly")
+							attemptUrl = locateFile (args.deploy_prefix + "/" + asset.name);
+						else
+							attemptUrl = asset.name;
+					} else {
 						attemptUrl = sourcePrefix + asset.name;
+					}
 
 					try {
 						console.log ("Attempting to load", asset.name, "from", attemptUrl);
@@ -788,26 +807,20 @@ var MonoSupportLib = {
 			});
 		},
 
-		_globalization_init: function (args, assets) {
+		_globalization_init: function (args, ctx) {
 			var invariantMode = false;
 
 			if (args.globalization_mode === "invariant")
 				invariantMode = true;
 
 			if (!invariantMode) {
-				var icudt = assets ["icudt.dat"];
-
-				if (icudt) {
-					console.log ("MONO_WASM: Loading ICU data archive icudt.dat");
-					var ;
-					var result = mono_wasm_load_icu_data (icudt[0]);
-					if (result !== 1)
-						console.log ("MONO_WASM: mono_wasm_load_icu_data returned", result);
+				if (ctx.num_icu_assets_loaded_successfully > 0) {
+					console.log ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (args.globalization_mode !== "icu") {
-					console.log ("MONO_WASM: icudt.dat not present, using invariant globalization mode");
+					console.log ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
 					invariantMode = true;
 				} else {
-					console.log ("MONO_WASM: ERROR: icudt.dat not found and invariant globalization mode is inactive.");
+					console.error ("MONO_WASM: ERROR: invariant globalization mode is inactive and no ICU data archives were loaded.");
 				}
 			}
 
@@ -815,8 +828,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_get_loaded_files: function() {
-			console.log(">>>mono_wasm_get_loaded_files");
-			return this.loaded_files;
+			throw new Error("not implemented");
 		},
 
 		mono_wasm_clear_all_breakpoints: function() {
