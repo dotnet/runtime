@@ -2051,7 +2051,7 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
         public override string ToString() { throw null; }
-        public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
+        public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
     public abstract partial class DbDataAdapter : System.Data.Common.DataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
@@ -2404,7 +2404,7 @@ namespace System.Data.Common
         public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
         public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
         public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
-        public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
+        public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
         public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
     public abstract partial class DbProviderFactory
