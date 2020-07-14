@@ -2323,7 +2323,7 @@ namespace System.Net.Sockets
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed((SocketError)castedAsyncResult.ErrorCode, ex);
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
 
                 if (ex == null)
                 {
@@ -4128,6 +4128,8 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
         {
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(socketAddress);
+
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 
             // Throw an appropriate SocketException if the native call fails.

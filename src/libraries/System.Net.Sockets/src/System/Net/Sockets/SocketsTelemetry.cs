@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
 
@@ -39,12 +38,11 @@ namespace System.Net.Sockets
         }
 
         [Event(3, Level = EventLevel.Error)]
-        public void ConnectFailed(SocketError error, Exception? exception)
+        public void ConnectFailed(SocketError error, string? exceptionMessage)
         {
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
-                string message = exception?.Message ?? string.Empty;
-                WriteEvent(eventId: 3, (int)error, message);
+                WriteEvent(eventId: 3, (int)error, exceptionMessage ?? string.Empty);
                 ConnectStopInternal();
             }
         }
