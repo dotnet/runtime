@@ -51,7 +51,7 @@ public:
     // IPC event handlers.
     static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
     static void GetProcessInfo(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
-    static void ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
+    static void ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
 };
 
 #endif // FEATURE_PERFTRACING
