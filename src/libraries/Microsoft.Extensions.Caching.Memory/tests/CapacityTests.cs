@@ -345,11 +345,12 @@ namespace Microsoft.Extensions.Caching.Memory
         public void TryingToAddExpiredEntryDoesNotIncreaseCacheSize()
         {
             var testClock = new TestClock();
-            var cache = new MemoryCache(new MemoryCacheOptions {Clock = testClock, SizeLimit = 10});
+            var cache = new MemoryCache(new MemoryCacheOptions { Clock = testClock, SizeLimit = 10 });
 
             var entryOptions = new MemoryCacheEntryOptions
             {
-                Size = 5, AbsoluteExpiration = testClock.UtcNow.Add(TimeSpan.FromMinutes(-1))
+                Size = 5,
+                AbsoluteExpiration = testClock.UtcNow.Add(TimeSpan.FromMinutes(-1))
             };
 
             cache.Set("key", "value", entryOptions);
@@ -361,11 +362,12 @@ namespace Microsoft.Extensions.Caching.Memory
         [Fact]
         public void TryingToAddEntryWithExpiredTokenDoesNotIncreaseCacheSize()
         {
-            var cache = new MemoryCache(new MemoryCacheOptions {SizeLimit = 10});
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
             var testExpirationToken = new TestExpirationToken { HasChanged = true };
             var entryOptions = new MemoryCacheEntryOptions
             {
-                Size = 5, ExpirationTokens = { testExpirationToken }
+                Size = 5,
+                ExpirationTokens = { testExpirationToken }
             };
 
             cache.Set("key", "value", entryOptions);
