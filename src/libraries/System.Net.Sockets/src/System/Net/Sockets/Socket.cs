@@ -22,10 +22,19 @@ namespace System.Net.Sockets
 
         private SafeSocketHandle _handle;
 
-        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
+        // RightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
-        internal EndPoint? _rightEndPoint;
-        private EndPoint? _localEndPoint; // Cached LocalEndPoint value. Should be cleared on any _rightEndPoint change
+        private EndPoint? _rightEndPoint;
+        internal EndPoint? RightEndPoint
+        {
+            get { return _rightEndPoint; }
+            private set
+            {
+                _rightEndPoint = value;
+                _localEndPoint = null;
+            }
+        }
+        private EndPoint? _localEndPoint; // Cached LocalEndPoint value. Should be cleared on any RightEndPoint change
         internal EndPoint? _remoteEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
@@ -44,7 +53,7 @@ namespace System.Net.Sockets
         private bool _nonBlockingConnectInProgress;
 
         // Keep track of the kind of endpoint used to do a non-blocking connect, so we can set
-        // it to _rightEndPoint when we discover we're connected.
+        // it to RightEndPoint when we discover we're connected.
         private EndPoint? _nonBlockingConnectRightEndPoint;
 
         // These are constants initialized by constructor.
@@ -161,7 +170,7 @@ namespace System.Net.Sockets
                 switch (_addressFamily)
                 {
                     case AddressFamily.InterNetwork:
-                        _rightEndPoint = new IPEndPoint(
+                        RightEndPoint = new IPEndPoint(
                             new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
                             SocketAddressPal.GetPort(buffer));
                         break;
@@ -169,21 +178,20 @@ namespace System.Net.Sockets
                     case AddressFamily.InterNetworkV6:
                         Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                         SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
-                        _rightEndPoint = new IPEndPoint(
+                        RightEndPoint = new IPEndPoint(
                             new IPAddress(address, scope),
                             SocketAddressPal.GetPort(buffer));
                         break;
 
                     case AddressFamily.Unix:
                         socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
-                        _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                        RightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
                         break;
                 }
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
 
                 // Try to determine if we're connected, based on querying for a peer, just as we would in RemoteEndPoint,
                 // but ignoring any failures; this is best-effort (RemoteEndPoint also does a catch-all around the Create call).
-                if (_rightEndPoint != null)
+                if (RightEndPoint != null)
                 {
                     try
                     {
@@ -316,19 +324,18 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = _nonBlockingConnectRightEndPoint;
                     _nonBlockingConnectInProgress = false;
                 }
 
                 if (_localEndPoint == null)
                 {
-                    if (_rightEndPoint == null)
+                    if (RightEndPoint == null)
                     {
                         return null;
                     }
 
-                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(RightEndPoint);
 
                     unsafe
                     {
@@ -343,7 +350,7 @@ namespace System.Net.Sockets
                             }
                         }
                     }
-                    _localEndPoint = _rightEndPoint.Create(socketAddress);
+                    _localEndPoint = RightEndPoint.Create(socketAddress);
                 }
 
                 return _localEndPoint;
@@ -363,20 +370,19 @@ namespace System.Net.Sockets
                     {
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
-                        _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                        _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                        RightEndPoint = _nonBlockingConnectRightEndPoint;
                         _nonBlockingConnectInProgress = false;
                     }
 
-                    if (_rightEndPoint == null || !_isConnected)
+                    if (RightEndPoint == null || !_isConnected)
                     {
                         return null;
                     }
 
                     Internals.SocketAddress socketAddress =
                         _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
-                            IPEndPointExtensions.Serialize(_rightEndPoint) :
-                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size than _rightEndPoint.
+                            IPEndPointExtensions.Serialize(RightEndPoint) :
+                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size than RightEndPoint.
 
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
@@ -391,7 +397,7 @@ namespace System.Net.Sockets
 
                     try
                     {
-                        _remoteEndPoint = _rightEndPoint.Create(socketAddress);
+                        _remoteEndPoint = RightEndPoint.Create(socketAddress);
                     }
                     catch
                     {
@@ -475,8 +481,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = _nonBlockingConnectRightEndPoint;
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -515,7 +520,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return (_rightEndPoint != null);
+                return (RightEndPoint != null);
             }
         }
 
@@ -835,11 +840,10 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = endPointSnapshot;
             }
         }
 
@@ -1072,7 +1076,7 @@ namespace System.Net.Sockets
 
             ThrowIfDisposed();
 
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -1092,7 +1096,7 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddress =
                 _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
-                    IPEndPointExtensions.Serialize(_rightEndPoint) :
+                    IPEndPointExtensions.Serialize(RightEndPoint) :
                     new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size.
 
             // This may throw ObjectDisposedException.
@@ -1113,7 +1117,7 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, RightEndPoint.Create(socketAddress));
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
             return socket;
         }
@@ -1331,11 +1335,10 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = remoteEP;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, size);
@@ -1529,7 +1532,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -1569,11 +1572,10 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
                     // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = endPointSnapshot;
                 }
             }
 
@@ -1609,7 +1611,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -1654,11 +1656,10 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
                     // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = endPointSnapshot;
                 }
             }
 
@@ -2078,7 +2079,7 @@ namespace System.Net.Sockets
             // Unix sockets are not supported by ConnectEx.
 
             return (_socketType == SocketType.Stream) &&
-                   (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint)) &&
+                   (RightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint)) &&
                    (remoteEP.AddressFamily != AddressFamily.Unix);
         }
 
@@ -2686,7 +2687,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
-            EndPoint? oldEndPoint = _rightEndPoint;
+            EndPoint? oldEndPoint = RightEndPoint;
             EndPoint? oldLocalEndPoint = _localEndPoint;
 
             // Guarantee to call CheckAsyncCallOverlappedResult if we call SetUnamangedStructures with a cache in order to
@@ -2694,10 +2695,9 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketError.SocketError;
             try
             {
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
-                    _rightEndPoint = endPointSnapshot;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = endPointSnapshot;
                 }
 
                 errorCode = SocketPal.SendToAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
@@ -2706,7 +2706,7 @@ namespace System.Net.Sockets
             }
             catch (ObjectDisposedException)
             {
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
                 throw;
             }
@@ -2716,7 +2716,7 @@ namespace System.Net.Sockets
             {
                 UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
 
                 throw new SocketException((int)errorCode);
@@ -3033,7 +3033,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -3045,7 +3045,7 @@ namespace System.Net.Sockets
             asyncResult.StartPostingAsyncOp(false);
 
             // Start the ReceiveFrom.
-            EndPoint oldEndPoint = _rightEndPoint;
+            EndPoint oldEndPoint = RightEndPoint;
             EndPoint? oldLocalEndPoint = _localEndPoint;
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
@@ -3063,10 +3063,9 @@ namespace System.Net.Sockets
 
                 SetReceivingPacketInformation();
 
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
-                    _rightEndPoint = remoteEP;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = remoteEP;
                 }
 
                 errorCode = SocketPal.ReceiveMessageFromAsync(this, _handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
@@ -3088,7 +3087,7 @@ namespace System.Net.Sockets
             }
             catch (ObjectDisposedException)
             {
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
                 throw;
             }
@@ -3098,7 +3097,7 @@ namespace System.Net.Sockets
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
                 // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
 
                 throw new SocketException((int)errorCode);
@@ -3233,7 +3232,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -3271,7 +3270,7 @@ namespace System.Net.Sockets
 
         private void DoBeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OriginalAddressOverlappedAsyncResult asyncResult)
         {
-            EndPoint? oldEndPoint = _rightEndPoint;
+            EndPoint? oldEndPoint = RightEndPoint;
             EndPoint? oldLocalEndPoint = _localEndPoint;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
@@ -3284,10 +3283,9 @@ namespace System.Net.Sockets
                 // Save a copy of the original EndPoint in the asyncResult.
                 asyncResult.SocketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
-                    _rightEndPoint = endPointSnapshot;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = endPointSnapshot;
                 }
 
                 errorCode = SocketPal.ReceiveFromAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
@@ -3296,7 +3294,7 @@ namespace System.Net.Sockets
             }
             catch (ObjectDisposedException)
             {
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
                 throw;
             }
@@ -3306,7 +3304,7 @@ namespace System.Net.Sockets
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
                 // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
 
                 throw new SocketException((int)errorCode);
@@ -3448,7 +3446,7 @@ namespace System.Net.Sockets
 
         private void DoBeginAccept(Socket? acceptSocket, int receiveSize, AcceptOverlappedAsyncResult asyncResult)
         {
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -3463,7 +3461,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
 
-            int socketAddressSize = GetAddressSize(_rightEndPoint);
+            int socketAddressSize = GetAddressSize(RightEndPoint);
             SocketError errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
@@ -3580,7 +3578,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
             }
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
@@ -3687,12 +3685,11 @@ namespace System.Net.Sockets
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
                 // Save the old RightEndPoint and prep new RightEndPoint.
-                EndPoint? oldEndPoint = _rightEndPoint;
+                EndPoint? oldEndPoint = RightEndPoint;
                 EndPoint? oldLocalEndPoint = _localEndPoint;
-                if (_rightEndPoint == null)
+                if (RightEndPoint == null)
                 {
-                    _rightEndPoint = endPointSnapshot;
-                    _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                    RightEndPoint = endPointSnapshot;
                 }
 
                 // Prepare for the native call.
@@ -3715,7 +3712,7 @@ namespace System.Net.Sockets
                 }
                 catch
                 {
-                    _rightEndPoint = oldEndPoint;
+                    RightEndPoint = oldEndPoint;
                     _localEndPoint = oldLocalEndPoint;
 
                     // Clear in-use flag on event args object.
@@ -4032,12 +4029,11 @@ namespace System.Net.Sockets
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
-            EndPoint? oldEndPoint = _rightEndPoint;
+            EndPoint? oldEndPoint = RightEndPoint;
             EndPoint? oldLocalEndPoint = _localEndPoint;
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
-                _rightEndPoint = endPointSnapshot;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = endPointSnapshot;
             }
 
             SocketError socketError;
@@ -4047,8 +4043,7 @@ namespace System.Net.Sockets
             }
             catch
             {
-                _rightEndPoint = null;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
@@ -4056,7 +4051,7 @@ namespace System.Net.Sockets
 
             if (!CheckErrorAndUpdateStatus(socketError))
             {
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
             }
 
@@ -4166,11 +4161,10 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
                 // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
@@ -4333,7 +4327,7 @@ namespace System.Net.Sockets
             {
                 // DualMode: When bound to IPv6Any you must enable both socket options.
                 // When bound to an IPv4 mapped IPv6 address you must enable the IPv4 socket option.
-                IPEndPoint? ipEndPoint = _rightEndPoint as IPEndPoint;
+                IPEndPoint? ipEndPoint = RightEndPoint as IPEndPoint;
                 IPAddress? boundAddress = (ipEndPoint != null ? ipEndPoint.Address : null);
                 Debug.Assert(boundAddress != null, "Not Bound");
                 if (_addressFamily == AddressFamily.InterNetwork)
@@ -4548,12 +4542,11 @@ namespace System.Net.Sockets
                 asyncResult.StartPostingAsyncOp(false);
             }
 
-            EndPoint? oldEndPoint = _rightEndPoint;
+            EndPoint? oldEndPoint = RightEndPoint;
             EndPoint? oldLocalEndPoint = _localEndPoint;
-            if (_rightEndPoint == null)
+            if (RightEndPoint == null)
             {
-                _rightEndPoint = endPointSnapshot;
-                _localEndPoint = null; // clear cached value, if any, after _rightEndPoint change
+                RightEndPoint = endPointSnapshot;
             }
 
             SocketError errorCode;
@@ -4563,8 +4556,8 @@ namespace System.Net.Sockets
             }
             catch
             {
-                // _rightEndPoint will always equal oldEndPoint.
-                _rightEndPoint = oldEndPoint;
+                // RightEndPoint will always equal oldEndPoint.
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
                 throw;
             }
@@ -4581,7 +4574,7 @@ namespace System.Net.Sockets
             {
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
+                RightEndPoint = oldEndPoint;
                 _localEndPoint = oldLocalEndPoint;
 
                 throw new SocketException((int)errorCode);
@@ -4803,8 +4796,7 @@ namespace System.Net.Sockets
             socket._addressFamily = _addressFamily;
             socket._socketType = _socketType;
             socket._protocolType = _protocolType;
-            socket._rightEndPoint = _rightEndPoint;
-            socket._localEndPoint = null;
+            socket.RightEndPoint = RightEndPoint;
             socket._remoteEndPoint = remoteEP;
 
             // The socket is connected.

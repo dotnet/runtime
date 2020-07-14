@@ -351,7 +351,7 @@ namespace System.Net.Sockets
             System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
             _acceptSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
-                _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                _currentSocket.RightEndPoint!.Create(remoteSocketAddress));
             return SocketError.Success;
         }
 

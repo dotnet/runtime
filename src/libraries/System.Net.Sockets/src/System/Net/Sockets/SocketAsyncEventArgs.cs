@@ -523,7 +523,7 @@ namespace System.Net.Sockets
             // AcceptEx needs a single buffer that's the size of two native sockaddr buffers with 16
             // extra bytes each. It can also take additional buffer space in front of those special
             // sockaddr structures that can be filled in with initial data coming in on a connection.
-            _acceptAddressBufferCount = 2 * (Socket.GetAddressSize(_currentSocket!._rightEndPoint!) + 16);
+            _acceptAddressBufferCount = 2 * (Socket.GetAddressSize(_currentSocket!.RightEndPoint!) + 16);
 
             // If our caller specified a buffer (willing to get received data with the Accept) then
             // it needs to be large enough for the two special sockaddr buffers that AcceptEx requires.
@@ -681,13 +681,13 @@ namespace System.Net.Sockets
             {
                 case SocketAsyncOperation.Accept:
                     // Get the endpoint.
-                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!._rightEndPoint!);
+                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!.RightEndPoint!);
 
                     socketError = FinishOperationAccept(remoteSocketAddress);
 
                     if (socketError == SocketError.Success)
                     {
-                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket.RightEndPoint!.Create(remoteSocketAddress));
 
                         if (NetEventSource.Log.IsEnabled())
                         {
