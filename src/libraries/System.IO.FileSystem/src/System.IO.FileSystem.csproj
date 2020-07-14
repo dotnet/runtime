@@ -3,7 +3,7 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -172,8 +172,8 @@
     <Compile Include="System\IO\FileSystem.Windows.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
   </ItemGroup>
-  <!-- Unix files -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <!-- Linux, FreeBSD, Browser files -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
@@ -222,13 +222,74 @@
              Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
-    <Compile Include="System\IO\FileStatus.Unix.cs" />
+    <Compile Include="System\IO\FileStatus.OtherUnix.cs" />
     <Compile Include="System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
   </ItemGroup>
-  <!-- Unix references -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <!-- Linux, FreeBSD, Browser references -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsBrowser)' == 'true'">
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <!-- OSX files -->
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs"
+             Link="Common\Interop\Unix\Interop.MountPoints.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
+             Link="Common\Interop\Unix\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\Interop.Read.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadDir.cs"
+             Link="Common\Interop\Unix\Interop.ReadDir.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
+             Link="Common\Interop\Unix\Interop.Unlink.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Unix.cs"
+             Link="Common\System\IO\DriveInfoInternal.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs"
+             Link="System\IO\PathInternal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs"
+             Link="Common\Interop\Unix\Interop.ChMod.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs"
+             Link="Common\Interop\Unix\Interop.CopyFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs"
+             Link="Common\Interop\Unix\Interop.GetEGid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs"
+             Link="Common\Interop\Unix\Interop.LChflags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs"
+             Link="Common\Interop\Unix\Interop.Link.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs"
+             Link="Common\Interop\Unix\Interop.MkDir.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Rename.cs"
+             Link="Common\Interop\Unix\Interop.Rename.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RmDir.cs"
+             Link="Common\Interop\Unix\Interop.RmDir.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs"
+             Link="Common\Interop\Unix\Interop.Stat.Span.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UTimensat.cs"
+             Link="Common\Interop\Unix\Interop.UTimensat.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs"
+             Link="Interop\OSX\Interop.libobjc.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
+    <Compile Include="System\IO\FileStatus.OSX.cs" />
+    <Compile Include="System\IO\FileSystem.Exists.Unix.cs" />
+    <Compile Include="System\IO\FileSystem.Unix.cs" />
+    <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
+  </ItemGroup>
+  <!-- OSX references -->
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>
