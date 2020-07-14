@@ -47,6 +47,18 @@ build_test_wrappers()
     fi
 }
 
+build_mono_aot()
+{
+    __RuntimeFlavor="mono"
+    __MonoBinDir="$__RootBinDir/bin/mono/$__TargetOS.$__BuildArch.$__BuildType"
+    __Exclude="${__ProjectDir}/tests/issues.targets"
+    __TestBinDir="$__TestWorkingDir"
+    CORE_ROOT="$__TestBinDir"/Tests/Core_Root
+    export __Exclude
+    export CORE_ROOT
+    build_MSBuild_projects "Tests_MonoAot" "$__ProjectDir/tests/src/runtest.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
+}
+
 generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
@@ -608,6 +620,12 @@ handle_arguments_local() {
         excludemonofailures|-excludemonofailures)
             __Mono=1
             ;;
+
+        mono_aot|-mono_aot)
+            __Mono=1
+            __MonoAot=1
+            ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -661,6 +679,8 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __priority1=
+__Mono=0
+__MonoAot=0
 CORE_ROOT=
 
 source "$__ProjectRoot"/_build-commons.sh
@@ -703,10 +723,12 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers
+elif [[ "$__MonoAot" -eq 1 ]]; then
+    build_mono_aot
 else
     generate_layout
 fi

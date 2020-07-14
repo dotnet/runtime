@@ -25,7 +25,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
@@ -35,34 +35,58 @@ namespace System.Text.Json
                 declaredPropertyType,
                 runtimePropertyType,
                 runtimeClassType,
-                propertyInfo,
+                memberInfo,
                 converter,
                 ignoreCondition,
                 options);
 
-            if (propertyInfo != null)
+            switch (memberInfo)
             {
-                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                case PropertyInfo propertyInfo:
+                    {
+                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
 
-                MethodInfo? getMethod = propertyInfo.GetMethod;
-                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                }
+                        MethodInfo? getMethod = propertyInfo.GetMethod;
+                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        }
 
-                MethodInfo? setMethod = propertyInfo.SetMethod;
-                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                }
-            }
-            else
-            {
-                IsForClassInfo = true;
-                HasGetter = true;
-                HasSetter = true;
+                        MethodInfo? setMethod = propertyInfo.SetMethod;
+                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        }
+
+                        break;
+                    }
+
+                case FieldInfo fieldInfo:
+                    {
+                        Debug.Assert(fieldInfo.IsPublic);
+
+                        HasGetter = true;
+                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                        if (!fieldInfo.IsInitOnly)
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        IsForClassInfo = true;
+                        HasGetter = true;
+                        HasSetter = true;
+
+                        break;
+                    }
             }
 
             GetPolicies(ignoreCondition);
