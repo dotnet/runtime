@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Inlining Support
 //
@@ -541,6 +540,8 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
 
 struct InlArgInfo
 {
+    unsigned __int64 bbFlags;             // basic block flags that need to be added when replacing GT_RET_EXPR
+                                          // with argNode
     GenTree* argNode;                     // caller node for this argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number

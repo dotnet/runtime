@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4196,6 +4195,13 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool bbIsReturn)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        // Fields of dependently promoted structs may only be initialized in the prolog when the whole
+        // struct is initialized in the prolog.
+        return fgVarNeedsExplicitZeroInit(varDsc->lvParentLcl, bbInALoop, bbIsReturn);
+    }
 
     if (bbInALoop && !bbIsReturn)
     {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -913,7 +912,7 @@ namespace System
             // to the first transition and uses the first standard transitionType (or the first transitionType if none of them are standard)
             // 2. Create an AdjustmentRule for each transition, i.e. from dts[index - 1] to dts[index].
             // This rule uses the transitionType[index - 1] and the whole AdjustmentRule only describes a single offset - either
-            // all daylight savings, or all stanard time.
+            // all daylight savings, or all standard time.
             // 3. After all the transitions are filled out, the last AdjustmentRule is created from either:
             //   a. a POSIX-style timezone description ("futureTransitionsPosixFormat"), if there is one or
             //   b. continue the last transition offset until DateTime.Max

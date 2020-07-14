@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Cache;
@@ -191,8 +190,8 @@ namespace System.Net
         private DateTime _startTime;
         private int _timeout = s_DefaultTimeout;
         private int _remainingTimeout;
-        private long _contentLength = 0;
-        private long _contentOffset = 0;
+        private long _contentLength;
+        private long _contentOffset;
         private X509CertificateCollection? _clientCertificates;
         private bool _passive = true;
         private bool _binary = true;
@@ -491,7 +490,7 @@ namespace System.Net
 
         internal FtpWebRequest(Uri uri)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, uri);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
                 throw new ArgumentOutOfRangeException(nameof(uri));
@@ -528,11 +527,7 @@ namespace System.Net
         //
         public override WebResponse GetResponse()
         {
-            if (NetEventSource.IsEnabled)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             try
             {
@@ -595,22 +590,18 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
 
                 // if _exception == null, we are about to throw an exception to the user
                 // and we haven't saved the exception, which also means we haven't dealt
                 // with it. So just release the connection and log this for investigation.
                 if (_exception == null)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                     SetException(exception);
                     FinishRequestStage(RequestStage.CheckForError);
                 }
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _ftpWebResponse);
             }
             return _ftpWebResponse!;
         }
@@ -620,11 +611,7 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             ContextAwareResult? asyncResult;
 
@@ -687,12 +674,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -703,7 +686,6 @@ namespace System.Net
         /// </summary>
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 // parameter validation
@@ -727,12 +709,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return _ftpWebResponse!;
@@ -743,11 +721,7 @@ namespace System.Net
         /// </summary>
         public override Stream GetRequestStream()
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             try
             {
@@ -788,12 +762,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return _stream;
         }
@@ -803,11 +773,7 @@ namespace System.Net
         /// </summary>
         public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
 
             ContextAwareResult? asyncResult = null;
             try
@@ -835,12 +801,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -848,7 +810,6 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             Stream? requestStream = null;
             try
             {
@@ -883,12 +844,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return requestStream;
         }
@@ -937,7 +894,7 @@ namespace System.Net
                         }
                     }
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Request being submitted");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Request being submitted");
 
                     connection.SetSocketTimeoutOption(RemainingTimeout);
 
@@ -1102,12 +1059,12 @@ namespace System.Net
         /// </summary>
         private void TimerCallback(TimerThread.Timer timer, int timeNoticed, object? context)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             FtpControlStream? connection = _connection;
             if (connection != null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "aborting connection");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "aborting connection");
                 connection.AbortConnect();
             }
         }
@@ -1146,7 +1103,7 @@ namespace System.Net
                 if (_connection != null)
                 {
                     _connection.CloseSocket();
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connection: {_connection}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connection: {_connection}");
                     _connection = null;
                 }
                 else
@@ -1162,7 +1119,7 @@ namespace System.Net
         /// </summary>
         private void SetException(Exception exception)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             if (exception is OutOfMemoryException)
             {
@@ -1221,7 +1178,6 @@ namespace System.Net
         //
         private void SyncRequestCallback(object? obj)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
 
             RequestStage stageMode = RequestStage.CheckForError;
             try
@@ -1229,7 +1185,7 @@ namespace System.Net
                 bool completedRequest = obj == null;
                 Exception? exception = obj as Exception;
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"exp:{exception} completedRequest:{completedRequest}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"exp:{exception} completedRequest:{completedRequest}");
 
                 if (exception != null)
                 {
@@ -1262,7 +1218,6 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 CheckError(); //will throw on error
             }
         }
@@ -1272,7 +1227,6 @@ namespace System.Net
         //
         private void AsyncRequestCallback(object? obj)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
             RequestStage stageMode = RequestStage.CheckForError;
 
             try
@@ -1283,7 +1237,7 @@ namespace System.Net
 
                 bool completedRequest = (obj == null);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"stream:{stream} conn:{connection} exp:{exception} completedRequest:{completedRequest}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"stream:{stream} conn:{connection} exp:{exception} completedRequest:{completedRequest}");
                 while (true)
                 {
                     if (exception != null)
@@ -1309,12 +1263,12 @@ namespace System.Net
                         {
                             if (_aborted)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connect:{connection}");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connect:{connection}");
                                 connection.CloseSocket();
                                 break;
                             }
                             _connection = connection;
-                            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
                         }
 
                         try
@@ -1374,7 +1328,6 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1392,7 +1345,7 @@ namespace System.Net
         //
         private RequestStage FinishRequestStage(RequestStage stage)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"state:{stage}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"state:{stage}");
 
             if (_exception != null)
                 stage = RequestStage.ReleaseConnection;
@@ -1456,7 +1409,7 @@ namespace System.Net
                     }
                     finally
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing connection: {connection}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connection: {connection}");
                         connection.CloseSocket();
                         if (_async)
                             if (_requestCompleteAsyncResult != null)
@@ -1503,7 +1456,6 @@ namespace System.Net
             if (_aborted)
                 return;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             try
             {
@@ -1533,12 +1485,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1772,7 +1720,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returns {_ftpWebResponse} with stream {_ftpWebResponse._responseStream}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returns {_ftpWebResponse} with stream {_ftpWebResponse._responseStream}");
 
             return;
         }

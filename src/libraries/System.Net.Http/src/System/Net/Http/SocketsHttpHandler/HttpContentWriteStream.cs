@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -26,7 +25,7 @@ namespace System.Net.Http
             {
                 HttpConnection? connection = _connection;
                 return connection != null ?
-                    connection.FlushAsync().AsTask() :
+                    connection.FlushAsync(async: true).AsTask() :
                     default!;
             }
 
@@ -36,7 +35,7 @@ namespace System.Net.Http
 
             public sealed override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-            public abstract ValueTask FinishAsync();
+            public abstract ValueTask FinishAsync(bool async);
         }
     }
 }

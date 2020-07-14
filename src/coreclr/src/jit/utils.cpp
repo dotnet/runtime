@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -2399,10 +2398,9 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  q2;
     UT  t;
     T   result_magic;
-    int iters = 0;
 
     absDenom = abs(denom);
-    t        = two_nminus1 + ((unsigned int)denom >> 31);
+    t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
     q1       = two_nminus1 / absNc;           // initialize q1 = 2^p / abs(nc)
@@ -2412,7 +2410,6 @@ T GetSignedMagic(T denom, int* shift /*out*/)
 
     do
     {
-        iters++;
         p++;
         q1 *= 2; // update q1 = 2^p / abs(nc)
         r1 *= 2; // update r1 = rem(2^p / abs(nc))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -118,7 +117,7 @@ namespace System.Net.Sockets
         internal override object? PostCompletion(int numBytes)
         {
             InitIPPacketInformation();
-            if (ErrorCode == 0 && NetEventSource.IsEnabled)
+            if (ErrorCode == 0 && NetEventSource.Log.IsEnabled())
             {
                 LogBuffer(numBytes);
             }
@@ -131,7 +130,7 @@ namespace System.Net.Sockets
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
-            Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(NetEventSource.Log.IsEnabled());
 
             NetEventSource.DumpBuffer(this, _wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
         }

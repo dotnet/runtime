@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Some tests rely on no deps.json file being present. -->

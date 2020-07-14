@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImportCallback.cpp
 //
@@ -23,6 +22,7 @@
 #include "appdomain.inl"
 #include "callingconvention.h"
 #include "customattribute.h"
+#include "typeparse.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -614,6 +614,22 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     pcpusl->X86EmitNearJump(pEnableRejoin);
 }
 
+namespace
+{
+    // Templated function to compute if a char string begins with a constant string.
+    template<size_t S2LEN>
+    bool BeginsWith(ULONG s1Len, const char* s1, const char (&s2)[S2LEN])
+    {
+        WRAPPER_NO_CONTRACT;
+
+        ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
+        if (s1Len < s2Len)
+            return false;
+
+        return (0 == strncmp(s1, s2, s2Len));
+    }
+}
+
 VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
 {
     STANDARD_VM_CONTRACT;
@@ -621,37 +637,103 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
     MethodDesc* pMD = GetMethod();
     _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
 
-    // Validate UnmanagedCallersOnlyAttribute usage
+    // Validate usage
     COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
 
     BYTE* pData = NULL;
     LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
 
+    bool nativeCallableInternalData = false;
     HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
     if (hr == S_FALSE)
+    {
         hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
+        nativeCallableInternalData = SUCCEEDED(hr);
+    }
 
     IfFailThrow(hr);
 
     _ASSERTE(cData > 0);
 
     CustomAttributeParser ca(pData, cData);
-    // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
+
+    // UnmanagedCallersOnly and NativeCallableInternal each
+    // have optional named arguments.
     CaNamedArg namedArgs[2];
-    CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
-    // First, the void constructor.
-    IfFailThrow(ParseKnownCaArgs(ca, NULL, 0));
 
-    // Now the optional named properties
-    namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)callConv);
-    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caType);
-    IfFailThrow(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+    // For the UnmanagedCallersOnly scenario.
+    CaType caCallConvs;
 
-    callConv = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
-    // Let UMThunkMarshalInfo choose the default if calling convension not definied.
-    if (namedArgs[0].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
-        m_callConv = (UINT16)callConv;
+    // Define attribute specific optional named properties
+    if (nativeCallableInternalData)
+    {
+        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
+    }
+    else
+    {
+        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
+        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
+    }
+
+    // Define common optional named properties
+    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
+    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
+
+    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
+    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+        pData,
+        cData,
+        &caValueArrayFactory,
+        NULL,
+        0,
+        namedArgs,
+        lengthof(namedArgs),
+        domainAssembly));
+
+    // If the value isn't defined, then return without setting anything.
+    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
+        return;
+
+    CorPinvokeMap callConvLocal = (CorPinvokeMap)0;
+    if (nativeCallableInternalData)
+    {
+        callConvLocal = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
+    }
+    else
+    {
+        // Set WinAPI as the default
+        callConvLocal = CorPinvokeMap::pmCallConvWinapi;
+
+        CaValue* arrayOfTypes = &namedArgs[0].val;
+        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
+        {
+            CaValue& typeNameValue = arrayOfTypes->arr[i];
+
+            // According to ECMA-335, type name strings are UTF-8. Since we are
+            // looking for type names that are equivalent in ASCII and UTF-8,
+            // using a const char constant is acceptable. Type name strings are
+            // in Fully Qualified form, so we include the ',' delimiter.
+            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvCdecl;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvStdcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvFastcall;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
+            {
+                callConvLocal = CorPinvokeMap::pmCallConvThiscall;
+            }
+        }
+    }
+
+    m_callConv = (UINT16)callConvLocal;
 }
 
 // Compiles an unmanaged to managed thunk for the given signature.
@@ -776,7 +858,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     stubInfo.m_cbSrcStack = static_cast<UINT16>(m_cbActualArgSize);
     stubInfo.m_cbDstStack = nStackBytes;
 
-    if (pSigInfo->GetCallConv() == pmCallConvCdecl)
+    if (m_callConv == pmCallConvCdecl)
     {
         // caller pop
         m_cbRetPop = 0;
@@ -786,7 +868,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         // callee pop
         m_cbRetPop = static_cast<UINT16>(m_cbActualArgSize);
 
-        if (pSigInfo->GetCallConv() == pmCallConvThiscall)
+        if (m_callConv == pmCallConvThiscall)
         {
             stubInfo.m_wFlags |= umtmlThisCall;
             if (argit.HasRetBuffArg())

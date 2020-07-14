@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -23,20 +23,20 @@ namespace System.Data.Common
             private const string AlternativeOriginalPrefix2 = "ORIGINAL";
             private const string AlternativeIsNullPrefix2 = "ISNULL";
 
-            private string _originalPrefix;
-            private string _isNullPrefix;
+            private string? _originalPrefix;
+            private string? _isNullPrefix;
 
             private readonly Regex _parameterNameParser;
             private readonly DbCommandBuilder _dbCommandBuilder;
-            private readonly string[] _baseParameterNames;
-            private readonly string[] _originalParameterNames;
-            private readonly string[] _nullParameterNames;
+            private readonly string?[] _baseParameterNames;
+            private readonly string?[] _originalParameterNames;
+            private readonly string?[] _nullParameterNames;
             private readonly bool[] _isMutatedName;
             private readonly int _count;
             private int _genericParameterCount;
             private readonly int _adjustedParameterNameMaxLength;
 
-            internal ParameterNames(DbCommandBuilder dbCommandBuilder, DbSchemaRow[] schemaRows)
+            internal ParameterNames(DbCommandBuilder dbCommandBuilder, DbSchemaRow?[] schemaRows)
             {
                 _dbCommandBuilder = dbCommandBuilder;
                 _baseParameterNames = new string[schemaRows.Length];
@@ -44,7 +44,7 @@ namespace System.Data.Common
                 _nullParameterNames = new string[schemaRows.Length];
                 _isMutatedName = new bool[schemaRows.Length];
                 _count = schemaRows.Length;
-                _parameterNameParser = new Regex(_dbCommandBuilder.ParameterNamePattern, RegexOptions.ExplicitCapture | RegexOptions.Singleline);
+                _parameterNameParser = new Regex(_dbCommandBuilder.ParameterNamePattern!, RegexOptions.ExplicitCapture | RegexOptions.Singleline);
 
                 SetAndValidateNamePrefixes();
                 _adjustedParameterNameMaxLength = GetAdjustedParameterNameMaxLength();
@@ -56,12 +56,13 @@ namespace System.Data.Common
                 //
                 for (int i = 0; i < schemaRows.Length; i++)
                 {
-                    if (null == schemaRows[i])
+                    var schemaRow = schemaRows[i];
+                    if (null == schemaRow)
                     {
                         continue;
                     }
                     bool isMutatedName = false;
-                    string columnName = schemaRows[i].ColumnName;
+                    string columnName = schemaRow.ColumnName;
 
                     // all names that start with original- or isNullPrefix are invalid
                     if (null != _originalPrefix)
@@ -117,7 +118,7 @@ namespace System.Data.Common
                         if (null != _isNullPrefix)
                         {
                             // don't bother generating an 'IsNull' name if it's not used
-                            if (schemaRows[i].AllowDBNull)
+                            if (schemaRows[i]!.AllowDBNull)
                             {
                                 _nullParameterNames[i] = _isNullPrefix + _baseParameterNames[i];
                             }
@@ -168,17 +169,17 @@ namespace System.Data.Common
             {
                 for (int i = 0; i < _baseParameterNames.Length; i++)
                 {
-                    if (null != _baseParameterNames[i])
+                    if (_baseParameterNames[i] is { } baseParameterName)
                     {
-                        _baseParameterNames[i] = _dbCommandBuilder.GetParameterName(_baseParameterNames[i]);
+                        _baseParameterNames[i] = _dbCommandBuilder.GetParameterName(baseParameterName);
                     }
-                    if (null != _originalParameterNames[i])
+                    if (_originalParameterNames[i] is { } originalParameterName)
                     {
-                        _originalParameterNames[i] = _dbCommandBuilder.GetParameterName(_originalParameterNames[i]);
+                        _originalParameterNames[i] = _dbCommandBuilder.GetParameterName(originalParameterName);
                     }
-                    if (null != _nullParameterNames[i])
+                    if (_nullParameterNames[i] is { } nullParameterName)
                     {
-                        _nullParameterNames[i] = _dbCommandBuilder.GetParameterName(_nullParameterNames[i]);
+                        _nullParameterNames[i] = _dbCommandBuilder.GetParameterName(nullParameterName);
                     }
                 }
             }
@@ -187,7 +188,7 @@ namespace System.Data.Common
             {
                 for (int i = 0; i < _count - 1; i++)
                 {
-                    string name = _baseParameterNames[i];
+                    string? name = _baseParameterNames[i];
                     if (null != name)
                     {
                         for (int j = i + 1; j < _count; j++)
@@ -206,7 +207,7 @@ namespace System.Data.Common
             }
 
             // Generates parameternames that couldn't be generated from columnname
-            internal void GenerateMissingNames(DbSchemaRow[] schemaRows)
+            internal void GenerateMissingNames(DbSchemaRow?[] schemaRows)
             {
                 // foreach name in base names
                 // if base name is null
@@ -218,7 +219,7 @@ namespace System.Data.Common
                 //   loop while name occurs in base names
                 //  end for
                 // end foreach
-                string name;
+                string? name;
                 for (int i = 0; i < _baseParameterNames.Length; i++)
                 {
                     name = _baseParameterNames[i];
@@ -227,7 +228,7 @@ namespace System.Data.Common
                         _baseParameterNames[i] = GetNextGenericParameterName();
                         _originalParameterNames[i] = GetNextGenericParameterName();
                         // don't bother generating an 'IsNull' name if it's not used
-                        if ((null != schemaRows[i]) && schemaRows[i].AllowDBNull)
+                        if (schemaRows[i] is { } schemaRow && schemaRow.AllowDBNull)
                         {
                             _nullParameterNames[i] = GetNextGenericParameterName();
                         }
@@ -265,15 +266,15 @@ namespace System.Data.Common
                 return name;
             }
 
-            internal string GetBaseParameterName(int index)
+            internal string? GetBaseParameterName(int index)
             {
                 return (_baseParameterNames[index]);
             }
-            internal string GetOriginalParameterName(int index)
+            internal string? GetOriginalParameterName(int index)
             {
                 return (_originalParameterNames[index]);
             }
-            internal string GetNullParameterName(int index)
+            internal string? GetNullParameterName(int index)
             {
                 return (_nullParameterNames[index]);
             }
@@ -302,34 +303,34 @@ namespace System.Data.Common
         private const string And = " AND ";
         private const string Or = " OR ";
 
-        private DbDataAdapter _dataAdapter;
+        private DbDataAdapter? _dataAdapter;
 
-        private DbCommand _insertCommand;
-        private DbCommand _updateCommand;
-        private DbCommand _deleteCommand;
+        private DbCommand? _insertCommand;
+        private DbCommand? _updateCommand;
+        private DbCommand? _deleteCommand;
 
         private MissingMappingAction _missingMappingAction;
 
         private ConflictOption _conflictDetection = ConflictOption.CompareAllSearchableValues;
-        private bool _setAllValues = false;
-        private bool _hasPartialPrimaryKey = false;
+        private bool _setAllValues;
+        private bool _hasPartialPrimaryKey;
 
-        private DataTable _dbSchemaTable;
-        private DbSchemaRow[] _dbSchemaRows;
-        private string[] _sourceColumnNames;
-        private ParameterNames _parameterNames = null;
+        private DataTable? _dbSchemaTable;
+        private DbSchemaRow?[]? _dbSchemaRows;
+        private string[]? _sourceColumnNames;
+        private ParameterNames? _parameterNames;
 
-        private string _quotedBaseTableName;
+        private string? _quotedBaseTableName;
 
         // quote strings to use around SQL object names
         private CatalogLocation _catalogLocation = CatalogLocation.Start;
-        private string _catalogSeparator = NameSeparator;
-        private string _schemaSeparator = NameSeparator;
-        private string _quotePrefix = string.Empty;
-        private string _quoteSuffix = string.Empty;
-        private string _parameterNamePattern = null;
-        private string _parameterMarkerFormat = null;
-        private int _parameterNameMaxLength = 0;
+        private string? _catalogSeparator = NameSeparator;
+        private string? _schemaSeparator = NameSeparator;
+        private string? _quotePrefix = string.Empty;
+        private string? _quoteSuffix = string.Empty;
+        private string? _parameterNamePattern;
+        private string? _parameterMarkerFormat;
+        private int _parameterNameMaxLength;
 
         protected DbCommandBuilder() : base()
         {
@@ -383,11 +384,12 @@ namespace System.Data.Common
         }
 
         [DefaultValueAttribute(DbCommandBuilder.NameSeparator)]
+        [AllowNull]
         public virtual string CatalogSeparator
         {
             get
             {
-                string catalogSeparator = _catalogSeparator;
+                string? catalogSeparator = _catalogSeparator;
                 return (((null != catalogSeparator) && (0 < catalogSeparator.Length)) ? catalogSeparator : NameSeparator);
             }
             set
@@ -402,7 +404,7 @@ namespace System.Data.Common
 
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DbDataAdapter DataAdapter
+        public DbDataAdapter? DataAdapter
         {
             get
             {
@@ -438,7 +440,7 @@ namespace System.Data.Common
             }
         }
 
-        internal string ParameterNamePattern
+        internal string? ParameterNamePattern
         {
             get
             {
@@ -446,7 +448,7 @@ namespace System.Data.Common
             }
         }
 
-        private string QuotedBaseTableName
+        private string? QuotedBaseTableName
         {
             get
             {
@@ -455,6 +457,7 @@ namespace System.Data.Common
         }
 
         [DefaultValueAttribute("")]
+        [AllowNull]
         public virtual string QuotePrefix
         {
             get { return _quotePrefix ?? string.Empty; }
@@ -469,11 +472,12 @@ namespace System.Data.Common
         }
 
         [DefaultValueAttribute("")]
+        [AllowNull]
         public virtual string QuoteSuffix
         {
             get
             {
-                string quoteSuffix = _quoteSuffix;
+                string? quoteSuffix = _quoteSuffix;
                 return ((null != quoteSuffix) ? quoteSuffix : string.Empty);
             }
             set
@@ -488,11 +492,12 @@ namespace System.Data.Common
 
 
         [DefaultValueAttribute(DbCommandBuilder.NameSeparator)]
+        [AllowNull]
         public virtual string SchemaSeparator
         {
             get
             {
-                string schemaSeparator = _schemaSeparator;
+                string? schemaSeparator = _schemaSeparator;
                 return (((null != schemaSeparator) && (0 < schemaSeparator.Length)) ? schemaSeparator : NameSeparator);
             }
             set
@@ -518,7 +523,7 @@ namespace System.Data.Common
             }
         }
 
-        private DbCommand InsertCommand
+        private DbCommand? InsertCommand
         {
             get
             {
@@ -530,7 +535,7 @@ namespace System.Data.Common
             }
         }
 
-        private DbCommand UpdateCommand
+        private DbCommand? UpdateCommand
         {
             get
             {
@@ -542,7 +547,7 @@ namespace System.Data.Common
             }
         }
 
-        private DbCommand DeleteCommand
+        private DbCommand? DeleteCommand
         {
             get
             {
@@ -554,7 +559,7 @@ namespace System.Data.Common
             }
         }
 
-        private void BuildCache(bool closeConnection, DataRow dataRow, bool useColumnsForParameterNames)
+        private void BuildCache(bool closeConnection, DataRow? dataRow, bool useColumnsForParameterNames)
         {
             // Don't bother building the cache if it's done already; wait for
             // the user to call RefreshSchema first.
@@ -562,10 +567,10 @@ namespace System.Data.Common
             {
                 return;
             }
-            DataTable schemaTable = null;
+            DataTable? schemaTable = null;
 
             DbCommand srcCommand = GetSelectCommand();
-            DbConnection connection = srcCommand.Connection;
+            DbConnection? connection = srcCommand.Connection;
             if (null == connection)
             {
                 throw ADP.MissingSourceCommandConnection();
@@ -624,13 +629,13 @@ namespace System.Data.Common
 
             _dbSchemaTable = schemaTable;
 
-            DbSchemaRow[] schemaRows = _dbSchemaRows;
+            DbSchemaRow?[] schemaRows = _dbSchemaRows!;
             string[] srcColumnNames = new string[schemaRows.Length];
             for (int i = 0; i < schemaRows.Length; ++i)
             {
-                if (null != schemaRows[i])
+                if (schemaRows[i] is { } schemaRow)
                 {
-                    srcColumnNames[i] = schemaRows[i].ColumnName;
+                    srcColumnNames[i] = schemaRow.ColumnName;
                 }
             }
             _sourceColumnNames = srcColumnNames;
@@ -651,20 +656,20 @@ namespace System.Data.Common
 
         private void BuildInformation(DataTable schemaTable)
         {
-            DbSchemaRow[] rows = DbSchemaRow.GetSortedSchemaRows(schemaTable, false);
+            DbSchemaRow?[]? rows = DbSchemaRow.GetSortedSchemaRows(schemaTable, false);
             if ((null == rows) || (0 == rows.Length))
             {
                 throw ADP.DynamicSQLNoTableInfo();
             }
 
-            string baseServerName = string.Empty;
-            string baseCatalogName = string.Empty;
-            string baseSchemaName = string.Empty;
-            string baseTableName = null;
+            string? baseServerName = string.Empty;
+            string? baseCatalogName = string.Empty;
+            string? baseSchemaName = string.Empty;
+            string? baseTableName = null;
 
             for (int i = 0; i < rows.Length; ++i)
             {
-                DbSchemaRow row = rows[i];
+                DbSchemaRow row = rows[i]!;
                 string tableName = row.BaseTableName;
                 if ((null == tableName) || (0 == tableName.Length))
                 {
@@ -775,7 +780,7 @@ namespace System.Data.Common
             _quotedBaseTableName = builder.ToString();
 
             _hasPartialPrimaryKey = false;
-            foreach (DbSchemaRow row in rows)
+            foreach (DbSchemaRow? row in rows)
             {
                 if ((null != row) && (row.IsKey || row.IsUnique) && !row.IsLong && !row.IsRowVersion && row.IsHidden)
                 {
@@ -786,7 +791,7 @@ namespace System.Data.Common
             _dbSchemaRows = rows;
         }
 
-        private DbCommand BuildDeleteCommand(DataTableMapping mappings, DataRow dataRow)
+        private DbCommand BuildDeleteCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(DeleteCommand);
             StringBuilder builder = new StringBuilder();
@@ -806,7 +811,7 @@ namespace System.Data.Common
             return command;
         }
 
-        private DbCommand BuildInsertCommand(DataTableMapping mappings, DataRow dataRow)
+        private DbCommand BuildInsertCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(InsertCommand);
             StringBuilder builder = new StringBuilder();
@@ -819,7 +824,7 @@ namespace System.Data.Common
             builder.Append(QuotedBaseTableName);
 
             // search for the columns in that base table, to be the column clause
-            DbSchemaRow[] schemaRows = _dbSchemaRows;
+            DbSchemaRow[] schemaRows = _dbSchemaRows!;
 
             string[] parameterName = new string[schemaRows.Length];
             for (int i = 0; i < schemaRows.Length; ++i)
@@ -829,15 +834,15 @@ namespace System.Data.Common
                 if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInInsertValues(row))
                     continue;
 
-                object currentValue = null;
-                string sourceColumn = _sourceColumnNames[i];
+                object? currentValue = null;
+                string sourceColumn = _sourceColumnNames![i];
 
                 // If we're building a statement for a specific row, then check the
                 // values to see whether the column should be included in the insert
                 // statement or not
                 if ((null != mappings) && (null != dataRow))
                 {
-                    DataColumn dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
+                    DataColumn? dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
 
                     if (null == dataColumn)
                         continue;
@@ -897,7 +902,7 @@ namespace System.Data.Common
             return command;
         }
 
-        private DbCommand BuildUpdateCommand(DataTableMapping mappings, DataRow dataRow)
+        private DbCommand? BuildUpdateCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(UpdateCommand);
             StringBuilder builder = new StringBuilder();
@@ -910,7 +915,7 @@ namespace System.Data.Common
             builder.Append(QuotedBaseTableName);
 
             // search for the columns in that base table, to build the set clause
-            DbSchemaRow[] schemaRows = _dbSchemaRows;
+            DbSchemaRow[] schemaRows = _dbSchemaRows!;
             for (int i = 0; i < schemaRows.Length; ++i)
             {
                 DbSchemaRow row = schemaRows[i];
@@ -918,15 +923,15 @@ namespace System.Data.Common
                 if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInUpdateSet(row))
                     continue;
 
-                object currentValue = null;
-                string sourceColumn = _sourceColumnNames[i];
+                object? currentValue = null;
+                string sourceColumn = _sourceColumnNames![i];
 
                 // If we're building a statement for a specific row, then check the
                 // values to see whether the column should be included in the update
                 // statement or not
                 if ((null != mappings) && (null != dataRow))
                 {
-                    DataColumn dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
+                    DataColumn? dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
 
                     if (null == dataColumn)
                         continue;
@@ -985,8 +990,8 @@ namespace System.Data.Common
         }
 
         private int BuildWhereClause(
-            DataTableMapping mappings,
-            DataRow dataRow,
+            DataTableMapping? mappings,
+            DataRow? dataRow,
             StringBuilder builder,
             DbCommand command,
             int parameterCount,
@@ -999,7 +1004,7 @@ namespace System.Data.Common
             builder.Append(Where);
             builder.Append(LeftParenthesis);
 
-            DbSchemaRow[] schemaRows = _dbSchemaRows;
+            DbSchemaRow[] schemaRows = _dbSchemaRows!;
             for (int i = 0; i < schemaRows.Length; ++i)
             {
                 DbSchemaRow row = schemaRows[i];
@@ -1011,8 +1016,8 @@ namespace System.Data.Common
                 builder.Append(beginNewCondition);
                 beginNewCondition = And;
 
-                object value = null;
-                string sourceColumn = _sourceColumnNames[i];
+                object? value = null;
+                string sourceColumn = _sourceColumnNames![i];
                 string baseColumnName = QuotedColumn(row.BaseColumnName);
 
                 if ((null != mappings) && (null != dataRow))
@@ -1116,11 +1121,11 @@ namespace System.Data.Common
 
         private string CreateParameterForNullTest(
             DbCommand command,
-            string parameterName,
+            string? parameterName,
             string sourceColumn,
             DataRowVersion version,
             int parameterCount,
-            object value,
+            object? value,
             DbSchemaRow row,
             StatementType statementType,
             bool whereClause
@@ -1169,11 +1174,11 @@ namespace System.Data.Common
 
         private string CreateParameterForValue(
             DbCommand command,
-            string parameterName,
+            string? parameterName,
             string sourceColumn,
             DataRowVersion version,
             int parameterCount,
-            object value,
+            object? value,
             DbSchemaRow row,
             StatementType statementType,
             bool whereClause
@@ -1228,15 +1233,15 @@ namespace System.Data.Common
             base.Dispose(disposing); // notify base classes
         }
 
-        private DataTableMapping GetTableMapping(DataRow dataRow)
+        private DataTableMapping? GetTableMapping(DataRow? dataRow)
         {
-            DataTableMapping tableMapping = null;
+            DataTableMapping? tableMapping = null;
             if (null != dataRow)
             {
                 DataTable dataTable = dataRow.Table;
                 if (null != dataTable)
                 {
-                    DbDataAdapter adapter = DataAdapter;
+                    DbDataAdapter? adapter = DataAdapter;
                     if (null != adapter)
                     {
                         tableMapping = adapter.GetTableMapping(dataTable);
@@ -1251,7 +1256,7 @@ namespace System.Data.Common
             return tableMapping;
         }
 
-        private string GetBaseParameterName(int index)
+        private string? GetBaseParameterName(int index)
         {
             if (null != _parameterNames)
             {
@@ -1262,7 +1267,7 @@ namespace System.Data.Common
                 return null;
             }
         }
-        private string GetOriginalParameterName(int index)
+        private string? GetOriginalParameterName(int index)
         {
             if (null != _parameterNames)
             {
@@ -1273,7 +1278,7 @@ namespace System.Data.Common
                 return null;
             }
         }
-        private string GetNullParameterName(int index)
+        private string? GetNullParameterName(int index)
         {
             if (null != _parameterNames)
             {
@@ -1287,8 +1292,8 @@ namespace System.Data.Common
 
         private DbCommand GetSelectCommand()
         {
-            DbCommand select = null;
-            DbDataAdapter adapter = DataAdapter;
+            DbCommand? select = null;
+            DbDataAdapter? adapter = DataAdapter;
             if (null != adapter)
             {
                 if (0 == _missingMappingAction)
@@ -1313,11 +1318,11 @@ namespace System.Data.Common
         {
             return GetInsertCommand(null, useColumnsForParameterNames);
         }
-        internal DbCommand GetInsertCommand(DataRow dataRow, bool useColumnsForParameterNames)
+        internal DbCommand GetInsertCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
             BuildInsertCommand(GetTableMapping(dataRow), dataRow);
-            return InsertCommand;
+            return InsertCommand!;
         }
 
         public DbCommand GetUpdateCommand()
@@ -1328,11 +1333,11 @@ namespace System.Data.Common
         {
             return GetUpdateCommand(null, useColumnsForParameterNames);
         }
-        internal DbCommand GetUpdateCommand(DataRow dataRow, bool useColumnsForParameterNames)
+        internal DbCommand GetUpdateCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
             BuildUpdateCommand(GetTableMapping(dataRow), dataRow);
-            return UpdateCommand;
+            return UpdateCommand!;
         }
 
         public DbCommand GetDeleteCommand()
@@ -1343,21 +1348,22 @@ namespace System.Data.Common
         {
             return GetDeleteCommand(null, useColumnsForParameterNames);
         }
-        internal DbCommand GetDeleteCommand(DataRow dataRow, bool useColumnsForParameterNames)
+        internal DbCommand GetDeleteCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
             BuildDeleteCommand(GetTableMapping(dataRow), dataRow);
-            return DeleteCommand;
+            return DeleteCommand!;
         }
 
-        private object GetColumnValue(DataRow row, string columnName, DataTableMapping mappings, DataRowVersion version)
+        private object? GetColumnValue(DataRow row, string columnName, DataTableMapping mappings, DataRowVersion version)
         {
             return GetColumnValue(row, GetDataColumn(columnName, mappings, row), version);
         }
 
-        private object GetColumnValue(DataRow row, DataColumn column, DataRowVersion version)
+        [return: NotNullIfNotNull("column")]
+        private object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
         {
-            object value = null;
+            object? value = null;
             if (null != column)
             {
                 value = row[column, version];
@@ -1365,9 +1371,9 @@ namespace System.Data.Common
             return value;
         }
 
-        private DataColumn GetDataColumn(string columnName, DataTableMapping tablemapping, DataRow row)
+        private DataColumn? GetDataColumn(string columnName, DataTableMapping tablemapping, DataRow row)
         {
-            DataColumn column = null;
+            DataColumn? column = null;
             if (!string.IsNullOrEmpty(columnName))
             {
                 column = tablemapping.GetDataColumn(columnName, null, row.Table, _missingMappingAction, MissingSchemaAction.Error);
@@ -1441,12 +1447,12 @@ namespace System.Data.Common
             }
         }
 
-        protected virtual DbCommand InitializeCommand(DbCommand command)
+        protected virtual DbCommand InitializeCommand(DbCommand? command)
         {
             if (null == command)
             {
                 DbCommand select = GetSelectCommand();
-                command = select.Connection.CreateCommand();
+                command = select.Connection!.CreateCommand();
                 /*if (null == command) {
                     // CONSIDER: throw exception
                 }*/
@@ -1479,7 +1485,7 @@ namespace System.Data.Common
             _sourceColumnNames = null;
             _quotedBaseTableName = null;
 
-            DbDataAdapter adapter = DataAdapter;
+            DbDataAdapter? adapter = DataAdapter;
             if (null != adapter)
             {
                 if (InsertCommand == adapter.InsertCommand)
@@ -1495,7 +1501,7 @@ namespace System.Data.Common
                     adapter.DeleteCommand = null;
                 }
             }
-            DbCommand command;
+            DbCommand? command;
             if (null != (command = InsertCommand))
             {
                 command.Dispose();
@@ -1532,7 +1538,7 @@ namespace System.Data.Common
                 if (UpdateStatus.Continue == rowUpdatingEvent.Status)
                 {
                     StatementType stmtType = rowUpdatingEvent.StatementType;
-                    DbCommand command = (DbCommand)rowUpdatingEvent.Command;
+                    DbCommand? command = (DbCommand?)rowUpdatingEvent.Command;
 
                     if (null != command)
                     {
@@ -1556,11 +1562,11 @@ namespace System.Data.Common
 
                         if (command != rowUpdatingEvent.Command)
                         {
-                            command = (DbCommand)rowUpdatingEvent.Command;
+                            command = (DbCommand?)rowUpdatingEvent.Command;
                             if ((null != command) && (null == command.Connection))
                             {
-                                DbDataAdapter adapter = DataAdapter;
-                                DbCommand select = ((null != adapter) ? adapter.SelectCommand : null);
+                                DbDataAdapter? adapter = DataAdapter;
+                                DbCommand? select = ((null != adapter) ? adapter.SelectCommand : null);
                                 if (null != select)
                                 {
                                     command.Connection = select.Connection;
@@ -1590,7 +1596,7 @@ namespace System.Data.Common
             DataRow datarow = rowUpdatingEvent.Row;
             BuildCache(false, datarow, false);
 
-            DbCommand command;
+            DbCommand? command;
             switch (rowUpdatingEvent.StatementType)
             {
                 case StatementType.Insert:

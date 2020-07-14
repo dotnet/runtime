@@ -52,8 +52,8 @@
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LDAP.Configuration.xml">
+    <Content Include="LDAP.Configuration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 </Project>

@@ -27,6 +27,8 @@
 
 #define MINT_VT_ALIGNMENT 8
 
+#define INTERP_STACK_SIZE (1024*1024)
+
 enum {
 	VAL_I32     = 0,
 	VAL_DOUBLE  = 1,
@@ -127,6 +129,8 @@ typedef enum {
 	IMETHOD_CODE_UNKNOWN
 } InterpMethodCodeType;
 
+#define PROFILE_INTERP 0
+
 /* 
  * Structure representing a method transformed for the interpreter 
  * This is domain specific
@@ -156,7 +160,6 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
 
-	guint32 locals_size;
 	guint32 total_locals_size;
 	guint32 stack_size;
 	guint32 vt_stack_size;
@@ -173,12 +176,17 @@ struct InterpMethod {
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
 	unsigned int needs_thread_attach : 1;
+#if PROFILE_INTERP
+	long calls;
+	long opcounts;
+#endif
 };
 
-typedef struct _StackFragment StackFragment;
-struct _StackFragment {
+/* Used for localloc memory allocation */
+typedef struct _FrameDataFragment FrameDataFragment;
+struct _FrameDataFragment {
 	guint8 *pos, *end;
-	struct _StackFragment *next;
+	struct _FrameDataFragment *next;
 #if SIZEOF_VOID_P == 4
 	/* Align data field to MINT_VT_ALIGNMENT */
 	gint32 pad;
@@ -187,10 +195,23 @@ struct _StackFragment {
 };
 
 typedef struct {
-	StackFragment *first, *current;
+	InterpFrame *frame;
+	/*
+	 * frag and pos hold the current allocation position when the stored frame
+	 * starts allocating memory. This is used for restoring the localloc stack
+	 * when frame returns.
+	 */
+	FrameDataFragment *frag;
+	guint8 *pos;
+} FrameDataInfo;
+
+typedef struct {
+	FrameDataFragment *first, *current;
+	FrameDataInfo *infos;
+	int infos_len, infos_capacity;
 	/* For GC sync */
 	int inited;
-} FrameStack;
+} FrameDataAllocator;
 
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
@@ -207,18 +228,15 @@ typedef struct {
 struct InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
-	stackval       *stack_args; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack;
 	InterpFrame    *next_free;
-	/* Stack fragments this frame was allocated from */
-	StackFragment *data_frag;
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;
 };
 
-#define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
+#define frame_locals(frame) ((guchar*)(frame)->stack)
 
 typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */
@@ -231,8 +249,17 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 	/* Exception that is being thrown. Set with rest of resume state */
 	MonoGCHandle exc_gchandle;
-	/* Stack of frame data */
-	FrameStack data_stack;
+	/* This is a contiguous space allocated for interp execution stack */
+	guchar *stack_start;
+	/*
+	 * This stack pointer is the highest stack memory that can be used by the current frame. This does not
+	 * change throughout the execution of a frame and it is essentially the upper limit of the execution
+	 * stack pointer. It is needed when re-entering interp, to know from which address we can start using
+	 * stack, and also needed for the GC to be able to scan the stack.
+	 */
+	guchar *stack_pointer;
+	/* Used for allocation of localloc regions */
+	FrameDataAllocator data_stack;
 } ThreadContext;
 
 typedef struct {
@@ -298,6 +325,7 @@ enum_type:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		return MINT_TYPE_I;
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;

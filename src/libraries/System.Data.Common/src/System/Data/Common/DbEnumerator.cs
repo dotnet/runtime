@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Data.ProviderBase;
@@ -12,10 +11,10 @@ namespace System.Data.Common
     public class DbEnumerator : IEnumerator
     {
         internal IDataReader _reader;
-        internal DbDataRecord _current;
-        internal SchemaInfo[] _schemaInfo; // shared schema info among all the data records
-        internal PropertyDescriptorCollection _descriptors; // cached property descriptors
-        private FieldNameLookup _fieldNameLookup;
+        internal DbDataRecord? _current;
+        internal SchemaInfo[]? _schemaInfo; // shared schema info among all the data records
+        internal PropertyDescriptorCollection? _descriptors; // cached property descriptors
+        private FieldNameLookup? _fieldNameLookup;
         private readonly bool _closeReader;
 
         // users must get enumerators off of the datareader interfaces
@@ -48,7 +47,8 @@ namespace System.Data.Common
         {
         }
 
-        public object Current => _current;
+        // TODO: this should throw InvalidOperationException if null
+        public object Current => _current!;
 
         public bool MoveNext()
         {
@@ -65,7 +65,7 @@ namespace System.Data.Common
                 // setup our current record
                 object[] values = new object[_schemaInfo.Length];
                 _reader.GetValues(values); // this.GetValues()
-                _current = new DataRecordInternal(_schemaInfo, values, _descriptors, _fieldNameLookup);
+                _current = new DataRecordInternal(_schemaInfo, values, _descriptors, _fieldNameLookup!);
                 return true;
             }
             if (_closeReader)

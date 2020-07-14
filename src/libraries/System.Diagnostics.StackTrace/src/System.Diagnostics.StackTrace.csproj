@@ -4,9 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
-    <NoWarn>$(NoWarn);1685</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
@@ -26,14 +24,14 @@
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageVendor.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.IO.FileSystem" />
     <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
-    <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

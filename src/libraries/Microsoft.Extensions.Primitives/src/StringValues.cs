@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -92,7 +91,7 @@ namespace Microsoft.Extensions.Primitives
             get
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-                var value = _values;
+                object value = _values;
                 if (value is string)
                 {
                     return 1;
@@ -137,7 +136,7 @@ namespace Microsoft.Extensions.Primitives
             get
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-                var value = _values;
+                object value = _values;
                 if (value is string str)
                 {
                     if (index == 0)
@@ -173,7 +172,7 @@ namespace Microsoft.Extensions.Primitives
         private string GetStringValue()
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string s)
             {
                 return s;
@@ -192,7 +191,7 @@ namespace Microsoft.Extensions.Primitives
 
                 Debug.Assert(value is string[]);
                 // value is not null or string, array, can only be string[]
-                var values = Unsafe.As<string[]>(value);
+                string[] values = Unsafe.As<string[]>(value);
                 switch (values.Length)
                 {
                     case 0: return null;
@@ -204,10 +203,10 @@ namespace Microsoft.Extensions.Primitives
             static string GetJoinedStringValueFromArray(string[] values)
             {
                 // Calculate final length
-                var length = 0;
-                for (var i = 0; i < values.Length; i++)
+                int length = 0;
+                for (int i = 0; i < values.Length; i++)
                 {
-                    var value = values[i];
+                    string value = values[i];
                     // Skip null and empty values
                     if (value != null && value.Length > 0)
                     {
@@ -223,11 +222,11 @@ namespace Microsoft.Extensions.Primitives
 #if NETCOREAPP || NETSTANDARD2_1
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
-                    var offset = 0;
+                    int offset = 0;
                     // Skip null and empty values
-                    for (var i = 0; i < strings.Length; i++)
+                    for (int i = 0; i < strings.Length; i++)
                     {
-                        var value = strings[i];
+                        string value = strings[i];
                         if (value != null && value.Length > 0)
                         {
                             if (offset > 0)
@@ -246,11 +245,11 @@ namespace Microsoft.Extensions.Primitives
 #pragma warning disable CS0618
                 var sb = new InplaceStringBuilder(length);
 #pragma warning restore CS0618
-                var hasAdded = false;
+                bool hasAdded = false;
                 // Skip null and empty values
-                for (var i = 0; i < values.Length; i++)
+                for (int i = 0; i < values.Length; i++)
                 {
-                    var value = values[i];
+                    string value = values[i];
                     if (value != null && value.Length > 0)
                     {
                         if (hasAdded)
@@ -285,7 +284,7 @@ namespace Microsoft.Extensions.Primitives
         private string[] GetArrayValue()
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 return values;
@@ -305,7 +304,7 @@ namespace Microsoft.Extensions.Primitives
         /// Returns the zero-based index of the first occurrence of an item in the <see cref="StringValues" />.
         /// </summary>
         /// <param name="item">The string to locate in the <see cref="StringValues"></see>.</param>
-        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, –1.</returns>
+        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, -1.</returns>
         int IList<string>.IndexOf(string item)
         {
             return IndexOf(item);
@@ -314,7 +313,7 @@ namespace Microsoft.Extensions.Primitives
         private int IndexOf(string item)
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 for (int i = 0; i < values.Length; i++)
@@ -347,11 +346,11 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Copies the entire <see cref="StringValues" />to a string array, starting at the specified index of the target array.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+        /// <param name="array">The one-dimensional <see cref="Array" /> that is the destination of the elements copied from. The <see cref="Array" /> must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in the destination array at which copying begins.</param>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="array">array</paramref> is null.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex">arrayIndex</paramref> is less than 0.</exception>
-        /// <exception cref="T:System.ArgumentException">The number of elements in the source <see cref="StringValues"></see> is greater than the available space from <paramref name="arrayIndex">arrayIndex</paramref> to the end of the destination <paramref name="array">array</paramref>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="array">array</paramref> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="arrayIndex">arrayIndex</paramref> is less than 0.</exception>
+        /// <exception cref="ArgumentException">The number of elements in the source <see cref="StringValues"></see> is greater than the available space from <paramref name="arrayIndex">arrayIndex</paramref> to the end of the destination <paramref name="array">array</paramref>.</exception>
         void ICollection<string>.CopyTo(string[] array, int arrayIndex)
         {
             CopyTo(array, arrayIndex);
@@ -360,7 +359,7 @@ namespace Microsoft.Extensions.Primitives
         private void CopyTo(string[] array, int arrayIndex)
         {
             // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 Array.Copy(values, 0, array, arrayIndex, values.Length);
@@ -424,7 +423,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>true if <paramref name="value">value</paramref> contains a single null string or empty array; otherwise, false.</returns>
         public static bool IsNullOrEmpty(StringValues value)
         {
-            var data = value._values;
+            object data = value._values;
             if (data is null)
             {
                 return true;
@@ -453,8 +452,8 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The concatenation of <paramref name="values1"/> and <paramref name="values2"/>.</returns>
         public static StringValues Concat(StringValues values1, StringValues values2)
         {
-            var count1 = values1.Count;
-            var count2 = values2.Count;
+            int count1 = values1.Count;
+            int count2 = values2.Count;
 
             if (count1 == 0)
             {
@@ -485,7 +484,7 @@ namespace Microsoft.Extensions.Primitives
                 return values;
             }
 
-            var count = values.Count;
+            int count = values.Count;
             if (count == 0)
             {
                 return new StringValues(value);
@@ -510,7 +509,7 @@ namespace Microsoft.Extensions.Primitives
                 return values;
             }
 
-            var count = values.Count;
+            int count = values.Count;
             if (count == 0)
             {
                 return new StringValues(value);
@@ -523,21 +522,21 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Determines whether two specified <see cref="StringValues"/> objects have the same values in the same order. 
+        /// Determines whether two specified <see cref="StringValues"/> objects have the same values in the same order.
         /// </summary>
         /// <param name="left">The first <see cref="StringValues"/> to compare.</param>
         /// <param name="right">The second <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool Equals(StringValues left, StringValues right)
         {
-            var count = left.Count;
+            int count = left.Count;
 
             if (count != right.Count)
             {
                 return false;
             }
 
-            for (var i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
                 if (left[i] != right[i])
                 {
@@ -549,7 +548,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Determines whether two specified <see cref="StringValues"/> have the same values. 
+        /// Determines whether two specified <see cref="StringValues"/> have the same values.
         /// </summary>
         /// <param name="left">The first <see cref="StringValues"/> to compare.</param>
         /// <param name="right">The second <see cref="StringValues"/> to compare.</param>
@@ -668,36 +667,36 @@ namespace Microsoft.Extensions.Primitives
         public static bool operator !=(string[] left, StringValues right) => !Equals(new StringValues(left), right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="StringValues"/> and <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="StringValues"/> and <see cref="object"/>, which must be a
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, have the same value.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator ==(StringValues left, object right) => left.Equals(right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="StringValues"/> and <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="StringValues"/> and <see cref="object"/>, which must be a
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, have different values.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator !=(StringValues left, object right) => !left.Equals(right);
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object"/>, which must be a 
+        /// Determines whether the specified <see cref="object"/>, which must be a
         /// <see cref="StringValues"/>, <see cref="string"/>, or array of <see cref="string"/>, and specified <see cref="StringValues"/>,  have the same value.
         /// </summary>
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
-        /// <param name="right">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="right">The <see cref="object"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator ==(object left, StringValues right) => right.Equals(left);
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object"/> and <see cref="StringValues"/> object have the same values.
+        /// Determines whether the specified <see cref="object"/> and <see cref="StringValues"/> object have the same values.
         /// </summary>
-        /// <param name="left">The <see cref="System.Object"/> to compare.</param>
+        /// <param name="left">The <see cref="object"/> to compare.</param>
         /// <param name="right">The <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the <paramref name="left"/> object is equal to the <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator !=(object left, StringValues right) => !right.Equals(left);
@@ -735,15 +734,15 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            var value = _values;
+            object value = _values;
             if (value is string[] values)
             {
                 if (Count == 1)
                 {
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
-                var hcc = new HashCodeCombiner();
-                for (var i = 0; i < values.Length; i++)
+                var hcc = default(HashCodeCombiner);
+                for (int i = 0; i < values.Length; i++)
                 {
                     hcc.Add(values[i]);
                 }
@@ -784,13 +783,13 @@ namespace Microsoft.Extensions.Primitives
 
             public bool MoveNext()
             {
-                var index = _index;
+                int index = _index;
                 if (index < 0)
                 {
                     return false;
                 }
 
-                var values = _values;
+                string[] values = _values;
                 if (values != null)
                 {
                     if ((uint)index < (uint)values.Length)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -8,7 +7,7 @@ namespace System.Threading.Tasks.Tests
 {
     public class RunContinuationsAsynchronouslyTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void Direct(bool useRunContinuationsAsynchronously)
@@ -16,7 +15,7 @@ namespace System.Threading.Tasks.Tests
             Run(useRunContinuationsAsynchronously, t => t);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ViaUnwrap(bool useRunContinuationsAsynchronously)
@@ -24,7 +23,7 @@ namespace System.Threading.Tasks.Tests
             Run(useRunContinuationsAsynchronously, t => ((Task<Task>)t).Unwrap());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ViaWhenAll(bool useRunContinuationsAsynchronously)
@@ -32,7 +31,7 @@ namespace System.Threading.Tasks.Tests
             Run(useRunContinuationsAsynchronously, t => Task.WhenAll(t));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ViaWhenAny(bool useRunContinuationsAsynchronously)

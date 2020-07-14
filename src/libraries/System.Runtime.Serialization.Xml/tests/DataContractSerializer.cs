@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -792,6 +791,33 @@ public static partial class DataContractSerializerTests
 
         Assert.True(y.RO1.Count == 1);
         Assert.True((char)y.RO1[0] == 'x');
+    }
+	
+    [Fact]
+    public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
+    {
+        TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
+        {
+            F1 = new MyEnumerable('a', 45),
+            F2 = new List<string> { "a", "b", "c" }.OrderBy(x => x),
+            P1 = new MyEnumerable("x", "y"),
+            P2 = Enumerable.Empty<int>()
+        };
+
+        var dcs = new DataContractSerializer(typeof(TypeWithEnumerableMembers));
+
+        string baseline = @"<TypeWithEnumerableMembers xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><F1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:char"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">97</a:anyType><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">45</a:anyType></F1><F2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">a</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">b</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">c</a:anyType></F2><P1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">x</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">y</a:anyType></P1><P2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><RO1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></TypeWithEnumerableMembers>";
+        using (MemoryStream ms = new MemoryStream())
+        {
+            dcs.WriteObject(ms, x);
+            ms.Position = 0;
+
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+
+            Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                Environment.NewLine, result.ErrorMessage, x, baseline, actualOutput));
+        }
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Collections;
@@ -11,7 +10,7 @@ namespace System.Data.Common
     {
         private const uint DefaultValue = uint.MinValue;
 
-        private uint[] _values;
+        private uint[] _values = default!; // Late-initialized
 
         public UInt32Storage(DataColumn column)
         : base(column, typeof(uint), DefaultValue, StorageType.UInt32)
@@ -135,12 +134,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         count = 0;
@@ -177,7 +176,7 @@ namespace System.Data.Common
             return (valueNo1 < valueNo2 ? -1 : (valueNo1 > valueNo2 ? 1 : 0)); // similar to UInt32.CompareTo(UInt32)
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -196,7 +195,7 @@ namespace System.Data.Common
             //return(valueNo1 < valueNo2 ? -1 : (valueNo1 > valueNo2 ? 1 : 0)); // similar to UInt32.CompareTo(UInt32)
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

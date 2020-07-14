@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // threadsuspend.CPP
 //
@@ -5390,54 +5389,6 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
 
 #ifndef TARGET_UNIX
 
-// Get the ExecutionState for the specified SwitchIn thread.  Note that this is
-// a 'StackWalk' call back (PSTACKWALKFRAMESCALLBACK).
-StackWalkAction SWCB_GetExecutionStateForSwitchIn(CrawlFrame *pCF, VOID *pData)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    ExecutionState  *pES = (ExecutionState *) pData;
-    StackWalkAction  action = SWA_CONTINUE;
-
-    if (pES->m_FirstPass) {
-        if (pCF->IsFrameless()) {
-#ifdef TARGET_X86
-            pES->m_FirstPass = FALSE;
-#else
-            _ASSERTE(!"Platform NYI");
-#endif
-
-            pES->m_IsJIT = TRUE;
-            pES->m_pFD = pCF->GetFunction();
-            pES->m_MethodToken = pCF->GetMethodToken();
-            // We do not care if the code is interruptible
-            pES->m_IsInterruptible = FALSE;
-            pES->m_RelOffset = pCF->GetRelOffset();
-            pES->m_pJitManager = pCF->GetJitManager();
-        }
-    }
-    else {
-#ifdef TARGET_X86
-        if (pCF->IsFrameless()) {
-            PREGDISPLAY     pRDT = pCF->GetRegisterSet();
-            if (pRDT) {
-                // pPC points to the return address sitting on the stack, as our
-                // current EIP for the penultimate stack frame.
-                pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
-                action = SWA_ABORT;
-            }
-        }
-#else
-        _ASSERTE(!"Platform NYI");
-#endif
-    }
-    return action;
-}
-
 //
 // The function below, ThreadCaughtInKernelModeExceptionHandling, exists to detect and work around a very subtle
 // race that we have when we suspend a thread while that thread is in the kernel handling an exception.
@@ -5751,7 +5702,7 @@ BOOL Thread::GetSafelyRedirectableThreadContext(DWORD dwOptions, CONTEXT * pCtx,
 // suspended.  If we aren't in interruptible code, then we aren't handled.  So we
 // pick a spot to hijack the return address and our caller will wait to get us
 // somewhere safe.
-BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
+BOOL Thread::HandledJITCase()
 {
     CONTRACTL {
         NOTHROW;
@@ -5797,26 +5748,20 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
     }
 #endif //_DEBUG
 
-    // Walk one or two frames of the stack...
-    if (ForTaskSwitchIn) {
-        action = StackWalkFramesEx(&rd,SWCB_GetExecutionStateForSwitchIn, &esb, QUICKUNWIND | DISABLE_MISSING_FRAME_DETECTION | THREAD_IS_SUSPENDED | ALLOW_ASYNC_STACK_WALK, NULL);
-    }
-    else {
 #ifdef TIME_SUSPEND
-        DWORD startCrawl = g_SuspendStatistics.GetTime();
+    DWORD startCrawl = g_SuspendStatistics.GetTime();
 #endif
-        action = StackWalkFramesEx(&rd,SWCB_GetExecutionState, &esb,
-                                   QUICKUNWIND | DISABLE_MISSING_FRAME_DETECTION |
-                                   THREAD_IS_SUSPENDED | ALLOW_ASYNC_STACK_WALK, NULL);
+    action = StackWalkFramesEx(&rd,SWCB_GetExecutionState, &esb,
+                                QUICKUNWIND | DISABLE_MISSING_FRAME_DETECTION |
+                                THREAD_IS_SUSPENDED | ALLOW_ASYNC_STACK_WALK, NULL);
 
 #ifdef TIME_SUSPEND
-        g_SuspendStatistics.crawl.Accumulate(
-                SuspendStatistics::GetElapsed(startCrawl,
-                                              g_SuspendStatistics.GetTime()));
+    g_SuspendStatistics.crawl.Accumulate(
+            SuspendStatistics::GetElapsed(startCrawl,
+                                            g_SuspendStatistics.GetTime()));
 
-        g_SuspendStatistics.cntHijackCrawl++;
+    g_SuspendStatistics.cntHijackCrawl++;
 #endif
-    }
 
     //
     // action should either be SWA_ABORT, in which case we properly walked

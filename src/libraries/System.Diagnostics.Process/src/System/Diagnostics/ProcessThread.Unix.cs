@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics
 {
@@ -44,10 +43,5 @@ namespace System.Diagnostics
         {
             set { throw new PlatformNotSupportedException(); } // No ability to change the affinity of a thread in an arbitrary process
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

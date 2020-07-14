@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
@@ -37,9 +36,9 @@ namespace System.Text
         internal static readonly UTF32Encoding s_default = new UTF32Encoding(bigEndian: false, byteOrderMark: true);
         internal static readonly UTF32Encoding s_bigEndianDefault = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
 
-        private readonly bool _emitUTF32ByteOrderMark = false;
-        private readonly bool _isThrowException = false;
-        private readonly bool _bigEndian = false;
+        private readonly bool _emitUTF32ByteOrderMark;
+        private readonly bool _isThrowException;
+        private readonly bool _bigEndian;
 
         public UTF32Encoding() : this(false, true)
         {
@@ -1167,8 +1166,8 @@ namespace System.Text
         private sealed class UTF32Decoder : DecoderNLS
         {
             // Need a place to store any extra bytes we may have picked up
-            internal int iChar = 0;
-            internal int readByteCount = 0;
+            internal int iChar;
+            internal int readByteCount;
 
             public UTF32Decoder(UTF32Encoding encoding) : base(encoding)
             {

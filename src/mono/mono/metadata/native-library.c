@@ -10,6 +10,7 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
+#include "mono/metadata/native-library.h"
 
 #ifdef ENABLE_NETCORE
 static int pinvoke_search_directories_count;
@@ -22,16 +23,16 @@ static char **pinvoke_search_directories;
 static MonoCoopMutex native_library_module_lock;
 static GHashTable *native_library_module_map;
 /*
- * This blacklist is used as a set for cache invalidation purposes with netcore pinvokes.
+ * This blocklist is used as a set for cache invalidation purposes with netcore pinvokes.
  * When pinvokes are resolved with anything other than the last-chance managed event,
  * the results of that lookup are added to an ALC-level cache. However, if a library is then
  * unloaded with NativeLibrary.Free(), this cache should be invalidated so that a newly called
- * pinvoke will not attempt to use it, hence the blacklist. This design means that if another
+ * pinvoke will not attempt to use it, hence the blocklist. This design means that if another
  * library is loaded at the same address, it will function with a perf hit, as the entry will
- * repeatedly be added and removed from the cache due to its presence in the blacklist.
+ * repeatedly be added and removed from the cache due to its presence in the blocklist.
  * This is a rare scenario and considered a worthwhile tradeoff.
  */
-static GHashTable *native_library_module_blacklist;
+static GHashTable *native_library_module_blocklist;
 #endif
 
 #ifndef DISABLE_DLLMAP
@@ -51,25 +52,6 @@ static GSList *bundle_library_paths;
 
 // Directory where we unpacked dynamic libraries
 static char *bundled_dylibrary_directory;
-
-typedef enum {
-	LOOKUP_PINVOKE_ERR_OK = 0, /* No error */
-	LOOKUP_PINVOKE_ERR_NO_LIB, /* DllNotFoundException */
-	LOOKUP_PINVOKE_ERR_NO_SYM, /* EntryPointNotFoundException */
-} MonoLookupPInvokeErr;
-
-/* We should just use a MonoError, but mono_lookup_pinvoke_call has this legacy
- * error reporting mechanism where it returns an exception class and a string
- * message.  So instead we return an error code and message, and for internal
- * callers convert it to a MonoError.
- *
- * Don't expose this type to the runtime.  It's just an implementation
- * detail for backward compatability.
- */
-typedef struct MonoLookupPInvokeStatus {
-	MonoLookupPInvokeErr err_code;
-	char *err_arg;
-} MonoLookupPInvokeStatus;
 
 /* Class lazy loading functions */
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
@@ -337,8 +319,8 @@ mono_global_loader_cache_init (void)
 #ifdef ENABLE_NETCORE
 	if (!native_library_module_map)
 		native_library_module_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-	if (!native_library_module_blacklist)
-		native_library_module_blacklist = g_hash_table_new (g_direct_hash, g_direct_equal);
+	if (!native_library_module_blocklist)
+		native_library_module_blocklist = g_hash_table_new (g_direct_hash, g_direct_equal);
 	mono_coop_mutex_init (&native_library_module_lock);
 #endif
 }
@@ -490,9 +472,9 @@ netcore_handle_lookup (gpointer handle)
 
 // LOCKING: expects you to hold native_library_module_lock
 static gboolean
-netcore_check_blacklist (MonoDl *module)
+netcore_check_blocklist (MonoDl *module)
 {
-	return g_hash_table_contains (native_library_module_blacklist, module);
+	return g_hash_table_contains (native_library_module_blocklist, module);
 }
 
 static MonoDl *
@@ -738,13 +720,13 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	result = (MonoDl *)g_hash_table_lookup (alc->pinvoke_scopes, scope);
 
 	if (result) {
-		gboolean blacklisted;
+		gboolean blocklisted;
 
 		native_library_lock ();
-		blacklisted = netcore_check_blacklist (result);
+		blocklisted = netcore_check_blocklist (result);
 		native_library_unlock ();
 
-		if (blacklisted) {
+		if (blocklisted) {
 			g_hash_table_remove (alc->pinvoke_scopes, scope);
 			result = NULL;
 		}
@@ -1249,6 +1231,11 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_import = g_strdup (orig_import);
 #endif
 
+	if (strcmp (new_scope, "QCall") == 0) {
+		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
+		return piinfo->addr;
+	}
+
 #ifdef ENABLE_NETCORE
 #ifndef HOST_WIN32
 retry_with_libcoreclr:
@@ -1433,7 +1420,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		goto leave;
 
 	g_hash_table_remove (native_library_module_map, module->handle);
-	g_hash_table_add (native_library_module_blacklist, module);
+	g_hash_table_add (native_library_module_blocklist, module);
 	mono_dl_close (module);
 
 leave:
@@ -1614,3 +1601,4 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	
 	g_free (buffer);
 }
+

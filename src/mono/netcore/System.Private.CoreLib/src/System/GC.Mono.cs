@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -248,13 +247,20 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            _GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
-                             out long memoryLoadBytes,
-                             out long totalAvailableMemoryBytes,
-                             out long heapSizeBytes,
-                             out long fragmentedBytes);
+            var data = new GCMemoryInfoData();
 
-            return new GCMemoryInfo(highMemoryLoadThresholdBytes, memoryLoadBytes, totalAvailableMemoryBytes, heapSizeBytes, fragmentedBytes);
+            _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
+                             out data._memoryLoadBytes,
+                             out data._totalAvailableMemoryBytes,
+                             out data._heapSizeBytes,
+                             out data._fragmentedBytes);
+
+            return new GCMemoryInfo(data);
+        }
+
+        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

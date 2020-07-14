@@ -10,7 +10,7 @@
     <NoWarn>436</NoWarn>
     <!-- Disable: CLSCompliant attribute is not needed -->
     <NoWarn>$(NoWarn);3021</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -32,6 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
+    <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
+             Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
              Link="ProductionCode\System\Net\Security\SslStream.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs"
@@ -44,6 +46,10 @@
              Link="ProductionCode\System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslConnectionInfo.cs"
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Windows.cs"
+             Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.Windows.cs" />
     <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
              Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
@@ -54,6 +60,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertMessage.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

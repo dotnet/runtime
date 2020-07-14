@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -42,12 +41,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string key, value;
 
-            using (var enumerator = Args.GetEnumerator())
+            using (IEnumerator<string> enumerator = Args.GetEnumerator())
             {
                 while (enumerator.MoveNext())
                 {
-                    var currentArg = enumerator.Current;
-                    var keyStartIndex = 0;
+                    string currentArg = enumerator.Current;
+                    int keyStartIndex = 0;
 
                     if (currentArg.StartsWith("--"))
                     {
@@ -65,7 +64,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         keyStartIndex = 2;
                     }
 
-                    var separator = currentArg.IndexOf('=');
+                    int separator = currentArg.IndexOf('=');
 
                     if (separator < 0)
                     {
@@ -77,7 +76,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         }
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.TryGetValue(currentArg, out var mappedKey))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(currentArg, out string mappedKey))
                         {
                             key = mappedKey;
                         }
@@ -92,7 +91,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                             key = currentArg.Substring(keyStartIndex);
                         }
 
-                        var previousKey = enumerator.Current;
+                        string previousKey = enumerator.Current;
                         if (!enumerator.MoveNext())
                         {
                             // ignore missing values
@@ -103,10 +102,10 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     }
                     else
                     {
-                        var keySegment = currentArg.Substring(0, separator);
+                        string keySegment = currentArg.Substring(0, separator);
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.TryGetValue(keySegment, out var mappedKeySegment))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(keySegment, out string mappedKeySegment))
                         {
                             key = mappedKeySegment;
                         }
@@ -138,7 +137,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             // However, the keys in configuration providers are all case-insensitive
             // So we check whether the given switch mappings contain duplicated keys with case-insensitive comparer
             var switchMappingsCopy = new Dictionary<string, string>(switchMappings.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (var mapping in switchMappings)
+            foreach (KeyValuePair<string, string> mapping in switchMappings)
             {
                 // Only keys start with "--" or "-" are acceptable
                 if (!mapping.Key.StartsWith("-") && !mapping.Key.StartsWith("--"))

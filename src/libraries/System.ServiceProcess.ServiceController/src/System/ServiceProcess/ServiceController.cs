@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -538,8 +537,7 @@ namespace System.ServiceProcess
         /// </summary>
         private unsafe string? GetServiceKeyName(SafeServiceHandle? SCMHandle, string serviceDisplayName)
         {
-            Span<char> initialBuffer = stackalloc char[256];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[256]);
             int bufLen;
             while (true)
             {

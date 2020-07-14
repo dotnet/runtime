@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2733,8 +2732,10 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         switch (otherTreeNode->OperGet())
         {
             case GT_CNS_INT:
-                if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
-                    (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
+            {
+                ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
+                ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
+                if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
                 {
 #ifdef TARGET_64BIT
                     // If the constant is negative, only reuse registers of the same type.
@@ -2743,14 +2744,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
                     // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
                     // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
                     // than once, we won't have access to the instruction that originally defines the constant).
-                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
-                        (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
+                    if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) || (v1 >= 0))
 #endif // TARGET_64BIT
                     {
                         return true;
                     }
                 }
                 break;
+            }
             case GT_CNS_DBL:
             {
                 // For floating point constants, the values must be identical, not simply compare
@@ -6547,10 +6548,13 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType))
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
+        // We can't do this in the case of a multi-reg node with a non-multireg source as
+        // we need the register to extract into.
 
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
@@ -6785,8 +6789,8 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         if (refPosition->copyReg)
         {
             // This is a TEMPORARY copy
-            assert(isCandidateLocalRef(tree));
-            newNode->gtFlags |= GTF_VAR_DEATH;
+            assert(isCandidateLocalRef(tree) || tree->IsMultiRegLclVar());
+            newNode->SetLastUse(multiRegIdx);
         }
 
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,7 +24,19 @@ namespace System.Net.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public partial class HttpWebRequestTest
+    public sealed class HttpWebRequestTest_Async : HttpWebRequestTest
+    {
+        public HttpWebRequestTest_Async(ITestOutputHelper output) : base(output) { }
+        protected override Task<WebResponse> GetResponseAsync(HttpWebRequest request) => request.GetResponseAsync();
+    }
+
+    public sealed class HttpWebRequestTest_Sync : HttpWebRequestTest
+    {
+        public HttpWebRequestTest_Sync(ITestOutputHelper output) : base(output) { }
+        protected override Task<WebResponse> GetResponseAsync(HttpWebRequest request) => Task.Run(() => request.GetResponse());
+    }
+
+    public abstract partial class HttpWebRequestTest
     {
         public class HttpWebRequestParameters
         {
@@ -219,6 +230,8 @@ namespace System.Net.Tests
             _output = output;
         }
 
+        protected abstract Task<WebResponse> GetResponseAsync(HttpWebRequest request);
+
         [Theory, MemberData(nameof(EchoServers))]
         public void Ctor_VerifyDefaults_Success(Uri remoteServer)
         {
@@ -316,7 +329,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.ServerCertificateValidationCallback = delegate { return true; };
-                using (WebResponse response = await request.GetResponseAsync())
+                using (WebResponse response = await GetResponseAsync(request))
                 using (Stream myStream = response.GetResponseStream())
                 using (var sr = new StreamReader(myStream))
                 {
@@ -366,7 +379,7 @@ namespace System.Net.Tests
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
+                Task<WebResponse> getResponse = GetResponseAsync(request);
                 await server.AcceptConnectionSendResponseAndCloseAsync();
                 using (WebResponse response = await getResponse)
                 {
@@ -390,7 +403,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 string host = uri.Host + ":" + uri.Port;
                 request.Host = host;
-                Task<WebResponse> getResponse = request.GetResponseAsync();
+                Task<WebResponse> getResponse = GetResponseAsync(request);
 
                 await server.AcceptConnectionAsync(async connection =>
                 {
@@ -659,7 +672,7 @@ namespace System.Net.Tests
                     request.KeepAlive = keepAlive.Value;
                 }
 
-                Task<WebResponse> getResponseTask = request.GetResponseAsync();
+                Task<WebResponse> getResponseTask = GetResponseAsync(request);
                 Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                 await TaskTimeoutExtensions.WhenAllOrAnyFailed(new Task[] { getResponseTask, serverTask });
@@ -1000,7 +1013,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.ProtocolVersion = requestVersion;
 
-                Task<WebResponse> getResponse = request.GetResponseAsync();
+                Task<WebResponse> getResponse = GetResponseAsync(request);
                 Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                 using (HttpWebResponse response = (HttpWebResponse)await getResponse)
@@ -1205,7 +1218,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.AllowAutoRedirect = true;
                 request.MaximumAutomaticRedirections = 1;
-                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await GetResponseAsync(request));
                 Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
             }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
         }
@@ -1217,7 +1230,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.AllowAutoRedirect = false;
-                using (WebResponse response = await request.GetResponseAsync())
+                using (WebResponse response = await GetResponseAsync(request))
                 {
                     HttpWebResponse httpResponse = Assert.IsType<HttpWebResponse>(response);
                     Assert.Equal(HttpStatusCode.Redirect, httpResponse.StatusCode);
@@ -1232,7 +1245,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.AllowAutoRedirect = false;
-                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await GetResponseAsync(request));
                 Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
             }, server => server.HandleRequestAsync(HttpStatusCode.BadRequest));
         }
@@ -1272,7 +1285,7 @@ namespace System.Net.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
-                using (WebResponse response = await request.GetResponseAsync())
+                using (WebResponse response = await GetResponseAsync(request))
                 using (Stream myStream = response.GetResponseStream())
                 {
                     Assert.NotNull(myStream);
@@ -1291,7 +1304,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.ServerCertificateValidationCallback = delegate { return true; };
-                using (WebResponse response = await request.GetResponseAsync())
+                using (WebResponse response = await GetResponseAsync(request))
                 using (Stream myStream = response.GetResponseStream())
                 using (var sr = new StreamReader(myStream))
                 {
@@ -1344,7 +1357,7 @@ namespace System.Net.Tests
                     requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
                 }
 
-                using (WebResponse response = await request.GetResponseAsync())
+                using (WebResponse response = await GetResponseAsync(request))
                 using (Stream myStream = response.GetResponseStream())
                 using (var sr = new StreamReader(myStream))
                 {
@@ -1385,7 +1398,7 @@ namespace System.Net.Tests
                 request.ServerCertificateValidationCallback = delegate { return true; };
                 request.UseDefaultCredentials = true;
 
-                (await request.GetResponseAsync()).Dispose();
+                (await GetResponseAsync(request)).Dispose();
             }, server => server.HandleRequestAsync(), options);
         }
 
@@ -1395,7 +1408,7 @@ namespace System.Net.Tests
         {
             string serverUrl = string.Format("http://www.{0}.com/", Guid.NewGuid().ToString());
             HttpWebRequest request = WebRequest.CreateHttp(serverUrl);
-            WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+            WebException ex = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
             Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
         }
 
@@ -1405,7 +1418,7 @@ namespace System.Net.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
-                WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                WebException ex = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
                 Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
                 $"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"));
@@ -1424,7 +1437,7 @@ namespace System.Net.Tests
                 request.ServerCertificateValidationCallback = delegate { return true; };
                 request.UseDefaultCredentials = true;
 
-                using WebResponse response = await request.GetResponseAsync();
+                using WebResponse response = await GetResponseAsync(request);
                 Assert.True(request.HaveResponse);
             }, server => server.HandleRequestAsync(), options);
         }
@@ -1443,7 +1456,7 @@ namespace System.Net.Tests
                 request.ServerCertificateValidationCallback = delegate { return true; };
                 request.ContentType = HeadersPartialContent;
 
-                using WebResponse response = await request.GetResponseAsync();
+                using WebResponse response = await GetResponseAsync(request);
                 string headersString = response.Headers.ToString();
                 Assert.Equal(HeadersPartialContent, response.Headers[HttpResponseHeader.ContentType]);
             }, async server =>
@@ -1507,16 +1520,16 @@ namespace System.Net.Tests
                 proxyTask = proxyServer.AcceptConnectionPerformAuthenticationAndCloseAsync("Proxy-Authenticate: Basic realm=\"NetCore\"\r\n");
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
 
-                RemoteExecutor.Invoke(async (user, pw) =>
+                RemoteExecutor.Invoke(async (async, user, pw) =>
                 {
                     WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(user, pw);
                     HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
 
-                    using (var response = (HttpWebResponse)await request.GetResponseAsync())
+                    using (var response = (HttpWebResponse)(bool.Parse(async) ? await request.GetResponseAsync() : request.GetResponse()))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
-                }, cred.UserName, cred.Password, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                }, (this is HttpWebRequestTest_Async).ToString(), cred.UserName, cred.Password, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
                 await proxyTask;
             }, options);
@@ -1540,7 +1553,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.ServerCertificateValidationCallback = delegate { return true; };
-                using WebResponse response = await request.GetResponseAsync();
+                using WebResponse response = await GetResponseAsync(request);
                 Assert.Equal(uri, response.ResponseUri);
             }, server => server.HandleRequestAsync(), options);
         }
@@ -1563,7 +1576,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 request.ServerCertificateValidationCallback = delegate { return true; };
-                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                using HttpWebResponse response = (HttpWebResponse)await GetResponseAsync(request);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }, server => server.HandleRequestAsync(), options);
         }
@@ -1585,7 +1598,7 @@ namespace System.Net.Tests
                     requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
                 }
 
-                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                using HttpWebResponse response = (HttpWebResponse)await GetResponseAsync(request);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }, server => server.HandleRequestAsync(), options);
         }
@@ -1604,7 +1617,7 @@ namespace System.Net.Tests
                 request.ServerCertificateValidationCallback = delegate { return true; };
                 request.ContentType = ContentType;
 
-                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                using HttpWebResponse response = (HttpWebResponse)await GetResponseAsync(request);
                 Assert.Equal(ContentType, response.Headers[HttpResponseHeader.ContentType]);
             }, async server =>
             {
@@ -1625,7 +1638,7 @@ namespace System.Net.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), MemberData(nameof(MixedWebRequestParameters))]
         public void GetResponseAsync_ParametersAreNotCachable_CreateNewClient(HttpWebRequestParameters requestParameters, bool connectionReusedParameter)
         {
-            RemoteExecutor.Invoke(async (serializedParameters, connectionReusedString) =>
+            RemoteExecutor.Invoke(async (async, serializedParameters, connectionReusedString) =>
             {
                 var parameters = JsonSerializer.Deserialize<HttpWebRequestParameters>(serializedParameters);
 
@@ -1645,7 +1658,7 @@ namespace System.Net.Tests
 
                     string responseContent = "Test response.";
 
-                    Task<WebResponse> firstResponseTask = request0.GetResponseAsync();
+                    Task<WebResponse> firstResponseTask = bool.Parse(async) ? request0.GetResponseAsync() : Task.Run(() => request0.GetResponse());
                     using (Socket server = await listener.AcceptAsync())
                     using (var serverStream = new NetworkStream(server, ownsSocket: false))
                     using (var serverReader = new StreamReader(serverStream))
@@ -1668,13 +1681,13 @@ namespace System.Net.Tests
                         }
                     }
                 }
-            }, JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).Dispose();
+            }, (this is HttpWebRequestTest_Async).ToString(), JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetResponseAsync_ParametersAreCachableButDifferent_CreateNewClient()
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async (async) =>
              {
                  using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                  {
@@ -1699,7 +1712,7 @@ namespace System.Net.Tests
 
                      string responseContent = "Test response.";
 
-                     Task<WebResponse> firstResponseTask = firstRequest.GetResponseAsync();
+                     Task<WebResponse> firstResponseTask = bool.Parse(async) ? firstRequest.GetResponseAsync() : Task.Run(() => firstRequest.GetResponse());
                      using (Socket server = await listener.AcceptAsync())
                      using (var serverStream = new NetworkStream(server, ownsSocket: false))
                      using (var serverReader = new StreamReader(serverStream))
@@ -1716,7 +1729,7 @@ namespace System.Net.Tests
                              HttpWebRequest currentRequest = WebRequest.CreateHttp(uri);
                              currentParameters.Configure(currentRequest);
 
-                             Task<WebResponse> currentResponseTask = currentRequest.GetResponseAsync();
+                             Task<WebResponse> currentResponseTask = bool.Parse(async) ? currentRequest.GetResponseAsync() : Task.Run(() => currentRequest.GetResponse());
                              if (connectionReused)
                              {
                                  await ReplyToClient(responseContent, server, serverReader);
@@ -1730,7 +1743,7 @@ namespace System.Net.Tests
                          }
                      }
                  }
-             }).Dispose();
+             }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
         }
 
         [Fact]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -607,7 +606,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
         {
             return this.Clear();
@@ -616,7 +614,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T value)
         {
             return this.Add(value);
@@ -625,7 +622,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T value)
         {
             return this.Remove(value);
@@ -634,7 +630,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
         {
             return this.Intersect(other);
@@ -643,7 +638,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
         {
             return this.Except(other);
@@ -654,7 +648,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.SymmetricExcept(IEnumerable<T> other)
         {
             return this.SymmetricExcept(other);
@@ -663,7 +656,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
         {
             return this.Union(other);
@@ -954,7 +946,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return this.IsEmpty ?
@@ -972,7 +963,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
-        [ExcludeFromCodeCoverage]
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

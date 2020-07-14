@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // System.Drawing.PrintDocument.cs
 //
@@ -40,13 +39,14 @@ using System.ComponentModel;
 
 namespace System.Drawing.Printing
 {
+    [DefaultProperty("DocumentName"), DefaultEvent("PrintPage")]
     public class PrintDocument : System.ComponentModel.Component
     {
         private PageSettings defaultpagesettings;
         private PrinterSettings printersettings;
         private PrintController printcontroller;
         private string documentname;
-        private bool originAtMargins = false; // .NET V1.1 Beta
+        private bool originAtMargins; // .NET V1.1 Beta
 
         public PrintDocument()
         {

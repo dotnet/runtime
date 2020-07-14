@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -290,6 +289,7 @@ namespace System.Security.Cryptography
             Debug.Assert(hmacOid == Oids.HmacWithSha1 || !isPkcs12);
         }
 
+        [SuppressMessage("Microsoft.Security", "CA5379", Justification = "SHA1 used if specified by argument")]
         internal static unsafe int Encrypt(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
@@ -698,6 +698,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [SuppressMessage("Microsoft.Security", "CA5379", Justification = "SHA1 used if specified by argument")]
         private static unsafe Rfc2898DeriveBytes OpenPbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlyMemory<byte>? parameters,

@@ -7,6 +7,7 @@ T:System.ComponentModel.EditorAttribute
 T:System.ComponentModel.ToolboxItemAttribute
 T:System.ComponentModel.TypeDescriptionProviderAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
+T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
@@ -27,7 +28,6 @@ T:System.Runtime.CompilerServices.IteratorStateMachineAttribute
 T:System.Runtime.CompilerServices.MethodImpl
 T:System.Runtime.CompilerServices.NullableAttribute
 T:System.Runtime.CompilerServices.NullableContextAttribute
-T:System.Runtime.CompilerServices.PreserveDependencyAttribute
 T:System.Runtime.CompilerServices.TypeForwardedFromAttribute
 T:System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute
 T:System.Runtime.ConstrainedExecution.ReliabilityContractAttribute

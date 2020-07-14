@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Threading;
@@ -92,6 +92,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets a description of the state of the state machine object, suitable for debug purposes.</summary>
         /// <param name="stateMachine">The state machine object.</param>
         /// <returns>A description of the state machine.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "It's okay if unused fields disappear from debug views")]
         internal static string GetAsyncStateMachineDescription(IAsyncStateMachine stateMachine)
         {
             Debug.Assert(stateMachine != null);
