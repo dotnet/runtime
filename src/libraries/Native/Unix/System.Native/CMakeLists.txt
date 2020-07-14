@@ -2,25 +2,30 @@ project(System.Native C)
 
 set(NATIVE_SOURCES
     pal_errno.c
-    pal_interfaceaddresses.c
     pal_io.c
-    pal_maphardwaretype.c
-    pal_memory.c
+    pal_logger.c
     pal_mount.c
-    pal_networking.c
-    pal_networkstatistics.c
-    pal_process.c
     pal_random.c
-    pal_runtimeinformation.c
-    pal_runtimeextensions.c
-    pal_signal.c
-    pal_string.c
-    pal_tcpstate.c
     pal_time.c
-    pal_uid.c
     pal_datetime.c
-    pal_sysctl.c
 )
+
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_interfaceaddresses.c
+        pal_maphardwaretype.c
+        pal_memory.c
+        pal_process.c
+        pal_networking.c
+        pal_networkstatistics.c
+        pal_runtimeinformation.c
+        pal_runtimeextensions.c
+        pal_signal.c
+        pal_string.c
+        pal_sysctl.c
+        pal_tcpstate.c
+        pal_uid.c)
+endif ()
 
 if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}

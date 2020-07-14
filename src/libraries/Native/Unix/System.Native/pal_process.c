@@ -15,7 +15,6 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <syslog.h>
 #include <unistd.h>
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -666,11 +665,6 @@ int32_t SystemNative_GetSid(int32_t pid)
     return getsid(pid);
 }
 
-void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
-{
-    syslog((int)(LOG_USER | priority), message, arg1);
-}
-
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
 {
     siginfo_t siginfo;
@@ -783,19 +777,6 @@ int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 #else
     return setpriority((priorityWhich)which, (id_t)who, nice);
 #endif
-}
-
-char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
-{
-    assert(bufferSize >= 0);
-
-    if (bufferSize < 0)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    return getcwd(buffer, Int32ToSizeT(bufferSize));
 }
 
 #if HAVE_SCHED_SETAFFINITY

@@ -76,27 +76,6 @@ typedef enum
 } Signals;
 
 /**
- * Constants for passing to the first parameter of syslog.
- * These are a combination of flags where the lower bits are
- * the priority and the higher bits are the facility. The lower
- * bits cannot be OR'd together; they must be OR'd with the higer bits.
- *
- * These values keep their original definition and are taken from syslog.h
- */
-typedef enum
-{
-    // Priorities
-    PAL_LOG_EMERG = 0,   /* system is unusable */
-    PAL_LOG_ALERT = 1,   /* action must be taken immediately */
-    PAL_LOG_CRIT = 2,    /* critical conditions */
-    PAL_LOG_ERR = 3,     /* error conditions */
-    PAL_LOG_WARNING = 4, /* warning conditions */
-    PAL_LOG_NOTICE = 5,  /* normal but significant condition */
-    PAL_LOG_INFO = 6,    /* informational */
-    PAL_LOG_DEBUG = 7,   /* debug-level messages */
-} SysLogPriority;
-
-/**
  * Constants to pass into pathconf.
  *
  * Note - these differ per OS so these values are the PAL-specific
@@ -180,12 +159,6 @@ PALEXPORT int32_t SystemNative_GetPid(void);
 PALEXPORT int32_t SystemNative_GetSid(int32_t pid);
 
 /**
- * Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
- * See man 3 syslog for more info
- */
-PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
-
-/**
  * Returns the pid of a terminated child without reaping it.
  *
  * 1) returns the process id of a terminated child process
@@ -227,11 +200,6 @@ PALEXPORT int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
  * Returns 0 on success; otherwise, -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
-
-/**
- * Gets the current working directory of the currently executing process.
- */
-PALEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
 #if HAVE_SCHED_SETAFFINITY
 /**

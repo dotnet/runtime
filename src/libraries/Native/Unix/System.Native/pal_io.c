@@ -473,6 +473,7 @@ int32_t SystemNative_CloseDir(DIR* dir)
     return closedir(dir);
 }
 
+#if !defined(TARGET_WASM)
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
     switch (flags)
@@ -522,6 +523,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #endif
     return result;
 }
+#endif
 
 int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
 {
@@ -530,6 +532,7 @@ int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
     return result;
 }
 
+#if !defined(TARGET_WASM)
 int32_t SystemNative_FcntlGetFD(intptr_t fd)
 {
     return fcntl(ToFileDescriptor(fd), F_GETFD);
@@ -609,6 +612,7 @@ int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
     *isNonBlocking = ((flags & O_NONBLOCK) == O_NONBLOCK) ? 1 : 0;
     return 0;
 }
+#endif
 
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
@@ -624,12 +628,14 @@ int32_t SystemNative_ChMod(const char* path, int32_t mode)
     return result;
 }
 
+#if !defined(TARGET_WASM)
 int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 {
     int32_t result;
     while ((result = fchmod(ToFileDescriptor(fd), (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 }
+#endif
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
@@ -650,6 +656,19 @@ int32_t SystemNative_ChDir(const char* path)
     int32_t result;
     while ((result = chdir(path)) < 0 && errno == EINTR);
     return result;
+}
+
+char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
+{
+    assert(bufferSize >= 0);
+
+    if (bufferSize < 0)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    return getcwd(buffer, Int32ToSizeT(bufferSize));
 }
 
 int32_t SystemNative_Access(const char* path, int32_t mode)
@@ -887,6 +906,7 @@ int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
     return msync(address, (size_t)length, flags);
 }
 
+#if !defined(TARGET_WASM)
 int64_t SystemNative_SysConf(int32_t name)
 {
     switch (name)
@@ -901,6 +921,7 @@ int64_t SystemNative_SysConf(int32_t name)
     errno = EINVAL;
     return -1;
 }
+#endif
 
 int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
 {
@@ -917,10 +938,12 @@ int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
     return result;
 }
 
+#if !defined(TARGET_WASM)
 int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     return Common_Poll(pollEvents, eventCount, milliseconds, triggered);
 }
+#endif
 
 int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice)
 {
@@ -957,6 +980,7 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
+#if !defined(TARGET_WASM)
 char* SystemNative_GetLine(FILE* stream)
 {
     assert(stream != NULL);
@@ -967,6 +991,7 @@ char* SystemNative_GetLine(FILE* stream)
 
     return length >= 0 ? lineptr : NULL;
 }
+#endif
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
@@ -1004,10 +1029,12 @@ int32_t SystemNative_RmDir(const char* path)
     return result;
 }
 
+#if !defined(TARGET_WASM)
 void SystemNative_Sync(void)
 {
     sync();
 }
+#endif
 
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
@@ -1226,6 +1253,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     return 0;
 }
 
+#if !defined(TARGET_WASM)
 intptr_t SystemNative_INotifyInit(void)
 {
 #if HAVE_INOTIFY
@@ -1304,6 +1332,7 @@ char* SystemNative_RealPath(const char* path)
     assert(path != NULL);
     return realpath(path, NULL);
 }
+#endif
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {

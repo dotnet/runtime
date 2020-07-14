@@ -717,3 +717,8 @@ PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
  * Returns true (non-zero) if supported, false (zero) if not.
  */
 PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
+
+/**
+ * Gets the current working directory of the currently executing process.
+ */
+PALEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
