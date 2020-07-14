@@ -370,7 +370,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
     // dirent should be under 2k in size
-    assert(sizeof(struct dirent) < 2048);
+    static_assert(sizeof(struct dirent) < 2048);
     // add some extra space so we can align the buffer to dirent.
     return sizeof(struct dirent) + dirent_alignment - 1;
 #else

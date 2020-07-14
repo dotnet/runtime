@@ -38,11 +38,9 @@ internal static partial class Interop
         internal static extern unsafe Error SetIPv4Address(byte* socketAddress, int socketAddressLen, uint address);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv6Address")]
-        [SuppressGCTransition]
         internal static extern unsafe Error GetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint* scopeId);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv6Address")]
-        [SuppressGCTransition]
         internal static extern unsafe Error SetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint scopeId);
     }
 }
