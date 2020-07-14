@@ -570,7 +570,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectCanceled();
+                    if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectCanceledAndStop();
 
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
                     // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
@@ -589,7 +589,7 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled() && _multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
             {
-                SocketsTelemetry.Log.ConnectFailed(socketError, null);
+                SocketsTelemetry.Log.ConnectFailedAndStop(socketError, null);
             }
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
@@ -738,7 +738,7 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed(socketError, null);
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop(socketError, null);
 
                         SetResults(socketError, bytesTransferred, flags);
                         _currentSocket!.UpdateStatusAfterSocketError(socketError);

@@ -10,18 +10,6 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
-        [NonEvent]
-        public void ConnectStart(Internals.SocketAddress address)
-        {
-            ConnectStart(address.ToString());
-        }
-
-        [NonEvent]
-        public void ConnectStart(EndPoint address)
-        {
-            ConnectStart(address.ToString());
-        }
-
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string? address)
         {
@@ -34,7 +22,10 @@ namespace System.Net.Sockets
         [Event(2, Level = EventLevel.Informational)]
         public void ConnectStop()
         {
-            ConnectStopInternal();
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 2);
+            }
         }
 
         [Event(3, Level = EventLevel.Error)]
@@ -43,7 +34,6 @@ namespace System.Net.Sockets
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
                 WriteEvent(eventId: 3, (int)error, exceptionMessage ?? string.Empty);
-                ConnectStopInternal();
             }
         }
 
@@ -53,17 +43,33 @@ namespace System.Net.Sockets
             if (IsEnabled(EventLevel.Warning, EventKeywords.All))
             {
                 WriteEvent(eventId: 4);
-                ConnectStopInternal();
             }
         }
 
         [NonEvent]
-        private void ConnectStopInternal()
+        public void ConnectStart(Internals.SocketAddress address)
         {
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                WriteEvent(eventId: 2);
-            }
+            ConnectStart(address.ToString());
+        }
+
+        [NonEvent]
+        public void ConnectStart(EndPoint address)
+        {
+            ConnectStart(address.ToString());
+        }
+
+        [NonEvent]
+        public void ConnectCanceledAndStop()
+        {
+            ConnectCanceled();
+            ConnectStop();
+        }
+
+        [NonEvent]
+        public void ConnectFailedAndStop(SocketError error, string? exceptionMessage)
+        {
+            ConnectFailed(error, exceptionMessage);
+            ConnectStop();
         }
     }
 }

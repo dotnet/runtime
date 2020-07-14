@@ -2323,7 +2323,7 @@ namespace System.Net.Sockets
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
 
                 if (ex == null)
                 {
@@ -4135,7 +4135,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailed(errorCode, null);
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop(errorCode, null);
 
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
