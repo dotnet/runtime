@@ -1487,7 +1487,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-#ifdef ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
         {
             _ASSERTE(!thValueType.IsNull());
 
@@ -1547,11 +1547,11 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             }
 #endif
 
-            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+            if  (size <= ENREGISTERED_RETURNTYPE_MAXSIZE)
                 break;
 #endif // UNIX_AMD64_ABI
         }
-#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#endif // ENREGISTERED_RETURNTYPE_MAXSIZE
 
         // Value types are returned using return buffer by default
         flags |= RETURN_HAS_RET_BUFFER;
@@ -1828,6 +1828,35 @@ public:
         return FALSE;
 #endif
     }
+
+    BOOL HasValueTypeReturn()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        TypeHandle thValueType;
+        CorElementType type = m_pSig->GetReturnTypeNormalized(&thValueType);
+        return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
+    }
+
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+    BOOL HasMultiRegReturnStruct()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        TypeHandle thValueType;
+        CorElementType type = m_pSig->GetReturnTypeNormalized(&thValueType);
+        if (type != ELEMENT_TYPE_VALUETYPE || thValueType.IsEnum())
+        {
+            return FALSE;
+        }
+        unsigned int structSize = thValueType.GetSize();
+        if (structSize == ENREGISTERED_RETURNTYPE_MAXSIZE)
+        {
+            return TRUE;
+        }
+        return FALSE;
+    }
+#endif
 };
 
 // Conventience helper

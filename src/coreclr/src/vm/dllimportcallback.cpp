@@ -473,6 +473,19 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         }
         else
         {
+            if (pInfo->m_wFlags & umtmlEnregRetValToBuf)
+            {
+                pcpusl->X86EmitPushReg(kEDI); // Save EDI register
+                // Move the return value from the enregisterd return from the JIT
+                // to the return buffer that the C++ compiler expects.
+                pcpusl->X86EmitIndexRegLoad(kEDI, kEBX, retbufofs);
+                pcpusl->X86EmitIndexRegStore(kEDI, 0x0, kEAX);
+                if (pInfo->m_wFlags & umtmlMultiregRetVal)
+                {
+                    pcpusl->X86EmitIndexRegStore(kEDI, 0x4 /* skip EAX half of the return value */, kEDX);
+                }
+                pcpusl->X86EmitPopReg(kEDI); // Restore EDI register
+            }
             // pretend that the method returned the ret buf hidden argument
             // (the structure ptr); C++ compiler seems to rely on this
 
@@ -766,6 +779,10 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     UINT nOffset = 0;
     int numRegistersUsed = 0;
     int numStackSlotsIndex = nStackBytes / STACK_ELEM_SIZE;
+    
+    // This could have been set in the UnmanagedCallersOnly scenario.
+    if (m_callConv == UINT16_MAX)
+        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
 
     // process this
     if (!fIsStatic)
@@ -775,11 +792,16 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     }
 
     // process the return buffer parameter
-    if (argit.HasRetBuffArg())
+    if (argit.HasRetBuffArg() || (m_callConv == pmCallConvThiscall && argit.HasValueTypeReturn()))
     {
-        numRegistersUsed++;
-        _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
-        psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] = nOffset;
+        // Only copy the retbuf arg from the src call when the managed call will also
+        // have a return buffer.
+        if (argit.HasRetBuffArg())
+        {
+            numRegistersUsed++;
+            _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
+            psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] = nOffset;
+        }
         retbufofs = nOffset;
 
         nOffset += StackElemSize(sizeof(LPVOID));
@@ -846,10 +868,6 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
 
     m_cbActualArgSize = cbActualArgSize;
 
-    // This could have been set in the UnmanagedCallersOnly scenario.
-    if (m_callConv == UINT16_MAX)
-        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
-
     UMThunkStubInfo stubInfo;
     memset(&stubInfo, 0, sizeof(stubInfo));
 
@@ -875,6 +893,14 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             if (argit.HasRetBuffArg())
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg;
+            }
+            else if (argit.HasValueTypeReturn())
+            {
+                stubInfo.m_wFlags |= umtmlThisCallHiddenArg | umtmlEnregRetValToBuf;
+                if (argit.HasMultiRegReturnStruct())
+                {
+                    stubInfo.m_wFlags |= umtmlMultiregRetVal;
+                }
             }
         }
     }
