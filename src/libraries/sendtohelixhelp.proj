@@ -170,8 +170,8 @@
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
       </XHarnessAppFolderToTest>
     </ItemGroup>
-    <ItemGroup>
-      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="$(HelixCorrelationPayload)" />
+    <ItemGroup Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
+      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
