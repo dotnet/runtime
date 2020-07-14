@@ -316,6 +316,10 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: testsProjContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -329,10 +333,6 @@ jobs:
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      variables:
-      # map dependencies variables to local variables
-      - name: testsProjContainsChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
