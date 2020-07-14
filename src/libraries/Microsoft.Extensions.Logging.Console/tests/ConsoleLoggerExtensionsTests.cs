@@ -277,6 +277,71 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(JavaScriptEncoder.UnsafeRelaxedJsonEscaping, formatter.FormatterOptions.JsonWriterOptions.Encoder);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
+        public void AddConsole_NullFormatterNameUsingSystemdFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions()
+        {
+            var configs = new[] {
+                new KeyValuePair<string, string>("Console:Format", "Systemd"),
+                new KeyValuePair<string, string>("Console:TimestampFormat", "HH:mm:ss "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+            };
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(configs).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddConsole(o => { })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Null(logger.Options.FormatterName);
+            var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+            Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
+        public void AddConsole_NullFormatterNameUsingDefaultFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
+                new KeyValuePair<string, string>("Console:Format", "Default"),
+                new KeyValuePair<string, string>("Console:TimestampFormat", "HH:mm:ss "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:SingleLine", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+            }).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddConsole(o => { 
+#pragma warning disable CS0618
+                        o.DisableColors = true;
+                        o.IncludeScopes = false; // code setup wins over config regardless
+#pragma warning restore CS0618
+                    })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Null(logger.Options.FormatterName);
+#pragma warning disable CS0618
+            Assert.True(logger.Options.DisableColors);
+#pragma warning restore CS0618
+            var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+            Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);  // overwritten from deprecated because FormatterName is not set
+            Assert.False(formatter.FormatterOptions.UseUtcTimestamp);               // not set anywhere, defaulted to false
+            Assert.False(formatter.FormatterOptions.IncludeScopes);                 // code setup wins over config
+            Assert.True(formatter.FormatterOptions.DisableColors);                  // setup from code setup
+            Assert.True(formatter.FormatterOptions.SingleLine);                     // nothing overwrites FormatterOptions:SingleLine from config setup
+        }
+
         public static TheoryData<string> FormatterNames
         {
             get

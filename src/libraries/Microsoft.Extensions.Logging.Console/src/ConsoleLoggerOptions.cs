@@ -32,14 +32,6 @@ namespace Microsoft.Extensions.Logging.Console
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _format = value;
-                if (value == ConsoleLoggerFormat.Systemd)
-                {
-                    FormatterName = ConsoleFormatterNames.Systemd;
-                }
-                else
-                {
-                    FormatterName = ConsoleFormatterNames.Simple;
-                }
             }
 #pragma warning restore CS0618
         }

@@ -75,11 +75,28 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
 
             UpdateFormatterOptions(logger.Formatter, logger.Options);
+            VerifyDeprecatedPropertiesUsedOnNullFormatterName(logger);
+            return (logger, sink, errorSink, levelAsString, writesPerMsg);
+        }
+
+        private static void VerifyDeprecatedPropertiesUsedOnNullFormatterName(ConsoleLogger logger)
+        {
+            Assert.Null(logger.Options.FormatterName);
             if (ConsoleLoggerFormat.Default == logger.Options.Format)
             {
-                Assert.Equal((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
+                var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
+                Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
+                Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
+                Assert.Equal(formatter.FormatterOptions.DisableColors, logger.Options.DisableColors);   
             }
-            return (logger, sink, errorSink, levelAsString, writesPerMsg);
+            else
+            {
+                var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);   
+                Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
+                Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
+            }
         }
 
         private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
@@ -217,45 +234,44 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(null)]
-        [InlineData("missingFormatter")]
-        public void Options_FormatterNameNull_PicksFormatterName(string formatterName)
+        [InlineData(null, 0)]
+        [InlineData(null, 1)]
+        [InlineData("missingFormatter", 0)]
+        [InlineData("missingFormatter", 1)]
+        public void Options_FormatterNameNull_UsesDeprecatedProperties(string formatterName, int formatNumber)
         {
             // Arrange
-            ConsoleLoggerFormat format = ConsoleLoggerFormat.Systemd;
+            ConsoleLoggerFormat format = (ConsoleLoggerFormat)formatNumber;
             var options = new ConsoleLoggerOptions() { FormatterName = formatterName };
             var monitor = new TestOptionsMonitor(options);
             var loggerProvider = new ConsoleLoggerProvider(monitor, GetFormatters());
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
-            string pickedFormatter = null;
-            var cleanup = monitor.OnChange((o, n) => pickedFormatter = o.FormatterName);
 
             // Act
-            monitor.Set(new ConsoleLoggerOptions() { FormatterName = null, Format = format });
+            monitor.Set(new ConsoleLoggerOptions() { FormatterName = null, Format = format, TimestampFormat = "HH:mm:ss " });
 
             // Assert
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:
                 {
-                    Assert.Equal(ConsoleFormatterNames.Simple, pickedFormatter);
-                    Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
+                    Assert.Null(logger.Options.FormatterName);
                     Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
                     var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                    Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
                 }
                 break;
                 case ConsoleLoggerFormat.Systemd:
                 {
-                    Assert.Equal(ConsoleFormatterNames.Systemd, pickedFormatter);
-                    Assert.Equal(ConsoleFormatterNames.Systemd, logger.Options.FormatterName);
+                    Assert.Null(logger.Options.FormatterName);
                     Assert.Equal(ConsoleFormatterNames.Systemd, logger.Formatter.Name);
                     var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                    Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
                 }
                 break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
-            cleanup?.Dispose();
             loggerProvider?.Dispose();
         }
 
@@ -765,9 +781,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
             {
                 case ConsoleLoggerFormat.Default:
                 {
-                    Assert.True((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes);
                     // Assert
                     Assert.Equal(2, sink.Writes.Count);
+                    var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                    Assert.True(formatter.FormatterOptions.IncludeScopes);
                     // scope
                     var write = sink.Writes[1];
                     Assert.Equal(header + Environment.NewLine
@@ -781,6 +798,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 {
                     // Assert
                     Assert.Single(sink.Writes);
+                    var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+                    Assert.True(formatter.FormatterOptions.IncludeScopes);
                     // scope
                     var write = sink.Writes[0];
                     Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
@@ -1283,7 +1302,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.NotNull(logger.ScopeProvider);
-            Assert.False((logger.Formatter as SimpleConsoleFormatter).FormatterOptions.IncludeScopes);
+            var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+            Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
