@@ -751,6 +751,7 @@ namespace System.Text.Encodings.Web
                         if (!containsNonAsciiBytes)
                         {
                             // All of the following 16 bytes is ASCII.
+                            // TODO AdvSimd: optimization maybe achievable using VectorTableLookup and/or VectorTableLookupExtension
 
                             if (Ssse3.IsSupported)
                             {
