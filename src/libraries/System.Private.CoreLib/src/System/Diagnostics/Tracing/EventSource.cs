@@ -4191,7 +4191,11 @@ namespace System.Diagnostics.Tracing
             if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceName))
             {
                 EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceName];
-                return (state.Level <= level) && ((state.Keyword & keywords) != 0);
+                if (state.Keyword != 0 && keywords != 0)
+                {
+                    return (state.Level <= level) && ((state.Keyword & keywords) != 0);
+                }
+                return true;
             }
             return false;
         }
