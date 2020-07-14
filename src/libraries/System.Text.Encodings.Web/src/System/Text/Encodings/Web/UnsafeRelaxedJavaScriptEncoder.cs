@@ -149,7 +149,7 @@ namespace System.Text.Encodings.Web
                 }
             }
 
-            return -1; // All characters are allowed.
+            idx = -1; // All characters are allowed.
 
         Return:
             return idx;
@@ -283,7 +283,7 @@ namespace System.Text.Encodings.Web
                 }
                 Debug.Assert(idx == utf8Text.Length);
 
-                return -1; // All bytes are allowed.
+                idx = -1; // All bytes are allowed.
 
             Return:
                 return idx;
