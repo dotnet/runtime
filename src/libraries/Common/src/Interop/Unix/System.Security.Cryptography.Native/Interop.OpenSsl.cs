@@ -186,7 +186,7 @@ internal static partial class Interop
                         throw CreateSslException(SR.net_allocate_ssl_context_failed);
                     }
 
-                    if (!sslAuthenticationOptions.IsServer)
+                    if (!sslAuthenticationOptions.IsServer && !string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
                     {
                         // The IdnMapping converts unicode input into the IDNA punycode sequence.
                         string punyCode = s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
