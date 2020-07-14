@@ -395,8 +395,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
 
             Catch ex As Exception
                 'Consume the exception
@@ -531,8 +529,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch e As Exception
                 Throw VbMakeException(vbErrors.CantCreateObject)
             End Try
@@ -548,8 +544,6 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw VbMakeException(vbErrors.CantCreateObject)
                 End Try
@@ -563,8 +557,6 @@ Namespace Microsoft.VisualBasic
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         Throw VbMakeException(vbErrors.CantCreateObject)

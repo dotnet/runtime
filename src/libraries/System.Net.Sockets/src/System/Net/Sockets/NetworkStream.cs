@@ -739,8 +739,6 @@ namespace System.Net.Sockets
         private int _currentWriteTimeout = -1;
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, mode, timeout, silent);
-
             if (timeout < 0)
             {
                 timeout = 0; // -1 becomes 0 for the winsock stack

@@ -162,7 +162,7 @@ namespace System.Net
     public partial class GlobalProxySelection
     {
         public GlobalProxySelection() { }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public static System.Net.IWebProxy Select { get { throw null; } set { } }
         public static System.Net.IWebProxy GetEmptyWebProxy() { throw null; }
     }
@@ -240,8 +240,8 @@ namespace System.Net
     }
     public partial class HttpWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.Obsolete("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HttpWebResponse() { }
         [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }

@@ -16,6 +16,14 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            internal Arm64() { }
+
+            public static new bool IsSupported { get => IsSupported; }
+        }
+
         /// <summary>
         /// uint32_t vsha1h_u32 (uint32_t hash_e)
         ///   A32: SHA1H.32 Qd, Qm

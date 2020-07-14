@@ -179,8 +179,8 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 
             ;; Check return trap
             ldr     x9, =g_TrapReturningThreads
-            ldr     x9, [x9]
-            cbnz    x9, RarePath
+            ldr     w9, [x9]
+            cbnz    w9, RarePath
 
             ;; pThread->m_pFrame = pFrame->m_Next
             ldr     x9, [x0, #Frame__m_Next]

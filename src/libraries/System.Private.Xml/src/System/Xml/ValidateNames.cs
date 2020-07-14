@@ -48,11 +48,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -84,12 +79,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -128,12 +117,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -146,12 +129,6 @@ namespace System.Xml
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                    {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -190,11 +167,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -207,11 +179,6 @@ namespace System.Xml
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;

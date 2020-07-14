@@ -10,7 +10,7 @@ namespace System.Data.Common
     {
         private const ulong DefaultValue = ulong.MinValue;
 
-        private ulong[] _values;
+        private ulong[] _values = default!; // Late-initialized
 
         public UInt64Storage(DataColumn column)
         : base(column, typeof(ulong), DefaultValue, StorageType.UInt64)
@@ -134,12 +134,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         return base.Aggregate(records, kind);
@@ -167,7 +167,7 @@ namespace System.Data.Common
             return (valueNo1 < valueNo2 ? -1 : (valueNo1 > valueNo2 ? 1 : 0)); // similar to UInt64.CompareTo(UInt64)
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -186,7 +186,7 @@ namespace System.Data.Common
             //return(valueNo1 < valueNo2 ? -1 : (valueNo1 > valueNo2 ? 1 : 0)); // similar to UInt64.CompareTo(UInt64)
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

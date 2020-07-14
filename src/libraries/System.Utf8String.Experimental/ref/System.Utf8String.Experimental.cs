@@ -257,7 +257,7 @@ namespace System
             private readonly object _dummy;
             public System.Utf8String? After { get { throw null; } }
             public System.Utf8String Before { get { throw null; } }
-            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public void Deconstruct(out System.Utf8String before, out System.Utf8String? after) { throw null; }
         }
     }

@@ -248,6 +248,7 @@ namespace System.Collections.Generic
         public System.Collections.Generic.LinkedListNode<T>? Next { get { throw null; } }
         public System.Collections.Generic.LinkedListNode<T>? Previous { get { throw null; } }
         public T Value { get { throw null; } set { } }
+        public ref T ValueRef { get { throw null; } }
     }
     public partial class LinkedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {

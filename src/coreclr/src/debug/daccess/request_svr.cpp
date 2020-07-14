@@ -274,7 +274,8 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
         dac_generation gen0 = *ServerGenerationTableIndex(heap, 0);
         dac_generation gen1 = *ServerGenerationTableIndex(heap, 1);
         dac_generation gen2 = *ServerGenerationTableIndex(heap, 2);
-        dac_generation loh = *ServerGenerationTableIndex(heap, 3);
+        dac_generation loh  = *ServerGenerationTableIndex(heap, 3);
+        dac_generation poh  = *ServerGenerationTableIndex(heap, 4);
 
         pHeaps[i].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
         pHeaps[i].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
@@ -285,6 +286,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 
         // Segments
         int count = GetSegmentCount(loh.start_segment);
+        count += GetSegmentCount(poh.start_segment);
         count += GetSegmentCount(gen2.start_segment);
 
         pHeaps[i].SegmentCount = count;
@@ -313,12 +315,22 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
             seg = seg->next;
         }
 
-
         // Large object heap segments
         seg = loh.start_segment;
         for (; seg && (j < count); ++j)
         {
             pHeaps[i].Segments[j].Generation = 3;
+            pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
+            pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
+
+            seg = seg->next;
+        }
+
+        // Pinned object heap segments
+        seg = poh.start_segment;
+        for (; seg && (j < count); ++j)
+        {
+            pHeaps[i].Segments[j].Generation = 4;
             pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
