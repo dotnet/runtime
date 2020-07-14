@@ -1049,27 +1049,71 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1902")]
-        [InlineData(@"{""$id"": {}}", "$.$id")]
-        [InlineData(@"{""$id"": }", "$.$id")]
-        [InlineData(@"{""$id"": []}", "$.$id")]
-        [InlineData(@"{""$id"": ]", "$.$id")]
-        [InlineData(@"{""$id"": null}", "$.$id")]
-        [InlineData(@"{""$id"": true}", "$.$id")]
-        [InlineData(@"{""$id"": false}", "$.$id")]
-        [InlineData(@"{""$id"": 10}", "$.$id")]
-        [InlineData(@"{""$ref"": {}}", "$.$ref")]
-        [InlineData(@"{""$ref"": }", "$.$ref")]
-        [InlineData(@"{""$ref"": []}", "$.$ref")]
-        [InlineData(@"{""$ref"": ]", "$.$ref")]
-        [InlineData(@"{""$ref"": null}", "$.$ref")]
-        [InlineData(@"{""$ref"": true}", "$.$ref")]
-        [InlineData(@"{""$ref"": false}", "$.$ref")]
-        [InlineData(@"{""$ref"": 10}", "$.$ref")]
-        public static void IdAndRefContainInvalidToken(string json, string expectedPath)
+        [InlineData(@"{""$id"":{}}", JsonTokenType.StartObject)]
+        [InlineData(@"{""$id"":[]}", JsonTokenType.StartArray)]
+        [InlineData(@"{""$id"":null}", JsonTokenType.Null)]
+        [InlineData(@"{""$id"":true}", JsonTokenType.True)]
+        [InlineData(@"{""$id"":false}", JsonTokenType.False)]
+        [InlineData(@"{""$id"":9}", JsonTokenType.Number)]
+        // Invalid JSON, the reader will throw before we reach the serializer validation.
+        [InlineData(@"{""$id"":}", JsonTokenType.None)]
+        [InlineData(@"{""$id"":]", JsonTokenType.None)]
+        public static void MetadataId_StartsWithInvalidToken(string json, JsonTokenType incorrectToken)
         {
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
-            Assert.Equal(expectedPath, ex.Path);
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$id", ex.Path);
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$id", ex.Path);
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$id", ex.Path);
+        }
+
+
+        [Theory]
+        [InlineData(@"{""$ref"":{}}", JsonTokenType.StartObject)]
+        [InlineData(@"{""$ref"":[]}", JsonTokenType.StartArray)]
+        [InlineData(@"{""$ref"":null}", JsonTokenType.Null)]
+        [InlineData(@"{""$ref"":true}", JsonTokenType.True)]
+        [InlineData(@"{""$ref"":false}", JsonTokenType.False)]
+        [InlineData(@"{""$ref"":9}", JsonTokenType.Number)]
+        // Invalid JSON, the reader will throw before we reach the serializer validation.
+        [InlineData(@"{""$ref"":}", JsonTokenType.None)]
+        [InlineData(@"{""$ref"":]", JsonTokenType.None)]
+        public static void MetadataRef_StartsWithInvalidToken(string json, JsonTokenType incorrectToken)
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$ref", ex.Path);
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$ref", ex.Path);
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$ref", ex.Path);
+        }
+
+        [Theory]
+        [InlineData(@"{""$id"":""1"",""$values"":{}}", JsonTokenType.StartObject)]
+        [InlineData(@"{""$id"":""1"",""$values"":null}", JsonTokenType.Null)]
+        [InlineData(@"{""$id"":""1"",""$values"":true}", JsonTokenType.True)]
+        [InlineData(@"{""$id"":""1"",""$values"":false}", JsonTokenType.False)]
+        [InlineData(@"{""$id"":""1"",""$values"":9}", JsonTokenType.Number)]
+        [InlineData(@"{""$id"":""1"",""$values"":""9""}", JsonTokenType.String)]
+        // Invalid JSON, the reader will throw before we reach the serializer validation.
+        [InlineData(@"{""$id"":""1"",""$values"":}", JsonTokenType.None)]
+        [InlineData(@"{""$id"":""1"",""$values"":]", JsonTokenType.None)]
+        public static void MetadataValues_StartsWithInvalidToken(string json, JsonTokenType incorrectToken)
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
+            Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
+            Assert.Equal("$.$values", ex.Path);
         }
         #endregion
 
