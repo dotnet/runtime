@@ -804,7 +804,11 @@ var MonoSupportLib = {
 					}
 
 					try {
-						console.log ("Attempting to load", asset.name, "from", attemptUrl);
+						if (asset.name === attemptUrl) {
+							console.log ("Attempting to fetch", attemptUrl);
+						} else {
+							console.log ("Attempting to fetch", attemptUrl, "for", asset.name);
+						}
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
 					} catch (exc) {

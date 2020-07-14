@@ -93,6 +93,7 @@ public class WasmAppBuilder : Task
                 string supportFilesDir = Path.Join(AppDir, "supportFiles");
                 Directory.CreateDirectory(supportFilesDir);
 
+                var i = 0;
                 foreach (var item in FilesToIncludeInFileSystem)
                 {
                     string? targetPath = item.GetMetadata("TargetPath");
@@ -104,9 +105,7 @@ public class WasmAppBuilder : Task
                     // We normalize paths from `\` to `/` as MSBuild items could use `\`.
                     targetPath = targetPath.Replace('\\', '/');
 
-                    var generatedFileName = item.ItemSpec.Replace(":", "_")
-                        .Replace("/", "_")
-                        .Replace("\\", "_");
+                    var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
                     File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
 
