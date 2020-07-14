@@ -252,6 +252,13 @@
     </When>
   </Choose>
 
+  <!-- Adds MinimumOSPlatform attribute for Windows Specific libraries -->
+  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
+    <AssemblyAttribute Include="System.Runtime.Versioning.MinimumOSPlatform">
+        <_Parameter1>$(MinimiumSupportedWindowsPlatform)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
         This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup>
