@@ -2977,6 +2977,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			return addr;
 		}
 
+#ifdef ENABLE_NETCORE
 		/*
 		 * The runtime expects a function pointer unique to method and
 		 * the native caller expects a function pointer with the
@@ -2984,6 +2985,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 */
 		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
 		return NULL;
+#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
