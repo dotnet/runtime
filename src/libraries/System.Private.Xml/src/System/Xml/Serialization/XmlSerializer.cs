@@ -126,9 +126,9 @@ namespace System.Xml.Serialization
         private readonly Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events;
-        internal string DefaultNamespace = null;
+        internal string DefaultNamespace;
         private Type _rootType;
-        private bool _isReflectionBasedSerializer = false;
+        private bool _isReflectionBasedSerializer;
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;

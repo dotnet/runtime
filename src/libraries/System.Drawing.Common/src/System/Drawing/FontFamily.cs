@@ -22,7 +22,7 @@ namespace System.Drawing
 
 #if DEBUG
         private static readonly object s_lockObj = new object();
-        private static int s_idCount = 0;
+        private static int s_idCount;
         private int _id;
 #endif
 

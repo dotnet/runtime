@@ -59,16 +59,16 @@ namespace System.Globalization
 
         internal int _numberDecimalDigits = 2;
         internal int _currencyDecimalDigits = 2;
-        internal int _currencyPositivePattern = 0;
-        internal int _currencyNegativePattern = 0;
+        internal int _currencyPositivePattern;
+        internal int _currencyNegativePattern;
         internal int _numberNegativePattern = 1;
-        internal int _percentPositivePattern = 0;
-        internal int _percentNegativePattern = 0;
+        internal int _percentPositivePattern;
+        internal int _percentNegativePattern;
         internal int _percentDecimalDigits = 2;
 
         internal int _digitSubstitution = (int)DigitShapes.None;
 
-        internal bool _isReadOnly = false;
+        internal bool _isReadOnly;
 
         private bool _hasInvariantNumberSigns = true;
 

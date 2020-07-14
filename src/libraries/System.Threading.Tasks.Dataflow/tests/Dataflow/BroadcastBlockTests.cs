@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class BroadcastBlockTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TestCtor()
         {
             var blocks = new[] {

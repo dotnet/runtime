@@ -77,7 +77,7 @@ namespace System.Management
 
         //Used to minimize the cases in which new wbemPath (WMI object path parser) objects need to be constructed
         //This is done for performance reasons.
-        private bool isWbemPathShared = false;
+        private bool isWbemPathShared;
 
         internal event IdentifierChangedEventHandler IdentifierChanged;
 

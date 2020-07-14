@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         private bool _disposed;
         protected int HashSizeValue;
         protected internal byte[]? HashValue;
-        protected int State = 0;
+        protected int State;
 
         protected HashAlgorithm() { }
 

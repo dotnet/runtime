@@ -370,8 +370,8 @@ namespace System.ComponentModel.Composition.Hosting
 
         private class MetadataList
         {
-            private Type? _arrayType = null;
-            private bool _containsNulls = false;
+            private Type? _arrayType;
+            private bool _containsNulls;
             private static readonly Type ObjectType = typeof(object);
             private static readonly Type TypeType = typeof(Type);
             private readonly Collection<object?> _innerList = new Collection<object?>();

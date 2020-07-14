@@ -717,16 +717,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // Unlike ARM, ARM64 implements NULLCHECK as a load to REG_ZR, so no internal register
-            // is required, and it is not a localDefUse.
-            assert(dstCount == 0);
-            assert(!tree->gtGetOp1()->isContained());
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
-            break;
-
         case GT_IND:
-            assert(dstCount == 1);
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
             break;
 

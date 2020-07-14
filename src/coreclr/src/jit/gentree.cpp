@@ -746,7 +746,6 @@ regMaskTP GenTree::gtGetRegMask() const
 
     if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
         resultMask = genRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
@@ -6263,7 +6262,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type)
+GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -6271,7 +6270,7 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     node->gtInlineCandidate = inlineCandidate;
 
-    node->bbFlags = 0;
+    node->bbFlags = bbFlags;
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
@@ -16568,12 +16567,12 @@ bool GenTree::isContained() const
 // return true if node is contained and an indir
 bool GenTree::isContainedIndir() const
 {
-    return isIndir() && isContained();
+    return OperIsIndir() && isContained();
 }
 
 bool GenTree::isIndirAddrMode()
 {
-    return isIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
+    return OperIsIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
 }
 
 bool GenTree::isIndir() const
@@ -17463,18 +17462,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                     if (context != nullptr)
                     {
-                        CORINFO_CLASS_HANDLE exactClass = nullptr;
-
-                        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-                        {
-                            exactClass = (CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                        }
-                        else
-                        {
-                            CORINFO_METHOD_HANDLE exactMethod =
-                                (CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                            exactClass = info.compCompHnd->getMethodClass(exactMethod);
-                        }
+                        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(context);
 
                         // Grab the signature in this context.
                         CORINFO_SIG_INFO sig;

@@ -25,7 +25,7 @@ namespace System.Xml.Serialization
         private SoapElementAttribute _soapElement;
         private SoapAttributeAttribute _soapAttribute;
         private SoapEnumAttribute _soapEnum;
-        private object _soapDefaultValue = null;
+        private object _soapDefaultValue;
 
         public SoapAttributes()
         {

@@ -25,7 +25,7 @@ namespace System.Diagnostics
         private StringDictionary? _attributes;
 
         private string? _listenerName;
-        private TraceFilter? _filter = null;
+        private TraceFilter? _filter;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceListener'/> class.</para>

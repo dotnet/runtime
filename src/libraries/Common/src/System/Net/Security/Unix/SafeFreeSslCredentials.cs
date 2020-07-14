@@ -20,7 +20,7 @@ namespace System.Net.Security
         private SafeEvpPKeyHandle? _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
-        private bool _isInvalid = false;
+        private bool _isInvalid;
 
         internal SafeX509Handle? CertHandle
         {

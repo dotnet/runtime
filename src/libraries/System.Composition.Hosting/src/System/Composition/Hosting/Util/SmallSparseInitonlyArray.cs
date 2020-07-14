@@ -15,7 +15,7 @@ namespace System.Composition.Hosting.Util
         private const int ElementIndexMask = 127;
         private const int LocalOffsetMax = 3;
 
-        private Element[] _elements = null;
+        private Element[] _elements;
         private SmallSparseInitonlyArray _overflow;
 
         public void Add(int index, object value)

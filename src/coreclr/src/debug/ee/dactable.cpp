@@ -35,10 +35,6 @@ extern PCODE g_FCDynamicallyAssignedImplementations;
 extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
 
-#ifdef FEATURE_APPX
-extern BOOL g_fAppX;
-#endif // FEATURE_APPX
-
 DLLEXPORT
 DacGlobals g_dacTable;
 

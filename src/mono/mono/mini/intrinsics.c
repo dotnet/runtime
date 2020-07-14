@@ -1881,13 +1881,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				method_context->method_inst->type_argc == 1 &&
 				cmethod->is_inflated &&
 				!mini_method_check_context_used (cfg, cmethod)) {
-			MonoClass *arg0 = mono_class_from_mono_type_internal (method_context->method_inst->type_argv [0]);
+			MonoType *t = method_context->method_inst->type_argv [0];
+			MonoClass *arg0 = mono_class_from_mono_type_internal (t);
 			if (m_class_is_valuetype (arg0) && !mono_class_has_default_constructor (arg0, FALSE)) {
-				MONO_INST_NEW (cfg, ins, MONO_CLASS_IS_SIMD (cfg, arg0) ? OP_XZERO : OP_VZERO);
-				ins->dreg = mono_alloc_dreg (cfg, STACK_VTYPE);
-				ins->type = STACK_VTYPE;
-				ins->klass = arg0;
-				MONO_ADD_INS (cfg->cbb, ins);
+				if (m_class_is_primitive (arg0)) {
+					int dreg = alloc_dreg (cfg, mini_type_to_stack_type (cfg, t));
+					mini_emit_init_rvar (cfg, dreg, t);
+					ins = cfg->cbb->last_ins;
+				} else {
+					MONO_INST_NEW (cfg, ins, MONO_CLASS_IS_SIMD (cfg, arg0) ? OP_XZERO : OP_VZERO);
+					ins->dreg = mono_alloc_dreg (cfg, STACK_VTYPE);
+					ins->type = STACK_VTYPE;
+					ins->klass = arg0;
+					MONO_ADD_INS (cfg->cbb, ins);
+				}
 				return ins;
 			}
 		}

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestPlatforms.Browser)]
     public class ILGeneratorEmit4
     {
         [Fact]

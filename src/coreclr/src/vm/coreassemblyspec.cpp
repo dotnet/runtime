@@ -141,7 +141,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         SafeComHolder<IAssemblyName> pName;
-        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName, true /*parseDisplayName*/);
+        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName);
         if (SUCCEEDED(hr))
         {
             hr = pBinder->BindAssemblyByName(pName, &pPrivAsm);

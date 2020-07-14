@@ -39,12 +39,12 @@ namespace System.IO.Ports
         // called when any of the pin/ring-related triggers occurs
         internal event SerialPinChangedEventHandler PinChanged;
 
-        private SafeFileHandle _handle = null;
+        private SafeFileHandle _handle;
 
         // members supporting properties exposed to SerialPort
         private byte _parityReplace = (byte)'?';
         private readonly bool _isAsync = true;
-        private bool _rtsEnable = false;
+        private bool _rtsEnable;
 
         // The internal C# representations of Win32 structures necessary for communication
         // hold most of the internal "fields" maintaining information about the port.
@@ -53,9 +53,9 @@ namespace System.IO.Ports
         private Interop.Kernel32.COMSTAT _comStat;
         private Interop.Kernel32.COMMPROP _commProp;
 
-        private readonly ThreadPoolBoundHandle _threadPoolBinding = null;
+        private readonly ThreadPoolBoundHandle _threadPoolBinding;
         private readonly EventLoopRunner _eventRunner;
-        private readonly Task _waitForComEventTask = null;
+        private readonly Task _waitForComEventTask;
 
         private readonly byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
 
@@ -1541,8 +1541,8 @@ namespace System.IO.Ports
         {
             private readonly WeakReference streamWeakReference;
             internal ManualResetEvent waitCommEventWaitHandle = new ManualResetEvent(false);
-            private readonly SafeFileHandle handle = null;
-            private readonly ThreadPoolBoundHandle threadPoolBinding = null;
+            private readonly SafeFileHandle handle;
+            private readonly ThreadPoolBoundHandle threadPoolBinding;
             private readonly bool isAsync;
             internal bool endEventLoop;
             private readonly int eventsOccurred;

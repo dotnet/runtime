@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Primitives
             }
 #else
             // Don't capture the current ExecutionContext and its AsyncLocals onto the token registration causing them to live forever
-            var restoreFlow = false;
+            bool restoreFlow = false;
             if (!ExecutionContext.IsFlowSuppressed())
             {
                 ExecutionContext.SuppressFlow();

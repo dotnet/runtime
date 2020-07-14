@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Dataflow\ActionBlockTests.cs" />
     <Compile Include="Dataflow\BatchBlockTests.cs" />
     <Compile Include="Dataflow\BatchedJoinBlockTests.cs" />

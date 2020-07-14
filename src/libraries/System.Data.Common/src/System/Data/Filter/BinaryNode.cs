@@ -1509,7 +1509,7 @@ namespace System.Data
         private static readonly char[] s_trimChars = new char[] { (char)0x20, (char)0x3000 };
 
         private int _kind;
-        private string _pattern = null;
+        private string _pattern;
 
         internal LikeNode(DataTable table, int op, ExpressionNode left, ExpressionNode right)
         : base(table, op, left, right)

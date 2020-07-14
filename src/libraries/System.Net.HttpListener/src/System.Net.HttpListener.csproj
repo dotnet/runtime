@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(ForceManagedImplementation)' != 'true'">
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerSession.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerResponse.Windows.cs" />

@@ -98,7 +98,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool _atBeginning = true;
 
-        private DirectoryEntry _current = null;
+        private DirectoryEntry _current;
     }
 }
 

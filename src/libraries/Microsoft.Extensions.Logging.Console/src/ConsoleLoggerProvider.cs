@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void ReloadLoggerOptions(ConsoleLoggerOptions options)
         {
-            foreach (var logger in _loggers)
+            foreach (System.Collections.Generic.KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {
                 logger.Value.Options = options;
             }
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             _scopeProvider = scopeProvider;
 
-            foreach (var logger in _loggers)
+            foreach (System.Collections.Generic.KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {
                 logger.Value.ScopeProvider = _scopeProvider;
             }

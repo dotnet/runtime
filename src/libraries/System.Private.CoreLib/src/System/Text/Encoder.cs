@@ -20,9 +20,9 @@ namespace System.Text
     //
     public abstract class Encoder
     {
-        internal EncoderFallback? _fallback = null;
+        internal EncoderFallback? _fallback;
 
-        internal EncoderFallbackBuffer? _fallbackBuffer = null;
+        internal EncoderFallbackBuffer? _fallbackBuffer;
 
         protected Encoder()
         {

@@ -4,9 +4,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -14,7 +17,7 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static readonly Func<string, Task<byte[]>>? s_downloadBytes = CreateDownloadBytesFunc();
+        private static readonly Func<string, CancellationToken, byte[]>? s_downloadBytes = CreateDownloadBytesFunc();
 
         internal static X509Certificate2? DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
@@ -102,28 +105,33 @@ namespace Internal.Cryptography.Pal
             {
                 long totalMillis = (long)remainingDownloadTime.TotalMilliseconds;
                 Stopwatch stopwatch = Stopwatch.StartNew();
+                CancellationTokenSource? cts = totalMillis > int.MaxValue ? null : new CancellationTokenSource((int)totalMillis);
 
                 try
                 {
-                    Task<byte[]> task = s_downloadBytes(uri);
-
-                    if (totalMillis > int.MaxValue || task.Wait((int)totalMillis))
-                    {
-                        return task.GetAwaiter().GetResult();
-                    }
+                    return s_downloadBytes(uri, cts?.Token ?? default);
                 }
                 catch { }
                 finally
                 {
                     // TimeSpan.Zero isn't a worrisome value on the subtraction, it only means "no limit" on the original input.
                     remainingDownloadTime -= stopwatch.Elapsed;
+                    cts?.Dispose();
                 }
             }
 
             return null;
         }
 
-        private static Func<string, Task<byte[]>>? CreateDownloadBytesFunc()
+        [DynamicDependency("#ctor(System.Net.Http.HttpMessageHandler)", "System.Net.Http.HttpClient", "System.Net.Http")]
+        [DynamicDependency("#ctor", "System.Net.Http.SocketsHttpHandler", "System.Net.Http")]
+        [DynamicDependency("#ctor", "System.Net.Http.HttpRequestMessage", "System.Net.Http")]
+        [DynamicDependency("set_PooledConnectionIdleTimeout", "System.Net.Http.SocketsHttpHandler", "System.Net.Http")]
+        [DynamicDependency("RequestUri", "System.Net.Http.HttpRequestMessage", "System.Net.Http")]
+        [DynamicDependency("Send", "System.Net.Http.HttpClient", "System.Net.Http")]
+        [DynamicDependency("Content", "System.Net.Http.HttpResponseMessage", "System.Net.Http")]
+        [DynamicDependency("ReadAsStream", "System.Net.Http.HttpContent", "System.Net.Http")]
+        private static Func<string, CancellationToken, byte[]>? CreateDownloadBytesFunc()
         {
             try
             {
@@ -131,17 +139,27 @@ namespace Internal.Cryptography.Pal
                 // Since System.Net.Http.dll explicitly depends on System.Security.Cryptography.X509Certificates.dll,
                 // the latter can't in turn have an explicit dependency on the former.
 
+                // Get the relevant types needed.
                 Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
                 Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                if (socketsHttpHandlerType == null || httpClientType == null)
+                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                if (socketsHttpHandlerType == null || httpClientType == null || httpRequestMessageType == null || httpResponseMessageType == null || httpContentType == null)
                 {
+                    Debug.Fail("Unable to load required type.");
                     return null;
                 }
 
+                // Get the methods on those types.
                 PropertyInfo? pooledConnectionIdleTimeoutProp = socketsHttpHandlerType.GetProperty("PooledConnectionIdleTimeout");
-                MethodInfo? getByteArrayAsyncMethod = httpClientType.GetMethod("GetByteArrayAsync", new Type[] { typeof(string) });
-                if (pooledConnectionIdleTimeoutProp == null || getByteArrayAsyncMethod == null)
+                PropertyInfo? requestUriProp = httpRequestMessageType.GetProperty("RequestUri");
+                MethodInfo? sendMethod = httpClientType.GetMethod("Send", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
+                PropertyInfo? responseContentProp = httpResponseMessageType.GetProperty("Content");
+                MethodInfo? readAsStreamMethod = httpContentType.GetMethod("ReadAsStream", Type.EmptyTypes);
+                if (pooledConnectionIdleTimeoutProp == null || requestUriProp == null || sendMethod == null || responseContentProp == null || readAsStreamMethod == null)
                 {
+                    Debug.Fail("Unable to load required member.");
                     return null;
                 }
 
@@ -149,21 +167,29 @@ namespace Internal.Cryptography.Pal
                 const int PooledConnectionIdleTimeoutSeconds = 15;
 
                 // Equivalent of:
-                // var socketsHttpHandler = new SocketsHttpHandler();
+                // var socketsHttpHandler = new SocketsHttpHandler() { PooledConnectionIdleTimeout = TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds) };
                 // var httpClient = new HttpClient(socketsHttpHandler);
-                // socketsHttpHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds);
-                // Func<string, Task<byte[]>> getByteArrayAsync = httpClient.GetByteArrayAsync;
                 object? socketsHttpHandler = Activator.CreateInstance(socketsHttpHandlerType);
-                object? httpClient = Activator.CreateInstance(httpClientType, new object?[] { socketsHttpHandler });
                 pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
-                var getByteArrayAsync = (Func<string, Task<byte[]>>)getByteArrayAsyncMethod.CreateDelegate(
-                    typeof(Func<string, Task<byte[]>>),
-                    httpClient);
+                object? httpClient = Activator.CreateInstance(httpClientType, new object?[] { socketsHttpHandler });
 
-                // Return a delegate for getting the byte[] for a uri.
-                // This delegate references the HttpClient object and thus
+                // Return a delegate for getting the byte[] for a uri. This delegate references the HttpClient object and thus
                 // all accesses will be through that singleton.
-                return uri => getByteArrayAsync(uri);
+                return (string uri, CancellationToken cancellationToken) =>
+                {
+                    // Equivalent of:
+                    // HttpResponseMessage resp = httpClient.Send(new HttpRequestMessage() { RequestUri = new Uri(uri) });
+                    // using Stream responseStream = resp.Content.ReadAsStream();
+                    object requestMessage = Activator.CreateInstance(httpRequestMessageType)!;
+                    requestUriProp.SetValue(requestMessage, new Uri(uri));
+                    object responseMessage = sendMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
+                    object content = responseContentProp.GetValue(responseMessage)!;
+                    using Stream responseStream = (Stream)readAsStreamMethod.Invoke(content, null)!;
+
+                    var result = new MemoryStream();
+                    responseStream.CopyTo(result);
+                    return result.ToArray();
+                };
             }
             catch
             {

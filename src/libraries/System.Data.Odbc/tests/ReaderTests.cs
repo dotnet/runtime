@@ -9,7 +9,7 @@ namespace System.Data.Odbc.Tests
 {
     public class ReaderTests : IntegrationTestBase
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void EmptyReader()
         {
             command.CommandText =
@@ -43,7 +43,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void GetValues()
         {
             command.CommandText =
@@ -76,7 +76,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void GetValueFailsWithBigIntWithBackwardsCompatibility()
         {
             command.CommandText =
@@ -111,7 +111,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void GetDataTypeName()
         {
             command.CommandText =
@@ -137,7 +137,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void GetFieldTypeIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -168,7 +168,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void IsDbNullIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -199,7 +199,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void InvalidRowIndex()
         {
             command.CommandText =
@@ -231,7 +231,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact]
         public void InvalidRowName()
         {
             command.CommandText =

@@ -31,15 +31,14 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact]
+        [Fact]
         public void Ctor_ExpectedDefaultValues()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
@@ -47,15 +46,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ServerCertificateCustomValidationCallback_SetGet_Roundtrips()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
@@ -182,7 +179,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (remoteServer.IsSecure)
                 {
-                    foreach (bool checkRevocation in new[] { true, false })
+                    foreach (bool checkRevocation in BoolValues)
                     {
                         yield return new object[] {
                             remoteServer,

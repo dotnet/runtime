@@ -12,6 +12,8 @@ parameters:
   pool: ''
   condition: true
   isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  helixQueues: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -81,6 +83,8 @@ jobs:
           osSubgroup: ${{ parameters.osSubgroup }}
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          helixQueues: ${{ parameters.helixQueues }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

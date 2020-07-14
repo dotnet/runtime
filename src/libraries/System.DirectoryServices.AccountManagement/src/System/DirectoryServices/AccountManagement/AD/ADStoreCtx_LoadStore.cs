@@ -799,12 +799,12 @@ namespace System.DirectoryServices.AccountManagement
 
         /************************/
         // This table only includes properties that are writeable.
-        private static Hashtable s_propertyMappingTableByProperty = null;
-        private static Hashtable s_propertyMappingTableByLDAP = null;
-        protected static Dictionary<string, bool> NonPresentAttrDefaultStateMapping = null;
-        private static Hashtable s_propertyMappingTableByPropertyFull = null;
+        private static Hashtable s_propertyMappingTableByProperty;
+        private static Hashtable s_propertyMappingTableByLDAP;
+        protected static Dictionary<string, bool> NonPresentAttrDefaultStateMapping;
+        private static Hashtable s_propertyMappingTableByPropertyFull;
 
-        protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap = null;
+        protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap;
 
         private class PropertyMappingTableEntry
         {

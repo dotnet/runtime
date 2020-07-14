@@ -13,10 +13,10 @@ namespace System.Net
 
         internal static IOCompletionCallback IOCallback => s_ioCallback;
 
-        internal ListenerAsyncResult(HttpListener listener, object userState, AsyncCallback callback) :
-            base(listener, userState, callback)
+        internal ListenerAsyncResult(HttpListenerSession session, object userState, AsyncCallback callback) :
+            base(session, userState, callback)
         {
-            _requestContext = new AsyncRequestContext(listener.RequestQueueBoundHandle, this);
+            _requestContext = new AsyncRequestContext(session.RequestQueueBoundHandle, this);
         }
 
         private static void IOCompleted(ListenerAsyncResult asyncResult, uint errorCode, uint numBytes)
@@ -34,7 +34,7 @@ namespace System.Net
                 }
                 else
                 {
-                    HttpListener httpWebListener = asyncResult.AsyncObject as HttpListener;
+                    HttpListenerSession listenerSession = asyncResult.AsyncObject as HttpListenerSession;
                     if (errorCode == Interop.HttpApi.ERROR_SUCCESS)
                     {
                         // at this point we have received an unmanaged HTTP_REQUEST and memoryBlob
@@ -42,9 +42,9 @@ namespace System.Net
                         bool stoleBlob = false;
                         try
                         {
-                            if (httpWebListener.ValidateRequest(asyncResult._requestContext))
+                            if (HttpListener.ValidateRequest(listenerSession, asyncResult._requestContext))
                             {
-                                result = httpWebListener.HandleAuthentication(asyncResult._requestContext, out stoleBlob);
+                                result = listenerSession.Listener.HandleAuthentication(listenerSession, asyncResult._requestContext, out stoleBlob);
                             }
                         }
                         finally
@@ -52,17 +52,17 @@ namespace System.Net
                             if (stoleBlob)
                             {
                                 // The request has been handed to the user, which means this code can't reuse the blob.  Reset it here.
-                                asyncResult._requestContext = result == null ? new AsyncRequestContext(httpWebListener.RequestQueueBoundHandle, asyncResult) : null;
+                                asyncResult._requestContext = result == null ? new AsyncRequestContext(listenerSession.RequestQueueBoundHandle, asyncResult) : null;
                             }
                             else
                             {
-                                asyncResult._requestContext.Reset(httpWebListener.RequestQueueBoundHandle, 0, 0);
+                                asyncResult._requestContext.Reset(listenerSession.RequestQueueBoundHandle, 0, 0);
                             }
                         }
                     }
                     else
                     {
-                        asyncResult._requestContext.Reset(httpWebListener.RequestQueueBoundHandle, asyncResult._requestContext.RequestBlob->RequestId, numBytes);
+                        asyncResult._requestContext.Reset(listenerSession.RequestQueueBoundHandle, asyncResult._requestContext.RequestBlob->RequestId, numBytes);
                     }
 
                     // We need to issue a new request, either because auth failed, or because our buffer was too small the first time.
@@ -107,9 +107,9 @@ namespace System.Net
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {_requestContext.RequestBlob->RequestId}Buffer:0x {((IntPtr)_requestContext.RequestBlob).ToString("x")} Size: {_requestContext.Size}");
                 uint bytesTransferred = 0;
-                HttpListener listener = (HttpListener)AsyncObject;
+                HttpListenerSession listenerSession = (HttpListenerSession)AsyncObject;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
-                    listener.RequestQueueHandle,
+                    listenerSession.RequestQueueHandle,
                     _requestContext.RequestBlob->RequestId,
                     (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY,
                     _requestContext.RequestBlob,
@@ -129,7 +129,7 @@ namespace System.Net
                 {
                     // the buffer was not big enough to fit the headers, we need
                     // to read the RequestId returned, allocate a new buffer of the required size
-                    _requestContext.Reset(listener.RequestQueueBoundHandle, _requestContext.RequestBlob->RequestId, bytesTransferred);
+                    _requestContext.Reset(listenerSession.RequestQueueBoundHandle, _requestContext.RequestBlob->RequestId, bytesTransferred);
                     continue;
                 }
                 else if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)

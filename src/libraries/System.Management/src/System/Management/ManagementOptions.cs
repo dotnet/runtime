@@ -1278,7 +1278,7 @@ namespace System.Management
         //Fields
         private string locale;
         private string username;
-        private SecureString securePassword = null;
+        private SecureString securePassword;
         private string authority;
         private ImpersonationLevel impersonation;
         private AuthenticationLevel authentication;

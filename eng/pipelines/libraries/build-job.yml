@@ -128,14 +128,11 @@ jobs:
         - ${{ if eq(parameters.runTests, true) }}:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
-              targetOS: ${{ parameters.osGroup }}
-              archGroup: ${{ parameters.archType }}
-              configuration: ${{ parameters.buildConfig }}
-              helixQueues: ${{ join('+', parameters.helixQueues) }}
-              msbuildScript: $(_msbuildCommand)
-              framework: ${{ parameters.framework }}
+              osGroup: ${{ parameters.osGroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              helixQueues: ${{ parameters.helixQueues }}
               testScope: ${{ parameters.testScope }}
               creator: dotnet-bot
-              helixToken: ''
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)

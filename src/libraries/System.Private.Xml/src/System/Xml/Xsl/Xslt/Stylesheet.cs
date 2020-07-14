@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.Xslt
 {
     internal class StylesheetLevel
     {
-        public Stylesheet[] Imports = null;
+        public Stylesheet[] Imports;
 
         // If (this is Stylesheet) {
         //   ModeFlags and ApplyFunctions are abblout apply-imports
@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.Xslt
         public Dictionary<QilName, AttributeSet> AttributeSets = new Dictionary<QilName, AttributeSet>();
 
         private readonly int _importPrecedence;
-        private int _orderNumber = 0;
+        private int _orderNumber;
 
         /*
             WhitespaceRules[0] - rules with default priority  0

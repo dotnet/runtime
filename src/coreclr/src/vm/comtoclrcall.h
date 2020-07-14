@@ -87,9 +87,6 @@ public:
     static MethodDesc* GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags);
 
-    static MethodDesc *GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD);
-    static MethodDesc *GetStaticForWinRTFactoryMethod(MethodTable *pClsMT, MethodDesc *pMD);
-
 private:
     ComCall() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
 

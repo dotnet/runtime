@@ -119,7 +119,7 @@ namespace System.DirectoryServices.Protocols
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class berval
     {
-        public int bv_len = 0;
+        public int bv_len;
         public IntPtr bv_val = IntPtr.Zero;
 
         public berval() { }
@@ -129,8 +129,8 @@ namespace System.DirectoryServices.Protocols
     internal sealed class LdapControl
     {
         public IntPtr ldctl_oid = IntPtr.Zero;
-        public berval ldctl_value = null;
-        public bool ldctl_iscritical = false;
+        public berval ldctl_value;
+        public bool ldctl_iscritical;
 
         public LdapControl() { }
     }
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.Protocols
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class LdapMod
     {
-        public int type = 0;
+        public int type;
         public IntPtr attribute = IntPtr.Zero;
         public IntPtr values = IntPtr.Zero;
 

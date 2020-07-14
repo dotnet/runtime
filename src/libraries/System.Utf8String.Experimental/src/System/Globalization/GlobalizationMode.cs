@@ -6,6 +6,6 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        internal static bool Invariant { get; } = false; // TODO: should we enable this?
+        internal static bool Invariant { get; } // TODO: should we enable this?
     }
 }

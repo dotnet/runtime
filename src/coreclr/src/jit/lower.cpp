@@ -111,26 +111,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
     assert(node != nullptr);
     switch (node->gtOper)
     {
+        case GT_NULLCHECK:
         case GT_IND:
-            // Process struct typed indirs separately, they only appear as the source of
-            // a block copy operation or a return node.
-            if (node->TypeGet() != TYP_STRUCT)
-            {
-                // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
-                // address containment in some cases so we end up creating trivial (reg + offfset)
-                // or (reg + reg) LEAs that are not necessary.
-                TryCreateAddrMode(node->AsIndir()->Addr(), true);
-                ContainCheckIndir(node->AsIndir());
-            }
+            LowerIndir(node->AsIndir());
             break;
 
         case GT_STOREIND:
-            assert(node->TypeGet() != TYP_STRUCT);
-            TryCreateAddrMode(node->AsIndir()->Addr(), true);
-            if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(node))
-            {
-                LowerStoreIndir(node->AsIndir());
-            }
+            LowerStoreIndirCommon(node->AsIndir());
             break;
 
         case GT_ADD:
@@ -263,7 +250,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
             __fallthrough;
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(node->AsBlk());
+            LowerBlockStoreCommon(node->AsBlk());
             break;
 
         case GT_LCLHEAP:
@@ -3128,7 +3115,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             objStore->SetAddr(addr);
             objStore->SetData(src);
             BlockRange().InsertBefore(objStore, addr);
-            LowerBlockStore(objStore);
+            LowerBlockStoreCommon(objStore);
             return;
         }
     }
@@ -3205,6 +3192,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             __fallthrough;
         case GT_IND:
             retVal->ChangeType(nativeReturnType);
+            LowerIndir(retVal->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -3435,7 +3423,8 @@ void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndir(store->AsIndir());
+        LowerStoreIndirCommon(store);
+        return;
     }
     else
     {
@@ -3452,7 +3441,7 @@ void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
 
         GenTreeLclVar* spilledCall = SpillStructCallResult(call);
         store->SetData(spilledCall);
-        LowerBlockStore(store);
+        LowerBlockStoreCommon(store);
 #endif // WINDOWS_AMD64_ABI
     }
 }
@@ -4014,20 +4003,6 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     //
     // Example3: GT_JMP.  After inserting PME execution order would be: PME, GT_JMP
     //           That is after PME, args for GT_JMP call will be setup.
-
-    // TODO-Cleanup: setting GCState to 1 seems to be redundant as InsertPInvokeCallProlog will set it to zero before a
-    // PInvoke call and InsertPInvokeCallEpilog() will set it back to 1 after the PInvoke.  Though this is redundant,
-    // it is harmeless.
-    // Note that liveness is artificially extending the life of compLvFrameListRoot var if the method being compiled has
-    // PInvokes.  Deleting the below stmnt would cause an an assert in lsra.cpp::SetLastUses() since compLvFrameListRoot
-    // will be live-in to a BBJ_RETURN block without any uses.  Long term we need to fix liveness for x64 case to
-    // properly extend the life of compLvFrameListRoot var.
-    //
-    // Thread.offsetOfGcState = 0/1
-    // That is [tcb + offsetOfGcState] = 1
-    GenTree* storeGCState = SetGCState(1);
-    returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeGCState));
-    ContainCheckStoreIndir(storeGCState->AsIndir());
 
     // Pop the frame if necessary. This always happens in the epilog on 32-bit targets. For 64-bit targets, we only do
     // this in the epilog for IL stubs; for non-IL stubs the frame is popped after every PInvoke call.
@@ -6324,4 +6299,191 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     {
         op1->SetContained();
     }
+}
+
+//------------------------------------------------------------------------
+// LowerStoreIndirCommon: a common logic to lower StoreIndir.
+//
+// Arguments:
+//    ind - the store indirection node we are lowering.
+//
+void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
+{
+    assert(ind->OperIs(GT_STOREIND));
+    assert(ind->TypeGet() != TYP_STRUCT);
+    TryCreateAddrMode(ind->Addr(), true);
+    if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
+    {
+        LowerStoreIndir(ind);
+    }
+}
+
+//------------------------------------------------------------------------
+// LowerIndir: a common logic to lower IND load or NullCheck.
+//
+// Arguments:
+//    ind - the ind node we are lowering.
+//
+void Lowering::LowerIndir(GenTreeIndir* ind)
+{
+    assert(ind->OperIs(GT_IND, GT_NULLCHECK));
+    // Process struct typed indirs separately unless they are unused;
+    // they only appear as the source of a block copy operation or a return node.
+    if (!ind->TypeIs(TYP_STRUCT) || ind->IsUnusedValue())
+    {
+        // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
+        // address containment in some cases so we end up creating trivial (reg + offfset)
+        // or (reg + reg) LEAs that are not necessary.
+        TryCreateAddrMode(ind->Addr(), true);
+        ContainCheckIndir(ind);
+
+        if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
+        {
+            // A nullcheck is essentially the same as an indirection with no use.
+            // The difference lies in whether a target register must be allocated.
+            // On XARCH we can generate a compare with no target register as long as the addresss
+            // is not contained.
+            // On ARM64 we can generate a load to REG_ZR in all cases.
+            // However, on ARM we must always generate a load to a register.
+            // In the case where we require a target register, it is better to use GT_IND, since
+            // GT_NULLCHECK is a non-value node and would therefore require an internal register
+            // to use as the target. That is non-optimal because it will be modeled as conflicting
+            // with the source register(s).
+            // So, to summarize:
+            // - On ARM64, always use GT_NULLCHECK for a dead indirection.
+            // - On ARM, always use GT_IND.
+            // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
+            // In all cases, change the type to TYP_INT.
+            //
+            ind->gtType = TYP_INT;
+#ifdef TARGET_ARM64
+            bool useNullCheck = true;
+#elif TARGET_ARM
+            bool useNullCheck = false;
+#else  // TARGET_XARCH
+            bool useNullCheck = !ind->Addr()->isContained();
+#endif // !TARGET_XARCH
+
+            if (useNullCheck && ind->OperIs(GT_IND))
+            {
+                ind->ChangeOper(GT_NULLCHECK);
+                ind->ClearUnusedValue();
+            }
+            else if (!useNullCheck && ind->OperIs(GT_NULLCHECK))
+            {
+                ind->ChangeOper(GT_IND);
+                ind->SetUnusedValue();
+            }
+        }
+    }
+    else
+    {
+        // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
+        // is a complex one it could benefit from an `LEA` that is not contained.
+        const bool isContainable = false;
+        TryCreateAddrMode(ind->Addr(), isContainable);
+    }
+}
+
+//------------------------------------------------------------------------
+// LowerBlockStoreCommon: a common logic to lower STORE_OBJ/BLK/DYN_BLK.
+//
+// Arguments:
+//    blkNode - the store blk/obj node we are lowering.
+//
+void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    if (TryTransformStoreObjAsStoreInd(blkNode))
+    {
+        return;
+    }
+
+    LowerBlockStore(blkNode);
+}
+
+//------------------------------------------------------------------------
+// TryTransformStoreObjAsStoreInd: try to replace STORE_OBJ/BLK as STOREIND.
+//
+// Arguments:
+//    blkNode - the store node.
+//
+// Return value:
+//    true if the replacement was made, false otherwise.
+//
+// Notes:
+//    TODO-CQ: this method should do the transformation when possible
+//    and STOREIND should always generate better or the same code as
+//    STORE_OBJ/BLK for the same copy.
+//
+bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    if (blkNode->OperIs(GT_STORE_DYN_BLK))
+    {
+        return false;
+    }
+
+    ClassLayout* layout = blkNode->GetLayout();
+    if (layout == nullptr)
+    {
+        return false;
+    }
+
+    var_types regType = layout->GetRegisterType();
+    if (regType == TYP_UNDEF)
+    {
+        return false;
+    }
+    if (varTypeIsSIMD(regType))
+    {
+        // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
+        return false;
+    }
+
+    if (varTypeIsGC(regType))
+    {
+        // TODO-CQ: STOREIND does not try to contain src if we need a barrier,
+        // STORE_OBJ generates better code currently.
+        return false;
+    }
+
+    GenTree* src = blkNode->Data();
+    if (src->OperIsInitVal() && !src->IsConstInitVal())
+    {
+        return false;
+    }
+
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    {
+        // source operand INDIR will use a widening instruction
+        // and generate worse code, like `movzx` instead of `mov`
+        // on x64.
+        return false;
+    }
+
+    blkNode->ChangeOper(GT_STOREIND);
+    blkNode->ChangeType(regType);
+
+    if ((blkNode->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0)
+    {
+        blkNode->gtFlags |= GTF_IND_TGTANYWHERE;
+    }
+
+    if (varTypeIsStruct(src))
+    {
+        src->ChangeType(regType);
+        LowerNode(blkNode->Data());
+    }
+    else if (src->OperIsInitVal())
+    {
+        GenTreeUnOp* initVal = src->AsUnOp();
+        src                  = src->gtGetOp1();
+        assert(src->IsCnsIntOrI());
+        src->AsIntCon()->FixupInitBlkValue(regType);
+        blkNode->SetData(src);
+        BlockRange().Remove(initVal);
+    }
+    LowerStoreIndirCommon(blkNode);
+    return true;
 }

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class RC2CryptoServiceProvider : RC2
     {
-        private bool _use40bitSalt = false;
+        private bool _use40bitSalt;
         private const int BitsPerByte = 8;
 
         private static readonly KeySizes[] s_legalKeySizes =

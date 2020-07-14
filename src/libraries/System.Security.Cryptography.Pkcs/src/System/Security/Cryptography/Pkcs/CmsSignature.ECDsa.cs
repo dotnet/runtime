@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? certKey,
                 bool silent,
-                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(oidValue, oidValue);
+                signatureAlgorithm = oidValue;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 int bufSize;

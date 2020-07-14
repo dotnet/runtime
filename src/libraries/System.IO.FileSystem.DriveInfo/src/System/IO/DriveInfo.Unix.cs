@@ -118,10 +118,6 @@ namespace System.IO
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private void CheckStatfsResultAndThrowIfNecessary(int result)
         {
             if (result != 0)

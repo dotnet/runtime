@@ -253,7 +253,8 @@ namespace ILCompiler
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment)
+            int? customPESectionAlignment,
+            bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -268,7 +269,7 @@ namespace ILCompiler
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             _customPESectionAlignment = customPESectionAlignment;
-            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
+            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;

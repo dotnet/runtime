@@ -24,7 +24,7 @@ namespace System.Data
 
         private readonly DataTable _table;
         private readonly DataRowTree _list = new DataRowTree();
-        internal int _nullInList = 0;
+        internal int _nullInList;
 
         /// <summary>
         /// Creates the DataRowCollection for the given table.

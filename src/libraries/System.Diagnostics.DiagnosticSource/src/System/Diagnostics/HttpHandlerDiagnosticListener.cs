@@ -807,7 +807,7 @@ namespace System.Diagnostics
         private const string TraceStateHeaderName = "tracestate";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
-        private bool initialized = false;
+        private bool initialized;
 
         // Fields for reflection
         private static FieldInfo s_connectionGroupListField;

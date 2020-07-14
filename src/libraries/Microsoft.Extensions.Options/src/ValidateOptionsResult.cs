@@ -61,6 +61,6 @@ namespace Microsoft.Extensions.Options
         /// <param name="failures">The reasons for the failure.</param>
         /// <returns>The failure result.</returns>
         public static ValidateOptionsResult Fail(IEnumerable<string> failures)
-            => new ValidateOptionsResult { Failed = true, FailureMessage = String.Join("; ", failures), Failures = failures };
+            => new ValidateOptionsResult { Failed = true, FailureMessage = string.Join("; ", failures), Failures = failures };
     }
 }

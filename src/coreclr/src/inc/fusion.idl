@@ -134,9 +134,5 @@ interface IAssemblyName: IUnknown
         [in]         DWORD    PropertyId,
         [out]        LPVOID   pvProperty,
         [in, out]    LPDWORD  pcbProperty);
-
-    HRESULT GetName(
-        [in, out, annotation("_Inout_")] LPDWORD lpcwBuffer,
-        [out, annotation("_Out_writes_opt_(*lpcwBuffer)")] WCHAR *pwzName);
 }
 

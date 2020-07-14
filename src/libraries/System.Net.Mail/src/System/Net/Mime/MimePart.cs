@@ -18,8 +18,8 @@ namespace System.Net.Mime
     internal class MimePart : MimeBasePart, IDisposable
     {
         private Stream? _stream;
-        private bool _streamSet = false;
-        private bool _streamUsedOnce = false;
+        private bool _streamSet;
+        private bool _streamUsedOnce;
         private AsyncCallback? _readCallback;
         private AsyncCallback? _writeCallback;
         private const int maxBufferSize = 0x4400;  //seems optimal for send based on perf analysis

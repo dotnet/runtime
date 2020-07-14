@@ -120,12 +120,6 @@ public:
 
     };
 
-    // pUnkResource must be one of the ICLRPrivResource* interfaces defined in CLRPrivBinding.IDL.
-    // pUnkResource will be queried for each of these to find a match and
-    static PEImage * OpenImage(
-        ICLRPrivResource * pIResource,
-        MDInternalImportFlags flags = MDInternalImport_Default);
-
     static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
     static PTR_PEImage FindByPath(LPCWSTR pPath);
     static PTR_PEImage FindByShortPath(LPCWSTR pPath);

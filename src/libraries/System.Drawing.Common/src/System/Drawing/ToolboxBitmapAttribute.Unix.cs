@@ -42,8 +42,8 @@ namespace System.Drawing
     [AttributeUsage(AttributeTargets.Class)]
     public class ToolboxBitmapAttribute : Attribute
     {
-        private Image? smallImage = null;
-        private Image? bigImage = null;
+        private Image? smallImage;
+        private Image? bigImage;
         public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute();
 
         private ToolboxBitmapAttribute()

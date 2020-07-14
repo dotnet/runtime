@@ -125,7 +125,7 @@ namespace System.Configuration
         protected override object CreateSectionFactory(FactoryRecord factoryRecord)
         {
             // Get the type of the factory
-            Type type = TypeUtil.GetType(Host, factoryRecord.FactoryTypeName, true);
+            Type type = TypeUtil.GetType(Host, factoryRecord.FactoryTypeName, throwOnError: true);
 
             // If the type is not a ConfigurationSection, use the DefaultSection if the type
             // implements IConfigurationSectionHandler.

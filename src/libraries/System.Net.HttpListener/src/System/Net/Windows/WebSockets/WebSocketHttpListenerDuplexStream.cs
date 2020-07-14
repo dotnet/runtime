@@ -844,8 +844,8 @@ namespace System.Net.WebSockets
             private readonly WebSocketHttpListenerDuplexStream _currentStream;
 
 #if DEBUG
-            private volatile int _nativeOverlappedCounter = 0;
-            private volatile int _nativeOverlappedUsed = 0;
+            private volatile int _nativeOverlappedCounter;
+            private volatile int _nativeOverlappedUsed;
 
             private void DebugRefCountReleaseNativeOverlapped()
             {

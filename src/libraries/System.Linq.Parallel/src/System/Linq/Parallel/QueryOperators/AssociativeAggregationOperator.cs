@@ -213,7 +213,7 @@ namespace System.Linq.Parallel
         // Returns an enumerable that represents the query executing sequentially.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "This method should never be called. Associative aggregation can always be parallelized")]
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("This method should never be called. Associative aggregation can always be parallelized.");

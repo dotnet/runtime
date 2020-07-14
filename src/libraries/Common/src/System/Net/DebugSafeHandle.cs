@@ -30,9 +30,6 @@ namespace System.Net
         private void Trace()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().ToString() + "<< (should be explicitly closed) \r\n";
-#if TRACE_VERBOSE
-            _trace += Environment.StackTrace;
-#endif
         }
 
         ~DebugSafeHandle()

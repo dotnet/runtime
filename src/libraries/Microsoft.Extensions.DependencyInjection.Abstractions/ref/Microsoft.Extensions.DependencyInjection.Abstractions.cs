@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         object GetRequiredService(System.Type serviceType);
     }
-    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object[] arguments);
+    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
     public static partial class ServiceCollectionServiceExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType) { throw null; }

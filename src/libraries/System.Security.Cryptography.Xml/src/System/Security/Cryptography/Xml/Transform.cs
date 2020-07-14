@@ -23,13 +23,13 @@ namespace System.Security.Cryptography.Xml
     public abstract class Transform
     {
         private string _algorithm;
-        private string _baseUri = null;
-        internal XmlResolver _xmlResolver = null;
-        private bool _bResolverSet = false;
-        private SignedXml _signedXml = null;
-        private Reference _reference = null;
-        private Hashtable _propagatedNamespaces = null;
-        private XmlElement _context = null;
+        private string _baseUri;
+        internal XmlResolver _xmlResolver;
+        private bool _bResolverSet;
+        private SignedXml _signedXml;
+        private Reference _reference;
+        private Hashtable _propagatedNamespaces;
+        private XmlElement _context;
 
         internal string BaseURI
         {

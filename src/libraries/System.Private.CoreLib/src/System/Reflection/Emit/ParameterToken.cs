@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
     /// </summary>
     public struct ParameterToken
     {
-        public static readonly ParameterToken Empty = default;
+        public static readonly ParameterToken Empty;
 
         internal ParameterToken(int parameterToken)
         {

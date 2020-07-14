@@ -11,8 +11,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public class GlobalCatalog : DomainController
     {
         // private variables
-        private ActiveDirectorySchema _schema = null;
-        private bool _disabled = false;
+        private ActiveDirectorySchema _schema;
+        private bool _disabled;
 
         #region constructors
         internal GlobalCatalog(DirectoryContext context, string globalCatalogName)

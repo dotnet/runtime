@@ -380,6 +380,61 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestCreatingActivityUsingDifferentParentIds()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+                const string hierarchicalId = "SomeId";
+
+                int callingByContext = 0;
+                int callingByParentId = 0;
+
+                using ActivitySource aSource = new ActivitySource("ParentIdsTest");
+                using ActivityListener listener1 = new ActivityListener();  // will have context callback only
+                using ActivityListener listener2 = new ActivityListener();  // will have parent id  callback only
+                using ActivityListener listener3 = new ActivityListener();  // will have both context and parent Id callbacks
+
+                listener1.ShouldListenTo = listener2.ShouldListenTo = listener3.ShouldListenTo = (activitySource) => activitySource.Name == "ParentIdsTest";
+                listener1.GetRequestedDataUsingContext = listener3.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    callingByContext++;
+
+                    Assert.Equal(new ActivityContext(ActivityTraceId.CreateFromString(w3cId.AsSpan(3,  32)), ActivitySpanId.CreateFromString(w3cId.AsSpan(36, 16)), ActivityTraceFlags.Recorded),
+                                 activityOptions.Parent);
+
+                    return ActivityDataRequest.AllData;
+                };
+                listener2.GetRequestedDataUsingParentId = listener3.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    callingByParentId++;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
+                ActivitySource.AddActivityListener(listener2);
+                ActivitySource.AddActivityListener(listener3);
+
+
+                // Create Activity using hierarchical Id, should trigger calling listener 2 and listener 3 only.
+                using Activity a = aSource.StartActivity("a", ActivityKind.Client, hierarchicalId);
+                Assert.Equal(2, callingByParentId);
+                Assert.Equal(0, callingByContext);
+
+                // Create Activity using W3C Id, should trigger calling all listeners.
+                using Activity b = aSource.StartActivity("b", ActivityKind.Client, w3cId);
+                Assert.Equal(4, callingByParentId);
+                Assert.Equal(1, callingByContext);
+
+                ActivityTraceId traceId = ActivityTraceId.CreateFromString("99d43cb30a4cdb4fbeee3a19c29201b0".AsSpan());
+
+                Assert.NotEqual("99d43cb30a4cdb4fbeee3a19c29201b0", a.TraceId.ToHexString());
+                Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", b.TraceId.ToHexString());
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }

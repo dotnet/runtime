@@ -213,6 +213,7 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_THISOBJ,
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
+        CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND
@@ -564,9 +565,8 @@ namespace Internal.JitInterface
         CORINFO_INITCLASS_NOT_REQUIRED = 0x00, // No class initialization required, but the class is not actually initialized yet
         // (e.g. we are guaranteed to run the static constructor in method prolog)
         CORINFO_INITCLASS_INITIALIZED = 0x01, // Class initialized
-        CORINFO_INITCLASS_SPECULATIVE = 0x02, // Class may be initialized speculatively
-        CORINFO_INITCLASS_USE_HELPER = 0x04, // The JIT must insert class initialization helper call.
-        CORINFO_INITCLASS_DONT_INLINE = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+        CORINFO_INITCLASS_USE_HELPER = 0x02, // The JIT must insert class initialization helper call.
+        CORINFO_INITCLASS_DONT_INLINE = 0x04, // The JIT should not inline the method requesting the class initialization. The class
         // initialization requires helper class now, but will not require initialization
         // if the method is compiled standalone. Or the method cannot be inlined due to some
         // requirement around class initialization such as shared generics.

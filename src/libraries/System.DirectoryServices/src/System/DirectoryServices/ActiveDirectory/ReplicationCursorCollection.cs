@@ -9,7 +9,7 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationCursorCollection : ReadOnlyCollectionBase
     {
-        private readonly DirectoryServer _server = null;
+        private readonly DirectoryServer _server;
 
         internal ReplicationCursorCollection(DirectoryServer server)
         {

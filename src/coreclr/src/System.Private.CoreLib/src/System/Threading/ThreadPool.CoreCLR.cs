@@ -34,8 +34,8 @@ namespace System.Threading
         private static IntPtr InvalidHandle => new IntPtr(-1);
         private IntPtr registeredWaitHandle = InvalidHandle;
         private WaitHandle? m_internalWaitObject;
-        private bool bReleaseNeeded = false;
-        private volatile int m_lock = 0;
+        private bool bReleaseNeeded;
+        private volatile int m_lock;
 
         internal IntPtr GetHandle() => registeredWaitHandle;
 

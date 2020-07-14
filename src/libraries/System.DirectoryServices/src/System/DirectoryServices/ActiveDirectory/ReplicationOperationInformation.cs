@@ -7,8 +7,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ReplicationOperationInformation
     {
         internal DateTime startTime;
-        internal ReplicationOperation currentOp = null;
-        internal ReplicationOperationCollection collection = null;
+        internal ReplicationOperation currentOp;
+        internal ReplicationOperationCollection collection;
 
         public ReplicationOperationInformation()
         {

@@ -710,6 +710,8 @@ namespace System.Runtime.Loader
         }
 #endif // !CORERT
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Satellite assemblies have no code in them and loading is not a problem")]
         private Assembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
         {
             // Called by native runtime when CultureName is not empty

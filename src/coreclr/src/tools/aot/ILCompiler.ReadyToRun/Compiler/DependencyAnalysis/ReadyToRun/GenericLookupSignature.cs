@@ -210,7 +210,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return result;
             }
 
-            return comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
+            var contextAsMethod = _methodContext.Context as MethodDesc;
+            var otherContextAsMethod = otherNode._methodContext.Context as MethodDesc;
+            if (contextAsMethod != null || otherContextAsMethod != null)
+            {
+                if (contextAsMethod == null)
+                    return -1;
+                if (otherContextAsMethod == null)
+                    return 1;
+
+                return comparer.Compare(contextAsMethod, otherContextAsMethod);
+            }
+            else
+            {
+                return comparer.Compare(_methodContext.ContextType, otherNode._methodContext.ContextType);
+            }
         }
     }
 }

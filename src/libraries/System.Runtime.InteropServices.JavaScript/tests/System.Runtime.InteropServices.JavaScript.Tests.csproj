@@ -9,5 +9,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
   </ItemGroup>
 </Project>

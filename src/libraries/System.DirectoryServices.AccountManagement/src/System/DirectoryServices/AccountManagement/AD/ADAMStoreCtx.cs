@@ -19,8 +19,8 @@ namespace System.DirectoryServices.AccountManagement
     internal partial class ADAMStoreCtx : ADStoreCtx
     {
         private const int mappingIndex = 1;
-        private List<string> _cachedBindableObjectList = null;
-        private string _cachedBindableObjectFilter = null;
+        private List<string> _cachedBindableObjectList;
+        private string _cachedBindableObjectFilter;
         private readonly object _objectListLock = new object();
 
         public ADAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, string serverName, ContextOptions options) : base(ctxBase, ownCtxBase, username, password, options)
@@ -31,7 +31,9 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Static constructor: used for initializing static tables
         //
+#pragma warning disable CA1810 // Initialize reference type static fields inline
         static ADAMStoreCtx()
+#pragma warning restore CA1810
         {
             LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
             LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);

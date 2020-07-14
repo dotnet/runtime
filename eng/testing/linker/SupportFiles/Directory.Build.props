@@ -2,6 +2,7 @@
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
     <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <_TrimmerLinkSymbols>true</_TrimmerLinkSymbols>
     <SelfContained>true</SelfContained>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PlatformManifestFile />

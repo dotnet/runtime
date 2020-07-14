@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed class AlgorithmIdentifier
     {
         public AlgorithmIdentifier()
-            : this(Oid.FromOidValue(Oids.TripleDesCbc, OidGroup.EncryptionAlgorithm), 0)
+            : this(Oids.TripleDesCbcOid.CopyOid(), 0)
         {
         }
 

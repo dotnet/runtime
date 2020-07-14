@@ -28,7 +28,7 @@ namespace System.Threading
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
-        private int _cpuUtilization = 0;
+        private int _cpuUtilization;
 
         private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
@@ -64,7 +64,7 @@ namespace System.Threading
 
         private readonly LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
 
-        private volatile int _numRequestedWorkers = 0;
+        private volatile int _numRequestedWorkers;
 
         private PortableThreadPool()
         {

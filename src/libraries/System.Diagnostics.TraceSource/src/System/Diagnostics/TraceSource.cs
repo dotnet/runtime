@@ -19,7 +19,7 @@ namespace System.Diagnostics
         private volatile TraceListenerCollection? _listeners;
         private readonly SourceLevels _switchLevel;
         private readonly string _sourceName;
-        internal volatile bool _initCalled = false;   // Whether we've called Initialize already.
+        internal volatile bool _initCalled;   // Whether we've called Initialize already.
         private StringDictionary? _attributes;
 
         public TraceSource(string name)

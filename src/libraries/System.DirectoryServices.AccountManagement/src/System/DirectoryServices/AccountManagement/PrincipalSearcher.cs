@@ -201,7 +201,7 @@ namespace System.DirectoryServices.AccountManagement
         private PrincipalContext _ctx;
 
         // Are we disposed?
-        private bool _disposed = false;
+        private bool _disposed;
 
         // Directly corresponds to the PrincipalSearcher.QueryFilter property.
         // Null means "return all principals".
@@ -209,7 +209,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // The default page size to use.  This value is automatically set
         // whenever a PrincipalContext is assigned to this object.
-        private int _pageSize = 0;
+        private int _pageSize;
 
         internal int PageSize
         {
@@ -220,7 +220,7 @@ namespace System.DirectoryServices.AccountManagement
         // Set by StoreCtx. PushFilterToNativeSearcher(), based on the qbeFilter.
         // If not set, either there is no underlying searcher (SAM), or PushFilterToNativeSearcher has not
         // yet been called.
-        private object _underlyingSearcher = null;
+        private object _underlyingSearcher;
         internal object UnderlyingSearcher
         {
             get

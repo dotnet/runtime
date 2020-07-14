@@ -44,10 +44,5 @@ namespace System.Diagnostics
         {
             set { throw new PlatformNotSupportedException(); } // No ability to change the affinity of a thread in an arbitrary process
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

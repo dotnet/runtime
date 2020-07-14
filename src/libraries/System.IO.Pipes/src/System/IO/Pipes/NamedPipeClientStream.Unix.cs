@@ -112,10 +112,5 @@ namespace System.IO.Pipes
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_NotOwnedByCurrentUser);
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

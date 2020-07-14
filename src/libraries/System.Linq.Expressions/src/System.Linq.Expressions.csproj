@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <FeatureInterpret>true</FeatureInterpret>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyName>System.Linq.Expressions</AssemblyName>
-    <RootNamespace>System.Linq.Expressions</RootNamespace>
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>

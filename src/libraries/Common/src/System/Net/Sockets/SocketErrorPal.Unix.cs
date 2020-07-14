@@ -21,7 +21,7 @@ namespace System.Net.Sockets
 #endif
 
         private const int NativeErrorToSocketErrorCount = 42;
-        private const int SocketErrorToNativeErrorCount = 40;
+        private const int SocketErrorToNativeErrorCount = 41;
 
         // No Interop.Errors are included for the following SocketErrors, as there's no good mapping:
         // - SocketError.NoRecovery
@@ -126,6 +126,7 @@ namespace System.Net.Sockets
             { SocketError.TooManyOpenSockets, Interop.Error.ENFILE }, // could also have been EMFILE
             { SocketError.TryAgain, Interop.Error.EAGAIN }, // not a perfect mapping, but better than nothing
             { SocketError.WouldBlock, Interop.Error.EAGAIN  },
+            { SocketError.SocketError, Interop.Error.ESOCKETERROR },
         };
 
         internal static SocketError GetSocketErrorForNativeError(Interop.Error errno)

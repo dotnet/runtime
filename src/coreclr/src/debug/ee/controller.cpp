@@ -8670,8 +8670,8 @@ DebuggerEnCBreakpoint::DebuggerEnCBreakpoint(SIZE_T offset,
                                              DebuggerEnCBreakpoint::TriggerType fTriggerType,
                                              AppDomain *pAppDomain)
   : DebuggerController(NULL, pAppDomain),
-    m_fTriggerType(fTriggerType),
-    m_jitInfo(jitInfo)
+    m_jitInfo(jitInfo),
+    m_fTriggerType(fTriggerType)
 {
     _ASSERTE( jitInfo != NULL );
     // Add and activate the specified patch

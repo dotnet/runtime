@@ -40,32 +40,15 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
-            new object[] { 300, "GET", "GET" },
-            new object[] { 300, "POST", "GET" },
-            new object[] { 300, "HEAD", "HEAD" },
-
-            new object[] { 301, "GET", "GET" },
-            new object[] { 301, "POST", "GET" },
-            new object[] { 301, "HEAD", "HEAD" },
-
-            new object[] { 302, "GET", "GET" },
-            new object[] { 302, "POST", "GET" },
-            new object[] { 302, "HEAD", "HEAD" },
-
-            new object[] { 303, "GET", "GET" },
-            new object[] { 303, "POST", "GET" },
-            new object[] { 303, "HEAD", "HEAD" },
-
-            new object[] { 307, "GET", "GET" },
-            new object[] { 307, "POST", "POST" },
-            new object[] { 307, "HEAD", "HEAD" },
-
-            new object[] { 308, "GET", "GET" },
-            new object[] { 308, "POST", "POST" },
-            new object[] { 308, "HEAD", "HEAD" },
-        };
-
+        public static IEnumerable<object[]> RedirectStatusCodesOldMethodsNewMethods()
+        {
+            foreach (int statusCode in new[] { 300, 301, 302, 303, 307, 308 })
+            {
+                yield return new object[] { statusCode, "GET", "GET" };
+                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
+                yield return new object[] { statusCode, "HEAD", "HEAD" };
+            }
+        }
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
@@ -112,7 +95,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = UseVersion };
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
@@ -157,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Content = new StringContent(ExpectedContent);
                     request.Headers.TransferEncodingChunked = true;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {

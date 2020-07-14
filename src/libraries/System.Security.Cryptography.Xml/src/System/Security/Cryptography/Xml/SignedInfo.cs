@@ -14,9 +14,9 @@ namespace System.Security.Cryptography.Xml
         private string _signatureMethod;
         private string _signatureLength;
         private readonly ArrayList _references;
-        private XmlElement _cachedXml = null;
-        private SignedXml _signedXml = null;
-        private Transform _canonicalizationMethodTransform = null;
+        private XmlElement _cachedXml;
+        private SignedXml _signedXml;
+        private Transform _canonicalizationMethodTransform;
 
         internal SignedXml SignedXml
         {

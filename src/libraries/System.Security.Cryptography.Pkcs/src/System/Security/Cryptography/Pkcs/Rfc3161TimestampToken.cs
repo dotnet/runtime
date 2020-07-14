@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 SignedCms cms = new SignedCms();
-                cms.Decode(source);
+                cms.Decode(source.Span);
 
                 // The fields of type EncapsulatedContentInfo of the SignedData
                 // construct have the following meanings:

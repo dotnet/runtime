@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>Counter used to produce a unique handle value.</summary>
-        private static long s_counter = 0;
+        private static long s_counter;
 
         /// <summary>
         /// The underlying FileStream.  May be null.  We hold onto the stream rather than just

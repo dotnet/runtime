@@ -13,7 +13,7 @@ namespace System.Threading.Tests
     /// </summary>
     public class SpinLockTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EnterExit()
         {
             var sl = new SpinLock();

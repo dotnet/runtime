@@ -1204,6 +1204,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
 
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
+
     //
     // ClrDataAccess.
     //

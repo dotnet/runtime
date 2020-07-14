@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumberFunctions : ValueQuery
     {
-        private readonly Query _arg = null;
+        private readonly Query _arg;
         private readonly FT _ftype;
 
         public NumberFunctions(FT ftype, Query arg)

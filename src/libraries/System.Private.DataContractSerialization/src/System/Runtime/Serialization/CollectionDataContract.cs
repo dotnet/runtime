@@ -466,7 +466,7 @@ namespace System.Runtime.Serialization
             private XmlFormatCollectionReaderDelegate _xmlFormatReaderDelegate;
             private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
             private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
-            private bool _isConstructorCheckRequired = false;
+            private bool _isConstructorCheckRequired;
 
             internal static Type[] KnownInterfaces
             {
@@ -742,7 +742,7 @@ namespace System.Runtime.Serialization
 
             private delegate void IncrementCollectionCountDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context);
 
-            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate = null;
+            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate;
 
             private static void DummyIncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context) { }
 

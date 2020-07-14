@@ -12,10 +12,10 @@ namespace System.Security.Cryptography.Xml
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlNodeList), typeof(XmlDocument) };
         private XmlNodeList _inputNodeList;
-        private readonly bool _includeComments = false;
-        private XmlNamespaceManager _nsm = null;
-        private XmlDocument _containingDocument = null;
-        private int _signaturePosition = 0;
+        private readonly bool _includeComments;
+        private XmlNamespaceManager _nsm;
+        private XmlDocument _containingDocument;
+        private int _signaturePosition;
 
         internal int SignaturePosition
         {

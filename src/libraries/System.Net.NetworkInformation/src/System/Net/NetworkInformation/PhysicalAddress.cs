@@ -10,7 +10,7 @@ namespace System.Net.NetworkInformation
     public class PhysicalAddress
     {
         private readonly byte[] _address;
-        private int _hash = 0;
+        private int _hash;
 
         public static readonly PhysicalAddress None = new PhysicalAddress(Array.Empty<byte>());
 

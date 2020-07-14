@@ -54,8 +54,8 @@ namespace
     {
     public:
         SafeArraySmartPtr(_In_ const std::vector<T> &in)
-            : _safeArray{}
-            , _elementCount{ static_cast<int>(in.size()) }
+            : _elementCount{ static_cast<int>(in.size())}
+              ,_safeArray{}
         {
             SAFEARRAYBOUND saBound;
             saBound.lLbound = 0;

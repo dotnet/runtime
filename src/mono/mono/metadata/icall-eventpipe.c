@@ -8,6 +8,9 @@
 #ifdef ENABLE_PERFTRACING
 #include <mono/eventpipe/ep-rt-config.h>
 #include <mono/eventpipe/ep.h>
+#include <mono/eventpipe/ep-event.h>
+#include <mono/eventpipe/ep-event-instance.h>
+#include <mono/eventpipe/ep-session.h>
 
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -117,21 +120,31 @@ mono_eventpipe_init (
 	ep_rt_thread_holder_alloc_func thread_holder_alloc_func,
 	ep_rt_thread_holder_free_func thread_holder_free_func)
 {
-	g_assert (table != NULL);
-	table->ep_rt_mono_100ns_datetime = mono_100ns_datetime;
-	table->ep_rt_mono_100ns_ticks = mono_100ns_ticks;
-	table->ep_rt_mono_cpu_count = mono_cpu_count;
-	table->ep_rt_mono_process_current_pid = mono_process_current_pid;
-	table->ep_rt_mono_native_thread_id_get = mono_native_thread_id_get;
-	table->ep_rt_mono_native_thread_id_equals = mono_native_thread_id_equals;
-	table->ep_rt_mono_runtime_is_shutting_down = mono_runtime_is_shutting_down;
-	table->ep_rt_mono_rand_try_get_bytes = rand_try_get_bytes_func;
-	table->ep_rt_mono_thread_get = eventpipe_thread_get;
-	table->ep_rt_mono_thread_get_or_create = eventpipe_thread_get_or_create;
-	table->ep_rt_mono_thread_exited = eventpipe_thread_exited;
-	table->ep_rt_mono_w32file_close = mono_w32file_close;
-	table->ep_rt_mono_w32file_create = mono_w32file_create;
-	table->ep_rt_mono_w32file_write = mono_w32file_write;
+	if (table != NULL) {
+		table->ep_rt_mono_100ns_datetime = mono_100ns_datetime;
+		table->ep_rt_mono_100ns_ticks = mono_100ns_ticks;
+		table->ep_rt_mono_cpu_count = mono_cpu_count;
+		table->ep_rt_mono_process_current_pid = mono_process_current_pid;
+		table->ep_rt_mono_native_thread_id_get = mono_native_thread_id_get;
+		table->ep_rt_mono_native_thread_id_equals = mono_native_thread_id_equals;
+		table->ep_rt_mono_runtime_is_shutting_down = mono_runtime_is_shutting_down;
+		table->ep_rt_mono_rand_try_get_bytes = rand_try_get_bytes_func;
+		table->ep_rt_mono_thread_get = eventpipe_thread_get;
+		table->ep_rt_mono_thread_get_or_create = eventpipe_thread_get_or_create;
+		table->ep_rt_mono_thread_exited = eventpipe_thread_exited;
+		table->ep_rt_mono_thread_info_sleep = mono_thread_info_sleep;
+		table->ep_rt_mono_thread_info_yield = mono_thread_info_yield;
+		table->ep_rt_mono_w32file_close = mono_w32file_close;
+		table->ep_rt_mono_w32file_create = mono_w32file_create;
+		table->ep_rt_mono_w32file_write = mono_w32file_write;
+		table->ep_rt_mono_w32event_create = mono_w32event_create;
+		table->ep_rt_mono_w32event_close = mono_w32event_close;
+		table->ep_rt_mono_w32event_set = mono_w32event_set;
+		table->ep_rt_mono_w32hadle_wait_one = mono_w32handle_wait_one;
+		table->ep_rt_mono_valloc = mono_valloc;
+		table->ep_rt_mono_vfree = mono_vfree;
+		table->ep_rt_mono_valloc_granule = mono_valloc_granule;
+	}
 
 	thread_holder_alloc_callback_func = thread_holder_alloc_func;
 	thread_holder_free_callback_func = thread_holder_free_func;
@@ -166,16 +179,27 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoError *error)
 {
 	EventPipeProvider *provider = NULL;
+	gpointer delegate_func = NULL;
 
 	if (MONO_HANDLE_IS_NULL (provider_name)) {
 		mono_error_set_argument_null (error, "providerName", "");
 		return NULL;
 	}
 
-	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
+#ifndef HOST_WASM
+	if (!MONO_HANDLE_IS_NULL (callback_func)) {
+		delegate_func = mono_delegate_to_ftnptr_impl (callback_func, error);
+		if (!is_ok (error) || !delegate_func) {
+			mono_error_set_argument_null (error, "callback_func", "");
+			return NULL;
+		}
+	}
+#endif
 
-	//TODO: Need to pin delegate if we switch to safe mode or maybe we should get funcptr in icall?
-	provider = ep_create_provider (provider_name_utf8, (EventPipeCallback)MONO_HANDLE_GETVAL (callback_func, delegate_trampoline), NULL);
+	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
+	if (is_ok (error) && provider_name_utf8) {
+		provider = ep_create_provider (provider_name_utf8, (EventPipeCallback)delegate_func, NULL);
+	}
 
 	g_free (provider_name_utf8);
 	return provider;
@@ -259,8 +283,8 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 	if (config_providers) {
 		for (int i = 0; i < providers_len; ++i) {
 			ep_provider_config_fini (&config_providers[i]);
-			g_free ((ep_char8_t *)config_providers[i].provider_name);
-			g_free ((ep_char8_t *)config_providers[i].filter_data);
+			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
+			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));
 		}
 	}
 

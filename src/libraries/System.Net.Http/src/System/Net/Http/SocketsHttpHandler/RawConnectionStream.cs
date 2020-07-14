@@ -34,6 +34,7 @@ namespace System.Net.Http
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -81,6 +82,7 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -104,7 +106,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = connection.CopyToUntilEofAsync(destination, bufferSize, cancellationToken);
+                Task copyTask = connection.CopyToUntilEofAsync(destination, async: true, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish(connection);
@@ -142,14 +144,9 @@ namespace System.Net.Http
             private void Finish(HttpConnection connection)
             {
                 // We cannot reuse this connection, so close it.
+                if (HttpTelemetry.IsEnabled) LogRequestStop();
                 connection.Dispose();
                 _connection = null;
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                Write(buffer.AsSpan(offset, count));
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)
@@ -184,7 +181,7 @@ namespace System.Net.Http
                     return default;
                 }
 
-                ValueTask writeTask = connection.WriteWithoutBufferingAsync(buffer);
+                ValueTask writeTask = connection.WriteWithoutBufferingAsync(buffer, async: true);
                 return writeTask.IsCompleted ?
                     writeTask :
                     new ValueTask(WaitWithConnectionCancellationAsync(writeTask, connection, cancellationToken));
@@ -205,7 +202,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                ValueTask flushTask = connection.FlushAsync();
+                ValueTask flushTask = connection.FlushAsync(async: true);
                 return flushTask.IsCompleted ?
                     flushTask.AsTask() :
                     WaitWithConnectionCancellationAsync(flushTask, connection, cancellationToken);

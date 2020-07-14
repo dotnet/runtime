@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
         private CipherData _cipherData;
         private EncryptionPropertyCollection _props;
         private KeyInfo _keyInfo;
-        internal XmlElement _cachedXml = null;
+        internal XmlElement _cachedXml;
 
         internal bool CacheValid
         {

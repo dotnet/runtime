@@ -39,7 +39,7 @@ public:
     inline FusionProperty operator [] (DWORD dwPropId);
 };
 
-class CAssemblyName : public IAssemblyName
+class CAssemblyName final : public IAssemblyName
 {
 private:
     DWORD        _dwSig;
@@ -47,9 +47,6 @@ private:
     CPropertyArray _rProp;
     BOOL         _fPublicKeyToken;
     BOOL         _fCustom;
-    LPWSTR       _pwzPathModifier;
-    LPWSTR       _pwzTextualIdentity;
-    LPWSTR       _pwzTextualIdentityILFull;
 
 public:
     // IUnknown methods
@@ -68,26 +65,19 @@ public:
         /*     out */  LPVOID   pvProperty,
         /* in  out */  LPDWORD  pcbProperty);
 
-    STDMETHOD(GetName)(
-        __inout  LPDWORD lpcwBuffer,
-        __out_ecount_opt(*lpcwBuffer) LPOLESTR pwzBuffer);
-
     HRESULT SetPropertyInternal(/* in */ DWORD  PropertyId,
                                 /* in */ LPCVOID pvProperty,
                                 /* in */ DWORD  cbProperty);
 
     CAssemblyName();
-    virtual ~CAssemblyName();
 
-    HRESULT SetName(LPCTSTR pszAssemblyName);
     HRESULT Parse(LPCWSTR szDisplayName);
 };
 
 STDAPI
 CreateAssemblyNameObject(
     LPASSEMBLYNAME    *ppAssemblyName,
-    LPCOLESTR          szAssemblyName,
-    bool               parseDisplayName);
+    LPCOLESTR          szAssemblyName);
 
 namespace fusion
 {
@@ -112,33 +102,6 @@ namespace fusion
         //
         // Returns S_FALSE if the property has not been set.
         HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, SString & ssVal);
-
-        // Returns an allocated buffer with the contents of the property.
-        //
-        // Returns S_FALSE if the property has not been set.
-        HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, __deref_out LPWSTR * pwzVal);
-
-        inline HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, LPCWSTR *pwzOut)
-        { return GetProperty(pName, dwProperty, const_cast<LPWSTR*>(pwzOut)); }
-
-        // Returns an allocated buffer with the contents of the property.
-        //
-        // Returns S_FALSE if the property has not been set.
-        HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, __deref_out LPSTR *pwzOut);
-
-        inline HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, LPCSTR *pwzOut)
-        { return GetProperty(pName, dwProperty, const_cast<LPSTR*>(pwzOut)); }
-
-        template <typename T> inline
-        typename std::enable_if<!std::is_pointer< typename std::remove_cv< T >::type >::value, HRESULT>::type
-        GetProperty(IAssemblyName * pName, DWORD dwProperty, T * pVal)
-        {
-            DWORD cbBuf = sizeof(T);
-            HRESULT hr = GetProperty(pName, dwProperty, pVal, &cbBuf);
-            if (hr == S_OK && cbBuf != sizeof(T))
-                hr = E_UNEXPECTED;
-            return hr;
-        }
 
         inline HRESULT GetSimpleName(IAssemblyName * pName, SString & ssName)
         { return GetProperty(pName, ASM_NAME_NAME, ssName); }

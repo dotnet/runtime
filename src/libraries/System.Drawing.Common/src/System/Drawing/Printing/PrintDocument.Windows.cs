@@ -9,7 +9,7 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Defines a reusable object that sends output to the printer.
     /// </summary>
-    [SRDescription(nameof(SR.PrintDocumentDesc))]
+    [DefaultProperty("DocumentName"), DefaultEvent("PrintPage"), SRDescription(nameof(SR.PrintDocumentDesc))]
     public class PrintDocument : Component
     {
         private string _documentName = "document";

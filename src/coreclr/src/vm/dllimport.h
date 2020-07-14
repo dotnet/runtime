@@ -542,7 +542,6 @@ protected:
 #ifdef FEATURE_COMINTEROP
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
-    DWORD               m_dwWinRTFactoryObjectLocalNum;
 #endif // FEATURE_COMINTEROP
 
     BOOL                m_fHasCleanupCode;

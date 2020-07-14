@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         private SchemaNames? _schemaNames;
         private readonly ValidationEventHandler? _eventHandler;
         private readonly XmlSchemaCompilationSettings? _compilationSettings;
-        private int _errorCount = 0;
+        private int _errorCount;
         private readonly string _nsXml;
 
         public BaseProcessor(XmlNameTable nameTable, SchemaNames? schemaNames, ValidationEventHandler? eventHandler)

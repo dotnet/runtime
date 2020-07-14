@@ -50,6 +50,6 @@
     <Compile Include="System\Security\SecureStringMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

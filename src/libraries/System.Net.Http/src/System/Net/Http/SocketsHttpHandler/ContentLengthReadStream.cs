@@ -48,6 +48,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -110,6 +111,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
+                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -132,7 +134,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = _connection.CopyToContentLengthAsync(destination, _contentBytesRemaining, bufferSize, cancellationToken);
+                Task copyTask = _connection.CopyToContentLengthAsync(destination, async: true, _contentBytesRemaining, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish();
@@ -164,6 +166,7 @@ namespace System.Net.Http
 
             private void Finish()
             {
+                if (HttpTelemetry.IsEnabled) LogRequestStop();
                 _contentBytesRemaining = 0;
                 _connection!.CompleteResponse();
                 _connection = null;
@@ -222,7 +225,7 @@ namespace System.Net.Http
                 {
                     while (true)
                     {
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                         ReadFromConnectionBuffer(int.MaxValue);
                         if (_contentBytesRemaining == 0)
                         {

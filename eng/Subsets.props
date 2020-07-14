@@ -150,6 +150,7 @@
                              $(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" Category="clr" BuildInParallel="true" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj" Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">

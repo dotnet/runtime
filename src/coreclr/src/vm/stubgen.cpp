@@ -960,11 +960,11 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
                 case 8:
                     {
                         UINT64 uVal = pInstrBuffer[i].uArg;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
                             uVal = CLR_NAN_64;
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
                     break;
@@ -1419,7 +1419,7 @@ void ILCodeStream::EmitLDC(DWORD_PTR uConst)
 {
     WRAPPER_NO_CONTRACT;
     Emit(
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
         CEE_LDC_I8
 #else
         CEE_LDC_I4
@@ -1434,14 +1434,14 @@ void ILCodeStream::EmitLDC_R4(UINT32 uConst)
 void ILCodeStream::EmitLDC_R8(UINT64 uConst)
 {
     STANDARD_VM_CONTRACT;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it later.
     CONSISTENCY_CHECK(((UINT32)uConst) != SPECIAL_VALUE_NAN_64_ON_32);
     if (uConst == CLR_NAN_64)
         uConst = SPECIAL_VALUE_NAN_64_ON_32;
     else
         CONSISTENCY_CHECK(FitsInU4(uConst));
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
     Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
 }
 void ILCodeStream::EmitLDELEMA(int token)

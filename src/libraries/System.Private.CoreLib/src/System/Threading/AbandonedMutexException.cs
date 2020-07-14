@@ -16,7 +16,7 @@ namespace System.Threading
     public class AbandonedMutexException : SystemException
     {
         private int _mutexIndex = -1;
-        private Mutex? _mutex = null;
+        private Mutex? _mutex;
 
         public AbandonedMutexException()
             : base(SR.Threading_AbandonedMutexException)

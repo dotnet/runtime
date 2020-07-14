@@ -21,12 +21,12 @@ include_directories(..)
 
 set(SOURCES
     ../bundle_marker.cpp
-    ./hostfxr_resolver_t.cpp
+    ./hostfxr_resolver.cpp
 )
 
 set(HEADERS
     ../bundle_marker.h
-    ../../../hostfxr_resolver_t.h
+    ../../../hostfxr_resolver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

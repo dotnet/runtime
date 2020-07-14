@@ -39,11 +39,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            var isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
+            bool isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(library.Type, "msbuildproject", StringComparison.OrdinalIgnoreCase);
 
-            var isPackage = string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase);
-            var isReferenceAssembly = string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase);
+            bool isPackage = string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase);
+            bool isReferenceAssembly = string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase);
             if (!isProject &&
                 !isPackage &&
                 !isReferenceAssembly &&
@@ -52,8 +52,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return false;
             }
 
-            var refsPath = Path.Combine(_basePath, RefsDirectoryName);
-            var isPublished = _fileSystem.Directory.Exists(refsPath);
+            string refsPath = Path.Combine(_basePath, RefsDirectoryName);
+            bool isPublished = _fileSystem.Directory.Exists(refsPath);
 
             // Resolving reference assemblies requires refs folder to exist
             if (isReferenceAssembly && !isPublished)
@@ -72,11 +72,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
 
             // Only packages can come from shared runtime
-            var sharedPath = _dependencyContextPaths.SharedRuntime;
+            string sharedPath = _dependencyContextPaths.SharedRuntime;
             if (isPublished && isPackage && !string.IsNullOrEmpty(sharedPath))
             {
-                var sharedDirectory = Path.GetDirectoryName(sharedPath);
-                var sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
+                string sharedDirectory = Path.GetDirectoryName(sharedPath);
+                string sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
                 if (_fileSystem.Directory.Exists(sharedRefs))
                 {
                     directories.Add(sharedRefs);
@@ -86,11 +86,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             var paths = new List<string>();
 
-            foreach (var assembly in library.Assemblies)
+            foreach (string assembly in library.Assemblies)
             {
                 bool resolved = false;
-                var assemblyFile = Path.GetFileName(assembly);
-                foreach (var directory in directories)
+                string assemblyFile = Path.GetFileName(assembly);
+                foreach (string directory in directories)
                 {
                     string fullName;
                     if (ResolverUtils.TryResolveAssemblyFile(_fileSystem, directory, assemblyFile, out fullName))

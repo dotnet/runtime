@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization
             private LocalBuilder _memberNamesLocal;
             private LocalBuilder _childElementNamespacesLocal;
             private int _typeIndex = 1;
-            private int _childElementIndex = 0;
+            private int _childElementIndex;
 #endif
 
             private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()

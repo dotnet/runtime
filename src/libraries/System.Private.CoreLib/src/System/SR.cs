@@ -21,7 +21,7 @@ namespace System
         // Needed for debugger integration
         internal static string GetResourceString(string resourceKey)
         {
-            return GetResourceString(resourceKey, string.Empty);
+            return GetResourceString(resourceKey, null);
         }
 
         private static string InternalGetResourceString(string key)

@@ -17,12 +17,18 @@ namespace System.Net.Http
             return true;
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        { }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             Task.CompletedTask;
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             SerializeToStreamAsync(stream, context);
+
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            EmptyReadStream.Instance;
 
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(EmptyReadStream.Instance);

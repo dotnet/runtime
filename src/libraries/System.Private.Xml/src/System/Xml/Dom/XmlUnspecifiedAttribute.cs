@@ -6,7 +6,7 @@ namespace System.Xml
 {
     internal class XmlUnspecifiedAttribute : XmlAttribute
     {
-        private bool _fSpecified = false;
+        private bool _fSpecified;
 
 
         protected internal XmlUnspecifiedAttribute(string prefix, string localName, string namespaceURI, XmlDocument doc)

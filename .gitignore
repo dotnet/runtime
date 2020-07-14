@@ -3,10 +3,12 @@ syntax: glob
 ### VisualStudio ###
 
 # Tool Runtime Dir
-.dotnet/
-.dotnet-mono/
-.packages/
-.tools/
+# note: there is no trailing slash so if these are symlinks (which are seen as files,
+#       instead of directories), git will still ignore them.
+.dotnet
+.dotnet-mono
+.packages
+.tools
 
 # User-specific files
 *.suo

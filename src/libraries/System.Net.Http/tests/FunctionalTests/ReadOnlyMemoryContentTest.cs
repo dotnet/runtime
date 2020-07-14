@@ -24,10 +24,32 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> TrueFalse()
+        public static IEnumerable<object[]> ContentLengthsAndUseArraysAndReadStreamAsync()
+        {
+            foreach (int length in new[] { 0, 1, 4096 })
+            {
+                foreach (bool useArray in new[] { true, false })
+                {
+                    foreach (bool readStreamAsync in new[] { true, false })
+                    {
+                        yield return new object[] { length, useArray, readStreamAsync };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> UseArrays()
         {
             yield return new object[] { true };
             yield return new object[] { false };
+        }
+
+        public static IEnumerable<object[]> UseArraysAndReadStreamAsync()
+        {
+            yield return new object[] { true, true };
+            yield return new object[] { true, false };
+            yield return new object[] { false, true };
+            yield return new object[] { false, false };
         }
 
         [Theory]
@@ -42,15 +64,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_TrivialMembersHaveExpectedValuesAndBehavior(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_TrivialMembersHaveExpectedValuesAndBehavior(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 42;
             Memory<byte> memory;
 
             using (ReadOnlyMemoryContent content = CreateContent(ContentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
 
                     // property values
@@ -76,15 +98,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_Seek(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_Seek(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 42;
             Memory<byte> memory;
 
             using (ReadOnlyMemoryContent content = CreateContent(ContentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream s = await content.ReadAsStreamAsync())
+                using (Stream s = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     foreach (int pos in new[] { 0, ContentLength / 2, ContentLength - 1 })
                     {
@@ -139,14 +161,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContentLengthsAndUseArrays))]
-        public async Task ReadAsStreamAsync_ReadByte_MatchesInput(int contentLength, bool useArray)
+        [MemberData(nameof(ContentLengthsAndUseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_ReadByte_MatchesInput(int contentLength, bool useArray, bool readStreamAsync)
         {
             Memory<byte> memory;
 
             using (ReadOnlyMemoryContent content = CreateContent(contentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     for (int i = 0; i < contentLength; i++)
                     {
@@ -160,15 +182,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_Read_InvalidArguments(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_Read_InvalidArguments(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 42;
             Memory<byte> memory;
 
             using (ReadOnlyMemoryContent content = CreateContent(ContentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     AssertExtensions.Throws<ArgumentNullException>("buffer", () => stream.Read(null, 0, 0));
                     AssertExtensions.Throws<ArgumentNullException>("buffer", () => { stream.ReadAsync(null, 0, 0); });
@@ -188,17 +210,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0, false)] // Read(byte[], ...)
-        [InlineData(1, false)] // Read(Span<byte>, ...)
-        [InlineData(2, false)] // ReadAsync(byte[], ...)
-        [InlineData(3, false)] // ReadAsync(Memory<byte>,...)
-        [InlineData(4, false)] // Begin/EndRead(byte[],...)
-        [InlineData(0, true)] // Read(byte[], ...)
-        [InlineData(1, true)] // Read(Span<byte>, ...)
-        [InlineData(2, true)] // ReadAsync(byte[], ...)
-        [InlineData(3, true)] // ReadAsync(Memory<byte>,...)
-        [InlineData(4, true)] // Begin/EndRead(byte[],...)
-        public async Task ReadAsStreamAsync_ReadMultipleBytes_MatchesInput(int mode, bool useArray)
+        [InlineData(0, false, false)] // Read(byte[], ...)
+        [InlineData(1, false, false)] // Read(Span<byte>, ...)
+        [InlineData(2, false, false)] // ReadAsync(byte[], ...)
+        [InlineData(3, false, false)] // ReadAsync(Memory<byte>,...)
+        [InlineData(4, false, false)] // Begin/EndRead(byte[],...)
+        [InlineData(0, false, true)] // Read(byte[], ...)
+        [InlineData(1, false, true)] // Read(Span<byte>, ...)
+        [InlineData(2, false, true)] // ReadAsync(byte[], ...)
+        [InlineData(3, false, true)] // ReadAsync(Memory<byte>,...)
+        [InlineData(4, false, true)] // Begin/EndRead(byte[],...)
+        [InlineData(0, true, false)] // Read(byte[], ...)
+        [InlineData(1, true, false)] // Read(Span<byte>, ...)
+        [InlineData(2, true, false)] // ReadAsync(byte[], ...)
+        [InlineData(3, true, false)] // ReadAsync(Memory<byte>,...)
+        [InlineData(4, true, false)] // Begin/EndRead(byte[],...)
+        [InlineData(0, true, true)] // Read(byte[], ...)
+        [InlineData(1, true, true)] // Read(Span<byte>, ...)
+        [InlineData(2, true, true)] // ReadAsync(byte[], ...)
+        [InlineData(3, true, true)] // ReadAsync(Memory<byte>,...)
+        [InlineData(4, true, true)] // Begin/EndRead(byte[],...)
+        public async Task ReadAsStreamAsync_ReadMultipleBytes_MatchesInput(int mode, bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 1024;
 
@@ -207,7 +239,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var buffer = new byte[3];
 
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     for (int i = 0; i < ContentLength; i += buffer.Length)
                     {
@@ -238,8 +270,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_ReadWithCancelableToken_MatchesInput(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_ReadWithCancelableToken_MatchesInput(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 100;
 
@@ -250,7 +282,7 @@ namespace System.Net.Http.Functional.Tests
                 var cts = new CancellationTokenSource();
                 int bytesRead;
 
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     for (int i = 0; i < ContentLength; i++)
                     {
@@ -271,8 +303,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_ReadWithCanceledToken_MatchesInput(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_ReadWithCanceledToken_MatchesInput(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 2;
 
@@ -280,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (ReadOnlyMemoryContent content = CreateContent(ContentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream stream = await content.ReadAsStreamAsync())
+                using (Stream stream = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)));
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await stream.ReadAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)));
@@ -305,15 +337,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContentLengthsAndUseArrays))]
-        public async Task ReadAsStreamAsync_CopyTo_AllContentCopied(int contentLength, bool useArray)
+        [MemberData(nameof(ContentLengthsAndUseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_CopyTo_AllContentCopied(int contentLength, bool useArray, bool readStreamAsync)
         {
             Memory<byte> memory;
             using (ReadOnlyMemoryContent content = CreateContent(contentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
 
                 var destination = new MemoryStream();
-                using (Stream s = await content.ReadAsStreamAsync())
+                using (Stream s = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     s.CopyTo(destination);
                 }
@@ -323,14 +355,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TrueFalse))]
-        public async Task ReadAsStreamAsync_CopyTo_InvalidArguments(bool useArray)
+        [MemberData(nameof(UseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_CopyTo_InvalidArguments(bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 42;
             Memory<byte> memory;
             using (ReadOnlyMemoryContent content = CreateContent(ContentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
-                using (Stream s = await content.ReadAsStreamAsync())
+                using (Stream s = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     AssertExtensions.Throws<ArgumentNullException>("destination", () => s.CopyTo(null));
                     AssertExtensions.Throws<ArgumentNullException>("destination", () => { s.CopyToAsync(null); });
@@ -350,15 +382,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContentLengthsAndUseArrays))]
-        public async Task ReadAsStreamAsync_CopyToAsync_AllContentCopied(int contentLength, bool useArray)
+        [MemberData(nameof(ContentLengthsAndUseArraysAndReadStreamAsync))]
+        public async Task ReadAsStreamAsync_CopyToAsync_AllContentCopied(int contentLength, bool useArray, bool readStreamAsync)
         {
             Memory<byte> memory;
             using (ReadOnlyMemoryContent content = CreateContent(contentLength, useArray, out memory, out IMemoryOwner<byte> memoryOwner))
             {
 
                 var destination = new MemoryStream();
-                using (Stream s = await content.ReadAsStreamAsync())
+                using (Stream s = await content.ReadAsStreamAsync(readStreamAsync))
                 {
                     await s.CopyToAsync(destination);
                 }

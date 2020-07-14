@@ -9,6 +9,8 @@
 
 #include "common.h"
 
+class EventPipeProvider;
+
 enum class EventPipeEventLevel
 {
     LogAlways,
@@ -21,6 +23,8 @@ enum class EventPipeEventLevel
 
 struct EventPipeProviderConfiguration
 {
+    friend class ProfToEEInterfaceImpl;
+
 private:
     LPCWSTR m_pProviderName = nullptr;
     UINT64 m_keywords = 0;
@@ -114,6 +118,53 @@ public:
 private:
     SList<SListElem<EventPipeProviderCallbackData>> list;
 };
+
+template <class T>
+class EventPipeIterator
+{
+private:
+    SList<SListElem<T>> *m_pList;
+    typename SList<SListElem<T>>::Iterator m_iterator;
+
+public:
+    EventPipeIterator(SList<SListElem<T>> *pList) :
+        m_pList(pList),
+        m_iterator(pList->begin())
+    {
+        _ASSERTE(m_pList != nullptr);
+    }
+
+    bool Next(T *ppProvider)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(ppProvider != nullptr);
+        }
+        CONTRACTL_END;
+
+        *ppProvider = *m_iterator;
+        ++m_iterator;
+        return m_iterator != m_pList->end();
+    }   
+
+};
+
+typedef void (*EventPipeSessionSynchronousCallback)(
+    EventPipeProvider *provider,
+    DWORD eventId,
+    DWORD eventVersion,
+    ULONG cbMetadataBlob,
+    LPCBYTE metadataBlob,
+    ULONG cbEventData,
+    LPCBYTE eventData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId,
+    Thread *pEventThread,
+    ULONG numStackFrames,
+    UINT_PTR stackFrames[]);
 
 #endif // FEATURE_PERFTRACING
 

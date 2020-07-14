@@ -36,8 +36,8 @@ namespace System.Linq.Parallel
         private readonly Func<TLeftInput, IEnumerable<TRightInput>>? _rightChildSelector; // To select a new child each iteration.
         private readonly Func<TLeftInput, int, IEnumerable<TRightInput>>? _indexedRightChildSelector; // To select a new child each iteration.
         private readonly Func<TLeftInput, TRightInput, TOutput>? _resultSelector; // An optional result selection function.
-        private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
-        private bool _limitsParallelism = false; // Whether to prematurely merge the input of this operator.
+        private bool _prematureMerge; // Whether to prematurely merge the input of this operator.
+        private bool _limitsParallelism; // Whether to prematurely merge the input of this operator.
 
         //---------------------------------------------------------------------------------------
         // Initializes a new select-many operator.

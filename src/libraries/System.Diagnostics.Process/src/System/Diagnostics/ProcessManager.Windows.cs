@@ -130,10 +130,6 @@ namespace System.Diagnostics
                 !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         static unsafe ProcessManager()
         {
             // In order to query information (OpenProcess) on some protected processes

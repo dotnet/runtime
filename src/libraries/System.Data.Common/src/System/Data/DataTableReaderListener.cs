@@ -8,8 +8,8 @@ namespace System.Data
 {
     internal sealed class DataTableReaderListener
     {
-        private DataTable _currentDataTable = null;
-        private bool _isSubscribed = false;
+        private DataTable _currentDataTable;
+        private bool _isSubscribed;
         private readonly WeakReference _readerWeak;
 
         internal DataTableReaderListener(DataTableReader reader)

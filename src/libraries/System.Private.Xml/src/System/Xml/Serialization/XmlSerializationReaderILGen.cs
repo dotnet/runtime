@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
         // Mapping name->id_XXXNN field
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private Dictionary<string, EnumMapping> _enums;
-        private int _nextIdNumber = 0;
+        private int _nextIdNumber;
 
         internal Dictionary<string, EnumMapping> Enums
         {

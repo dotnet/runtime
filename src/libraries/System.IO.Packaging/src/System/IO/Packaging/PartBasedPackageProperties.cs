@@ -835,7 +835,7 @@ namespace System.IO.Packaging
         // (Uses object comparison rather than string comparison.)
         private const int NumCoreProperties = 16;
         private readonly Dictionary<PackageXmlEnum, object> _propertyDictionary = new Dictionary<PackageXmlEnum, object>(NumCoreProperties);
-        private bool _dirty = false;
+        private bool _dirty;
 
         // This System.Xml.NameTable makes sure that we use the same references to strings
         // throughout (including when parsing Xml) and so can perform reference comparisons

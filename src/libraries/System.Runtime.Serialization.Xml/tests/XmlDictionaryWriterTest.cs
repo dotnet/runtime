@@ -62,7 +62,7 @@ public static class XmlDictionaryWriterTest
         Assert.Equal(expect, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;

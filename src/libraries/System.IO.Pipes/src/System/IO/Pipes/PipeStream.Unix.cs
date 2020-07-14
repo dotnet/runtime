@@ -302,10 +302,6 @@ namespace System.IO.Pipes
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>
         /// We want to ensure that only one asynchronous operation is actually in flight
         /// at a time. The base Stream class ensures this by serializing execution via a

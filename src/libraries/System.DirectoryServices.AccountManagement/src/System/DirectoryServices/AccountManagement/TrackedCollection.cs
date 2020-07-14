@@ -205,7 +205,7 @@ namespace System.DirectoryServices.AccountManagement
             //public T insertedValue = T.default;
             public T insertedValue;
 
-            public Pair<T, T> originalValue = null;
+            public Pair<T, T> originalValue;
 
             public T GetCurrentValue()
             {

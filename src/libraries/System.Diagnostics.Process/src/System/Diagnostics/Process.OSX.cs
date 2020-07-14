@@ -92,10 +92,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
         private static string GetExePath()
         {

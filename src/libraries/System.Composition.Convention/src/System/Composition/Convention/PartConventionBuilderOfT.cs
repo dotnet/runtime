@@ -132,8 +132,8 @@ namespace System.Composition.Convention
 
         private class ConstructorExpressionAdapter
         {
-            private ConstructorInfo _constructorInfo = null;
-            private Dictionary<ParameterInfo, Action<ImportConventionBuilder>> _importBuilders = null;
+            private ConstructorInfo _constructorInfo;
+            private Dictionary<ParameterInfo, Action<ImportConventionBuilder>> _importBuilders;
 
             public ConstructorExpressionAdapter(Expression<Func<ParameterImportConventionBuilder, T>> selectConstructor)
             {

@@ -36,7 +36,7 @@ namespace System.Drawing
         private uint _bestImageOffset;
         private uint _bestBitDepth;
         private uint _bestBytesInRes;
-        private bool? _isBestImagePng = null;
+        private bool? _isBestImagePng;
         private Size _iconSize = Size.Empty;
         private IntPtr _handle = IntPtr.Zero;
         private readonly bool _ownHandle = true;

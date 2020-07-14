@@ -30,7 +30,7 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
         /// -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-        ///
+        /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
@@ -60,6 +60,7 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
         /// -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>

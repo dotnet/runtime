@@ -335,7 +335,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal bool IsDebug => _regex != null && _regex.IsDebug;
 
         internal virtual void Dump()
@@ -377,7 +377,7 @@ namespace System.Text.RegularExpressions
         public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal override void Dump()
         {
             if (_caps != null)

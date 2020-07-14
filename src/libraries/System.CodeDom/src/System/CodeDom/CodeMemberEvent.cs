@@ -7,7 +7,7 @@ namespace System.CodeDom
     public class CodeMemberEvent : CodeTypeMember
     {
         private CodeTypeReference _type;
-        private CodeTypeReferenceCollection _implementationTypes = null;
+        private CodeTypeReferenceCollection _implementationTypes;
 
         public CodeMemberEvent() { }
 

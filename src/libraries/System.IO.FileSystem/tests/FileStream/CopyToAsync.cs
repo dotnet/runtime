@@ -70,7 +70,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory] // inner loop, just a few cases
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // inner loop, just a few cases
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(true, true)]
@@ -81,7 +81,7 @@ namespace System.IO.Tests
                 bufferSize: 4096, writeSize: 1024, numWrites: 10);
         }
 
-        [Theory] // outer loop, many combinations
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // outer loop, many combinations
         [OuterLoop]
         [MemberData(nameof(File_AllDataCopied_MemberData))]
         public async Task File_AllDataCopied(
@@ -277,7 +277,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DerivedFileStream_ReadAsyncInvoked(bool useAsync)

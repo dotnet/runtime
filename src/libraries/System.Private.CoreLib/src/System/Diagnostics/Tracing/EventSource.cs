@@ -233,6 +233,11 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
+        private static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// The human-friendly name of the eventSource.  It defaults to the simple name of the class
         /// </summary>
@@ -277,7 +282,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public bool IsEnabled(EventLevel level, EventKeywords keywords, EventChannel channel)
         {
-            if (!m_eventSourceEnabled)
+            if (!IsEnabled())
                 return false;
 
             if (!IsEnabledCommon(m_eventSourceEnabled, m_level, m_matchAnyKeyword, level, keywords, channel))
@@ -381,6 +386,11 @@ namespace System.Diagnostics.Tracing
             string? assemblyPathToIncludeInManifest,
             EventManifestOptions flags)
         {
+            if (!IsSupported)
+            {
+                return null;
+            }
+
             if (eventSourceType == null)
                 throw new ArgumentNullException(nameof(eventSourceType));
 
@@ -395,6 +405,11 @@ namespace System.Diagnostics.Tracing
         /// <returns></returns>
         public static IEnumerable<EventSource> GetSources()
         {
+            if (!IsSupported)
+            {
+                return Array.Empty<EventSource>();
+            }
+
             var ret = new List<EventSource>();
             lock (EventListener.EventListenersLock)
             {
@@ -420,6 +435,11 @@ namespace System.Diagnostics.Tracing
         /// <param name="commandArguments">A set of (name-argument, value-argument) pairs associated with the command</param>
         public static void SendCommand(EventSource eventSource, EventCommand command, IDictionary<string, string?>? commandArguments)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             if (eventSource == null)
                 throw new ArgumentNullException(nameof(eventSource));
 
@@ -522,6 +542,11 @@ namespace System.Diagnostics.Tracing
         /// the current thread</param>
         public static void SetCurrentThreadActivityId(Guid activityId)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             if (TplEventSource.Log != null)
                 TplEventSource.Log.SetActivityId(activityId);
 
@@ -550,6 +575,11 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
+                if (!IsSupported)
+                {
+                    return default;
+                }
+
                 // We ignore errors to keep with the convention that EventSources do not throw
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = default;
@@ -589,6 +619,12 @@ namespace System.Diagnostics.Tracing
         /// which will continue at some point in the future, on the current thread</param>
         public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
         {
+            if (!IsSupported)
+            {
+                oldActivityThatWillContinue = default;
+                return;
+            }
+
             oldActivityThatWillContinue = activityId;
 #if FEATURE_MANAGED_ETW
             // We ignore errors to keep with the convention that EventSources do not throw errors.
@@ -663,13 +699,19 @@ namespace System.Diagnostics.Tracing
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         protected EventSource(EventSourceSettings settings, params string[]? traits)
         {
-            m_config = ValidateSettings(settings);
+            if (IsSupported)
+            {
+#if FEATURE_PERFTRACING
+                m_eventHandleTable = new TraceLoggingEventHandleTable();
+#endif
+                m_config = ValidateSettings(settings);
 
-            Type myType = this.GetType();
-            Guid eventSourceGuid = GetGuid(myType);
-            string eventSourceName = GetName(myType);
+                Type myType = this.GetType();
+                Guid eventSourceGuid = GetGuid(myType);
+                string eventSourceName = GetName(myType);
 
-            Initialize(eventSourceGuid, eventSourceName, traits);
+                Initialize(eventSourceGuid, eventSourceName, traits);
+            }
         }
 
 #if FEATURE_PERFTRACING
@@ -734,7 +776,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (ints)
         protected unsafe void WriteEvent(int eventId, int arg1)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -746,7 +788,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -761,7 +803,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -780,7 +822,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (longs)
         protected unsafe void WriteEvent(int eventId, long arg1)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -792,7 +834,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -807,7 +849,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2, long arg3)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -826,7 +868,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (strings)
         protected unsafe void WriteEvent(int eventId, string? arg1)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
@@ -842,7 +884,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 arg2 ??= "";
@@ -863,7 +905,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 arg2 ??= "";
@@ -890,7 +932,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (string and ints)
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
@@ -909,7 +951,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
@@ -932,7 +974,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (string and longs)
         protected unsafe void WriteEvent(int eventId, string? arg1, long arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
@@ -952,7 +994,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (long and string)
         protected unsafe void WriteEvent(int eventId, long arg1, string? arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
@@ -972,7 +1014,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (int and string)
         protected unsafe void WriteEvent(int eventId, int arg1, string? arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
@@ -991,7 +1033,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, byte[]? arg1)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                 if (arg1 == null || arg1.Length == 0)
@@ -1024,7 +1066,7 @@ namespace System.Diagnostics.Tracing
 
         protected unsafe void WriteEvent(int eventId, long arg1, byte[]? arg2)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
@@ -1179,14 +1221,11 @@ namespace System.Diagnostics.Tracing
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
-                    if (relatedActivityId != null)
-                        ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
-
                     EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
                     EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
                     Guid* pActivityId = null;
@@ -1311,6 +1350,11 @@ namespace System.Diagnostics.Tracing
         /// <param name="disposing">True if called from Dispose(), false if called from the finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             if (disposing)
             {
 #if FEATURE_MANAGED_ETW
@@ -1396,8 +1440,15 @@ namespace System.Diagnostics.Tracing
         // Used by the internal FrameworkEventSource constructor and the TraceLogging-style event source constructor
         internal EventSource(Guid eventSourceGuid, string eventSourceName, EventSourceSettings settings, string[]? traits = null)
         {
-            m_config = ValidateSettings(settings);
-            Initialize(eventSourceGuid, eventSourceName, traits);
+            if (IsSupported)
+            {
+#if FEATURE_PERFTRACING
+                m_eventHandleTable = new TraceLoggingEventHandleTable();
+#endif
+
+                m_config = ValidateSettings(settings);
+                Initialize(eventSourceGuid, eventSourceName, traits);
+            }
         }
 
         /// <summary>
@@ -1862,15 +1913,13 @@ namespace System.Diagnostics.Tracing
 
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
-            if (m_eventSourceEnabled)
+            if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
                     if (childActivityID != null)
                     {
-                        ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
-
                         // If you use WriteEventWithRelatedActivityID you MUST declare the first argument to be a GUID
                         // with the name 'relatedActivityID, and NOT pass this argument to the WriteEvent method.
                         // During manifest creation we modify the ParameterInfo[] that we store to strip out any
@@ -2382,16 +2431,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void ValidateEventOpcodeForTransfer(ref EventMetadata eventData, string? eventName)
-        {
-            if ((EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Send &&
-                (EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Receive &&
-                (EventOpcode)eventData.Descriptor.Opcode != EventOpcode.Start)
-            {
-                ThrowEventSourceException(eventName);
-            }
-        }
-
         internal static EventOpcode GetOpcodeWithDefault(EventOpcode opcode, string? eventName)
         {
             if (opcode == EventOpcode.Info && eventName != null)
@@ -2506,6 +2545,11 @@ namespace System.Diagnostics.Tracing
                                   EventLevel level, EventKeywords matchAnyKeyword,
                                   IDictionary<string, string?>? commandArguments)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, etwSessionId, enable, level, matchAnyKeyword);
             lock (EventListener.EventListenersLock)
             {
@@ -2543,6 +2587,11 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal void DoCommand(EventCommandEventArgs commandArgs)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             // PRECONDITION: We should be holding the EventListener.EventListenersLock
             // We defer commands until we are completely inited.  This allows error messages to be sent.
             Debug.Assert(m_completelyInited);
@@ -2709,6 +2758,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal bool EnableEventForDispatcher(EventDispatcher? dispatcher, EventProviderType eventProviderType, int eventId, bool value)
         {
+            if (!IsSupported)
+                return false;
+
             Debug.Assert(m_eventData != null);
 
             if (dispatcher == null)
@@ -4383,7 +4435,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Used to disallow reentrancy.
         /// </summary>
-        private static bool s_CreatingListener = false;
+        private static bool s_CreatingListener;
 
 #if DEBUG
         /// <summary>
@@ -4398,8 +4450,8 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
-        private static bool s_EventSourceShutdownRegistered = false;
-#endregion
+        private static bool s_EventSourceShutdownRegistered;
+        #endregion
     }
 
     /// <summary>

@@ -26,10 +26,10 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly object _thisLock = new object();
         private readonly ICompositionElement _definitionOrigin;
         private volatile Assembly _assembly;
-        private volatile ComposablePartCatalog? _innerCatalog = null;
-        private int _isDisposed = 0;
+        private volatile ComposablePartCatalog? _innerCatalog;
+        private int _isDisposed;
 
-        private readonly ReflectionContext? _reflectionContext = default(ReflectionContext);
+        private readonly ReflectionContext? _reflectionContext;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AssemblyCatalog"/> class

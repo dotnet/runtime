@@ -77,7 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static bool operator !=(SymWithType swt1, SymWithType swt2) => !(swt1 == swt2);
 
-        [ExcludeFromCodeCoverage] // == overload should always be the method called.
+        [ExcludeFromCodeCoverage(Justification = "== overload should always be the method called")]
         public override bool Equals(object obj)
         {
             Debug.Fail("Sub-optimal equality called. Check if this is correct.");
@@ -86,7 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return Sym == other.Sym && Ats == other.Ats;
         }
 
-        [ExcludeFromCodeCoverage] // Never used as a key.
+        [ExcludeFromCodeCoverage(Justification = "Never used as a key")]
         public override int GetHashCode()
         {
             Debug.Fail("If using this as a key, implement IEquatable<SymWithType>");

@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Primitives
                 _changeTokenConsumer = changeTokenConsumer;
                 _state = state;
 
-                var token = changeTokenProducer();
+                IChangeToken token = changeTokenProducer();
 
                 RegisterChangeTokenCallback(token);
             }
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Primitives
                 //
                 // If the token changes after we take the token, then we'll process the update immediately upon
                 // registering the callback.
-                var token = _changeTokenProducer();
+                IChangeToken token = _changeTokenProducer();
 
                 try
                 {
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Primitives
 
             private void RegisterChangeTokenCallback(IChangeToken token)
             {
-                var registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
+                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);
             }
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Primitives
                 // We don't want to transition from _disposedSentinel => anything since it's terminal
                 // but we want to allow going from previously assigned disposable, to another
                 // disposable.
-                var current = Volatile.Read(ref _disposable);
+                IDisposable current = Volatile.Read(ref _disposable);
 
                 // If Dispose was called, then immediately dispose the disposable
                 if (current == _disposedSentinel)
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 // Otherwise, try to update the disposable
-                var previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
+                IDisposable previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
 
                 if (previous == _disposedSentinel)
                 {

@@ -371,7 +371,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
             /// </returns>
-            [ExcludeFromCodeCoverage]
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return this.GetEnumerator();

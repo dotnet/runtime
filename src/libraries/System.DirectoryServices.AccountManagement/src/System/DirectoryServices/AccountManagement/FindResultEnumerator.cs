@@ -182,10 +182,10 @@ namespace System.DirectoryServices.AccountManagement
         private bool _beforeStart = true;
 
         // if true, we've reached the end of the ResultSet
-        private bool _endReached = false;
+        private bool _endReached;
 
         // true if Dispose() has been called
-        private bool _disposed = false;
+        private bool _disposed;
 
         //
         private void CheckDisposed()

@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NodeFunctions : ValueQuery
     {
-        private readonly Query _arg = null;
+        private readonly Query _arg;
         private readonly FT _funcType;
         private XsltContext _xsltContext;
 

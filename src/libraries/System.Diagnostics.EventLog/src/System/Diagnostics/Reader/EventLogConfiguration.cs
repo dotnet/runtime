@@ -46,7 +46,7 @@ namespace System.Diagnostics.Eventing.Reader
     {
         private readonly EventLogHandle _handle = EventLogHandle.Zero;
 
-        private readonly EventLogSession _session = null;
+        private readonly EventLogSession _session;
 
         public EventLogConfiguration(string logName) : this(logName, null) { }
 

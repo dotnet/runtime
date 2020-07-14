@@ -80,6 +80,7 @@
     <Compile Include="System\FormatExceptionTests.cs" />
     <Compile Include="System\GCTests.cs" />
     <Compile Include="System\GuidTests.cs" />
+    <Compile Include="System\HalfTests.cs" />
     <Compile Include="System\HandleTests.cs" />
     <Compile Include="System\HashCodeTests.cs" />
     <Compile Include="System\IndexOutOfRangeExceptionTests.cs" />
@@ -134,6 +135,7 @@
     <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
+    <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
@@ -219,6 +221,7 @@
     <Compile Include="System\Runtime\Serialization\OptionalFieldAttributeTests.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationExceptionTests.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContextTests.cs" />
+    <Compile Include="System\Runtime\Versioning\OSPlatformAttributeTests.cs" />
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />
@@ -240,6 +243,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.cs" />
     <Compile Include="System\Text\ASCIIUtilityTests.cs" />
+    <Compile Include="System\Text\EncodingTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.cs" />
@@ -271,5 +275,8 @@
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 </Project>

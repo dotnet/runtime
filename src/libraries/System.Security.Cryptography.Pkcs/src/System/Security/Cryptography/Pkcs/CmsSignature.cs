@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             AsymmetricAlgorithm? key,
             bool silent,
-            [NotNullWhen(true)] out Oid? signatureAlgorithm,
+            [NotNullWhen(true)] out string? signatureAlgorithm,
             [NotNullWhen(true)] out byte[]? signatureValue);
 
         internal static CmsSignature? ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm? key)
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             AsymmetricAlgorithm? key,
             bool silent,
-            out Oid? oid,
+            out string? oid,
             out ReadOnlyMemory<byte> signatureValue)
         {
             CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);

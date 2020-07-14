@@ -92,7 +92,7 @@ namespace System.CodeDom.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData("\r\n")]
         [InlineData("\n")]
         [InlineData("newline")]

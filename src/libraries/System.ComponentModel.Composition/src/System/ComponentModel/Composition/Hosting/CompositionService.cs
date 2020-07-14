@@ -15,8 +15,8 @@ namespace System.ComponentModel.Composition.Hosting
     /// </remarks>
     public class CompositionService : ICompositionService, IDisposable
     {
-        private readonly CompositionContainer? _compositionContainer = null;
-        private readonly INotifyComposablePartCatalogChanged? _notifyCatalog = null;
+        private readonly CompositionContainer? _compositionContainer;
+        private readonly INotifyComposablePartCatalogChanged? _notifyCatalog;
 
         internal CompositionService(ComposablePartCatalog composablePartCatalog)
         {

@@ -19,23 +19,23 @@ namespace System.IO.Ports
         private const int TimeoutResolution = 30;
         // time [ms] loop has to be idle before it stops
         private const int IOLoopIdleTimeout = 2000;
-        private bool _ioLoopFinished = false;
+        private bool _ioLoopFinished;
 
-        private SafeSerialDeviceHandle _handle = null;
+        private SafeSerialDeviceHandle _handle;
         private int _baudRate;
         private StopBits _stopBits;
         private Parity _parity;
         private int _dataBits = 8;
-        private bool _rtsEnable = false;
-        private int _readTimeout = 0;
-        private int _writeTimeout = 0;
+        private bool _rtsEnable;
+        private int _readTimeout;
+        private int _writeTimeout;
         private byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
         private object _ioLoopLock = new object();
         private ConcurrentQueue<SerialStreamIORequest> _readQueue = new ConcurrentQueue<SerialStreamIORequest>();
         private ConcurrentQueue<SerialStreamIORequest> _writeQueue = new ConcurrentQueue<SerialStreamIORequest>();
 
-        private long _totalBytesRead = 0;
+        private long _totalBytesRead;
         private long TotalBytesAvailable => _totalBytesRead + BytesToRead;
         private long _lastTotalBytesAvailable;
 

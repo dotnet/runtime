@@ -107,8 +107,8 @@ namespace System.DirectoryServices.AccountManagement
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalServerDownException : PrincipalException
     {
-        private readonly int _errorCode = 0;
-        private readonly string _serverName = null;
+        private readonly int _errorCode;
+        private readonly string _serverName;
 
         public PrincipalServerDownException() : base() { }
 
@@ -151,7 +151,7 @@ namespace System.DirectoryServices.AccountManagement
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalOperationException : PrincipalException
     {
-        private readonly int _errorCode = 0;
+        private readonly int _errorCode;
 
         public PrincipalOperationException() : base() { }
 

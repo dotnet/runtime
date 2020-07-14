@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static PublicKey BuildPublicKey(RSA rsa)
         {
-            Oid oid = new Oid(Oids.Rsa);
+            Oid oid = Oids.RsaOid;
 
             // The OID is being passed to everything here because that's what
             // X509Certificate2.PublicKey does.

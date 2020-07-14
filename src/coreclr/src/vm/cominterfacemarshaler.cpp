@@ -104,8 +104,7 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     }
     CONTRACTL_END;
 
-    // If we are in an APPX process we do not check for IProvideClassInfo.
-    if (m_typeHandle.IsNull() && !AppX::IsAppXProcess())
+    if (m_typeHandle.IsNull())
     {
         EX_TRY
         {

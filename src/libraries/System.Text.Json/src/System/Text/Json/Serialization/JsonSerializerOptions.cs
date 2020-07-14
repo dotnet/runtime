@@ -32,7 +32,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
-        private JavaScriptEncoder? _encoder = null;
+        private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 
         private int _defaultBufferSize = BufferSizeDefault;

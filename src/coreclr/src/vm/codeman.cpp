@@ -1473,6 +1473,15 @@ void EEJitManager::SetCpuInfo()
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
     }
+
+    if (!CPUCompileFlags.IsSet(InstructionSet_SSE))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE is not supported on the processor."));
+    }
+    if (!CPUCompileFlags.IsSet(InstructionSet_SSE2))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE2 is not supported on the processor."));
+    }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_ARM64)
@@ -1483,6 +1492,15 @@ void EEJitManager::SetCpuInfo()
     }
 #if defined(TARGET_UNIX)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
+
+    // For HOST_ARM64, if OS has exposed mechanism to detect CPU capabilities, make sure it has AdvSimd capability.
+    // For other cases i.e. if !HOST_ARM64 but TARGET_ARM64 or HOST_ARM64 but OS doesn't expose way to detect
+    // CPU capabilities, we always enable AdvSimd flags by default.
+    //
+    if (!CPUCompileFlags.IsSet(InstructionSet_AdvSimd))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd is not supported on the processor."));
+    }
 #elif defined(HOST_64BIT)
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(InstructionSet_ArmBase);

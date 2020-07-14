@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ShouldSucceed()
         {
             var rb = new RegistrationBuilder();

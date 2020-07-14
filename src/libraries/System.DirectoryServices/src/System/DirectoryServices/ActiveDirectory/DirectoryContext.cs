@@ -22,14 +22,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class DirectoryContext
     {
-        private string _name = null;
+        private string _name;
         private DirectoryContextType _contextType;
-        private NetworkCredential _credential = null;
-        internal string serverName = null;
-        internal bool usernameIsNull = false;
-        internal bool passwordIsNull = false;
-        private bool _validated = false;
-        private bool _contextIsValid = false;
+        private NetworkCredential _credential;
+        internal string serverName;
+        internal bool usernameIsNull;
+        internal bool passwordIsNull;
+        private bool _validated;
+        private bool _contextIsValid;
 
         internal static LoadLibrarySafeHandle ADHandle;
         internal static LoadLibrarySafeHandle ADAMHandle;

@@ -19,7 +19,7 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
 )
 list(APPEND HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/../hostfxr_resolver_t.h
+    ${CMAKE_CURRENT_LIST_DIR}/../hostfxr_resolver.h
 )
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})

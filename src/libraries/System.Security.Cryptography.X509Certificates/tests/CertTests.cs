@@ -217,10 +217,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void X509Certificate2ToStringVerbose_WithPrivateKey_FromSpans(X509KeyStorageFlags keyStorageFlags)
+        {
+            Span<char> pwTmp = stackalloc char[30];
+            pwTmp.Fill('Z');
+            TestData.PfxDataPassword.AsSpan().CopyTo(pwTmp);
+            ReadOnlySpan<char> pw = pwTmp.Slice(0, TestData.PfxDataPassword.Length);
+
+            using (var cert = new X509Certificate2(TestData.PfxData.AsSpan(), pw, keyStorageFlags))
+            {
+                string certToString = cert.ToString(true);
+                Assert.Contains(PrivateKeySectionHeader, certToString);
+                Assert.Contains(PublicKeySectionHeader, certToString);
+            }
+        }
+
         [Fact]
         public static void X509Certificate2ToStringVerbose_NoPrivateKey()
         {
             using (var cert = new X509Certificate2(TestData.MsCertificatePemBytes))
+            {
+                string certToString = cert.ToString(true);
+                Assert.DoesNotContain(PrivateKeySectionHeader, certToString);
+                Assert.Contains(PublicKeySectionHeader, certToString);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2ToStringVerbose_NoPrivateKey_FromSpan()
+        {
+            using (var cert = new X509Certificate2(TestData.MsCertificatePemBytes.AsSpan()))
             {
                 string certToString = cert.ToString(true);
                 Assert.DoesNotContain(PrivateKeySectionHeader, certToString);
@@ -248,6 +276,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void X509Cert2CreateFromPfxWithPassword()
         {
             using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), "test"))
+            {
+                // OID=RSA Encryption
+                Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
+            }
+        }
+
+        [Fact]
+        public static void X509Cert2CreateFromPfxWithSpanPassword()
+        {
+            Span<char> pw = stackalloc char[] { 't', 'e', 's', 't' };
+
+            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), pw))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());

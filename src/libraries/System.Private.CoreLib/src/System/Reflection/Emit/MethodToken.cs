@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public struct MethodToken
     {
-        public static readonly MethodToken Empty = default;
+        public static readonly MethodToken Empty;
 
         internal MethodToken(int methodToken)
         {

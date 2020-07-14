@@ -738,7 +738,7 @@ private:
             // we set all this up in FixupRetExpr().
             if (oldRetExpr != nullptr)
             {
-                GenTree* retExpr    = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
+                GenTree* retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet(), thenBlock->bbFlags);
                 inlineInfo->retExpr = retExpr;
 
                 if (returnTemp != BAD_VAR_NUM)

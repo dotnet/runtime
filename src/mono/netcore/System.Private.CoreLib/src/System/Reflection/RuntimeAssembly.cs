@@ -58,6 +58,8 @@ namespace System.Reflection
         private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
 
+        internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
+
         private ResolveEventHolder? resolve_event_holder;
 
         public extern override MethodInfo? EntryPoint

@@ -1172,15 +1172,12 @@ namespace System.Xml
                 return;
             }
 
-            if (!attdef.DefaultValueChecked)
+            SchemaInfo schemaInfo = coreReader.DtdInfo as SchemaInfo;
+            if (schemaInfo == null)
             {
-                SchemaInfo schemaInfo = coreReader.DtdInfo as SchemaInfo;
-                if (schemaInfo == null)
-                {
-                    return;
-                }
-                DtdValidator.CheckDefaultValue(attdef, schemaInfo, _eventHandling, coreReader.BaseURI);
+                return;
             }
+            DtdValidator.CheckDefaultValue(attdef, schemaInfo, _eventHandling, coreReader.BaseURI);
         }
     }
 }

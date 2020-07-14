@@ -10,8 +10,8 @@ namespace System.Xml.Schema
 
     public abstract class XmlSchemaObject
     {
-        private int _lineNum = 0;
-        private int _linePos = 0;
+        private int _lineNum;
+        private int _linePos;
         private string? _sourceUri;
         private XmlSerializerNamespaces? _namespaces;
         private XmlSchemaObject? _parent;

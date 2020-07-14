@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
     {
         private readonly XPathNodeIterator _innerIterator;
         private readonly string _name;
-        private int _position = 0;
+        private int _position;
 
         internal IteratorFilter(XPathNodeIterator innerIterator, string name)
         {

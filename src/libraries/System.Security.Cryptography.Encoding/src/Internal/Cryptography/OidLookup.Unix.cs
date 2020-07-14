@@ -50,9 +50,5 @@ namespace Internal.Cryptography
 
             return Interop.Crypto.GetOidValue(sharedObject);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

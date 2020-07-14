@@ -349,7 +349,7 @@ namespace System.Xml
     {
         private WeakReference _elemList;
         private readonly XmlDocument _doc;
-        private readonly XmlNodeChangedEventHandler _nodeChangeHandler = null;
+        private readonly XmlNodeChangedEventHandler _nodeChangeHandler;
 
         internal XmlElementListListener(XmlDocument doc, XmlElementList elemList)
         {

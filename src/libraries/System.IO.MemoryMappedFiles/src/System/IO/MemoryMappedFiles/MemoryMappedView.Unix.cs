@@ -160,10 +160,6 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Attempt to prevent the specified pages from being copied into forked processes.</summary>
         /// <param name="addr">The starting address.</param>
         /// <param name="length">The length.</param>

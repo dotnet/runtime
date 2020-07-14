@@ -88,7 +88,7 @@ namespace System.Net.Tests
         public abstract Task<WebResponse> GetResponseAsync(WebRequest request);
         public abstract Task<Stream> GetRequestStreamAsync(WebRequest request);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -125,7 +125,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -151,7 +151,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteThenReadFile_WriteAccessResultsInNullResponseStream()
         {
             string path = Path.GetTempFileName();
@@ -183,7 +183,7 @@ namespace System.Net.Tests
 
         protected virtual bool EnableConcurrentReadWriteTests => true;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task RequestAfterResponse_throws()
         {
             string path = Path.GetTempFileName();
@@ -203,7 +203,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]

@@ -49,7 +49,7 @@ namespace System.Reflection
             return null;
         }
 
-        private RoAssembly? _coreAssembly = null;
+        private RoAssembly? _coreAssembly;
 
         /// <summary>
         /// Returns a lazily created and cached Type instance corresponding to the indicated core type. This method throws

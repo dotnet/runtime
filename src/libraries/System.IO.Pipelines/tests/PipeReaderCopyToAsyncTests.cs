@@ -33,7 +33,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(() => pipe.Reader.CopyToAsync(new MemoryStream(), new CancellationToken(true)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CopyToAsyncStreamWorks()
         {
             var messages = new List<byte[]>()
@@ -169,7 +169,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingBetweenReadsThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -194,7 +194,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -209,7 +209,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -223,7 +223,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingStreamViaCancellationTokenThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -266,7 +266,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         public async Task ThrowingFromStreamCallsAdvanceToWithStartOfLastReadResult(int throwAfterNWrites)

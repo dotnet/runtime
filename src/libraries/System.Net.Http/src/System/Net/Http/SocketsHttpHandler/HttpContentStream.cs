@@ -2,15 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+
 namespace System.Net.Http
 {
     internal abstract class HttpContentStream : HttpBaseStream
     {
         protected HttpConnection? _connection;
 
+        // Makes sure we don't call HttpTelemetry events more than once.
+        private int _requestStopCalled; // 0==no, 1==yes
+
         public HttpContentStream(HttpConnection connection)
         {
             _connection = connection;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
         protected override void Dispose(bool disposing)
@@ -34,6 +44,14 @@ namespace System.Net.Http
                 // it, which is misuse, or held onto it and tried to use it later after we've disposed of it,
                 // which is also misuse.
                 ThrowObjectDisposedException();
+        }
+
+        protected void LogRequestStop()
+        {
+            if (Interlocked.Exchange(ref _requestStopCalled, 1) == 0)
+            {
+                HttpTelemetry.Log.RequestStop();
+            }
         }
 
         private HttpConnection ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name);

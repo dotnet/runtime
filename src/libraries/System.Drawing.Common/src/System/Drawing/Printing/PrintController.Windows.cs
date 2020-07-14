@@ -65,7 +65,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private protected SafeDeviceModeHandle? _modeHandle = null;
+        private protected SafeDeviceModeHandle? _modeHandle;
 
         /// <remarks>
         /// If you have nested PrintControllers, this method won't get called on the inner one.

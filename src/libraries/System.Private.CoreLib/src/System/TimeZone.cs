@@ -26,7 +26,7 @@ namespace System
     [Obsolete("System.TimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo instead.")]
     public abstract class TimeZone
     {
-        private static volatile TimeZone? currentTimeZone = null;
+        private static volatile TimeZone? currentTimeZone;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static object? s_InternalSyncObject;

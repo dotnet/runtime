@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.Xslt
         */
         //Max depth to avoid StackOverflow
         private const int MaxParseRelativePathDepth = 1024;
-        private int _parseRelativePath = 0;
+        private int _parseRelativePath;
         private QilNode ParseRelativePathPattern()
         {
             if (++_parseRelativePath > MaxParseRelativePathDepth)

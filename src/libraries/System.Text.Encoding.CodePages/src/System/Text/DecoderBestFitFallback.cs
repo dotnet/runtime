@@ -17,7 +17,7 @@ namespace System.Text
     {
         // Our variables
         internal BaseCodePageEncoding encoding;
-        internal char[]? arrayBestFit = null;
+        internal char[]? arrayBestFit;
         internal char cReplacement = '?';
 
         internal InternalDecoderBestFitFallback(BaseCodePageEncoding _encoding)
@@ -41,7 +41,7 @@ namespace System.Text
     internal sealed class InternalDecoderBestFitFallbackBuffer : DecoderFallbackBuffer
     {
         // Our variables
-        internal char cBestFit = '\0';
+        internal char cBestFit;
         internal int iCount = -1;
         internal int iSize;
         private readonly InternalDecoderBestFitFallback _oFallback;

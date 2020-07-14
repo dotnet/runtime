@@ -394,9 +394,7 @@ namespace System.Management
 
             Initialize();
 
-#pragma warning disable CA2002
             lock (this)
-#pragma warning restore CA2002
             {
                 SecurityHandler securityHandler = Scope.GetSecurityHandler();
 
@@ -561,9 +559,7 @@ namespace System.Management
                 Options = new EventWatcherOptions();
 
             //If we're not connected yet, this is the time to do it...
-#pragma warning disable CA2002
             lock (this)
-#pragma warning restore CA2002
             {
                 if (null == scope)
                     Scope = new ManagementScope();
@@ -721,9 +717,7 @@ namespace System.Management
         {
             if (null != stub)
             {
-#pragma warning disable CA2002
                 lock (this)
-#pragma warning restore CA2002
                 {
                     if (null != stub)
                     {
@@ -749,9 +743,7 @@ namespace System.Management
         {
             if (null != stub)
             {
-#pragma warning disable CA2002
                 lock (this)
-#pragma warning restore CA2002
                 {
                     /*
                      * We force a release of the stub here so as to allow

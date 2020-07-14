@@ -311,13 +311,13 @@ namespace System.Data.Common
         private MissingMappingAction _missingMappingAction;
 
         private ConflictOption _conflictDetection = ConflictOption.CompareAllSearchableValues;
-        private bool _setAllValues = false;
-        private bool _hasPartialPrimaryKey = false;
+        private bool _setAllValues;
+        private bool _hasPartialPrimaryKey;
 
         private DataTable _dbSchemaTable;
         private DbSchemaRow[] _dbSchemaRows;
         private string[] _sourceColumnNames;
-        private ParameterNames _parameterNames = null;
+        private ParameterNames _parameterNames;
 
         private string _quotedBaseTableName;
 
@@ -327,9 +327,9 @@ namespace System.Data.Common
         private string _schemaSeparator = NameSeparator;
         private string _quotePrefix = string.Empty;
         private string _quoteSuffix = string.Empty;
-        private string _parameterNamePattern = null;
-        private string _parameterMarkerFormat = null;
-        private int _parameterNameMaxLength = 0;
+        private string _parameterNamePattern;
+        private string _parameterMarkerFormat;
+        private int _parameterNameMaxLength;
 
         protected DbCommandBuilder() : base()
         {

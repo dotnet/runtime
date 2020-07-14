@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.Xslt
         // List of all variables and parameters
         private readonly List<VarPar> _allVarPars = new List<VarPar>();
 #endif
-        private int _forEachDepth = 0;
+        private int _forEachDepth;
         private XPathAnalyzer _xpathAnalyzer;
         private ProtoTemplate _currentTemplate;
 

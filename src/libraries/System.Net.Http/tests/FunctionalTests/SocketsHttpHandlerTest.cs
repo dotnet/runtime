@@ -109,14 +109,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
         public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
-
-        [Theory]
-        [InlineData("delete", "DELETE")]
-        [InlineData("options", "OPTIONS")]
-        [InlineData("trace", "TRACE")]
-        [InlineData("patch", "PATCH")]
-        public Task CustomMethod_SentUppercasedIfKnown_Additional(string specifiedMethod, string expectedMethod) =>
-            CustomMethod_SentUppercasedIfKnown(specifiedMethod, expectedMethod);
     }
 
     public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
@@ -199,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
 
                             // Wait a small amount of time before sending the first response, so the connection lifetime will expire.
                             Debug.Assert(lifetimeMilliseconds < 100);
-                            await Task.Delay(100);
+                            await Task.Delay(1000);
 
                             // Second request should not have completed yet, as we haven't completed the first yet.
                             Assert.False(request2.IsCompleted);
@@ -342,7 +334,7 @@ namespace System.Net.Http.Functional.Tests
                         ValidateResponseHeaders(response1, totalSize, mode);
 
                         // Read part but not all of response
-                        Stream responseStream = await response1.Content.ReadAsStreamAsync();
+                        Stream responseStream = await response1.Content.ReadAsStreamAsync(TestAsync);
                         await ReadToByteCount(responseStream, readSize);
 
                         response1.Dispose();
@@ -645,7 +637,7 @@ namespace System.Net.Http.Functional.Tests
                         var trailingHeaders = response.TrailingHeaders;
                         Assert.Empty(trailingHeaders);
 
-                        Stream stream = await response.Content.ReadAsStreamAsync();
+                        Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
                         Byte[] data = new Byte[100];
                         // Read some data, preferably whole body.
                         int readBytes = await stream.ReadAsync(data, 0, 4);
@@ -870,7 +862,7 @@ namespace System.Net.Http.Functional.Tests
                 // Pending read on the response content.
                 Assert.Empty(response.TrailingHeaders);
 
-                Stream stream = await response.Content.ReadAsStreamAsync();
+                Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
                 Byte[] data = new Byte[100];
                 await stream.ReadAsync(data, 0, data.Length);
 
@@ -984,7 +976,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
@@ -1036,31 +1028,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop]
-        [Fact]
-        public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
-        {
-            var releaseServer = new TaskCompletionSource();
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var handler = new SocketsHttpHandler())
-                using (var invoker = new HttpMessageInvoker(handler))
-                {
-                    handler.ConnectTimeout = TimeSpan.FromSeconds(1);
-
-                    var sw = Stopwatch.StartNew();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-                        invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get,
-                            new UriBuilder(uri) { Scheme = "https" }.ToString()) { Version = UseVersion }, default));
-                    sw.Stop();
-
-                    Assert.InRange(sw.ElapsedMilliseconds, 500, 60_000);
-                    releaseServer.SetResult();
-                }
-            }, server => releaseServer.Task); // doesn't establish SSL connection
-        }
-
-
         [Fact]
         public void Expect100ContinueTimeout_Default()
         {
@@ -1107,53 +1074,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
-
-        [OuterLoop("Incurs significant delay")]
-        [Fact]
-        public async Task Expect100Continue_WaitsExpectedPeriodOfTimeBeforeSendingContent()
-        {
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var handler = new SocketsHttpHandler())
-                using (var invoker = new HttpMessageInvoker(handler))
-                {
-                    TimeSpan delay = TimeSpan.FromSeconds(3);
-                    handler.Expect100ContinueTimeout = delay;
-
-                    var tcs = new TaskCompletionSource<bool>();
-                    var content = new SetTcsContent(new MemoryStream(new byte[1]), tcs);
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion };
-                    request.Headers.ExpectContinue = true;
-
-                    var sw = Stopwatch.StartNew();
-                    (await invoker.SendAsync(request, default)).Dispose();
-                    sw.Stop();
-
-                    Assert.InRange(sw.Elapsed, delay - TimeSpan.FromSeconds(.5), delay * 20); // arbitrary wiggle room
-                }
-            }, async server =>
-            {
-                await server.AcceptConnectionAsync(async connection =>
-                {
-                    await connection.ReadRequestHeaderAsync();
-                    await connection.ReadAsync(new byte[1], 0, 1);
-                    await connection.SendResponseAsync();
-                });
-            });
-        }
-
-        private sealed class SetTcsContent : StreamContent
-        {
-            private readonly TaskCompletionSource<bool> _tcs;
-
-            public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
-
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            {
-                _tcs.SetResult(true);
-                return base.SerializeToStreamAsync(stream, context);
-            }
-        }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
@@ -1164,43 +1084,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
-
-        [Theory]
-        [MemberData(nameof(Authentication_SocketsHttpHandler_TestData))]
-        public async Task SocketsHttpHandler_Authentication_Succeeds(string authenticateHeader, bool result)
-        {
-            await HttpClientHandler_Authentication_Succeeds(authenticateHeader, result);
-        }
-
-        public static IEnumerable<object[]> Authentication_SocketsHttpHandler_TestData()
-        {
-            // These test cases successfully authenticate on SocketsHttpHandler but fail on the other handlers.
-            // These are legal as per the RFC, so authenticating is the expected behavior.
-            // See https://github.com/dotnet/runtime/issues/25643 for details.
-            yield return new object[] { "Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true };
-            yield return new object[] { "Basic something digest something", true };
-            yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
-                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
-            yield return new object[] { "dIgEsT realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
-                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
-
-            // These cases fail on WinHttpHandler because of a behavior in WinHttp that causes requests to be duplicated
-            // when the digest header has certain parameters. See https://github.com/dotnet/runtime/issues/25644 for details.
-            yield return new object[] { "Digest ", false };
-            yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
-
-            // These cases fail to authenticate on SocketsHttpHandler, but succeed on the other handlers.
-            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/runtime/issues/25645 for details.
-            yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
-            yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
-            yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
-
-            // These tests check that the algorithm parameter is treated in case insensitive way.
-            // WinHTTP only supports plain MD5, so other algorithms are included here.
-            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=md5-Sess, nonce=\"testnonce\", qop=\"auth\"", true };
-            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256, nonce=\"testnonce\"", true };
-            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256-SESS, nonce=\"testnonce\", qop=\"auth\"", true };
-        }
     }
 
     public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
@@ -1222,7 +1105,7 @@ namespace System.Net.Http.Functional.Tests
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                        using (Stream clientStream = await (await getResponseTask).Content.ReadAsStreamAsync())
+                        using (Stream clientStream = await (await getResponseTask).Content.ReadAsStreamAsync(TestAsync))
                         {
                             // Boolean properties returning correct values
                             Assert.True(clientStream.CanWrite);
@@ -1322,92 +1205,9 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandlerTestBase
+    public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandler_Connect_Test
     {
         public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public async Task ConnectMethod_Success()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url) { Version = UseVersion };
-                    request.Headers.Host = "foo.com:345";
-
-                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
-                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
-
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        // Verify that Host header exist and has same value and URI authority.
-                        List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
-                        string authority = lines[0].Split()[1];
-                        foreach (string line in lines)
-                        {
-                            if (line.StartsWith("Host:",StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                Assert.Equal("Host: foo.com:345", line);
-                                break;
-                            }
-                        }
-
-                        Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
-                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);
-
-                        using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync())
-                        {
-                            Assert.True(clientStream.CanWrite);
-                            Assert.True(clientStream.CanRead);
-                            Assert.False(clientStream.CanSeek);
-
-                            TextReader clientReader = new StreamReader(clientStream);
-                            TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
-                            TextWriter serverWriter = connection.Writer;
-
-                            const string helloServer = "hello server";
-                            const string helloClient = "hello client";
-                            const string goodbyeServer = "goodbye server";
-                            const string goodbyeClient = "goodbye client";
-
-                            clientWriter.WriteLine(helloServer);
-                            Assert.Equal(helloServer, connection.ReadLine());
-                            serverWriter.WriteLine(helloClient);
-                            Assert.Equal(helloClient, clientReader.ReadLine());
-                            clientWriter.WriteLine(goodbyeServer);
-                            Assert.Equal(goodbyeServer, connection.ReadLine());
-                            serverWriter.WriteLine(goodbyeClient);
-                            Assert.Equal(goodbyeClient, clientReader.ReadLine());
-                        }
-                    });
-                }
-            });
-        }
-
-        [Fact]
-        public async Task ConnectMethod_Fails()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url) { Version = UseVersion };
-                    request.Headers.Host = "foo.com:345";
-                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
-                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.Forbidden, content: "error");
-
-                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask);
-                        HttpResponseMessage response = await responseTask;
-
-                        Assert.True(response.StatusCode ==  HttpStatusCode.Forbidden);
-                    });
-                }
-            });
-        }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
