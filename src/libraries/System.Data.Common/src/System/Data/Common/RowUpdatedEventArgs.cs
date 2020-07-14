@@ -12,10 +12,10 @@ namespace System.Data.Common
         private readonly IDbCommand _command;
         private StatementType _statementType;
         private readonly DataTableMapping _tableMapping;
-        private Exception _errors;
+        private Exception? _errors;
 
         private DataRow _dataRow;
-        private DataRow[] _dataRows;
+        private DataRow[]? _dataRows;
 
         private UpdateStatus _status; // UpdateStatus.Continue; /*0*/
         private int _recordsAffected;
@@ -47,7 +47,7 @@ namespace System.Data.Common
             }
         }
 
-        public Exception Errors
+        public Exception? Errors
         {
             get
             {
@@ -75,7 +75,7 @@ namespace System.Data.Common
             }
         }
 
-        internal DataRow[] Rows
+        internal DataRow[]? Rows
         {
             get
             {
@@ -87,7 +87,7 @@ namespace System.Data.Common
         {
             get
             {
-                DataRow[] dataRows = _dataRows;
+                DataRow[]? dataRows = _dataRows;
                 return ((null != dataRows) ? dataRows.Length : ((null != _dataRow) ? 1 : 0));
             }
         }
@@ -153,7 +153,7 @@ namespace System.Data.Common
 
         public void CopyToRows(DataRow[] array, int arrayIndex)
         {
-            DataRow[] dataRows = _dataRows;
+            DataRow[]? dataRows = _dataRows;
             if (null != dataRows)
             {
                 dataRows.CopyTo(array, arrayIndex);

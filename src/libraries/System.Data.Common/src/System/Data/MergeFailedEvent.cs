@@ -5,7 +5,7 @@ namespace System.Data
 {
     public class MergeFailedEventArgs : EventArgs
     {
-        public MergeFailedEventArgs(DataTable table, string conflict)
+        public MergeFailedEventArgs(DataTable? table, string conflict)
         {
             Table = table;
             Conflict = conflict;
@@ -14,7 +14,7 @@ namespace System.Data
         /// <summary>
         /// Gets the name of the <see cref='System.Data.DataTable'/>.
         /// </summary>
-        public DataTable Table { get; }
+        public DataTable? Table { get; }
 
         /// <summary>
         /// Gets a description of the merge conflict.
