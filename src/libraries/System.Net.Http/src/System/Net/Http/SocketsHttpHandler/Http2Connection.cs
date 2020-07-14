@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -33,7 +34,6 @@ namespace System.Net.Http
 
         private readonly Dictionary<int, Http2Stream> _httpStreams;
 
-        private readonly AsyncMutex _writerLock;
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
 
@@ -43,7 +43,8 @@ namespace System.Net.Http
         private int _maxConcurrentStreams;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
-        private int _pendingWriters;
+
+        private readonly Channel<WriteQueueEntry> _writeChannel;
         private bool _lastPendingWriterShouldFlush;
 
         // This means that the pool has disposed us, but there may still be
@@ -58,12 +59,6 @@ namespace System.Net.Http
 
         // This will be set when a connection IO error occurs
         private Exception? _abortException;
-
-        // If an in-progress write is canceled we need to be able to immediately
-        // report a cancellation to the user, but also block the connection until
-        // the write completes. We avoid actually canceling the write, as we would
-        // then have to close the whole connection.
-        private Task? _inProgressWrite;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -96,6 +91,9 @@ namespace System.Net.Http
         // this value, so this is not a hard maximum size.
         private const int UnflushedOutgoingBufferSize = 32 * 1024;
 
+        // Channel options for creating _writeChannel
+        private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
+
         public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
@@ -107,9 +105,10 @@ namespace System.Net.Http
 
             _httpStreams = new Dictionary<int, Http2Stream>();
 
-            _writerLock = new AsyncMutex();
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), int.MaxValue);
+
+            _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
@@ -151,24 +150,24 @@ namespace System.Net.Http
             _expectingSettingsAck = true;
 
             _ = ProcessIncomingFramesAsync();
+            _ = ProcessOutgoingFramesAsync();
         }
 
         private async Task FlushOutgoingBytesAsync()
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_outgoingBuffer.ActiveLength)}={_outgoingBuffer.ActiveLength}");
-            Debug.Assert(_outgoingBuffer.ActiveLength > 0);
 
-            try
+            if (_outgoingBuffer.ActiveLength > 0)
             {
-                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Abort(e);
-                throw;
-            }
-            finally
-            {
+                try
+                {
+                    await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    Abort(e);
+                }
+
                 _lastPendingWriterShouldFlush = false;
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
             }
@@ -766,110 +765,138 @@ namespace System.Net.Http
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
-            PerformWriteAsync(0, 0, (_, __) => FlushTiming.Now, cancellationToken);
+            PerformWriteAsync(0, 0, (_, __) => true, cancellationToken);
 
-        /// <summary>Performs a write operation serialized via the <see cref="_writerLock"/>.</summary>
-        /// <param name="writeBytes">The number of bytes to be written.</param>
-        /// <param name="state">The state to pass through to the callbacks.</param>
-        /// <param name="lockedAction">The action to be invoked while the writer lock is held and that actually writes the data to the provided buffer.</param>
-        /// <param name="cancellationToken">The cancellation token to use while waiting.</param>
-        private async Task PerformWriteAsync<T>(int writeBytes, T state, Func<T, Memory<byte>, FlushTiming> lockedAction, CancellationToken cancellationToken = default)
+        private abstract class WriteQueueEntry : TaskCompletionSource
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(writeBytes)}={writeBytes}");
+            private readonly CancellationToken _cancellationToken;
+            private readonly CancellationTokenRegistration _cancellationRegistration;
 
-            // Acquire the write lock
-            ValueTask acquireLockTask = _writerLock.EnterAsync(cancellationToken);
-            if (acquireLockTask.IsCompletedSuccessfully)
+            public WriteQueueEntry(int writeBytes, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                acquireLockTask.GetAwaiter().GetResult(); // to enable the value task sources to be pooled
-            }
-            else
-            {
-                Interlocked.Increment(ref _pendingWriters);
-                try
-                {
-                    await acquireLockTask.ConfigureAwait(false);
-                }
-                catch
-                {
-                    if (Interlocked.Decrement(ref _pendingWriters) == 0)
-                    {
-                        // If a pending waiter is canceled, we may end up in a situation where a previously written frame
-                        // saw that there were pending writers and as such deferred its flush to them, but if/when that pending
-                        // writer is canceled, nothing may end up flushing the deferred work (at least not promptly).  To compensate,
-                        // if a pending writer does end up being canceled, we flush asynchronously.  We can't check whether there's such
-                        // a pending operation because we failed to acquire the lock that protects that state.  But we can at least only
-                        // do the flush if our decrement caused the pending count to reach 0: if it's still higher than zero, then there's
-                        // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
-                        // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
-                        // cancellation was requested, and it's because of that cancellation that we need to flush.
-                        LogExceptions(FlushAsync(cancellationToken: default));
-                    }
+                WriteBytes = writeBytes;
 
-                    throw;
-                }
-                Interlocked.Decrement(ref _pendingWriters);
+                _cancellationToken = cancellationToken;
+                _cancellationRegistration = cancellationToken.UnsafeRegister(s => ((WriteQueueEntry)s!).OnCancellation(), this);
             }
 
-            // If the connection has been aborted, then fail now instead of trying to send more data.
-            if (_abortException != null)
+            public int WriteBytes { get; }
+
+            private void OnCancellation()
             {
-                _writerLock.Exit();
-                ThrowRequestAborted(_abortException);
+                SetCanceled(_cancellationToken);
             }
 
-            // Flush waiting state, then invoke the supplied action.
-            try
+            public bool TryDisableCancellation()
             {
-                // If there is a pending write that was canceled while in progress, wait for it to complete.
-                if (_inProgressWrite != null)
-                {
-                    await new ValueTask(_inProgressWrite).ConfigureAwait(false); // await ValueTask to minimize number of awaiter fields
-                    _inProgressWrite = null;
-                }
-
-                // If the buffer has already grown to 32k, does not have room for the next request,
-                // and is non-empty, flush the current contents to the wire.
-                int totalBufferLength = _outgoingBuffer.Capacity;
-                if (totalBufferLength >= UnflushedOutgoingBufferSize)
-                {
-                    int activeBufferLength = _outgoingBuffer.ActiveLength;
-                    if (writeBytes >= totalBufferLength - activeBufferLength && activeBufferLength > 0)
-                    {
-                        // We explicitly do not pass cancellationToken here, as this flush impacts more than just this operation.
-                        await new ValueTask(FlushOutgoingBytesAsync()).ConfigureAwait(false); // await ValueTask to minimize number of awaiter fields
-                    }
-                }
-
-                // Invoke the callback with the supplied state and the target write buffer.
-                _outgoingBuffer.EnsureAvailableSpace(writeBytes);
-                FlushTiming flush = lockedAction(state, _outgoingBuffer.AvailableMemorySliced(writeBytes));
-
-                // Finish the write
-                _outgoingBuffer.Commit(writeBytes);
-                _lastPendingWriterShouldFlush |= flush == FlushTiming.AfterPendingWrites;
-                EndWrite(forceFlush: flush == FlushTiming.Now);
+                _cancellationRegistration.Dispose();
+                return !Task.IsCanceled;
             }
-            finally
+
+            public abstract bool InvokeWriteAction(Memory<byte> writeBuffer);
+        }
+
+        private sealed class WriteQueueEntry<T> : WriteQueueEntry
+        {
+            private readonly T _state;
+            private readonly Func<T, Memory<byte>, bool> _writeAction;
+
+            public WriteQueueEntry(int writeBytes, T state, Func<T, Memory<byte>, bool> writeAction, CancellationToken cancellationToken)
+                : base(writeBytes, cancellationToken)
             {
-                _writerLock.Exit();
+                _state = state;
+                _writeAction = writeAction;
+            }
+
+            public override bool InvokeWriteAction(Memory<byte> writeBuffer)
+            {
+                return _writeAction(_state, writeBuffer);
             }
         }
 
-        private void EndWrite(bool forceFlush)
+        private Task PerformWriteAsync<T>(int writeBytes, T state, Func<T, Memory<byte>, bool> writeAction, CancellationToken cancellationToken = default)
         {
-            // We can't validate that we hold the mutex, but we can at least validate that someone is holding it.
-            Debug.Assert(_writerLock.IsHeld);
+            WriteQueueEntry writeEntry = new WriteQueueEntry<T>(writeBytes, state, writeAction, cancellationToken);
 
-            // We must flush if the caller requires it or if this or a recent frame wanted to be flushed
-            // once there were no more pending writers that themselves could have forced the flush.
-            if (forceFlush || (_pendingWriters == 0 && _lastPendingWriterShouldFlush))
+            if (!_writeChannel.Writer.TryWrite(writeEntry))
             {
-                Debug.Assert(_inProgressWrite == null);
-                if (_outgoingBuffer.ActiveLength > 0)
+                Debug.Assert(_abortException is not null);
+                ThrowRequestAborted(_abortException);
+            }
+
+            return writeEntry.Task;
+        }
+
+        private async Task ProcessOutgoingFramesAsync()
+        {
+            try
+            {
+                while (await _writeChannel.Reader.WaitToReadAsync().ConfigureAwait(false))
                 {
-                    _inProgressWrite = FlushOutgoingBytesAsync();
+                    while (_writeChannel.Reader.TryRead(out WriteQueueEntry? writeEntry))
+                    {
+                        if (writeEntry.TryDisableCancellation())
+                        {
+                            if (_abortException is not null)
+                            {
+                                writeEntry.SetException(_abortException);
+                            }
+                            else
+                            {
+                                int writeBytes = writeEntry.WriteBytes;
+
+                                // If the buffer has already grown to 32k, does not have room for the next request,
+                                // and is non-empty, flush the current contents to the wire.
+                                int totalBufferLength = _outgoingBuffer.Capacity;
+                                if (totalBufferLength >= UnflushedOutgoingBufferSize)
+                                {
+                                    int activeBufferLength = _outgoingBuffer.ActiveLength;
+                                    if (writeBytes >= totalBufferLength - activeBufferLength)
+                                    {
+                                        await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                                    }
+                                }
+
+                                _outgoingBuffer.EnsureAvailableSpace(writeBytes);
+
+                                try
+                                {
+                                    if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(writeBytes)}={writeBytes}");
+
+                                    // Invoke the callback with the supplied state and the target write buffer.
+                                    bool flush = writeEntry.InvokeWriteAction(_outgoingBuffer.AvailableMemorySliced(writeBytes));
+
+                                    writeEntry.SetResult();
+
+                                    _outgoingBuffer.Commit(writeBytes);
+                                    _lastPendingWriterShouldFlush |= flush;
+                                }
+                                catch (Exception e)
+                                {
+                                    writeEntry.SetException(e);
+                                }
+                            }
+
+                        }
+                    }
+
+                    // Nothing left in the queue to process.
+                    // Flush the write buffer if we need to.
+                    if (_lastPendingWriterShouldFlush)
+                    {
+                        await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                    }
                 }
+
+                // Connection should be aborting at this point.
+                Debug.Assert(_abortException is not null);
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Unexpected exception in {nameof(ProcessOutgoingFramesAsync)}: {e}");
+
+                Debug.Fail($"Unexpected exception in {nameof(ProcessOutgoingFramesAsync)}: {e}");
             }
         }
 
@@ -880,7 +907,7 @@ namespace System.Net.Http
 
                 FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, streamId: 0);
 
-                return FlushTiming.AfterPendingWrites;
+                return true;
             });
 
         /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
@@ -895,7 +922,7 @@ namespace System.Net.Http
                 FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, streamId: 0);
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
-                return FlushTiming.AfterPendingWrites;
+                return true;
             });
 
         private Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
@@ -907,7 +934,7 @@ namespace System.Net.Http
                 FrameHeader.WriteTo(span, FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, s.streamId);
                 BinaryPrimitives.WriteInt32BigEndian(span.Slice(FrameHeader.Size), (int)s.errorCode);
 
-                return FlushTiming.Now; // ensure cancellation is seen as soon as possible
+                return true;
             });
 
         private static (ReadOnlyMemory<byte> first, ReadOnlyMemory<byte> rest) SplitBuffer(ReadOnlyMemory<byte> buffer, int maxSize) =>
@@ -1207,18 +1234,12 @@ namespace System.Net.Http
                 // before taking the write lock.
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
                 WriteHeaders(request, ref headerBuffer);
-                ReadOnlyMemory<byte> remaining = headerBuffer.ActiveMemory;
-                Debug.Assert(remaining.Length > 0);
+                ReadOnlyMemory<byte> headerBytes = headerBuffer.ActiveMemory;
+                Debug.Assert(headerBytes.Length > 0);
 
                 // Calculate the total number of bytes we're going to use (content + headers).
-                int frameCount = ((remaining.Length - 1) / FrameHeader.MaxPayloadLength) + 1;
-                int totalSize = remaining.Length + (frameCount * FrameHeader.Size);
-
-                ReadOnlyMemory<byte> current;
-                (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxPayloadLength);
-                FrameFlags flags =
-                    (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
-                    (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
+                int frameCount = ((headerBytes.Length - 1) / FrameHeader.MaxPayloadLength) + 1;
+                int totalSize = headerBytes.Length + (frameCount * FrameHeader.Size);
 
                 // Construct and initialize the new Http2Stream instance.  It's stream ID must be set below
                 // before the instance is used and stored into the dictionary.  However, we construct it here
@@ -1228,70 +1249,66 @@ namespace System.Net.Http
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
                 // streams are created and started in order.
-                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, current, remaining, totalSize, flags, mustFlush), (s, writeBuffer) =>
+                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null), mustFlush), (s, writeBuffer) =>
                 {
-                    try
+                    if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
+
+                    // Allocate the next available stream ID. Note that if we fail before sending the headers,
+                    // we'll just skip this stream ID, which is fine.
+                    lock (s.thisRef.SyncObject)
                     {
-                        if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. {nameof(s.totalSize)}={s.totalSize}");
-
-                        // Allocate the next available stream ID. Note that if we fail before sending the headers,
-                        // we'll just skip this stream ID, which is fine.
-                        lock (s.thisRef.SyncObject)
+                        if (s.thisRef._nextStream == MaxStreamId || s.thisRef._disposed || s.thisRef._lastStreamId != -1)
                         {
-                            if (s.thisRef._nextStream == MaxStreamId || s.thisRef._disposed || s.thisRef._lastStreamId != -1)
-                            {
-                                // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
-                                // Throw a retryable request exception. This will cause retry logic to kick in
-                                // and perform another connection attempt. The user should never see this exception.
-                                s.thisRef.ThrowShutdownException();
-                            }
-
-                            // Now that we're holding the lock, configure the stream.  The lock must be held while
-                            // assigning the stream ID to ensure only one stream gets an ID, and it must be held
-                            // across setting the initial window size (available credit) and storing the stream into
-                            // collection such that window size updates are able to atomically affect all known streams.
-                            s.http2Stream.Initialize(s.thisRef._nextStream, _initialWindowSize);
-
-                            // Client-initiated streams are always odd-numbered, so increase by 2.
-                            s.thisRef._nextStream += 2;
-
-                            // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
-                            // The lifetime of the stream is now controlled by the stream itself and the connection.
-                            // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
-                            s.thisRef._httpStreams.Add(s.http2Stream.StreamId, s.http2Stream);
+                            // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
+                            // Throw a retryable request exception. This will cause retry logic to kick in
+                            // and perform another connection attempt. The user should never see this exception.
+                            s.thisRef.ThrowShutdownException();
                         }
 
-                        Span<byte> span = writeBuffer.Span;
+                        // Now that we're holding the lock, configure the stream.  The lock must be held while
+                        // assigning the stream ID to ensure only one stream gets an ID, and it must be held
+                        // across setting the initial window size (available credit) and storing the stream into
+                        // collection such that window size updates are able to atomically affect all known streams.
+                        s.http2Stream.Initialize(s.thisRef._nextStream, _initialWindowSize);
 
-                        // Copy the HEADERS frame.
-                        FrameHeader.WriteTo(span, s.current.Length, FrameType.Headers, s.flags, s.http2Stream.StreamId);
+                        // Client-initiated streams are always odd-numbered, so increase by 2.
+                        s.thisRef._nextStream += 2;
+
+                        // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
+                        // The lifetime of the stream is now controlled by the stream itself and the connection.
+                        // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
+                        s.thisRef._httpStreams.Add(s.http2Stream.StreamId, s.http2Stream);
+                    }
+
+                    Span<byte> span = writeBuffer.Span;
+
+                    // Copy the HEADERS frame.
+                    ReadOnlyMemory<byte> current, remaining;
+                    (current, remaining) = SplitBuffer(s.headerBytes, FrameHeader.MaxPayloadLength);
+                    FrameFlags flags = (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None);
+                    flags |= (s.endStream ? FrameFlags.EndStream : FrameFlags.None);
+                    FrameHeader.WriteTo(span, current.Length, FrameType.Headers, flags, s.http2Stream.StreamId);
+                    span = span.Slice(FrameHeader.Size);
+                    current.Span.CopyTo(span);
+                    span = span.Slice(current.Length);
+                    if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote HEADERS frame. Length={current.Length}, flags={flags}");
+
+                    // Copy CONTINUATION frames, if any.
+                    while (remaining.Length > 0)
+                    {
+                        (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxPayloadLength);
+                        flags = remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
+
+                        FrameHeader.WriteTo(span, current.Length, FrameType.Continuation, flags, s.http2Stream.StreamId);
                         span = span.Slice(FrameHeader.Size);
-                        s.current.Span.CopyTo(span);
-                        span = span.Slice(s.current.Length);
-                        if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote HEADERS frame. Length={s.current.Length}, flags={s.flags}");
-
-                        // Copy CONTINUATION frames, if any.
-                        while (s.remaining.Length > 0)
-                        {
-                            (s.current, s.remaining) = SplitBuffer(s.remaining, FrameHeader.MaxPayloadLength);
-                            s.flags = s.remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
-
-                            FrameHeader.WriteTo(span, s.current.Length, FrameType.Continuation, s.flags, s.http2Stream.StreamId);
-                            span = span.Slice(FrameHeader.Size);
-                            s.current.Span.CopyTo(span);
-                            span = span.Slice(s.current.Length);
-                            if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote CONTINUATION frame. Length={s.current.Length}, flags={s.flags}");
-                        }
-
-                        Debug.Assert(span.Length == 0);
-
-                        return s.mustFlush || (s.flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually;
+                        current.Span.CopyTo(span);
+                        span = span.Slice(current.Length);
+                        if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote CONTINUATION frame. Length={current.Length}, flags={flags}");
                     }
-                    catch
-                    {
-                        s.thisRef.EndWrite(forceFlush: false);
-                        throw;
-                    }
+
+                    Debug.Assert(span.Length == 0);
+
+                    return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
                 return http2Stream;
             }
@@ -1328,7 +1345,7 @@ namespace System.Net.Http
                         FrameHeader.WriteTo(writeBuffer.Span, s.current.Length, FrameType.Data, FrameFlags.None, s.streamId);
                         s.current.CopyTo(writeBuffer.Slice(FrameHeader.Size));
 
-                        return FlushTiming.Eventually; // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
+                        return false; // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
                     }, cancellationToken).ConfigureAwait(false);
                 }
                 catch
@@ -1347,7 +1364,7 @@ namespace System.Net.Http
 
                 FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Data, FrameFlags.EndStream, s.streamId);
 
-                return FlushTiming.AfterPendingWrites; // finished sending request body, so flush soon (but ok to wait for pending packets)
+                return true; // finished sending request body, so flush soon (but ok to wait for pending packets)
             });
 
         private Task SendWindowUpdateAsync(int streamId, int amount)
@@ -1362,7 +1379,7 @@ namespace System.Net.Http
                 FrameHeader.WriteTo(span, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, s.streamId);
                 BinaryPrimitives.WriteInt32BigEndian(span.Slice(FrameHeader.Size), s.amount);
 
-                return FlushTiming.Now; // make sure window updates are seen as soon as possible
+                return true;
             });
         }
 
@@ -1395,13 +1412,29 @@ namespace System.Net.Http
         private void Abort(Exception abortException)
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.
-            if (Interlocked.CompareExchange(ref _abortException, abortException, null) != null &&
-                NetEventSource.Log.IsEnabled() &&
-                !ReferenceEquals(_abortException, abortException))
+            bool alreadyAborting = false;
+            lock (SyncObject)
             {
-                // Lost the race to set the field to another exception, so just trace this one.
-                Trace($"{nameof(abortException)}=={abortException}");
+                if (_abortException is null)
+                {
+                    _abortException = abortException;
+                }
+                else
+                {
+                    alreadyAborting = true;
+                }
             }
+
+            if (alreadyAborting)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Abort called while already aborting. {nameof(abortException)}=={abortException}");
+
+                return;
+            }
+
+            if (NetEventSource.Log.IsEnabled()) Trace($"Abort initiated. {nameof(abortException)}=={abortException}");
+
+            _writeChannel.Writer.Complete();
 
             AbortStreams(_abortException);
         }
@@ -1663,17 +1696,6 @@ namespace System.Net.Http
             InitialWindowSize = 0x4,
             MaxFrameSize = 0x5,
             MaxHeaderListSize = 0x6
-        }
-
-        /// <summary>Specifies when the data written needs to be flushed.</summary>
-        private enum FlushTiming
-        {
-            /// <summary>No specific requirement.  This can be used when the caller knows another operation will soon force a flush.</summary>
-            Eventually,
-            /// <summary>The data needs to be flushed soon, but it's ok to wait briefly for pending writes to further populate the buffer.</summary>
-            AfterPendingWrites,
-            /// <summary>The data must be flushed immediately.</summary>
-            Now
         }
 
         // Note that this is safe to be called concurrently by multiple threads.

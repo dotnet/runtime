@@ -92,6 +92,14 @@
              Link="ProductionCode\SmtpDateTime.cs" />
     <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs"
              Link="ProductionCode\MultiAsyncResult.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\ByteEncoder.cs"
+             Link="ProductionCode\ByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\Base64Encoder.cs"
+             Link="ProductionCode\Base64Encoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\IByteEncoder.cs"
+             Link="ProductionCode\IByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\QEncoder.cs"
+             Link="ProductionCode\QEncoder.cs" />
     <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs"
              Link="ProductionCode\TrackingStringDictionary.cs" />
     <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs"

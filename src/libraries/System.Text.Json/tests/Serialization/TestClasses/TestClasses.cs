@@ -1805,6 +1805,16 @@ namespace System.Text.Json.Serialization.Tests
         public IDictionary<string, JsonElement> MyOverflow { get; set; }
     }
 
+    public class ClassWithExtensionField
+    {
+        public SimpleTestClass MyNestedClass { get; set; }
+        public int MyInt { get; set; }
+
+        [JsonInclude]
+        [JsonExtensionData]
+        public IDictionary<string, JsonElement> MyOverflow;
+    }
+
     public class TestClassWithNestedObjectCommentsInner : ITestClass
     {
         public SimpleTestClass MyData { get; set; }
