@@ -410,8 +410,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     int      configValue          = JitConfig.JitDisableConstCSE();
 
 #if defined(TARGET_ARM64)
-    // ARM64 - allow to combine with nearby offsets, when config is not 2
-    if (configValue != 2)
+    // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
+    if ((configValue != 2) && (configValue != 4))
     {
         enableSharedConstCSE = true;
     }
