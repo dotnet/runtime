@@ -17,15 +17,9 @@ namespace System.Runtime.InteropServices
         internal static bool IsCurrentOSPlatform(string osPlatform)
         {
             string name = s_osPlatformName ??= Interop.Sys.GetUnixName();
-            if (osPlatform.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-            else if (name == "OSX")
-            {
-                return osPlatform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
-            }
-            return false;
+
+            return osPlatform.Equals(name, StringComparison.OrdinalIgnoreCase)
+                || (name == "OSX" && osPlatform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)); // GetUnixName returns OSX on macOS
         }
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
