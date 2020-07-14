@@ -222,12 +222,17 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             Assert.True(result, "TryHashData true");
             Assert.True(expected.SequenceEqual(inputOutput.Slice(0, bytesWritten)), "expected equals destination");
 
+            // partial overlapping forward
             input.AsSpan().CopyTo(inputOutput);
-
-            // partial overlapping
             result = TryHashData(inputOutput.Slice(0, input.Length), inputOutput.Slice(1), out bytesWritten);
             Assert.True(result, "TryHashData true");
             Assert.True(expected.SequenceEqual(inputOutput.Slice(1, bytesWritten)), "expected equals destination");
+
+            // partial overlapping backward
+            input.AsSpan().CopyTo(inputOutput.Slice(1));
+            result = TryHashData(inputOutput.Slice(1, input.Length), inputOutput, out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(0, bytesWritten)), "expected equals destination");
         }
 
         private void Verify_Array(byte[] input, string output)
