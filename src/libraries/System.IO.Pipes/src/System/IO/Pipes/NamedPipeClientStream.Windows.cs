@@ -107,6 +107,7 @@ namespace System.IO.Pipes
             return true;
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public unsafe int NumberOfServerInstances
         {
             get
