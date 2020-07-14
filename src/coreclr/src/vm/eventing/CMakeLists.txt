@@ -8,7 +8,7 @@ else()
   set(NEED_XPLAT_HEADER ON)
 endif()
 
-include(FindPython)
+include(FindPythonInterp)
 
 set (EventingHeaders
   ${GENERATED_INCLUDE_DIR}/etmdummy.h
@@ -24,7 +24,7 @@ endif()
 set(GENEVENTING_SCRIPT ${CLR_DIR}/src/scripts/genEventing.py)
 
 add_custom_target(eventing_headers
-  ${Python_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  ${PYTHON_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
   DEPENDS ${EVENT_MANIFEST} ${GENEVENTING_SCRIPT}
   VERBATIM
 )
