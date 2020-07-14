@@ -9,19 +9,17 @@ namespace System.Reflection
 {
     internal sealed class ReferenceTracker
     {
+#pragma warning disable CA1823, 414, 169
         private IntPtr NativeALC;
+#pragma warning restore CA1823, 414, 169
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void Destroy(IntPtr NativeALC);
 
-        private ReferenceTracker(IntPtr native_alc)
-        {
-            this.NativeALC = native_alc;
-        }
-
         ~ReferenceTracker()
         {
-            Destroy(NativeALC);
+            if (NativeALC != IntPtr.Zero)
+                Destroy(NativeALC);
         }
     }
 }

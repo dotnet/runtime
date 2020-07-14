@@ -541,7 +541,7 @@
 		</type>
 
 		<!-- assembly-load-context.c: mono_domain_create_individual_alc -->
-		<type fullname="System.Reflection.RefTracker" preserve="fields" >
+		<type fullname="System.Reflection.ReferenceTracker" preserve="fields" >
 			<method name=".ctor" />
 		</type>
 

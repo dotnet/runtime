@@ -75,8 +75,9 @@ mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandl
 		// Create managed ReferenceTracker
 		// TODO: handle failure case
 		MonoClass *ref_tracker_class = mono_class_get_reference_tracker_class ();
-		MonoObjectHandle ref_tracker = mono_object_new_handle (domain, ref_tracker_class, error); // need to actually call ctor properly
-		alc->ref_tracker = mono_gchandle_from_handle (ref_tracker, FALSE);
+		MonoManagedReferenceTrackerHandle ref_tracker = MONO_HANDLE_CAST (MonoManagedReferenceTracker, mono_object_new_handle (domain, ref_tracker_class, error));
+		MONO_HANDLE_SETVAL (ref_tracker, native_assembly_load_context, MonoAssemblyLoadContext *, alc); 
+		alc->ref_tracker = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, ref_tracker), FALSE);
 	}
 
 	alc->gchandle = this_gchandle;
@@ -245,7 +246,6 @@ void
 ves_icall_System_Reflection_ReferenceTracker_Destroy (gpointer alc_pointer, MonoError *error)
 {
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_pointer;
-
 	mono_alc_free (alc);
 }
 
@@ -268,7 +268,7 @@ MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 {
 	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
-	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
+	MonoAssemblyLoadContext *alc = MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
 	return alc;
 }
 

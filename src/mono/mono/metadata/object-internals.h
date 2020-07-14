@@ -338,13 +338,20 @@ typedef struct {
 	MonoEvent *resolving;
 	MonoEvent *unloading;
 	MonoString *name;
-	gpointer *native_assembly_load_context;
+	MonoAssemblyLoadContext *native_assembly_load_context;
 	gint64 id;
 	gint32 internal_state;
 	MonoBoolean is_collectible;
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
+
+typedef struct {
+	MonoObject object;
+	MonoAssemblyLoadContext *native_assembly_load_context;
+} MonoManagedReferenceTracker;
+
+TYPED_HANDLE_DECL (MonoManagedReferenceTracker);
 #endif
 
 typedef struct {
