@@ -80,6 +80,36 @@ namespace System.Net.Security
             }
         }
 
+        internal SslAuthenticationOptions(ServerOptionsSelectionCallback optionCallback, object? state)
+        {
+            CheckCertName = false;
+            TargetHost = string.Empty;
+            IsServer = true;
+            UserState = state;
+            ServerOptionDelegate = optionCallback;
+        }
+
+        internal void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        {
+            AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
+            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
+            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
+            CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
+            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            {
+                CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+            }
+            else if (sslServerAuthenticationOptions.ServerCertificate is X509Certificate2 certificateWithKey &&
+                    certificateWithKey.HasPrivateKey)
+            {
+                // given cert is X509Certificate2 with key. We can use it directly.
+                CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
+            }
+        }
+
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
         {
             if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
@@ -98,7 +128,7 @@ namespace System.Net.Security
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
-        internal List<SslApplicationProtocol>? ApplicationProtocols { get; }
+        internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal SslStreamCertificateContext? CertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
@@ -110,5 +140,7 @@ namespace System.Net.Security
         internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
         internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+        internal object? UserState { get; }
+        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; }
     }
 }
