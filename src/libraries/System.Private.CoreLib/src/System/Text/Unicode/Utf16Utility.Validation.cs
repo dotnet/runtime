@@ -489,7 +489,6 @@ namespace System.Text.Unicode
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-            // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
 
