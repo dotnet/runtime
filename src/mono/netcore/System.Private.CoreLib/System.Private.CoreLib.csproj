@@ -197,7 +197,6 @@
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.Mono.cs" />
