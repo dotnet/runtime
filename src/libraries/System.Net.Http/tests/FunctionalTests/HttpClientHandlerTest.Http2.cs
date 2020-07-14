@@ -1873,7 +1873,6 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = new SocketsHttpHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);

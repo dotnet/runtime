@@ -81,7 +81,6 @@ namespace System.Net.Http
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
-        // ToDo: can we forgo ALPN completely if we now that downgrade is forbiden by VersionPolicy?
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
@@ -116,12 +115,7 @@ namespace System.Net.Http
             if (host != null)
             {
                 _originAuthority = new HttpAuthority(host, port);
-
-                // ToDo: what about this?
-                if (_poolManager.Settings._assumePrenegotiatedHttp3ForTesting)
-                {
-                    _http3Authority = _originAuthority;
-                }
+                _http3Authority = _originAuthority;
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
@@ -151,7 +145,7 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false; // ToDo: why?
+                    _http2Enabled = false;
                     _http3Enabled = false;
                     break;
 
@@ -161,7 +155,7 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false; // ToDo: why?
+                    _http2Enabled = false;
                     _http3Enabled = false;
                     break;
 
@@ -264,8 +258,6 @@ namespace System.Net.Http
 
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
-
-        // ToDo: can we forgo ALPN completely if we now that downgrade is forbiden by VersionPolicy?
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
@@ -356,9 +348,9 @@ namespace System.Net.Http
                 }
             }
 
-            if (_http3Enabled && request.Version.Major >= 3)
+            // Allow HTTP/3 only when user requests exact version. ALPN is not yet supported by HTTP/3 and implmentation is still experimental.
+            if (_http3Enabled && request.Version.Major >= 3 && request.VersionPolicy == HttpVersionPolicy.RequestVersionExact)
             {
-                // ToDo: this depends on _assumePrenegotiatedHttp3ForTesting, why is the H3 connection under this condition?
                 HttpAuthority? authority = _http3Authority;
                 if (authority != null)
                 {
@@ -366,20 +358,18 @@ namespace System.Net.Http
                 }
             }
 
-            // What about retry? Should we move this check into SendWithRetry?
             // If we got here, we cannot provide HTTP/3 connection so do not continue to attempt at getting/creating a lowered one.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
                 throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
             }
 
-            if (_http2Enabled && request.Version.Major >= 2 &&
-               (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
+            if (_http2Enabled && 
+               (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
             }
 
-            // What about retry? Should we move this check into SendWithRetry?
             // If we got here, we cannot provide HTTP/2 connection so do not continue to attempt at getting/creating a lowered one.
             if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {

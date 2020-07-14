@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
         protected override HttpClient CreateHttpClient()
         {
             HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
-            SetUsePrenegotiatedHttp3(handler, usePrenegotiatedHttp3: false);
 
             return CreateHttpClient(handler);
         }

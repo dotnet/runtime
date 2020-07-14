@@ -43,9 +43,6 @@ namespace System.Net.Http
 
         internal Version _maxHttpVersion;
 
-        // Used for testing until https://github.com/dotnet/runtime/issues/987
-        internal bool _assumePrenegotiatedHttp3ForTesting;
-
         internal SslClientAuthenticationOptions? _sslOptions;
 
         internal IDictionary<string, object?>? _properties;
@@ -94,8 +91,7 @@ namespace System.Net.Http
                 _proxy = _proxy,
                 _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
                 _useCookies = _useCookies,
-                _useProxy = _useProxy,
-                _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting
+                _useProxy = _useProxy
             };
         }
 
