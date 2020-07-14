@@ -1557,7 +1557,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReferenceIsNotAssignableFrom()
         {
             const string json = @"{""Base"":{""$id"":""my_id_1""},""Derived"":{""$ref"":""my_id_1""}}";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BaseAndDerivedWrapper>(json, s_serializerOptionsPreserve));
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<BaseAndDerivedWrapper>(json, s_serializerOptionsPreserve));
 
             Assert.Contains("my_id_1", ex.Message);
             Assert.Contains(typeof(Derived).ToString(), ex.Message);

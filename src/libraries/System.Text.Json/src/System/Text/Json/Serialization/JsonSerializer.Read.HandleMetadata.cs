@@ -257,7 +257,7 @@ namespace System.Text.Json
 
                 if (!converter.TypeToConvert.IsAssignableFrom(value.GetType()))
                 {
-                    ThrowHelper.ThrowJsonException_MetadataReferenceOfTypeCannotBeAssignedToType(referenceId, typeOfValue, converter.TypeToConvert);
+                    ThrowHelper.ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(referenceId, typeOfValue, converter.TypeToConvert);
                 }
 
                 state.Current.ReturnValue = value;
