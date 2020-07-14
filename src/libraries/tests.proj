@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(RunDisablediOSTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Composite\tests\Microsoft.Extensions.FileProviders.Composite.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
@@ -61,7 +61,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Context\tests\System.Reflection.Context.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager\tests\System.Resources.ResourceManager.Tests.csproj" />
@@ -81,6 +83,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ServiceModel.Syndication\tests\System.ServiceModel.Syndication.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Encoding\tests\System.Text.Encoding.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Extensions\tests\System.Threading.Tasks.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple\tests\System.ValueTuple.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" />
