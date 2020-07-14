@@ -194,9 +194,5 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>5c95b40b725e1aa9d596411c453900385cf6f84c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20311.3">
-      <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>de1e82c874dbafccd3545b0cb59fba2e08cb60f1</Sha>
-    </Dependency>
   </ToolsetDependencies>
 </Dependencies>
