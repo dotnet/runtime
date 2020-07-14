@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -89,45 +90,20 @@ internal static partial class Interop
             }
         }
 
-        private static IntPtr NSDate;
-        private static IntPtr NSDictionary;
-        private static IntPtr NSFileManager;
-        private static IntPtr NSString;
-        private static IntPtr alloc;
-        private static IntPtr init;
-        private static IntPtr initWithUTF8String_;
-        private static IntPtr initWithTimeIntervalSince1970_;
-        private static IntPtr dictionaryWithObject_forKey_;
-        private static IntPtr defaultManager;
-        private static IntPtr setAttributes_ofItemAtPath_error_;
-        private static IntPtr release;
-        private static IntPtr NSFileCreationDate;
-        private static IntPtr NSFileModificationDate;
-        private static IntPtr DefaultNSFileManager;
-
-        static libobjc()
-        {
-            NSDate = objc_getClass("NSDate");
-            NSDictionary = objc_getClass("NSDictionary");
-            NSFileManager = objc_getClass("NSFileManager");
-            NSString = objc_getClass("NSString");
-
-            alloc = sel_getUid("alloc");
-            init = sel_getUid("init");
-            initWithUTF8String_ = sel_getUid("initWithUTF8String:");
-            initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
-            dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
-            defaultManager = sel_getUid("defaultManager");
-            setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
-            release = sel_getUid("release");
-
-            NSFileCreationDate = objc_msgSend(NSString, alloc);
-            NSFileCreationDate = objc_msgSend(NSFileCreationDate, initWithUTF8String_, "NSFileCreationDate");
-
-            NSFileModificationDate = objc_msgSend(NSString, alloc);
-            NSFileModificationDate = objc_msgSend(NSFileModificationDate, initWithUTF8String_, "NSFileModificationDate");
-
-            DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
-        }
+        private static IntPtr NSDate = objc_getClass("NSDate");
+        private static IntPtr NSDictionary = objc_getClass("NSDictionary");
+        private static IntPtr NSFileManager = objc_getClass("NSFileManager");
+        private static IntPtr NSString = objc_getClass("NSString");
+        private static IntPtr alloc = sel_getUid("alloc");
+        private static IntPtr init = sel_getUid("init");
+        private static IntPtr initWithUTF8String_ = sel_getUid("initWithUTF8String:");
+        private static IntPtr initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
+        private static IntPtr dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
+        private static IntPtr defaultManager = sel_getUid("defaultManager");
+        private static IntPtr setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
+        private static IntPtr release = sel_getUid("release");
+        private static IntPtr NSFileCreationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, "NSFileCreationDate");
+        private static IntPtr NSFileModificationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, "NSFileModificationDate");
+        private static IntPtr DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
     }
 }
