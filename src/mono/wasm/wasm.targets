@@ -21,7 +21,6 @@
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Sockets.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Primitives.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.NameResolution\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.NameResolution.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Security.Cryptography.Algorithms\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Security.Cryptography.Algorithms.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.Compression\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.Compression.dll"/>
     <!--<WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.Compression.Brotli\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.Compression.Brotli.dll"/>-->

@@ -369,6 +369,62 @@ ErrExit:
     return hr;
 } // RegMeta::AddInterfaceImpl
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//*******************************************************************************
+// Helper to determine path separator and number of separated parts.
+//
+// Implements internal API code:IMDInternalEmit::GetPathSeparator.
+//*******************************************************************************
+HRESULT
+RegMeta::GetPathSeparator(
+    char    *path,
+    char    *separator,
+    ULONG   *partsCount)
+{
+    const char delimiters[] = { '\\', '/', '\0'};
+    ULONG tokens = 1;
+
+    // try first
+    char delim = delimiters[0];
+    char* charPtr = strchr(path, delim);
+
+    if (charPtr != NULL)
+    {
+        // count tokens
+        while (charPtr != NULL)
+        {
+            tokens++;
+            charPtr = strchr(charPtr + 1, delim);
+        }
+    }
+    else
+    {
+        // try second
+        delim = delimiters[1];
+        charPtr = strchr(path, delim);
+        if (charPtr != NULL)
+        {
+            // count tokens
+            while (charPtr != NULL)
+            {
+                tokens++;
+                charPtr = strchr(charPtr + 1, delim);
+            }
+        }
+        else
+        {
+            // delimiter not found - set to \0;
+            delim = delimiters[2];
+        }
+    }
+
+    *separator = delim;
+    *partsCount = tokens;
+
+    return S_OK;
+} // RegMeta::GetPathSeparator
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
