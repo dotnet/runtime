@@ -80,9 +80,6 @@ namespace System.IO
 
         public override string? ReadLine()
         {
-            // Don't carry over chars from ReadLine buffer method.
-            _readLineSB.Clear();
-
             bool isEnter = ReadLineCore(consumeKeys: true);
             string? line = null;
             if (isEnter || _readLineSB.Length > 0)
@@ -140,6 +137,10 @@ namespace System.IO
         private bool ReadLineCore(bool consumeKeys)
         {
             Debug.Assert(_tmpKeys.Count == 0);
+
+            // Don't carry over chars from previous ReadLine call.
+            _readLineSB.Clear();
+
             Interop.Sys.InitializeConsoleBeforeRead();
             try
             {
