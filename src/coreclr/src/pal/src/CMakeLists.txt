@@ -237,16 +237,20 @@ add_library(coreclrpal
 if(CLR_CMAKE_TARGET_OSX)
   set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
 
-  set_source_files_properties(${CLR_DIR}/src/pal/src/exception/remote-unwind.cpp PROPERTIES
-    COMPILE_FLAGS "-D_XOPEN_SOURCE -DUNW_REMOTE_ONLY"
-    INCLUDE_DIRECTORIES "${CLR_DIR}/src/pal/src/libunwind/include;${CLR_DIR}/src/pal/src/libunwind/include/tdep;${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_BINARY_DIR}/libunwind/include;${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep"
-  )
-
   add_library(coreclrpal_dac
     STATIC
     exception/remote-unwind.cpp
     ${LIBUNWIND_DAC_OBJECTS}
   )
+
+  target_compile_definitions(coreclrpal_dac PUBLIC 
+    "-D_XOPEN_SOURCE -DUNW_REMOTE_ONLY"
+  )
+
+  target_include_directories(coreclrpal_dac PUBLIC 
+    "${CLR_DIR}/src/pal/src/libunwind/include;${CLR_DIR}/src/pal/src/libunwind/include/tdep;${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_BINARY_DIR}/libunwind/include;${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep"
+  )
+
 endif(CLR_CMAKE_TARGET_OSX)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',

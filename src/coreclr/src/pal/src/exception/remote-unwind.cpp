@@ -172,6 +172,8 @@ typedef struct _libunwindInfo
 // The Pointer-Encoding format is partially documented in Linux Base
 // Spec v1.3 (http://www.linuxbase.org/spec/).
 
+// These defines and struct (dwarf_cie_info) were copied from libunwind's dwarf.h
+
 #define DW_EH_PE_FORMAT_MASK    0x0f    // format of the encoded value
 #define DW_EH_PE_APPL_MASK      0x70    // how the value is to be applied
 #define DW_EH_PE_indirect       0x80    // Flag bit. If set, the resulting pointer is the
