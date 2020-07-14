@@ -378,10 +378,13 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Add or update the Activity tags with the input key and value.
-        /// If there is any tag added before with the same key, then the value mapped to this key will be updated with the new input value.
-        /// If the input value is null and key exist before, this entry with that key will be removed from the collection. otherwise nothing wil happen.
-        /// otherwise, the key and value will get added to the attributes list.
+        /// Add or update the Activity tag with the input key and value.
+        /// If the input value is null
+        ///     - if the collection has any tag with the same key, then this tag will get removed from the collection.
+        ///     - otherwise, nothing will happen and the collection will not change.
+        /// If the input value is not null
+        ///     - if the collection has any tag with the same key, then the value mapped to this key will get updated with the new input value.
+        ///     - otherwise, the key and value will get added as a new tag to the collection.
         /// </summary>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>

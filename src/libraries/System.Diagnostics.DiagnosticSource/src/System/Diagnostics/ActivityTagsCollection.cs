@@ -9,16 +9,16 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Diagnostics
 {
     /// <summary>
-    /// ActivityTagsCollection is collection class used to store the tracing tags.
-    /// This collection will be used with classes like <see cref="ActivityEvent"/> and <see cref="ActivityLink"/>
-    /// This collection behave as follow:
-    ///     - The collection items will be ordered according to the precedence when the item stored.
-    ///     - Don't allow a duplication of items with the same key.
-    ///     - When using the indexer to store item in the collection,
-    ///         - if the item has a key which previousely existed in the collection and the value is null, the collection item matching the key will get removed from the collection.
-    ///         - if the item has a key which previousely existed in the collection and the value is not null, the item value will replace the old value stored in the collection.
-    ///         - otherwise, the item will get added to the collection.
-    ///     - Add method can add a new item to the collection if the collection didn't previously store item with same key. Otherwise, it'll throw exception.
+    /// ActivityTagsCollection is a collection class used to store tracing tags.
+    /// This collection will be used with classes like <see cref="ActivityEvent"/> and <see cref="ActivityLink"/>.
+    /// This collection behaves as follows:
+    ///     - The collection items will be ordered according to how they are added.
+    ///     - Don't allow duplication of items with the same key.
+    ///     - When using the indexer to store an item in the collection:
+    ///         - If the item has a key that previously existed in the collection and the value is null, the collection item matching the key will be removed from the collection.
+    ///         - If the item has a key that previously existed in the collection and the value is not null, the new item value will replace the old value stored in the collection.
+    ///         - Otherwise, the item will be added to the collection.
+    ///     - Add method will add a new item to the collection if an item doesn't already exist with the same key. Otherwise, it will throw an exception.
     /// </summary>
     public class ActivityTagsCollection : IDictionary<string, object>
     {
@@ -54,8 +54,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Get or set collection item
         /// When setting a value to this indexer property, the following behavior will be observed:
-        ///     - If the key previousely existed in the collection and the value is null, the collection item matching the key will get removed from the collection.
-        ///     - If the key previousely existed in the collection and the value is not null, the value will replace the old value stored in the collection.
+        ///     - If the key previously existed in the collection and the value is null, the collection item matching the key will get removed from the collection.
+        ///     - If the key previously existed in the collection and the value is not null, the value will replace the old value stored in the collection.
         ///     - Otherwise, a new item will get added to the collection.
         /// </summary>
         /// <value>Object mapped to the key</value>
@@ -138,7 +138,7 @@ namespace System.Diagnostics
         public int Count => _list.Count;
 
         /// <summary>
-        /// Adds an tag with the provided key and value to the collection.
+        /// Adds a tag with the provided key and value to the collection.
         /// This collection doesn't allow adding two tags with the same key.
         /// </summary>
         /// <param name="key">The tag key.</param>
@@ -203,7 +203,17 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
-        public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => _list.GetEnumerator();
+        IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator() => new Enumerator(_list);
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        public Enumerator GetEnumerator() => new Enumerator(_list);
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_list);
 
         /// <summary>
         /// Removes the tag with the specified key from the collection.
@@ -253,9 +263,16 @@ namespace System.Diagnostics
             return false;
         }
 
-        /// <summary>
-        /// Returns an enumerator that iterates through the collection.
-        /// </summary>
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public struct Enumerator : IEnumerator<KeyValuePair<string, object>>, IEnumerator
+        {
+            private List<KeyValuePair<string, object>>.Enumerator _enumerator;
+            internal Enumerator(List<KeyValuePair<string, object>> list) => _enumerator = list.GetEnumerator();
+
+            public KeyValuePair<string, object> Current => _enumerator.Current;
+            object IEnumerator.Current => ((IEnumerator)_enumerator).Current;
+            public void Dispose() => _enumerator.Dispose();
+            public bool MoveNext() => _enumerator.MoveNext();
+            void IEnumerator.Reset() => ((IEnumerator)_enumerator).Reset();
+        }
     }
 }

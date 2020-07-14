@@ -86,11 +86,21 @@ namespace System.Diagnostics
         public bool Contains(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
         public bool ContainsKey(string key) { throw null; }
         public void CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { throw null; }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>.GetEnumerator() { throw null; }
         public bool Remove(string key) { throw null; }
         public bool Remove(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
         public bool TryGetValue(string key, out object value) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public Enumerator GetEnumerator()  { throw null; }
+
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.IEnumerator
+        {
+            public System.Collections.Generic.KeyValuePair<string, object> Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            public void Dispose() { throw null; }
+            public bool MoveNext() { throw null; }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+        }
     }
     public enum ActivityIdFormat
     {
