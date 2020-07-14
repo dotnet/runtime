@@ -301,9 +301,12 @@ namespace System.Data
                     //Tables, Columns, Rows
                     for (int i = 0; i < Tables.Count; i++)
                     {
+                        // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         MemoryStream memStream = new MemoryStream();
+#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         bf.Serialize(memStream, Tables[i]);
+#pragma warning restore MSLIB0003
                         memStream.Position = 0;
                         info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
                     }
@@ -380,8 +383,10 @@ namespace System.Data
                         byte[] buffer = (byte[])info.GetValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), typeof(byte[]));
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
+#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
+#pragma warning restore MSLIB0003
                         Tables.Add(dt);
                     }
 
