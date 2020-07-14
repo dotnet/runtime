@@ -97,7 +97,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsNotWindows7))]
         [InlineData(SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls12)]
         public async Task ServerAsyncAuthenticate_SniSetVersion_Success(SslProtocols version)
