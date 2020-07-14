@@ -329,13 +329,17 @@ jobs:
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      variables:
+      # map dependencies variables to local variables
+      - name: testsProjContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         # update once: https://github.com/dotnet/runtime/issues/39238 is fixed
         condition: >-
           or(
-          eq(dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'], true),
+          eq(variables['testsProjContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
