@@ -1936,13 +1936,22 @@ namespace System
 
         private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
         {
-            return TrailingZeros(value.Slice(index));
+            // For compatibility, we need to allow trailing zeros at the end of a number string
+            for (int i = index; (uint)i < (uint)value.Length; i++)
+            {
+                if (value[i] != '\0')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool TrailingZeros(ReadOnlySpan<char> value)
         {
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = 0; (uint)i < (uint)value.Length; i++)
+            for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] != '\0')
                 {
