@@ -22,6 +22,7 @@ parameters:
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
   jobParameters: {}
+  variables: []
 
 jobs:
 
@@ -280,6 +281,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: tvOS
       archType: x64
       platform: tvOS_x64
@@ -318,6 +320,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: x64
       platform: iOS_x64

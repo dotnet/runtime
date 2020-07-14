@@ -1,6 +1,6 @@
 parameters:
   jobTemplate: ''
-  variables: {}
+  variables: []
   osGroup: ''
   osSubgroup: ''
   archType: ''
