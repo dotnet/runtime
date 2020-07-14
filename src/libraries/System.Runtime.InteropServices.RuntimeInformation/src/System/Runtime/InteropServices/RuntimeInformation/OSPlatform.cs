@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices
 
         public override bool Equals(object? obj)
         {
-            return obj is OSPlatform oSPlatform && Equals(oSPlatform);
+            return obj is OSPlatform osPlatform && Equals(osPlatform);
         }
 
         public override int GetHashCode()
