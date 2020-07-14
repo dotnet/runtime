@@ -184,7 +184,7 @@ mono_reflected_hash (gconstpointer a) {
 static void
 clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_memory_manager_from_class (domain, klass);
 
 	mono_memory_manager_lock (memory_manager);
 
@@ -440,12 +440,12 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	MonoType *norm_type;
 	MonoReflectionType *res;
 	MonoClass *klass;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
 	error_init (error);
 
 	g_assert (type != NULL);
 	klass = mono_class_from_mono_type_internal (type);
+	MonoMemoryManager *memory_manager = mono_memory_manager_from_class (domain, klass);
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller

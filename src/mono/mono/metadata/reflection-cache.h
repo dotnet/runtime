@@ -32,17 +32,14 @@ guint
 mono_reflected_hash (gconstpointer a);
 
 static inline ReflectedEntry*
-alloc_reflected_entry (MonoDomain *domain)
+alloc_reflected_entry (MonoDomain *domain, MonoClass *klass)
 {
 	ReflectedEntry *re;
 
 	if (!mono_gc_is_moving ())
 		re = g_new0 (ReflectedEntry, 1);
-	else {
-		mono_domain_lock (domain);
-		re = (ReflectedEntry *)mono_mempool_alloc (domain->memory_manager->mp, sizeof (ReflectedEntry));
-		mono_domain_unlock (domain);
-	}
+	else
+		re = (ReflectedEntry *)mono_class_alloc_code (domain, klass, sizeof (ReflectedEntry));
 
 	return re;
 }
@@ -58,7 +55,7 @@ static inline MonoObject*
 cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o)
 {
 	MonoObject *obj;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_memory_manager_from_class (domain, klass);
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
@@ -66,7 +63,7 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 	mono_memory_manager_lock (memory_manager);
 	obj = (MonoObject*) mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe);
 	if (obj == NULL) {
-		ReflectedEntry *e = alloc_reflected_entry (domain);
+		ReflectedEntry *e = alloc_reflected_entry (domain, klass);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, o);
@@ -80,7 +77,7 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 static inline MonoObjectHandle
 cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObjectHandle o)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_memory_manager_from_class (domain, klass);
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
@@ -88,7 +85,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	mono_memory_manager_lock (memory_manager);
 	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
-		ReflectedEntry *e = alloc_reflected_entry (domain);
+		ReflectedEntry *e = alloc_reflected_entry (domain, klass);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
@@ -104,14 +101,14 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 static inline MonoObjectHandle
 check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_memory_manager_from_class (domain, klass);
 	MonoObjectHandle obj_handle;
 	ReflectedEntry e;
 	e.item = item;
 	e.refclass = klass;
 
 	mono_memory_manager_lock (memory_manager);
-	MonoConcGHashTable *hash = domain->memory_manager->refobject_hash;
+	MonoConcGHashTable *hash = memory_manager->refobject_hash;
 	obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (hash, &e));
 	mono_memory_manager_unlock (memory_manager);
 

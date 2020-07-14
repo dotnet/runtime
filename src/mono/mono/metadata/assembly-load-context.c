@@ -168,7 +168,12 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	mono_memory_manager_free_singleton (alc->memory_manager, FALSE);
 	alc->memory_manager = NULL;
 
-	// clean up generic memory managers
+	for (int i = 0; i < alc->generic_memory_managers->len; i++) {
+		MonoGenericMemoryManager *memory_manager = (MonoGenericMemoryManager *)alc->generic_memory_managers->pdata [i];
+		mono_memory_manager_free_generic (memory_manager, FALSE);
+	}
+	g_ptr_array_free (alc->generic_memory_managers, TRUE);
+	mono_coop_mutex_destroy (&alc->memory_managers_lock);
 
 	mono_gchandle_free_internal (alc->gchandle);
 	alc->gchandle = NULL;
@@ -190,6 +195,18 @@ void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc)
 {
 	mono_coop_mutex_unlock (&alc->assemblies_lock);
+}
+
+void
+mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_lock (&alc->memory_managers_lock);
+}
+
+void
+mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_unlock (&alc->memory_managers_lock);
 }
 
 static void
@@ -237,9 +254,11 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContex
 	alc->gchandle = strong_gchandle;
 	mono_gchandle_free_internal (weak_gchandle);
 
+#ifndef DISABLE_ALC_UNLOADABILITY
 	// Destroy the strong handle to the ReferenceTracker to let it reach its finalizer
 	mono_gchandle_free_internal (alc->ref_tracker);
 	alc->ref_tracker = NULL;
+#endif
 }
 
 void

@@ -78,6 +78,8 @@ struct _MonoMemoryManager {
 	gboolean collectible;
 	// Whether this is a singleton or generic memory manager
 	gboolean is_generic;
+	// Whether the MemoryManager is in the process of being free'd
+	gboolean freeing;
 
 	// Entries moved over from the domain:
 
@@ -162,6 +164,12 @@ mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
 void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc);
 
+void
+mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc);
+
+void
+mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc);
+
 gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc);
 
@@ -203,7 +211,7 @@ mono_memory_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, 
 
 #ifdef ENABLE_NETCORE
 MonoGenericMemoryManager *
-mono_memory_manager_get_generic (MonoAssemblyLoadContext **alcs, int n_alcs, gboolean collectible);
+mono_memory_manager_get_generic (MonoAssemblyLoadContext **alcs, int n_alcs);
 
 void
 mono_memory_manager_free_generic (MonoGenericMemoryManager *memory_manager, gboolean debug_unload);
@@ -221,4 +229,41 @@ mono_memory_manager_unlock (MonoMemoryManager *memory_manager)
 	mono_coop_mutex_unlock (&memory_manager->lock);
 }
 
+MonoMemoryManager *
+mono_memory_manager_from_class (MonoDomain *domain, MonoClass *klass);
+
+MonoMemoryManager *
+mono_memory_manager_from_method (MonoDomain *domain, MonoMethod *method);
+
+gpointer
+mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size);
+
+gpointer
+mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
+
+void*
+mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
+
+void*
+mono_memory_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int alignment);
+
+void
+mono_memory_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize);
+
+void
+mono_memory_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
+
+// Uses the domain on legacy and the method's MemoryManager on netcore
+void *
+mono_method_alloc_code (MonoDomain *domain, MonoMethod *method, int size);
+
+void *
+mono_method_alloc0_code (MonoDomain *domain, MonoMethod *method, int size);
+
+// Uses the domain on legacy and the method's MemoryManager on netcore
+void *
+mono_class_alloc_code (MonoDomain *domain, MonoClass *klass, int size);
+
+void *
+mono_class_alloc0_code (MonoDomain *domain, MonoClass *klass, int size);
 #endif

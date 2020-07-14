@@ -434,8 +434,8 @@ mono_domain_create (void)
 
 #ifndef ENABLE_NETCORE
 	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, TRUE);
-#else
-	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, FALSE); // TODO: remove this
+#elif !defined(DISABLE_DOMAIN_CODE_MEMORY)
+	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, FALSE);
 #endif
 
 	domain->lock_free_mp = lock_free_mempool_new ();
@@ -1323,6 +1323,7 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 	return domain->friendly_name;
 }
 
+#if !defined(ENABLE_NETCORE) || !defined(DISABLE_DOMAIN_CODE_MEMORY)
 /*
  * mono_domain_alloc:
  *
@@ -1361,12 +1362,6 @@ gpointer
 	mono_domain_unlock (domain);
 
 	return res;
-}
-
-gpointer
-(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
-{
-	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
 
 /*
@@ -1431,6 +1426,13 @@ mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *us
 	mono_domain_lock (domain);
 	mono_code_manager_foreach (domain->memory_manager->code_mp, func, user_data);
 	mono_domain_unlock (domain);
+}
+#endif
+
+gpointer
+(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
+{
+	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
 
 /**

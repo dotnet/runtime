@@ -451,15 +451,14 @@ struct _MonoDomain {
 
 #ifdef ENABLE_NETCORE
 	GSList *alcs;
-	GPtrArray *generic_memory_managers;
 	MonoAssemblyLoadContext *default_alc;
-	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' and 'generic_memory_managers' */
+	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
 #endif
 
-//#ifndef ENABLE_NETCORE // TODO: re-add this define
+#if !defined(ENABLE_NETCORE) || !defined(DISABLE_DOMAIN_CODE_MEMORY)
 	// Holds domain code memory
 	MonoMemoryManager *memory_manager;
-//#endif
+#endif
 };
 
 typedef struct  {
@@ -555,6 +554,7 @@ mono_make_shadow_copy (const char *filename, MonoError *error);
 gboolean
 mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);
 
+#if !defined(ENABLE_NETCORE) || !defined(DISABLE_DOMAIN_CODE_MEMORY)
 gpointer
 mono_domain_alloc  (MonoDomain *domain, guint size);
 
@@ -564,11 +564,6 @@ gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size);
 
 #define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
-
-gpointer
-mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
 void*
 mono_domain_code_reserve (MonoDomain *domain, int size);
@@ -585,6 +580,12 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize);
 
 void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data);
+#endif
+
+gpointer
+mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
+
+#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
 void
 mono_domain_unset (void);
