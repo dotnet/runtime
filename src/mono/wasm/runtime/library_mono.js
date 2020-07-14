@@ -672,6 +672,35 @@ var MonoSupportLib = {
 			}
 		},
 
+		_finalize_startup: function (args, ctx) {
+			MONO.loaded_assets = ctx.loaded_assets;
+
+			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
+
+			console.log ("MONO_WASM: Initializing mono runtime");
+
+			this._globalization_init (args, ctx);
+
+			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
+				try {
+					load_runtime (args.vfs_prefix, args.enable_debugging);
+				} catch (ex) {
+					print ("MONO_WASM: load_runtime () failed: " + ex);
+					var err = new Error();
+					print ("MONO_WASM: Stacktrace: \n");
+					print (err.stack);
+
+					var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
+					wasm_exit (1);
+				}
+			} else {
+				load_runtime (args.vfs_prefix, args.enable_debugging);
+			}
+
+			MONO.mono_wasm_runtime_ready ();
+			args.loaded_cb ();
+		},
+
 		_load_assets_and_runtime: function (args) {
 			if (args.assembly_list)
 				throw new Error ("Invalid args (assembly_list was replaced by assets)");
@@ -700,32 +729,12 @@ var MonoSupportLib = {
 				--ctx.pending_count;
 
 				if (ctx.pending_count === 0) {
-					MONO.loaded_assets = ctx.loaded_assets;
-
-					var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
-
-					console.log ("MONO_WASM: Initializing mono runtime");
-
-					this._globalization_init (args, ctx);
-
-					if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-						try {
-							load_runtime (args.vfs_prefix, args.enable_debugging);
-						} catch (ex) {
-							print ("MONO_WASM: load_runtime () failed: " + ex);
-							var err = new Error();
-							print ("MONO_WASM: Stacktrace: \n");
-							print (err.stack);
-
-							var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
-							wasm_exit (1);
-						}
-					} else {
-						load_runtime (args.vfs_prefix, args.enable_debugging);
+					try {
+						MONO._finalize_startup (args, ctx);
+					} catch (exc) {
+						console.error ("Unhandled exception in _finalize_startup", exc);
+						throw exc;
 					}
-
-					MONO.mono_wasm_runtime_ready ();
-					args.loaded_cb ();
 				}
 			};
 
