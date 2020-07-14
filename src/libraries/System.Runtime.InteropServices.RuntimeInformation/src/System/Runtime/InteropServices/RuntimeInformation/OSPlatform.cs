@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Runtime.InteropServices
 {
     public readonly struct OSPlatform : IEquatable<OSPlatform>
@@ -30,14 +28,21 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
+        internal bool IsCurrent { get; }
+
         private OSPlatform(string osPlatform)
         {
             if (osPlatform == null) throw new ArgumentNullException(nameof(osPlatform));
             if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, nameof(osPlatform));
 
             _osPlatform = osPlatform;
+            IsCurrent = RuntimeInformation.IsCurrentOSPlatform(osPlatform);
         }
 
+        /// <summary>
+        /// Creates a new OSPlatform instance.
+        /// </summary>
+        /// <remarks>If you plan to call this method frequently, please consider caching its result.</remarks>
         public static OSPlatform Create(string osPlatform)
         {
             return new OSPlatform(osPlatform);
