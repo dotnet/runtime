@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Data.Common</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -125,8 +125,9 @@
     <Compile Include="System\Data\LinqDataView.cs" />
     <Compile Include="System\Data\LoadOption.cs" />
     <Compile Include="System\Data\LocalAppContextSwitches.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs"
-          Link="System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="System\Data\MappingType.cs" />
     <Compile Include="System\Data\MergeFailedEvent.cs" />
     <Compile Include="System\Data\MergeFailedEventHandler.cs" />
@@ -300,7 +301,7 @@
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
