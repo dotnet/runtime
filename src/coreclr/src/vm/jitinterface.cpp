@@ -14596,7 +14596,7 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
                 Module * pZapModule = ExecutionManager::FindZapModule((TADDR)pvFuncletStart);
                 NGenLayoutInfo * pLayoutInfo = pZapModule->GetNGenLayoutInfo();
 
-                int ColdFunctionIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod((TADDR)uImageBase, (DWORD)((TADDR)pvFuncletStart - uImageBase),
+                int ColdFunctionIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod((DWORD)((TADDR)pvFuncletStart - uImageBase),
                                                                                pLayoutInfo->m_pRuntimeFunctions[2],
                                                                                0, pLayoutInfo->m_nRuntimeFunctions[2] - 1);
 

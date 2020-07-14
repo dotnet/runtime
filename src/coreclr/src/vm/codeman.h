@@ -1601,8 +1601,7 @@ public:
 class NativeUnwindInfoLookupTable
 {
 public:
-    static int LookupUnwindInfoForMethod(TADDR ImageBase,
-                                         DWORD codeOffset,
+    static int LookupUnwindInfoForMethod(DWORD codeOffset,
                                          PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                          int StartIndex,
                                          int EndIndex);

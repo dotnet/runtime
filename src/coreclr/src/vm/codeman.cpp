@@ -5591,7 +5591,7 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     if (iRange == 2)
     {
-        int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase, RelativePc,
+        int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
                                                                                pLayoutInfo->m_pRuntimeFunctions[2],
                                                                                0,
                                                                                pLayoutInfo->m_nRuntimeFunctions[2] - 1);
@@ -5680,8 +5680,7 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         PTR_RUNTIME_FUNCTION FunctionTable = pLayoutInfo->m_pRuntimeFunctions[iRange];
         PTR_DWORD pMethodDescs = pLayoutInfo->m_MethodDescs[iRange];
 
-        int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase,
-                                                                               RelativePc,
+        int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
                                                                                FunctionTable,
                                                                                Low,
                                                                                High);
@@ -5809,7 +5808,6 @@ DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodTok
         NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
 
         int iColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(
-                                                    moduleBase,
                                                     (DWORD)(regionInfo.coldStartAddress - moduleBase),
                                                     pLayoutInfo->m_pRuntimeFunctions[2],
                                                     0,
@@ -6133,8 +6131,7 @@ DWORD NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(PTR_CORCOM
     return 0;
 }
 
-int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(TADDR ImageBase,
-                                                           DWORD RelativePc,
+int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
                                                            PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                                            int Low,
                                                            int High)
@@ -6181,16 +6178,8 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(TADDR ImageBase,
             
             if (RelativePc >= pFunctionEntry->BeginAddress)
             {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI) && !defined(FEATURE_EH_FUNCLETS)
-                // On Windows X86, the end offset is handled by the method region code (for ngen), and
-                // the GCInfo for ReadyToRun
-#else
-                if (RelativePc < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, ImageBase))
-#endif
-                {
-                    return i;
-                    break;
-                }
+                return i;
+                break;
             }
         }
     }
@@ -6790,6 +6779,12 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     // READYTORUN: FUTURE: Hot-cold spliting
 
+    // If the address is in a thunk, return NULL.
+    if (GetStubCodeBlockKind(pRangeSection, currentPC) != STUB_CODE_BLOCK_UNKNOWN)
+    {
+        return FALSE;
+    }
+
     TADDR currentInstr = PCODEToPINSTR(currentPC);
 
     TADDR ImageBase = pRangeSection->LowAddress;
@@ -6802,28 +6797,13 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
     PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
 
-    int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(ImageBase,
-                                                                             RelativePc,
+    int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
                                                                              pRuntimeFunctions,
                                                                              0,
                                                                              nRuntimeFunctions - 1);
 
     if (MethodIndex < 0)
         return FALSE;
-
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI) && !defined(FEATURE_EH_FUNCLETS)
-    {
-        // On Windows X86, the RUNTIME_FUNCTION structure does not encode the end of the function
-        // Use the GCInfo to find the end of the function and verify that currentPC is in the
-        // bounds of the function
-        PTR_RUNTIME_FUNCTION FunctionEntryEarly = pRuntimeFunctions + MethodIndex;
-        METHODTOKEN methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntryEarly));
-        DWORD offsetFromStartOfFunction = RelativePc - RUNTIME_FUNCTION__BeginAddress(FunctionEntryEarly);
-        DWORD functionSize = GetCodeManager()->GetFunctionSize(GetGCInfoToken(methodToken));
-        if (functionSize < offsetFromStartOfFunction)
-            return FALSE;
-    }
-#endif
 
     if (ppMethodDesc == NULL && pCodeInfo == NULL)
     {
