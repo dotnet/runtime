@@ -69,7 +69,7 @@ internal static partial class Interop
         internal static void SetCreationOrModificationTimeOfFileInternal(string path, bool isModificationDate, DateTimeOffset time)
         {
             var date = objc_msgSend(NSDate, alloc);
-            date = objc_msgSend(date, initWithTimeIntervalSince1970_, time.ToUnixSeconds());
+            date = objc_msgSend(date, initWithTimeIntervalSince1970_, time.ToUnixTimeSeconds());
             var fileAttributes = objc_msgSend(NSDictionary, dictionaryWithObject_forKey_, date, isModificationDate ? NSFileModificationDate : NSFileCreationDate);
             var native_filePath = objc_msgSend(NSString, alloc);
             native_filePath = objc_msgSend(native_filePath, initWithUTF8String_, path);
