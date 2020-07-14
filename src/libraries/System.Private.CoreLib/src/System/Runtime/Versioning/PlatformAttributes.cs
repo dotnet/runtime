@@ -7,10 +7,10 @@ namespace System.Runtime.Versioning
     /// Base type for all platform-specific API attributes.
     /// </summary>
 #pragma warning disable CS3015 // Type has no accessible constructors which use only CLS-compliant types
-#if INTERNAL_PLATFORM_ATTRIBUTES
-    internal
-#else
+#if SYSTEM_PRIVATE_CORELIB
     public
+#else
+    internal
 #endif
         abstract class OSPlatformAttribute : Attribute
 #pragma warning restore CS3015
@@ -27,10 +27,10 @@ namespace System.Runtime.Versioning
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly,
                     AllowMultiple = false, Inherited = false)]
-#if INTERNAL_PLATFORM_ATTRIBUTES
-    internal
-#else
+#if SYSTEM_PRIVATE_CORELIB
     public
+#else
+    internal
 #endif
         sealed class TargetPlatformAttribute : OSPlatformAttribute
     {
@@ -60,10 +60,10 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-#if INTERNAL_PLATFORM_ATTRIBUTES
-    internal
-#else
+#if SYSTEM_PRIVATE_CORELIB
     public
+#else
+    internal
 #endif
         sealed class MinimumOSPlatformAttribute : OSPlatformAttribute
     {
@@ -89,10 +89,10 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-#if INTERNAL_PLATFORM_ATTRIBUTES
-    internal
-#else
+#if SYSTEM_PRIVATE_CORELIB
     public
+#else
+    internal
 #endif
         sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
     {
@@ -127,10 +127,10 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple = true, Inherited = false)]
-#if INTERNAL_PLATFORM_ATTRIBUTES
-    internal
-#else
+#if SYSTEM_PRIVATE_CORELIB
     public
+#else
+    internal
 #endif
         sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
     {
