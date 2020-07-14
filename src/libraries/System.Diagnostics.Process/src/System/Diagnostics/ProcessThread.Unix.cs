@@ -6,6 +6,7 @@ namespace System.Diagnostics
     public partial class ProcessThread
     {
         /// <summary>Sets the processor that this thread would ideally like to run on.</summary>
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public int IdealProcessor
         {
             set
@@ -18,6 +19,7 @@ namespace System.Diagnostics
         /// Resets the ideal processor so there is no ideal processor for this thread (e.g.
         /// any processor is ideal).
         /// </summary>
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public void ResetIdealProcessor()
         {
             // Nop.  This is a hint, and there's no good match for the Windows concept.

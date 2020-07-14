@@ -98,6 +98,7 @@ namespace System.Diagnostics
         public void Close() { }
         public bool CloseMainWindow() { throw null; }
         protected override void Dispose(bool disposing) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void EnterDebugMode() { }
         public static System.Diagnostics.Process GetCurrentProcess() { throw null; }
         public static System.Diagnostics.Process GetProcessById(int processId) { throw null; }
@@ -108,6 +109,7 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
         public void Kill() { }
         public void Kill(bool entireProcessTree) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
@@ -200,6 +202,7 @@ namespace System.Diagnostics
         public int BasePriority { get { throw null; } }
         public int CurrentPriority { get { throw null; } }
         public int Id { get { throw null; } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
         public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
@@ -212,6 +215,7 @@ namespace System.Diagnostics
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
         public System.Diagnostics.ThreadWaitReason WaitReason { get { throw null; } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public void ResetIdealProcessor() { }
     }
     public partial class ProcessThreadCollection : System.Collections.ReadOnlyCollectionBase
