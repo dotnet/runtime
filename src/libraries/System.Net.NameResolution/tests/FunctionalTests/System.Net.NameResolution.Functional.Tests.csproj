@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetHostByAddressTest.cs" />
@@ -10,6 +11,7 @@
     <Compile Include="GetHostEntryTest.cs" />
     <Compile Include="GetHostAddressesTest.cs" />
     <Compile Include="LoggingTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="TestSettings.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"

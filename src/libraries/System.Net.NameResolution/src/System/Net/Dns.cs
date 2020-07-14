@@ -379,10 +379,12 @@ namespace System.Net
             }
 
             if (NameResolutionTelemetry.Log.IsEnabled())
+            {
                 NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
-            // Do the forward lookup to get the IPs for that host name
-            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
+                // Do the forward lookup to get the IPs for that host name
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
+            }
 
             object result;
             try
