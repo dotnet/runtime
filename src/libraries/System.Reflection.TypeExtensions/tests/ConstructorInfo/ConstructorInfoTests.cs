@@ -75,6 +75,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void TypeConstructorName_ReturnsExpected()
         {
+            int a = 1;
             Assert.Equal(".cctor", ConstructorInfo.TypeConstructorName);
         }
 
