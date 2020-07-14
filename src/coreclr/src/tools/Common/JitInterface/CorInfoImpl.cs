@@ -521,12 +521,19 @@ namespace Internal.JitInterface
                 if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
                     continue;
 
+                // We only care about the modifiers for the return type. These will be at the start of
+                // the signature, so will be first in the array of embedded signature data.
+                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
+                    break;
+
                 if (!(data.type is DefType defType))
                     continue;
 
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
+                // The last specified modopt in IL is first in the signature byte stream,
+                // so return once we find a recognized calling convention.
                 switch (defType.Name)
                 {
                     case "CallConvCdecl":

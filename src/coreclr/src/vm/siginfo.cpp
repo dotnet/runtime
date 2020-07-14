@@ -5322,7 +5322,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         {
             if (::strcmp(typeName, callConv.name) == 0)
             {
-                // The last specified modopt is first in the signature byte stream,
+                // The last specified modopt in IL is first in the signature byte stream,
                 // so return once we find a recognized calling convention.
                 *callConvOut = callConv.value;
                 return S_OK;
