@@ -37,6 +37,7 @@ namespace System.Net
         public TimeSpan EntityBody
         {
             get => TimeSpan.Zero;
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 ValidateTimeout(value);
@@ -47,6 +48,7 @@ namespace System.Net
         public TimeSpan HeaderWait
         {
             get => TimeSpan.Zero;
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 ValidateTimeout(value);
@@ -57,6 +59,7 @@ namespace System.Net
         public long MinSendBytesPerSecond
         {
             get => 0;
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 if (value < 0 || value > uint.MaxValue)
@@ -70,6 +73,7 @@ namespace System.Net
         public TimeSpan RequestQueue
         {
             get => TimeSpan.Zero;
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 ValidateTimeout(value);
