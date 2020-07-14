@@ -191,12 +191,14 @@ namespace System.Text.Encodings.Web
                             Sse2.LoadVector128(ptr),
                             Vector128.Create((short)'A'));  // max. one "iteration", so no need to cache this vector
                     }
-                    else
+                    else if (AdvSimd.Arm64.IsSupported)
                     {
-                        Debug.Assert(AdvSimd.Arm64.IsSupported);
-
                         Vector64<sbyte> saturated = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
                         sourceValue = Vector128.Create(saturated, Vector64.Create((sbyte)'A'));
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
 
                     index = NeedsEscaping(sourceValue);
