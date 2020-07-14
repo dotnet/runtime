@@ -1997,7 +1997,7 @@ namespace System.Net.Sockets.Tests
 
                     Assert.Equal(DataLength, args.BytesTransferred);
                     Assert.Equal(expectedEP, args.RemoteEndPoint);
-                    Assert.Equal(IPAddress.Loopback, args.ReceiveMessageFromPacketInfo.Address);
+                    Assert.True(args.ReceiveMessageFromPacketInfo.Address.Equals(IPAddress.Loopback) || args.ReceiveMessageFromPacketInfo.Address.Equals(IPAddress.Loopback.MapToIPv6()));
                 }
             }
         }
