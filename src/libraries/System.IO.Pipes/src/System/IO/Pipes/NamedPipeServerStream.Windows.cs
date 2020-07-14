@@ -221,7 +221,6 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
             ExecuteHelper execHelper = new ExecuteHelper(impersonationWorker, InternalHandle);
-            RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(tryCode, cleanupCode, execHelper);
 
             // now handle win32 impersonate/revert specific errors by throwing corresponding exceptions
             if (execHelper._impersonateErrorCode != 0)
@@ -233,11 +232,6 @@ namespace System.IO.Pipes
                 throw WinIOError(execHelper._revertImpersonateErrorCode);
             }
         }
-
-        // the following are needed for CER
-
-        private static readonly RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(ImpersonateAndTryCode);
-        private static readonly RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(RevertImpersonationOnBackout);
 
         private static void ImpersonateAndTryCode(object? helper)
         {

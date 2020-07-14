@@ -7,6 +7,9 @@ using System.Security.Permissions;
 
 namespace System.Data.Odbc
 {
+#if CAS_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class OdbcPermission : DBDataPermission
     {
         public OdbcPermission() : base(default(PermissionState)) { }

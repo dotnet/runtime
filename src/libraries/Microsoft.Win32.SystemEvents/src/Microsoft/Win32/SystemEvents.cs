@@ -1114,7 +1114,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [PrePrepareMethod]
         private static void Shutdown(object? sender, EventArgs e)
         {
             Shutdown();

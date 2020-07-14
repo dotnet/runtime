@@ -13,6 +13,9 @@ namespace System.Security
         [Obsolete]
         public static bool SecurityEnabled { get; set; }
         public static bool CurrentThreadRequiresSecurityContextCapture() { return false; }
+#if CAS_OBSOLETIONS
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public static PermissionSet GetStandardSandbox(Evidence evidence) { return default(PermissionSet); }
         public static void GetZoneAndOrigin(out System.Collections.ArrayList zone, out System.Collections.ArrayList origin) { zone = default(System.Collections.ArrayList); origin = default(System.Collections.ArrayList); }
         [Obsolete]

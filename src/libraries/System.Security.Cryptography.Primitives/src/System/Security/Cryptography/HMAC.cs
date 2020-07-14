@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
 
         protected HMAC() { }
 
+        [Obsolete(Obsoletions.DefaultAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static new HMAC Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 

@@ -8,6 +8,9 @@ using System.Threading;
 
 namespace System.Security.Permissions
 {
+#if CAS_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
     {
         private IDRole[] _idArray;

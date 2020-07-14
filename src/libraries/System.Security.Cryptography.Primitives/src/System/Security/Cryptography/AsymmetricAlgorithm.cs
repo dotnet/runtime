@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
 
         protected AsymmetricAlgorithm() { }
 
+        [Obsolete(Obsoletions.DefaultAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static AsymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 

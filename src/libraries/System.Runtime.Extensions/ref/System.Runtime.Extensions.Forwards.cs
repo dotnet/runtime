@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+#pragma warning disable SYSLIB0003 // CAS Obsoletions
+
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AppDomain))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AppDomainSetup))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AppDomainUnloadedException))]
@@ -75,3 +77,5 @@
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityAttribute))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionAttribute))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionFlag))]
+
+#pragma warning restore SYSLIB0003

@@ -8,6 +8,6 @@ namespace System.Runtime.Serialization
         internal const string SharedUrlFormat = "https://aka.ms/dotnet-warnings/{0}";
 
         internal const string InsecureSerializationMessage = "BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.";
-        internal const string InsecureSerializationDiagId = "MSLIB0003";
+        internal const string InsecureSerializationDiagId = "SYSLIB0011";
     }
 }

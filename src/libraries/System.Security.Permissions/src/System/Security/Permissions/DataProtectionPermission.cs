@@ -3,6 +3,9 @@
 
 namespace System.Security.Permissions
 {
+#if CAS_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class DataProtectionPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public DataProtectionPermission(PermissionState state) { }

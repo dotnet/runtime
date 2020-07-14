@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Web
 {
+#if CAS_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class AspNetHostingPermission :  CodeAccessPermission, IUnrestrictedPermission
     {
         public AspNetHostingPermission(PermissionState state) { }

@@ -23,6 +23,7 @@
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\KeyedHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeySizes.cs" />
+    <Compile Include="System\Security\Cryptography\Obsoletions.cs" />
     <Compile Include="System\Security\Cryptography\PaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.cs" />

@@ -91,6 +91,7 @@
     <Compile Include="System\Security\Permissions\KeyContainerPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\KeyContainerPermissionFlags.cs" />
     <Compile Include="System\Security\Permissions\MediaPermission.cs" />
+    <Compile Include="System\Security\Permissions\Obsoletions.cs" />
     <Compile Include="System\Security\Permissions\PermissionSetAttribute.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermission.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermissionAttribute.cs" />

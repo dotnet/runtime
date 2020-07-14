@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 
 namespace System.Security
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public partial class PermissionSet : ICollection, IEnumerable, IDeserializationCallback, ISecurityEncodable, IStackWalk
     {
         public PermissionSet(PermissionState state) { }

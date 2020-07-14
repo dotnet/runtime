@@ -3,6 +3,9 @@
 
 namespace System.Security.Permissions
 {
+#if CAS_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public enum IsolatedStorageContainment
     {
         None = 0x00,

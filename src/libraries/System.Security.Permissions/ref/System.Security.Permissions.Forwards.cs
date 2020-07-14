@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
+#pragma warning disable SYSLIB0003 // CAS Obsoletions
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.IPermission))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.ISecurityEncodable))]
@@ -17,3 +18,5 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.PermissionSet))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.PermissionState))]
 #endif
+
+#pragma warning restore SYSLIB0003

@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
             PaddingValue = PaddingMode.PKCS7;
         }
 
+        [Obsolete(Obsoletions.DefaultAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static SymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
