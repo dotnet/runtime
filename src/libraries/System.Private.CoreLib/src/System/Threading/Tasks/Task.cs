@@ -619,7 +619,7 @@ namespace System.Threading.Tasks
                         if (antecedent == null)
                         {
                             // if no antecedent was specified, use this task's reference as the cancellation state object
-                            ctr = cancellationToken.UnsafeRegister(t => ((Task)t!).InternalCancel(), this);
+                            ctr = cancellationToken.UnsafeRegister(static t => ((Task)t!).InternalCancel(), this);
                         }
                         else
                         {
@@ -628,7 +628,7 @@ namespace System.Threading.Tasks
                             // If an antecedent was specified, pack this task, its antecedent and the TaskContinuation together as a tuple
                             // and use it as the cancellation state object. This will be unpacked in the cancellation callback so that
                             // antecedent.RemoveCancellation(continuation) can be invoked.
-                            ctr = cancellationToken.UnsafeRegister(t =>
+                            ctr = cancellationToken.UnsafeRegister(static t =>
                             {
                                 var tuple = (Tuple<Task, Task, TaskContinuation>)t!;
 
@@ -1880,7 +1880,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     // Post the throwing of the exception to that context, and return.
-                    targetContext.Post(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
+                    targetContext.Post(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
                     return;
                 }
                 catch (Exception postException)
@@ -1895,7 +1895,7 @@ namespace System.Threading.Tasks
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
-            ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
+            ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
 #endif // CORERT
         }
@@ -5420,7 +5420,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(token.CanBeCanceled);
 
                 _token = token;
-                _registration = token.UnsafeRegister(state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
+                _registration = token.UnsafeRegister(static state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
             }
 
             private void CompleteCanceled()
@@ -6590,7 +6590,7 @@ namespace System.Threading.Tasks
             // there's a high liklihood this thread is going to be doing lots more work before
             // returning to the thread pool (at the very least unwinding through thousands of
             // stack frames).  So we queue to the global queue.
-            ThreadPool.UnsafeQueueUserWorkItem(state =>
+            ThreadPool.UnsafeQueueUserWorkItem(static state =>
             {
                 // InvokeCore(completingTask);
                 var tuple = (Tuple<UnwrapPromise<TResult>, Task>)state!;
