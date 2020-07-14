@@ -73,7 +73,7 @@
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
