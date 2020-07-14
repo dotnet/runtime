@@ -10,7 +10,7 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  variables: {}
+  variables: []
   name: ''
   displayName: ''
   runtimeVariant: ''
@@ -54,7 +54,8 @@ jobs:
       clean: all
 
   variables:
-  - ${{ parameters.variables }}
+  - ${{ each variable in parameters.variables }}:
+    - ${{ variable }}
 
   - name: OfficialBuildArg
     value: ''

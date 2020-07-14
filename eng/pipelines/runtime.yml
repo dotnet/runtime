@@ -320,6 +320,8 @@ jobs:
       # map dependencies variables to local variables
       - name: testsProjContainsChange
         value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -340,6 +342,7 @@ jobs:
         condition: >-
           or(
           eq(variables['testsProjContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #

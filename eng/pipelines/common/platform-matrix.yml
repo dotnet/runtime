@@ -22,7 +22,7 @@ parameters:
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
   jobParameters: {}
-  variables: {}
+  variables: []
 
 jobs:
 
