@@ -92,7 +92,7 @@ struct _MonoMemoryManager {
 
 	GPtrArray *class_vtable_array;
 
-#define MONO_MEMORY_MANAGER_FIRST_GC_TRACKED type_hash // TODO: make this actually matter
+	// !!! REGISTERED AS GC ROOTS !!!
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
@@ -100,7 +100,7 @@ struct _MonoMemoryManager {
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
-#define MONO_MEMORY_MANAGER_LAST_GC_TRACKED type_init_exception_hash
+	// End of gc roots
 
 	// This must be a GHashTable, since these objects can't be finalized
 	// if the hashtable contains a GC visible reference to them.
