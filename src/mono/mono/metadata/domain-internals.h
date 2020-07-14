@@ -721,10 +721,21 @@ mono_domain_ambient_alc (MonoDomain *domain)
 
 static inline
 MonoMemoryManager *
+mono_domain_default_memory_manager (MonoDomain *domain)
+{
+#ifdef ENABLE_NETCORE
+	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
+#else
+	return domain->memory_manager;
+#endif
+}
+
+static inline
+MonoMemoryManager *
 mono_domain_ambient_memory_manager (MonoDomain *domain)
 {
 	// FIXME: All the callers of mono_domain_ambient_memory_manager should get a MemoryManager passed to them from their callers
-	return domain->memory_manager;
+	return mono_domain_default_memory_manager (domain);
 }
 
 G_END_DECLS

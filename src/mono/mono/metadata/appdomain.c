@@ -1054,7 +1054,7 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 	gboolean res;
 
 	mono_domain_lock (domain);
-	res = mono_mempool_contains_addr (domain->memory_manager->mp, vtable_slot);
+	res = mono_mempool_contains_addr (mono_domain_ambient_memory_manager (domain)->mp, vtable_slot);
 	mono_domain_unlock (domain);
 	return res;
 }
@@ -3229,7 +3229,7 @@ unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
-	MonoMemoryManager *memory_manager = domain->memory_manager;
+	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 	int i;
 	gsize result = 1; // failure
 

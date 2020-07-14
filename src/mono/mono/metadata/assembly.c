@@ -4249,7 +4249,7 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 	GSList *tmp;
 	MonoAssemblyBindingInfo *info_tmp;
 	MonoDomain *domain = (MonoDomain*)user_data;
-	MonoMemoryManager *memory_manager = domain->memory_manager;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
 	if (!domain)
 		return;

@@ -1735,7 +1735,7 @@ gpointer
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_domain_code_reserve (domain, size);
+	return mono_memory_manager_code_reserve (mono_domain_ambient_memory_manager (domain), size);
 }
 
 typedef struct _GenericVirtualCase {
@@ -2707,7 +2707,7 @@ mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *p
 	MonoRemoteClass *rc;
 	gpointer* key, *mp_key;
 	char *name;
-	MonoMemoryManager *memory_manager = domain->memory_manager;
+	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 	
 	error_init (error);
 
