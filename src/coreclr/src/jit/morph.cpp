@@ -2776,9 +2776,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             maxRegArgs = 0;
         }
 #ifdef UNIX_X86_ABI
-            // Add in the ret buff arg
-            if (callHasRetBuffArg)
-                maxRegArgs++;
+        // Add in the ret buff arg
+        if (callHasRetBuffArg)
+            maxRegArgs++;
 #endif
     }
 #endif // TARGET_X86

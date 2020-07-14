@@ -349,7 +349,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     lvaInitThisPtr(varDscInfo);
 
     unsigned numUserArgsToSkip = 0;
-    unsigned numUserArgs = info.compMethodInfo->args.numArgs;
+    unsigned numUserArgs       = info.compMethodInfo->args.numArgs;
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
     if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
     {
@@ -597,7 +597,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     regMaskTP doubleAlignMask = RBM_NONE;
 #endif // TARGET_ARM
 
-    for (unsigned i = 0; i < skipArgs; i++, argLst = info.compCompHnd->getArgNext(argLst));
+    for (unsigned i = 0; i < skipArgs; i++, argLst = info.compCompHnd->getArgNext(argLst))
+    {
+        ;
+    }
 
     for (unsigned i = 0; i < numUserArgs;
          i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
@@ -5242,8 +5245,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef TARGET_X86
-        argOffs =
-            lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -5285,7 +5287,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     unsigned                argSigLen = info.compMethodInfo->args.numArgs;
     assert(userArgsToSkip <= argSigLen);
     argSigLen -= userArgsToSkip;
-    for(unsigned i = 0; i < userArgsToSkip; i++, argLst = info.compCompHnd->getArgNext(argLst));
+    for (unsigned i = 0; i < userArgsToSkip; i++, argLst = info.compCompHnd->getArgNext(argLst))
+    {
+        ;
+    }
 
 #ifdef TARGET_ARM
     //

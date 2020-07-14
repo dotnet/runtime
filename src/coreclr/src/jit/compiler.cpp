@@ -1085,7 +1085,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType           = TYP_STRUCT;
                 }
                 else
-                {      
+                {
                     // Otherwise we return this struct using a return buffer
                     // setup wbPassType and useType indicate that this is returned using a return buffer register
                     //  (reference to a return buffer)
@@ -2230,7 +2230,7 @@ void Compiler::compSetProcessor()
 #elif defined(TARGET_ARM64)
     info.genCPU      = CPU_ARM64;
 #elif defined(TARGET_AMD64)
-    info.genCPU                   = CPU_X64;
+    info.genCPU = CPU_X64;
 #elif defined(TARGET_X86)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;

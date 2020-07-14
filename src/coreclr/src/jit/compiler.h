@@ -9171,7 +9171,8 @@ public:
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
         // On x86, 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType) || (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else  // targets: X64-UNIX, ARM64 or ARM32
         // On all other targets that support multireg return values:
         // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
@@ -9196,7 +9197,8 @@ public:
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
         // On x86, 64-bit longs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType) || (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
+        return varTypeIsLong(info.compRetNativeType) ||
+               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
         // TYP_SIMD* are returned in one register.

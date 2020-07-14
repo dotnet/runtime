@@ -1186,7 +1186,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         GenTreeCall* srcCall = src->AsCall();
         if (srcCall->TreatAsHasRetBufArg(this))
         {
-            // Case of call returning a struct via hidden retbuf arg
+// Case of call returning a struct via hidden retbuf arg
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
@@ -1210,7 +1210,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     }
                     else
                     {
-                        for(; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext());
+                        for (; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext())
+                            ;
                         lastArg->SetNext(gtPrependNewCallArg(destAddr, lastArg->GetNext()));
                     }
 #else
@@ -4607,7 +4608,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #if defined(TARGET_XARCH)
         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
-        platformNamespaceName = ".Arm";
+        platformNamespaceName           = ".Arm";
 #else
 #error Unsupported platform
 #endif
@@ -8952,7 +8953,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
 
     if ((corType == CORINFO_TYPE_VALUECLASS) || (corType == CORINFO_TYPE_REFANY))
     {
-        // We have some kind of STRUCT being returned
+// We have some kind of STRUCT being returned
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
         if (compMethodIsNativeInstanceMethod(methInfo))
         {
@@ -9127,7 +9128,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL)
     {
         howToReturnStruct = SPK_ByReference;
-        returnType = TYP_UNKNOWN;
+        returnType        = TYP_UNKNOWN;
     }
     else
 #endif
