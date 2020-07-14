@@ -1446,11 +1446,18 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
         return true;
 
 #if defined(TARGET_LINUX)
-    const char* toRedirect[] = {
-            "System.Native.so",
-            "System.IO.Compression.Native.so",
-            "System.Net.Security.Native.so",
-            "System.Security.Cryptography.Native.OpenSsl.so"
+    static const char* toRedirect[] = {
+        "System.Native.so",
+        "System.IO.Compression.Native.so",
+        "System.Net.Security.Native.so",
+        "System.Security.Cryptography.Native.OpenSsl.so"
+    };
+
+    static const int toRedirectLen[] = {
+        strlen(toRedirect[0]),
+        strlen(toRedirect[1]),
+        strlen(toRedirect[2]),
+        strlen(toRedirect[3]),
     };
 
     int nameLength = strlen(libraryNameOrPath);
@@ -1458,7 +1465,7 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
     for (int i = 0; i < count; ++i)
     {
         const char* match = toRedirect[i];
-        int matchLength = strlen(match);
+        int matchLength = toRedirectLen[i];
         if (nameLength >= matchLength && strcmp(libraryNameOrPath + nameLength - matchLength, match) == 0)
             return true;
     }

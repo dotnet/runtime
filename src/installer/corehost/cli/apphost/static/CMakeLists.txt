@@ -90,36 +90,37 @@ elseif(CLR_CMAKE_TARGET_LINUX)
 
     # currently linking coreclr into the singlefilehost is only supported on linux
     # the following code here would be needed if/when BSD and OSX are supported too
-    if(CLR_CMAKE_TARGET_OSX)
-      find_library(COREFOUNDATION CoreFoundation)
-      find_library(CORESERVICES CoreServices)
-      find_library(SECURITY Security)
-      find_library(SYSTEM System)
-
-      LIST(APPEND CORECLR_LIBRARIES
-        ${COREFOUNDATION}
-        ${CORESERVICES}
-        ${SECURITY}
-        ${SYSTEM}
-      )
-    endif(CLR_CMAKE_TARGET_OSX)
-
-    # On OSX and *BSD, we use the libunwind that's part of the OS
-    if(CLR_CMAKE_TARGET_FREEBSD)
-        find_unwind_libs(UNWIND_LIBS)
-
-        LIST(APPEND CORECLR_LIBRARIES
-          ${UNWIND_LIBS}
-        )
-    endif(CLR_CMAKE_TARGET_FREEBSD)
-
-    if(CLR_CMAKE_TARGET_NETBSD)
-        find_library(KVM kvm)
-
-        LIST(APPEND CORECLR_LIBRARIES
-          ${KVM}
-        )
-    endif(CLR_CMAKE_TARGET_NETBSD)
+    #
+    # if(CLR_CMAKE_TARGET_OSX)
+    #   find_library(COREFOUNDATION CoreFoundation)
+    #   find_library(CORESERVICES CoreServices)
+    #   find_library(SECURITY Security)
+    #   find_library(SYSTEM System)
+    # 
+    #   LIST(APPEND CORECLR_LIBRARIES
+    #     ${COREFOUNDATION}
+    #     ${CORESERVICES}
+    #     ${SECURITY}
+    #     ${SYSTEM}
+    #   )
+    # endif(CLR_CMAKE_TARGET_OSX)
+    # 
+    # # On OSX and *BSD, we use the libunwind that's part of the OS
+    # if(CLR_CMAKE_TARGET_FREEBSD)
+    #     find_unwind_libs(UNWIND_LIBS)
+    # 
+    #     LIST(APPEND CORECLR_LIBRARIES
+    #       ${UNWIND_LIBS}
+    #     )
+    # endif(CLR_CMAKE_TARGET_FREEBSD)
+    # 
+    # if(CLR_CMAKE_TARGET_NETBSD)
+    #     find_library(KVM kvm)
+    # 
+    #     LIST(APPEND CORECLR_LIBRARIES
+    #       ${KVM}
+    #     )
+    # endif(CLR_CMAKE_TARGET_NETBSD)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
@@ -129,6 +130,7 @@ message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 if(NOT CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
         # Native libs linked into singlefilehost is supported only on Linux for now.
+        # if/when BSD and OSX are supported too, consider the commented code sections below.
     )
 else()
     set(NATIVE_LIBS
@@ -138,19 +140,15 @@ else()
       ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
     )
 
-    if(CLR_CMAKE_TARGET_OSX)
-        LIST(APPEND NATIVE_LIBS
-          ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.Apple.a
-        )
-    endif(CLR_CMAKE_TARGET_OSX)
-    
-    
+    find_package(ZLIB REQUIRED)
+
     # Additional requirements for System.System.IO.Compression.Native
-    if (CLR_CMAKE_TARGET_SUNOS)
-        set(ZLIB_LIBRARIES z m)
-    elseif (CLR_CMAKE_TARGET_UNIX)
-        find_package(ZLIB REQUIRED)
-    endif ()
+    #
+    # if (CLR_CMAKE_TARGET_SUNOS)
+    #     set(ZLIB_LIBRARIES z m)
+    # elseif (CLR_CMAKE_TARGET_UNIX)
+    #     find_package(ZLIB REQUIRED)
+    # endif ()
     
     # Additional requirements for System.Net.Security.Native
     if (HAVE_GSSFW_HEADERS)
@@ -175,20 +173,20 @@ else()
         set(NATIVE_LIBS_EXTRA
           rt
         )
-    elseif (CLR_CMAKE_TARGET_FREEBSD)
-        set(NATIVE_LIBS_EXTRA
-          pthread
-        )
-        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-        if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
-          LIST(APPEND NATIVE_LIBS_EXTRA
-            ${INOTIFY_LIBRARY}
-          )
-        endif ()
-    elseif (CLR_CMAKE_TARGET_SUNOS)
-        set(NATIVE_LIBS_EXTRA
-            socket
-        )
+    # elseif (CLR_CMAKE_TARGET_FREEBSD)
+    #     set(NATIVE_LIBS_EXTRA
+    #       pthread
+    #     )
+    #     find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+    #     if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
+    #       LIST(APPEND NATIVE_LIBS_EXTRA
+    #         ${INOTIFY_LIBRARY}
+    #       )
+    #     endif ()
+    # elseif (CLR_CMAKE_TARGET_SUNOS)
+    #     set(NATIVE_LIBS_EXTRA
+    #         socket
+    #     )
     endif ()
 
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
@@ -196,13 +194,6 @@ else()
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-
-    if(CLR_CMAKE_TARGET_OSX)
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -force_load)
-        set(END_WHOLE_ARCHIVE )
-    endif(CLR_CMAKE_TARGET_OSX)
-
 endif(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_OSX)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
