@@ -174,6 +174,16 @@ mono_eventpipe_fini (void)
 
 static
 void
+delegate_callback_data_free_func (
+	EventPipeCallback callback_func,
+	void *callback_data)
+{
+	if (callback_data)
+		mono_gchandle_free_internal ((MonoGCHandle)callback_data);
+}
+
+static
+void
 delegate_callback_func (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -193,7 +203,8 @@ delegate_callback_func (
 		EVENT_FILTER_DESCRIPTOR* filterData,
 		void* callbackContext);*/
 
-	MonoObject *delegate_object = (MonoObject *)callback_context;
+	MonoGCHandle delegate_object_handle = (MonoGCHandle)callback_context;
+	MonoObject *delegate_object = delegate_object_handle ? mono_gchandle_get_target_internal (delegate_object_handle) : NULL;
 	if (delegate_object) {
 		void *params [7];
 		params [0] = (void *)source_id;
@@ -216,7 +227,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoError *error)
 {
 	EventPipeProvider *provider = NULL;
-	MonoObject *delegate_object = NULL;
+	void *callback_data = NULL;
 
 	if (MONO_HANDLE_IS_NULL (provider_name)) {
 		mono_error_set_argument_null (error, "providerName", "");
@@ -224,11 +235,11 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	}
 
 	if (!MONO_HANDLE_IS_NULL (callback_func))
-		delegate_object = MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, callback_func));
+		callback_data = (void *)mono_gchandle_new_weakref_internal (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, callback_func)), FALSE);
 
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 	if (is_ok (error) && provider_name_utf8) {
-		provider = ep_create_provider (provider_name_utf8, delegate_callback_func, delegate_object);
+		provider = ep_create_provider (provider_name_utf8, delegate_callback_func, delegate_callback_data_free_func, callback_data);
 	}
 
 	g_free (provider_name_utf8);
