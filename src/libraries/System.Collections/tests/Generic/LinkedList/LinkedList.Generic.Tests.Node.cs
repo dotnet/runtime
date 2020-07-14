@@ -52,6 +52,35 @@ namespace System.Collections.Tests
             node.Value = default(T);
 
             VerifyLinkedListNode(node, default(T), null, null, null);
+
+            //[] Verify passing something other then default(T) into the constructor and set the value to something other then default(T)
+            value = CreateT(seed++);
+            node = new LinkedListNode<T>(value);
+            value = CreateT(seed++);
+            node.ValueRef = value;
+
+            VerifyLinkedListNode(node, value, null, null, null);
+
+            //[] Verify passing something other then default(T) into the constructor and set the value to default(T)
+            value = CreateT(seed++);
+            node = new LinkedListNode<T>(value);
+            node.ValueRef = default(T);
+
+            VerifyLinkedListNode(node, default(T), null, null, null);
+
+            //[] Verify passing default(T) into the constructor and set the value to something other then default(T)
+            node = new LinkedListNode<T>(default(T));
+            value = CreateT(seed++);
+            node.ValueRef = value;
+
+            VerifyLinkedListNode(node, value, null, null, null);
+
+            //[] Verify passing default(T) into the constructor and set the value to default(T)
+            node = new LinkedListNode<T>(default(T));
+            value = CreateT(seed++);
+            node.ValueRef = default(T);
+
+            VerifyLinkedListNode(node, default(T), null, null, null);
         }
     }
 }
