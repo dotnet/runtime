@@ -13,10 +13,7 @@ namespace System.Runtime.InteropServices
         private static Architecture? s_osArch;
         private static Architecture? s_processArch;
 
-        public static bool IsOSPlatform(OSPlatform osPlatform)
-        {
-            return OSPlatform.Windows == osPlatform;
-        }
+        internal static bool IsCurrentOSPlatform(string osPlatform) => osPlatform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
 
         public static string OSDescription
         {

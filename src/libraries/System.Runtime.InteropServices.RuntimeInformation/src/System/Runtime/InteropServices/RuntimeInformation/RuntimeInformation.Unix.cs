@@ -14,10 +14,12 @@ namespace System.Runtime.InteropServices
         private static Architecture? s_osArch;
         private static Architecture? s_processArch;
 
-        public static bool IsOSPlatform(OSPlatform osPlatform)
+        internal static bool IsCurrentOSPlatform(string osPlatform)
         {
             string name = s_osPlatformName ??= Interop.Sys.GetUnixName();
-            return osPlatform.Equals(name);
+
+            return osPlatform.Equals(name, StringComparison.OrdinalIgnoreCase)
+                || (name == "OSX" && osPlatform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)); // GetUnixName returns OSX on macOS
         }
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
