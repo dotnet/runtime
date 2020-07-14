@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
 
@@ -888,7 +889,7 @@ namespace System.Net
                     for (int e = 0; e < listCount; e++)
                     {
                         string path = (string)list.GetKey(e);
-                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path), StringComparison.Ordinal))
+                        if (PathMatch(uri.AbsolutePath, path))
                         {
                             CookieCollection cc = (CookieCollection)list.GetByIndex(e)!;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
@@ -906,6 +907,21 @@ namespace System.Net
                     }
                 }
             }
+        }
+
+        // Implement path-matching according to https://tools.ietf.org/html/rfc6265#section-5.1.4
+        private static bool PathMatch(string requestPath, string cookiePath)
+        {
+            cookiePath = CookieParser.CheckQuoted(cookiePath);
+            // A request-path path-matches a given cookie-path if at least one of the following conditions holds:
+            // - The cookie-path and the request-path are identical.
+            // - The cookie-path is a prefix of the request-path, and the last character of the cookie-path is %x2F ("/").
+            // - The cookie-path is a prefix of the request-path, and the first character of the request-path that is not included in the cookie-path is a %x2F ("/") character.
+            if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
+                return false;
+            return requestPath.Length <= cookiePath.Length ||
+                   cookiePath.Length > 0 && cookiePath[cookiePath.Length - 1] == '/' ||
+                   requestPath[cookiePath.Length] == '/';
         }
 
         private void MergeUpdateCollections(ref CookieCollection? destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)
