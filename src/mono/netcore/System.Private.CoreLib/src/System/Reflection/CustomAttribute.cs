@@ -592,7 +592,7 @@ namespace System.Reflection
         private static extern bool IsDefinedInternal(ICustomAttributeProvider obj, Type AttributeType);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Custom attributes are analyzed by the linker")]
+            Justification = "Linker analyzes base properties and marks them")]
         private static PropertyInfo? GetBasePropertyDefinition(RuntimePropertyInfo property)
         {
             MethodInfo? method = property.GetGetMethod(true);
@@ -623,7 +623,7 @@ namespace System.Reflection
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Custom attributes are analyzed by the linker")]
+            Justification = "Linker analyzes base events and marks them")]
         private static EventInfo? GetBaseEventDefinition(RuntimeEventInfo evt)
         {
             MethodInfo? method = evt.GetAddMethod(true);
