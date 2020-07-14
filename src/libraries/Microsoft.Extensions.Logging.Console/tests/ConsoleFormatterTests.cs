@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         private IDisposable _optionsReloadToken;
 
         public TestFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
-        : base ("TestFormatter")
+            : base ("TestFormatter")
         {
             FormatterOptions = options.CurrentValue;
             ReloadLoggerOptions(options.CurrentValue);

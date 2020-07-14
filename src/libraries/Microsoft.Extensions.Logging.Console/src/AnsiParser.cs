@@ -55,7 +55,55 @@ namespace Microsoft.Extensions.Logging.Console
             bool isBright = false;
             for (int i = 0; i < span.Length; i++)
             {
-                if (span[i] != EscapeChar || span.Length < i + 4 || span[i + 1] != '[')
+                if (span[i] == EscapeChar && span.Length >= i + 4 && span[i + 1] == '[')
+                {
+                    if (span[i + 3] == 'm')
+                    {
+    #if (NETSTANDARD2_0 || NETFRAMEWORK)
+                        if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
+    #else
+                        if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
+    #endif
+                        {
+                            if (escapeCode == 1)
+                                isBright = true;
+                            i += 3;
+                        }
+                    }
+                    else if (span.Length >= i + 5 && span[i + 4] == 'm')
+                    {
+    #if (NETSTANDARD2_0 || NETFRAMEWORK)
+                        if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
+    #else
+                        if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
+    #endif
+                        {
+                            if (TryGetForegroundColor(escapeCode, isBright, out color))
+                            {
+                                if (startIndex != -1)
+                                {
+                                    _onParseWrite(message, startIndex, length, background, foreground);
+                                    startIndex = -1;
+                                    length = 0;
+                                }
+                                foreground = color;
+                                isBright = false;
+                            }
+                            else if (TryGetBackgroundColor(escapeCode, out color))
+                            {
+                                if (startIndex != -1)
+                                {
+                                    _onParseWrite(message, startIndex, length, background, foreground);
+                                    startIndex = -1;
+                                    length = 0;
+                                }
+                                background = color;
+                            }
+                            i += 4;
+                        }
+                    }
+                }
+                else
                 {
                     if (startIndex == -1)
                     {
@@ -69,51 +117,6 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                     length += nextEscapeIndex;
                     i += nextEscapeIndex - 1;
-                }
-                else if (span[i + 3] == 'm')
-                {
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                    if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
-#else
-                    if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
-#endif
-                    {
-                        if (escapeCode == 1)
-                            isBright = true;
-                        i += 3;
-                    }
-                }
-                else if (span.Length >= i + 5 && span[i + 4] == 'm')
-                {
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                    if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
-#else
-                    if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
-#endif
-                    {
-                        if (TryGetForegroundColor(escapeCode, isBright, out color))
-                        {
-                            if (startIndex != -1)
-                            {
-                                _onParseWrite(message, startIndex, length, background, foreground);
-                                startIndex = -1;
-                                length = 0;
-                            }
-                            foreground = color;
-                            isBright = false;
-                        }
-                        else if (TryGetBackgroundColor(escapeCode, out color))
-                        {
-                            if (startIndex != -1)
-                            {
-                                _onParseWrite(message, startIndex, length, background, foreground);
-                                startIndex = -1;
-                                length = 0;
-                            }
-                            background = color;
-                        }
-                        i += 4;
-                    }
                 }
             }
             if (startIndex != -1)
