@@ -984,6 +984,95 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/BSTR/BSTRTest/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Regression/GitHub_17073/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/LoadDquVector128_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/LoadDquVector128_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorUnused_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorUnused_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_ro/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_r/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/DivToMul/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/StructABI/StructABI/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_15949/GitHub_15949/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_15291/GitHub_15291/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16928/b16928/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/osr/osr015/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/ArrayBound_o/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorThrowInlinedStatic/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorThrowMethodAccess/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyLoadContext30Extensions/AssemblyLoadContext30Extensions/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
+            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizeexcep/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
