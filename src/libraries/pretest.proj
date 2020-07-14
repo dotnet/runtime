@@ -106,6 +106,12 @@
       <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <!-- Remove pdbs form RuntimeList.xml as they shouldn't be there -->
+      <_runtimePackLibFiles Remove="@(_runtimePackLibFiles)" Condition="'%(Extension)' == '.pdb'" />
+      <_runtimePackNativeFiles Remove="@(_runtimePackNativeFiles)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+
     <CreateFrameworkListFile Files="@(_refPackLibFile)"
                              TargetFile="$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml"
                              TargetFilePrefixes="ref/;runtimes/"
