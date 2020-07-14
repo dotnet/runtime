@@ -73,7 +73,6 @@ namespace System.Diagnostics
         /// Puts a Process component in state to interact with operating system processes that run in a
         /// special mode by enabling the native property SeDebugPrivilege on the current thread.
         /// </summary>
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void EnterDebugMode()
         {
             SetPrivilege(Interop.Advapi32.SeDebugPrivilege, (int)Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED);
@@ -83,7 +82,6 @@ namespace System.Diagnostics
         /// Takes a Process component out of the state that lets it interact with operating system processes
         /// that run in a special mode.
         /// </summary>
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void LeaveDebugMode()
         {
             SetPrivilege(Interop.Advapi32.SeDebugPrivilege, 0);

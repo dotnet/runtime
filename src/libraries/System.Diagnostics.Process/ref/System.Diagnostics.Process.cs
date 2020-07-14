@@ -98,7 +98,6 @@ namespace System.Diagnostics
         public void Close() { }
         public bool CloseMainWindow() { throw null; }
         protected override void Dispose(bool disposing) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void EnterDebugMode() { }
         public static System.Diagnostics.Process GetCurrentProcess() { throw null; }
         public static System.Diagnostics.Process GetProcessById(int processId) { throw null; }
@@ -109,7 +108,6 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
         public void Kill() { }
         public void Kill(bool entireProcessTree) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
