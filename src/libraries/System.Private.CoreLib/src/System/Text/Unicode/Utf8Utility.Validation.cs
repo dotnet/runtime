@@ -119,7 +119,7 @@ namespace System.Text.Unicode
                         // the alignment check consumes at most a single DWORD.)
 
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
-                        uint mask;
+                        ulong mask;
 
                         Vector128<byte> initialMask = Vector128.Create((ushort)0x1001).AsByte();
                         Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80).AsByte();
@@ -133,7 +133,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = (uint)Arm64MoveMask(AdvSimd.LoadVector128(pInputBuffer), initialMask, mostSignficantBitMask);
+                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), initialMask, mostSignficantBitMask);
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -141,7 +141,7 @@ namespace System.Text.Unicode
                             }
                             else if (Sse2.IsSupported)
                             {
-                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
+                                mask = (ulong)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -734,7 +734,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Arm64MoveMask(Vector128<byte> value, Vector128<byte> initialMask, Vector128<byte> mostSignficantBitMask)
+        private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> initialMask, Vector128<byte> mostSignficantBitMask)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
