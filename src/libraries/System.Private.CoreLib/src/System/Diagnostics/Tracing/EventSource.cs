@@ -2139,7 +2139,7 @@ namespace System.Diagnostics.Tracing
         // Events emitted from self-describing EventSources have EventIDs of -1 so they can't be filtered via the existing
         // dispatcher.m_EventEnabled[eventId] filtering mechanism.
         private EventLevel m_EventListenersMaxLevel; // Keeps track of the max level on this EventSource enabled by all instances of EventListeners
-        private EventKeywords m_EventListenersKeywords; // Keeps track of the sum of all keywords on this EventSource enabled by all instances of alive EventListeners
+        private EventKeywords m_EventListenersKeywords; // Keeps track of the union of all keywords on this EventSource enabled by all instances of alive EventListeners
 
         // helper for writing to all EventListeners attached the current eventSource.
         internal unsafe void WriteToAllListeners(int eventId, uint* osThreadId, DateTime* timeStamp, Guid* activityID, Guid* childActivityID, params object?[] args)
