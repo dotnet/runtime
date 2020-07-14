@@ -95,7 +95,6 @@ internal static partial class Interop
         private static IntPtr NSFileManager = objc_getClass("NSFileManager");
         private static IntPtr NSString = objc_getClass("NSString");
         private static IntPtr alloc = sel_getUid("alloc");
-        private static IntPtr init = sel_getUid("init");
         private static IntPtr initWithUTF8String_ = sel_getUid("initWithUTF8String:");
         private static IntPtr initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
         private static IntPtr dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");

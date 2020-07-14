@@ -205,7 +205,7 @@ namespace System.IO
             //the creationTime is checked, as when the modification time is set to a value prior to the creationTime, it also sets the creation time to that, see #39132
             var creationTime = GetCreationTime(path);
             Interop.libobjc.SetCreationOrModificationTimeOfFileInternal(path, true, time);
-            if (time < creationTime) Interop.libobjc.SetCreationOrModificationTimeOfFileInternal(path, false, creationDate);
+            if (time < creationTime) Interop.libobjc.SetCreationOrModificationTimeOfFileInternal(path, false, creationTime);
         }
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
