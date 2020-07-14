@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 // This file is auto-generated from template file Helpers.tt
 // In order to make changes to this file, please update Helpers.tt
@@ -2152,8 +2153,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
-        private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding)
+        private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding, short op3, bool subOp)
         {
+            short product = (short)((short)op1 * (short)op2);
+
+            bool dblOvf;
+            (product, dblOvf) = AddOvf(product, product);
+
+            bool addOvf;
+            short accum;
+
+            if (subOp)
+            {
+                (accum, addOvf) = SubtractOvf(op3, product);
+            }
+            else
+            {
+                (accum, addOvf) = AddOvf(op3, product);
+            }
+
             short roundConst = 0;
 
             if (rounding)
@@ -2161,45 +2179,41 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (short)1 << (8 * sizeof(sbyte) - 1);
             }
 
-            short product = (short)((short)op1 * (short)op2);
+            bool rndOvf;
+            short result;
 
-            var (result, ovf) = AddOvf(product, roundConst);
+            (result, rndOvf) = AddOvf(accum, roundConst);
 
+            return (result, addOvf ^ rndOvf ^ dblOvf);
+        }
+
+        private static sbyte SaturateHigh(short val, bool ovf)
+        {
             if (ovf)
             {
-                return (result, ovf);
+                return val < 0 ? sbyte.MaxValue : sbyte.MinValue;
             }
 
-            return AddOvf(result, product);
+            return (sbyte)UnsignedShift(val, (short)(-8 * sizeof(sbyte)));
         }
 
         public static sbyte MultiplyDoublingSaturateHigh(sbyte op1, sbyte op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (short)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? sbyte.MaxValue : sbyte.MinValue;
-            }
-
-            return (sbyte)UnsignedShift(product, (short)(-8 * sizeof(sbyte)));
+            return SaturateHigh(val, ovf);
         }
 
         public static sbyte MultiplyRoundedDoublingSaturateHigh(sbyte op1, sbyte op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true, (short)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? sbyte.MaxValue : sbyte.MinValue;
-            }
-
-            return (sbyte)UnsignedShift(product, (short)(-8 * sizeof(sbyte)));
+            return SaturateHigh(val, ovf);
         }
 
         public static short MultiplyDoublingWideningSaturate(sbyte op1, sbyte op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (short)0, subOp: false);
 
             if (ovf)
             {
@@ -2207,6 +2221,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return product;
+        }
+
+        public static sbyte MultiplyRoundedDoublingAndAddSaturateHigh(sbyte op1, sbyte op2, sbyte op3)
+        {
+            short addend = UnsignedShift((short)op1, (short)(8 * sizeof(sbyte)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, addend, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static sbyte MultiplyRoundedDoublingAndSubtractSaturateHigh(sbyte op1, sbyte op2, sbyte op3)
+        {
+            short minuend = UnsignedShift((short)op1, (short)(8 * sizeof(sbyte)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
+
+            return SaturateHigh(val, ovf);
         }
 
         public static short MultiplyDoublingWideningAndAddSaturate(short op1, sbyte op2, sbyte op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -2460,8 +2492,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
-        private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding)
+        private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding, int op3, bool subOp)
         {
+            int product = (int)((int)op1 * (int)op2);
+
+            bool dblOvf;
+            (product, dblOvf) = AddOvf(product, product);
+
+            bool addOvf;
+            int accum;
+
+            if (subOp)
+            {
+                (accum, addOvf) = SubtractOvf(op3, product);
+            }
+            else
+            {
+                (accum, addOvf) = AddOvf(op3, product);
+            }
+
             int roundConst = 0;
 
             if (rounding)
@@ -2469,45 +2518,41 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (int)1 << (8 * sizeof(short) - 1);
             }
 
-            int product = (int)((int)op1 * (int)op2);
+            bool rndOvf;
+            int result;
 
-            var (result, ovf) = AddOvf(product, roundConst);
+            (result, rndOvf) = AddOvf(accum, roundConst);
 
+            return (result, addOvf ^ rndOvf ^ dblOvf);
+        }
+
+        private static short SaturateHigh(int val, bool ovf)
+        {
             if (ovf)
             {
-                return (result, ovf);
+                return val < 0 ? short.MaxValue : short.MinValue;
             }
 
-            return AddOvf(result, product);
+            return (short)UnsignedShift(val, (int)(-8 * sizeof(short)));
         }
 
         public static short MultiplyDoublingSaturateHigh(short op1, short op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (int)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? short.MaxValue : short.MinValue;
-            }
-
-            return (short)UnsignedShift(product, (int)(-8 * sizeof(short)));
+            return SaturateHigh(val, ovf);
         }
 
         public static short MultiplyRoundedDoublingSaturateHigh(short op1, short op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true, (int)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? short.MaxValue : short.MinValue;
-            }
-
-            return (short)UnsignedShift(product, (int)(-8 * sizeof(short)));
+            return SaturateHigh(val, ovf);
         }
 
         public static int MultiplyDoublingWideningSaturate(short op1, short op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (int)0, subOp: false);
 
             if (ovf)
             {
@@ -2515,6 +2560,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return product;
+        }
+
+        public static short MultiplyRoundedDoublingAndAddSaturateHigh(short op1, short op2, short op3)
+        {
+            int addend = UnsignedShift((int)op1, (int)(8 * sizeof(short)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, addend, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static short MultiplyRoundedDoublingAndSubtractSaturateHigh(short op1, short op2, short op3)
+        {
+            int minuend = UnsignedShift((int)op1, (int)(8 * sizeof(short)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
+
+            return SaturateHigh(val, ovf);
         }
 
         public static int MultiplyDoublingWideningAndAddSaturate(int op1, short op2, short op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -2768,8 +2831,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
-        private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding)
+        private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding, long op3, bool subOp)
         {
+            long product = (long)((long)op1 * (long)op2);
+
+            bool dblOvf;
+            (product, dblOvf) = AddOvf(product, product);
+
+            bool addOvf;
+            long accum;
+
+            if (subOp)
+            {
+                (accum, addOvf) = SubtractOvf(op3, product);
+            }
+            else
+            {
+                (accum, addOvf) = AddOvf(op3, product);
+            }
+
             long roundConst = 0;
 
             if (rounding)
@@ -2777,45 +2857,41 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (long)1 << (8 * sizeof(int) - 1);
             }
 
-            long product = (long)((long)op1 * (long)op2);
+            bool rndOvf;
+            long result;
 
-            var (result, ovf) = AddOvf(product, roundConst);
+            (result, rndOvf) = AddOvf(accum, roundConst);
 
+            return (result, addOvf ^ rndOvf ^ dblOvf);
+        }
+
+        private static int SaturateHigh(long val, bool ovf)
+        {
             if (ovf)
             {
-                return (result, ovf);
+                return val < 0 ? int.MaxValue : int.MinValue;
             }
 
-            return AddOvf(result, product);
+            return (int)UnsignedShift(val, (long)(-8 * sizeof(int)));
         }
 
         public static int MultiplyDoublingSaturateHigh(int op1, int op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (long)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? int.MaxValue : int.MinValue;
-            }
-
-            return (int)UnsignedShift(product, (long)(-8 * sizeof(int)));
+            return SaturateHigh(val, ovf);
         }
 
         public static int MultiplyRoundedDoublingSaturateHigh(int op1, int op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true, (long)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? int.MaxValue : int.MinValue;
-            }
-
-            return (int)UnsignedShift(product, (long)(-8 * sizeof(int)));
+            return SaturateHigh(val, ovf);
         }
 
         public static long MultiplyDoublingWideningSaturate(int op1, int op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (long)0, subOp: false);
 
             if (ovf)
             {
@@ -2823,6 +2899,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return product;
+        }
+
+        public static int MultiplyRoundedDoublingAndAddSaturateHigh(int op1, int op2, int op3)
+        {
+            long addend = UnsignedShift((long)op1, (long)(8 * sizeof(int)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, addend, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static int MultiplyRoundedDoublingAndSubtractSaturateHigh(int op1, int op2, int op3)
+        {
+            long minuend = UnsignedShift((long)op1, (long)(8 * sizeof(int)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
+
+            return SaturateHigh(val, ovf);
         }
 
         public static long MultiplyDoublingWideningAndAddSaturate(long op1, int op2, int op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -5710,6 +5804,30 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return (ulong)result;
+        }
+
+        public static uint DotProduct(uint op1, byte[] op2, int s, byte[] op3, int t)
+        {
+            uint result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (uint)((uint)op2[s + i] * (uint)op3[t + i]);
+            }
+
+            return result;
+        }
+
+        public static int DotProduct(int op1, sbyte[] op2, int s, sbyte[] op3, int t)
+        {
+            int result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (int)((int)op2[s + i] * (int)op3[t + i]);
+            }
+
+            return result;
         }
     }
 }

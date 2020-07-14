@@ -311,6 +311,12 @@ namespace System.Net.Mime
             return cur - offset;
         }
 
+        public int EncodeString(string value, Encoding encoding)
+        {
+            byte[] buffer = encoding.GetBytes(value);
+            return EncodeBytes(buffer, 0, buffer.Length);
+        }
+
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
         public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);

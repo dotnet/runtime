@@ -55,6 +55,49 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ExtensioFieldNotUsed()
+        {
+            string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
+            ClassWithExtensionField obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+            Assert.Null(obj.MyOverflow);
+        }
+
+        [Fact]
+        public static void ExtensionFieldRoundTrip()
+        {
+            ClassWithExtensionField obj;
+
+            {
+                string json = @"{""MyIntMissing"":2, ""MyInt"":1, ""MyNestedClassMissing"":" + SimpleTestClass.s_json + "}";
+                obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+                Verify();
+            }
+
+            // Round-trip the json.
+            {
+                string json = JsonSerializer.Serialize(obj);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+                Verify();
+
+                // The json should not contain the dictionary name.
+                Assert.DoesNotContain(nameof(ClassWithExtensionField.MyOverflow), json);
+            }
+
+            void Verify()
+            {
+                Assert.NotNull(obj.MyOverflow);
+                Assert.Equal(1, obj.MyInt);
+                Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+                JsonProperty[] properties = obj.MyOverflow["MyNestedClassMissing"].EnumerateObject().ToArray();
+
+                // Verify a couple properties
+                Assert.Equal(1, properties.Where(prop => prop.Name == "MyInt16").First().Value.GetInt32());
+                Assert.True(properties.Where(prop => prop.Name == "MyBooleanTrue").First().Value.GetBoolean());
+            }
+        }
+
+        [Fact]
         public static void ExtensionPropertyIgnoredWhenWritingDefault()
         {
             string expected = @"{}";

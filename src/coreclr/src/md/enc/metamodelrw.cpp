@@ -146,6 +146,22 @@ g_TblSizeInfo[MDSizeIndex_Count][TBL_COUNT] =
        0,           // GenericParam
        0,           // MethodSpec
        0,           // GenericParamConstraint
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+       /* Dummy tables to fill the gap to 0x30 */
+       0,           // Dummy1
+       0,           // Dummy2
+       0,           // Dummy3
+       /* Actual portable PDB tables */
+       0,           // Document
+       0,           // MethodDebugInformation
+       0,           // LocalScope
+       0,           // LocalVariable
+       0,           // LocalConstant
+       0,           // ImportScope
+       // TODO:
+       // 0,           // StateMachineMethod
+       // 0,           // CustomDebugInformation
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
     },
     // Minimal table sizes (code:MDSizeIndex_Minimal).
     {
@@ -194,6 +210,22 @@ g_TblSizeInfo[MDSizeIndex_Count][TBL_COUNT] =
        0,       // GenericParam
        0,       // MethodSpec
        0,       // GenericParamConstraint
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+       /* Dummy tables to fill the gap to 0x30 */
+       0,       // Dummy1
+       0,       // Dummy2
+       0,       // Dummy3
+       /* Actual portable PDB tables */
+       0,       // Document
+       0,       // MethodDebugInformation
+       0,       // LocalScope
+       0,       // LocalVariable
+       0,       // LocalConstant
+       0,       // ImportScope
+       // TODO:
+       // 0,       // StateMachineMethod
+       // 0,       // CustomDebugInformation
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
     }
 };  // g_TblSizeInfo
 
@@ -252,6 +284,22 @@ const TblIndex g_TblIndex[TBL_COUNT] =
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParam},   // GenericParam
     {(ULONG) -1,        (ULONG) -1,     mdtMethodSpec},     // MethodSpec
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParamConstraint},// GenericParamConstraint
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    /* Dummy tables to fill the gap to 0x30 */
+    {(ULONG)-1,        (ULONG)-1,     (ULONG)-1},           // Dummy1
+    {(ULONG)-1,        (ULONG)-1,     (ULONG)-1},           // Dummy2
+    {(ULONG)-1,        (ULONG)-1,     (ULONG)-1},           // Dummy3
+    /* Actual portable PDB tables */
+    {(ULONG)-1,        (ULONG)-1,     mdtDocument},         // Document
+    {(ULONG)-1,        (ULONG)-1,     mdtMethodDebugInformation},// MethodDebugInformation
+    {(ULONG)-1,        (ULONG)-1,     mdtLocalScope},       // LocalScope
+    {(ULONG)-1,        (ULONG)-1,     mdtLocalVariable},    // LocalVariable
+    {(ULONG)-1,        (ULONG)-1,     mdtLocalConstant},    // LocalConstant
+    {(ULONG) -1,       (ULONG) -1,    mdtImportScope},      // ImportScope
+    // TODO:
+    // {(ULONG) -1,        (ULONG) -1,     mdtStateMachineMethod},// StateMachineMethod
+    // {(ULONG) -1,        (ULONG) -1,     mdtCustomDebugInformation},// CustomDebugInformation
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 };
 
 ULONG CMiniMdRW::m_TruncatedEncTables[] =
