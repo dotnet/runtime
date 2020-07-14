@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
-        internal bool IsCurrent { get; }
+        internal bool IsCurrent { get; } // this information is cached because it's frequently used
 
         private OSPlatform(string osPlatform)
         {
