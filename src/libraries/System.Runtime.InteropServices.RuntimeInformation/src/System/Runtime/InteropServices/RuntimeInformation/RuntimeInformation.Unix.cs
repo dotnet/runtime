@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
             {
                 return true;
             }
-            else if (name.Length == 3 && name[0] == 'O' && name[1] == 'S' && name[2] == 'X')
+            else if (name == "OSX")
             {
                 return osPlatform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
             }
