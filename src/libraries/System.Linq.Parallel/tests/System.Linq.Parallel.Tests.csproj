@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
