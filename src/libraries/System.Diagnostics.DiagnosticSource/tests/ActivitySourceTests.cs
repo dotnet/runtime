@@ -502,6 +502,36 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceIdAutoGenerationWithNullParentId()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("TraceIdAutoGenerationWithNullParent");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "TraceIdAutoGenerationWithNullParent";
+
+                ActivityContext ctx = default;
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    ctx = activityOptions.Parent;
+                    return ActivityDataRequest.AllData;
+                };
+
+                listener.AutoGenerateRootContextTraceId = true;
+                ActivitySource.AddActivityListener(listener);
+
+                Activity activity = aSource.StartActivity("a2", default, null);
+
+                Assert.NotNull(activity);
+                Assert.NotEqual(default, ctx);
+                Assert.Equal(ctx.TraceId, activity.TraceId);
+                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }
