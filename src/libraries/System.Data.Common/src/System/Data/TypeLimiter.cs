@@ -14,7 +14,7 @@ namespace System.Data
     internal sealed class TypeLimiter
     {
         [ThreadStatic]
-        private static Scope s_activeScope;
+        private static Scope? s_activeScope;
 
         private Scope m_instanceScope;
 
@@ -37,9 +37,9 @@ namespace System.Data
         /// <remarks>
         /// Returns null if no limiter is active.
         /// </remarks>
-        public static TypeLimiter Capture()
+        public static TypeLimiter? Capture()
         {
-            Scope activeScope = s_activeScope;
+            Scope? activeScope = s_activeScope;
             return (activeScope != null) ? new TypeLimiter(activeScope) : null;
         }
 
@@ -52,14 +52,14 @@ namespace System.Data
         /// <exception cref="InvalidOperationException">
         /// If <paramref name="type"/> is not allowed.
         /// </exception>
-        public static void EnsureTypeIsAllowed(Type type, TypeLimiter capturedLimiter = null)
+        public static void EnsureTypeIsAllowed(Type? type, TypeLimiter? capturedLimiter = null)
         {
             if (type is null)
             {
                 return; // nothing to check
             }
 
-            Scope capturedScope = capturedLimiter?.m_instanceScope ?? s_activeScope;
+            Scope? capturedScope = capturedLimiter?.m_instanceScope ?? s_activeScope;
             if (capturedScope is null)
             {
                 return; // we're not in a restricted scope
@@ -76,7 +76,7 @@ namespace System.Data
             throw ExceptionBuilder.TypeNotAllowed(type);
         }
 
-        public static IDisposable EnterRestrictedScope(DataSet dataSet)
+        public static IDisposable? EnterRestrictedScope(DataSet dataSet)
         {
             if (IsTypeLimitingDisabled)
             {
@@ -88,7 +88,7 @@ namespace System.Data
             return newScope;
         }
 
-        public static IDisposable EnterRestrictedScope(DataTable dataTable)
+        public static IDisposable? EnterRestrictedScope(DataTable dataTable)
         {
             if (IsTypeLimitingDisabled)
             {
@@ -188,14 +188,14 @@ namespace System.Data
             /// <summary>
             /// This thread's previous scope.
             /// </summary>
-            private readonly Scope m_previousScope;
+            private readonly Scope? m_previousScope;
 
             /// <summary>
             /// The Serialization Guard token associated with this scope.
             /// </summary>
             private readonly DeserializationToken m_deserializationToken;
 
-            internal Scope(Scope previousScope, IEnumerable<Type> allowedTypes)
+            internal Scope(Scope? previousScope, IEnumerable<Type> allowedTypes)
             {
                 Debug.Assert(allowedTypes != null);
 
@@ -232,7 +232,7 @@ namespace System.Data
                 // The incoming type is allowed if the current scope or any nested inner
                 // scope allowed it.
 
-                for (Scope currentScope = this; currentScope != null; currentScope = currentScope.m_previousScope)
+                for (Scope? currentScope = this; currentScope != null; currentScope = currentScope.m_previousScope)
                 {
                     if (currentScope.m_allowedTypes.Contains(type))
                     {
@@ -242,7 +242,7 @@ namespace System.Data
 
                 // Did the application programmatically allow this type to be deserialized?
 
-                Type[] appDomainAllowedTypes = (Type[])AppDomain.CurrentDomain.GetData(AppDomainDataSetDefaultAllowedTypesKey);
+                Type[]? appDomainAllowedTypes = (Type[]?)AppDomain.CurrentDomain.GetData(AppDomainDataSetDefaultAllowedTypesKey);
                 if (appDomainAllowedTypes != null)
                 {
                     for (int i = 0; i < appDomainAllowedTypes.Length; i++)
@@ -283,7 +283,7 @@ namespace System.Data
 
                 if (type.IsSZArray)
                 {
-                    type = type.GetElementType();
+                    type = type.GetElementType()!;
                     goto TryAgain;
                 }
 

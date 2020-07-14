@@ -1960,7 +1960,7 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader reader, bool denyResolving)
         {
-            IDisposable restrictedScope = null;
+            IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
@@ -2469,7 +2469,7 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
-            IDisposable restictedScope = null;
+            IDisposable? restictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, mode={1}, denyResolving={2}", ObjectID, mode, denyResolving);
             try
             {

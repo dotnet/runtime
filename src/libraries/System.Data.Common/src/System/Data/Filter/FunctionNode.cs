@@ -16,7 +16,7 @@ namespace System.Data
         internal int _argumentCount;
         internal const int initialCapacity = 1;
         internal ExpressionNode[]? _arguments;
-        private readonly TypeLimiter _capturedLimiter = null;
+        private readonly TypeLimiter? _capturedLimiter;
 
         private static readonly Function[] s_funcs = new Function[] {
             new Function("Abs", FunctionId.Abs, typeof(object), true, false, 1, typeof(object), null, null),
