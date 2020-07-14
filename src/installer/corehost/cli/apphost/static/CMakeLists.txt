@@ -125,10 +125,9 @@ set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
-if(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_OSX)
+if(NOT CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
-        # Disable native libs linking on Win32 and OSX for now.
-        # ${NATIVE_LIBS_LOCATION}/libclrcompression.lib
+        # Native libs linked into singlefilehost is supported only on Linux for now.
     )
 else()
     set(NATIVE_LIBS

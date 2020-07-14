@@ -1446,6 +1446,7 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
         return true;
 
     // TODO: WIP - hardcoded for now, but should be specified by the host.
+#if defined(TARGET_LINUX)
     const char* toRedirect[] = {
             "System.Native.so",
             "System.IO.Compression.Native.so",
@@ -1462,6 +1463,7 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
         if (nameLength >= matchLength && strcmp(libraryNameOrPath + nameLength - matchLength, match) == 0)
             return true;
     }
+#endif
 
     return false;
 }
