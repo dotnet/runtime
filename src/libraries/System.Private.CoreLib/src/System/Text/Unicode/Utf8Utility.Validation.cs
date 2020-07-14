@@ -119,10 +119,7 @@ namespace System.Text.Unicode
                         // the alignment check consumes at most a single DWORD.)
 
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
-                        ulong mask;
-
-                        Vector128<byte> initialMask = Vector128.Create((ushort)0x1001).AsByte();
-                        Vector128<byte> mostSignficantBitMask = Vector128.Create((byte)0x80).AsByte();
+                        uint mask;
 
                         do
                         {
@@ -133,7 +130,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), initialMask);
+                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -141,7 +138,7 @@ namespace System.Text.Unicode
                             }
                             else if (Sse2.IsSupported)
                             {
-                                mask = (ulong)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
+                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -733,18 +730,21 @@ namespace System.Text.Unicode
             return pInputBuffer;
         }
 
-        // Passing the values of initialMask and mostSignificantBitMask is slightly more efficient than using static readonly fields as of right now.
-        // The expected values are:
-        // initialMask = 0x1001 = 0001 0000 0000 0001 (2 bytes)
+        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
+                                            Vector128.Create(0x80402010_08040201).AsByte() :
+                                            Vector128.Create(0x01020408_10204080).AsByte();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> initialMask)
+        private static ushort GetNonAsciiBytes(Vector128<byte> value)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, initialMask);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsUInt64().ToScalar();
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            return extractedBits.AsUInt16().ToScalar();
         }
     }
 }
