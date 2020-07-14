@@ -133,7 +133,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), initialMask, mostSignficantBitMask);
+                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), initialMask);
                                 if (mask != 0)
                                 {
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
@@ -736,13 +736,12 @@ namespace System.Text.Unicode
         // Passing the values of initialMask and mostSignificantBitMask is slightly more efficient than using static readonly fields as of right now.
         // The expected values are:
         // initialMask = 0x1001 = 0001 0000 0000 0001 (2 bytes)
-        // mostSignficantBitMask = 0x80 = 1000 0000 (1 byte)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> initialMask, Vector128<byte> mostSignificantBitMask)
+        private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> initialMask)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignificantBitMask), mostSignificantBitMask);
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, initialMask);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             return extractedBits.AsUInt64().ToScalar();
