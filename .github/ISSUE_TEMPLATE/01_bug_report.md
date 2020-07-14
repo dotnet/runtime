@@ -9,6 +9,18 @@ assignees: ''
 
 <!--This is just a template - feel free to delete any and all of it and replace as appropriate.-->
 
+<!--
+     Labels on your issue are optional but can help it get routed quickly.
+
+     "area-" labels help route your issue to the right expert. Please no more than one "area-" label.
+     https://github.com/dotnet/runtime/labels?q=area-
+     https://github.com/dotnet/runtime/blob/master/docs/area-owners.md
+
+     "os-" and "arch-" labels are useful for issues specific to certain platforms or architectures.
+     https://github.com/dotnet/runtime/labels?q=arch-
+     https://github.com/dotnet/runtime/labels?q=os-
+-->
+
 ### Description
 
 <!--
