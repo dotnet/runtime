@@ -17,7 +17,6 @@
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-$(Configuration)\System.Runtime.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.FileSystem.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Sockets.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Primitives.dll"/>
