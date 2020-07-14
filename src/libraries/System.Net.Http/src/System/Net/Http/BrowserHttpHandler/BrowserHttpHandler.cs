@@ -132,7 +132,7 @@ namespace System.Net.Http
             {
                 var requestObject = new JSObject();
 
-                if (request.Options.TryGetValue<IDictionary<string, object>>(FetchOptions, out IDictionary<string, object>? fetchOptions))
+                if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
@@ -223,9 +223,13 @@ namespace System.Net.Http
 
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
-                request.Options.TryGetValue<bool>(EnableStreamingResponse, out bool streamingEnabled);
+                bool streamingEnabled = false;
+                if (StreamingSupported)
+                {
+                    request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
+                }
 
-                httpResponse.Content = StreamingSupported && streamingEnabled
+                httpResponse.Content = streamingEnabled
                     ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
                     : (HttpContent)new BrowserHttpContent(status);
 

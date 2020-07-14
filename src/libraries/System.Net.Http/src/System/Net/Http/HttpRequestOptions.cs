@@ -10,13 +10,13 @@ namespace System.Net.Http
     {
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value)
         {
-            value = default(TValue);
-            var ourValueResult = base.TryGetValue(key.Key, out object? _value);
-            if (ourValueResult && _value is TValue)
+            if (base.TryGetValue(key.Key, out object? _value) && _value is TValue tvalue)
             {
-                value = (TValue)_value;
+                value = tvalue;
                 return true;
             }
+
+            value = default(TValue);
             return false;
         }
 
