@@ -2304,6 +2304,26 @@ pin_handle_stack_interior_ptrs (void **ptr_slot, void *user_data)
 extern gboolean mono_wasm_enable_gc;
 #endif
 
+static gboolean
+handle_ref_trackers_from_frame (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	if (frame->ji && (frame->ji->is_trampoline || frame->ji->async))
+		return FALSE; // Keep unwinding
+
+	gboolean is_managed = (frame->type == FRAME_TYPE_MANAGED || frame->type == FRAME_TYPE_INTERP);
+	MonoMethod *method = NULL;
+	if (frame && frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+		method = mono_jit_info_get_method (frame->ji);
+
+	if (is_managed)
+		method = mono_jit_info_get_method (frame->ji);
+
+	if (method && method->name)
+		printf("method name: %s\n", method->name); // scan RefTracker
+
+	return FALSE;
+}
+
 /*
  * Mark from thread stacks and registers.
  */
@@ -2343,6 +2363,11 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		}
 
 		sgen_binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.info.stack_end, skip_reason);
+
+#if defined(ENABLE_NETCORE) && !defined(DISABLE_ALC_UNLOADABILITY)
+		// Stack walk to find methods
+		//mono_walk_stack_full (handle_ref_trackers_from_frame, info->client_info.ctx, NULL, info->client_info.info.jit_data, info->client_info.info.jit_data->lmf, MONO_UNWIND_LOOKUP_IL_OFFSET, NULL, FALSE);
+#endif
 
 		if (skip_reason) {
 			if (precise) {
