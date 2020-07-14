@@ -173,7 +173,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [OuterLoop("Uses delays")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
         public async Task SendAsync_MultipleHttp2ConnectionsEnabled_CreateAdditionalConnections()
         {
             // Warm up thread pool because the full .NET Framework calls synchronous Stream.Read() and we need to delay those calls thus threads will get blocked.
