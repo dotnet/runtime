@@ -483,8 +483,6 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null);
-
             // Set this thread as a background thread.  On AppDomain/Process shutdown, the thread will just be killed.
             Thread.CurrentThread.IsBackground = true;
 

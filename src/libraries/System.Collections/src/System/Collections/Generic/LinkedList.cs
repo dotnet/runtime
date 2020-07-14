@@ -651,6 +651,9 @@ namespace System.Collections.Generic
             set { item = value; }
         }
 
+        /// <summary>Gets a reference to the value held by the node.</summary>
+        public ref T ValueRef => ref item;
+
         internal void Invalidate()
         {
             list = null;

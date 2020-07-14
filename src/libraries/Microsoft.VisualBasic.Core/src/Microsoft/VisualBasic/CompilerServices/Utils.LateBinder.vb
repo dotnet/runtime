@@ -79,8 +79,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 s = ResourceMsgDefault
             End Try
@@ -112,8 +110,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
 
             Catch ex As Exception
@@ -151,8 +147,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 'Ignore, should default to 0 values

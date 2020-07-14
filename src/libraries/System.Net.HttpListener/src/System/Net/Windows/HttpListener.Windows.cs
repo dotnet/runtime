@@ -220,8 +220,6 @@ namespace System.Net
 
         public void Start()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             // Make sure there are no race conditions between Start/Stop/Abort/Close/Dispose and
             // calls to SetupV2Config: Start needs to setup all resources (esp. in V2 where besides
             // the request handle, there is also a server session and a Url group. Abort/Stop must
@@ -268,10 +266,6 @@ namespace System.Net
                     CleanupV2Config();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Start {exception}");
                     throw;
-                }
-                finally
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
@@ -355,7 +349,6 @@ namespace System.Net
 
         public void Stop()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 lock (_internalLock)
@@ -383,10 +376,6 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Stop {exception}");
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
         }
 
         private unsafe void CreateRequestQueueHandle()
@@ -407,8 +396,6 @@ namespace System.Net
 
         public void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -435,15 +422,12 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
 
         private void Dispose()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -464,7 +448,6 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
@@ -506,8 +489,6 @@ namespace System.Net
 
         public HttpListenerContext GetContext()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             SyncRequestContext memoryBlob = null;
             HttpListenerContext httpContext = null;
             bool stoleBlob = false;
@@ -612,7 +593,6 @@ namespace System.Net
                     memoryBlob.ReleasePins();
                     memoryBlob.Close();
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "RequestTraceIdentifier: " + (httpContext != null ? httpContext.Request.RequestTraceIdentifier.ToString() : "<null>"));
             }
         }
 
@@ -629,7 +609,6 @@ namespace System.Net
 
         public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ListenerAsyncResult asyncResult = null;
             try
             {
@@ -656,17 +635,12 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"BeginGetContext {exception}");
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
 
             return asyncResult;
         }
 
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             HttpListenerContext httpContext = null;
             try
             {
@@ -696,10 +670,6 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"EndGetContext {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "EndGetContext " + httpContext == null ? "<no context>" : "HttpListenerContext" + httpContext.ToString() + " RequestTraceIdentifier#" + httpContext.Request.RequestTraceIdentifier);
             }
             return httpContext;
         }
@@ -1741,8 +1711,6 @@ namespace System.Net
 
         internal static ChannelBinding GetChannelBindingFromTls(HttpListenerSession session, ulong connectionId)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(session.Listener, $"connectionId: {connectionId}");
-
             // +128 since a CBT is usually <128 thus we need to call HRCC just once. If the CBT
             // is >128 we will get ERROR_MORE_DATA and call again
             int size = sizeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS) + 128;

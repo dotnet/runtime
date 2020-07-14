@@ -219,6 +219,10 @@
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
 
+  <PropertyGroup>
+    <DefineConstants Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(DefineConstants),USE_INTERNAL_ACCESSIBILITY</DefineConstants>
+  </PropertyGroup>
+  
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
     <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">

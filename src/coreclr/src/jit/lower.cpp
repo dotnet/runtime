@@ -3835,13 +3835,13 @@ GenTree* Lowering::CreateReturnTrapSeq()
     GenTree* testTree;
     if (addrOfCaptureThreadGlobal != nullptr)
     {
-        testTree = Ind(AddrGen(addrOfCaptureThreadGlobal));
+        testTree = AddrGen(addrOfCaptureThreadGlobal);
     }
     else
     {
-        testTree = Ind(Ind(AddrGen(pAddrOfCaptureThreadGlobal)));
+        testTree = Ind(AddrGen(pAddrOfCaptureThreadGlobal));
     }
-    return comp->gtNewOperNode(GT_RETURNTRAP, TYP_INT, testTree);
+    return comp->gtNewOperNode(GT_RETURNTRAP, TYP_INT, Ind(testTree, TYP_INT));
 }
 
 //------------------------------------------------------------------------
@@ -5134,6 +5134,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
+        assert(divMod->MarkedDivideByConstOptimized());
 
         // Depending on the "add" flag returned by GetUnsignedMagicNumberForDivide we need to generate:
         // add == false (when divisor == 3 for example):
@@ -5207,7 +5208,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, div, divisor, mul, dividend);
         }
         ContainCheckRange(firstNode, divMod);
-
         return true;
     }
 #endif
@@ -6530,6 +6530,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    return false;
+#if 0 // the optimization is temporary disabled due to https://github.com/dotnet/wpf/issues/3226 issue.
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
@@ -6597,4 +6599,5 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     }
     LowerStoreIndirCommon(blkNode);
     return true;
+#endif
 }

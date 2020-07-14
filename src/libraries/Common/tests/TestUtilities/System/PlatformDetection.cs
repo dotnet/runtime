@@ -74,9 +74,9 @@ namespace System
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
-        public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
 #else
-        public static bool IsReflectionEmitSupported = true;
+        public static bool IsReflectionEmitSupported => true;
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => true;

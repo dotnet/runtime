@@ -56,9 +56,9 @@
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20330.3</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20330.3</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20330.3</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20330.3</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20353.2</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20330.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20330.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20358.2</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20330.3</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20330.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
@@ -67,7 +67,7 @@
     <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>5.0.0-preview.7.20316.4</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>5.0.0-preview.8.20359.4</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
     <SystemTextJsonVersion>5.0.0-preview.4.20202.18</SystemTextJsonVersion>
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
@@ -116,10 +116,12 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200602.3</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20359.3</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20360.3</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>5.0.0-preview.8.20359.5</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20356.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.20356.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20356.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.20356.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20356.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
@@ -141,6 +143,8 @@
     <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
+    <MicrosoftNETCoreRuntimeICUTransportPackage>Microsoft.NETCore.Runtime.ICU.Transport</MicrosoftNETCoreRuntimeICUTransportPackage>
+
     <!-- XmlDocFileRoot needs to be defined here since we use it in packaging.props and docs.targets.
     It also uses Arcade defined property NuGetPackageRoot, this is the only codepath shared in between
     packaging.props and docs.targets with arcade properties defined. 

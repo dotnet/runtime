@@ -305,6 +305,8 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         string ICustomTypeDescriptor.GetClassName()
         {
             return null;
@@ -335,6 +337,7 @@ namespace System.Data.Common
         {
             return null;
         }
+#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {

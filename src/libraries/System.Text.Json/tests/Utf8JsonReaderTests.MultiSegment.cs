@@ -485,6 +485,12 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(LargeTestCases))]
         public static void TestJsonReaderLargeUtf8SegmentSizeOne(bool compactData, TestCaseType type, string jsonString)
         {
+            // Skipping really large JSON on Browser to prevent OOM
+            if (PlatformDetection.IsBrowser && (type == TestCaseType.Json40KB || type == TestCaseType.Json400KB || type == TestCaseType.ProjectLockJson))
+            {
+                return;
+            }
+
             ReadFullySegmentSizeOne(compactData, type, jsonString);
         }
 

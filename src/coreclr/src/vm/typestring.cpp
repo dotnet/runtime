@@ -368,7 +368,7 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
         Append(W("[*]"));
     else if (rank > 64)
     {
-        // Only taken in an error path, runtime will not load arrays of more than 32 dimentions
+        // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
         WCHAR wzDim[128];
         _snwprintf_s(wzDim, 128, _TRUNCATE, W("[%d]"), rank);
         Append(wzDim);

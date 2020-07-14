@@ -93,33 +93,20 @@ namespace System.Diagnostics
                 // do the enumeration at all.  So we'll detect this case and bail out.
                 if (!succeeded)
                 {
-                    SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
-                    try
+                    if (!Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out bool sourceProcessIsWow64))
                     {
-                        hCurProcess = ProcessManager.OpenProcess(Environment.ProcessId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
-
-                        if (!Interop.Kernel32.IsWow64Process(hCurProcess, out bool sourceProcessIsWow64))
-                        {
-                            throw new Win32Exception();
-                        }
-
-                        if (!Interop.Kernel32.IsWow64Process(processHandle, out bool targetProcessIsWow64))
-                        {
-                            throw new Win32Exception();
-                        }
-
-                        if (sourceProcessIsWow64 && !targetProcessIsWow64)
-                        {
-                            // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
-                            throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
-                        }
+                        throw new Win32Exception();
                     }
-                    finally
+
+                    if (!Interop.Kernel32.IsWow64Process(processHandle, out bool targetProcessIsWow64))
                     {
-                        if (hCurProcess != SafeProcessHandle.InvalidHandle)
-                        {
-                            hCurProcess.Dispose();
-                        }
+                        throw new Win32Exception();
+                    }
+
+                    if (sourceProcessIsWow64 && !targetProcessIsWow64)
+                    {
+                        // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
+                        throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
                     }
 
                     EnumProcessModulesUntilSuccess(processHandle, null, 0, out needed);

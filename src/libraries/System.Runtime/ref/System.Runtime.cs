@@ -1808,12 +1808,16 @@ namespace System
         public static string Format(System.Type enumType, object value, string format) { throw null; }
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum: struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
         public static System.Array GetValues(System.Type enumType) { throw null; }
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, System.Enum { throw null; }
         public bool HasFlag(System.Enum flag) { throw null; }
         public static bool IsDefined(System.Type enumType, object value) { throw null; }
+        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public static object Parse(System.Type enumType, string value) { throw null; }
         public static object Parse(System.Type enumType, string value, bool ignoreCase) { throw null; }
         public static TEnum Parse<TEnum>(string value) where TEnum : struct { throw null; }
@@ -3065,13 +3069,19 @@ namespace System
     }
     public enum PlatformID
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32S = 0,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32Windows = 1,
         Win32NT = 2,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         WinCE = 3,
         Unix = 4,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Xbox = 5,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         MacOSX = 6,
+        Other = 7,
     }
     public partial class PlatformNotSupportedException : System.NotSupportedException
     {
@@ -9913,12 +9923,12 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed class MinimumOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public MinimumOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
@@ -9931,7 +9941,7 @@ namespace System.Runtime.Versioning
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed class RemovedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public RemovedInOSPlatformAttribute(string platformName) : base(platformName) { }

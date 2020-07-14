@@ -27,8 +27,6 @@ namespace System.Net.Http
 
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, request, cancellationToken);
-
             HttpResponseMessage response = await _initialInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             uint redirectCount = 0;
@@ -80,8 +78,6 @@ namespace System.Net.Http
                 // Issue the redirected request.
                 response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
 
             return response;
         }
