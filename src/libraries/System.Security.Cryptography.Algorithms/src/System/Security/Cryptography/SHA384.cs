@@ -26,6 +26,14 @@ namespace System.Security.Cryptography
 
         public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
 
+        /// <summary>
+        /// Computes the hash of data using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
         public static byte[] HashData(byte[] source)
         {
             if (source is null)
@@ -34,6 +42,11 @@ namespace System.Security.Cryptography
             return HashData(new ReadOnlySpan<byte>(source));
         }
 
+        /// <summary>
+        /// Computes the hash of data using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <returns>The hash of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
             byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
@@ -44,6 +57,16 @@ namespace System.Security.Cryptography
             return buffer;
         }
 
+        /// <summary>
+        /// Computes the hash of data using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        /// size. The SHA384 algorithm always produces a 384-bit hash, or 48 bytes.
+        /// </exception>
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(source, destination, out int bytesWritten))
@@ -52,6 +75,17 @@ namespace System.Security.Cryptography
             return bytesWritten;
         }
 
+        /// <summary>
+        /// Attempts to compute the hash of data using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param nam="bytesWritten">
+        /// When this method returns, the total number of bytes written into <paramref name="destination"/>.
+        /// <returns>
+        /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
+        /// calculated hash, <see langword="true"/> otherwise.
+        /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < HashSizeBytes)
