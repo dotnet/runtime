@@ -1485,9 +1485,27 @@ namespace System.Diagnostics.Tests
             {
                 Assert.Equal(tags[i].Key, tagObjects[i].Key);
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
-
-                Console.WriteLine($"{tags[i].Key}, {tagObjects[i].Key}, {tags[i].Value}, {tagObjects[i].Value}");
             }
+        }
+
+        [Theory]
+        [InlineData("key1", null, true,  1)]
+        [InlineData("key2", null, false, 0)]
+        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key4", "v2", false, 1)]
+        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        {
+            Activity a = new Activity("SetFirstTag");
+            if (add)
+            {
+                a.AddTag(key, value);
+            }
+            else
+            {
+                a.SetTag(key, value);
+            }
+
+            Assert.Equal(resultCount, a.TagObjects.Count());
         }
 
         public void Dispose()

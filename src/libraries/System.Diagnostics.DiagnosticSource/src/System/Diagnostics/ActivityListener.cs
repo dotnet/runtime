@@ -48,7 +48,7 @@ namespace System.Diagnostics
         public GetRequestedData<ActivityContext>? GetRequestedDataUsingContext { get; set; }
 
         /// <summary>
-        /// Determin if automatically generates a new trace Id when there is no parent context.
+        /// Determine if the listener automatically generates a new trace Id before sampling when there is no parent context.
         /// </summary>
         public bool AutoGenerateRootContextTraceId { get; set;}
 

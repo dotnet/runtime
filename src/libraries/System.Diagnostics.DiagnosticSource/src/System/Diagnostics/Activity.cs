@@ -390,7 +390,7 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
-            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) != null)
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) != null)
             {
                 _tags.Set(kvp);
             }
@@ -1274,7 +1274,7 @@ namespace System.Diagnostics
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue) => _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(firstValue);
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {

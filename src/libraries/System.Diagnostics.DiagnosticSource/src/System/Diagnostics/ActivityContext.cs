@@ -19,6 +19,9 @@ namespace System.Diagnostics
         /// <param name="traceFlags">Contain details about the trace.</param>
         /// <param name="traceState">Carries system-specific configuration data.</param>
         /// <param name="isRemote">Indicate the context is propagated from remote parent.</param>
+        /// <remarks>
+        /// isRemote is not a part of W3C specification. It is needed for the OpenTelemetry scenarios.
+        /// </remarks>
         public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null, bool isRemote = false)
         {
             TraceId = traceId;
@@ -51,6 +54,9 @@ namespace System.Diagnostics
         /// <summary>
         /// IsRemote indicates if the ActivityContext was propagated from a remote parent.
         /// </summary>
+        /// <remarks>
+        /// IsRemote is not a part of W3C specification. It is needed for the OpenTelemetry scenarios.
+        /// </remarks>
         public bool IsRemote { get; }
 
         public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState;
