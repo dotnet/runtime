@@ -118,8 +118,8 @@ namespace System.Text.Encodings.Web
                 throw new PlatformNotSupportedException();
             }
 
-            // extractedBits[i] = (value[i] & 0x80 == 0x80) & (1 << (12 * (i % 2)))
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, s_mostSignficantBitMask), s_mostSignficantBitMask);
+            // extractedBits[i] = (value[i] >> 7) & (1 << (12 * (i % 2)));
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitmask);
 
             // collapse mask to lower bits
@@ -150,7 +150,6 @@ namespace System.Text.Encodings.Web
         private static readonly Vector128<sbyte> s_graveAccentMaskSByte = Vector128.Create((sbyte)'`');
         private static readonly Vector128<sbyte> s_tildeMaskSByte = Vector128.Create((sbyte)'~');
 
-        private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
         private static readonly Vector128<byte> s_bitmask = BitConverter.IsLittleEndian ?
             Vector128.Create((ushort)0x1001).AsByte() :
             Vector128.Create((ushort)0x0110).AsByte();
