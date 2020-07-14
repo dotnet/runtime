@@ -162,7 +162,7 @@ namespace System.Net
     public partial class GlobalProxySelection
     {
         public GlobalProxySelection() { }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public static System.Net.IWebProxy Select { get { throw null; } set { } }
         public static System.Net.IWebProxy GetEmptyWebProxy() { throw null; }
     }
