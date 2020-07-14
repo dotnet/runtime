@@ -407,7 +407,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     CSEdsc*  hashDsc;
     bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
-    int      configValue          = JitConfig.JitDisableConstCSE();
+    int      configValue          = JitConfig.JitConstCSE();
 
 #if defined(TARGET_ARM64)
     // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
@@ -724,7 +724,7 @@ unsigned Compiler::optValnumCSE_Locate()
 
     bool disableConstCSE = false;
 
-    int configValue = JitConfig.JitDisableConstCSE();
+    int configValue = JitConfig.JitConstCSE();
 
     // all platforms - disable CSE of constant values when config is 1
     if (configValue == 1)
