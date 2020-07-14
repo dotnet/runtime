@@ -83,7 +83,7 @@ namespace System.Text.Encodings.Web
 
             if (textLength == 0)
             {
-                return -1;
+                goto AllAllowed;
             }
 
             int idx = 0;
@@ -109,7 +109,7 @@ namespace System.Text.Encodings.Web
 
                 if (NeedsEscaping(*(char*)ptr))
                 {
-                    return idx;
+                    goto Return;
                 }
 
                 ptr++;
@@ -117,7 +117,11 @@ namespace System.Text.Encodings.Web
             }
             while (ptr < end);
 
-            return -1;
+        AllAllowed:
+            idx = -1;
+
+        Return:
+            return idx;
 
 #if NETCOREAPP
         VectorizedStart:
@@ -226,7 +230,7 @@ namespace System.Text.Encodings.Web
                 goto Sequential;
             }
 
-            return -1;
+            goto AllAllowed;
 
         VectorizedFound:
             index += CalculateIndex(ptr, text);
@@ -248,7 +252,7 @@ namespace System.Text.Encodings.Web
 
                 if (textLength == 0)
                 {
-                    return -1;
+                    goto AllAllowed;
                 }
 
                 int idx = 0;
@@ -274,7 +278,7 @@ namespace System.Text.Encodings.Web
 
                     if (NeedsEscaping(*ptr))
                     {
-                        return idx;
+                        goto Return;
                     }
 
                     ptr++;
@@ -282,7 +286,11 @@ namespace System.Text.Encodings.Web
                 }
                 while (ptr < end);
 
-                return -1;
+            AllAllowed:
+                idx = -1;
+
+            Return:
+                return idx;
 
 #if NETCOREAPP
             Vectorized:
@@ -337,7 +345,7 @@ namespace System.Text.Encodings.Web
                         goto VectorizedFound;
                     }
 
-                    return -1;
+                    goto AllAllowed;
                 }
 
                 idx = CalculateIndex(ptr, pValue);
@@ -347,7 +355,7 @@ namespace System.Text.Encodings.Web
                     goto Sequential;
                 }
 
-                return -1;
+                goto AllAllowed;
 
             VectorizedFound:
                 index += CalculateIndex(ptr, pValue);
