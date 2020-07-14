@@ -32,6 +32,9 @@ namespace System.Net.Http
         private static readonly JSObject? s_fetch = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
         private static readonly JSObject? s_window = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
 
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+        private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
         /// </summary>
@@ -129,8 +132,7 @@ namespace System.Net.Http
             {
                 var requestObject = new JSObject();
 
-                if (request.Options.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
-                    fetchOptionsValue is IDictionary<string, object> fetchOptions)
+                if (request.Options.TryGetValue<IDictionary<string, object>>(FetchOptions, out IDictionary<string, object>? fetchOptions))
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
@@ -221,7 +223,7 @@ namespace System.Net.Http
 
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
-                bool streamingEnabled = request.Options.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                request.Options.TryGetValue<bool>(EnableStreamingResponse, out bool streamingEnabled);
 
                 httpResponse.Content = StreamingSupported && streamingEnabled
                     ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))

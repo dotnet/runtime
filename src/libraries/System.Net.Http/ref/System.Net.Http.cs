@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Net.Http
 {
     public partial class ByteArrayContent : System.Net.Http.HttpContent
@@ -227,7 +229,11 @@ namespace System.Net.Http
         public string Key { get { throw null; } }
     }
 
-    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<string, object> { }
+    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<string, object> 
+    { 
+        public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
+        public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
+    }
 
     public partial class HttpResponseMessage : System.IDisposable
     {
