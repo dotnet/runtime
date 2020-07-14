@@ -151,12 +151,38 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [Theory]
-        [InlineData("\x1B[77m")]
-        [InlineData("\x1B[7m")]
-        public void Parse_UnsupportedCode_Skipped(string unsupportedCode)
+        // supported
+        [InlineData("\x1B[77mInfo", "Info")]
+        [InlineData("\x1B[77m\x1B[1m\x1B[2m\x1B[0mInfo\x1B[1m", "Info")]
+        [InlineData("\x1B[7mInfo", "Info")]
+        [InlineData("\x1B[40m\x1B[1m\x1B[33mwarn\x1B[39m\x1B[22m\x1B[49m:", "warn", ":")]
+        // unsupported: skips
+        [InlineData("Info\x1B[77m:", "Info", ":")]
+        [InlineData("Info\x1B[7m:", "Info", ":")]
+        // treats as content
+        [InlineData("\x1B", "\x1B")]
+        [InlineData("\x1B ", "\x1B ")]
+        [InlineData("\x1Bm", "\x1Bm")]
+        [InlineData("\x1B m", "\x1B m")]
+        [InlineData("\x1Bxym", "\x1Bxym")]
+        [InlineData("\x1B[", "\x1B[")]
+        [InlineData("\x1B[m", "\x1B[m")]
+        [InlineData("\x1B[ ", "\x1B[ ")]
+        [InlineData("\x1B[ m", "\x1B[ m")]
+        [InlineData("\x1B[xym", "\x1B[xym")]
+        [InlineData("\x1B[7777m", "\x1B[7777m")]
+        [InlineData("\x1B\x1B\x1B", "\x1B\x1B\x1B")]
+        [InlineData("Message\x1B\x1B\x1B", "Message\x1B\x1B\x1B")]
+        [InlineData("\x1B\x1BMessage\x1B", "\x1B\x1BMessage\x1B")]
+        [InlineData("\x1B\x1B\x1BMessage", "\x1B\x1B\x1BMessage")]
+        [InlineData("Message\x1B ", "Message\x1B ")]
+        [InlineData("\x1BmMessage", "\x1BmMessage")]
+        [InlineData("\x1B[77m\x1B m\x1B[40m", "\x1B m")]
+        [InlineData("\x1B mMessage\x1Bxym", "\x1B mMessage\x1Bxym")]
+        public void Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(string messageWithUnsupportedCode, params string[] output)
         {
             // Arrange
-            var message = unsupportedCode + "Request received";
+            var message = messageWithUnsupportedCode;
             var segments = new List<ConsoleContext>();
             Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite = (message, startIndex, length, bg, fg) => {
                 segments.Add(new ConsoleContext() {
@@ -168,13 +194,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var parser = new AnsiParser(onParseWrite);
 
             // Act
-            parser.Parse(message);
+            parser.Parse(messageWithUnsupportedCode);
 
             // Assert
-            Assert.Equal(1, segments.Count);
-            Assert.Equal("Request received", segments[0].Message);
-            Assert.Null(segments[0].ForegroundColor);
-            Assert.Null(segments[0].BackgroundColor);
+            Assert.Equal(output.Length, segments.Count);
+            for (int i = 0; i < output.Length; i++)
+                Assert.Equal(output[i], segments[i].Message);
         }
 
         [Fact]

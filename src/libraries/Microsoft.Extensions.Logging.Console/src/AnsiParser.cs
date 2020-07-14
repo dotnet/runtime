@@ -65,9 +65,16 @@ namespace Microsoft.Extensions.Logging.Console
                         if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
     #endif
                         {
+                            if (startIndex != -1)
+                            {
+                                _onParseWrite(message, startIndex, length, background, foreground);
+                                startIndex = -1;
+                                length = 0;
+                            }
                             if (escapeCode == 1)
                                 isBright = true;
                             i += 3;
+                            continue;
                         }
                     }
                     else if (span.Length >= i + 5 && span[i + 4] == 'm')
@@ -78,46 +85,42 @@ namespace Microsoft.Extensions.Logging.Console
                         if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
     #endif
                         {
+                            if (startIndex != -1)
+                            {
+                                _onParseWrite(message, startIndex, length, background, foreground);
+                                startIndex = -1;
+                                length = 0;
+                            }
                             if (TryGetForegroundColor(escapeCode, isBright, out color))
                             {
-                                if (startIndex != -1)
-                                {
-                                    _onParseWrite(message, startIndex, length, background, foreground);
-                                    startIndex = -1;
-                                    length = 0;
-                                }
                                 foreground = color;
                                 isBright = false;
                             }
                             else if (TryGetBackgroundColor(escapeCode, out color))
                             {
-                                if (startIndex != -1)
-                                {
-                                    _onParseWrite(message, startIndex, length, background, foreground);
-                                    startIndex = -1;
-                                    length = 0;
-                                }
                                 background = color;
                             }
                             i += 4;
+                            continue;
                         }
                     }
                 }
-                else
+                if (startIndex == -1)
                 {
-                    if (startIndex == -1)
-                    {
-                        startIndex = i;
-                    }
-                    int nextEscapeIndex = span.Slice(i, span.Length - i).IndexOf(EscapeChar);
-                    if (nextEscapeIndex == -1)
-                    {
-                        length += span.Length - i;
-                        break;
-                    }
-                    length += nextEscapeIndex;
-                    i += nextEscapeIndex - 1;
+                    startIndex = i;
                 }
+                int nextEscapeIndex = -1;
+                if (i < message.Length - 1)
+                {
+                    nextEscapeIndex = message.IndexOf(EscapeChar, i + 1);
+                }
+                if (nextEscapeIndex < 0)
+                {
+                    length = message.Length - startIndex;
+                    break;
+                }
+                length = nextEscapeIndex - startIndex;
+                i = nextEscapeIndex - 1;
             }
             if (startIndex != -1)
             {
