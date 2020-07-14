@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.cpp
 //
@@ -3620,7 +3619,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                            pParamTokenArray,
                                            nlType,
                                            nlFlags,
-                                           0,
+                                           1, // Indicating as the first argument
                                            pss,
                                            isInstanceMethod,
                                            argOffset,
@@ -5211,14 +5210,10 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 {
     STANDARD_VM_CONTRACT;
 
-    BOOL fGcMdaEnabled = FALSE;
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
 #ifdef FEATURE_PREJIT
-        if (fGcMdaEnabled)
-            return NULL;
-
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
@@ -5231,23 +5226,17 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return ((fGcMdaEnabled && !pNMD->IsQCall()) ? NULL : pNMD->ndirect.m_pStubMD.GetValueMaybeNull());
+        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
     }
 #endif // FEATURE_COMINTEROP
     else if (pMD->IsEEImpl())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
         if (SF_IsReverseStub(dwStubFlags))
         {

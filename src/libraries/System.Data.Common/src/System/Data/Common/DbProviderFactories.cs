@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -11,8 +10,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-
-#nullable enable
 
 namespace System.Data.Common
 {
@@ -58,7 +55,7 @@ namespace System.Data.Common
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
 
-            DataColumn assemblyQualifiedNameColumn = providerRow.Table.Columns[AssemblyQualifiedNameColumnName];
+            DataColumn? assemblyQualifiedNameColumn = providerRow.Table.Columns[AssemblyQualifiedNameColumnName];
             if (null == assemblyQualifiedNameColumn)
             {
                 throw ADP.Argument(SR.ADP_DbProviderFactories_NoAssemblyQualifiedName);

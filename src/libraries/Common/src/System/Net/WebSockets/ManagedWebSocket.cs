@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -385,7 +384,7 @@ namespace System.Net.WebSockets
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
             ValueTask writeTask = default;
-            bool releaseSemaphoreAndSendBuffer = true;
+            bool releaseSendBufferAndSemaphore = true;
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
@@ -403,7 +402,7 @@ namespace System.Net.WebSockets
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
                 // calling GetResult), we want to release the semaphore and the send buffer. After this point,
                 // both need to be held until writeTask completes.
-                releaseSemaphoreAndSendBuffer = false;
+                releaseSendBufferAndSemaphore = false;
             }
             catch (Exception exc)
             {
@@ -414,10 +413,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (releaseSemaphoreAndSendBuffer)
+                if (releaseSendBufferAndSemaphore)
                 {
-                    _sendFrameAsyncLock.Release();
                     ReleaseSendBuffer();
+                    _sendFrameAsyncLock.Release();
                 }
             }
 
@@ -438,8 +437,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                _sendFrameAsyncLock.Release();
                 ReleaseSendBuffer();
+                _sendFrameAsyncLock.Release();
             }
         }
 
@@ -462,8 +461,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                _sendFrameAsyncLock.Release();
                 ReleaseSendBuffer();
+                _sendFrameAsyncLock.Release();
             }
         }
 
@@ -1278,6 +1277,8 @@ namespace System.Net.WebSockets
         /// <summary>Releases the send buffer to the pool.</summary>
         private void ReleaseSendBuffer()
         {
+            Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
+
             byte[]? old = _sendBuffer;
             if (old != null)
             {

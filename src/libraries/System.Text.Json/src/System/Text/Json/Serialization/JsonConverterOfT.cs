@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -148,6 +147,19 @@ namespace System.Text.Json.Serialization
                         originalPropertyBytesConsumed,
                         isValueConverter: true,
                         ref reader);
+                }
+
+                if (CanBePolymorphic && options.ReferenceHandler != null)
+                {
+                    // Edge case where we want to lookup for a reference when parsing into typeof(object)
+                    // instead of return `value` as a JsonElement.
+                    Debug.Assert(TypeToConvert == typeof(object));
+                    Debug.Assert(value is JsonElement);
+
+                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, (JsonElement)(object)value, out object? referenceValue))
+                    {
+                        value = (T)referenceValue;
+                    }
                 }
 
                 return true;

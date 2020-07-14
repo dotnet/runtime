@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -29,7 +29,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(table));
                 }
-                DataViewSetting dataViewSetting = (DataViewSetting)_list[table];
+                DataViewSetting? dataViewSetting = (DataViewSetting?)_list[table];
                 if (dataViewSetting == null)
                 {
                     dataViewSetting = new DataViewSetting();
@@ -49,10 +49,10 @@ namespace System.Data
             }
         }
 
-        private DataTable GetTable(string tableName)
+        private DataTable? GetTable(string tableName)
         {
-            DataTable dt = null;
-            DataSet ds = _dataViewManager.DataSet;
+            DataTable? dt = null;
+            DataSet? ds = _dataViewManager.DataSet;
             if (ds != null)
             {
                 dt = ds.Tables[tableName];
@@ -60,10 +60,10 @@ namespace System.Data
             return dt;
         }
 
-        private DataTable GetTable(int index)
+        private DataTable? GetTable(int index)
         {
-            DataTable dt = null;
-            DataSet ds = _dataViewManager.DataSet;
+            DataTable? dt = null;
+            DataSet? ds = _dataViewManager.DataSet;
             if (ds != null)
             {
                 dt = ds.Tables[index];
@@ -71,11 +71,11 @@ namespace System.Data
             return dt;
         }
 
-        public virtual DataViewSetting this[string tableName]
+        public virtual DataViewSetting? this[string tableName]
         {
             get
             {
-                DataTable dt = GetTable(tableName);
+                DataTable? dt = GetTable(tableName);
                 if (dt != null)
                 {
                     return this[dt];
@@ -84,11 +84,12 @@ namespace System.Data
             }
         }
 
+        [MaybeNull]
         public virtual DataViewSetting this[int index]
         {
             get
             {
-                DataTable dt = GetTable(index);
+                DataTable? dt = GetTable(index);
                 if (dt != null)
                 {
                     return this[dt];
@@ -97,7 +98,7 @@ namespace System.Data
             }
             set
             {
-                DataTable dt = GetTable(index);
+                DataTable? dt = GetTable(index);
                 if (dt != null)
                 {
                     this[dt] = value;
@@ -128,7 +129,7 @@ namespace System.Data
         {
             get
             {
-                DataSet ds = _dataViewManager.DataSet;
+                DataSet? ds = _dataViewManager.DataSet;
                 return (ds == null) ? 0 : ds.Tables.Count;
             }
         }
@@ -155,15 +156,15 @@ namespace System.Data
 
         private sealed class DataViewSettingsEnumerator : IEnumerator
         {
-            private readonly DataViewSettingCollection _dataViewSettings;
+            private readonly DataViewSettingCollection? _dataViewSettings;
             private readonly IEnumerator _tableEnumerator;
             public DataViewSettingsEnumerator(DataViewManager dvm)
             {
-                DataSet ds = dvm.DataSet;
+                DataSet? ds = dvm.DataSet;
                 if (ds != null)
                 {
                     _dataViewSettings = dvm.DataViewSettings;
-                    _tableEnumerator = dvm.DataSet.Tables.GetEnumerator();
+                    _tableEnumerator = dvm.DataSet!.Tables.GetEnumerator();
                 }
                 else
                 {
@@ -175,7 +176,7 @@ namespace System.Data
 
             public void Reset() => _tableEnumerator.Reset();
 
-            public object Current => _dataViewSettings[(DataTable)_tableEnumerator.Current];
+            public object Current => _dataViewSettings![(DataTable)_tableEnumerator.Current];
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -25,21 +24,21 @@ namespace System.Data
         private readonly Aggregate _aggregate;
         private readonly bool _local;     // set to true if the aggregate calculated locally (for the current table)
 
-        private readonly string _relationName;
+        private readonly string? _relationName;
         private readonly string _columnName;
 
         // CONSIDER PERF: keep the objects, not names.
         // ? try to drop a column
-        private DataTable _childTable;
-        private DataColumn _column;
-        private DataRelation _relation;
+        private DataTable? _childTable;
+        private DataColumn? _column;
+        private DataRelation? _relation;
 
-        internal AggregateNode(DataTable table, FunctionId aggregateType, string columnName) :
+        internal AggregateNode(DataTable? table, FunctionId aggregateType, string columnName) :
             this(table, aggregateType, columnName, true, null)
         {
         }
 
-        internal AggregateNode(DataTable table, FunctionId aggregateType, string columnName, bool local, string relationName) : base(table)
+        internal AggregateNode(DataTable? table, FunctionId aggregateType, string columnName, bool local, string? relationName) : base(table)
         {
             Debug.Assert(columnName != null, "Invalid parameter column name (null).");
             _aggregate = (Aggregate)(int)aggregateType;
@@ -71,7 +70,7 @@ namespace System.Data
         {
             BindTable(table);
             if (table == null)
-                throw ExprException.AggregateUnbound(ToString());
+                throw ExprException.AggregateUnbound(ToString()!);
 
             if (_local)
             {
@@ -88,7 +87,7 @@ namespace System.Data
 
                     if (relations.Count > 1)
                     {
-                        throw ExprException.UnresolvedRelation(table.TableName, ToString());
+                        throw ExprException.UnresolvedRelation(table.TableName, ToString()!);
                     }
                     if (relations.Count == 1)
                     {
@@ -96,7 +95,7 @@ namespace System.Data
                     }
                     else
                     {
-                        throw ExprException.AggregateUnbound(ToString());
+                        throw ExprException.AggregateUnbound(ToString()!);
                     }
                 }
                 else
@@ -134,7 +133,7 @@ namespace System.Data
             AggregateNode.Bind(_relation, list);
         }
 
-        internal static void Bind(DataRelation relation, List<DataColumn> list)
+        internal static void Bind(DataRelation? relation, List<DataColumn> list)
         {
             if (null != relation)
             {
@@ -161,10 +160,10 @@ namespace System.Data
             return Eval(null, DataRowVersion.Default);
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             if (_childTable == null)
-                throw ExprException.AggregateUnbound(ToString());
+                throw ExprException.AggregateUnbound(ToString()!);
 
             DataRow[] rows;
 
@@ -181,7 +180,7 @@ namespace System.Data
                 }
                 if (_relation == null)
                 {
-                    throw ExprException.AggregateUnbound(ToString());
+                    throw ExprException.AggregateUnbound(ToString()!);
                 }
                 rows = row.GetChildRows(_relation, version);
             }
@@ -217,19 +216,19 @@ namespace System.Data
             }
             records = recordList.ToArray();
 
-            return _column.GetAggregateValue(records, _type);
+            return _column!.GetAggregateValue(records, _type);
         }
 
         // Helper for the DataTable.Compute method
         internal override object Eval(int[] records)
         {
             if (_childTable == null)
-                throw ExprException.AggregateUnbound(ToString());
+                throw ExprException.AggregateUnbound(ToString()!);
             if (!_local)
             {
-                throw ExprException.ComputeNotAggregate(ToString());
+                throw ExprException.ComputeNotAggregate(ToString()!);
             }
-            return _column.GetAggregateValue(records, _type);
+            return _column!.GetAggregateValue(records, _type);
         }
 
         internal override bool IsConstant()
@@ -258,9 +257,9 @@ namespace System.Data
             {
                 return true;
             }
-            if (_column.Computed)
+            if (_column!.Computed)
             {
-                return _column.DataExpression.DependsOn(column);
+                return _column.DataExpression!.DependsOn(column);
             }
             return false;
         }
