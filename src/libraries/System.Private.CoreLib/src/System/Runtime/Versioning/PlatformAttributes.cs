@@ -52,6 +52,7 @@ namespace System.Runtime.Versioning
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
                     AttributeTargets.Method |
@@ -80,6 +81,7 @@ namespace System.Runtime.Versioning
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
                     AttributeTargets.Method |
@@ -117,6 +119,7 @@ namespace System.Runtime.Versioning
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
                     AttributeTargets.Method |
