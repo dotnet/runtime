@@ -2541,6 +2541,76 @@ namespace System.Runtime.Intrinsics.Arm
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Dp : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Dp() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProduct(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProduct(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProduct(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProduct(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector64<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, byte rightScaledIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> DotProductBySelectedQuadruplet(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right, byte rightScaledIndex) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.AdvSimd.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Rdm : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Rdm() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<short> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<short> minuend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<int> minuend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<short> minuend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<int> minuend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<short> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<short> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<short> minuend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<short> minuend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<int> minuend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector128<int> minuend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<short> minuend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<short> minuend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<int> minuend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<int> minuend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.AdvSimd.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingAndAddSaturateHighScalar(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingAndAddSaturateHighScalar(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingAndSubtractSaturateHighScalar(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingAndSubtractSaturateHighScalar(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<short> minuend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<short> minuend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<int> minuend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte rightIndex) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh(System.Runtime.Intrinsics.Vector64<int> minuend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right, byte rightIndex) { throw null; }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class Sha1 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal Sha1() { }

@@ -241,6 +241,8 @@ namespace System.Text.Json
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { get { throw null; } set { } }
         public bool IgnoreNullValues { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
+        public bool IgnoreReadOnlyFields { get { throw null; } set { } }
+        public bool IncludeFields { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
@@ -502,7 +504,7 @@ namespace System.Text.Json.Serialization
         internal JsonConverter() { }
         public abstract bool CanConvert(System.Type typeToConvert);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
     public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         protected JsonConverterAttribute() { }
@@ -535,23 +537,23 @@ namespace System.Text.Json.Serialization
     {
         public JsonConstructorAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonExtensionDataAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
         public System.Text.Json.Serialization.JsonIgnoreCondition Condition { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed partial class JsonIncludeAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIncludeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonPropertyNameAttribute(string name) { }
