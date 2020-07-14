@@ -3069,6 +3069,8 @@ type_has_references (MonoType *type)
 		return TRUE;
 	if (MONO_TYPE_ISSTRUCT (type)) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (!m_class_is_inited (klass))
+			mono_class_init_internal (klass);
 		return m_class_has_references (klass);
 	}
 	return FALSE;
