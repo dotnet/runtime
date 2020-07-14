@@ -77,49 +77,6 @@ public class WasmAppBuilder : Task
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        var filesToMap = new Dictionary<string, List<string>>();
-        if (FilesToIncludeInFileSystem != null)
-        {
-            string supportFilesDir = Path.Join(AppDir, "supportFiles");
-            Directory.CreateDirectory(supportFilesDir);
-
-            foreach (var item in FilesToIncludeInFileSystem)
-            {
-                string? targetPath = item.GetMetadata("TargetPath");
-                if (string.IsNullOrEmpty(targetPath))
-                {
-                    targetPath = Path.GetFileName(item.ItemSpec);
-                }
-
-                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
-                targetPath = targetPath.Replace('\\', '/');
-
-                string? directory = Path.GetDirectoryName(targetPath);
-
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(Path.Join(supportFilesDir, directory));
-                }
-                else
-                {
-                    directory = "/";
-                }
-
-                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, targetPath), true);
-
-                if (filesToMap.TryGetValue(directory, out List<string>? files))
-                {
-                    files.Add(Path.GetFileName(targetPath));
-                }
-                else
-                {
-                    files = new List<string>();
-                    files.Add(Path.GetFileName(targetPath));
-                    filesToMap[directory] = files;
-                }
-            }
-        }
-
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
             sw.WriteLine("config = {");
@@ -131,26 +88,47 @@ public class WasmAppBuilder : Task
             foreach (var assembly in _assemblies.Values)
                 sw.WriteLine($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }},");
 
-            foreach (KeyValuePair<string, List<string>> keyValuePair in filesToMap)
+            if (FilesToIncludeInFileSystem != null)
             {
-                sw.WriteLine("\t\t{");
-                sw.WriteLine($"\t\t\tbehavior: \"vfs\",");
-                sw.WriteLine($"\t\t\tdirectory: \"{keyValuePair.Key}\",");
-                sw.WriteLine("\t\t\tfiles: [");
-                foreach (string file in keyValuePair.Value)
+                string supportFilesDir = Path.Join(AppDir, "supportFiles");
+                Directory.CreateDirectory(supportFilesDir);
+
+                foreach (var item in FilesToIncludeInFileSystem)
                 {
-                    sw.WriteLine($"\t\t\t\t\"{file}\",");
+                    string? targetPath = item.GetMetadata("TargetPath");
+                    if (string.IsNullOrEmpty(targetPath))
+                    {
+                        targetPath = Path.GetFileName(item.ItemSpec);
+                    }
+
+                    // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                    targetPath = targetPath.Replace('\\', '/');
+
+                    var generatedFileName = item.ItemSpec.Replace(":", "_")
+                        .Replace("/", "_")
+                        .Replace("\\", "_");
+
+                    File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
+
+                    var actualItemName = "supportFiles/" + generatedFileName;
+
+                    sw.WriteLine("\t\t{");
+                    sw.WriteLine("\t\t\tbehavior: \"vfs\",");
+                    sw.WriteLine($"\t\t\tname: \"{actualItemName}\",");
+                    sw.WriteLine($"\t\t\tvirtual_path: \"{targetPath}\",");
+                    sw.WriteLine("\t\t},");
                 }
-                sw.WriteLine("\t\t\t],");
-                sw.WriteLine("\t\t},");
             }
 
+            var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
+            var sEnableRemote = enableRemote ? "true" : "false";
+
             foreach (var asset in ICUDataFiles!)
-                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: true }},");
+                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: {sEnableRemote}}},");
 
             sw.WriteLine ("\t],");
 
-            if (RemoteSources!.Length > 0) {
+            if (enableRemote) {
                 sw.WriteLine("\tremote_sources: [");
                 foreach (var source in RemoteSources!)
                     sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");

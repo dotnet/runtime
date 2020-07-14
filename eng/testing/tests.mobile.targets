@@ -139,8 +139,7 @@
       <ExtraAssemblies Include="$(PublishDir)System.Transactions.dll" />
       <ExtraAssemblies Include="$(PublishDir)System.Xml.dll" />
       <ExtraAssemblies Include="$(PublishDir)WindowsBase.dll" />
-      <AssetSources Include="./" />
-      <Assets Include="icudt.dat" />
+      <ICUDataFiles Include="icudt.dat" />
     </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
@@ -151,8 +150,7 @@
       ExtraAssemblies="@(ExtraAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      AssetSources="@(AssetSources)"
-      Assets="@(Assets)" />
+      ICUDataFiles="@(ICUDataFiles)" />
       <Copy SourceFiles="$(NuGetPackageRoot)\microsoft.netcore.runtime.icu.transport\$(MicrosoftNETCoreRuntimeICUTransportVersion)\runtimes\browser-wasm\native\lib\icudt.dat"
             DestinationFiles="$(BundleDir)\icudt.dat" SkipUnchangedFiles="true"/>
   </Target>

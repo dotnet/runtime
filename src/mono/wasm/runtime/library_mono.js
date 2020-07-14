@@ -722,6 +722,7 @@ var MonoSupportLib = {
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
 				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
 				loaded_assets: Object.create (null),
+				createPath: Module['FS_createPath'],
 				num_icu_assets_loaded_successfully: 0
 			};
 
