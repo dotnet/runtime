@@ -1822,7 +1822,7 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Type.GetConstructor(ConstructorInfo) is not actually unsafe")]
+            Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             /*FIXME I would expect the same checks of GetMethod here*/
