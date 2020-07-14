@@ -67,7 +67,6 @@ NOHANDLES(ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_De
 NOHANDLES(ICALL(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsLogging))
 NOHANDLES(ICALL(DEBUGR_3, "Log_icall", ves_icall_System_Diagnostics_Debugger_Log))
 
-#ifndef DISABLE_EVENTPIPE
 ICALL_TYPE(EVENTPIPE, "System.Diagnostics.Tracing.EventPipeInternal", EVENTPIPE_1)
 HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 2, (MonoString, MonoDelegate))
 NOHANDLES(ICALL(EVENTPIPE_2, "DefineEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent))
@@ -80,7 +79,6 @@ NOHANDLES(ICALL(EVENTPIPE_8, "GetProvider", ves_icall_System_Diagnostics_Tracing
 NOHANDLES(ICALL(EVENTPIPE_9, "GetSessionInfo", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo))
 NOHANDLES(ICALL(EVENTPIPE_10, "GetWaitHandle", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle))
 NOHANDLES(ICALL(EVENTPIPE_11, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
-#endif
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, MonoBoolean, 3, (MonoReflectionType, MonoArrayOut, MonoArrayOut))

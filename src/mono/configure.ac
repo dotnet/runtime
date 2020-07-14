@@ -950,16 +950,6 @@ if test x$with_core = xonly; then
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
-if test x$with_core = xonly; then
-	if test -f $srcdir/mono/eventpipe/ep.h; then
-		enable_perftracing=yes
-	fi
-	if test x$enable_perftracing = xyes; then
-		AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
-	fi
-fi
-AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
-
 #
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
@@ -1991,7 +1981,6 @@ if test "x$mono_feature_disable_sgen_marksweep_conc" = "xyes"; then
 	AC_MSG_NOTICE([Disabled concurrent gc support in SGEN.])
 fi
 
-
 if test "x$mono_feature_disable_sgen_split_nursery" = "xyes"; then
 	AC_DEFINE(DISABLE_SGEN_SPLIT_NURSERY, 1, [Disable minor=split support in SGEN.])
 	AC_MSG_NOTICE([Disabled minor=split support in SGEN.])
@@ -2035,7 +2024,18 @@ fi
 if test "x$mono_feature_disable_eventpipe" = "xyes"; then
 	AC_DEFINE(DISABLE_EVENTPIPE, 1, [Disable EventPipe support])
 	AC_MSG_NOTICE([Disabled EventPipe support])
+	enable_perftracing=no
 fi
+
+if test x$enable_perftracing = x -a x$with_core = xonly; then
+	if test -f $srcdir/mono/eventpipe/ep.h; then
+		enable_perftracing=yes
+	fi
+fi
+if test x$enable_perftracing = xyes; then
+	AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
+fi
+AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)

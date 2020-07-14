@@ -1,6 +1,6 @@
 #include <config.h>
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+#ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 
 // Option to include all internal source files into ep.c.
@@ -1332,19 +1332,7 @@ ep_provider_callback_data_queue_try_dequeue (
 	return true;
 }
 
-#else
-
-void
-ep_init (void)
-{
-}
-
-void
-ep_shutdown (void)
-{
-}
-
-#endif /* ENABLE_PERFTRACING && !DISABLE_EVENTPIPE */
+#endif /* ENABLE_PERFTRACING */
 
 extern const char quiet_linker_empty_file_warning_eventpipe;
 const char quiet_linker_empty_file_warning_eventpipe = 0;
