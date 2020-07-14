@@ -1445,7 +1445,6 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
     if (libraryNameOrPath == nullptr)
         return true;
 
-    // TODO: WIP - hardcoded for now, but should be specified by the host.
 #if defined(TARGET_LINUX)
     const char* toRedirect[] = {
             "System.Native.so",

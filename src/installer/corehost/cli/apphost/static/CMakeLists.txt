@@ -79,7 +79,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
-else()
+elseif(CLR_CMAKE_TARGET_LINUX)
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
@@ -87,42 +87,43 @@ else()
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
+
+    # currently linking coreclr into the singlefilehost is only supported on linux
+    # the following code here would be needed if/when BSD and OSX are supported too
+    if(CLR_CMAKE_TARGET_OSX)
+      find_library(COREFOUNDATION CoreFoundation)
+      find_library(CORESERVICES CoreServices)
+      find_library(SECURITY Security)
+      find_library(SYSTEM System)
+
+      LIST(APPEND CORECLR_LIBRARIES
+        ${COREFOUNDATION}
+        ${CORESERVICES}
+        ${SECURITY}
+        ${SYSTEM}
+      )
+    endif(CLR_CMAKE_TARGET_OSX)
+
+    # On OSX and *BSD, we use the libunwind that's part of the OS
+    if(CLR_CMAKE_TARGET_FREEBSD)
+        find_unwind_libs(UNWIND_LIBS)
+
+        LIST(APPEND CORECLR_LIBRARIES
+          ${UNWIND_LIBS}
+        )
+    endif(CLR_CMAKE_TARGET_FREEBSD)
+
+    if(CLR_CMAKE_TARGET_NETBSD)
+        find_library(KVM kvm)
+
+        LIST(APPEND CORECLR_LIBRARIES
+          ${KVM}
+        )
+    endif(CLR_CMAKE_TARGET_NETBSD)
 endif(CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_TARGET_OSX)
-  find_library(COREFOUNDATION CoreFoundation)
-  find_library(CORESERVICES CoreServices)
-  find_library(SECURITY Security)
-  find_library(SYSTEM System)
-
-  LIST(APPEND CORECLR_LIBRARIES
-    ${COREFOUNDATION}
-    ${CORESERVICES}
-    ${SECURITY}
-    ${SYSTEM}
-  )
-endif(CLR_CMAKE_TARGET_OSX)
-
-# On OSX and *BSD, we use the libunwind that's part of the OS
-if(CLR_CMAKE_TARGET_FREEBSD)
-    find_unwind_libs(UNWIND_LIBS)
-
-    LIST(APPEND CORECLR_LIBRARIES
-      ${UNWIND_LIBS}
-    )
-endif(CLR_CMAKE_TARGET_FREEBSD)
-
-if(CLR_CMAKE_TARGET_NETBSD)
-    find_library(KVM kvm)
-
-    LIST(APPEND CORECLR_LIBRARIES
-      ${KVM}
-    )
-endif(CLR_CMAKE_TARGET_NETBSD)
 
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
 set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
-
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
 if(NOT CLR_CMAKE_TARGET_LINUX)
