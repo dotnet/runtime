@@ -9,10 +9,6 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
-if(NOT CLR_CMAKE_TARGET_BROWSER)
-    cmake_policy(SET CMP0083 NEW)
-endif(NOT CLR_CMAKE_TARGET_BROWSER)
-
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
