@@ -79,13 +79,13 @@ namespace System.ComponentModel.Design
                     {
                         // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
                         // when walking through all the assemblies in the current app domain. This throws an
-                        // exception on Assembly.CodeBase and we bail out. Catching exceptions here is not a
+                        // exception on Assembly.Location and we bail out. Catching exceptions here is not a
                         // bad thing.
                         if (asm.IsDynamic)
                             continue;
 
                         // file://fullpath/foo.exe
-                        string fileName = GetLocalPath(asm.EscapedCodeBase);
+                        string fileName = GetLocalPath(asm.Location);
                         fileName = new FileInfo(fileName).Name;
 
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
@@ -105,10 +105,10 @@ namespace System.ComponentModel.Design
                 }
                 else if (!resourceAssembly.IsDynamic)
                 {
-                    // EscapedCodeBase won't be supported by emitted assemblies anyway
+                    // Location won't be supported by emitted assemblies anyway
                     string fileName;
 
-                    fileName = GetLocalPath(resourceAssembly.EscapedCodeBase);
+                    fileName = GetLocalPath(resourceAssembly.Location);
 
                     fileName = Path.GetFileName(fileName);
                     string licResourceName = fileName + ".licenses";

@@ -54,7 +54,9 @@ namespace System.IO.IsolatedStorage
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
 
             AssemblyName assemblyName = assembly.GetName();
+#pragma warning disable 618
             Uri codeBase = new Uri(assembly.CodeBase!);
+#pragma warning restore 618
 
             hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
             if (hash != null)
