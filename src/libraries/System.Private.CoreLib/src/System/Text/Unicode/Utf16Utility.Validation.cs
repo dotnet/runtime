@@ -480,7 +480,6 @@ namespace System.Text.Unicode
             return pInputBuffer;
         }
 
-        private static readonly Vector128<byte> s_mostSignficantBitMask = Vector128.Create((byte)0x80);
         private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
                                                 Vector128.Create(0x80402010_08040201).AsByte() :
                                                 Vector128.Create(0x01020408_10204080).AsByte();
@@ -491,8 +490,7 @@ namespace System.Text.Unicode
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             // extractedBits[i] = (value[i] & 0x80) == 0x80 & (1 << i);
-            Vector128<byte> mostSignficantBitMask = s_mostSignficantBitMask;
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, mostSignficantBitMask), mostSignficantBitMask);
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
 
             // self-pairwise add until all flags have moved to the first two bytes of the vector
