@@ -213,6 +213,21 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             result = TryHashData(input, default, out bytesWritten);
             Assert.False(result, "TryHashData false");
             Assert.Equal(0, bytesWritten);
+
+            Span<byte> inputOutput = new byte[Math.Max(input.Length, expected.Length) + 1];
+            input.AsSpan().CopyTo(inputOutput);
+
+            // overlapping
+            result = TryHashData(inputOutput.Slice(0, input.Length), inputOutput, out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(0, bytesWritten)), "expected equals destination");
+
+            input.AsSpan().CopyTo(inputOutput);
+
+            // partial overlapping
+            result = TryHashData(inputOutput.Slice(0, input.Length), inputOutput.Slice(1), out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(1, bytesWritten)), "expected equals destination");
         }
 
         private void Verify_Array(byte[] input, string output)
