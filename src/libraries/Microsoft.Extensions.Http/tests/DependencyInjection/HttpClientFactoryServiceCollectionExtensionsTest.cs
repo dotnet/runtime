@@ -950,11 +950,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Assert.Same(
                 services.GetRequiredService<SingletonService>(),
-                request.Properties[nameof(SingletonService)]);
+                request.Options[nameof(SingletonService)]);
 
             Assert.Same(
                 client.Service,
-                request.Properties[nameof(SingletonService)]);
+                request.Options[nameof(SingletonService)]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -981,15 +981,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 Assert.Same(
                     services.GetRequiredService<SingletonService>(),
-                    request.Properties[nameof(SingletonService)]);
+                    request.Options[nameof(SingletonService)]);
 
                 Assert.Same(
                     scope.ServiceProvider.GetRequiredService<SingletonService>(),
-                    request.Properties[nameof(SingletonService)]);
+                    request.Options[nameof(SingletonService)]);
 
                 Assert.Same(
                     client.Service,
-                    request.Properties[nameof(SingletonService)]);
+                    request.Options[nameof(SingletonService)]);
             }
         }
 
@@ -1037,7 +1037,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 Assert.NotSame(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
-                    request.Properties[nameof(ScopedService)]);
+                    request.Options[nameof(ScopedService)]);
 
                 Assert.Same(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
@@ -1045,7 +1045,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 Assert.NotSame(
                     client.Service,
-                    request.Properties[nameof(ScopedService)]);
+                    request.Options[nameof(ScopedService)]);
             }
         }
 
@@ -1071,11 +1071,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Assert.NotSame(
                 services.GetRequiredService<TransientService>(),
-                request.Properties[nameof(TransientService)]);
+                request.Options[nameof(TransientService)]);
 
             Assert.NotSame(
                 client.Service,
-                request.Properties[nameof(TransientService)]);
+                request.Options[nameof(TransientService)]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1102,11 +1102,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 Assert.NotSame(
                     services.GetRequiredService<TransientService>(),
-                    request.Properties[nameof(TransientService)]);
+                    request.Options[nameof(TransientService)]);
 
                 Assert.NotSame(
                     client.Service,
-                    request.Properties[nameof(TransientService)]);
+                    request.Options[nameof(TransientService)]);
             }
         }
 
@@ -1304,7 +1304,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Properties[nameof(SingletonService)] = Service;
+                request.Options[nameof(SingletonService)] = Service;
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
@@ -1320,7 +1320,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Properties[nameof(ScopedService)] = Service;
+                request.Options[nameof(ScopedService)] = Service;
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
@@ -1336,7 +1336,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Properties[nameof(TransientService)] = Service;
+                request.Options[nameof(TransientService)] = Service;
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
