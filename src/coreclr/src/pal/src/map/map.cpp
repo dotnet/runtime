@@ -2462,7 +2462,10 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     loadedHeader = (IMAGE_DOS_HEADER*)(static_cast<char*>(loadedBase) + OffsetWithinPage(offset));
 
-    LPVOID loadedHeaderBase = NULL;
+    LPVOID loadedHeaderBase;
+    // initialize this on a separate line to prevent a false error about the goto done; jumping over this
+    loadedHeaderBase = NULL;
+
     _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((off_t)loadedHeader));
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
                     (LPVOID)loadedHeader, headerSize, PROT_READ, readOnlyFlags, fd, offset,
