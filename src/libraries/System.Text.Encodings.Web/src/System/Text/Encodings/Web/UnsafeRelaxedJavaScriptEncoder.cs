@@ -81,12 +81,15 @@ namespace System.Text.Encodings.Web
                         mask = Sse2Helper.CreateAsciiMask(sourceValue);
                         containsNonAsciiChars = Sse2Helper.ContainsNonAsciiByte(mask.AsSByte());
                     }
-                    else
+                    else if (AdvSimd.Arm64.IsSupported)
                     {
-                        Debug.Assert(AdvSimd.Arm64.IsSupported);
                         sourceValue = AdvSimd.LoadVector128(startingAddress);
                         mask = AdvSimdHelper.CreateAsciiMask(sourceValue);
                         containsNonAsciiChars = AdvSimdHelper.ContainsNonAsciiByte(mask.AsSByte());
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
 
                     if (containsNonAsciiChars)
@@ -114,11 +117,14 @@ namespace System.Text.Encodings.Web
                             mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
                             index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
                         }
-                        else
+                        else if (AdvSimd.Arm64.IsSupported)
                         {
-                            Debug.Assert(AdvSimd.Arm64.IsSupported);
                             mask = AdvSimdHelper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
                             index = AdvSimdHelper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
+                        }
+                        else
+                        {
+                            throw new PlatformNotSupportedException();
                         }
 
                         // If index >= 16, that means none of the 8 characters needed to be escaped.

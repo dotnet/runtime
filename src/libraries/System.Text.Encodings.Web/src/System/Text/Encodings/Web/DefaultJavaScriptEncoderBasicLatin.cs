@@ -147,12 +147,14 @@ namespace System.Text.Encodings.Web
                             Sse2.LoadVector128(ptr),
                             Sse2.LoadVector128(ptr + Vector128<short>.Count));
                     }
-                    else
+                    else if (AdvSimd.Arm64.IsSupported)
                     {
-                        Debug.Assert(AdvSimd.Arm64.IsSupported);
-
                         Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(AdvSimd.LoadVector128(ptr));
                         sourceValue = AdvSimd.ExtractNarrowingSaturateUpper(lower, AdvSimd.LoadVector128(ptr + Vector128<short>.Count));
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
 
                     // Check if any of the 16 characters need to be escaped.

@@ -738,11 +738,14 @@ namespace System.Text.Encodings.Web
                             sourceValue = Sse2.LoadVector128(startingAddress);
                             containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
                         }
-                        else
+                        else if (AdvSimd.Arm64.IsSupported)
                         {
-                            Debug.Assert(AdvSimd.Arm64.IsSupported);
                             sourceValue = AdvSimd.LoadVector128(startingAddress);
                             containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
+                        }
+                        else
+                        {
+                            throw new PlatformNotSupportedException();
                         }
 
                         if (!containsNonAsciiBytes)

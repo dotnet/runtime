@@ -15,7 +15,10 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<short> CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(Vector128<short> sourceValue)
         {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // Anything in the control characters range, and anything above short.MaxValue but less than or equal char.MaxValue
             // That's because anything between 32768 and 65535 (inclusive) will overflow and become negative.
@@ -35,7 +38,10 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(Vector128<sbyte> sourceValue)
         {
-            Debug.Assert(AdvSimd.IsSupported);
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // Anything in the control characters range (except 0x7F), and anything above sbyte.MaxValue but less than or equal byte.MaxValue
             // That's because anything between 128 and 255 (inclusive) will overflow and become negative.
@@ -54,7 +60,10 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(Vector128<sbyte> sourceValue)
         {
-            Debug.Assert(AdvSimd.IsSupported);
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             Vector128<sbyte> mask = CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
 
@@ -71,7 +80,10 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<short> CreateAsciiMask(Vector128<short> sourceValue)
         {
-            Debug.Assert(AdvSimd.IsSupported);
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // Anything above short.MaxValue but less than or equal char.MaxValue
             // That's because anything between 32768 and 65535 (inclusive) will overflow and become negative.
@@ -86,14 +98,25 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsNonAsciiByte(Vector128<sbyte> value)
         {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
-            return AdvSimd.Arm64.MinAcross(value).ToScalar() < 0;
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // most significant bit mask for a 64-bit byte vector
+            const ulong MostSignficantBitMask = 0x8080808080808080;
+
+            value = AdvSimd.Arm64.MinPairwise(value, value);
+            return (value.AsUInt64().ToScalar() & MostSignficantBitMask) != 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetIndexOfFirstNonAsciiByte(Vector128<byte> value)
         {
-            Debug.Assert(AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian);
+            if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // extractedBits[i] = (value[i] & 0x80 == 0x80) & (1 << (12 * (i % 2)))
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.CompareEqual(AdvSimd.And(value, s_mostSignficantBitMask), s_mostSignficantBitMask);
