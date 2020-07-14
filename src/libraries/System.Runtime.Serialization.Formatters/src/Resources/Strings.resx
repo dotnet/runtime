@@ -250,6 +250,6 @@
     <value>Unable to read beyond the end of the stream.</value>
   </data>
   <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
-    <value>BinaryFormatter serialization and deserialization is disallowed within this application. See https://aka.ms/binaryformatter for more information.</value>
+    <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
   </data>
 </root>

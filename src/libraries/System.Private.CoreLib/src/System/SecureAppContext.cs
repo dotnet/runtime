@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System
 {
     /// <summary>
@@ -8,29 +10,28 @@ namespace System
     /// </summary>
     /// <remarks>
     /// This class provides a place to store the values of security-sensitive switches as they
-    /// were when the application started. Attackers cannot use standard "open reflection"
-    /// gadgets to modify these fields since the reflection stack forbids altering the contents
-    /// of static initonly fields. This provides an extra layer of defense for applications
-    /// which rely on these switches as part of an overall attack surface reduction strategy.
+    /// were when the application started. It guards against dependency code inadvertently
+    /// calling AppContext.SetSwitch and subverting app-level policy.
     ///
-    /// This is not meant to be a perfect defense. A caller can always use unsafe code to modify
-    /// these static fields. However, we assume such a caller is already running code within the
-    /// process. Arbitrary memory writes can also alter these fields. Both of these scenarios are
-    /// outside the scope of our threat model.
+    /// This is not meant to be a perfect defense. A determined caller can always use private
+    /// reflection to modify the contents of these switches. But that doesn't fall under the
+    /// realm of "inadvertent" so is outside the scope of our threat model.
     /// </remarks>
     internal static class SecureAppContext
     {
-        // Important: this field should be annotated 'static readonly'
-        private static readonly Switches s_switches = InitSwitches();
+#if DEBUG
+        private static bool s_isInitialized;
+#endif
 
-        private static Switches InitSwitches()
-        {
-            return new Switches()
-            {
-                BinaryFormatterEnabled = GetSwitchValue("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization"),
-                SerializationGuardEnabled = GetSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard"),
-            };
-        }
+        /// <summary>
+        /// Returns a value stating whether BinaryFormatter serialization is allowed.
+        /// </summary>
+        internal static bool BinaryFormatterEnabled { get; private set; }
+
+        /// <summary>
+        /// Returns a value stating whether Serialization Guard is enabled.
+        /// </summary>
+        internal static bool SerializationGuardEnabled { get; private set; }
 
         private static bool GetSwitchValue(string switchName)
         {
@@ -45,20 +46,15 @@ namespace System
             return LocalAppContextSwitches.GetCachedSwitchValue(switchName, ref cachedValue);
         }
 
-        /// <summary>
-        /// Returns a value stating whether BinaryFormatter serialization is allowed.
-        /// </summary>
-        internal static bool BinaryFormatterEnabled => s_switches.BinaryFormatterEnabled;
-
-        /// <summary>
-        /// Returns a value stating whether Serialization Guard is enabled.
-        /// </summary>
-        internal static bool SerializationGuardEnabled => s_switches.SerializationGuardEnabled;
-
-        private struct Switches
+        internal static void Initialize()
         {
-            internal bool BinaryFormatterEnabled { get; init; }
-            internal bool SerializationGuardEnabled { get; init; }
+#if DEBUG
+            Debug.Assert(!s_isInitialized, "Initialize shouldn't be called multiple times.");
+            s_isInitialized = true;
+#endif
+
+            BinaryFormatterEnabled = GetSwitchValue("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization");
+            SerializationGuardEnabled = GetSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard");
         }
     }
 }

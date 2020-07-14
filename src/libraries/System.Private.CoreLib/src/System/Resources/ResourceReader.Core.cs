@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 
@@ -37,7 +38,7 @@ namespace System.Resources
 
             _ums = stream as UnmanagedMemoryStream;
 
-            _permitDeserialization = permitDeserialization;
+            _permitDeserialization = permitDeserialization && SerializationInfo.BinaryFormatterEnabled;
 
             ReadResources();
         }
@@ -67,6 +68,12 @@ namespace System.Resources
 
         private void InitializeBinaryFormatter()
         {
+            if (!SerializationInfo.BinaryFormatterEnabled)
+            {
+                // allows the linker to trim away all the reflection goop below
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            }
+
             LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 throwOnError: true)!);

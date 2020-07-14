@@ -10,34 +10,6 @@ namespace System.Tests
 {
     public partial class SecureAppContextTests
     {
-        // these tests only make sense on platforms where reflection is expected to forbid overwriting initonly fields
-        public static bool RunForbidSettingInitonlyTests => PlatformDetection.IsNetCore && RemoteExecutor.IsSupported;
-
-        [ConditionalFact(nameof(RunForbidSettingInitonlyTests))]
-        public void CannotUseReflectionToChangeValues()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                Type secureAppContextType = typeof(AppContext).Assembly.GetType("System.SecureAppContext", throwOnError: true);
-
-                foreach (FieldInfo field in secureAppContextType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-                {
-                    try
-                    {
-                        Assert.True(field.FieldType.IsValueType, "Field is a reference type; instance members may be subject to mutation.");
-                        Assert.True(field.IsInitOnly, "Field is mutable.");
-
-                        object originalValue = field.GetValue(null);
-                        Assert.Throws<FieldAccessException>(() => field.SetValue(null, originalValue));
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"Failure when testing field {field.Name}.", ex);
-                    }
-                }
-            }).Dispose();
-        }
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("Switch.System.Runtime.Serialization.SerializationGuard", "SerializationGuardEnabled", true)]
         [InlineData("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", "BinaryFormatterEnabled", true)]

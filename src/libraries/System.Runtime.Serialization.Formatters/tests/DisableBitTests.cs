@@ -11,12 +11,29 @@ namespace System.Runtime.Serialization.Formatters.Tests
     public static class DisableBitTests
     {
         // these tests only make sense on platforms with both SecureAppContext and RemoteExecutor support
-        public static bool ShouldRunTests => !PlatformDetection.IsNetFramework && RemoteExecutor.IsSupported;
+        public static bool ShouldRunFullAppContextEnablementChecks => !PlatformDetection.IsNetFramework && RemoteExecutor.IsSupported;
 
         private const string EnableBinaryFormatterSwitchName = "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization";
         private const string MoreInfoUrl = "https://aka.ms/binaryformatter";
 
-        [ConditionalFact(nameof(ShouldRunTests))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public static void DisabledAlwaysInBrowser()
+        {
+            // First, test serialization
+
+            MemoryStream ms = new MemoryStream();
+            BinaryFormatter bf = new BinaryFormatter();
+            var ex = Assert.Throws<NotSupportedException>(() => bf.Serialize(ms, "A string to serialize."));
+            Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
+
+            // Then test deserialization
+
+            ex = Assert.Throws<NotSupportedException>(() => bf.Deserialize(ms));
+            Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
+        }
+
+        [ConditionalFact(nameof(ShouldRunFullAppContextEnablementChecks))]
         public static void DisabledThroughAppContext()
         {
             RemoteExecutor.Invoke(() =>
@@ -37,7 +54,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(ShouldRunTests))]
+        [ConditionalFact(nameof(ShouldRunFullAppContextEnablementChecks))]
         public static void DisabledThroughSecureAppContext_CannotOverride()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
@@ -143,8 +142,7 @@ namespace System
                 s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
             }
 
-            // burn these values in to the SecureAppContext's cctor
-            RuntimeHelpers.RunClassConstructor(typeof(SecureAppContext).TypeHandle);
+            SecureAppContext.Initialize();
         }
 
         private static string GetBaseDirectoryCore()
