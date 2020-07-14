@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace System.Net.NetworkInformation
 {
@@ -185,20 +184,8 @@ namespace System.Net.NetworkInformation
             for (int i = 0; i < address.Length; i++)
             {
                 int character = address[i];
-
-                if (character >= '0' && character <= '9')
-                {
-                    character -= '0';
-                }
-                else if (character >= 'A' && character <= 'F')
-                {
-                    character -= ('A' - 10);
-                }
-                else if (character >= 'a' && character <= 'f')
-                {
-                    character -= ('a' - 10);
-                }
-                else
+                int tmp;
+                if ((tmp = HexConverter.FromChar(character)) == 0xFF)
                 {
                     if (delimiter == character && validCount == validSegmentLength)
                     {
@@ -208,6 +195,8 @@ namespace System.Net.NetworkInformation
 
                     return false;
                 }
+
+                character = tmp;
 
                 // we had too many characters after the last delimiter
                 if (validCount >= validSegmentLength)

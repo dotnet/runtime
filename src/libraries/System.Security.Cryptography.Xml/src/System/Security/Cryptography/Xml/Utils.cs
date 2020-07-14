@@ -729,27 +729,9 @@ namespace System.Security.Cryptography.Xml
         internal static byte[] DecodeHexString(string s)
         {
             string hexString = Utils.DiscardWhiteSpaces(s);
-            uint cbHex = (uint)hexString.Length / 2;
-            byte[] hex = new byte[cbHex];
-            int i = 0;
-            for (int index = 0; index < cbHex; index++)
-            {
-                hex[index] = (byte)((HexToByte(hexString[i]) << 4) | HexToByte(hexString[i + 1]));
-                i += 2;
-            }
+            byte[] hex = new byte[hexString.Length / 2];
+            HexConverter.TryDecodeFromUtf16(hexString.AsSpan(0, hex.Length * 2), hex);
             return hex;
-        }
-
-        internal static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         internal static bool IsSelfSigned(X509Chain chain)

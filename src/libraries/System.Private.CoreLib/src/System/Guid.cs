@@ -664,13 +664,12 @@ namespace System
             for (; i < guidString.Length && guidString[i] == '0'; i++) ;
 
             int processedDigits = 0;
-            ReadOnlySpan<byte> charToHexLookup = HexConverter.CharToHexLookup;
             uint tmp = 0;
             for (; i < guidString.Length; i++)
             {
-                int numValue;
                 char c = guidString[i];
-                if (c >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[c]) == 0xFF)
+                int numValue = HexConverter.FromChar(c);
+                if (numValue == 0xFF)
                 {
                     if (processedDigits > 8) overflow = true;
                     result = 0;

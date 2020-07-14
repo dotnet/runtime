@@ -84,6 +84,16 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
+        public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+        {
+            Debug.Assert(chars.Length >= bytes.Length * 2);
+
+            for (int pos = 0; pos < bytes.Length; ++pos)
+            {
+                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+            }
+        }
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
@@ -114,10 +124,7 @@ namespace System
                 return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), (chars, args) =>
                 {
                     var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
-                    for (int pos = 0; pos < ros.Length; ++pos)
-                    {
-                        ToCharsBuffer(ros[pos], chars, pos * 2, args.casing);
-                    }
+                    EncodeToUtf16(ros, chars, args.casing);
                 });
             }
 #endif
@@ -153,26 +160,37 @@ namespace System
 
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
+            return TryDecodeFromUtf16(chars, bytes, out _);
+        }
+
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        {
             Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
             Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
 
             int i = 0;
             int j = 0;
+            int byteLo = 0;
+            int byteHi = 0;
             while (j < bytes.Length)
             {
-                int byteLo = FromChar(chars[i + 1]);
-                int byteHi = FromChar(chars[i]);
+                byteLo = FromChar(chars[i + 1]);
+                byteHi = FromChar(chars[i]);
 
                 // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
                 // is if either byteHi or byteLo was not a hex character.
                 if ((byteLo | byteHi) == 0xFF)
-                    return false;
+                    break;
 
                 bytes[j++] = (byte)((byteHi << 4) | byteLo);
                 i+=2;
             }
 
-            return true;
+            if (byteLo == 0xFF)
+                i++;
+
+            charsProcessed = i;
+            return (byteLo | byteHi) != 0xFF;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -182,8 +200,44 @@ namespace System
             return c >= charToHexLookup.Length ? 0xFF : charToHexLookup[c];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromUpperChar(int c)
+        {
+            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
+            return c > 71 ? 0xFF : charToHexLookup[c];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromLowerChar(int c)
+        {
+            if ('0' <= c && c <= '9')
+                return (byte)(c - '0');
+            if ('a' <= c && c <= 'f')
+                return (byte)(c - ('a' - 10));
+
+            return 0xFF;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexChar(int c)
+        {
+            return FromChar(c) != 0xFF;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexUpperChar(int c)
+        {
+            return (uint)(c - '0') <= 9 || (uint)(c - 'A') <= ('F' - 'A');
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexLowerChar(int c)
+        {
+            return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
+        }
+
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        internal static ReadOnlySpan<byte> CharToHexLookup => new byte[]
+        private static ReadOnlySpan<byte> CharToHexLookup => new byte[]
         {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31

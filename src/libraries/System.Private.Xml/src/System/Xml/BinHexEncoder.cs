@@ -33,8 +33,8 @@ namespace System.Xml
             while (index < endIndex)
             {
                 int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
-                int charCount = Encode(buffer, index, cnt, chars);
-                writer.WriteRaw(chars, 0, charCount);
+                HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
+                writer.WriteRaw(chars, 0, cnt * 2);
                 index += cnt;
                 count -= cnt;
             }
@@ -44,28 +44,5 @@ namespace System.Xml
         {
             return Convert.ToHexString(inArray, offsetIn, count);
         }
-
-        private static int Encode(byte[] inArray, int offsetIn, int count, char[] outArray)
-        {
-            int curOffsetOut = 0, offsetOut = 0;
-            byte b;
-            int lengthOut = outArray.Length;
-
-            for (int j = 0; j < count; j++)
-            {
-                b = inArray[offsetIn++];
-                outArray[curOffsetOut++] = HexConverter.ToCharUpper(b >> 4);
-                if (curOffsetOut == lengthOut)
-                {
-                    break;
-                }
-                outArray[curOffsetOut++] = HexConverter.ToCharUpper(b);
-                if (curOffsetOut == lengthOut)
-                {
-                    break;
-                }
-            }
-            return curOffsetOut - offsetOut;
-        } // function
     } // class
 } // namespace
