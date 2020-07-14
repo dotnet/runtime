@@ -290,7 +290,7 @@ namespace System.Text.Json
             var nameLookup = new Dictionary<string, ParameterLookupEntry>(PropertyCacheArray!.Length, StringComparer.OrdinalIgnoreCase);
             foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
             {
-                string propertyName = jsonProperty.PropertyInfo!.Name;
+                string propertyName = jsonProperty.MemberInfo!.Name;
                 var entry = new ParameterLookupEntry(jsonProperty);
                 if (!JsonHelpers.TryAdd(nameLookup, propertyName, entry))
                 {
@@ -300,57 +300,36 @@ namespace System.Text.Json
                 }
             }
 
+            Type GetMemberType(MemberInfo memberInfo)
+            {
+                Debug.Assert(memberInfo is PropertyInfo || memberInfo is FieldInfo);
+
+                return memberInfo is PropertyInfo propertyInfo
+                    ? propertyInfo.PropertyType
+                    : Unsafe.As<FieldInfo>(memberInfo).FieldType;
+            }
+
             foreach (ParameterInfo parameterInfo in parameters)
             {
-                void AddParameter(JsonPropertyInfo jsonPropertyInfo)
-                {
-                    JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
-
-                    parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
-
-                    // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
-                    PropertyCache!.Remove(jsonPropertyInfo.NameAsString);
-                }
-
                 string parameterName = parameterInfo.Name!;
 
                 if (nameLookup.TryGetValue(parameterName, out ParameterLookupEntry? matchingEntry) &&
-                    (parameterInfo.ParameterType == matchingEntry.JsonPropertyInfo.PropertyInfo!.PropertyType))
+                    (parameterInfo.ParameterType == GetMemberType(matchingEntry.JsonPropertyInfo.MemberInfo!)))
                 {
-                    AddParameter(matchingJsonProperty!);
-                }
-                else
-                {
-                    if (camelCaseLookup == null)
-                    {
-                        // Initialize camel-case cache.
-                        camelCaseLookup = new Dictionary<string, CamelCaseParameterLookupEntry>(PropertyCacheArray!.Length);
-                        foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
-                        {
-                            string propertyName = jsonProperty.PropertyInfo!.Name;
-                            string camelCaseName = JsonNamingPolicy.CamelCase.ConvertName(propertyName);
-                            if (!propertyName.Equals(camelCaseName, StringComparison.Ordinal))
-                            {
-                                var entry = new CamelCaseParameterLookupEntry(jsonProperty);
-
-                                if (!JsonHelpers.TryAdd(camelCaseLookup, camelCaseName, entry))
-                                {
-                                    // More than one property has the same camel-case name.
-                                    camelCaseLookup[camelCaseName].DuplicateJsonPropertyInfo = jsonProperty;
-                                }
-                            }
-                        }
-
                     if (matchingEntry.DuplicateJsonPropertyInfo != null)
                     {
                         // Multiple object properties cannot bind to the same constructor parameter.
                         ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                             Type,
                             parameterInfo,
-                            matchingEntry.JsonPropertyInfo.PropertyInfo!,
-                            matchingEntry.DuplicateJsonPropertyInfo.PropertyInfo!,
+                            matchingEntry.JsonPropertyInfo.MemberInfo!,
+                            matchingEntry.DuplicateJsonPropertyInfo.MemberInfo!,
                             constructorInfo);
                     }
+
+                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
+                    JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
+                    parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
 
                     // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
                     PropertyCache!.Remove(jsonPropertyInfo.NameAsString);
@@ -367,7 +346,6 @@ namespace System.Text.Json
             ParameterCache = parameterCache;
             ParameterCount = parameters.Length;
         }
-
         private static bool PropertyIsOverridenAndIgnored(MemberInfo currentMember, Dictionary<string, MemberInfo>? ignoredMembers)
         {
             if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMember.Name, out MemberInfo? ignoredProperty))

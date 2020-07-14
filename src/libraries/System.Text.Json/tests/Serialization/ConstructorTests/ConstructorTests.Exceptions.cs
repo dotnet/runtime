@@ -21,8 +21,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("(Int32, Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter", exStr);
 
-            ex = Assert.Throws<InvalidOperationException>(
-                () => Serializer.Deserialize<Point_MultipleMembers_BindTo_OneConstructorParameter_Variant>("{}"));
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<Point_MultipleMembers_BindTo_OneConstructorParameter_Variant>("{}"));
 
             exStr = ex.ToString();
             Assert.Contains("'X'", exStr);
