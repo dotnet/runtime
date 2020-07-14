@@ -4,6 +4,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -13,6 +14,7 @@
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs"
              Link="ProductionCode\System\Net\IPHostEntry.cs" />
     <Compile Include="Fakes\FakeContextAwareResult.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="NameResolutionPalTests.cs" />
     <Compile Include="Fakes\DnsFake.cs" />
     <Compile Include="Fakes\IPAddressFakeExtensions.cs" />
