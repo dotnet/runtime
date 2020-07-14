@@ -107,7 +107,10 @@ namespace Microsoft.Extensions.Logging.Console
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
                     _ => _formatters[ConsoleFormatterNames.Simple],
                 };
-                UpdateFormatterOptions(logFormatter, options);
+                if (options.FormatterName == null)
+                {
+                    UpdateFormatterOptions(logFormatter, options);
+                }
 #pragma warning restore CS0618
             }
 
@@ -129,7 +132,10 @@ namespace Microsoft.Extensions.Logging.Console
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
                     _ => _formatters[ConsoleFormatterNames.Simple],
                 };
-                UpdateFormatterOptions(logFormatter, _options.CurrentValue);
+                if (_options.CurrentValue.FormatterName == null)
+                {
+                    UpdateFormatterOptions(logFormatter, _options.CurrentValue);
+                }
 #pragma warning disable CS0618
             }
 
@@ -146,17 +152,23 @@ namespace Microsoft.Extensions.Logging.Console
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
-                defaultFormatter.FormatterOptions.DisableColors = deprecatedFromOptions.DisableColors;
-                defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
-                defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
-                defaultFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
+                defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
+                {
+                    DisableColors = deprecatedFromOptions.DisableColors,
+                    IncludeScopes = deprecatedFromOptions.IncludeScopes,
+                    TimestampFormat = deprecatedFromOptions.TimestampFormat,
+                    UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,
+                };
             }
             else
             if (formatter is SystemdConsoleFormatter systemdFormatter)
             {
-                systemdFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
-                systemdFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
-                systemdFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
+                systemdFormatter.FormatterOptions = new ConsoleFormatterOptions()
+                {
+                    IncludeScopes = deprecatedFromOptions.IncludeScopes,
+                    TimestampFormat = deprecatedFromOptions.TimestampFormat,
+                    UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,
+                };
             }
         }
 #pragma warning restore CS0618
