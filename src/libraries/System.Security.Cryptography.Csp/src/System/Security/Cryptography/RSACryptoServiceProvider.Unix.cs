@@ -26,12 +26,15 @@ namespace System.Security.Cryptography
             _impl = RSA.Create(dwKeySize);
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters parameters) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public RSACryptoServiceProvider(CspParameters parameters) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public CspKeyContainerInfo CspKeyContainerInfo =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo)));
 

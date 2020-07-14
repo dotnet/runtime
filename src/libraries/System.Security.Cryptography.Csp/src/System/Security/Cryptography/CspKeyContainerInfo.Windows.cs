@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
+    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
     public sealed class CspKeyContainerInfo
     {
         private readonly CspParameters _parameters;

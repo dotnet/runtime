@@ -103,6 +103,7 @@ namespace System.Security.Cryptography
         public bool UseSalt
         {
             get { return false; }
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 // Don't allow a true value

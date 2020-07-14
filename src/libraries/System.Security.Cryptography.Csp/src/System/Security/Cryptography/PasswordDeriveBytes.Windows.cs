@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     {
         private SafeProvHandle? _safeProvHandle;
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {
             if (keySize < 0)

@@ -3,6 +3,7 @@
 
 namespace System.Security.Cryptography
 {
+    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
     public sealed class CspKeyContainerInfo
     {
         public CspKeyContainerInfo(CspParameters parameters) { throw GetPlatformNotSupported(); }
