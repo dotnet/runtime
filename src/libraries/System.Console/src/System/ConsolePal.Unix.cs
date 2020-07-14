@@ -1435,7 +1435,7 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public unsafe override int Read(byte[] buffer, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count)
             {
                 ValidateRead(buffer, offset, count);
 

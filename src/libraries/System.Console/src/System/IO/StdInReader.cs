@@ -22,7 +22,7 @@ namespace System.IO
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
         private readonly Encoding _encoding;
-        private Encoder? _bufferedReadEncoder;
+        private Encoder? _bufferReadEncoder;
 
         private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
@@ -80,184 +80,177 @@ namespace System.IO
 
         public override string? ReadLine()
         {
-            return ReadLine(consumeKeys: true).line;
+            // Don't carry over chars from ReadLine buffer method.
+            _readLineSB.Clear();
+
+            bool isEnter = ReadLineCore(consumeKeys: true);
+            string? line = null;
+            if (isEnter || _readLineSB.Length > 0)
+            {
+                line = _readLineSB.ToString();
+            }
+            else
+            {
+                _readLineSB.Clear();
+            }
+            return line;
         }
 
         public int ReadLine(byte[] buffer, int offset, int count)
         {
-            return ReadLine(consumeKeys: true, buffer, offset, count).bytesRead;
+            if (count == 0)
+            {
+                return 0;
+            }
+
+            // Don't read a new line if there are remaining characters in the StringBuilder.
+            if (_readLineSB.Length == 0)
+            {
+                bool isEnter = ReadLineCore(consumeKeys: true);
+                if (isEnter)
+                {
+                    _readLineSB.Append('\n');
+                }
+            }
+
+            // Encode line into buffer.
+            Encoder encoder = _bufferReadEncoder ??= _encoding.GetEncoder();
+            int bytesUsedTotal = 0;
+            int charsUsedTotal = 0;
+            Span<byte> destination = buffer.AsSpan(offset, count);
+            foreach (ReadOnlyMemory<char> chunk in _readLineSB.GetChunks())
+            {
+                encoder.Convert(chunk.Span, destination, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
+                destination = destination.Slice(bytesUsed);
+                bytesUsedTotal += bytesUsed;
+                charsUsedTotal += charsUsed;
+
+                if (charsUsed == 0)
+                {
+                    break;
+                }
+            }
+            _readLineSB.Remove(0, charsUsedTotal);
+            return bytesUsedTotal;
         }
 
-        private (string? line, int bytesRead) ReadLine(bool consumeKeys, byte[]? buffer = null, int offset = 0, int count = 0)
+        // Reads a line in _readLineSB when consumeKeys is true,
+        //              or _availableKeys when consumeKeys is false.
+        // Returns whether the line was terminated using the Enter key.
+        private bool ReadLineCore(bool consumeKeys)
         {
-            // This method blocks until a line was read or EOF was reached.
-            // When buffer is null, and consumeKeys is true, the line is returned as a string.
-            // When buffer is not null, the line is encoded into the buffer.
-            // If the buffer is too small for the line, successive calls will return the remainder.
             Debug.Assert(_tmpKeys.Count == 0);
-
-            // Don't carry over chars from buffer read followed by non-buffer read.
-            if (buffer == null)
+            Interop.Sys.InitializeConsoleBeforeRead();
+            try
             {
-                _readLineSB.Clear();
-            }
-            // read into emty buffer.
-            else if (count == 0)
-            {
-                return (null, 0);
-            }
-
-            // For a buffer read, first use remaining chars from _readLineSB.
-            if (buffer == null || _readLineSB.Length == 0)
-            {
-                Interop.Sys.InitializeConsoleBeforeRead();
-                try
+                // Read key-by-key until we've read a line.
+                while (true)
                 {
-                    // Read key-by-key until we've read a line.
-                    while (true)
+                    // Read the next key.  This may come from previously read keys, from previously read but
+                    // unprocessed data, or from an actual stdin read.
+                    bool previouslyProcessed;
+                    ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
+                    if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
                     {
-                        // Read the next key.  This may come from previously read keys, from previously read but
-                        // unprocessed data, or from an actual stdin read.
-                        bool previouslyProcessed;
-                        ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
-                        if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
-                        {
-                            _tmpKeys.Push(keyInfo);
-                        }
+                        _tmpKeys.Push(keyInfo);
+                    }
 
-                        // Handle the next key.  Since for other functions we may have ended up reading some of the user's
-                        // input, we need to be able to handle manually processing that input, and so we do that processing
-                        // for all input.  As such, we need to special-case a few characters, e.g. recognizing when Enter is
-                        // pressed to end a line.  We also need to handle Backspace specially, to fix up both our buffer of
-                        // characters and the position of the cursor.  More advanced processing would be possible, but we
-                        // try to keep this very simple, at least for now.
-                        if (keyInfo.Key == ConsoleKey.Enter)
+                    // Handle the next key.  Since for other functions we may have ended up reading some of the user's
+                    // input, we need to be able to handle manually processing that input, and so we do that processing
+                    // for all input.  As such, we need to special-case a few characters, e.g. recognizing when Enter is
+                    // pressed to end a line.  We also need to handle Backspace specially, to fix up both our buffer of
+                    // characters and the position of the cursor.  More advanced processing would be possible, but we
+                    // try to keep this very simple, at least for now.
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        if (!previouslyProcessed)
                         {
-                            if (buffer != null)
-                            {
-                                _readLineSB.Append('\n');
-                            }
+                            Console.WriteLine();
+                        }
+                        return true;
+                    }
+                    else if (IsEol(keyInfo.KeyChar))
+                    {
+                        return false;
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace)
+                    {
+                        int len = _readLineSB.Length;
+                        if (len > 0)
+                        {
+                            _readLineSB.Length = len - 1;
                             if (!previouslyProcessed)
                             {
-                                Console.WriteLine();
-                            }
-                            break;
-                        }
-                        else if (IsEol(keyInfo.KeyChar))
-                        {
-                            if (_readLineSB.Length == 0)
-                            {
-                                return (null, 0);
-                            }
-                            break;
-                        }
-                        else if (keyInfo.Key == ConsoleKey.Backspace)
-                        {
-                            int len = _readLineSB.Length;
-                            if (len > 0)
-                            {
-                                _readLineSB.Length = len - 1;
-                                if (!previouslyProcessed)
+                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
+                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
+                                if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
+                                    left == 0 && top > 0)
                                 {
-                                    // The ReadLine input may wrap accross terminal rows and we need to handle that.
-                                    // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
-                                    if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
-                                        left == 0 && top > 0)
+                                    if (s_clearToEol == null)
                                     {
-                                        if (s_clearToEol == null)
-                                        {
-                                            s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
-                                        }
-
-                                        // Move to end of previous line
-                                        ConsolePal.SetCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
-                                        // Clear from cursor to end of the line
-                                        ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
+                                        s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
                                     }
-                                    else
+
+                                    // Move to end of previous line
+                                    ConsolePal.SetCursorPosition(ConsolePal.WindowWidth - 1, top - 1);
+                                    // Clear from cursor to end of the line
+                                    ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
+                                }
+                                else
+                                {
+                                    if (s_moveLeftString == null)
                                     {
-                                        if (s_moveLeftString == null)
-                                        {
-                                            string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
-                                            s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
-                                        }
-
-                                        Console.Write(s_moveLeftString);
+                                        string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
+                                        s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                     }
+
+                                    Console.Write(s_moveLeftString);
                                 }
                             }
                         }
-                        else if (keyInfo.Key == ConsoleKey.Tab)
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Tab)
+                    {
+                        if (consumeKeys)
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
-                            if (!previouslyProcessed)
-                            {
-                                Console.Write(' ');
-                            }
                         }
-                        else if (keyInfo.Key == ConsoleKey.Clear)
+                        if (!previouslyProcessed)
                         {
-                            _readLineSB.Clear();
-                            if (!previouslyProcessed)
-                            {
-                                Console.Clear();
-                            }
+                            Console.Write(' ');
                         }
-                        else if (keyInfo.KeyChar != '\0')
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Clear)
+                    {
+                        _readLineSB.Clear();
+                        if (!previouslyProcessed)
+                        {
+                            Console.Clear();
+                        }
+                    }
+                    else if (keyInfo.KeyChar != '\0')
+                    {
+                        if (consumeKeys)
                         {
                             _readLineSB.Append(keyInfo.KeyChar);
-                            if (!previouslyProcessed)
-                            {
-                                Console.Write(keyInfo.KeyChar);
-                            }
+                        }
+                        if (!previouslyProcessed)
+                        {
+                            Console.Write(keyInfo.KeyChar);
                         }
                     }
                 }
-                finally
-                {
-                    Interop.Sys.UninitializeConsoleAfterRead();
-
-                    // If we're not consuming the read input, make the keys available for a future read
-                    while (_tmpKeys.Count > 0)
-                    {
-                        _availableKeys.Push(_tmpKeys.Pop());
-                    }
-                }
             }
-
-            string? line = null;
-            int bytesUsedTotal = 0;
-            if (buffer == null)
+            finally
             {
-                if (consumeKeys)
+                Interop.Sys.UninitializeConsoleAfterRead();
+
+                // If we're not consuming the read input, make the keys available for a future read
+                while (_tmpKeys.Count > 0)
                 {
-                    line = _readLineSB.ToString();
+                    _availableKeys.Push(_tmpKeys.Pop());
                 }
-                _readLineSB.Clear();
             }
-            else
-            {
-                // Encode _readLineSB in buffer.
-                Encoder encoder = _bufferedReadEncoder ??= _encoding.GetEncoder();
-
-                int charsUsedTotal = 0;
-                Span<byte> destination = buffer.AsSpan(offset, count);
-                foreach (ReadOnlyMemory<char> chunk in _readLineSB.GetChunks())
-                {
-                    encoder.Convert(chunk.Span, destination, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
-                    destination = destination.Slice(bytesUsed);
-                    bytesUsedTotal += bytesUsed;
-                    charsUsedTotal += charsUsed;
-
-                    if (charsUsed == 0)
-                    {
-                        break;
-                    }
-                }
-
-                _readLineSB.Remove(0, charsUsedTotal);
-            }
-            return (line, bytesUsedTotal);
         }
 
         public override int Read() => ReadOrPeek(peek: false);
@@ -269,7 +262,7 @@ namespace System.IO
             // If there aren't any keys in our processed keys stack, read a line to populate it.
             if (_availableKeys.Count == 0)
             {
-                ReadLine(consumeKeys: false);
+                ReadLineCore(consumeKeys: false);
             }
 
             // Now if there are keys, use the first.
