@@ -2137,9 +2137,9 @@ MAPRecordMapping(
     return palError;
 }
 
-static size_t OffsetWithinPage(off_t offset)
+static size_t OffsetWithinPage(off_t addr)
 {
-    return offset & (GetVirtualPageSize() - 1);
+    return addr & (GetVirtualPageSize() - 1);
 }
 
 static size_t RoundToPage(size_t size, off_t offset)
@@ -2462,8 +2462,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     loadedHeader = (IMAGE_DOS_HEADER*)(static_cast<char*>(loadedBase) + OffsetWithinPage(offset));
 
-    LPVOID loadedHeaderBase;
-    loadedHeaderBase = NULL;
+    LPVOID loadedHeaderBase = NULL;
     _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((off_t)loadedHeader));
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
                     (LPVOID)loadedHeader, headerSize, PROT_READ, readOnlyFlags, fd, offset,
