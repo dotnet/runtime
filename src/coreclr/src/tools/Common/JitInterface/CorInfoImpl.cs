@@ -510,6 +510,43 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConv callConv)
+        {
+            callConv = CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED;
+            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
+                return false;
+
+            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+            {
+                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
+                    continue;
+
+                if (!(data.type is DefType defType))
+                    continue;
+
+                if (defType.Namespace != "System.Runtime.CompilerServices")
+                    continue;
+
+                switch (defType.Name)
+                {
+                    case "CallConvCdecl":
+                        callConv = CorInfoCallConv.CORINFO_CALLCONV_C;
+                        return true;
+                    case "CallConvStdcall":
+                        callConv = CorInfoCallConv.CORINFO_CALLCONV_STDCALL;
+                        return true;
+                    case "CallConvFastcall":
+                        callConv = CorInfoCallConv.CORINFO_CALLCONV_FASTCALL;
+                        return true;
+                    case "CallConvThiscall":
+                        callConv = CorInfoCallConv.CORINFO_CALLCONV_THISCALL;
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
@@ -519,6 +556,22 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
+
+            // Unmanaged calling convention indicates modopt should be read
+            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                if (TryGetUnmanagedCallingConventionFromModOpt(signature, out CorInfoCallConv callConvMaybe))
+                {
+                    sig->callConv = callConvMaybe;
+                }
+                else
+                {
+                    // Use platform default
+                    sig->callConv = _compilation.TypeSystemContext.Target.IsWindows
+                        ? CorInfoCallConv.CORINFO_CALLCONV_STDCALL
+                        : CorInfoCallConv.CORINFO_CALLCONV_C;
+                }
+            }
 
             TypeDesc returnType = signature.ReturnType;
 
