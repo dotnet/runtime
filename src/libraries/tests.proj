@@ -72,10 +72,7 @@
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true')" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\System.Buffers.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'" />
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
