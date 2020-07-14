@@ -352,6 +352,6 @@
     <value>System.Security.Cryptography is not supported on Browser.</value>
   </data>
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
-    <value>The total number of bytes extracted cannot exceed (2^32 - 1) * hash length.</value>
+    <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
 </root>
