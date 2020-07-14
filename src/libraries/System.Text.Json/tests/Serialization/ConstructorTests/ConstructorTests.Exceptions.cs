@@ -152,6 +152,31 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
+        [Fact]
+        public void AnonymousObject_NamingPolicy()
+        {
+            const string Json = @"{""prop"":5}";
+
+            var obj = new { Prop = 5 };
+            Type objType = obj.GetType();
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            object newObj = JsonSerializer.Deserialize(Json, objType);
+            // Verify no match if no naming policy
+            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            // Verify match with naming policy
+            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
+        }
+
+#if NETCOREAPP // These require the C# 9.0 "record" feature which is not available for all TFMs.
         private record MyRecord(int Prop);
 
         [Fact]
@@ -184,30 +209,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void AnonymousObject_NamingPolicy()
-        {
-            const string Json = @"{""prop"":5}";
-
-            var obj = new { Prop = 5 };
-            Type objType = obj.GetType();
-
-            // 'Prop' property binds with a ctor arg called 'Prop'.
-
-            object newObj = JsonSerializer.Deserialize(Json, objType);
-            // Verify no match if no naming policy
-            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            newObj = JsonSerializer.Deserialize(Json, objType, options);
-            // Verify match with naming policy
-            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
-        }
-
-        [Fact]
         public void Record_NamingPolicy()
         {
             const string Json = @"{""prop"":5}";
@@ -227,6 +228,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<MyRecord>(Json, options);
             Assert.Equal(5, obj.Prop);
         }
+#endif
 
         [Fact]
         public async Task DeserializePathForObjectFails()

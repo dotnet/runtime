@@ -283,10 +283,10 @@ namespace System.Text.Json
                 parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
             // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
-            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C# record
-            // types or anonymous types are used.
-            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we are just binding the
-            // parameter name to the object property name and do not include the JSON version of the name here.
+            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C#
+            // record types or anonymous types are used.
+            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
+            // the parameter name to the object property name and do not use the JSON version of the name here.
             var nameLookup = new Dictionary<string, ParameterLookupEntry>(PropertyCacheArray!.Length, StringComparer.OrdinalIgnoreCase);
             foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
             {
