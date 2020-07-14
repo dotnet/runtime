@@ -81,8 +81,9 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="destination">The buffer to receive the hash value.</param>
-        /// <param nam="bytesWritten">
+        /// <param name="bytesWritten">
         /// When this method returns, the total number of bytes written into <paramref name="destination"/>.
+        /// </param>
         /// <returns>
         /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
         /// calculated hash, <see langword="true"/> otherwise.
