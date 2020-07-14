@@ -80,8 +80,7 @@ public class WasmAppBuilder : Task
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
             sw.WriteLine("config = {");
-            sw.WriteLine("\tvfs_prefix: \"managed\",");
-            sw.WriteLine("\tdeploy_prefix: \"managed\",");
+            sw.WriteLine("\tassembly_root: \"managed\",");
             sw.WriteLine("\tenable_debugging: 0,");
             sw.WriteLine("\tassets: [");
 

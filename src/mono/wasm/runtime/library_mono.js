@@ -627,8 +627,7 @@ var MonoSupportLib = {
 
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
-		//    vfs_prefix: (required)
-		//    deploy_prefix: (required) the subfolder containing managed assemblies and pdbs
+		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
 		//    enable_debugging: (required)
 		//    assets: (required) a list of assets to load along with the runtime. each asset
 		//     is a dictionary-style Object with the following properties:
@@ -675,7 +674,7 @@ var MonoSupportLib = {
 		_finalize_startup: function (args, ctx) {
 			MONO.loaded_assets = ctx.loaded_assets;
 
-			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
+			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['number']);
 
 			console.log ("MONO_WASM: Initializing mono runtime");
 
@@ -683,7 +682,7 @@ var MonoSupportLib = {
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
-					load_runtime (args.vfs_prefix, args.enable_debugging);
+					load_runtime (args.enable_debugging);
 				} catch (ex) {
 					print ("MONO_WASM: load_runtime () failed: " + ex);
 					var err = new Error();
@@ -694,7 +693,7 @@ var MonoSupportLib = {
 					wasm_exit (1);
 				}
 			} else {
-				load_runtime (args.vfs_prefix, args.enable_debugging);
+				load_runtime (args.enable_debugging);
 			}
 
 			MONO.mono_wasm_runtime_ready ();
@@ -794,9 +793,8 @@ var MonoSupportLib = {
 
 					var attemptUrl;
 					if (sourcePrefix.trim() === "") {
-						// FIXME: Disgusting magic to match old search behavior
 						if (asset.behavior === "assembly")
-							attemptUrl = locateFile (args.deploy_prefix + "/" + asset.name);
+							attemptUrl = locateFile (args.assembly_root + "/" + asset.name);
 						else
 							attemptUrl = asset.name;
 					} else {

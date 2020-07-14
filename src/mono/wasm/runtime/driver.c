@@ -343,7 +343,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
+mono_wasm_load_runtime (int enable_debugging)
 {
 	const char *interp_opts = "";
 
