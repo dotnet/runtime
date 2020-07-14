@@ -202,7 +202,6 @@ namespace System.Diagnostics
         public int BasePriority { get { throw null; } }
         public int CurrentPriority { get { throw null; } }
         public int Id { get { throw null; } }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
         public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
@@ -215,7 +214,6 @@ namespace System.Diagnostics
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
         public System.Diagnostics.ThreadWaitReason WaitReason { get { throw null; } }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public void ResetIdealProcessor() { }
     }
     public partial class ProcessThreadCollection : System.Collections.ReadOnlyCollectionBase
