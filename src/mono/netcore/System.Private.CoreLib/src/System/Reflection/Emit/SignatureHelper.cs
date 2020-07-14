@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -48,17 +50,18 @@ namespace System.Reflection.Emit
             HELPER_PROPERTY
         }
 
-        private ModuleBuilder? module; // can be null in 2.0
+#region Sync with MonoReflectionSigHelper in object-internals.h
+        private ModuleBuilder? module;
         private Type[]? arguments;
         private SignatureHelperType type;
         private Type? returnType;
         private CallingConventions callConv;
         private CallingConvention unmanagedCallConv;
-#pragma warning disable 649
         private Type[][]? modreqs;
         private Type[][]? modopts;
-#pragma warning restore 649
+#endregion
 
+        [DynamicDependency(nameof(modopts))]  // Automatically keeps all previous fields too due to StructLayout
         internal SignatureHelper(ModuleBuilder? module, SignatureHelperType type)
         {
             this.type = type;

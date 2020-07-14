@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -189,7 +188,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -234,21 +233,28 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            ValueTask<Stream> task = CreateContentReadStreamAsyncCore(async: false, cancellationToken);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
+        }
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
-            CreateContentReadStreamAsyncCore(CancellationToken.None);
+            CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).AsTask();
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
+            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask() :
             base.CreateContentReadStreamAsync(cancellationToken);
 
-        private async Task<Stream> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
+        private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
         {
             try
             {
@@ -267,16 +273,27 @@ namespace System.Net.Http
                     HttpContent nestedContent = _nestedContent[contentIndex];
                     streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
 
-                    Stream readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) ?? new MemoryStream();
+                    Stream readStream;
+                    if (async)
+                    {
+                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        readStream = nestedContent.ReadAsStream();
+                    }
+                    // Cannot be null, at least an empty stream is necessary.
+                    readStream ??= new MemoryStream();
+
                     if (!readStream.CanSeek)
                     {
-                        // Seekability impacts whether HttpClientHandlers are able to rewind.  To maintain compat
+                        // Seekability impacts whether HttpClientHandlers are able to rewind. To maintain compat
                         // and to allow such use cases when a nested stream isn't seekable (which should be rare),
-                        // we fall back to the base behavior.  We don't dispose of the streams already obtained
+                        // we fall back to the base behavior. We don't dispose of the streams already obtained
                         // as we don't necessarily own them yet.
 
-                        // Do not pass a cancellationToken to base as it would trigger an infinite loop => StackOverflow
-                        return await base.CreateContentReadStreamAsync().ConfigureAwait(false);
+                        // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
+                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
                     }
                     streams[streamIndex++] = readStream;
                 }
@@ -288,7 +305,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }

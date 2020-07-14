@@ -42,4 +42,6 @@ endif
 endif
 endif
 
-DIST_SUBDIRS = btls $(culture_dirs) native eglib arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler
+DIST_SUBDIRS = btls $(culture_dirs) native eglib eventpipe arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler
+
+EXTRA_DIST = eventpipe/Makefile

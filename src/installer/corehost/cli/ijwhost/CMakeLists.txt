@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(ijwhost)
 
@@ -34,7 +33,7 @@ convert_to_absolute_path(SOURCES ${SOURCES})
 convert_to_absolute_path(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
 
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    preprocess_compile_asm(ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_OBJECTS)
+    preprocess_compile_asm(TARGET ijwhost ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_OBJECTS)
     list(APPEND ASM_HELPERS_SOURCES ${ASM_HELPERS_OBJECTS})
 endif ()
 

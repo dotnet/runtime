@@ -119,4 +119,7 @@
   <data name="IO_FileNotFound_FileName" xml:space="preserve">
     <value>Could not find file '{0}'.</value>
   </data>
+  <data name="DiagnosticsFileVersionInfo_PlatformNotSupported" xml:space="preserve">
+    <value>System.Diagnostics.FileVersionInfo is not supported on this platform.</value>
+  </data>
 </root>

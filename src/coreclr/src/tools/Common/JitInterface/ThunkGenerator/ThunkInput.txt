@@ -1,6 +1,5 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
-; See the LICENSE file in the project root for more information.
 ;
 ; Thunk generator input file for generating the thunks from the C++ version of the 
 ; jit interface to COM, into managed, and from COM to C++. 

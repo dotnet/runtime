@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -20,12 +19,12 @@ namespace System.Data
         /// <summary>
         /// A Comparer that compares a Key and a Row.
         /// </summary>
-        internal Func<object, DataRow, int> comparerKeyRow;  // comparer for DataView.Find(..
+        internal Func<object, DataRow, int>? comparerKeyRow;  // comparer for DataView.Find(..
 
         /// <summary>
         /// Builds the sort expression in case multiple selector/comparers are added.
         /// </summary>
-        internal readonly SortExpressionBuilder<DataRow> sortExpressionBuilder;
+        internal readonly SortExpressionBuilder<DataRow>? sortExpressionBuilder;
 
         /// <summary>
         /// Constructs a LinkDataView and its parent DataView.
@@ -33,7 +32,7 @@ namespace System.Data
         /// </summary>
         /// <param name="table">The input table from which LinkDataView is to be created.</param>
         /// <param name="sortExpressionBuilder">The sort expression builder in case multiple selectors/comparers are added.</param>
-        internal LinqDataView(DataTable table, SortExpressionBuilder<DataRow> sortExpressionBuilder)
+        internal LinqDataView(DataTable table, SortExpressionBuilder<DataRow>? sortExpressionBuilder)
             : base(table)
         {
             Debug.Assert(table != null, "null DataTable");
@@ -54,10 +53,10 @@ namespace System.Data
         /// <param name="sortExpressionBuilder">Combined sort expression build using mutiple sort expressions.</param>
         internal LinqDataView(
                     DataTable table,
-                    Predicate<DataRow> predicate_system,
-                    Comparison<DataRow> comparison,
-                    Func<object, DataRow, int> comparerKeyRow,
-                    SortExpressionBuilder<DataRow> sortExpressionBuilder)
+                    Predicate<DataRow>? predicate_system,
+                    Comparison<DataRow>? comparison,
+                    Func<object, DataRow, int>? comparerKeyRow,
+                    SortExpressionBuilder<DataRow>? sortExpressionBuilder)
             : base(table,
                 predicate_system,
                 comparison,
@@ -70,7 +69,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the expression used to filter which rows are viewed in the LinqDataView
         /// </summary>
-        public override string RowFilter
+        public override string? RowFilter
         {
             get
             {
@@ -123,11 +122,11 @@ namespace System.Data
             }
             else  // find for expression based sort
             {
-                if (sortExpressionBuilder.Count != 1)
+                if (sortExpressionBuilder!.Count != 1)
                     throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
 
                 Index.ComparisonBySelector<object, DataRow> compareDelg =
-                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow);
+                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow!);
 
                 List<object> keyList = new List<object>();
                 keyList.Add(key);
@@ -142,7 +141,7 @@ namespace System.Data
         /// them to Find using multiple keys.
         /// This overriden method prevents users calling multi-key find on dataview.
         /// </summary>
-        internal override int FindByKey(object[] key)
+        internal override int FindByKey(object?[] key)
         {
             // must have string or expression based sort specified
             if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort))
@@ -150,7 +149,7 @@ namespace System.Data
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
             }
-            else if (base.SortComparison != null && key.Length != sortExpressionBuilder.Count)
+            else if (base.SortComparison != null && key.Length != sortExpressionBuilder!.Count)
             {
                 throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
             }
@@ -163,10 +162,10 @@ namespace System.Data
             else
             {
                 Index.ComparisonBySelector<object, DataRow> compareDelg =
-                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow);
+                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow!);
 
-                List<object> keyList = new List<object>();
-                foreach (object singleKey in key)
+                List<object?> keyList = new List<object?>();
+                foreach (object? singleKey in key)
                 {
                     keyList.Add(singleKey);
                 }
@@ -182,7 +181,7 @@ namespace System.Data
         /// Since LinkDataView does not support multiple selectors/comparers, it does not make sense for
         /// them to Find using multiple keys. This overriden method prevents users calling multi-key find on dataview.
         /// </summary>
-        internal override DataRowView[] FindRowsByKey(object[] key)
+        internal override DataRowView[] FindRowsByKey(object?[] key)
         {
             // must have string or expression based sort specified
             if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort))
@@ -190,7 +189,7 @@ namespace System.Data
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
             }
-            else if (base.SortComparison != null && key.Length != sortExpressionBuilder.Count)
+            else if (base.SortComparison != null && key.Length != sortExpressionBuilder!.Count)
             {
                 throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
             }
@@ -202,8 +201,8 @@ namespace System.Data
             else
             {
                 Range range = FindRecords<object, DataRow>(
-                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow),
-                    new List<object>(key));
+                    new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow!),
+                    new List<object?>(key));
                 return base.GetDataRowViewFromRange(range);
             }
         }
@@ -215,7 +214,7 @@ namespace System.Data
         /// Overriding DataView's SetIndex to prevent users from setting RowState filter to anything other
         /// than CurrentRows.
         /// </summary>
-        internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter newRowFilter)
+        internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             // Throw only if expressions (filter or sort) are used and rowstate is not current rows
             if ((base.SortComparison != null || base.RowPredicate != null) && newRowStates != DataViewRowState.CurrentRows)
@@ -231,7 +230,8 @@ namespace System.Data
         #endregion
 
         #region IBindingList
-
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.
         /// </summary>
@@ -282,7 +282,7 @@ namespace System.Data
                 return !(base.SortComparison == null && base.Sort.Length == 0);
             }
         }
-
+#nullable enable
         #endregion
     }
 }

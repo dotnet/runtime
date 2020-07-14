@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Globalization;
@@ -1885,6 +1884,8 @@ namespace System
             return GetCorrespondingInflatedConstructor(fromNoninstanciated);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "We already have a FieldInfo so this will succeed")]
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
             /* create sensible flags from given FieldInfo */
@@ -2196,8 +2197,9 @@ namespace System
 
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1 || rank > 255)
+            if (rank < 1)
                 throw new IndexOutOfRangeException();
+
             return make_array_type(rank);
         }
 

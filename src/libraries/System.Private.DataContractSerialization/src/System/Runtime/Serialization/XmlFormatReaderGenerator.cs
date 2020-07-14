@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -413,16 +412,6 @@ namespace System.Runtime.Serialization
                         _ilg.StoreMember(dataMember.MemberInfo);
                     }
 
-#if FEATURE_LEGACYNETCF
-                    // The DataContractSerializer in the .NET Framework doesn't support unordered elements:
-                    // deserialization will fail if the data members in the XML are not sorted alphabetically.
-                    // But the NetCF DataContractSerializer does support unordered element. To maintain compatibility
-                    // with Mango we always search for the member from the beginning of the member list.
-                    // We set memberIndexLocal to -1 because GetMemberIndex always starts from memberIndex+1.
-                    if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                        ilg.Set(memberIndexLocal, (int)-1);
-                    else
-#endif // FEATURE_LEGACYNETCF
                     _ilg.Set(memberIndexLocal, memberCount);
 
                     _ilg.EndCase();

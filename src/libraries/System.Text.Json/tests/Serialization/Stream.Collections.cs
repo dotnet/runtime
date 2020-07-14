@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -18,15 +17,16 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         public static async Task HandleCollectionsAsync()
         {
-            await RunTest<string>();
-            await RunTest<ClassWithKVP>();
-            await RunTest<ImmutableStructWithStrings>();
+            await RunTestAsync<string>();
+            await RunTestAsync<ClassWithKVP>();
+            await RunTestAsync<ImmutableStructWithStrings>();
         }
 
-        private static async Task RunTest<TElement>()
+        private static async Task RunTestAsync<TElement>()
         {
             foreach ((Type, int) pair in CollectionTestData<TElement>())
             {
@@ -60,21 +60,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             string expectedjson = JsonSerializer.Serialize(obj, options);
 
-            using (var memoryStream = new MemoryStream())
-            {
-                await JsonSerializer.SerializeAsync(memoryStream, obj, options);
-                string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
-                JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
+            using var memoryStream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(memoryStream, obj, options);
+            string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
+            JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
 
-                memoryStream.Position = 0;
-                await TestDeserialization<TElement>(memoryStream, expectedjson, type, options);
-            }
+            memoryStream.Position = 0;
 
-            // Deserialize with extra whitespace
-            string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(expectedjson);
-            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithWhiteSpace)))
+            if (options.ReferenceHandler == null || !GetTypesNonRoundtrippableWithReferenceHandler().Contains(type))
             {
                 await TestDeserialization<TElement>(memoryStream, expectedjson, type, options);
+
+                // Deserialize with extra whitespace
+                string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(expectedjson);
+                using var memoryStreamWithWhiteSpace = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithWhiteSpace));
+                await TestDeserialization<TElement>(memoryStreamWithWhiteSpace, expectedjson, type, options);
             }
         }
 
@@ -351,6 +351,16 @@ namespace System.Text.Json.Serialization.Tests
             typeof(WrapperForIEnumerable),
             typeof(WrapperForIReadOnlyCollectionOfT<TElement>),
             typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>)
+        };
+
+        // Non-generic types cannot roundtrip when they contain a $ref written on serialization and they are the root type.
+        private static HashSet<Type> GetTypesNonRoundtrippableWithReferenceHandler() => new HashSet<Type>
+        {
+            typeof(Hashtable),
+            typeof(Queue),
+            typeof(Stack),
+            typeof(WrapperForIList),
+            typeof(WrapperForIEnumerable)
         };
 
         private class ClassWithKVP

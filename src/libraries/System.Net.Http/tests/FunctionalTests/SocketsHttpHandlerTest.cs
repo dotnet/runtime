@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -191,7 +190,7 @@ namespace System.Net.Http.Functional.Tests
 
                             // Wait a small amount of time before sending the first response, so the connection lifetime will expire.
                             Debug.Assert(lifetimeMilliseconds < 100);
-                            await Task.Delay(100);
+                            await Task.Delay(1000);
 
                             // Second request should not have completed yet, as we haven't completed the first yet.
                             Assert.False(request2.IsCompleted);
@@ -334,7 +333,7 @@ namespace System.Net.Http.Functional.Tests
                         ValidateResponseHeaders(response1, totalSize, mode);
 
                         // Read part but not all of response
-                        Stream responseStream = await response1.Content.ReadAsStreamAsync();
+                        Stream responseStream = await response1.Content.ReadAsStreamAsync(TestAsync);
                         await ReadToByteCount(responseStream, readSize);
 
                         response1.Dispose();
@@ -637,7 +636,7 @@ namespace System.Net.Http.Functional.Tests
                         var trailingHeaders = response.TrailingHeaders;
                         Assert.Empty(trailingHeaders);
 
-                        Stream stream = await response.Content.ReadAsStreamAsync();
+                        Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
                         Byte[] data = new Byte[100];
                         // Read some data, preferably whole body.
                         int readBytes = await stream.ReadAsync(data, 0, 4);
@@ -862,7 +861,7 @@ namespace System.Net.Http.Functional.Tests
                 // Pending read on the response content.
                 Assert.Empty(response.TrailingHeaders);
 
-                Stream stream = await response.Content.ReadAsStreamAsync();
+                Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
                 Byte[] data = new Byte[100];
                 await stream.ReadAsync(data, 0, data.Length);
 
@@ -1105,7 +1104,7 @@ namespace System.Net.Http.Functional.Tests
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                        using (Stream clientStream = await (await getResponseTask).Content.ReadAsStreamAsync())
+                        using (Stream clientStream = await (await getResponseTask).Content.ReadAsStreamAsync(TestAsync))
                         {
                             // Boolean properties returning correct values
                             Assert.True(clientStream.CanWrite);

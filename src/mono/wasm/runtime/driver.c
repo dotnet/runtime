@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include <emscripten.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +14,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
+#include <mono/jit/mono-private-unstable.h>
 
 #include "pinvoke.h"
 
@@ -38,13 +38,15 @@ char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
+char *mono_method_get_full_name (MonoMethod *method);
 
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
+static MonoClass* task_class;
 static MonoClass* safehandle_class;
 
-int mono_wasm_enable_gc;
+int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
@@ -293,6 +295,38 @@ icall_table_lookup_symbol (void *func)
 
 #endif
 
+/*
+ * get_native_to_interp:
+ *
+ *   Return a pointer to a wasm function which can be used to enter the interpreter to
+ * execute METHOD from native code.
+ * EXTRA_ARG is the argument passed to the interp entry functions in the runtime.
+ */
+void*
+get_native_to_interp (MonoMethod *method, void *extra_arg)
+{
+	MonoClass *klass = mono_method_get_class (method);
+	MonoImage *image = mono_class_get_image (klass);
+	MonoAssembly *assembly = mono_image_get_assembly (image);
+	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+	const char *name = mono_assembly_name_get_name (aname);
+	const char *class_name = mono_class_get_name (klass);
+	const char *method_name = mono_method_get_name (method);
+	char key [128];
+	int len;
+
+	assert (strlen (name) < 100);
+	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	len = strlen (key);
+	for (int i = 0; i < len; ++i) {
+		if (key [i] == '.')
+			key [i] = '_';
+	}
+
+	void *addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	return addr;
+}
+
 void mono_initialize_internals ()
 {
 	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
@@ -328,6 +362,7 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
+	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
 #ifdef ENABLE_AOT
 	// Defined in driver-gen.c
@@ -491,8 +526,10 @@ mono_wasm_string_from_js (const char *str)
 static int
 class_is_task (MonoClass *klass)
 {
-	if (!strcmp ("System.Threading.Tasks", mono_class_get_namespace (klass)) &&
-		(!strcmp ("Task", mono_class_get_name (klass)) || !strcmp ("Task`1", mono_class_get_name (klass))))
+	if (!task_class)
+		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
+
+	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
 		return 1;
 
 	return 0;
@@ -730,9 +767,9 @@ mono_wasm_parse_runtime_options (int argc, char* argv[])
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enable_on_demand_gc (void)
+mono_wasm_enable_on_demand_gc (int enable)
 {
-	mono_wasm_enable_gc = 1;
+	mono_wasm_enable_gc = enable ? 1 : 0;
 }
 
 // Returns the local timezone default is UTC.

@@ -7,6 +7,10 @@
 
 
   <!-- COMPlus_* variables that can be specified for a test scenario -->
+  <!-- There is a non-COMPlus variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
+       The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
+       The COMPlus_ processing handling below allows for variables not prefixed by 'COMPlus_'.
+  -->
   <PropertyGroup>
     <COMPlusVariables>
       COMPlus_TieredCompilation;
@@ -48,7 +52,8 @@
       COMPlus_TieredPGO;
       COMPlus_JitEnableGuardedDevirtualization;
       COMPlus_EnableEHWriteThru;
-      COMPlus_JitObjectStackAllocation
+      COMPlus_JitObjectStackAllocation;
+      RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -140,6 +145,8 @@
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
+    <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
+    <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -176,13 +183,31 @@
   <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
+
+      <!-- Mono interpreter -->
       <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+
+      <!-- CLR interpreter -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterJITThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_TC_CallCountThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
       <_TestEnvFileLine Include="#!/usr/bin/env bash" />
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
+
+      <!-- Mono interpreter -->
       <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+
+      <!-- CLR interpreter -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterJITThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_TC_CallCountThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />

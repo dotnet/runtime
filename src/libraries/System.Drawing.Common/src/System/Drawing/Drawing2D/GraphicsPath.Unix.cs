@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.Drawing2D.GraphicsPath.cs
 //
@@ -381,7 +381,7 @@ namespace System.Drawing.Drawing2D
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
             if (points.Length == 0)
-                throw new ArgumentException(nameof(points));
+                throw new ArgumentException(null, nameof(points));
 
             int status = Gdip.GdipAddPathLine2I(_nativePath, points, points.Length);
             Gdip.CheckStatus(status);
@@ -392,7 +392,7 @@ namespace System.Drawing.Drawing2D
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
             if (points.Length == 0)
-                throw new ArgumentException(nameof(points));
+                throw new ArgumentException(null, nameof(points));
 
             int status = Gdip.GdipAddPathLine2(_nativePath, points, points.Length);
             Gdip.CheckStatus(status);
@@ -464,7 +464,7 @@ namespace System.Drawing.Drawing2D
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
             if (rects.Length == 0)
-                throw new ArgumentException(nameof(rects));
+                throw new ArgumentException(null, nameof(rects));
 
             int status = Gdip.GdipAddPathRectanglesI(_nativePath, rects, rects.Length);
             Gdip.CheckStatus(status);
@@ -475,7 +475,7 @@ namespace System.Drawing.Drawing2D
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
             if (rects.Length == 0)
-                throw new ArgumentException(nameof(rects));
+                throw new ArgumentException(null, nameof(rects));
 
             int status = Gdip.GdipAddPathRectangles(_nativePath, rects, rects.Length);
             Gdip.CheckStatus(status);
@@ -642,7 +642,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             if (family == null)
-                throw new ArgumentException(nameof(family));
+                throw new ArgumentNullException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
@@ -653,7 +653,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             if (family == null)
-                throw new ArgumentException(nameof(family));
+                throw new ArgumentNullException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception

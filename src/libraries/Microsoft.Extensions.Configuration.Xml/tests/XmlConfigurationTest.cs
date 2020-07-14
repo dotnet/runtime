@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -432,7 +431,8 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             var config = new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: true).Build();
         }
 
-        [ConditionalFact]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [FrameworkSkipCondition(RuntimeFrameworks.Mono)]
         public void LoadKeyValuePairsFromValidEncryptedXml()
         {

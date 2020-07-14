@@ -17,6 +17,7 @@
     <Compile Include="StaticFieldLayout.il" />
     <Compile Include="VirtualFunctionOverride.il" />
     <Compile Include="Signature.il" />
+    <Compile Include="MethodImplOverride1.il" />
   </ItemGroup>
 
 </Project>

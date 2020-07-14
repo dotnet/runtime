@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -237,7 +236,7 @@ namespace System.Net.Http.Functional.Tests
                     await ValidateClientCancellationAsync(async () =>
                     {
                         HttpResponseMessage resp = await getResponse;
-                        Stream respStream = await resp.Content.ReadAsStreamAsync();
+                        Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync);
                         Task readTask = readOrCopyToAsync ?
                             respStream.ReadAsync(new byte[1], 0, 1, cts.Token) :
                             respStream.CopyToAsync(Stream.Null, 10, cts.Token);
@@ -296,7 +295,7 @@ namespace System.Net.Http.Functional.Tests
 
 
                     using (HttpResponseMessage resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
-                    using (Stream respStream = await resp.Content.ReadAsStreamAsync())
+                    using (Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync))
                     {
                         var result = new MemoryStream();
                         int b = respStream.ReadByte();

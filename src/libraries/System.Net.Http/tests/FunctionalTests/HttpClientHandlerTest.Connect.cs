@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
@@ -41,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
                         Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
                         await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);
 
-                        using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync())
+                        using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync(TestAsync))
                         {
                             Assert.True(clientStream.CanWrite);
                             Assert.True(clientStream.CanRead);

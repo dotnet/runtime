@@ -40,8 +40,8 @@
     <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
 
-    <ILLinkSubstitutionsXml Condition="'$(ILLinkSubstitutionsXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLink.Substitutions.xml')">$(MSBuildProjectDirectory)/ILLink.Substitutions.xml</ILLinkSubstitutionsXml>
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
+    <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -49,13 +49,12 @@
 
   <ItemGroup>
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
-    <None Include="$(ILLinkSubstitutionsXml)" Condition="'$(ILLinkSubstitutionsXml)' != ''" />
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
-  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
+  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
-  --> 
+  -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceTargetFramework Include="$(BuildSettings)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
@@ -72,7 +71,7 @@
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
-          DependsOnTargets="_CombineILLinkDescriptorsXmls;_CombineILLinkSubstitutionsXmls">
+          DependsOnTargets="_CombineILLinkDescriptorsXmls;_CombineILLinkSubstitutionsXmls;_CombineILLinkLinkAttributesXmls">
 
     <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
       <EmbeddedResource Include="$(ILLinkTrimXml)">
@@ -83,6 +82,12 @@
     <ItemGroup Condition="'$(ILLinkSubstitutionsXml)' != ''">
       <EmbeddedResource Include="$(ILLinkSubstitutionsXml)">
         <LogicalName>ILLink.Substitutions.xml</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ILLinkLinkAttributesXml)' != ''">
+      <EmbeddedResource Include="$(ILLinkLinkAttributesXml)">
+        <LogicalName>ILLink.LinkAttributes.xml</LogicalName>
       </EmbeddedResource>
     </ItemGroup>
 
@@ -105,8 +110,41 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup>
+    <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(GenerateResourcesSubstitutions)' == 'true'">
+    <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
+  </ItemGroup>
+
+  <!-- If a library uses string resources, the following target generates a substitution xml that will be embedded on the
+  library so that if a consumer wants to run the linker they can specify a feature switch to strip out all resources
+  from the assembly. -->
+  <Target Name="GenerateResourcesSubstitutionFile"
+          Condition="'$(GenerateResourcesSubstitutions)' == 'true'"
+          Inputs="$(MSBuildProjectFullPath)"
+          Outputs="$(ILLinkResourcesSubstitutionIntermediatePath)">
+
+    <PropertyGroup>
+      <ILLinkResourcesSubstitutionTemplate>$(MSBuildThisFileDirectory)ILLink.Substitutions.Resources.template</ILLinkResourcesSubstitutionTemplate>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(ILLinkResourcesSubstitutionIntermediatePath)"
+                      Lines="$([System.IO.File]::ReadAllText('$(ILLinkResourcesSubstitutionTemplate)')
+                                                 .Replace('{AssemblyName}', '$(AssemblyName)')
+                                                 .Replace('{StringResourcesName}', '$(StringResourcesName)'))"
+                      Overwrite="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_CombineILLinkSubstitutionsXmls"
-          Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXmls)' != ''"
+          DependsOnTargets="GenerateResourcesSubstitutionFile"
+          Condition="'@(ILLinkSubstitutionsXmls)' != ''"
           Inputs="@(ILLinkSubstitutionsXmls)"
           Outputs="$(ILLinkSubstitutionsXmlIntermediatePath)">
     <PropertyGroup>
@@ -121,7 +159,23 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_SetILLinkTrimAssembly" 
+  <Target Name="_CombineILLinkLinkAttributesXmls"
+          Condition="'@(ILLinkLinkAttributesXmls)' != ''"
+          Inputs="@(ILLinkLinkAttributesXmls)"
+          Outputs="$(ILLinkLinkAttributesXmlIntermediatePath)">
+    <PropertyGroup>
+      <ILLinkLinkAttributesXml>$(ILLinkLinkAttributesXmlIntermediatePath)</ILLinkLinkAttributesXml>
+    </PropertyGroup>
+
+    <CombineLinkerXmlFiles LinkerXmlFiles="@(ILLinkLinkAttributesXmls)"
+                           CombinedLinkerXmlFile="$(ILLinkLinkAttributesXml)" />
+
+    <ItemGroup>
+      <FileWrites Include="$(ILLinkLinkAttributesXml)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_SetILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == ''"
           DependsOnTargets="GetBinPlaceTargetFramework">
     <PropertyGroup>
@@ -155,6 +209,9 @@
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
       <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
+      <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
+      <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
+      <ILLinkArgs Condition="'$(ILLinkLinkAttributesXml)' != ''">$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
@@ -204,7 +261,7 @@
       <_DotNetHostFileName>dotnet</_DotNetHostFileName>
       <_DotNetHostFileName Condition=" '$(OS)' == 'Windows_NT' ">dotnet.exe</_DotNetHostFileName>
     </PropertyGroup>
-    
+
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
@@ -241,10 +298,10 @@
     <Exec Command="$(AsmDiffCmd) $(AsmDiffListArgs)" />
     <Message Text="Assembly trimming report: $(AsmDiffList)" />
   </Target>
-  
-  <!-- Similar to _CheckForCompileOutputs and runs in the same places, 
+
+  <!-- Similar to _CheckForCompileOutputs and runs in the same places,
        always set these even if compile didn't run. -->
-  <Target Name="_CheckForILLinkTrimAssemblyOutputs" 
+  <Target Name="_CheckForILLinkTrimAssemblyOutputs"
           BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>

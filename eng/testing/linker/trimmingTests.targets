@@ -68,7 +68,8 @@
                                                  .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
                                                  .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
-                                                 .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)'))"
+                                                 .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
+                                                 .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />

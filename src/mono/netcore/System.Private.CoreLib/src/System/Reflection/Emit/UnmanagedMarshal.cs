@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -35,12 +37,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-
-    [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead.")]
-    [ComVisible(true)]
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class UnmanagedMarshal
+    internal sealed class UnmanagedMarshal
     {
 #pragma warning disable 169, 414
         private int count;
@@ -65,36 +63,6 @@ namespace System.Reflection.Emit
             count = 0;
             t = maint;
             tbase = elemt;
-        }
-
-        public UnmanagedType BaseType
-        {
-            get
-            {
-                if (t == UnmanagedType.LPArray)
-                    throw new ArgumentException();
-
-#if FEATURE_COMINTEROP
-				if (t == UnmanagedType.SafeArray)
-					throw new ArgumentException ();
-#endif
-                return tbase;
-            }
-        }
-
-        public int ElementCount
-        {
-            get { return count; }
-        }
-
-        public UnmanagedType GetUnmanagedType
-        {
-            get { return t; }
-        }
-
-        public Guid IIDGuid
-        {
-            get { return new Guid(guid!); }
         }
 
         public static UnmanagedMarshal DefineByValArray(int elemCount)
