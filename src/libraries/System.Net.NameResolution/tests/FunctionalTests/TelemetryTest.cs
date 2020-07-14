@@ -75,14 +75,14 @@ namespace System.Net.NameResolution.Tests
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
-                    await Assert.ThrowsAsync<SocketException>(async () => await Dns.GetHostEntryAsync(InvalidHostName));
-                    await Assert.ThrowsAsync<SocketException>(async () => await Dns.GetHostAddressesAsync(InvalidHostName));
+                    await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostEntryAsync(InvalidHostName));
+                    await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostAddressesAsync(InvalidHostName));
 
-                    Assert.Throws<SocketException>(() => Dns.GetHostEntry(InvalidHostName));
-                    Assert.Throws<SocketException>(() => Dns.GetHostAddresses(InvalidHostName));
+                    Assert.ThrowsAny<SocketException>(() => Dns.GetHostEntry(InvalidHostName));
+                    Assert.ThrowsAny<SocketException>(() => Dns.GetHostAddresses(InvalidHostName));
 
-                    Assert.Throws<SocketException>(() => Dns.EndGetHostEntry(Dns.BeginGetHostEntry(InvalidHostName, null, null)));
-                    Assert.Throws<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
+                    Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostEntry(Dns.BeginGetHostEntry(InvalidHostName, null, null)));
+                    Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
                 });
 
                 Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
