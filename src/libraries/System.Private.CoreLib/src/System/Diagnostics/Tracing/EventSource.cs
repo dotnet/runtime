@@ -2135,35 +2135,11 @@ namespace System.Diagnostics.Tracing
                 args: args);
         }
 
-        // For EventListener filtering
+        // For EventListener filtering on self-describing EventSources
+        // Events emitted from self-describing EventSources have EventIDs of -1 so they can't be filtered via the existing
+        // dispatcher.m_EventEnabled[eventId] filtering mechanism.
         private EventLevel m_EventListenersMaxLevel; // Keeps track of the max level on this EventSource enabled by all instances of EventListeners
         private EventKeywords m_EventListenersKeywords; // Keeps track of the sum of all keywords on this EventSource enabled by all instances of alive EventListeners
-
-        // When an EventListener calls EnableEvents() on this EventSource, it updates this so that it can be used for filtering when events are written to it.
-        internal void UpdateListenerLevelAndKeywords(EventLevel level, EventKeywords keywords)
-        {
-            m_EventListenersMaxLevel = level > m_EventListenersMaxLevel ? level : m_EventListenersMaxLevel;
-            m_EventListenersKeywords |=  keywords;
-        }
-
-        // This method gets called when we remove EventListeners from the known list of EventListeners. Because there is no easy way to "undo" the level/keyword
-        // combination of EventListener that was removed, we need to iterate through all known dispatchers and compute the max EventLevel and sum of EventKeywords.
-        internal void ComputeMaxLevelAndKeywords()
-        {
-            EventLevel maxLevel = EventLevel.LogAlways;
-            EventKeywords maxKeywords = EventKeywords.None;
-            for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
-            {
-                EventListenerEventSourceState state;
-                if (dispatcher.m_Listener.GetListenerEventSourceStates(this, out state))
-                {
-                    maxLevel = state.Level > maxLevel ? state.Level : maxLevel;
-                    maxKeywords |= state.Keyword;
-                }
-            }
-            m_EventListenersMaxLevel = maxLevel;
-            m_EventListenersKeywords = maxKeywords;
-        }
 
         // helper for writing to all EventListeners attached the current eventSource.
         internal unsafe void WriteToAllListeners(int eventId, uint* osThreadId, DateTime* timeStamp, Guid* activityID, Guid* childActivityID, params object?[] args)
@@ -2194,7 +2170,7 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
                 if (LocalAppContextSwitches.DisableEventListenerFiltering ||
-                    (dispatcher.m_EventEnabled[eventId] && dispatcher.m_Listener.IsEventEnabled(eventCallbackArgs)))
+                    (dispatcher.m_EventEnabled[eventId] && dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)))
                 {
                     {
                         try
@@ -2675,6 +2651,13 @@ namespace System.Diagnostics.Tracing
                             else if (m_matchAnyKeyword != 0)
                                 m_matchAnyKeyword = unchecked(m_matchAnyKeyword | commandArgs.matchAnyKeyword);
                         }
+
+                        if (commandArgs.dispatcher != null)
+                        {
+                            commandArgs.dispatcher.UpdateLevelAndKeyword(commandArgs.level, commandArgs.matchAnyKeyword);
+                            m_EventListenersMaxLevel = commandArgs.level > m_EventListenersMaxLevel ? commandArgs.level : m_EventListenersMaxLevel;
+                            m_EventListenersKeywords |= commandArgs.Keywords; 
+                        }
                     }
 
                     // interpret perEventSourceSessionId's sign, and adjust perEventSourceSessionId to
@@ -2733,6 +2716,8 @@ namespace System.Diagnostics.Tracing
                         for (int i = 0; i < m_eventData.Length; i++)
                         {
                             bool isEnabledForAnyListener = false;
+                            EventLevel maxLevel = 0; 
+                            EventKeywords unionKeywords = 0;
                             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
                             {
                                 Debug.Assert(dispatcher.m_EventEnabled != null);
@@ -2742,8 +2727,13 @@ namespace System.Diagnostics.Tracing
                                     isEnabledForAnyListener = true;
                                     break;
                                 }
+
+                                maxLevel = maxLevel > dispatcher.m_Level ? maxLevel : dispatcher.m_Level;
+                                unionKeywords |= dispatcher.m_Keywords;
                             }
                             m_eventData[i].EnabledForAnyListener = isEnabledForAnyListener;
+                            m_EventListenersMaxLevel = maxLevel;
+                            m_EventListenersKeywords = unionKeywords;
                         }
 
                         // If no events are enabled, disable the global enabled bit.
@@ -3943,19 +3933,7 @@ namespace System.Diagnostics.Tracing
     public class EventListener : IDisposable
     {
         private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
-        private Dictionary<string, EventListenerEventSourceState>? _EnabledEventSourceStates;
-        private static EventListenerEventSourceState EmptyEventListenerEventSourceState = new EventListenerEventSourceState { Level = (EventLevel)0, Keyword = (EventKeywords)0 };
 
-        internal bool GetListenerEventSourceStates(EventSource source, out EventListenerEventSourceState state)
-        {
-            if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(source.Name))
-            {
-                state = _EnabledEventSourceStates[source.Name];
-                return true;
-            }
-            state = EmptyEventListenerEventSourceState;
-            return false;
-        }
         /// <summary>
         /// This event is raised whenever a new eventSource is 'attached' to the dispatcher.
         /// This can happen for all existing EventSources when the EventListener is created
@@ -4103,10 +4081,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(eventSource));
             }
 
-            if (_EnabledEventSourceStates != null)
-                _EnabledEventSourceStates[eventSource.Name] = new EventListenerEventSourceState{ Level = level, Keyword = matchAnyKeyword };
-            eventSource.UpdateListenerLevelAndKeywords(level, matchAnyKeyword);
-
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
@@ -4179,25 +4153,6 @@ namespace System.Diagnostics.Tracing
         protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
             this.EventWritten?.Invoke(this, eventData);
-        }
-
-        internal virtual bool IsEventEnabled(EventWrittenEventArgs eventData)
-        {
-            return IsEventEnabled(eventData.EventSource.Name, eventData.Level, eventData.Keywords);
-        }
-
-        internal virtual bool IsEventEnabled(string eventSourceName, EventLevel level, EventKeywords keywords)
-        {
-            if (_EnabledEventSourceStates != null && _EnabledEventSourceStates.ContainsKey(eventSourceName))
-            {
-                EventListenerEventSourceState state = _EnabledEventSourceStates[eventSourceName];
-                if (state.Keyword != 0 && keywords != 0)
-                {
-                    return (state.Level <= level) && ((state.Keyword & keywords) != 0);
-                }
-                return true;
-            }
-            return false;
         }
 
 #region private
@@ -4339,7 +4294,6 @@ namespace System.Diagnostics.Tracing
                             prev = cur;
                         }
                     }
-                    eventSource.ComputeMaxLevelAndKeywords();
                 }
             }
 
@@ -5236,6 +5190,27 @@ namespace System.Diagnostics.Tracing
         // Instance fields
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
+        
+        /// Filtering logic for self-describing EventSources 
+        /// Events coming from self-describing EventSources have EventIDs of -1, so they need to be filtered separately
+        /// via their event level and keywords.
+        internal EventLevel m_Level;         // Level at which this EventListener enabled this EventSource
+        internal EventKeywords m_Keywords;   // Keyword with which this EventListener enabled this EventSource
+
+        internal void UpdateLevelAndKeyword(EventLevel level, EventKeywords keywords)
+        {
+            m_Level = level;
+            m_Keywords = keywords;
+        }
+
+        internal bool IsEventEnabled(EventLevel level, EventKeywords keywords)
+        {
+            if (keywords != 0 && m_Keywords != 0)
+            {
+                return (m_Level <= level) && ((m_Keywords | keywords) > 0);
+            }
+            return true;
+        }
 
         // Only guaranteed to exist after a InsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
