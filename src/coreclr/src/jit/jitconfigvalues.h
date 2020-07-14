@@ -291,7 +291,7 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 // If 3, enable the CSE of Constants including nearby offsets. (all platforms)
 // If 4, enable the CSE of Constants but don't combine with nearby offsets. (all platforms)
 //
-CONFIG_INTEGER(JitDisableConstCSE, W("JitDisableConstCSE"), 0)
+CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
 ///
 /// JIT
