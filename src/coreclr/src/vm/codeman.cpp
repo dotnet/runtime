@@ -6179,11 +6179,19 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(TADDR ImageBase,
         {
             PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
             
-            if (RelativePc >= pFunctionEntry->BeginAddress && RelativePc < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, ImageBase))
+            if (RelativePc >= pFunctionEntry->BeginAddress)
             {
-                return i;
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI) && !defined(FEATURE_EH_FUNCLETS)
+                // On Windows X86, the end offset is handled by the method region code (for ngen), and
+                // the GCInfo for ReadyToRun
+#else
+                if (RelativePc < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, ImageBase))
+#endif
+                {
+                    return i;
+                    break;
+                }
             }
-            break;
         }
     }
 
@@ -6802,6 +6810,20 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     if (MethodIndex < 0)
         return FALSE;
+
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI) && !defined(FEATURE_EH_FUNCLETS)
+    {
+        // On Windows X86, the RUNTIME_FUNCTION structure does not encode the end of the function
+        // Use the GCInfo to find the end of the function and verify that currentPC is in the
+        // bounds of the function
+        PTR_RUNTIME_FUNCTION FunctionEntryEarly = pRuntimeFunctions + MethodIndex;
+        METHODTOKEN methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntryEarly));
+        DWORD offsetFromStartOfFunction = RelativePc - RUNTIME_FUNCTION__BeginAddress(FunctionEntryEarly);
+        DWORD functionSize = GetCodeManager()->GetFunctionSize(GetGCInfoToken(methodToken));
+        if (functionSize < offsetFromStartOfFunction)
+            return FALSE;
+    }
+#endif
 
     if (ppMethodDesc == NULL && pCodeInfo == NULL)
     {
