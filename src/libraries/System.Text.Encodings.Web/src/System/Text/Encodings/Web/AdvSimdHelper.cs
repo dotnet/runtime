@@ -104,7 +104,7 @@ namespace System.Text.Encodings.Web
             ulong mask = extractedBits.AsUInt64().ToScalar();
 
             // calculate the index
-            int index = BitOperations.TrailingZeroCount(mask) / 4;
+            int index = BitOperations.TrailingZeroCount(mask) >> 2;
             Debug.Assert((mask != 0) ? index < 16 : index >= 16);
             return index;
         }
