@@ -3634,13 +3634,13 @@ static void CreateNDirectStubWorker(StubState*         pss,
     else
     {
         // This is an ordinary value type - see if it is returned by-ref.
-        MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-        if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+        TypeHandle retType = msig.GetRetTypeHandleThrowing();
+        if (retType.IsValueType() && !retType.IsEnum() && IsUnmanagedValueTypeReturnedByRef(retType.MakeNativeValueType().GetSize()))
         {
             nativeStackSize += sizeof(LPVOID);
         }
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        else if (fThisCall)
+        else if (fThisCall && !retType.IsEnum())
         {
             nativeStackSize += sizeof(LPVOID);
         }
