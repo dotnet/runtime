@@ -127,11 +127,10 @@ public class WasmAppBuilder : Task
             sw.WriteLine("\tdeploy_prefix: \"managed\",");
             sw.WriteLine("\tenable_debugging: 0,");
             sw.WriteLine("\tassets: [");
+
             foreach (var assembly in _assemblies.Values)
-            {
-                sw.Write($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }}");
-                sw.WriteLine(",");
-            }
+                sw.WriteLine($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }},");
+
             foreach (KeyValuePair<string, List<string>> keyValuePair in filesToMap)
             {
                 sw.WriteLine("\t\t{");
@@ -145,8 +144,10 @@ public class WasmAppBuilder : Task
                 sw.WriteLine("\t\t\t],");
                 sw.WriteLine("\t\t},");
             }
+
             foreach (var asset in ICUDataFiles!)
-                sw.Write($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: true }}");
+                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: true }},");
+
             sw.WriteLine ("\t],");
 
             if (RemoteSources!.Length > 0) {
@@ -155,6 +156,7 @@ public class WasmAppBuilder : Task
                     sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
                 sw.WriteLine ("],");
             }
+
             sw.WriteLine ("};");
         }
 
