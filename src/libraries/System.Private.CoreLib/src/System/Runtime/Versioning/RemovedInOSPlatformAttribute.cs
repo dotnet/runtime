@@ -3,27 +3,5 @@
 
 namespace System.Runtime.Versioning
 {
-    /// <summary>
-    /// Marks APIs that were removed in a given operating system version.
-    /// </summary>
-    /// <remarks>
-    /// Primarily used by OS bindings to indicate APIs that are only available in
-    /// earlier versions.
-    /// </remarks>
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Field |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple = true, Inherited = false)]
-    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
-    {
-        public RemovedInOSPlatformAttribute(string platformName) : base(platformName)
-        {
-        }
-    }
+
 }
