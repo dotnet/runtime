@@ -954,7 +954,7 @@ namespace System.Text.Unicode
 
                             if (AdvSimd.IsSupported)
                             {
-                                if (AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask).ToScalar() == 0)
+                                if (AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask).ToScalar() != 0)
                                 {
                                     goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                                 }
