@@ -57,6 +57,10 @@
         <_Parameter1>$(AssemblyName)</_Parameter1>
       </AssemblyAttribute>
 
+      <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage" Condition="'@(EmbeddedResource)' != '' and '$(IsSourceProject)' == 'true'">
+        <_Parameter1>en-US</_Parameter1>
+      </AssemblyAttribute>
+
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
                          Condition="'$(SkipFrameworkAssemblyMetadata)' != 'true' and '@(AssemblyMetadata)' != ''">
         <_Parameter1>%(AssemblyMetadata.Identity)</_Parameter1>
