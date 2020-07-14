@@ -1406,6 +1406,9 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
    mono_feature_disable_cfgdir_config='yes'
+   mono_feature_disable_alc_unloadability='yes'
+   # For debugging; merge this in with ALC unloadability once JIT and AOT allocations are moved over
+   # mono_feature_disable_domain_code_memory='yes'
    if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
@@ -2044,6 +2047,16 @@ if test x$enable_perftracing = xyes; then
 	AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
 fi
 AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
+
+if test "x$mono_feature_disable_alc_unloadability" = "xyes"; then
+	AC_DEFINE(DISABLE_ALC_UNLOADABILITY, 1, [Disable ALC unloadability in netcore])
+	AC_MSG_NOTICE([Didsabled ALC unloadability])
+fi
+
+if test "x$mono_feature_disable_domain_code_memory" = "xyes"; then
+	AC_DEFINE(DISABLE_DOMAIN_CODE_MEMORY, 1, [Disable domain code memory in netcore])
+	AC_MSG_NOTICE([Disabled domain code memory for debugging])
+fi
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
