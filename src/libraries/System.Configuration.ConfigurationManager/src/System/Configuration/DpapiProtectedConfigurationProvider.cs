@@ -8,6 +8,7 @@ using System.Xml;
 
 namespace System.Configuration
 {
+    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
     public sealed class DpapiProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
         private bool _useMachineProtection = true;
