@@ -13,6 +13,7 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
                     AttributeTargets.Event |
+                    AttributeTargets.Field |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
