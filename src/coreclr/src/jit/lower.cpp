@@ -4983,7 +4983,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             GenTree* next = node->gtNext;
             BlockRange().Remove(op2);
             BlockRange().Remove(node);
-            JITDUMP("Remove [06%u], [06%u]\n", op2->gtTreeID, node->gtTreeID);
+            JITDUMP("Remove [%06u], [%06u]\n", op2->gtTreeID, node->gtTreeID);
             return next;
         }
 
