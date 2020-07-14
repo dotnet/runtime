@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = useMachineContext;
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public X509Chain(IntPtr chainContext)
         {
             _pal = ChainPal.FromHandle(chainContext);

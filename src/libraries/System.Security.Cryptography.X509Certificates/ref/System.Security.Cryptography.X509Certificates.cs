@@ -332,6 +332,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509Chain() { }
         public X509Chain(bool useMachineContext) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public X509Chain(System.IntPtr chainContext) { }
         public System.IntPtr ChainContext { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainElementCollection ChainElements { get { throw null; } }
