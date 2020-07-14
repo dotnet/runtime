@@ -12,43 +12,7 @@ namespace System
 {
     public static partial class Environment
     {
-        public static bool UserInteractive => true;
-
-        private static string CurrentDirectoryCore
-        {
-            get => Interop.Sys.GetCwd();
-            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true);
-        }
-
-        private static string ExpandEnvironmentVariablesCore(string name)
-        {
-            var result = new ValueStringBuilder(stackalloc char[128]);
-
-            int lastPos = 0, pos;
-            while (lastPos < name.Length && (pos = name.IndexOf('%', lastPos + 1)) >= 0)
-            {
-                if (name[lastPos] == '%')
-                {
-                    string key = name.Substring(lastPos + 1, pos - lastPos - 1);
-                    string? value = GetEnvironmentVariable(key);
-                    if (value != null)
-                    {
-                        result.Append(value);
-                        lastPos = pos + 1;
-                        continue;
-                    }
-                }
-                result.Append(name.AsSpan(lastPos, pos - lastPos));
-                lastPos = pos;
-            }
-            result.Append(name.AsSpan(lastPos));
-
-            return result.ToString();
-        }
-
         public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
-
-        private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
         public static string MachineName
         {
@@ -60,13 +24,24 @@ namespace System
             }
         }
 
-        private static int GetCurrentProcessId() => Interop.Sys.GetPid();
+        public static long WorkingSet
+        {
+            get
+            {
+                Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
+                {
+                    using (currentProcess)
+                    {
+                        if (processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null) is long result)
+                            return result;
+                    }
+                }
 
-        internal const string NewLineConst = "\n";
-
-        public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
-
-        public static int SystemPageSize => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
+                // Could not get the current working set.
+                return 0;
+            }
+        }
 
         public static unsafe string UserName
         {
@@ -134,41 +109,6 @@ namespace System
 
             // Otherwise, fail.
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
-        }
-
-        public static string UserDomainName => MachineName;
-
-        /// <summary>Invoke <see cref="Interop.Sys.SysConf"/>, throwing if it fails.</summary>
-        private static int CheckedSysConf(Interop.Sys.SysConfName name)
-        {
-            long result = Interop.Sys.SysConf(name);
-            if (result == -1)
-            {
-                Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
-                throw errno.Error == Interop.Error.EINVAL ?
-                    new ArgumentOutOfRangeException(nameof(name), name, errno.GetErrorMessage()) :
-                    Interop.GetIOException(errno);
-            }
-            return (int)result;
-        }
-
-        public static long WorkingSet
-        {
-            get
-            {
-                Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
-                {
-                    using (currentProcess)
-                    {
-                        if (processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null) is long result)
-                            return result;
-                    }
-                }
-
-                // Could not get the current working set.
-                return 0;
-            }
         }
     }
 }
