@@ -348,6 +348,7 @@ namespace System.Text.Tests
             yield return new object[] { "Hello" }; // simple ASCII
             yield return new object[] { "a\U00000123b\U00001234c\U00101234d" }; // with multi-byte sequences of varying lengths
             yield return new object[] { "\uF8FF\uE000\U000FFFFF" }; // with scalars from the private use areas
+            yield return new object[] { "\u00E921222324303132333435363738393A3B3C3D3E3F3031323334353637\u00E938393A3B3C3D3E3F" }; // reaches the intrinsics optimizations in System.Text.Unicode.Utf8Utility.GetPointerToFirstInvalidByte
         }
     }
 }
