@@ -66,6 +66,7 @@ namespace System.Net.Sockets
             if (errorCode == SocketError.Success)
             {
                 _rightEndPoint = ep.Create(socketAddress);
+                _localEndPoint = null;
             }
             else if (errorCode == SocketError.InvalidArgument)
             {
