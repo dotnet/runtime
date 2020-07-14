@@ -99,7 +99,7 @@ namespace System.Text.Encodings.Web
                             Debug.Assert((text + idx) <= (text + textLength));
                             if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
                             {
-                                return idx;
+                                goto Return;
                             }
                         }
                         startingAddress += 8;
@@ -128,7 +128,7 @@ namespace System.Text.Encodings.Web
                             // the first one found that needed to be escaped within the 8 characters.
                             Debug.Assert(index % 2 == 0);
                             idx += index >> 1;
-                            return idx;
+                            goto Return;
                         }
                         idx += 8;
                         startingAddress += 8;
@@ -145,11 +145,14 @@ namespace System.Text.Encodings.Web
                 Debug.Assert((text + idx) <= (text + textLength));
                 if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
                 {
-                    return idx;
+                    goto Return;
                 }
             }
 
             return -1; // All characters are allowed.
+
+        Return:
+            return idx;
         }
 
         public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
@@ -198,7 +201,7 @@ namespace System.Text.Encodings.Web
                                 {
                                     if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
                                     {
-                                        return idx;
+                                        goto Return;
                                     }
                                     idx++;
                                 }
@@ -209,7 +212,7 @@ namespace System.Text.Encodings.Web
                                     Debug.Assert(nextScalarValue <= int.MaxValue);
                                     if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
                                     {
-                                        return idx;
+                                        goto Return;
                                     }
 
                                     Debug.Assert(opStatus == OperationStatus.Done);
@@ -240,7 +243,7 @@ namespace System.Text.Encodings.Web
                                 // Found at least one byte that needs to be escaped, figure out the index of
                                 // the first one found that needed to be escaped within the 16 bytes.
                                 idx += index;
-                                return idx;
+                                goto Return;
                             }
                             idx += 16;
                             startingAddress += 16;
@@ -260,7 +263,7 @@ namespace System.Text.Encodings.Web
                     {
                         if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
                         {
-                            return idx;
+                            goto Return;
                         }
                         idx++;
                     }
@@ -271,7 +274,7 @@ namespace System.Text.Encodings.Web
                         Debug.Assert(nextScalarValue <= int.MaxValue);
                         if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
                         {
-                            return idx;
+                            goto Return;
                         }
 
                         Debug.Assert(opStatus == OperationStatus.Done);
@@ -281,6 +284,9 @@ namespace System.Text.Encodings.Web
                 Debug.Assert(idx == utf8Text.Length);
 
                 return -1; // All bytes are allowed.
+
+            Return:
+                return idx;
             }
         }
 
