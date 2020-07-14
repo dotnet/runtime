@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public object? WrappedObject { get; }
     }
 }
