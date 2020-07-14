@@ -593,61 +593,20 @@ public:
         LocalDesc nativeType = GetNativeType();
         LocalDesc managedType = GetManagedType();
 
-        bool byrefNativeReturn = false;
-        CorElementType typ = ELEMENT_TYPE_VOID;
-        UINT32 nativeSize = 0;
-
-        // we need to convert value type return types to primitives as
-        // JIT does not inline P/Invoke calls that return structures
-        if (nativeType.IsValueClass())
-        {
-            if (wNativeSize == VARIABLESIZE)
-            {
-                // the unmanaged type size is variable
-                nativeSize = m_pargs->m_pMT->GetNativeSize();
-            }
-            else
-            {
-                // the unmanaged type size is fixed
-                nativeSize = wNativeSize;
-            }
-        }
-
-        if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && IsCLRToNative(m_dwMarshalFlags)))
+        if (IsHresultSwap(dwMarshalFlags))
         {
             LocalDesc extraParamType = nativeType;
             extraParamType.MakeByRef();
 
             m_pcsMarshal->SetStubTargetArgType(&extraParamType, false);
 
-            if (IsHresultSwap(dwMarshalFlags))
-            {
-                // HRESULT swapping: the original return value is transformed into an extra
-                // byref parameter and the target is expected to return an HRESULT
-                m_pcsMarshal->SetStubTargetReturnType(ELEMENT_TYPE_I4);    // native method returns an HRESULT
-            }
-            else
-            {
-                // byref structure return: the original return value is transformed into an
-                // extra byref parameter and the target is not expected to return anything
-                //
-                // note: we do this only for forward calls because [unmanaged calling conv.
-                // uses byref return] implies [managed calling conv. uses byref return]
-                m_pcsMarshal->SetStubTargetReturnType(ELEMENT_TYPE_VOID);
-            }
+            // HRESULT swapping: the original return value is transformed into an extra
+            // byref parameter and the target is expected to return an HRESULT
+            m_pcsMarshal->SetStubTargetReturnType(ELEMENT_TYPE_I4);    // native method returns an HRESULT
         }
         else
         {
-            if (typ != ELEMENT_TYPE_VOID)
-            {
-                // small structure return: the original return value is transformed into
-                // ELEMENT_TYPE_U1, ELEMENT_TYPE_U2, ELEMENT_TYPE_U4, or ELEMENT_TYPE_U8
-                m_pcsMarshal->SetStubTargetReturnType(typ);
-            }
-            else
-            {
-                m_pcsMarshal->SetStubTargetReturnType(&nativeType);
-            }
+            m_pcsMarshal->SetStubTargetReturnType(&nativeType);
         }
 
         m_managedHome.InitHome(ILStubMarshalHome::HomeType_ILLocal, m_pcsMarshal->NewLocal(managedType));
@@ -657,31 +616,14 @@ public:
 
         if (IsCLRToNative(dwMarshalFlags))
         {
-            if (IsHresultSwap(dwMarshalFlags) || byrefNativeReturn)
+            if (IsHresultSwap(dwMarshalFlags))
             {
                 EmitReInitNative(m_pcsMarshal);
                 EmitLoadNativeHomeAddrForByRefDispatch(pcsDispatch);    // load up the byref native type as an extra arg
             }
             else
             {
-                if (typ != ELEMENT_TYPE_VOID)
-                {
-                    // small structure forward: the returned integer is memcpy'd into native home
-                    // of the structure
-
-                    DWORD dwTempLocalNum = m_pcsUnmarshal->NewLocal(typ);
-                    m_pcsUnmarshal->EmitSTLOC(dwTempLocalNum);
-
-                    // cpblk
-                    m_nativeHome.EmitLoadHomeAddr(m_pcsUnmarshal);
-                    m_pcsUnmarshal->EmitLDLOCA(dwTempLocalNum);
-                    m_pcsUnmarshal->EmitLDC(nativeSize);
-                    m_pcsUnmarshal->EmitCPBLK();
-                }
-                else
-                {
-                    EmitStoreNativeValue(m_pcsUnmarshal);
-                }
+                EmitStoreNativeValue(m_pcsUnmarshal);
             }
 
             if (NeedsMarshalCleanupIndex())
@@ -737,25 +679,7 @@ public:
             }
             else
             {
-                if (typ != ELEMENT_TYPE_VOID)
-                {
-                    // small structure return (reverse): native home of the structure is memcpy'd
-                    // into the integer to be returned from the stub
-
-                    DWORD dwTempLocalNum = m_pcsUnmarshal->NewLocal(typ);
-
-                    // cpblk
-                    m_pcsUnmarshal->EmitLDLOCA(dwTempLocalNum);
-                    m_nativeHome.EmitLoadHomeAddr(m_pcsUnmarshal);
-                    m_pcsUnmarshal->EmitLDC(nativeSize);
-                    m_pcsUnmarshal->EmitCPBLK();
-
-                    m_pcsUnmarshal->EmitLDLOC(dwTempLocalNum);
-                }
-                else
-                {
-                    EmitLoadNativeValue(m_pcsUnmarshal);
-                }
+                EmitLoadNativeValue(m_pcsUnmarshal);
             }
 
             // make sure we free (and zero) the return value if an exception is thrown

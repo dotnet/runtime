@@ -3468,36 +3468,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
     UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
 
-    // Normally we would like this to be false so that we use the correct signature
-    // in the IL_STUB, (i.e if it returns a value class then the signature will use that)
-    // When this bool is true we change the return type to void and explicitly add a
-    // return buffer argument as the first argument so as to match the native calling convention correctly.
-    BOOL fMarshalReturnValueFirst = FALSE;
-
-    // We can only change fMarshalReturnValueFirst to true when we are NOT doing HRESULT-swapping!
-    // When we are HRESULT-swapping, the managed return type is actually the type of the last parameter and not the return type.
-    // The native return type of an HRESULT-swapped function is an HRESULT, which never uses a return-buffer argument.
-    // Since the managed return type is actually the last parameter, we need to marshal it after the last parameter in the managed signature
-    // to make sure we match the native signature correctly (when marshalling parameters, we add them to the native stub signature).
-    if (!SF_IsHRESULTSwapping(dwStubFlags))
-    {
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        // JIT32 has problems in generating code for pinvoke ILStubs which do a return in return buffer.
-        // Therefore instead we change the signature of calli to return void and make the return buffer as first
-        // argument. This matches the ABI i.e. return buffer is passed as first arg. So native target will get the
-        // return buffer in correct register.
-        // The return structure secret arg comes first, however byvalue return is processed at
-        // the end because it could be the HRESULT-swapped argument which always comes last.
-
-#ifdef UNIX_X86_ABI
-        // For functions with value type class, managed and unmanaged calling convention differ
-        fMarshalReturnValueFirst = HasRetBuffArgUnmanagedFixup(&msig);
-#else
-        fMarshalReturnValueFirst = HasRetBuffArg(&msig);
-#endif // UNIX_X86_ABI
-#endif
-    }
-
     //
     // Marshal the arguments
     //
@@ -3551,48 +3521,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
     int argidx = 1;
     int nativeArgIndex = 0;
 
-    if (fMarshalReturnValueFirst)
-    {
-        marshalType = DoMarshalReturnValue(msig,
-                                           pParamTokenArray,
-                                           nlType,
-                                           nlFlags,
-                                           0,
-                                           pss,
-                                           argOffset,
-                                           dwStubFlags,
-                                           pMD,
-                                           nativeStackSize,
-                                           fStubNeedsCOM,
-                                           0
-                                           DEBUG_ARG(pSigDesc->m_pDebugName)
-                                           DEBUG_ARG(pSigDesc->m_pDebugClassName)
-                                           );
-
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
-#ifdef FEATURE_COMINTEROP
-         || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
-#endif // FEATURE_COMINTEROP
-            )
-        {
-            // These are special non-blittable types returned by-ref in managed,
-            // but marshaled as primitive values returned by-value in unmanaged.
-        }
-        else
-        {
-            // This is an ordinary value type - see if it is returned by-ref.
-            MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
-            {
-                nativeStackSize += sizeof(LPVOID);
-            }
-        }
-    }
-
     while (argidx <= numArgs)
     {
         //
@@ -3638,37 +3566,62 @@ static void CreateNDirectStubWorker(StubState*         pss,
             argOffset++;
     }
 
-    if (!fMarshalReturnValueFirst)
-    {
-        // This could be a HRESULT-swapped argument so it must come last.
-        marshalType = DoMarshalReturnValue(msig,
-                             pParamTokenArray,
-                             nlType,
-                             nlFlags,
-                             argidx,
-                             pss,
-                             argOffset,
-                             dwStubFlags,
-                             pMD,
-                             nativeStackSize,
-                             fStubNeedsCOM,
-                             nativeArgIndex
-                             DEBUG_ARG(pSigDesc->m_pDebugName)
-                             DEBUG_ARG(pSigDesc->m_pDebugClassName)
-                             );
+    marshalType = DoMarshalReturnValue(msig,
+                            pParamTokenArray,
+                            nlType,
+                            nlFlags,
+                            argidx,
+                            pss,
+                            argOffset,
+                            dwStubFlags,
+                            pMD,
+                            nativeStackSize,
+                            fStubNeedsCOM,
+                            nativeArgIndex
+                            DEBUG_ARG(pSigDesc->m_pDebugName)
+                            DEBUG_ARG(pSigDesc->m_pDebugClassName)
+                            );
 
-        // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
-        // Interop methods that use this stub will have an implicit reliability contract
-        // (see code:TAStackCrawlCallBack).
-        if (!SF_IsHRESULTSwapping(dwStubFlags))
+    // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
+    // Interop methods that use this stub will have an implicit reliability contract
+    // (see code:TAStackCrawlCallBack).
+    if (!SF_IsHRESULTSwapping(dwStubFlags))
+    {
+        if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
+            marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
         {
-            if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
-                marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
-            {
-                if (pMD->IsDynamicMethod())
-                    pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
-            }
+            if (pMD->IsDynamicMethod())
+                pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
         }
+    }
+
+    if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
+        marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
+#ifdef FEATURE_COMINTEROP
+        || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
+#endif // FEATURE_COMINTEROP
+        )
+    {
+        // These are special non-blittable types returned by-ref in managed,
+        // but marshaled as primitive values returned by-value in unmanaged.
+    }
+    else
+    {
+        // This is an ordinary value type - see if it is returned by-ref.
+        MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
+        if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+        {
+            nativeStackSize += sizeof(LPVOID);
+        }
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+        else if (fThisCall)
+        {
+            nativeStackSize += sizeof(LPVOID);
+        }
+#endif
     }
 
     if (SF_IsHRESULTSwapping(dwStubFlags))
