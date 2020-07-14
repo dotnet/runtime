@@ -3573,7 +3573,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
 
 static bool TrackMemoryRangeHelper(PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved)
 {
-    // The pvArgs is really pointing to a debugger-side container. Saddly the callback only takes a PTR_VOID.
+    // The pvArgs is really pointing to a debugger-side container. Sadly the callback only takes a PTR_VOID.
     CQuickArrayList<COR_MEMORY_RANGE> *rangeCollection =
                                         (CQuickArrayList<COR_MEMORY_RANGE>*)(dac_cast<TADDR>(pvArgs));
     TADDR rangeStart = dac_cast<TADDR>(pvAllocationBase);
@@ -3622,9 +3622,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
 
 void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator)
 {
-    // The JIT Code heap will always have
+    // We should always have a valid EEJitManager with at least one code heap.
     EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERT(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
 
     PTR_HeapList pHeapList = pEM->m_pCodeHeap;
     while (pHeapList != NULL)
@@ -3660,6 +3660,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_
             default:
             {
                 LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFJCH: unknown heap type at 0x%x\n\n", pHeap));
+                _ASSERTE("Unknown heap type enumerating code ranges.");
                 break;
             }
         }
@@ -3681,18 +3682,19 @@ HRESULT DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMOR
 
         // Anything that's loaded in the SystemDomain or into the main AppDomain's default context in .NET Core
         // and after uses only one global allocator. Enumerating that one is enough for most purposes.
-        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
-        _ASSERTE(pGlobalAllocator);
-        EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
-        // TODO: This doesn't consider any uses of AssemblyLoadingContexts (Unloadable or not). Each context has
+        // This doesn't consider any uses of AssemblyLoadingContexts (Unloadable or not). Each context has
         // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
         // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
         // pointer to the LoaderAllocator tos enumerate.
+        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
+        _ASSERTE(pGlobalAllocator);
+        EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
 
         EnumerateMemRangesForJitCodeHeaps(&memoryRanges);
 
-        // TODO: Add R2R Jit heaps
-        // TODO: module thunk heaps to support IJW.
+        // This code doesn't enumerate module thunk heaps to support IJW.
+        // It's a fairly rare scenario and requires to enumerate all modules.
+        // The return for such added time is minimal.
 
         _ASSERTE(memoryRanges.Size() < INT_MAX);
         pRanges->Init(memoryRanges.Ptr(), (UINT) memoryRanges.Size());

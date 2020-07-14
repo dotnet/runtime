@@ -3313,6 +3313,8 @@ interface ICorDebugProcess10 : IUnknown
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
+// The memory range described by this structure is a closed-open
+// interval, that is only the start is inclusive.
 typedef struct _COR_MEMORY_RANGE
 {
     CORDB_ADDRESS start;          // The start address of the range.
