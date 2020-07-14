@@ -41,5 +41,7 @@ namespace System.Text.Json.Serialization
         }
 
         public sealed override bool HandleNull => false;
+
+        public abstract void CreateInstance(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
     }
 }
