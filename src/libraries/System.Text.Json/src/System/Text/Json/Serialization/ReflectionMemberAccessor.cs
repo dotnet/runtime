@@ -156,5 +156,17 @@ namespace System.Text.Json.Serialization
                 setMethodInfo.Invoke(obj, new object[] { value! });
             };
         }
+
+        public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj)
+            {
+                return (TProperty)fieldInfo.GetValue(obj)!;
+            };
+
+        public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj, TProperty value)
+            {
+                fieldInfo.SetValue(obj, value);
+            };
     }
 }

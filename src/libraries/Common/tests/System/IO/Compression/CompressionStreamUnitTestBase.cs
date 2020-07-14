@@ -14,7 +14,7 @@ namespace System.IO.Compression
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
             if (FlushNoOps)
@@ -49,7 +49,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringReadAsync()
         {
             if (FlushNoOps)
@@ -78,7 +78,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringFlushAsync()
         {
             if (FlushNoOps)
@@ -121,7 +121,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void WriteAsync_DuringWriteAsync()
         {
             byte[] buffer = new byte[100000];
@@ -154,7 +154,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -179,7 +179,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());

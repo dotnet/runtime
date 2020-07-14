@@ -484,13 +484,6 @@ void InitGSCookie()
     }
     CONTRACTL_END;
 
-#if defined(TARGET_OSX) && defined(CORECLR_EMBEDDED)
-    // OSX does not like the way we change section protection when running in a superhost bundle
-    // disabling this for now
-    // https://github.com/dotnet/runtime/issues/38184
-    return;
-#endif
-
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef TARGET_UNIX

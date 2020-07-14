@@ -2976,6 +2976,14 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			imethod->jit_entry = addr;
 			return addr;
 		}
+
+		/*
+		 * The runtime expects a function pointer unique to method and
+		 * the native caller expects a function pointer with the
+		 * right signature, so fail right away.
+		 */
+		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
+		return NULL;
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
