@@ -41,12 +41,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
