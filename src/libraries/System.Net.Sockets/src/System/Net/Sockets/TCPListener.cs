@@ -111,6 +111,7 @@ namespace System.Net.Sockets
             }
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public void AllowNatTraversal(bool allowed)
         {
             if (_active)
