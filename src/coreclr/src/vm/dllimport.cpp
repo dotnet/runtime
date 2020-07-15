@@ -6310,10 +6310,10 @@ namespace
         if (g_coreclr_embedded)
         {
             static const LPCWSTR toRedirect[] = {
-                W("System.Native.so"),
-                W("System.IO.Compression.Native.so"),
-                W("System.Net.Security.Native.so"),
-                W("System.Security.Cryptography.Native.OpenSsl.so")
+                W("libSystem.Native"),
+                W("libSystem.IO.Compression.Native"),
+                W("libSystem.Net.Security.Native"),
+                W("libSystem.Security.Cryptography.Native.OpenSsl")
             };
 
             int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
