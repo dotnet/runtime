@@ -645,11 +645,13 @@ namespace System.IO
             FileSystem.MoveFile(fullSourceFileName, fullDestFileName, overwrite);
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void Encrypt(string path)
         {
             FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void Decrypt(string path)
         {
             FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
