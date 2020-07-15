@@ -17,6 +17,10 @@
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Strings.resx">
       <LogicalName>ILVerification.Strings.resources</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\Common\TypeSystem\Common\Properties\Resources.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>Internal.TypeSystem.SR</ClassName>
+    </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
     <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
