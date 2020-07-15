@@ -140,6 +140,7 @@ namespace Internal.ReadyToRunConstants
         // Not a real helper - handle to current module passed to delay load helpers.
         Module                      = 0x01,
         GSCookie                    = 0x02,
+        IndirectTrapThreads         = 0x03,
 
         //
         // Delay load helpers
@@ -148,7 +149,7 @@ namespace Internal.ReadyToRunConstants
         // All delay load helpers use custom calling convention:
         // - scratch register - address of indirection cell. 0 = address is inferred from callsite.
         // - stack - section index, module handle
-        DelayLoad_MethodCall        = 0x08,
+        DelayLoad_MethodCall = 0x08,
 
         DelayLoad_Helper            = 0x10,
         DelayLoad_Helper_Obj        = 0x11,
