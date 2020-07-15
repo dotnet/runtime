@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true'">true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -61,6 +61,10 @@
              Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs"
              Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
@@ -90,7 +94,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs"
              Link="Common\System\Net\Capability.Security.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="IdentityValidator.Unix.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs"
              Link="Common\System\Net\Capability.Security.Unix.cs" />

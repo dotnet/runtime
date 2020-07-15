@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace Microsoft.Extensions.Http
         // Establishing a minimum lifetime helps us avoid some possible destructive cases.
         //
         // IMPORTANT: This is used in a resource string. Update the resource if this changes.
-        internal readonly static TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
 
         private TimeSpan _handlerLifetime = TimeSpan.FromMinutes(2);
 
@@ -33,7 +32,7 @@ namespace Microsoft.Extensions.Http
         public IList<Action<HttpClient>> HttpClientActions { get; } = new List<Action<HttpClient>>();
 
         /// <summary>
-        /// Gets or sets the length of time that a <see cref="HttpMessageHandler"/> instance can be reused. Each named 
+        /// Gets or sets the length of time that a <see cref="HttpMessageHandler"/> instance can be reused. Each named
         /// client can have its own configured handler lifetime value. The default value of this property is two minutes.
         /// Set the lifetime to <see cref="Timeout.InfiniteTimeSpan"/> to disable handler expiry.
         /// </summary>
@@ -50,7 +49,7 @@ namespace Microsoft.Extensions.Http
         /// chosen with an understanding of the application's requirement to respond to changes in the network environment.
         /// </para>
         /// <para>
-        /// Expiry of a handler will not immediately dispose the handler. An expired handler is placed in a separate pool 
+        /// Expiry of a handler will not immediately dispose the handler. An expired handler is placed in a separate pool
         /// which is processed at intervals to dispose handlers only when they become unreachable. Using long-lived
         /// <see cref="HttpClient"/> instances will prevent the underlying <see cref="HttpMessageHandler"/> from being
         /// disposed until all references are garbage-collected.
@@ -94,9 +93,9 @@ namespace Microsoft.Extensions.Http
         /// </para>
         /// <para>
         /// When operations that are part of <see cref="HttpMessageHandlerBuilderActions"/> are executed
-        /// they will be provided with the scoped <see cref="IServiceProvider"/> via 
+        /// they will be provided with the scoped <see cref="IServiceProvider"/> via
         /// <see cref="HttpMessageHandlerBuilder.Services"/>. This includes retrieving a message handler
-        /// from dependency injection, such as one registered using 
+        /// from dependency injection, such as one registered using
         /// <see cref="HttpClientBuilderExtensions.AddHttpMessageHandler{THandler}(IHttpClientBuilder)"/>.
         /// </para>
         /// </remarks>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -1170,7 +1169,7 @@ namespace System.Text
         private static UnicodeCategory GetUnicodeCategoryNonAscii(Rune value)
         {
             Debug.Assert(!value.IsAscii, "Shouldn't use this non-optimized code path for ASCII characters.");
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return CharUnicodeInfo.GetUnicodeCategory(value.Value);
 #else
             if (value.IsBmp)

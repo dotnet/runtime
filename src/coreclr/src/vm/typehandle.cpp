@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: typehandle.cpp
 //
@@ -421,7 +420,7 @@ bool TypeHandle::IsHFA() const
     return false;
 }
 
-CorElementType TypeHandle::GetHFAType() const
+CorInfoHFAElemType TypeHandle::GetHFAType() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -431,7 +430,7 @@ CorElementType TypeHandle::GetHFAType() const
     if (AsTypeDesc()->IsNativeValueType())
         return AsNativeValueType()->GetNativeHFAType();
 
-    return ELEMENT_TYPE_END;
+    return CORINFO_HFA_ELEM_NONE;
 }
 
 

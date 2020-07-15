@@ -1,0 +1,35 @@
+<Project>
+  <Target Name="RestoreProject">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore" />
+  </Target>
+
+  <Target Name="AddFrameworkReference">
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.NETCore.App" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateRuntimePack"
+          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- This will need to change to AfterTargets=PrepareForILLink when we get a new SDK -->
+  <Target Name="EnsureAllAssembliesAreLinked"
+          AfterTargets="_SetILLinkDefaults"> 
+    <ItemGroup>
+      <!-- This will need to change to ManagedAssemblyToLink and TrimMode=link when we get a new SDK -->
+      <_ManagedAssembliesToLink>
+        <action>link</action>
+      </_ManagedAssembliesToLink>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTrimmed" DependsOnTargets="RestoreProject;UpdateRuntimePack;Publish" />
+
+</Project>

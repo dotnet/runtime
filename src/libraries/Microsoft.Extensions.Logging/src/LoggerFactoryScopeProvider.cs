@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -57,7 +56,7 @@ namespace Microsoft.Extensions.Logging
 
         public IDisposable Push(object state)
         {
-            var parent = _currentScope.Value;
+            Scope parent = _currentScope.Value;
             var newScope = new Scope(this, state, parent);
             _currentScope.Value = newScope;
 

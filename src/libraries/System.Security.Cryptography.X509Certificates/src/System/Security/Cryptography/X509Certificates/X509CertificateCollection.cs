@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -83,9 +82,9 @@ namespace System.Security.Cryptography.X509Certificates
         public override int GetHashCode()
         {
             int hashCode = 0;
-            foreach (X509Certificate? cert in List)
+            foreach (X509Certificate cert in List)
             {
-                hashCode += cert!.GetHashCode();
+                hashCode += cert.GetHashCode();
             }
             return hashCode;
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.IO;
@@ -17,7 +16,7 @@ namespace System.CodeDom.Compiler
         private CodeTypeDeclaration _currentClass;
         private CodeTypeMember _currentMember;
 
-        private bool _inNestedBinary = false;
+        private bool _inNestedBinary;
 
         protected CodeTypeDeclaration CurrentClass => _currentClass;
 

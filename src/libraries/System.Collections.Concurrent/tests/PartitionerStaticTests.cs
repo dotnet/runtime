@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -14,7 +13,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class PartitionerStaticTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestStaticPartitioningIList()
         {
             RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 0);
@@ -22,7 +21,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestStaticPartitioningArray()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 1);
@@ -30,7 +29,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestLoadBalanceIList()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 2);
@@ -38,7 +37,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestLoadBalanceArray()
         {
             RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 3);
@@ -46,7 +45,7 @@ namespace System.Collections.Concurrent.Tests
             RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 3);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestLoadBalanceEnumerator()
         {
             RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 4);

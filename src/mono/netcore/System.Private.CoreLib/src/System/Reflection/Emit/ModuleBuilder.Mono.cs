@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -32,6 +34,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.IO;
@@ -42,11 +45,9 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public partial class ModuleBuilder : Module
     {
+#region Sync with MonoReflectionModuleBuilder in object-internals.h
 
-#pragma warning disable 169, 414
-        #region Sync with object-internals.h
-        // This class inherits from Module, but the runtime expects it to have the same layout as MonoModule
-        #region Sync with MonoModule
+#region This class inherits from Module, but the runtime expects it to have the same layout as MonoModule
         internal IntPtr _impl; /* a pointer to a MonoImage */
         internal Assembly assembly;
         internal string fqname;
@@ -54,7 +55,8 @@ namespace System.Reflection.Emit
         internal string scopename;
         internal bool is_resource;
         internal int token;
-        #endregion
+#endregion
+
         private UIntPtr dynamic_image; /* GC-tracked */
         private int num_types;
         private TypeBuilder[]? types;
@@ -62,14 +64,13 @@ namespace System.Reflection.Emit
         private byte[] guid;
         private int table_idx;
         internal AssemblyBuilder assemblyb;
-        private MethodBuilder[]? global_methods;
-        private FieldBuilder[]? global_fields;
+        private object[]? global_methods;
+        private object[]? global_fields;
         private bool is_main;
         private object? resources;
         private IntPtr unparented_classes;
         private int[]? table_indexes;
-        #endregion
-#pragma warning restore 169, 414
+#endregion
 
         private TypeBuilder? global_type;
         private Type? global_type_created;
@@ -84,6 +85,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
+        [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
         internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)
         {
             this.name = this.scopename = name;
@@ -150,6 +152,8 @@ namespace System.Reflection.Emit
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             if (name == null)
@@ -184,8 +188,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                global_fields = new FieldBuilder[1];
-                global_fields[0] = fb;
+                global_fields = new FieldBuilder[] { fb };
             }
             return fb;
         }
@@ -201,8 +204,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                global_methods = new MethodBuilder[1];
-                global_methods[0] = mb;
+                global_methods = new MethodBuilder[] { mb };
             }
         }
 
@@ -287,6 +289,8 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             if (name == null)
@@ -354,12 +358,14 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
@@ -597,6 +603,8 @@ namespace System.Reflection.Emit
             return new TypeToken(GetToken(type));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         public TypeToken GetTypeToken(string name)
         {
             return GetTypeToken(GetType(name)!);
@@ -840,6 +848,11 @@ namespace System.Reflection.Emit
             return false;
         }
 
+        internal ModuleBuilder GetNativeHandle() => this;
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (global_type_created == null)
@@ -941,6 +954,7 @@ namespace System.Reflection.Emit
             return CustomAttributeData.GetCustomAttributes(this);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (global_type_created == null)
@@ -948,6 +962,7 @@ namespace System.Reflection.Emit
             return global_type_created.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (global_type_created == null)
@@ -955,6 +970,7 @@ namespace System.Reflection.Emit
             return global_type_created.GetFields(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (global_type_created == null)

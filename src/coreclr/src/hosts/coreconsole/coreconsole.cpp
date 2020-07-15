@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // A simple CoreCLR host that runs a managed binary with the same name as this executable but with *.dll extension
@@ -27,7 +26,7 @@ class StringBuffer {
     StringBuffer& operator =(const StringBuffer&);
 
 public:
-    StringBuffer() : m_capacity(0), m_buffer(nullptr), m_length(0) {
+    StringBuffer() : m_buffer(nullptr), m_capacity(0), m_length(0) {
     }
 
     ~StringBuffer() {
@@ -116,7 +115,7 @@ public:
     wchar_t m_coreCLRDirectoryPath[MAX_LONGPATH];
 
     HostEnvironment(Logger *logger)
-        : m_log(logger), m_CLRRuntimeHost(nullptr) {
+        : m_CLRRuntimeHost(nullptr), m_log(logger) {
 
             // Discover the path to this exe's module. All other files are expected to be in the same directory.
             DWORD thisModuleLength = ::GetModuleFileNameW(::GetModuleHandleW(nullptr), m_hostPath, MAX_LONGPATH);

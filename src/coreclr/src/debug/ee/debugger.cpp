@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: debugger.cpp
 //
@@ -12896,8 +12895,8 @@ private:
 // is a valid Remap Breakpoint location (not in a special offset, must be empty stack, and not in a handler.
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
-    : m_pOffsetToHandlerInfo(NULL),
-      m_pJitInfo(pJitInfo)
+    : m_pJitInfo(pJitInfo),
+    m_pOffsetToHandlerInfo(NULL)      
 {
     CONTRACTL
     {

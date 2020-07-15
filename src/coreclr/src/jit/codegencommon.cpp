@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -441,7 +440,7 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
     assert(varDsc->lvIsInReg());
 
-    if (varTypeIsFloating(varDsc->TypeGet()))
+    if (varTypeUsesFloatReg(varDsc->TypeGet()))
     {
         regMask = genRegMaskFloat(varDsc->GetRegNum(), varDsc->TypeGet());
     }
@@ -1752,7 +1751,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         // Ngen case - GS cookie constant needs to be accessed through an indirection.
-        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(0));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
     }
     // Load this method's GS value from the stack frame
@@ -10108,30 +10108,19 @@ unsigned Compiler::GetHfaCount(GenTree* tree)
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-    var_types result = TYP_UNDEF;
+#ifdef FEATURE_HFA
     if (hClass != NO_CLASS_HANDLE)
     {
-#ifdef FEATURE_HFA
-        CorInfoType corType = info.compCompHnd->getHFAType(hClass);
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-        if (corType == CORINFO_TYPE_VALUECLASS)
+        CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+        if (elemKind != CORINFO_HFA_ELEM_NONE)
         {
-            // This is a vector type.
-            // HVAs are only supported on ARM64, and only for homogeneous aggregates of 8 or 16 byte vectors.
-            // For 8-byte vectors corType will be returned as CORINFO_TYPE_DOUBLE.
-            result = TYP_SIMD16;
             // This type may not appear elsewhere, but it will occupy a floating point register.
             compFloatingPointUsed = true;
         }
-        else
-#endif // TARGET_ARM64 && FEATURE_SIMD
-            if (corType != CORINFO_TYPE_UNDEF)
-        {
-            result = JITtype2varType(corType);
-        }
-#endif // FEATURE_HFA
+        return HfaTypeFromElemKind(elemKind);
     }
-    return result;
+#endif // FEATURE_HFA
+    return TYP_UNDEF;
 }
 
 //------------------------------------------------------------------------
@@ -11468,13 +11457,13 @@ void CodeGen::genReturn(GenTree* treeNode)
             genSimpleReturn(treeNode);
 #else // !TARGET_ARM64
 #if defined(TARGET_X86)
-            if (varTypeIsFloating(treeNode))
+            if (varTypeUsesFloatReg(treeNode))
             {
                 genFloatReturn(treeNode);
             }
             else
 #elif defined(TARGET_ARM)
-            if (varTypeIsFloating(treeNode) && (compiler->opts.compUseSoftFP || compiler->info.compIsVarArgs))
+            if (varTypeUsesFloatReg(treeNode) && (compiler->opts.compUseSoftFP || compiler->info.compIsVarArgs))
             {
                 if (targetType == TYP_FLOAT)
                 {
@@ -11490,7 +11479,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             else
 #endif // TARGET_ARM
             {
-                regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
+                regNumber retReg = varTypeUsesFloatReg(treeNode) ? REG_FLOATRET : REG_INTRET;
                 if (op1->GetRegNum() != retReg)
                 {
                     inst_RV_RV(ins_Move_Extend(targetType, true), retReg, op1->GetRegNum(), targetType);
@@ -11624,10 +11613,8 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     assert(!varTypeIsStruct(treeNode));
     return false;
-#elif defined(TARGET_ARM64)
-    return varTypeIsStruct(treeNode) && (compiler->info.compRetNativeType == TYP_STRUCT);
 #else
-    return varTypeIsStruct(treeNode);
+    return varTypeIsStruct(treeNode) && (compiler->info.compRetNativeType == TYP_STRUCT);
 #endif
 }
 
@@ -11957,8 +11944,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
     // an argument, or returned from a call, in an integer register and must be
     // copied if it's in an xmm register.
 
-    bool srcFltReg = (varTypeIsFloating(op1) || varTypeIsSIMD(op1));
-    bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
+    bool srcFltReg = (varTypeUsesFloatReg(op1));
+    bool tgtFltReg = (varTypeUsesFloatReg(treeNode));
     if (srcFltReg != tgtFltReg)
     {
         instruction ins;

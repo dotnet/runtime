@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -2304,6 +2303,55 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Gets the number of bits required for shortest two's complement representation of the current instance without the sign bit.
+        /// </summary>
+        /// <returns>The minimum non-negative number of bits in two's complement notation without the sign bit.</returns>
+        /// <remarks>This method returns 0 iff the value of current object is equal to <see cref="Zero"/> or <see cref="MinusOne"/>. For positive integers the return value is equal to the ordinary binary representation string length.</remarks>
+        public long GetBitLength()
+        {
+            AssertValid();
+
+            uint highValue;
+            int bitsArrayLength;
+            int sign = _sign;
+            uint[]? bits = _bits;
+
+            if (bits == null)
+            {
+                bitsArrayLength = 1;
+                highValue = (uint)(sign < 0 ? -sign : sign);
+            }
+            else
+            {
+                bitsArrayLength = bits.Length;
+                highValue = bits[bitsArrayLength - 1];
+            }
+
+            long bitLength = bitsArrayLength * 32L - BitOperations.LeadingZeroCount(highValue);
+
+            if (sign >= 0)
+                return bitLength;
+
+            // When negative and IsPowerOfTwo, the answer is (bitLength - 1)
+
+            // Check highValue
+            if ((highValue & (highValue - 1)) != 0)
+                return bitLength;
+
+            // Check the rest of the bits (if present)
+            for (int i = bitsArrayLength - 2; i >= 0; i--)
+            {
+                // bits array is always non-null when bitsArrayLength >= 2
+                if (bits![i] == 0)
+                    continue;
+
+                return bitLength;
+            }
+
+            return bitLength - 1;
+        }
+
+        /// <summary>
         /// Encapsulate the logic of normalizing the "small" and "large" forms of BigInteger
         /// into the "large" form so that Bit Manipulation algorithms can be simplified.
         /// </summary>
@@ -2328,12 +2376,15 @@ namespace System.Numerics
                 {
                     xd = new uint[] { (uint)x._sign };
                 }
+
+                xl = 1;
             }
             else
             {
                 xd = x._bits;
+                xl = x._bits.Length;
             }
-            xl = (x._bits == null ? 1 : x._bits.Length);
+
             return x._sign < 0;
         }
 

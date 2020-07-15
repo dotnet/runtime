@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/libunwind/libunwind.svg?branch=master)](https://travis-ci.org/libunwind/libunwind)
 
-This is version 1.5 of the unwind library.  This library supports
+This is version 1.4 of the unwind library.  This library supports
 several architecture/operating-system combinations:
 
 | System  | Architecture | Status |

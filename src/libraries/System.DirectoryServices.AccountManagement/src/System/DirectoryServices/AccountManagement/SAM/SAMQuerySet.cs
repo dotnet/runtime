@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -179,8 +178,8 @@ namespace System.DirectoryServices.AccountManagement
         private readonly SAMStoreCtx _storeCtx;
         private readonly DirectoryEntry _ctxBase;
         private readonly DirectoryEntries _entries;
-        private readonly IEnumerator _enumerator = null;  // the enumerator for "entries"
-        private DirectoryEntry _current = null;  // the DirectoryEntry that we're currently positioned at
+        private readonly IEnumerator _enumerator;  // the enumerator for "entries"
+        private DirectoryEntry _current;  // the DirectoryEntry that we're currently positioned at
 
         // Filter parameters
         private readonly int _sizeLimit;  // -1 == no limit
@@ -188,10 +187,10 @@ namespace System.DirectoryServices.AccountManagement
         private readonly SAMMatcher _matcher;
 
         // Count of number of results returned so far
-        private int _resultsReturned = 0;
+        private int _resultsReturned;
 
         // Have we run out of entries?
-        private bool _endReached = false;
+        private bool _endReached;
     }
 
     internal abstract class SAMMatcher
@@ -213,14 +212,14 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //
-        // Static constructor: used for initializing static tables
+        // used for initializing static tables
         //
-        static QbeMatcher()
+        private static Hashtable CreateFilterPropertiesTable()
         {
             //
             // Load the filterPropertiesTable
             //
-            s_filterPropertiesTable = new Hashtable();
+            var filterPropertiesTable = new Hashtable();
 
             for (int i = 0; i < s_filterPropertiesTableRaw.GetLength(0); i++)
             {
@@ -233,14 +232,16 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(f != null);
 
                 // There should only be one entry per QBE type
-                Debug.Assert(s_filterPropertiesTable[qbeType] == null);
+                Debug.Assert(filterPropertiesTable[qbeType] == null);
 
                 FilterPropertyTableEntry entry = new FilterPropertyTableEntry();
                 entry.winNTPropertyName = winNTPropertyName;
                 entry.matcher = f;
 
-                s_filterPropertiesTable[qbeType] = entry;
+                filterPropertiesTable[qbeType] = entry;
             }
+
+            return filterPropertiesTable;
         }
 
         internal override bool Matches(DirectoryEntry de)
@@ -311,7 +312,7 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(BadLogonCountFilter),                           "BadPasswordAttempts",                new MatcherDelegate(IntMatcher)},
         };
 
-        private static readonly Hashtable s_filterPropertiesTable = null;
+        private static readonly Hashtable s_filterPropertiesTable = CreateFilterPropertiesTable();
 
         private class FilterPropertyTableEntry
         {

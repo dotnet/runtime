@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -604,7 +603,7 @@ namespace System.Diagnostics.Tracing
         private static readonly ActivityTracker s_activityTrackerInstance = new ActivityTracker();
 
         // Used to create unique IDs at the top level.  Not used for nested Ids (each activity has its own id generator)
-        private static long m_nextId = 0;
+        private static long m_nextId;
         private const ushort MAX_ACTIVITY_DEPTH = 100;            // Limit maximum depth of activities to be tracked at 100.
                                                                   // This will avoid leaking memory in case of activities that are never stopped.
 

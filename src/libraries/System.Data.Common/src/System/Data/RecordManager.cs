@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,10 +12,10 @@ namespace System.Data
 
         private int _lastFreeRecord;
         private int _minimumCapacity = 50;
-        private int _recordCapacity = 0;
+        private int _recordCapacity;
         private readonly List<int> _freeRecordList = new List<int>();
 
-        private DataRow[] _rows;
+        private DataRow?[] _rows = default!; // Always late-initialized by callers via NewRecordBase
 
         internal RecordManager(DataTable table)
         {
@@ -122,7 +121,7 @@ namespace System.Data
             //            Debug.Assert(record < lastFreeRecord, "Attempt to Free() <outofbounds> record");
             if (-1 != record)
             {
-                this[record] = null;
+                _rows[record] = null;
 
                 int count = _table._columnCollection.Count;
                 for (int i = 0; i < count; ++i)
@@ -169,7 +168,7 @@ namespace System.Data
                 _freeRecordList.Capacity = _freeRecordList.Count + _table.Rows.Count;
                 for (int record = 0; record < _recordCapacity; ++record)
                 {
-                    if (_rows[record] != null && _rows[record].rowID != -1)
+                    if (_rows[record] is { } row && row.rowID != -1)
                     {
                         int tempRecord = record;
                         FreeRecord(ref tempRecord);
@@ -183,7 +182,7 @@ namespace System.Data
             get
             {
                 Debug.Assert(record >= 0 && record < _rows.Length, "Invalid record number");
-                return _rows[record];
+                return _rows[record]!;
             }
             set
             {
@@ -226,11 +225,11 @@ namespace System.Data
                 for (int i = 0; i < count; ++i)
                 {
                     DataColumn dstColumn = _table.Columns[i];
-                    DataColumn srcColumn = src.Columns[dstColumn.ColumnName];
+                    DataColumn? srcColumn = src.Columns[dstColumn.ColumnName];
                     if (null != srcColumn)
                     {
                         object value = srcColumn[record];
-                        ICloneable cloneableObject = value as ICloneable;
+                        ICloneable? cloneableObject = value as ICloneable;
                         if (null != cloneableObject)
                         {
                             dstColumn[newRecord] = cloneableObject.Clone();
@@ -268,14 +267,15 @@ namespace System.Data
         internal void VerifyRecord(int record)
         {
             Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
-            Debug.Assert((null == _rows[record]) ||
-                         (record == _rows[record]._oldRecord) ||
-                         (record == _rows[record]._newRecord) ||
-                         (record == _rows[record]._tempRecord), "record of a different row");
+            var r = _rows[record];
+            Debug.Assert((null == r) ||
+                         (record == r._oldRecord) ||
+                         (record == r._newRecord) ||
+                         (record == r._tempRecord), "record of a different row");
         }
 
         [Conditional("DEBUG")]
-        internal void VerifyRecord(int record, DataRow row)
+        internal void VerifyRecord(int record, DataRow? row)
         {
             Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
             Debug.Assert((null == _rows[record]) || (row == _rows[record]), "record of a different row");

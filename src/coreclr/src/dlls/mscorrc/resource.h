@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //{{NO_DEPENDENCIES}}
 // Used by mscorrc.rc
 //
@@ -272,7 +271,6 @@
 #define IDS_EE_INVALIDCOMDEFITF                 0x1a32
 #define IDS_EE_COMDEFITFNOTSUPPORTED            0x1a33
 
-#define IDS_EE_GUID_REPRESENTS_NON_VC           0x1a35
 #define IDS_EE_CANNOT_MAP_TO_MANAGED_VC         0x1a36
 
 #define IDS_EE_MARSHAL_UNMAPPABLE_CHAR          0x1a37
@@ -570,14 +568,6 @@
 #ifdef FEATURE_COMINTEROP
 #define IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE           0x262e
 #endif // FEATURE_COMINTEROP
-
-#define IDS_EE_BADMARSHAL_TYPE_ANSIBSTR         0x262f
-#define IDS_EE_BADMARSHAL_TYPE_VBBYVALSTR       0x2630
-#define IDS_EE_BADMARSHAL_TYPE_REFERENCECUSTOMMARSHALER  0x2631
-#define IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT  0x2632
-#define IDS_EE_BADMARSHAL_TYPE_ASANYA           0x2633
-#define IDS_EE_BADMARSHAL_TYPE_IDISPATCH        0x2634
-#define IDS_EE_ERROR_IDISPATCH                  0x2635
 
 #define IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT                  0x2636
 #define IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED          0x2637

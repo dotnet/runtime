@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
@@ -51,21 +50,21 @@ namespace System.Management
         private string OriginalNamespace = string.Empty;
         private string OriginalClassName = string.Empty;
         private readonly string OriginalPath = string.Empty;
-        private bool bSingletonClass = false;
+        private bool bSingletonClass;
         private bool bUnsignedSupported = true;
         private string NETNamespace = string.Empty;
         private string arrConvFuncName = string.Empty;
         private string enumType = string.Empty;
         private const int DMTF_DATETIME_STR_LENGTH = 25;
-        private bool bDateConversionFunctionsAdded = false;
-        private bool bTimeSpanConversionFunctionsAdded = false;
+        private bool bDateConversionFunctionsAdded;
+        private bool bTimeSpanConversionFunctionsAdded;
 
 
 
 
         private ManagementClass classobj;
         private CodeDomProvider cp;
-        private TextWriter tw = null;
+        private TextWriter tw;
         private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
@@ -102,7 +101,7 @@ namespace System.Management
         private SortedList PublicNamesUsed = new SortedList(StringComparer.OrdinalIgnoreCase);
         private SortedList PrivateNamesUsed = new SortedList(StringComparer.OrdinalIgnoreCase);
 
-        private bool bHasEmbeddedProperties = false;
+        private bool bHasEmbeddedProperties;
 
 
         /// <summary>

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573;CS3016;CA5379</NoWarn>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
@@ -95,10 +94,12 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
@@ -221,6 +222,8 @@
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
+             Link="Common\System\Security\Cryptography\Oids.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"

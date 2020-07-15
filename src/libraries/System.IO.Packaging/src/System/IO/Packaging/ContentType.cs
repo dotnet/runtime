@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //-----------------------------------------------------------------------------
 //
@@ -562,7 +561,7 @@ namespace System.IO.Packaging
         private string _subType = string.Empty;
         private readonly string _originalString;
         private Dictionary<string, string>? _parameterDictionary;
-        private readonly bool _isInitialized = false;
+        private readonly bool _isInitialized;
 
         private const string Quote = "\"";
         private const char SemicolonSeparator = ';';

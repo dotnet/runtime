@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <atomic>
 #include <condition_variable>
@@ -495,6 +494,12 @@ namespace
                 "System.Private.CoreLib",
                 "Internal.Runtime.InteropServices.ComponentActivator",
                 "LoadAssemblyAndGetFunctionPointer",
+                delegate);
+        case coreclr_delegate_type::get_function_pointer:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "GetFunctionPointer",
                 delegate);
         default:
             return StatusCode::LibHostInvalidArgs;

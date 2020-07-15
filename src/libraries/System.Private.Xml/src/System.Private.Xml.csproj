@@ -3,9 +3,8 @@
     <AssemblyName>System.Private.Xml</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
@@ -791,7 +790,7 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs"
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
@@ -799,7 +798,7 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Unix.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImpl.Unix.cs" />
   </ItemGroup>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -250,7 +249,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(expected[7], handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_CanExpire()
         {
             // Arrange
@@ -293,7 +292,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_HandlerCanBeReusedBeforeExpiry()
         {
             // Arrange
@@ -342,7 +341,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange

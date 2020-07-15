@@ -545,7 +545,8 @@
         "3.1.2",
         "3.1.3",
         "3.1.4",
-        "3.1.5"
+        "3.1.5",
+        "3.1.6"
       ],
       "BaselineVersion": "5.0.0",
       "InboxOn": {},
@@ -553,6 +554,7 @@
         "3.1.3.0": "3.1.3",
         "3.1.4.0": "3.1.4",
         "3.1.5.0": "3.1.5",
+        "3.1.6.0": "3.1.6",
         "5.0.0.0": "5.0.0"
       }
     },
@@ -649,6 +651,9 @@
       "AssemblyVersionInPackageVersion": {
         "5.0.0.0": "5.0.0"
       }
+    },
+    "Microsoft.Extensions.HostFactoryResolver.Sources": {
+      "InboxOn": {}
     },
     "Microsoft.Extensions.Hosting": {
       "StableVersions": [
@@ -1562,9 +1567,10 @@
         "4.0.0",
         "4.3.0",
         "4.4.0",
-        "4.5.0"
+        "4.5.0",
+        "4.5.1"
       ],
-      "BaselineVersion": "4.5.0",
+      "BaselineVersion": "4.5.1",
       "InboxOn": {
         "netcoreapp2.0": "4.0.2.0",
         "netcoreapp2.1": "4.0.3.0",
@@ -1684,7 +1690,9 @@
         "1.3.2",
         "1.4.0",
         "1.5.0",
-        "1.6.0"
+        "1.6.0",
+        "1.7.0",
+        "1.7.1"
       ],
       "BaselineVersion": "5.0.0",
       "InboxOn": {
@@ -2881,6 +2889,12 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "System.Formats.Cbor": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "System.Globalization": {
       "StableVersions": [
         "4.0.0",
@@ -3373,12 +3387,13 @@
         "4.5.0",
         "4.5.1"
       ],
-      "BaselineVersion": "4.5.1",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
-        "4.0.3.0": "4.5.0"
+        "4.0.3.0": "4.5.0",
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.IO.Ports": {
@@ -3630,9 +3645,10 @@
         "4.5.0",
         "4.5.1",
         "4.5.2",
-        "4.5.3"
+        "4.5.3",
+        "4.5.4"
       ],
-      "BaselineVersion": "4.5.3",
+      "BaselineVersion": "4.5.4",
       "InboxOn": {
         "netcoreapp2.1": "4.1.0.0",
         "netcoreapp3.0": "4.2.0.0",
@@ -4485,13 +4501,16 @@
         "4.4.0",
         "4.5.0",
         "4.5.1",
-        "4.6.0"
+        "4.6.0",
+        "4.7.0",
+        "4.7.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.7.1",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "netcoreapp2.1": "4.0.4.0",
         "netcoreapp3.0": "4.0.5.0",
+        "netstandard2.1": "4.0.5.0",
         "net5.0": "5.0.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -4508,7 +4527,7 @@
         "4.0.3.0": "4.4.0",
         "4.0.4.0": "4.5.0",
         "4.0.5.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "4.0.6.0": "4.7.0"
       }
     },
     "System.Reflection.Emit": {
@@ -5541,12 +5560,11 @@
         "4.3.0",
         "4.3.1"
       ],
-      "BaselineVersion": "4.3.0",
+      "BaselineVersion": "4.3.1",
       "InboxOn": {
         "netcoreapp2.0": "4.3.0.0",
         "netcoreapp2.1": "4.3.1.0",
         "net5.0": "5.0.0.0",
-        "net461": "4.2.0.0",
         "netstandard2.0": "4.2.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -6495,9 +6513,10 @@
         "4.5.0",
         "4.5.1",
         "4.5.2",
-        "4.5.3"
+        "4.5.3",
+        "4.5.4"
       ],
-      "BaselineVersion": "4.5.2",
+      "BaselineVersion": "4.5.4",
       "InboxOn": {
         "netcoreapp2.0": "4.1.1.0",
         "netcoreapp2.1": "4.3.0.0",
@@ -7245,8 +7264,8 @@
     }
   },
   "ModulesToPackages": {
-    "sni.dll": "runtime.native.System.Data.SqlClient.sni",
-    "libSystem.IO.Ports.Native": "runtime.native.System.IO.Ports"
+    "libSystem.IO.Ports.Native": "runtime.native.System.IO.Ports",
+    "sni.dll": "runtime.native.System.Data.SqlClient.sni"
   },
   "MetaPackages": {
     "NETStandard.Library": [

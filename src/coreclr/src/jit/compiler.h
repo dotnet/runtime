@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -139,53 +138,50 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 // HFA info shared by LclVarDsc and fgArgTabEntry
 //------------------------------------------------------------------------
 #ifdef FEATURE_HFA
-enum HfaElemKind : unsigned int
+inline bool IsHfa(CorInfoHFAElemType kind)
 {
-    HFA_ELEM_NONE,
-    HFA_ELEM_FLOAT,
-    HFA_ELEM_DOUBLE,
-    HFA_ELEM_SIMD16
-};
-inline bool IsHfa(HfaElemKind kind)
-{
-    return kind != HFA_ELEM_NONE;
+    return kind != CORINFO_HFA_ELEM_NONE;
 }
-inline var_types HfaTypeFromElemKind(HfaElemKind kind)
+inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
 {
     switch (kind)
     {
-        case HFA_ELEM_FLOAT:
+        case CORINFO_HFA_ELEM_FLOAT:
             return TYP_FLOAT;
-        case HFA_ELEM_DOUBLE:
+        case CORINFO_HFA_ELEM_DOUBLE:
             return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
-        case HFA_ELEM_SIMD16:
+        case CORINFO_HFA_ELEM_VECTOR64:
+            return TYP_SIMD8;
+        case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
 #endif
-        case HFA_ELEM_NONE:
+        case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
         default:
             assert(!"Invalid HfaElemKind");
             return TYP_UNDEF;
     }
 }
-inline HfaElemKind HfaElemKindFromType(var_types type)
+inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
 {
     switch (type)
     {
         case TYP_FLOAT:
-            return HFA_ELEM_FLOAT;
+            return CORINFO_HFA_ELEM_FLOAT;
         case TYP_DOUBLE:
-            return HFA_ELEM_DOUBLE;
+            return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+            return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
-            return HFA_ELEM_SIMD16;
+            return CORINFO_HFA_ELEM_VECTOR128;
 #endif
         case TYP_UNDEF:
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
         default:
             assert(!"Invalid HFA Type");
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
     }
 }
 #endif // FEATURE_HFA
@@ -484,8 +480,8 @@ public:
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
 #ifdef FEATURE_HFA
-    HfaElemKind _lvHfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
-#endif                              // FEATURE_HFA
+    CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
+#endif                                     // FEATURE_HFA
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -591,18 +587,19 @@ public:
 #elif defined(TARGET_ARM64)
         switch (_lvHfaElemKind)
         {
-            case HFA_ELEM_NONE:
+            case CORINFO_HFA_ELEM_NONE:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
-            case HFA_ELEM_FLOAT:
+            case CORINFO_HFA_ELEM_FLOAT:
                 assert((lvExactSize % 4) == 0);
                 slots = lvExactSize >> 2;
                 break;
-            case HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_VECTOR64:
                 assert((lvExactSize % 8) == 0);
                 slots = lvExactSize >> 3;
                 break;
-            case HFA_ELEM_SIMD16:
+            case CORINFO_HFA_ELEM_VECTOR128:
                 assert((lvExactSize % 16) == 0);
                 slots = lvExactSize >> 4;
                 break;
@@ -767,7 +764,7 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeIsFloating(TypeGet()))
+        if (varTypeUsesFloatReg(TypeGet()))
         {
             if (GetRegNum() != REG_STK)
             {
@@ -903,7 +900,7 @@ public:
                     bool                 propagate = true);
     bool IsFloatRegType() const
     {
-        return isFloatRegType(lvType) || lvIsHfaRegArg();
+        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
     }
 
     var_types GetHfaType() const
@@ -919,7 +916,10 @@ public:
     void SetHfaType(var_types type)
     {
 #ifdef FEATURE_HFA
-        _lvHfaElemKind = HfaElemKindFromType(type);
+        CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+        _lvHfaElemKind              = elemKind;
+        // Ensure we've allocated enough bits.
+        assert(_lvHfaElemKind == elemKind);
 #endif // FEATURE_HFA
     }
 
@@ -983,6 +983,8 @@ public:
         }
         return GetLayout()->GetRegisterType();
     }
+
+    bool CanBeReplacedWithItsField(Compiler* comp) const;
 
 #ifdef DEBUG
 public:
@@ -1447,7 +1449,7 @@ public:
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA
-    HfaElemKind _hfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
+    CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
 
     bool isLateArg()
@@ -1610,7 +1612,10 @@ public:
             if (!IsHfaArg())
             {
                 // We haven't previously set this; do so now.
-                _hfaElemKind = HfaElemKindFromType(type);
+                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+                _hfaElemKind                = elemKind;
+                // Ensure we've allocated enough bits.
+                assert(_hfaElemKind == elemKind);
                 if (isPassedInRegisters())
                 {
                     numRegs = numHfaRegs;
@@ -2126,10 +2131,11 @@ public:
 #endif // ARM_SOFTFP
 
     //-------------------------------------------------------------------------
-    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM.
+    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
     // HFAs are one to four element structs where each element is the same
-    // type, either all float or all double. They are treated specially
-    // in the ARM Procedure Call Standard, specifically, they are passed in
+    // type, either all float or all double. We handle HVAs (one to four elements of
+    // vector types) uniformly with HFAs. HFAs are treated specially
+    // in the ARM/ARM64 Procedure Call Standards, specifically, they are passed in
     // floating-point registers instead of the general purpose registers.
     //
 
@@ -2537,7 +2543,6 @@ public:
 
 #ifdef FEATURE_SIMD
     GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
-    GenTree* gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size);
 #endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
@@ -2625,6 +2630,9 @@ public:
                                                  var_types      baseType,
                                                  unsigned       size);
 
+    GenTreeHWIntrinsic* gtNewSimdCreateBroadcastNode(
+        var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
                                                    var_types      baseType,
@@ -2681,7 +2689,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type);
+    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags);
 
     GenTree* gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -2910,7 +2918,7 @@ public:
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
-    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array, GenTree** handleTree = nullptr);
+    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
@@ -3231,6 +3239,7 @@ public:
 #endif // TARGET_ARM
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
+    void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
 #ifdef UNIX_AMD64_ABI
@@ -3460,6 +3469,10 @@ public:
 
         bool CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd);
         bool TryPromoteStructVar(unsigned lclNum);
+        void Clear()
+        {
+            structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
+        }
 
 #ifdef DEBUG
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
@@ -3644,7 +3657,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fncHandle, CORINFO_MODULE_HANDLE scpHandle);
+    bool impILConsumesAddr(const BYTE* codeAddr);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -3746,7 +3759,7 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  bool                  mustExpand);
+                                  GenTree*              newobjThis);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -3756,7 +3769,8 @@ protected:
                                          CORINFO_SIG_INFO*    sig,
                                          var_types            retType,
                                          var_types            baseType,
-                                         unsigned             simdSize);
+                                         unsigned             simdSize,
+                                         GenTree*             newobjThis);
 
     GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
                                         var_types            retType,
@@ -3774,10 +3788,13 @@ protected:
                                  var_types             retType,
                                  unsigned              simdSize);
 
-    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass, bool expectAddr = false);
+    GenTree* getArgForHWIntrinsic(var_types            argType,
+                                  CORINFO_CLASS_HANDLE argClass,
+                                  bool                 expectAddr = false,
+                                  GenTree*             newobjThis = nullptr);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     GenTree* addRangeCheckIfNeeded(
-        NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immLowerBound, int immUpperBound);
+        NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -4193,10 +4210,11 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                GenTree*      curArgVal,
-                                unsigned      argNum,
-                                InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo*      pInlineInfo,
+                                GenTree*         curArgVal,
+                                unsigned         argNum,
+                                unsigned __int64 bbFlags,
+                                InlineResult*    inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4976,10 +4994,11 @@ public:
     void fgInitBlockVarSets();
 
     // true if we've gone through and created GC Poll calls.
-    bool fgGCPollsCreated;
-    void fgMarkGCPollBlocks();
-    void fgCreateGCPolls();
-    bool fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt = nullptr);
+    bool        fgGCPollsCreated;
+    void        fgMarkGCPollBlocks();
+    void        fgCreateGCPolls();
+    PhaseStatus fgInsertGCPolls();
+    BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
     // Requires that "block" is a block that returns from
     // a finally.  Returns the number of successors (jump targets of
@@ -5596,6 +5615,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
 
@@ -6503,6 +6523,7 @@ public:
 #define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
 
     bool doesMethodHaveFatPointer()
     {
@@ -7186,6 +7207,7 @@ public:
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
+    CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
 
     // VOM info, method sigs
@@ -7594,7 +7616,7 @@ public:
 
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
     // node, else NULL.
-    static GenTree* fgIsIndirOfAddrOfLocal(GenTree* tree);
+    static GenTreeLclVar* fgIsIndirOfAddrOfLocal(GenTree* tree);
 
     // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
@@ -7627,7 +7649,7 @@ public:
 
     bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
     {
-        bits        = nullptr;
+        *bits       = nullptr;
         bool result = false;
 
         if (m_promotedStructDeathVars != nullptr)
@@ -7964,7 +7986,7 @@ private:
     // vector type (i.e. do not analyze or promote its fields).
     // Note that all but the fixed vector types are opaque, even though they may
     // actually be declared as having fields.
-    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle)
+    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
     {
         return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
                 (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
@@ -7980,7 +8002,7 @@ private:
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
-    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
+    bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
         if (!varDsc->lvSIMDType)
         {
@@ -9172,7 +9194,7 @@ public:
 
     // Returns true if the method returns a value in more than one return register,
     // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
-    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD* handling,
     // this method correctly returns false for it (it is passed as HVA), when the original returns true.
     bool compMethodReturnsMultiRegRegTypeAlternate()
     {
@@ -9182,8 +9204,8 @@ public:
         return varTypeIsLong(info.compRetNativeType);
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
-        // TYP_SIMD16 is returned in one register.
-        if (info.compRetNativeType == TYP_SIMD16)
+        // TYP_SIMD* are returned in one register.
+        if (varTypeIsSIMD(info.compRetNativeType))
         {
             return false;
         }
@@ -9315,7 +9337,11 @@ public:
     static void compStartup();  // One-time initialization
     static void compShutdown(); // One-time finalization
 
-    void compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo);
+    void compInit(ArenaAllocator*       pAlloc,
+                  CORINFO_METHOD_HANDLE methodHnd,
+                  COMP_HANDLE           compHnd,
+                  CORINFO_METHOD_INFO*  methodInfo,
+                  InlineInfo*           inlineInfo);
     void compDone();
 
     static void compDisplayStaticSizes(FILE* fout);
@@ -9338,10 +9364,7 @@ public:
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
 
-    int compCompile(CORINFO_METHOD_HANDLE methodHnd,
-                    CORINFO_MODULE_HANDLE classPtr,
-                    COMP_HANDLE           compHnd,
-                    CORINFO_METHOD_INFO*  methodInfo,
+    int compCompile(CORINFO_MODULE_HANDLE classPtr,
                     void**                methodCodePtr,
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -11,14 +10,14 @@ namespace System.Runtime.Intrinsics.X86
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class Lzcnt
+    public abstract class Lzcnt // : X86Base
     {
         internal Lzcnt() { }
 
         public static bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public abstract class X64
+        public abstract class X64 // : X86Base.X64
         {
             internal X64() { }
 

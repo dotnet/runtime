@@ -237,8 +237,6 @@
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
-             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

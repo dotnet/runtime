@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __COREHOST_CONTEXT_CONTRACT_H__
 #define __COREHOST_CONTEXT_CONTRACT_H__
@@ -28,6 +27,7 @@ enum class coreclr_delegate_type
     com_register,
     com_unregister,
     load_assembly_and_get_function_pointer,
+    get_function_pointer,
 
     __last, // Sentinel value for determining the last known delegate type
 };

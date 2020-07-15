@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -111,7 +110,7 @@ namespace System.Diagnostics.Tests
             await Task.WhenAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]  // poll
         [InlineData(10)] // real timeout
         public void CurrentProcess_WaitNeverCompletes(int milliseconds)

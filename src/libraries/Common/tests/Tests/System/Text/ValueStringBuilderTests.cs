@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -283,8 +282,7 @@ namespace System.Text.Tests
         {
             // Note: constants used here may be dependent on minimal buffer size
             // the ArrayPool is able to return.
-            Span<char> initialBuffer = stackalloc char[32];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[32]);
 
             builder.EnsureCapacity(65);
 
@@ -294,8 +292,7 @@ namespace System.Text.Tests
         [Fact]
         public void EnsureCapacity_IfBufferTimesTwoWins()
         {
-            Span<char> initialBuffer = stackalloc char[32];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[32]);
 
             builder.EnsureCapacity(33);
 
@@ -307,8 +304,7 @@ namespace System.Text.Tests
         {
             // Note: constants used here may be dependent on minimal buffer size
             // the ArrayPool is able to return.
-            Span<char> initialBuffer = stackalloc char[64];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[64]);
 
             builder.EnsureCapacity(16);
 

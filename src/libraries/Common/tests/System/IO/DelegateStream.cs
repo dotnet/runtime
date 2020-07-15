@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,14 +53,14 @@ namespace System.IO
             _positionSetFunc = positionSetFunc ?? (_ => { throw new NotSupportedException(); });
             _positionGetFunc = positionGetFunc ?? (() => { throw new NotSupportedException(); });
 
-            _readFunc = readFunc;
             _readAsyncFunc = readAsyncFunc ?? ((buffer, offset, count, token) => base.ReadAsync(buffer, offset, count, token));
+            _readFunc = readFunc ?? ((buffer, offset, count) => readAsyncFunc(buffer, offset, count, default).GetAwaiter().GetResult());
 
             _seekFunc = seekFunc ?? ((_, __) => { throw new NotSupportedException(); });
             _setLengthFunc = setLengthFunc ?? (_ => { throw new NotSupportedException(); });
 
-            _writeFunc = writeFunc;
             _writeAsyncFunc = writeAsyncFunc ?? ((buffer, offset, count, token) => base.WriteAsync(buffer, offset, count, token));
+            _writeFunc = writeFunc ?? ((buffer, offset, count) => writeAsyncFunc(buffer, offset, count, default).GetAwaiter().GetResult());
 
             _disposeFunc = disposeFunc;
         }

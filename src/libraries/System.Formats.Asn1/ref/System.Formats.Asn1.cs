@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -148,6 +147,7 @@ namespace System.Formats.Asn1
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
         public void CopyTo(System.Formats.Asn1.AsnWriter destination) { }
         public byte[] Encode() { throw null; }
+        public int Encode(System.Span<byte> destination) { throw null; }
         public bool EncodedValueEquals(System.Formats.Asn1.AsnWriter other) { throw null; }
         public bool EncodedValueEquals(System.ReadOnlySpan<byte> other) { throw null; }
         public int GetEncodedLength() { throw null; }

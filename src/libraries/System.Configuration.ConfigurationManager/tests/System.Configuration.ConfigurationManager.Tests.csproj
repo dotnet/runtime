@@ -23,6 +23,7 @@
              Link="Source\UrlPath.cs" />
     <Compile Include="..\src\System\Configuration\ValidatorUtils.cs"
              Link="Source\ValidatorUtils.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Mono\CallbackValidatorTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionTest.cs" />

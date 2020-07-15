@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -513,14 +512,25 @@ namespace Internal.TypeSystem
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        // TODO: Substitutions, generics, modopts, ...
-        public virtual MethodDesc GetMethod(string name, MethodSignature signature)
+        public MethodDesc GetMethod(string name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. If substitution is not null, then substitution will be applied to
+        /// possible target methods before signature comparison. Returns null if method not found.
+        /// </summary>
+        public virtual MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
                 if (method.Name == name)
                 {
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }

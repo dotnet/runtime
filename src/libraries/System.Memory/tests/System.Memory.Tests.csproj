@@ -171,8 +171,6 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
     <Compile Include="ReadOnlySpan\ToString.cs" />
     <Compile Include="ReadOnlySpan\ToUpperLower.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
-             Link="ReadOnlySpan\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />

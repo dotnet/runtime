@@ -61,6 +61,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
     pal_timeZoneInfo.c
     pal_icushim.c
+    entrypoints.c
 )
 
 include_directories("../Common")
@@ -80,7 +81,7 @@ if (GEN_SHARED_LIB)
 endif()
 
 add_library(System.Globalization.Native-Static
-    STATIC
+    OBJECT
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 

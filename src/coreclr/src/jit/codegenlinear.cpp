@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -58,7 +57,7 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        noway_assert(!varTypeIsFloating(varDsc->TypeGet()));
+        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
 
         // Mark the register as holding the variable
         assert(varDsc->GetRegNum() != REG_STK);
@@ -1113,11 +1112,16 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
 //    inserted a GT_RELOAD to indicate the register into which it should be
 //    reloaded.
 //
+//    A GT_RELOAD never has a reg candidate lclVar or multi-reg lclVar as its child.
+//    This is because register candidates locals always have distinct tree nodes
+//    for uses and definitions. (This is unlike non-register candidate locals which
+//    may be "defined" by a GT_LCL_VAR node that loads it into a register. It may
+//    then have a GT_RELOAD inserted if it needs a different register, though this
+//    is unlikely to happen except in stress modes.)
+//
 void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 {
-    regNumber dstReg      = tree->GetRegNum();
-    GenTree*  unspillTree = tree;
-
+    GenTree* unspillTree = tree;
     if (tree->gtOper == GT_RELOAD)
     {
         unspillTree = tree->AsOp()->gtOp1;
@@ -1127,6 +1131,9 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
     {
         if (genIsRegCandidateLocal(unspillTree))
         {
+            // We never have a GT_RELOAD for this case.
+            assert(tree == unspillTree);
+
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
@@ -1167,10 +1174,13 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 #endif
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
-            genUnspillLocal(lcl->GetLclNum(), spillType, lcl->AsLclVar(), dstReg, reSpill, isLastUse);
+            genUnspillLocal(lcl->GetLclNum(), spillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
         }
         else if (unspillTree->IsMultiRegLclVar())
         {
+            // We never have a GT_RELOAD for this case.
+            assert(tree == unspillTree);
+
             GenTreeLclVar* lclNode  = unspillTree->AsLclVar();
             LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode->GetLclNum());
             unsigned       regCount = varDsc->lvFieldCnt;
@@ -1191,17 +1201,26 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         }
         else if (unspillTree->IsMultiRegNode())
         {
+            // Here we may have a GT_RELOAD, and we will need to use that node ('tree') to
+            // do the unspilling if needed. However, that tree doesn't have the register
+            // count, so we use 'unspillTree' for that.
             unsigned regCount = unspillTree->GetMultiRegCount();
             for (unsigned i = 0; i < regCount; ++i)
             {
-                genUnspillRegIfNeeded(unspillTree, i);
+                genUnspillRegIfNeeded(tree, i);
             }
             unspillTree->gtFlags &= ~GTF_SPILLED;
         }
         else
         {
+            // Here we may have a GT_RELOAD.
+            // The spill temp allocated for it is associated with the original tree that defined the
+            // register that it was spilled from.
+            // So we use 'unspillTree' to recover that spill temp.
             TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
             emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
+            // Reload into the register specified by 'tree' which may be a GT_RELOAD.
+            regNumber dstReg = tree->GetRegNum();
             GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
             regSet.tmpRlsTemp(t);
 
@@ -1512,7 +1531,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
     }
     else if (tree->isContained())
     {
-        if (tree->isIndir())
+        if (tree->OperIsIndir())
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }

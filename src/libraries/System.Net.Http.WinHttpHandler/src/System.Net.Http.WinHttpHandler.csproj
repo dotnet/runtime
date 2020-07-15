@@ -11,6 +11,8 @@
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
+    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
+    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
@@ -93,5 +95,6 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="netstandard" />
   </ItemGroup>
 </Project>

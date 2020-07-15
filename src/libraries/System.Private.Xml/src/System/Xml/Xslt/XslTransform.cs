@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl
 {
@@ -13,8 +12,8 @@ namespace System.Xml.Xsl
 
     public sealed class XslTransform
     {
-        private XmlResolver _documentResolver = null;
-        private bool _isDocumentResolverSet = false;
+        private XmlResolver _documentResolver;
+        private bool _isDocumentResolverSet;
         private XmlResolver _DocumentResolver
         {
             get
@@ -35,8 +34,6 @@ namespace System.Xml.Xsl
         private Stylesheet _CompiledStylesheet;
         private List<TheQuery> _QueryStore;
         private RootAction _RootAction;
-
-        private readonly IXsltDebugger _debugger;
 
         public XslTransform() { }
 
@@ -121,7 +118,7 @@ namespace System.Xml.Xsl
         public XmlReader Transform(XPathNavigator input, XsltArgumentList args, XmlResolver resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, _debugger);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             return processor.StartReader();
         }
 
@@ -133,7 +130,7 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList args, XmlWriter output, XmlResolver resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, _debugger);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -144,7 +141,7 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList args, Stream output, XmlResolver resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, _debugger);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -156,14 +153,14 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList args, TextWriter output, XmlResolver resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, _debugger);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
         public void Transform(XPathNavigator input, XsltArgumentList args, TextWriter output)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, _DocumentResolver, _CompiledStylesheet, _QueryStore, _RootAction, _debugger);
+            Processor processor = new Processor(input, args, _DocumentResolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -268,7 +265,7 @@ namespace System.Xml.Xsl
         {
             Debug.Assert(stylesheet != null);
 
-            Compiler compiler = (Debugger == null) ? new Compiler() : new DbgCompiler(this.Debugger);
+            Compiler compiler = new Compiler();
             NavigatorInput input = new NavigatorInput(stylesheet);
             compiler.Compile(input, resolver ?? XmlNullResolver.Singleton);
 
@@ -278,11 +275,6 @@ namespace System.Xml.Xsl
             _CompiledStylesheet = compiler.CompiledStylesheet;
             _QueryStore = compiler.QueryStore;
             _RootAction = compiler.RootAction;
-        }
-
-        internal IXsltDebugger Debugger
-        {
-            get { return _debugger; }
         }
 
         private static XmlResolver CreateDefaultResolver()

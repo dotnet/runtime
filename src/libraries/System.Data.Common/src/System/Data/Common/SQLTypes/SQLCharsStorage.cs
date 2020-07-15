@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.IO;
@@ -13,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlCharsStorage : DataStorage
     {
-        private SqlChars[] _values;
+        private SqlChars[] _values = default!; // Late-initialized
 
         public SqlCharsStorage(DataColumn column)
         : base(column, typeof(SqlChars), SqlChars.Null, SqlChars.Null, StorageType.SqlChars)
@@ -26,12 +25,12 @@ namespace System.Data.Common
             {
                 switch (kind)
                 {
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null; // no data => null
+                        return null!; // no data => null
 
                     case AggregateType.Count:
                         int count = 0;
@@ -56,7 +55,7 @@ namespace System.Data.Common
             return 0;
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             //            throw ExceptionBuilder.IComparableNotDefined;
             return 0;

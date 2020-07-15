@@ -5,10 +5,10 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true'"
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\NetEventSource.Common.cs"
              Link="Common\System\Net\Http\aspnetcore\NetEventSource.Common.cs" />
@@ -84,7 +84,7 @@
              Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="System\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" Condition="'$(TargetsUnix)' == 'true'"
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
              Link="Common\System\Buffers\NativeMemoryManager.cs" />
@@ -106,7 +106,7 @@
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"
              Link="Common\System\Net\Capability.Security.Windows.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\System\Net\Capability.Security.Unix.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
@@ -168,6 +168,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
+    <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
+    <Compile Include="HttpClientHandlerTest.Connect.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs"
@@ -218,6 +220,7 @@
              Link="Common\System\Net\Http\ResponseStreamTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
              Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
+    <Compile Include="SyncHttpHandlerTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
@@ -233,7 +236,7 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>

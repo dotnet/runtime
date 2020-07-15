@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ==++==
 //
@@ -758,6 +757,14 @@ private:
               m_pSubst(s.m_pSubst),
               m_nameHash(s.m_nameHash)
             { }
+
+        MethodSignature GetSignatureWithoutSubstitution() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            MethodSignature sig = *this;
+            sig.m_pSubst = NULL;
+            return sig;
+        }
 
         //-----------------------------------------------------------------------------------------
         // Returns the module that is the scope within which the signature itself lives.
@@ -2287,7 +2294,7 @@ private:
         inline BOOL             Next();
         inline BOOL             Prev();
         inline void             ResetToEnd();
-        inline mdToken          Token();
+        inline mdToken          Token() const;
         inline DWORD            Attrs();
         inline DWORD            RVA();
         inline DWORD            ImplFlags();
@@ -2296,7 +2303,7 @@ private:
         inline METHOD_IMPL_TYPE MethodImpl();
         inline BOOL             IsMethodImpl();
         inline METHOD_TYPE      MethodType();
-        inline bmtMDMethod     *GetMDMethod();
+        inline bmtMDMethod     *GetMDMethod() const;
         inline MethodDesc      *GetIntroducingMethodDesc();
         inline bmtMDMethod *    operator->();
         inline bmtMDMethod *    operator*() { WRAPPER_NO_CONTRACT; return GetMDMethod(); }
@@ -2724,6 +2731,12 @@ private:
     // If none is found, return a null method handle
     bmtMethodHandle
     FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig);
+
+    // --------------------------------------------------------------------------------------------
+    // Find the decl method within the class hierarchy method name+signature specified
+    // If none is found, return a null method handle
+    bmtMethodHandle
+    FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig);
 
     // --------------------------------------------------------------------------------------------
     // Throws if an entry already exists that has been MethodImpl'd. Adds the interface slot and
