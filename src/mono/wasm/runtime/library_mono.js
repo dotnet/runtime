@@ -746,6 +746,7 @@ var MonoSupportLib = {
 			var ok = (fn (offset)) === 1;
 			if (ok)
 				this.num_icu_assets_loaded_successfully++;
+			return ok;
 		},
 
 		_finalize_startup: function (args, ctx) {
