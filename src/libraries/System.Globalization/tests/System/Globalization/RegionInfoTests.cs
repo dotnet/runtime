@@ -100,8 +100,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new RegionInfo(name).NativeName);
         }
 
-        // RegionInfo.EnglishName is not supported by Browser's ICU
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [InlineData("en-US", new string[] { "United States" })]
         [InlineData("US", new string[] { "United States" })]
         [InlineData("zh-CN", new string[] { "China", "People's Republic of China", "China mainland" })]
