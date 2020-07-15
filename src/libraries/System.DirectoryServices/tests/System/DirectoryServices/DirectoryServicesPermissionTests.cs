@@ -11,7 +11,6 @@ namespace System.Security.Permissions.Tests
 {
     public class DirectoryServicesPermissionTests
     {
-#pragma warning disable SYSLIB0003 // CAS Obsoletions
         [Fact]
         public static void DirectoryServicesPermissionCallMethods()
         {
@@ -29,6 +28,5 @@ namespace System.Security.Permissions.Tests
             string path = dpa.Path;
             IPermission ip = dpa.CreatePermission();
         }
-#pragma warning restore SYSLIB0003
     }
 }

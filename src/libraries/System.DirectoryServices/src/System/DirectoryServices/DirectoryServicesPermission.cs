@@ -5,9 +5,9 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
-#if CAS_OBSOLETIONS
-    [Obsolete("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif
+#pragma warning disable SYSLIB0003
+    // Conditionally marking this type as obsolete in .NET 5+ will require diverging its net5.0 build from netstandard2.0
+    // https://github.com/dotnet/runtime/issues/39413
     public sealed class DirectoryServicesPermission : ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }
@@ -16,4 +16,5 @@ namespace System.DirectoryServices
         public DirectoryServicesPermission(DirectoryServicesPermissionAccess permissionAccess, string path) { }
         public DirectoryServicesPermissionEntryCollection PermissionEntries { get; }
     }
+#pragma warning restore SYSLIB0003
 }
