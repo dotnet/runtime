@@ -592,6 +592,11 @@ PALAPI
 PAL_LoadLibraryDirect(
     IN LPCWSTR lpLibFileName)
 {
+    if (!lpLibFileName && g_running_in_exe)
+    {
+        return dlopen(NULL, RTLD_LAZY);
+    }
+
     PathCharString pathstr;
     CHAR * lpstr = nullptr;
     LPCSTR lpcstr = nullptr;
@@ -1444,23 +1449,6 @@ static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
     // Getting nullptr as name indicates redirection to current library
     if (libraryNameOrPath == nullptr)
         return true;
-
-#if defined(TARGET_LINUX)
-    static const char* toRedirect[] = {
-        "System.Native.so",
-        "System.IO.Compression.Native.so",
-        "System.Net.Security.Native.so",
-        "System.Security.Cryptography.Native.OpenSsl.so"
-    };
-
-    int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
-    for (int i = 0; i < count; ++i)
-    {
-        const char* match = toRedirect[i];
-        if (strcmp(libraryNameOrPath, match) == 0)
-            return true;
-    }
-#endif
 
     return false;
 }

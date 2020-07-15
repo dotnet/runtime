@@ -51,6 +51,9 @@
 #include "clr/fs/path.h"
 using namespace clr::fs;
 
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 #define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
@@ -6302,6 +6305,27 @@ namespace
             }
         }
 #endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+
+#if defined(TARGET_LINUX)
+        if (g_coreclr_embedded)
+        {
+            static const LPCWSTR toRedirect[] = {
+                W("System.Native.so"),
+                W("System.IO.Compression.Native.so"),
+                W("System.Net.Security.Native.so"),
+                W("System.Security.Cryptography.Native.OpenSsl.so")
+            };
+
+            int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
+            for (int i = 0; i < count; ++i)
+            {
+                if (wcscmp(wszLibName, toRedirect[i]) == 0)
+                {
+                    return PAL_LoadLibraryDirect(NULL);
+                }
+            }
+        }
+#endif
 
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
