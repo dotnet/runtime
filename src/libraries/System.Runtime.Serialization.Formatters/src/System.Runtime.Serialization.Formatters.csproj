@@ -4,10 +4,8 @@
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- On certain runtimes BinaryFormatter isn't supported at all. -->
-    <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);BINARYFORMATTER_PNSE</DefineConstants>
+    <!-- When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
+    <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CS0649</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
@@ -52,7 +50,8 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
