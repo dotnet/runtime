@@ -135,20 +135,16 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
-
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
-            _isFallbackBodyCompilation = methodIL != null;
-
-            CORINFO_METHOD_INFO methodInfo;
-            methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
-
-            // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+            // methodIL must not be null
             if (methodIL == null)
             {
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
             }
+
+            CORINFO_METHOD_INFO methodInfo;
+            Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
 
             _methodScope = methodInfo.scope;
 
@@ -428,16 +424,12 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
+        private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
         {
-            // MethodIL can be provided externally for the case of a method whose IL was replaced because we couldn't compile it.
-            if (methodIL == null)
-                methodIL = _compilation.GetMethodIL(method);
-
             if (methodIL == null)
             {
                 *methodInfo = default(CORINFO_METHOD_INFO);
-                return null;
+                return false;
             }
 
             methodInfo->ftn = ObjectToHandle(method);
@@ -465,7 +457,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
-            return methodIL;
+            return true;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
@@ -862,8 +854,9 @@ namespace Internal.JitInterface
 
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
-            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), null, info);
-            return methodIL != null;
+            MethodDesc method = HandleToObject(ftn);
+            MethodIL methodIL = _compilation.GetMethodIL(method);
+            return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
@@ -1722,10 +1715,11 @@ namespace Internal.JitInterface
             MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (_isFallbackBodyCompilation ||
+            if (
 #if READYTORUN
                 IsClassPreInited(type)
 #else
+                _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
 #endif
                 )
