@@ -37,7 +37,7 @@ namespace TypeSystemTests
             {
                 sb.Append(data.kind.ToString());
                 sb.Append(data.index);
-                sb.Append(((MetaDataType)data.type).Name);
+                sb.Append(((MetadataType)data.type).Name);
             }
             return sb.ToString();
         }
