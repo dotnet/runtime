@@ -49,10 +49,14 @@ namespace Internal.Cryptography
                     0);
 
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
 
                 if (destination.Length < hashSize)
+                {
                     throw new CryptographicException();
+                }
 
                 if (!s_useCompatOneShot)
                 {
@@ -68,17 +72,17 @@ namespace Internal.Cryptography
                                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                             }
                         }
+
+                        return hashSize;
                     }
                     catch (EntryPointNotFoundException)
                     {
                         s_useCompatOneShot = true;
-                        HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
                     }
                 }
-                else
-                {
-                    HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
-                }
+
+                Debug.Assert(s_useCompatOneShot);
+                HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
 
                 return hashSize;
             }
@@ -99,14 +103,18 @@ namespace Internal.Cryptography
                     BCryptCreateHashFlags.None);
 
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
 
                 using (hHash)
                 {
                     ntStatus = Interop.BCrypt.BCryptHashData(hHash, source, source.Length, 0);
 
                     if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                    {
                         throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                    }
 
                     Interop.BCrypt.BCryptFinishHash(hHash, destination, hashSize, 0);
                 }
