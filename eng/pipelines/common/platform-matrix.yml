@@ -22,6 +22,7 @@ parameters:
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
   jobParameters: {}
+  variables: []
 
 jobs:
 
@@ -31,6 +32,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: arm
       platform: Linux_arm
@@ -54,6 +56,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: arm64
       platform: Linux_arm64
@@ -77,6 +80,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Linux
       osSubgroup: _musl
       archType: x64
@@ -104,6 +108,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Linux
       osSubgroup: _musl
       archType: arm64
@@ -128,6 +133,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: x64
       platform: Linux_x64
@@ -150,6 +156,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Browser
       archType: wasm
       platform: Browser_wasm
@@ -170,6 +177,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: FreeBSD
       archType: x64
       platform: FreeBSD_x64
@@ -192,6 +200,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Android
       archType: x64
       platform: Android_x64
@@ -214,6 +223,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Android
       archType: x86
       platform: Android_x86
@@ -236,6 +246,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Android
       archType: arm
       platform: Android_arm
@@ -258,6 +269,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Android
       archType: arm64
       platform: Android_arm64
@@ -280,6 +292,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: tvOS
       archType: x64
       platform: tvOS_x64
@@ -299,6 +312,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: tvOS
       archType: arm64
       platform: tvOS_arm64
@@ -318,6 +332,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: x64
       platform: iOS_x64
@@ -337,6 +352,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: x86
       platform: iOS_x86
@@ -357,6 +373,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: arm
       platform: iOS_arm
@@ -376,6 +393,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: arm64
       platform: iOS_arm64
@@ -395,6 +413,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: OSX
       archType: x64
       platform: OSX_x64
@@ -414,6 +433,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: x64
       platform: Windows_NT_x64
@@ -433,6 +453,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: x86
       platform: Windows_NT_x86
@@ -451,6 +472,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: arm
       platform: Windows_NT_arm
@@ -470,6 +492,7 @@ jobs:
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: arm64
       platform: Windows_NT_arm64
