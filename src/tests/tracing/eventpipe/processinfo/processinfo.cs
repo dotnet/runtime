@@ -86,12 +86,13 @@ namespace Tracing.Tests.ProcessInfoValidation
                  $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
 
             // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
-            // This isn't represented in the output from FileInfo.FullName, but is in the Runtime unfortunately, so we'll force that completion in that case.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && expectedCommandLine.StartsWith("/tmp/"))
-                expectedCommandLine = "/private" + expectedCommandLine;
+            // This isn't represented in the output from the Runtime unfortunately, so we'll force that completion in that case.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && expectedCommandLine.StartsWith("/private/tmp/"))
+                expectedCommandLine = expectedCommandLine["/private".Length..];
             string receivedCommandLine = commandLine.Trim();
 
-            Utils.Assert(expectedCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: '{expectedCommandLine}', Received: '{receivedCommandLine}' (original: '{commandLine}')");
+            Utils.Assert(expectedCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), 
+                $"CommandLine must match current process. Expected: '{expectedCommandLine}', Received: '{receivedCommandLine}' (original: '{commandLine}')");
 
             // VALIDATE OS
             start = end;
