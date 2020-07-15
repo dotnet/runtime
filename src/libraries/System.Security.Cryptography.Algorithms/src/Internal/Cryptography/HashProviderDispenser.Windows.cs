@@ -29,7 +29,7 @@ namespace Internal.Cryptography
 
         public static class OneShotHashProvider
         {
-            private static volatile bool s_UseCompatOneShot;
+            private static volatile bool s_useCompatOneShot;
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
@@ -54,7 +54,7 @@ namespace Internal.Cryptography
                 if (destination.Length < hashSize)
                     throw new CryptographicException();
 
-                if (!s_UseCompatOneShot)
+                if (!s_useCompatOneShot)
                 {
                     try
                     {
@@ -71,7 +71,7 @@ namespace Internal.Cryptography
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        s_UseCompatOneShot = true;
+                        s_useCompatOneShot = true;
                         HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
                     }
                 }
