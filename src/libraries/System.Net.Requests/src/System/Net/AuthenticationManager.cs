@@ -14,11 +14,11 @@ namespace System.Net
 
         public static StringDictionary CustomTargetNameDictionary { get; } = new StringDictionary();
 
-        [Obsolete("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? Authenticate(string challenge, WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 
-        [Obsolete("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? PreAuthenticate(WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 

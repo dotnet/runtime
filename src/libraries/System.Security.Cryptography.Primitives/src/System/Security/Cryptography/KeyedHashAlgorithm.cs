@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
     {
         protected KeyedHashAlgorithm() { }
 
-        [Obsolete(Obsoletions.DefaultAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static new KeyedHashAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 

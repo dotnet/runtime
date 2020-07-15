@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
         /// Creates PDB symbol generator.
         /// </summary>
         /// <returns>PDB symbol generator.</returns>
-        [Obsolete("The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0008", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete(Obsoletions.CreatePdbGeneratorMessage, DiagnosticId = Obsoletions.CreatePdbGeneratorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static DebugInfoGenerator CreatePdbGenerator()
         {
             // Creating PDBs is not supported in .NET Core
