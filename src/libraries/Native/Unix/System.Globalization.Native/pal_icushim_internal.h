@@ -60,14 +60,12 @@
 #if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(u_init, libicuuc) \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
     PER_FUNCTION_BLOCK(u_getVersion, libicuuc) \
     PER_FUNCTION_BLOCK(u_strlen, libicuuc) \
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc) \
     PER_FUNCTION_BLOCK(u_toupper, libicuuc) \
-    PER_FUNCTION_BLOCK(udata_setCommonData, libicuuc) \
     PER_FUNCTION_BLOCK(ucal_add, libicui18n) \
     PER_FUNCTION_BLOCK(ucal_close, libicui18n) \
     PER_FUNCTION_BLOCK(ucal_get, libicui18n) \
@@ -188,14 +186,12 @@ FOR_ALL_ICU_FUNCTIONS
 
 // Redefine all calls to ICU functions as calls through pointers that are set
 // to the functions of the selected version of ICU in the initialization.
-#define u_init(...) u_init_ptr(__VA_ARGS__)
 #define u_charsToUChars(...) u_charsToUChars_ptr(__VA_ARGS__)
 #define u_getVersion(...) u_getVersion_ptr(__VA_ARGS__)
 #define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
 #define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
-#define udata_setCommonData(...) udata_setCommonData_ptr(__VA_ARGS__)
 #define ucal_add(...) ucal_add_ptr(__VA_ARGS__)
 #define ucal_close(...) ucal_close_ptr(__VA_ARGS__)
 #define ucal_get(...) ucal_get_ptr(__VA_ARGS__)
