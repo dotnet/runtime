@@ -1620,7 +1620,7 @@ private:
 
 #ifdef FEATURE_READYTORUN
 
-class ReadyToRunJitManager : public IJitManager
+class ReadyToRunJitManager final: public IJitManager
 {
     VPTR_VTABLE_CLASS(ReadyToRunJitManager, IJitManager)
 
