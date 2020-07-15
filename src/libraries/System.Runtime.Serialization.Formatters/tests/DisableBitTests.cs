@@ -13,11 +13,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         // these tests only make sense on platforms with both SecureAppContext and RemoteExecutor support
         public static bool ShouldRunFullAppContextEnablementChecks => !PlatformDetection.IsNetFramework && RemoteExecutor.IsSupported;
 
+        // determines whether BinaryFormatter will always fail, regardless of config, on this platform
+        public static bool IsBinaryFormatterSuppressedOnThisPlatform => !PlatformDetection.IsBinaryFormatterSupported;
+
         private const string EnableBinaryFormatterSwitchName = "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization";
         private const string MoreInfoUrl = "https://aka.ms/binaryformatter";
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Browser)]
+        [ConditionalFact(nameof(IsBinaryFormatterSuppressedOnThisPlatform))]
         public static void DisabledAlwaysInBrowser()
         {
             // First, test serialization

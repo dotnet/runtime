@@ -12,8 +12,7 @@ namespace System.Collections.Generic.Tests
 {
     public abstract partial class ComparersGenericTests<T>
     {
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void EqualityComparer_SerializationRoundtrip()
         {
             var bf = new BinaryFormatter();

@@ -659,8 +659,7 @@ namespace System.Collections.Tests
 
         #region Serialization
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void ComparerSerialization()
         {
             // Strings switch between randomized and non-randomized comparers,

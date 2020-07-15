@@ -72,6 +72,8 @@ namespace System
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
+        public static bool IsBinaryFormatterSupported => !PlatformDetection.IsBrowser;
+
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
 #else

@@ -22,8 +22,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Null(typeName);
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void BindToType_AllValuesTracked()
         {
             var s = new MemoryStream();
