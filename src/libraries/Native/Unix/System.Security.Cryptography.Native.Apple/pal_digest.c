@@ -177,26 +177,52 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
     if (pOutput == NULL || cbOutput <= 0 || pcbDigest == NULL)
         return -1;
 
-    DigestCtx* ctx = AppleCryptoNative_DigestCreate(algorithm, pcbDigest);
-
-    if (ctx == NULL)
-        return -1;
-
-    if (cbOutput < *pcbDigest)
+    switch (algorithm)
     {
-        AppleCryptoNative_DigestFree(ctx);
-        return -1;
+        case PAL_SHA1:
+            *pcbDigest = CC_SHA1_DIGEST_LENGTH;
+            if (cbOutput < CC_SHA1_DIGEST_LENGTH)
+            {
+                return -1;
+            }
+            CC_SHA1(pBuf, cbBuf, pOutput);
+            return 1;
+        case PAL_SHA256:
+            *pcbDigest = CC_SHA256_DIGEST_LENGTH;
+            if (cbOutput < CC_SHA256_DIGEST_LENGTH)
+            {
+                return -1;
+            }
+            CC_SHA256(pBuf, cbBuf, pOutput);
+            return 1;
+        case PAL_SHA384:
+            *pcbDigest = CC_SHA384_DIGEST_LENGTH;
+            if (cbOutput < CC_SHA384_DIGEST_LENGTH)
+            {
+                return -1;
+            }
+            CC_SHA384(pBuf, cbBuf, pOutput);
+            return 1;
+        case PAL_SHA512:
+            *pcbDigest = CC_SHA512_DIGEST_LENGTH;
+            if (cbOutput < CC_SHA512_DIGEST_LENGTH)
+            {
+                return -1;
+            }
+            CC_SHA512(pBuf, cbBuf, pOutput);
+            return 1;
+        case PAL_MD5:
+            *pcbDigest = CC_MD5_DIGEST_LENGTH;
+            if (cbOutput < CC_MD5_DIGEST_LENGTH)
+            {
+                return -1;
+            }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            CC_MD5(pBuf, cbBuf, pOutput);
+#pragma clang diagnostic pop
+            return 1;
+        default:
+            return -1;
     }
-
-    int32_t ret = AppleCryptoNative_DigestUpdate(ctx, pBuf, cbBuf);
-
-    if (ret != 1)
-    {
-        AppleCryptoNative_DigestFree(ctx);
-        return ret;
-    }
-
-    ret = AppleCryptoNative_DigestFinal(ctx, pOutput, cbOutput);
-    AppleCryptoNative_DigestFree(ctx);
-    return ret;
 }
