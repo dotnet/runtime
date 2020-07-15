@@ -25,6 +25,11 @@ var MonoSupportLib = {
 		export_functions: function (module) {
 			module ["pump_message"] = MONO.pump_message;
 			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl;
+			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args;
+			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap;
+			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
+			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
+			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
 		},
 
 		mono_text_decoder: undefined,
@@ -647,6 +652,35 @@ var MonoSupportLib = {
 			}
 		},
 
+		// deprecated
+		mono_load_runtime_and_bcl: function (
+			unused_vfs_prefix, deploy_prefix, enable_debugging, file_list, loaded_cb, fetch_file_cb
+		) {
+			var args = {
+				fetch_file_cb: fetch_file_cb,
+				loaded_cb: loaded_cb,
+				enable_debugging: enable_debugging,
+				assembly_root: deploy_prefix,
+				assets: []
+			};
+
+			for (var i = 0; i < file_list.length; i++) {
+				var file_name = file_list[i];
+				var behavior;
+				if (file_name === "icudt.dat")
+					behavior = "icu";
+				else // if (file_name.endsWith (".pdb") || file_name.endsWith (".dll"))
+					behavior = "assembly";
+
+				args.assets.push ({
+					name: file_name,
+					behavior: behavior
+				});
+			}
+
+			return this.mono_load_runtime_and_bcl_args (args);
+		},
+
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
 		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
@@ -703,6 +737,8 @@ var MonoSupportLib = {
 			return memoryOffset;
 		},
 
+		num_icu_assets_loaded_successfully: 0,
+
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
 		mono_wasm_load_icu_data: function (offset) {
@@ -755,8 +791,6 @@ var MonoSupportLib = {
 				throw new Error ("Invalid args (runtime_asset_sources was replaced by remote_sources)");
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
-
-			this.num_icu_assets_loaded_successfully = 0;
 
 			var ctx = {
 				tracing: args.diagnostic_tracing || false,
