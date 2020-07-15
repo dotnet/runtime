@@ -122,7 +122,7 @@ public class WasmAppBuilder : Task
             var sEnableRemote = enableRemote ? "true" : "false";
 
             foreach (var asset in ICUDataFiles!)
-                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: {sEnableRemote}}},");
+                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: {sEnableRemote} }},");
 
             sw.WriteLine ("\t],");
 
@@ -130,7 +130,7 @@ public class WasmAppBuilder : Task
                 sw.WriteLine("\tremote_sources: [");
                 foreach (var source in RemoteSources!)
                     sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
-                sw.WriteLine ("],");
+                sw.WriteLine ("\t],");
             }
 
             sw.WriteLine ("};");

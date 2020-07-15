@@ -699,7 +699,7 @@ var MonoSupportLib = {
 			MONO.loaded_assets = ctx.loaded_assets;
 			console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
 
-			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['number']);
+			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
 			console.log ("MONO_WASM: Initializing mono runtime");
 
@@ -707,7 +707,7 @@ var MonoSupportLib = {
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
-					load_runtime (args.enable_debugging);
+					load_runtime ("unused", args.enable_debugging);
 				} catch (ex) {
 					print ("MONO_WASM: load_runtime () failed: " + ex);
 					var err = new Error();
@@ -718,7 +718,7 @@ var MonoSupportLib = {
 					wasm_exit (1);
 				}
 			} else {
-				load_runtime (args.enable_debugging);
+				load_runtime ("unused", args.enable_debugging);
 			}
 
 			MONO.mono_wasm_runtime_ready ();
