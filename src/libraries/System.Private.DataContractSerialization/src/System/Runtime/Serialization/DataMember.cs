@@ -161,7 +161,7 @@ namespace System.Runtime.Serialization
             private bool _isRequired;
             private bool _emitDefaultValue;
             private bool _isNullable;
-            private bool _isGetOnlyCollection = false;
+            private bool _isGetOnlyCollection;
             private readonly MemberInfo _memberInfo;
             private bool _hasConflictingNameAndType;
             private DataMember _conflictingMember;

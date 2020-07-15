@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
             // Perform the actual decryption step, updating the XmlDocument in-place.
-            var encryptedXml = _encryptedXmlFactory(document);
+            EncryptedXml encryptedXml = _encryptedXmlFactory(document);
             encryptedXml.DecryptDocument();
 
             // Finally, return the new XmlReader from the updated XmlDocument.

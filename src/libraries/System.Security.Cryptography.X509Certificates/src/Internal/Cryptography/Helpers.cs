@@ -8,12 +8,19 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Globalization;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        internal static ReadOnlySpan<byte> AsSpanParameter(this byte[] array, string paramName)
+        {
+            if (array == null)
+                throw new ArgumentNullException(paramName);
+
+            return new ReadOnlySpan<byte>(array);
+        }
+
         // Encode a byte array as an array of upper-case hex characters.
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {

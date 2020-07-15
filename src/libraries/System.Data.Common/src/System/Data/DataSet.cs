@@ -38,7 +38,7 @@ namespace System.Data
         // Public Collections
         private readonly DataTableCollection _tableCollection;
         private readonly DataRelationCollection _relationCollection;
-        internal PropertyCollection _extendedProperties = null;
+        internal PropertyCollection _extendedProperties;
         private string _dataSetName = "NewDataSet";
         private string _datasetPrefix = string.Empty;
         internal string _namespaceURI = string.Empty;
@@ -50,12 +50,12 @@ namespace System.Data
         private bool _cultureUserSet;
 
         // Internal definitions
-        internal bool _fInReadXml = false;
-        internal bool _fInLoadDiffgram = false;
-        internal bool _fTopLevelTable = false;
-        internal bool _fInitInProgress = false;
+        internal bool _fInReadXml;
+        internal bool _fInLoadDiffgram;
+        internal bool _fTopLevelTable;
+        internal bool _fInitInProgress;
         internal bool _fEnableCascading = true;
-        internal bool _fIsSchemaLoading = false;
+        internal bool _fIsSchemaLoading;
         private bool _fBoundToDocument;        // for XmlDataDocument
 
         internal string _mainTableName = string.Empty;
@@ -67,7 +67,7 @@ namespace System.Data
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = Interlocked.Increment(ref s_objectTypeCount);
-        private static XmlSchemaComplexType s_schemaTypeForWSDL = null;
+        private static XmlSchemaComplexType s_schemaTypeForWSDL;
 
         internal bool _useDataSetSchemaOnly; // UseDataSetSchemaOnly  , for YUKON
         internal bool _udtIsWrapped; // if UDT is wrapped , for YUKON

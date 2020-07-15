@@ -20,7 +20,7 @@ namespace EventPipeTests
 {
     class EventPipe
     {
-        static readonly Guid EventPipeProfilerGuid = new Guid("2726B5B4-3F88-462D-AEC0-4EFDC8D7B921");
+        static readonly Guid EventPipeWritingProfilerGuid = new Guid("2726B5B4-3F88-462D-AEC0-4EFDC8D7B921");
 
         public static int Main(string[] args)
         {
@@ -31,7 +31,7 @@ namespace EventPipeTests
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "EventPipeBasic",
-                                          profilerClsid: EventPipeProfilerGuid);
+                                          profilerClsid: EventPipeWritingProfilerGuid);
         }
 
         public static int RunTest()

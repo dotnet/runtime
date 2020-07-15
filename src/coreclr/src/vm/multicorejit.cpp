@@ -1359,8 +1359,6 @@ void MulticoreJitManager::StopProfileAll()
     }
     CONTRACTL_END;
 
-    _ASSERTE(!AppX::IsAppXProcess());
-
     AppDomainIterator domain(TRUE);
 
     while (domain.Next())

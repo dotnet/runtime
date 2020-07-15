@@ -176,10 +176,6 @@ namespace System.IO.MemoryMappedFiles
             return handle;
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>
         /// This converts a MemoryMappedFileRights to its corresponding native FILE_MAP_XXX value to be used when
         /// creating new views.

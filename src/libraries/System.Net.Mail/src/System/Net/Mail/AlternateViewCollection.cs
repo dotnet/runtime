@@ -8,7 +8,7 @@ namespace System.Net.Mail
 {
     public sealed class AlternateViewCollection : Collection<AlternateView>, IDisposable
     {
-        private bool _disposed = false;
+        private bool _disposed;
 
         internal AlternateViewCollection()
         { }

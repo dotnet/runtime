@@ -26,21 +26,21 @@ namespace System.DirectoryServices.ActiveDirectory
     public class Forest : IDisposable
     {
         // Private Variables
-        private readonly DirectoryContext _context = null;
-        private readonly DirectoryEntryManager _directoryEntryMgr = null;
-        private bool _disposed = false;
+        private readonly DirectoryContext _context;
+        private readonly DirectoryEntryManager _directoryEntryMgr;
+        private bool _disposed;
 
         // Internal variables corresponding to public properties
-        private readonly string _forestDnsName = null;
-        private ReadOnlySiteCollection _cachedSites = null;
-        private DomainCollection _cachedDomains = null;
-        private GlobalCatalogCollection _cachedGlobalCatalogs = null;
-        private ApplicationPartitionCollection _cachedApplicationPartitions = null;
+        private readonly string _forestDnsName;
+        private ReadOnlySiteCollection _cachedSites;
+        private DomainCollection _cachedDomains;
+        private GlobalCatalogCollection _cachedGlobalCatalogs;
+        private ApplicationPartitionCollection _cachedApplicationPartitions;
         private int _forestModeLevel = -1;
-        private Domain _cachedRootDomain = null;
-        private ActiveDirectorySchema _cachedSchema = null;
-        private DomainController _cachedSchemaRoleOwner = null;
-        private DomainController _cachedNamingRoleOwner = null;
+        private Domain _cachedRootDomain;
+        private ActiveDirectorySchema _cachedSchema;
+        private DomainController _cachedSchemaRoleOwner;
+        private DomainController _cachedNamingRoleOwner;
 
         #region constructors
         internal Forest(DirectoryContext context, string forestDnsName, DirectoryEntryManager directoryEntryMgr)

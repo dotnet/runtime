@@ -42,7 +42,7 @@ namespace System.Globalization
 
         // Integers at end to make marshaller happier
         internal int iTwoDigitYearMax = 2029; // Max 2 digit year (for Y2K bug data entry)
-        private int iCurrentEra = 0;  // current era # (usually 1)
+        private int iCurrentEra;  // current era # (usually 1)
 
         // Use overrides?
         internal bool bUseUserOverrides; // True if we want user overrides.

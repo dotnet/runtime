@@ -39,7 +39,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // IsSecurityGroup property
-        private bool _isSecurityGroup = false;          // the actual property value
+        private bool _isSecurityGroup;          // the actual property value
         private LoadState _isSecurityGroupChanged = LoadState.NotSet;   // change-tracking
 
         public Nullable<bool> IsSecurityGroup
@@ -130,7 +130,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Members property
-        private PrincipalCollection _members = null;
+        private PrincipalCollection _members;
 
         public PrincipalCollection Members
         {
@@ -212,7 +212,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         public override void Dispose()
         {

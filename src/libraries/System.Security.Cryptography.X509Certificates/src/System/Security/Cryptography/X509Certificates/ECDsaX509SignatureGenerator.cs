@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates
             Buffer.BlockCopy(ecParameters.Q.X, 0, uncompressedPoint, 1, ecParameters.Q.X.Length);
             Buffer.BlockCopy(ecParameters.Q.Y, 0, uncompressedPoint, 1 + ecParameters.Q.X.Length, ecParameters.Q.Y.Length);
 
-            Oid ecPublicKey = new Oid(Oids.EcPublicKey);
+            Oid ecPublicKey = Oids.EcPublicKeyOid;
 
             return new PublicKey(
                 ecPublicKey,

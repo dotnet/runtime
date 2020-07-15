@@ -144,7 +144,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(BuildAllConfigurations)' != 'true'">
+          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' != 'true'">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 
@@ -153,7 +153,6 @@
     <Message Importance="High" Text="Creating directory $(TestArchiveRuntimeRoot)" />
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
 
-    <Message Importance="High" Text="ZIP directory $(TestHostRootPath) to $(TestArchiveRuntimeFile)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />

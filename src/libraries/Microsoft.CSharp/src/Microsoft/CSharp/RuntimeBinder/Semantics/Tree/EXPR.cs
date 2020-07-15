@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             protected set { _type = value; }
         }
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual object Object
         {
             get

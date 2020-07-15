@@ -465,13 +465,18 @@ namespace System.Security.Cryptography
     {
         internal IncrementalHash() { }
         public System.Security.Cryptography.HashAlgorithmName AlgorithmName { get { throw null; } }
+        public int HashLengthInBytes { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(byte[] data, int offset, int count) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
         public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { throw null; }
         public void Dispose() { }
+        public byte[] GetCurrentHash() { throw null; }
+        public int GetCurrentHash(System.Span<byte> destination) { throw null; }
         public byte[] GetHashAndReset() { throw null; }
+        public int GetHashAndReset(System.Span<byte> destination) { throw null; }
+        public bool TryGetCurrentHash(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryGetHashAndReset(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class MaskGenerationMethod

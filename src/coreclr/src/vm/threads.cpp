@@ -4732,9 +4732,9 @@ BOOL Thread::PrepareApartmentAndContext()
 #endif //FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP
-    // Our IInitializeSpy will be registered in AppX always, in classic processes
+    // Our IInitializeSpy will be registered in classic processes
     // only if the internal config switch is on.
-    if (AppX::IsAppXProcess() || g_pConfig->EnableRCWCleanupOnSTAShutdown())
+    if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
         NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
 

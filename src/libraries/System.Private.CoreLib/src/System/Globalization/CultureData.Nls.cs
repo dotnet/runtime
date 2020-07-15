@@ -359,7 +359,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumLocaleData context = ref Unsafe.As<byte, EnumLocaleData>(ref *(byte*)contextHandle);
@@ -382,7 +382,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)contextHandle);
@@ -404,7 +404,7 @@ namespace System.Globalization
         }
 
         // EnumTimeFormatsEx callback itself.
-        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);

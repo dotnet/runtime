@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             // We are setting buffer size to 1 to prevent FileStream from allocating it's internal buffer
             // 0 causes constructor to throw
-            var bufferSize = 1;
+            int bufferSize = 1;
             return new FileStream(
                 PhysicalPath,
                 FileMode.Open,

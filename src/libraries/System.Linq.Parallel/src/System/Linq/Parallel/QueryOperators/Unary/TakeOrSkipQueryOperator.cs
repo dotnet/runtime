@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
     {
         private readonly int _count; // The number of elements to take or skip.
         private readonly bool _take; // Whether to take (true) or skip (false).
-        private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
+        private bool _prematureMerge; // Whether to prematurely merge the input of this operator.
 
         //---------------------------------------------------------------------------------------
         // Initializes a new take-while operator.

@@ -148,10 +148,6 @@ namespace System.Diagnostics
             get { return GetThreadTimes().UserProcessorTime; }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Gets timing information for the thread.</summary>
         private ProcessThreadTimes GetThreadTimes()
         {

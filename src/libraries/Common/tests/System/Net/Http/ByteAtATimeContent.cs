@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
@@ -23,6 +24,11 @@ namespace System.Net.Http.Functional.Tests
             _startedSend = startedSend;
             _millisecondDelayBetweenBytes = millisecondDelayBetweenBytes;
         }
+
+#if NETCOREAPP
+        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
+#endif
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {

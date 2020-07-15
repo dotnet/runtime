@@ -39,14 +39,14 @@ namespace Microsoft.Extensions.Http.Logging
                 {
                     var values = new List<KeyValuePair<string, object>>();
 
-                    foreach (var kvp in Headers)
+                    foreach (KeyValuePair<string, IEnumerable<string>> kvp in Headers)
                     {
                         values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
                     }
 
                     if (ContentHeaders != null)
                     {
-                        foreach (var kvp in ContentHeaders)
+                        foreach (KeyValuePair<string, IEnumerable<string>> kvp in ContentHeaders)
                         {
                             values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
                         }
@@ -91,9 +91,9 @@ namespace Microsoft.Extensions.Http.Logging
                 var builder = new StringBuilder();
                 builder.AppendLine(_kind == Kind.Request ? "Request Headers:" : "Response Headers:");
 
-                for (var i = 0; i < Values.Count; i++)
+                for (int i = 0; i < Values.Count; i++)
                 {
-                    var kvp = Values[i];
+                    KeyValuePair<string, object> kvp = Values[i];
                     builder.Append(kvp.Key);
                     builder.Append(": ");
 
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Http.Logging
                         builder.AppendJoin(", ", (IEnumerable<object>)kvp.Value);
                         builder.AppendLine();
 #else
-                        foreach (var value in (IEnumerable<object>)kvp.Value)
+                        foreach (object value in (IEnumerable<object>)kvp.Value)
                         {
                             builder.Append(value);
                             builder.Append(", ");

@@ -424,15 +424,15 @@ namespace System.Data.OleDb
 
         internal IntPtr iOrdinal = (IntPtr)0;
 
-        internal int dwFlags = 0;
+        internal int dwFlags;
 
         internal IntPtr ulColumnSize = (IntPtr)0;
 
-        internal short wType = 0;
+        internal short wType;
 
-        internal byte bPrecision = 0;
+        internal byte bPrecision;
 
-        internal byte bScale = 0;
+        internal byte bScale;
 
         internal tagDBIDX columnid;
 

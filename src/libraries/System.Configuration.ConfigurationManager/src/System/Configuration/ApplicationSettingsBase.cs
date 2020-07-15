@@ -14,7 +14,7 @@ namespace System.Configuration
     /// </summary>
     public abstract class ApplicationSettingsBase : SettingsBase, INotifyPropertyChanged
     {
-        private bool _explicitSerializeOnClass = false;
+        private bool _explicitSerializeOnClass;
         private object[] _classAttributes;
         private readonly IComponent _owner;
         private PropertyChangedEventHandler _onPropertyChanged;
@@ -27,7 +27,7 @@ namespace System.Configuration
         private SettingsSavingEventHandler _onSettingsSaving;
         private string _settingsKey = string.Empty;
         private bool _firstLoad = true;
-        private bool _initialized = false;
+        private bool _initialized;
 
         /// <summary>
         /// Default constructor without a concept of "owner" component.

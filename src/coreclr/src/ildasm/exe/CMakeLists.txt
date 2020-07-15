@@ -104,14 +104,8 @@ if(CLR_CMAKE_HOST_UNIX)
         mscorrc
         coreclrpal
         palrt
+        ${CMAKE_DL_LIBS}
     )
-
-    # FreeBSD and NetBSD implement dlopen(3) in libc
-    if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
-        target_link_libraries(ildasm
-            dl
-        )
-    endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}

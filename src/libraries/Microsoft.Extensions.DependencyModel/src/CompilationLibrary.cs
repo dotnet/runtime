@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (customResolvers?.Length > 0)
             {
-                foreach (var resolver in customResolvers)
+                foreach (ICompilationAssemblyResolver resolver in customResolvers)
                 {
                     if (resolver.TryResolveAssemblyPaths(this, assemblies))
                     {

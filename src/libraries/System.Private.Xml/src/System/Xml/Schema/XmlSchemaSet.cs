@@ -31,7 +31,7 @@ namespace System.Xml.Schema
         private readonly ValidationEventHandler _internalEventHandler;
         private ValidationEventHandler? _eventHandler;
 
-        private bool _isCompiled = false;
+        private bool _isCompiled;
 
         //Dictionary<Uri, XmlSchema> schemaLocations;
         //Dictionary<ChameleonKey, XmlSchema> chameleonSchemas;

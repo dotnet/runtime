@@ -41,9 +41,9 @@ namespace Microsoft.Extensions.FileProviders.Composite
             if (_directories == null)
             {
                 _directories = new List<IDirectoryContents>();
-                foreach (var fileProvider in _fileProviders)
+                foreach (IFileProvider fileProvider in _fileProviders)
                 {
-                    var directoryContents = fileProvider.GetDirectoryContents(_subPath);
+                    IDirectoryContents directoryContents = fileProvider.GetDirectoryContents(_subPath);
                     if (directoryContents != null && directoryContents.Exists)
                     {
                         _exists = true;
@@ -60,10 +60,10 @@ namespace Microsoft.Extensions.FileProviders.Composite
             {
                 _files = new List<IFileInfo>();
                 var names = new HashSet<string>();
-                for (var i = 0; i < _directories.Count; i++)
+                for (int i = 0; i < _directories.Count; i++)
                 {
-                    var directoryContents = _directories[i];
-                    foreach (var file in directoryContents)
+                    IDirectoryContents directoryContents = _directories[i];
+                    foreach (IFileInfo file in directoryContents)
                     {
                         if (names.Add(file.Name))
                         {

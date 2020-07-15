@@ -13,7 +13,7 @@ namespace Internal.Cryptography.Pal
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
         private static ICertificatePal ImportPkcs12(
-            byte[] rawData,
+            ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool exportable,
             SafeKeychainHandle keychain)

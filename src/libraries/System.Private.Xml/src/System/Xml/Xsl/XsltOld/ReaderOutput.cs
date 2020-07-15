@@ -695,8 +695,8 @@ namespace System.Xml.Xsl.XsltOld
 
         private class XmlEncoder
         {
-            private StringBuilder _buffer = null;
-            private XmlTextEncoder _encoder = null;
+            private StringBuilder _buffer;
+            private XmlTextEncoder _encoder;
 
             private void Init()
             {

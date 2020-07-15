@@ -22,9 +22,5 @@ namespace Internal.Cryptography
             BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, false, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void MultipleThreads_SameType_DifferentJson()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void MultipleThreads_DifferentTypes()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
@@ -165,7 +165,7 @@ namespace System.Text.Json.Serialization.Tests
         // this options is not the default options instance the tests will not use previously cached metadata.
         private static JsonSerializerOptions s_options = new JsonSerializerOptions();
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(WriteSuccessCases))]
         public static void MultipleTypes(ITestClass testObj)
         {

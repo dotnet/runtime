@@ -11,12 +11,12 @@ namespace System.Net
     // _SecPkgInfoW in sspi.h.
     internal class SecurityPackageInfoClass
     {
-        internal int Capabilities = 0;
-        internal short Version = 0;
-        internal short RPCID = 0;
-        internal int MaxToken = 0;
-        internal string? Name = null;
-        internal string? Comment = null;
+        internal int Capabilities;
+        internal short Version;
+        internal short RPCID;
+        internal int MaxToken;
+        internal string? Name;
+        internal string? Comment;
 
         /*
             This is to support SSL with no client cert.

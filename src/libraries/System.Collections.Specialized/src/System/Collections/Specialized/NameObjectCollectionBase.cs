@@ -24,7 +24,7 @@ namespace System.Collections.Specialized
     /// </devdoc>
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
-        private bool _readOnly = false;
+        private bool _readOnly;
         private ArrayList _entriesArray;
         private IEqualityComparer _keyComparer;
         private volatile Hashtable _entriesTable;

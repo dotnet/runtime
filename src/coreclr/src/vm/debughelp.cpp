@@ -1016,10 +1016,6 @@ void PrintDomainName(size_t ob)
 
 #include "gcdump.h"
 
-#include "../gcdump/i386/gcdumpx86.cpp"
-
-#include "../gcdump/gcdump.cpp"
-
 /*********************************************************************/
 void printfToDbgOut(const char* fmt, ...)
 {

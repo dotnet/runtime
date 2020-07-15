@@ -43,6 +43,7 @@ namespace ILCompiler
         public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
         public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
         public int? CustomPESectionAlignment { get; set; }
+        public bool VerifyTypeAndFieldLayout { get; set; }
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
@@ -198,6 +199,10 @@ namespace ILCompiler
                 {
                     Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
+                new Option(new[] { "--verify-type-and-field-layout" }, SR.VerifyTypeAndFieldLayoutOption)
+                {
+                    Argument = new Argument<bool>()
+                }
             };
         }
     }

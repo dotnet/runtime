@@ -225,7 +225,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private static string OperatorDescription(int Opcode)
         {
             string codeStr = (Opcode & Mask) switch
@@ -287,7 +287,7 @@ namespace System.Text.RegularExpressions
                 ((Opcode & Back2) != 0 ? "-Back2" : "");
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public string OpcodeDescription(int offset)
         {
             var sb = new StringBuilder();
@@ -396,10 +396,10 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString()
         {
             var sb = new StringBuilder();

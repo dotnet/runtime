@@ -9,23 +9,23 @@ namespace System.Data
 {
     public sealed class DataTableReader : DbDataReader
     {
-        private readonly DataTable[] _tables = null;
+        private readonly DataTable[] _tables;
         private bool _isOpen = true;
-        private DataTable _schemaTable = null;
+        private DataTable _schemaTable;
 
         private int _tableCounter = -1;
         private int _rowCounter = -1;
-        private DataTable _currentDataTable = null;
-        private DataRow _currentDataRow = null;
+        private DataTable _currentDataTable;
+        private DataRow _currentDataRow;
 
         private bool _hasRows = true;
-        private bool _reachEORows = false;
-        private bool _currentRowRemoved = false;
-        private bool _schemaIsChanged = false;
-        private bool _started = false;
-        private bool _readerIsInvalid = false;
-        private DataTableReaderListener _listener = null;
-        private bool _tableCleared = false;
+        private bool _reachEORows;
+        private bool _currentRowRemoved;
+        private bool _schemaIsChanged;
+        private bool _started;
+        private bool _readerIsInvalid;
+        private DataTableReaderListener _listener;
+        private bool _tableCleared;
 
         public DataTableReader(DataTable dataTable)
         {

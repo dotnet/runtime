@@ -125,14 +125,13 @@ ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 // Class for connecting a native COM object to a managed object instance
 class NativeObjectWrapperContext
 {
-#ifdef _DEBUG
-    size_t _sentinel;
-#endif
-
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
     Volatile<BOOL> _isValidTracker;
 
+#ifdef _DEBUG
+    size_t _sentinel;
+#endif
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);

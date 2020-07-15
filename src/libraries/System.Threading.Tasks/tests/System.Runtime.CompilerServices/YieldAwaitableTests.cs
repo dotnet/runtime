@@ -15,7 +15,7 @@ namespace System.Threading.Tasks.Tests
     public class YieldAwaitableTests
     {
         // awaiting Task.Yield
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunAsyncYieldAwaiterTests()
         {
             // Test direct usage works even though it's not encouraged
@@ -146,14 +146,14 @@ namespace System.Threading.Tasks.Tests
             SynchronizationContext.SetSynchronizationContext(null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToDefaultTaskScheduler()
         {
             await Task.Yield();
             Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToCorrectTaskScheduler()
         {
             QUWITaskScheduler ts = new QUWITaskScheduler();
@@ -167,7 +167,7 @@ namespace System.Threading.Tasks.Tests
             Assert.NotSame(ts, TaskScheduler.Current);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToCorrectSynchronizationContext()
         {
             var sc = new ValidateCorrectContextSynchronizationContext ();

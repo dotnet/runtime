@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.Hosting
         private ComposablePartCatalog _innerCatalog;
         private FilteredCatalog? _complement;
         private readonly object _lock = new object();
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FilteredCatalog"/> class.

@@ -15,7 +15,7 @@ namespace System.Xml
         private XmlNode _node;
         private DataColumn _column;
         private bool _fOnValue;
-        private bool _bNeedFoliate = false;
+        private bool _bNeedFoliate;
         private bool _isInUse;
 
         internal DataPointer(XmlDataDocument doc, XmlNode node)

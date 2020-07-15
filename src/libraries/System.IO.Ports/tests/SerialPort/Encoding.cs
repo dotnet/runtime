@@ -111,7 +111,7 @@ namespace System.IO.Ports.Tests
         public void Encoding_UTF7()
         {
             Debug.WriteLine("Verifying UTF7Encoding Encoding");
-            VerifyException(Encoding.UTF7, ThrowAt.Set, typeof(ArgumentException));
+            VerifyException(LegacyUTF7Encoding, ThrowAt.Set, typeof(ArgumentException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]

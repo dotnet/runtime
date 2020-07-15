@@ -34,9 +34,5 @@ namespace Internal.Cryptography
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

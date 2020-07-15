@@ -419,12 +419,6 @@ FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
 FCFuncEnd()
 
-#ifdef FEATURE_APPX
-FCFuncStart(gApplicationModelFuncs)
-    QCFuncElement("IsAppXProcess", AppDomainNative::IsAppXProcess)
-FCFuncEnd()
-#endif
-
 FCFuncStart(gMdUtf8String)
     QCFuncElement("EqualsCaseInsensitive", MdUtf8String::EqualsCaseInsensitive)
     QCFuncElement("HashCaseInsensitive", MdUtf8String::HashCaseInsensitive)
@@ -1132,9 +1126,6 @@ FCFuncEnd()
 // Note these have to remain sorted by name:namespace pair (Assert will wack you if you don't)
 // The sorting is case-sensitive
 
-#ifdef FEATURE_APPX
-FCClassElement("ApplicationModel", "System", gApplicationModelFuncs)
-#endif
 FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("Assembly", "System.Reflection", gAssemblyFuncs)

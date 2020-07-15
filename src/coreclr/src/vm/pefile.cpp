@@ -63,6 +63,7 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
+    m_pAssemblyLoadContext(nullptr),
     m_pHostAssembly(nullptr),
     m_pFallbackLoadContextBinder(nullptr)
 {
@@ -1831,7 +1832,7 @@ void PEAssembly::Attach()
     STANDARD_VM_CONTRACT;
 }
 
-
+#ifndef DACCESS_COMPILE
 PEAssembly::PEAssembly(
                 CoreBindResult* pBindResultInfo,
                 IMetaDataEmit* pEmit,
@@ -1921,8 +1922,10 @@ PEAssembly::PEAssembly(
     m_debugName.Normalize();
     m_pDebugName = m_debugName;
 #endif
-}
 
+    SetupAssemblyLoadContext();
+}
+#endif // !DACCESS_COMPILE
 
 
 PEAssembly *PEAssembly::Open(
@@ -2331,6 +2334,24 @@ void PEFile::EnsureImageOpened()
         GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
 }
 
+void PEFile::SetupAssemblyLoadContext()
+{
+    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
+    ICLRPrivBinder* pOpaqueBinder = NULL;
+
+    if (pBindingContext != NULL)
+    {
+        UINT_PTR assemblyBinderID = 0;
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+    }
+
+    m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
+        (AssemblyLoadContext*)pOpaqueBinder :
+        AppDomain::GetCurrentDomain()->CreateBinderContext();
+}
+
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -2462,23 +2483,3 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
 
     return pBindingContext;
 }
-
-#ifndef DACCESS_COMPILE
-AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
-    ICLRPrivBinder* pOpaqueBinder = NULL;
-
-    if (pBindingContext != NULL)
-    {
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-    }
-
-    return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();
-}
-#endif

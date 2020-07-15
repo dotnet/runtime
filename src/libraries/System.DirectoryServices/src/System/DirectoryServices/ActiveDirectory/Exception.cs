@@ -162,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class SyncFromAllServersOperationException : ActiveDirectoryOperationException, ISerializable
     {
-        private readonly SyncFromAllServersErrorInformation[] _errors = null;
+        private readonly SyncFromAllServersErrorInformation[] _errors;
 
         public SyncFromAllServersOperationException(string message, Exception inner, SyncFromAllServersErrorInformation[] errors) : base(message, inner)
         {

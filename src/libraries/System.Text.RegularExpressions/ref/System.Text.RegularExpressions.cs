@@ -87,9 +87,7 @@ namespace System.Text.RegularExpressions
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#pragma warning disable CS8614 // Nullability of reference types in type of parameter doesn't match implicitly implemented member.
         public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.RegularExpressions.Group? value) { throw null; }
-#pragma warning restore CS8614
     }
     public partial class Match : System.Text.RegularExpressions.Group
     {

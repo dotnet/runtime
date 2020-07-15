@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             try
             {
-                var emptyFile = File.Create(path);
+                FileStream emptyFile = File.Create(path);
                 if (emptyFile != null)
                 {
                     emptyFile.Dispose();

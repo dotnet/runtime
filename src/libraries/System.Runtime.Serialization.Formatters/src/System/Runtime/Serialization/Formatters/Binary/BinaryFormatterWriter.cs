@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private readonly ObjectWriter _objectWriter;
         private readonly BinaryWriter _dataWriter;
 
-        private int _consecutiveNullArrayEntryCount = 0;
+        private int _consecutiveNullArrayEntryCount;
         private Dictionary<string, ObjectMapInfo>? _objectMapTable;
 
         private BinaryObject? _binaryObject;
@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private BinaryObjectWithMapTyped? _binaryObjectWithMapTyped;
         private BinaryObjectString? _binaryObjectString;
         private BinaryArray? _binaryArray;
-        private byte[]? _byteBuffer = null;
+        private byte[]? _byteBuffer;
         private MemberPrimitiveUnTyped? _memberPrimitiveUnTyped;
         private MemberPrimitiveTyped? _memberPrimitiveTyped;
         private ObjectNull? _objectNull;

@@ -150,7 +150,7 @@ public class WasmAppBuilder : Task
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
         {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;

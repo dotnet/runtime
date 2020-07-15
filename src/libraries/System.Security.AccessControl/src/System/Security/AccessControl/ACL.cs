@@ -840,7 +840,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private readonly RawAcl _acl;
-        private bool _isDirty = false;
+        private bool _isDirty;
         private readonly bool _isCanonical;
         private readonly bool _isContainer;
 
@@ -3061,7 +3061,7 @@ namespace System.Security.AccessControl
     {
         #region
         private static readonly SecurityIdentifier _sidEveryone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-        private bool everyOneFullAccessForNullDacl = false;
+        private bool everyOneFullAccessForNullDacl;
         #endregion
 
         #region Constructors

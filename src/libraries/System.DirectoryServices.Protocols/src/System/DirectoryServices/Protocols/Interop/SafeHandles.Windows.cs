@@ -35,7 +35,7 @@ namespace System.DirectoryServices.Protocols
 
     internal sealed class ConnectionHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal bool _needDispose = false;
+        internal bool _needDispose;
 
         internal ConnectionHandle() : base(true)
         {

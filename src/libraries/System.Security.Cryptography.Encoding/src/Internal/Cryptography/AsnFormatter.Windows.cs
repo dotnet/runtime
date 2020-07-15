@@ -7,9 +7,5 @@ namespace Internal.Cryptography
     internal abstract partial class AsnFormatter
     {
         private static readonly AsnFormatter s_instance = new CngAsnFormatter();
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
         private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
-        private bool _refsInitialized = false;
+        private bool _refsInitialized;
 
         protected Regex()
         {
@@ -440,7 +440,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>True if the regex has debugging enabled.</summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }

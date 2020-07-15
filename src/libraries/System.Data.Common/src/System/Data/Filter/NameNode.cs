@@ -9,11 +9,8 @@ namespace System.Data
 {
     internal sealed class NameNode : ExpressionNode
     {
-        internal char _open = '\0';
-        internal char _close = '\0';
         internal string _name;
         internal bool _found;
-        internal bool _type = false;
         internal DataColumn _column;
 
         internal NameNode(DataTable table, char[] text, int start, int pos) : base(table)

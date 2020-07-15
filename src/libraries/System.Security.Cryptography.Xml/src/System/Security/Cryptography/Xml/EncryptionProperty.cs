@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
         private string _target;
         private string _id;
         private XmlElement _elemProp;
-        private XmlElement _cachedXml = null;
+        private XmlElement _cachedXml;
 
         // We are being lax here as per the spec
         public EncryptionProperty() { }

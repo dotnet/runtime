@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
         internal ArrayList containedActions;
         internal CopyCodeAction lastCopyCodeAction; // non null if last action is CopyCodeAction;
 
-        private int _maxid = 0;
+        private int _maxid;
 
         // Local execution states
         protected const int ProcessingChildren = 1;

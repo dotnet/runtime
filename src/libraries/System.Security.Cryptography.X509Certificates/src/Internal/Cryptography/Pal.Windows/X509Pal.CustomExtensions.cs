@@ -189,7 +189,7 @@ namespace Internal.Cryptography.Pal
             usages = localUsages;
         }
 
-        public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
+        public byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
         {
             unsafe
             {

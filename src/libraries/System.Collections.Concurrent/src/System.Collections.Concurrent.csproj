@@ -22,7 +22,7 @@
              Link="System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
     <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />

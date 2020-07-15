@@ -231,7 +231,7 @@ FUNCTIONS
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
-    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
+    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)

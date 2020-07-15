@@ -184,6 +184,7 @@ namespace System.Net.Security
         public override int ReadTimeout { get { throw null; } set { } }
         public virtual System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public virtual System.Security.Authentication.SslProtocols SslProtocol { get { throw null; } }
+        public string TargetHostName { get { throw null; } }
         public System.Net.TransportContext TransportContext { get { throw null; } }
         public override int WriteTimeout { get { throw null; } set { } }
         public void AuthenticateAsClient(System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions) { }

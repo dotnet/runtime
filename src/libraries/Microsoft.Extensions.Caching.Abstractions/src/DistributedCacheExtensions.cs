@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <returns>The string value from the stored cache key.</returns>
         public static string GetString(this IDistributedCache cache, string key)
         {
-            var data = cache.Get(key);
+            byte[] data = cache.Get(key);
             if (data == null)
             {
                 return null;
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <returns>A task that gets the string value from the stored cache key.</returns>
         public static async Task<string> GetStringAsync(this IDistributedCache cache, string key, CancellationToken token = default(CancellationToken))
         {
-            var data = await cache.GetAsync(key, token).ConfigureAwait(false);
+            byte[] data = await cache.GetAsync(key, token).ConfigureAwait(false);
             if (data == null)
             {
                 return null;

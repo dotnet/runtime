@@ -78,11 +78,6 @@ namespace BINDER_SPACE
 
         STDMETHOD(GetAvailableImageTypes)(PDWORD pdwImageTypes);
 
-        STDMETHOD(GetImageResource)(
-                DWORD dwImageType,
-                DWORD *pdwImageType,
-                ICLRPrivResource ** ppIResource);
-
         STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
 
         STDMETHOD(GetLoaderAllocator)(LPVOID* pLoaderAllocator);
@@ -149,18 +144,6 @@ namespace BINDER_SPACE
         SString                  m_assemblyPath;
         DWORD                    m_dwAssemblyFlags;
         ICLRPrivBinder          *m_pBinder;
-
-        // Nested class used to implement ICLRPriv binder related interfaces
-        class CLRPrivResourceAssembly :
-            public ICLRPrivResource, public ICLRPrivResourceAssembly
-        {
-public:
-            STDMETHOD(QueryInterface)(REFIID riid, void ** ppv);
-            STDMETHOD_(ULONG, AddRef)();
-            STDMETHOD_(ULONG, Release)();
-            STDMETHOD(GetResourceType)(IID *pIID);
-            STDMETHOD(GetAssembly)(LPVOID *ppAssembly);
-         } m_clrPrivRes;
 
         inline void SetBinder(ICLRPrivBinder *pBinder)
         {

@@ -12,8 +12,8 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
-        private bool _assumeBinaryFormatter = false;
-        private BinaryFormatter? _formatter = null;
+        private bool _assumeBinaryFormatter;
+        private BinaryFormatter? _formatter;
 
         private bool ValidateReaderType(string readerType)
         {

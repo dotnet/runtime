@@ -34,13 +34,13 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Root.Dump();
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString() => Root.ToString();
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public bool Debug => (Options & RegexOptions.Debug) != 0;
 #endif
     }

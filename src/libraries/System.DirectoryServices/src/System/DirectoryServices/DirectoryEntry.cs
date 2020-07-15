@@ -28,20 +28,20 @@ namespace System.DirectoryServices
         private bool _cacheFilled;
         // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
-        internal bool propertiesAlreadyEnumerated = false;
+        internal bool propertiesAlreadyEnumerated;
 #pragma warning restore 0414
-        private bool _disposed = false;
+        private bool _disposed;
         private AuthenticationTypes _authenticationType = AuthenticationTypes.Secure;
         private NetworkCredential _credentials;
         private readonly DirectoryEntryConfiguration _options;
 
-        private PropertyCollection _propertyCollection = null;
-        internal bool allowMultipleChange = false;
-        private bool _userNameIsNull = false;
-        private bool _passwordIsNull = false;
-        private bool _objectSecurityInitialized = false;
-        private bool _objectSecurityModified = false;
-        private ActiveDirectorySecurity _objectSecurity = null;
+        private PropertyCollection _propertyCollection;
+        internal bool allowMultipleChange;
+        private bool _userNameIsNull;
+        private bool _passwordIsNull;
+        private bool _objectSecurityInitialized;
+        private bool _objectSecurityModified;
+        private ActiveDirectorySecurity _objectSecurity;
         private const string SecurityDescriptorProperty = "ntSecurityDescriptor";
 
         /// <devdoc>

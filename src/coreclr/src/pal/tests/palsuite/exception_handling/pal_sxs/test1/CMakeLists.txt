@@ -18,18 +18,9 @@ convert_to_absolute_path(DEF_SOURCES1 ${DEF_SOURCES1})
 set(EXPORTS_FILE1 ${CMAKE_CURRENT_BINARY_DIR}/dlltest1.exports)
 generate_exports_file(${DEF_SOURCES1} ${EXPORTS_FILE1})
 
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
-    set(EXPORTS_LINKER_OPTION1 -Wl,--version-script=${EXPORTS_FILE1})
-endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
-
-if(CLR_CMAKE_TARGET_OSX)
-    set(EXPORTS_LINKER_OPTION1 -Wl,-exported_symbols_list,${EXPORTS_FILE1})
-endif(CLR_CMAKE_TARGET_OSX)
-
-if(CLR_CMAKE_TARGET_SUNOS)
-    # Add linker exports file option
-    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-endif(CLR_CMAKE_TARGET_SUNOS)
+if(CLR_CMAKE_HOST_UNIX)
+  set_exports_linker_option(${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_UNIX)
 
 set(DLL1SOURCES dlltest1.cpp)
 add_library(paltest_pal_sxs_test1_dll1 SHARED ${DLL1SOURCES})

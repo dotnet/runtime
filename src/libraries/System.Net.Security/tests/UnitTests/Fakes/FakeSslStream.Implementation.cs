@@ -11,6 +11,13 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private class FakeOptions
+        {
+            public string TargetHost;
+        }
+
+        private FakeOptions? _sslAuthenticationOptions;
+
         private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             // Without setting (or using) these members you will get a build exception in the unit test project.
@@ -35,6 +42,7 @@ namespace System.Net.Security
 
         private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
+            _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };
         }
 
         private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)

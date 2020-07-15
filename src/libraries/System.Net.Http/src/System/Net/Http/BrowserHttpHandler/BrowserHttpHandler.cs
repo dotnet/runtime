@@ -371,7 +371,7 @@ namespace System.Net.Http
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
             {

@@ -9,7 +9,7 @@
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" Private="false" />
     <ReferenceFromRuntime Include="System.Runtime" />
     <ReferenceFromRuntime Include="System.Threading" />
   </ItemGroup>

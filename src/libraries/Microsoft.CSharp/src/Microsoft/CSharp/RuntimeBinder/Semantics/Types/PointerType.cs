@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override FUNDTYPE FundamentalType => FUNDTYPE.FT_PTR;
 
-        [ExcludeFromCodeCoverage] // Technically correct, but we can't have constant pointers in dynamically dispatched code.
+        [ExcludeFromCodeCoverage(Justification = "Dynamic code can't contain constant pointers")]
         public override ConstValKind ConstValKind
         {
             get

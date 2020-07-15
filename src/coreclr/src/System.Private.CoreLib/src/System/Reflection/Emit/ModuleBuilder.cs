@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -770,7 +771,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             lock (SyncRoot)
             {
@@ -780,7 +781,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, int typesize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typesize)
         {
             lock (SyncRoot)
             {
@@ -788,7 +789,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, PackingSize packingSize, int typesize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
         {
             lock (SyncRoot)
             {
@@ -796,7 +797,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             lock (SyncRoot)
             {
@@ -804,12 +805,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
+        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             return new TypeBuilder(name, attr, parent, interfaces, this, packingSize, typesize, null);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, PackingSize packsize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
         {
             lock (SyncRoot)
             {
@@ -817,7 +818,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, Type? parent, PackingSize packsize)
+        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
         {
             return new TypeBuilder(name, attr, parent, null, this, packsize, TypeBuilder.UnspecifiedTypeSize, null);
         }

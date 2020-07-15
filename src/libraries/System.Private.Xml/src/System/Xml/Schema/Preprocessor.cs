@@ -59,7 +59,7 @@ namespace System.Xml.Schema
         private XmlReaderSettings? _readerSettings;
 
         // For redefines
-        private XmlSchema? _rootSchemaForRedefine = null;
+        private XmlSchema? _rootSchemaForRedefine;
         private ArrayList? _redefinedList;
 
         private static XmlSchema? s_builtInSchemaForXmlNS;
@@ -72,7 +72,7 @@ namespace System.Xml.Schema
         private const XmlSchemaDerivationMethod complexTypeBlockAllowed = XmlSchemaDerivationMethod.Restriction | XmlSchemaDerivationMethod.Extension;
         private const XmlSchemaDerivationMethod complexTypeFinalAllowed = XmlSchemaDerivationMethod.Restriction | XmlSchemaDerivationMethod.Extension;
 
-        private XmlResolver? _xmlResolver = null;
+        private XmlResolver? _xmlResolver;
 
         public Preprocessor(XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler? eventHandler)
             : this(nameTable, schemaNames, eventHandler, new XmlSchemaCompilationSettings())

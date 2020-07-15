@@ -22,8 +22,8 @@ namespace System.Security.Cryptography.Xml
         private readonly object _refTarget;
         private readonly ReferenceTargetType _refTargetType;
         private XmlElement _cachedXml;
-        private SignedXml _signedXml = null;
-        internal CanonicalXmlNodeList _namespaces = null;
+        private SignedXml _signedXml;
+        internal CanonicalXmlNodeList _namespaces;
 
         //
         // public constructors

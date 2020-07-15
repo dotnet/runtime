@@ -367,7 +367,7 @@ namespace System.Net.Sockets
             _closeTimeout = timeout;
             Dispose();
         }
-        private volatile bool _disposed = false;
+        private volatile bool _disposed;
         protected override void Dispose(bool disposing)
         {
             // Mark this as disposed before changing anything else.

@@ -1448,8 +1448,8 @@ namespace System.Xml.Xsl.IlGen
             MarkSequencePoint(sourceInfo);
         }
 
-        private string _lastUriString = null;
-        private string _lastFileName = null;
+        private string _lastUriString;
+        private string _lastFileName;
 
         // SQLBUDT 278010: debugger does not work with network paths in uri format, like file://server/share/dir/file
         private string GetFileName(ISourceLineInfo sourceInfo)

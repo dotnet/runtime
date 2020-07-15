@@ -15,11 +15,11 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class ApplicationCatalog : ComposablePartCatalog, ICompositionElement
     {
-        private bool _isDisposed = false;
-        private volatile AggregateCatalog? _innerCatalog = null;
+        private bool _isDisposed;
+        private volatile AggregateCatalog? _innerCatalog;
         private readonly object _thisLock = new object();
-        private readonly ICompositionElement? _definitionOrigin = null;
-        private readonly ReflectionContext? _reflectionContext = null;
+        private readonly ICompositionElement? _definitionOrigin;
+        private readonly ReflectionContext? _reflectionContext;
 
         public ApplicationCatalog() { }
 

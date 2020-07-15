@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public ContentInfo(byte[] content)
-            : this(Oid.FromOidValue(Oids.Pkcs7Data, OidGroup.ExtensionOrAttribute), content)
+            : this(Oids.Pkcs7DataOid.CopyOid(), content)
         {
         }
 
@@ -39,6 +39,11 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
+            return PkcsPal.Instance.GetEncodedMessageType(encodedMessage);
+        }
+
+        public static Oid GetContentType(ReadOnlySpan<byte> encodedMessage)
+        {
             return PkcsPal.Instance.GetEncodedMessageType(encodedMessage);
         }
     }

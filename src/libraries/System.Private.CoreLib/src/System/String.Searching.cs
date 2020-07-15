@@ -24,7 +24,9 @@ namespace System
 
         public bool Contains(string value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) >= 0;
+#pragma warning restore CA2249
         }
 
         public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);

@@ -16,7 +16,7 @@ namespace System.IO.Pipelines.Tests
     {
         public delegate Task WriteAsyncDelegate(Stream stream, byte[] data);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DisposingPipeWriterStreamCompletesPipeWriter()
         {
             var pipe = new Pipe();
@@ -119,7 +119,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellingPendingFlushThrowsOperationCancelledException()
         {
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 0));
@@ -136,7 +136,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancellationTokenFlowsToUnderlyingPipeWriter()
         {
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 0));

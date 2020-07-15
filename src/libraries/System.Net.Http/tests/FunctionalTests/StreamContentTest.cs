@@ -175,28 +175,32 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(10 - consumed, destination2.Length);
         }
 
-        [Fact]
-        public async Task ContentReadStream_GetProperty_ReturnOriginalStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContentReadStream_GetProperty_ReturnOriginalStream(bool readStreamAsync)
         {
             var source = new MockStream(new byte[10]);
             var content = new StreamContent(source);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
             Assert.Equal(source.Length, stream.Length);
             Assert.Equal(0, source.ReadCount);
             Assert.NotSame(source, stream);
         }
 
-        [Fact]
-        public async Task ContentReadStream_GetPropertyPartiallyConsumed_ReturnOriginalStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContentReadStream_GetPropertyPartiallyConsumed_ReturnOriginalStream(bool readStreamAsync)
         {
             int consumed = 4;
             var source = new MockStream(new byte[10]);
             source.Read(new byte[consumed], 0, consumed);
             var content = new StreamContent(source);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
             Assert.Equal(source.Length, stream.Length);
             Assert.Equal(1, source.ReadCount);
@@ -204,8 +208,10 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotSame(source, stream);
         }
 
-        [Fact]
-        public async Task ContentReadStream_CheckResultProperties_ValuesRepresentReadOnlyStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContentReadStream_CheckResultProperties_ValuesRepresentReadOnlyStream(bool readStreamAsync)
         {
             byte[] data = new byte[10];
             for (int i = 0; i < data.Length; i++)
@@ -216,7 +222,7 @@ namespace System.Net.Http.Functional.Tests
             var source = new MockStream(data);
 
             var content = new StreamContent(source);
-            Stream contentReadStream = await content.ReadAsStreamAsync();
+            Stream contentReadStream = await content.ReadAsStreamAsync(readStreamAsync);
 
             // The following checks verify that the stream returned passes all read-related properties to the
             // underlying MockStream and throws when using write-related members.

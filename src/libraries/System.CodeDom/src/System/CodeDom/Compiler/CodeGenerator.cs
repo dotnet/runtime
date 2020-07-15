@@ -17,7 +17,7 @@ namespace System.CodeDom.Compiler
         private CodeTypeDeclaration _currentClass;
         private CodeTypeMember _currentMember;
 
-        private bool _inNestedBinary = false;
+        private bool _inNestedBinary;
 
         protected CodeTypeDeclaration CurrentClass => _currentClass;
 

@@ -58,7 +58,7 @@ namespace System.Net.Security
         /// SSPI does not send a server ack on successful auth.
         /// This is a state variable used to gracefully handle auth confirmation.
         /// </summary>
-        private bool _remoteOk = false;
+        private bool _remoteOk;
 
         public NegotiateStream(Stream innerStream) : this(innerStream, false)
         {

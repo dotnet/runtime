@@ -143,25 +143,25 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Have we been disposed?
-        private bool _disposed = false;
+        private bool _disposed;
 
         //  The name of our outer class. Used when throwing an ObjectDisposedException.
         private readonly string _outerClassName;
 
-        private readonly List<TrackedCollection<T>.ValueEl> _combinedValues = null;
+        private readonly List<TrackedCollection<T>.ValueEl> _combinedValues;
 
         // The value we're currently positioned at
         private T _current;
 
         // The enumerator for our inner list, combinedValues.
-        private IEnumerator _enumerator = null;
+        private IEnumerator _enumerator;
 
         // True when we reach the end of combinedValues (no more values to enumerate in the TrackedCollection)
-        private bool _endReached = false;
+        private bool _endReached;
 
         // When this enumerator was constructed, to detect changes made to the TrackedCollection after it was constructed
         private readonly DateTime _creationTime = DateTime.UtcNow;
-        private readonly TrackedCollection<T> _trackedCollection = null;
+        private readonly TrackedCollection<T> _trackedCollection;
 
         private void CheckDisposed()
         {

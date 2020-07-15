@@ -89,13 +89,13 @@ namespace System.Linq.Expressions
             return Call(@object, Method, arguments);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameArguments(ICollection<Expression>? arguments)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -117,7 +117,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of MethodCallExpression which is being used.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
             throw ContractUtils.Unreachable;
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="index">The index of the argument expression to get.</param>
         /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual Expression GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the number of argument expressions of the node.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int ArgumentCount
         {
             get { throw ContractUtils.Unreachable; }

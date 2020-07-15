@@ -268,7 +268,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 
 #if DEBUG
-        private bool _stringBuilderLocked = false;
+        private bool _stringBuilderLocked;
 #endif
 
         internal StringBuilder GetSharedStringBuilder()

@@ -24,9 +24,9 @@ namespace Microsoft.Extensions.Configuration
                 IEnumerable<IConfigurationSection> children,
                 string indent)
             {
-                foreach (var child in children)
+                foreach (IConfigurationSection child in children)
                 {
-                    var valueAndProvider = GetValueAndProvider(root, child.Path);
+                    (string Value, IConfigurationProvider Provider) valueAndProvider = GetValueAndProvider(root, child.Path);
 
                     if (valueAndProvider.Provider != null)
                     {
@@ -62,9 +62,9 @@ namespace Microsoft.Extensions.Configuration
             IConfigurationRoot root,
             string key)
         {
-            foreach (var provider in root.Providers.Reverse())
+            foreach (IConfigurationProvider provider in root.Providers.Reverse())
             {
-                if (provider.TryGet(key, out var value))
+                if (provider.TryGet(key, out string value))
                 {
                     return (value, provider);
                 }

@@ -17,18 +17,18 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509BasicConstraintsExtension : X509Extension
     {
         public X509BasicConstraintsExtension()
-            : base(Oids.BasicConstraints2)
+            : base(Oids.BasicConstraints2Oid)
         {
             _decoded = true;
         }
 
         public X509BasicConstraintsExtension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint, bool critical)
-            : base(Oids.BasicConstraints2, EncodeExtension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint), critical)
+            : base(Oids.BasicConstraints2Oid, EncodeExtension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint), critical)
         {
         }
 
         public X509BasicConstraintsExtension(AsnEncodedData encodedBasicConstraints, bool critical)
-            : base(Oids.BasicConstraints2, encodedBasicConstraints.RawData, critical)
+            : base(Oids.BasicConstraints2Oid, encodedBasicConstraints.RawData, critical)
         {
         }
 

@@ -14,7 +14,7 @@ namespace System.ServiceProcess
     [AttributeUsage(AttributeTargets.All)]
     public class ServiceProcessDescriptionAttribute : DescriptionAttribute
     {
-        private bool replaced = false;
+        private bool replaced;
 
         /// <summary>
         /// Constructs a new sys description

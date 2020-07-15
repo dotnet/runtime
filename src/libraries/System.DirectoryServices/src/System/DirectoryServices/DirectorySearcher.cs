@@ -20,34 +20,34 @@ namespace System.DirectoryServices
         private DirectoryEntry _searchRoot;
         private string _filter = defaultFilter;
         private StringCollection _propertiesToLoad;
-        private bool _disposed = false;
+        private bool _disposed;
 
         private static readonly TimeSpan s_minusOneSecond = new TimeSpan(0, 0, -1);
 
         // search preference variables
         private SearchScope _scope = System.DirectoryServices.SearchScope.Subtree;
-        private bool _scopeSpecified = false;
-        private int _sizeLimit = 0;
+        private bool _scopeSpecified;
+        private int _sizeLimit;
         private TimeSpan _serverTimeLimit = s_minusOneSecond;
         private TimeSpan _clientTimeout = s_minusOneSecond;
-        private int _pageSize = 0;
+        private int _pageSize;
         private TimeSpan _serverPageTimeLimit = s_minusOneSecond;
         private ReferralChasingOption _referralChasing = ReferralChasingOption.External;
         private SortOption _sort = new SortOption();
         private bool _cacheResults = true;
-        private bool _cacheResultsSpecified = false;
-        private bool _rootEntryAllocated = false;             // true: if a temporary entry inside Searcher has been created
-        private string _assertDefaultNamingContext = null;
+        private bool _cacheResultsSpecified;
+        private bool _rootEntryAllocated;             // true: if a temporary entry inside Searcher has been created
+        private string _assertDefaultNamingContext;
         private string _attributeScopeQuery = "";
-        private bool _attributeScopeQuerySpecified = false;
+        private bool _attributeScopeQuerySpecified;
         private DereferenceAlias _derefAlias = DereferenceAlias.Never;
         private SecurityMasks _securityMask = SecurityMasks.None;
         private ExtendedDN _extendedDN = ExtendedDN.None;
-        private DirectorySynchronization _sync = null;
-        internal bool directorySynchronizationSpecified = false;
-        private DirectoryVirtualListView _vlv = null;
-        internal bool directoryVirtualListViewSpecified = false;
-        internal SearchResultCollection searchResult = null;
+        private DirectorySynchronization _sync;
+        internal bool directorySynchronizationSpecified;
+        private DirectoryVirtualListView _vlv;
+        internal bool directoryVirtualListViewSpecified;
+        internal SearchResultCollection searchResult;
 
         private const string defaultFilter = "(objectClass=*)";
 

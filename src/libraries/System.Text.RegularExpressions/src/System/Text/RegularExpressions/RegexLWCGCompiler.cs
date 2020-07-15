@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
         /// <summary>Id number to use for the next compiled regex.</summary>
-        private static int s_regexCount = 0;
+        private static int s_regexCount;
 
         public RegexLWCGCompiler() : base(persistsAssembly: false)
         {

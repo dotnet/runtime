@@ -230,6 +230,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // allocates too much memory
         public async Task CompleteWithLargeWriteThrows()
         {
             var pipe = new Pipe();

@@ -139,7 +139,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AnonymousProducerConsumer()
         {
             using (Semaphore s = new Semaphore(0, int.MaxValue))

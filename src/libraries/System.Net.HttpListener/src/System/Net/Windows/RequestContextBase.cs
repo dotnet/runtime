@@ -13,7 +13,7 @@ namespace System.Net
         private Interop.HttpApi.HTTP_REQUEST* _memoryBlob;
         private Interop.HttpApi.HTTP_REQUEST* _originalBlobAddress;
         private IntPtr _backingBuffer = IntPtr.Zero;
-        private int _backingBufferLength = 0;
+        private int _backingBufferLength;
 
         // Must call this from derived class' constructors.
         protected void BaseConstruction(Interop.HttpApi.HTTP_REQUEST* requestBlob)

@@ -11,9 +11,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        // The special dll name to be used for DllImport of QCalls
-        internal const string QCall = "QCall";
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);

@@ -15,10 +15,10 @@ namespace System.Data
     public abstract class Constraint
     {
         private string _schemaName = string.Empty;
-        private bool _inCollection = false;
-        private DataSet _dataSet = null;
+        private bool _inCollection;
+        private DataSet _dataSet;
         internal string _name = string.Empty;
-        internal PropertyCollection _extendedProperties = null;
+        internal PropertyCollection _extendedProperties;
 
         internal Constraint() { }
 

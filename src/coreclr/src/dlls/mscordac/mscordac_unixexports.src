@@ -34,6 +34,8 @@ nativeStringResourceTable_mscorrc
 #PAL_GetPALDirectoryW
 #PAL_get_stdout
 #PAL_get_stderr
+#PAL_GetApplicationGroupId
+#PAL_GetTransportName
 #PAL_GetCurrentThread
 #PAL_GetCpuLimit
 #PAL_GetNativeExceptionHolderHead

@@ -27,6 +27,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             _ = caseName;
             X509ContentType blobType = X509Certificate2.GetCertContentType(blob);
             Assert.Equal(contentType, blobType);
+
+            blobType = X509Certificate2.GetCertContentType(blob.AsSpan());
+            Assert.Equal(contentType, blobType);
         }
 
         [Fact]
@@ -34,6 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             byte[] blob = new byte[] { 0x00, 0xFF, 0x00, 0xFF };
             Assert.ThrowsAny<CryptographicException>(() => X509Certificate2.GetCertContentType(blob));
+            Assert.ThrowsAny<CryptographicException>(() => X509Certificate2.GetCertContentType(blob.AsSpan()));
         }
 
         public static IEnumerable<object[]> GetContentBlobsWithType()

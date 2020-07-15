@@ -22,7 +22,7 @@ namespace System.Net.Http
         private readonly MultiProxy _secureProxy;      // URI of the https system proxy if set
         private readonly FailedProxyCache _failedProxies = new FailedProxyCache();
         private readonly List<string>? _bypass;         // list of domains not to proxy
-        private readonly bool _bypassLocal = false;    // we should bypass domain considered local
+        private readonly bool _bypassLocal;    // we should bypass domain considered local
         private readonly List<IPAddress>? _localIp;
         private ICredentials? _credentials;
         private readonly WinInetProxyHelper _proxyHelper;

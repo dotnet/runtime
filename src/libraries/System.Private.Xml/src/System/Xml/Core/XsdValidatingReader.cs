@@ -86,7 +86,7 @@ namespace System.Xml
         private ArrayList _defaultAttributes;
 
         // Inline Schema
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
 
         // Typed Value & PSVI
         private object? _atomicValue;

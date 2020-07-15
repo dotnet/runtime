@@ -117,7 +117,7 @@ namespace System.DirectoryServices.AccountManagement
             set { _extra = value; }
         }
 
-        private object _extra = null;
+        private object _extra;
 
         public abstract string PropertyName { get; }
     }

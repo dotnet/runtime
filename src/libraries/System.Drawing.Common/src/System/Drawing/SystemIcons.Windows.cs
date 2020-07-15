@@ -8,16 +8,16 @@ namespace System.Drawing
 {
     public static class SystemIcons
     {
-        private static Icon? s_application = null;
-        private static Icon? s_asterisk = null;
-        private static Icon? s_error = null;
-        private static Icon? s_exclamation = null;
-        private static Icon? s_hand = null;
-        private static Icon? s_information = null;
-        private static Icon? s_question = null;
-        private static Icon? s_warning = null;
-        private static Icon? s_winlogo = null;
-        private static Icon? s_shield = null;
+        private static Icon? s_application;
+        private static Icon? s_asterisk;
+        private static Icon? s_error;
+        private static Icon? s_exclamation;
+        private static Icon? s_hand;
+        private static Icon? s_information;
+        private static Icon? s_question;
+        private static Icon? s_warning;
+        private static Icon? s_winlogo;
+        private static Icon? s_shield;
 
         public static Icon Application => GetIcon(ref s_application, SafeNativeMethods.IDI_APPLICATION);
 

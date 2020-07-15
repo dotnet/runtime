@@ -11,7 +11,7 @@ namespace System.Threading.Tests
 {
     public static class ExecutionContextTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CreateCopyTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -39,7 +39,7 @@ namespace System.Threading.Tests
             executionContext.CreateCopy().Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -146,7 +146,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -227,7 +227,7 @@ namespace System.Threading.Tests
             Assert.Equal(expectedValue, asyncLocalValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncFlowControlTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

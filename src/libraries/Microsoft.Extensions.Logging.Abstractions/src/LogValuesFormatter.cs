@@ -12,12 +12,11 @@ using System.Text;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Formatter to convert the named format items like {NamedformatItem} to <see cref="M:string.Format"/> format.
+    /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.
     /// </summary>
     internal class LogValuesFormatter
     {
         private const string NullValue = "(null)";
-        private static readonly object[] EmptyArray = new object[0];
         private static readonly char[] FormatDelimiters = {',', ':'};
         private readonly string _format;
         private readonly List<string> _valueNames = new List<string>();
@@ -27,13 +26,13 @@ namespace Microsoft.Extensions.Logging
             OriginalFormat = format;
 
             var sb = new StringBuilder();
-            var scanIndex = 0;
-            var endIndex = format.Length;
+            int scanIndex = 0;
+            int endIndex = format.Length;
 
             while (scanIndex < endIndex)
             {
-                var openBraceIndex = FindBraceIndex(format, '{', scanIndex, endIndex);
-                var closeBraceIndex = FindBraceIndex(format, '}', openBraceIndex, endIndex);
+                int openBraceIndex = FindBraceIndex(format, '{', scanIndex, endIndex);
+                int closeBraceIndex = FindBraceIndex(format, '}', openBraceIndex, endIndex);
 
                 if (closeBraceIndex == endIndex)
                 {
@@ -43,7 +42,7 @@ namespace Microsoft.Extensions.Logging
                 else
                 {
                     // Format item syntax : { index[,alignment][ :formatString] }.
-                    var formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
+                    int formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
 
                     sb.Append(format, scanIndex, openBraceIndex - scanIndex + 1);
                     sb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
@@ -63,9 +62,9 @@ namespace Microsoft.Extensions.Logging
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
         {
             // Example: {{prefix{{{Argument}}}suffix}}.
-            var braceIndex = endIndex;
-            var scanIndex = startIndex;
-            var braceOccurrenceCount = 0;
+            int braceIndex = endIndex;
+            int scanIndex = startIndex;
+            int braceOccurrenceCount = 0;
 
             while (scanIndex < endIndex)
             {
@@ -110,7 +109,7 @@ namespace Microsoft.Extensions.Logging
 
         private static int FindIndexOfAny(string format, char[] chars, int startIndex, int endIndex)
         {
-            var findIndex = format.IndexOfAny(chars, startIndex, endIndex - startIndex);
+            int findIndex = format.IndexOfAny(chars, startIndex, endIndex - startIndex);
             return findIndex == -1 ? endIndex : findIndex;
         }
 
@@ -124,7 +123,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            return string.Format(CultureInfo.InvariantCulture, _format, values ?? EmptyArray);
+            return string.Format(CultureInfo.InvariantCulture, _format, values ?? Array.Empty<object>());
         }
 
         internal string Format()
@@ -165,7 +164,7 @@ namespace Microsoft.Extensions.Logging
         public IEnumerable<KeyValuePair<string, object>> GetValues(object[] values)
         {
             var valueArray = new KeyValuePair<string, object>[values.Length + 1];
-            for (var index = 0; index != _valueNames.Count; ++index)
+            for (int index = 0; index != _valueNames.Count; ++index)
             {
                 valueArray[index] = new KeyValuePair<string, object>(_valueNames[index], values[index]);
             }

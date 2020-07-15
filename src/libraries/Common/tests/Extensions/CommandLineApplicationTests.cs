@@ -1101,15 +1101,10 @@ Examples:
             Assert.False(optFlag.HasValue());
         }
 
-        // disable inaccurate analyzer error https://github.com/xunit/xunit/issues/1274
-#pragma warning disable xUnit1010
-#pragma warning disable xUnit1011
         [Theory]
         [InlineData("-f:File1", "-f:File2")]
         [InlineData("--file:File1", "--file:File2")]
         [InlineData("--file", "File1", "--file", "File2")]
-#pragma warning restore xUnit1010
-#pragma warning restore xUnit1011
         public void ThrowsExceptionOnSingleValueOptionHavingTwoValues(params string[] inputOptions)
         {
             var app = new CommandLineApplication();

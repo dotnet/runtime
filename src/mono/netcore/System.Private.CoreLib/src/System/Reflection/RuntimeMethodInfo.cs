@@ -175,9 +175,9 @@ namespace System.Reflection
             if (IsGenericMethod)
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
 
-            sbName.Append("(");
+            sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+            sbName.Append(')');
 
             return sbName.ToString();
         }
@@ -971,9 +971,9 @@ namespace System.Reflection
             StringBuilder sbName = new StringBuilder(Name);
             sbName.Append("Void ");
 
-            sbName.Append("(");
+            sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+            sbName.Append(')');
 
             return sbName.ToString();
         }

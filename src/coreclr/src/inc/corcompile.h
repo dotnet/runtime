@@ -693,6 +693,9 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
 
     ENCODE_CHECK_INSTRUCTION_SET_SUPPORT,           /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
 
+    ENCODE_VERIFY_FIELD_OFFSET,                     /* Used for the R2R compiler can generate a check against the real field offset used at runtime */
+    ENCODE_VERIFY_TYPE_LAYOUT,                      /* Used for the R2R compiler can generate a check against the real type layout used at runtime */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
     ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */

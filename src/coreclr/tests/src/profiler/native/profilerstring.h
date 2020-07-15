@@ -9,7 +9,11 @@
 #include <cstring>
 #include <string>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+#ifdef _WIN32
+#define WCHAR(str) L##str
+#define CAST_CHAR(ch) ch
+
+#else // defined(_WIN32)
 
 // Definitely won't work for non-ascii characters so hopefully we never start using
 // them in the tests
@@ -56,10 +60,7 @@ inline int wcscmp(const char16_t *lhs, const char16_t *rhs)
     return lhs[i] - rhs[i];
 }
 
-#else // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-#define WCHAR(str) L##str
-#define CAST_CHAR(ch) ch
-#endif // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+#endif // defined(__WIN32)
 
 // 16 bit string type that works cross plat and doesn't require changing widths
 // on non-windows platforms
@@ -69,13 +70,15 @@ class String
 private:
     WCHAR *buffer;
     size_t bufferLen;
+    wchar_t *printBuffer;
+    size_t printBufferLen;
     const size_t DefaultStringLength = 1024;
 
     void CopyBuffer(const WCHAR *other)
     {
         assert(other != nullptr);
 
-        size_t otherLen = wcslen(other);
+        size_t otherLen = wcslen(other) + 1;
         if (buffer == nullptr || otherLen > bufferLen)
         {
             bufferLen = max(DefaultStringLength, otherLen);
@@ -87,13 +90,15 @@ private:
             buffer = new WCHAR[bufferLen];
         }
 
-        memcpy(buffer, other, bufferLen * sizeof(WCHAR));
+        memcpy(buffer, other, otherLen * sizeof(WCHAR));
     }
 
 public:
     String(const WCHAR *s = WCHAR("")) :
         buffer(nullptr),
-        bufferLen(0)
+        bufferLen(0),
+        printBuffer(nullptr),
+        printBufferLen(0)
     {
         CopyBuffer(s);
     }
@@ -105,18 +110,28 @@ public:
             bufferLen = 0;
             delete[] buffer;
         }
+
+        if (printBuffer != nullptr)
+        {
+            printBufferLen = 0;
+            delete[] printBuffer;
+        }
     }
 
     String(const String& other) :
         buffer(nullptr),
-        bufferLen(0)
+        bufferLen(0),
+        printBuffer(nullptr),
+        printBufferLen(0)
     {
         CopyBuffer(other.buffer);
     }
 
     String(String&& other) noexcept :
         buffer(nullptr),
-        bufferLen(0)
+        bufferLen(0),
+        printBuffer(nullptr),
+        printBufferLen(0)
     {
         std::swap(buffer, other.buffer);
         std::swap(bufferLen, other.bufferLen);
@@ -132,6 +147,9 @@ public:
             }
         }
 
+        printBuffer = nullptr;
+        printBufferLen = 0;
+
         return *this;
     }
 
@@ -139,6 +157,10 @@ public:
     {
         std::swap(buffer, other.buffer);
         std::swap(bufferLen, other.bufferLen);
+
+        printBuffer = nullptr;
+        printBufferLen = 0;
+
         return *this;
     }
 
@@ -192,6 +214,34 @@ public:
         {
             buffer[0] = 0;
         }
+    }
+
+    const wchar_t *ToCStr()
+    {
+        if (bufferLen == 0 || buffer == nullptr)
+        {
+            // Nothing to convert
+            return nullptr;
+        }
+
+        if (bufferLen > printBufferLen)
+        {
+            delete[] printBuffer;
+            printBuffer = nullptr;
+            printBufferLen = 0;
+        }
+
+        if (printBuffer == nullptr)
+        {
+            printBuffer = new wchar_t[bufferLen];
+        }
+
+        for (size_t i = 0; i < bufferLen; ++i)
+        {
+            printBuffer[i] = (wchar_t)buffer[i];
+        }
+
+        return printBuffer;
     }
 
     std::wstring ToWString()

@@ -24,10 +24,10 @@ namespace System.Text
         internal static readonly UnicodeEncoding s_bigEndianDefault = new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
         internal static readonly UnicodeEncoding s_littleEndianDefault = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
 
-        private readonly bool isThrowException = false;
+        private readonly bool isThrowException;
 
-        private readonly bool bigEndian = false;
-        private readonly bool byteOrderMark = false;
+        private readonly bool bigEndian;
+        private readonly bool byteOrderMark;
 
         // Unicode version 2.0 character size in bytes
         public const int CharSize = 2;
@@ -1855,7 +1855,7 @@ namespace System.Text
         private sealed class Decoder : System.Text.DecoderNLS
         {
             internal int lastByte = -1;
-            internal char lastChar = '\0';
+            internal char lastChar;
 
             public Decoder(UnicodeEncoding encoding) : base(encoding)
             {

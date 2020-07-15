@@ -27,5 +27,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
         internal static extern int HmacFinal(SafeHmacCtxHandle ctx, ref byte data, ref int len);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
+        internal static extern int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
     }
 }

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private CryptoStream _cs = null;
+        private CryptoStream _cs;
 
         public XmlDsigBase64Transform()
         {

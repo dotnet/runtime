@@ -81,7 +81,7 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -1606,17 +1606,6 @@ namespace System.Diagnostics
                 else
                 {
                     errorDataReceived(this, e);
-                }
-            }
-        }
-
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
-                {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
                 }
             }
         }

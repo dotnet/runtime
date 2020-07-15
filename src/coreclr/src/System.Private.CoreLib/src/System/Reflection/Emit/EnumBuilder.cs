@@ -337,7 +337,9 @@ namespace System.Reflection.Emit
          * private data members
          *
          */
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal TypeBuilder m_typeBuilder;
+
         private FieldBuilder m_underlyingField;
     }
 }

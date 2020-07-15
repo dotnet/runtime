@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs
                 _bagOid = new Oid(_bagIdValue);
             }
 
-            return new Oid(_bagOid);
+            return _bagOid.CopyOid();
         }
 
         public bool TryEncode(Span<byte> destination, out int bytesWritten)

@@ -36,10 +36,6 @@ namespace Internal.Cryptography
             return null;
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Expected size of <see cref="s_extraFriendlyNameToOid"/>.</summary>
         private const int ExtraFriendlyNameToOidCount = 8;
 

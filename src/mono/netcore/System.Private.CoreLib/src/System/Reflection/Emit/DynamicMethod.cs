@@ -443,14 +443,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        // FIXME: "Not implemented"
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         /*
                 public override int MetadataToken {

@@ -107,7 +107,7 @@ namespace System.Net
         private int m_maxCookieSize = DefaultCookieLengthLimit; // Do not rename (binary serialization)
         private int m_maxCookies = DefaultCookieLimit; // Do not rename (binary serialization)
         private int m_maxCookiesPerDomain = DefaultPerDomainCookieLimit; // Do not rename (binary serialization)
-        private int m_count = 0; // Do not rename (binary serialization)
+        private int m_count; // Do not rename (binary serialization)
         private readonly string m_fqdnMyDomain = s_fqdnMyDomain; // Do not rename (binary serialization)
 
         public CookieContainer()

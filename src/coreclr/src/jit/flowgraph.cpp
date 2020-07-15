@@ -3070,6 +3070,14 @@ void Compiler::fgComputePreds()
     // Treat the initial block as a jump target
     fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
+    // Under OSR, we may need to specially protect the original method entry.
+    //
+    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    {
+        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        fgEntryBB->bbRefs = 1;
+    }
+
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         switch (block->bbJumpKind)
@@ -4878,8 +4886,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 
-                    if (notStruct && notLastInstr && notDebugCode &&
-                        impILConsumesAddr(codeAddr + sz, impTokenLookupContextHandle, info.compScopeHnd))
+                    if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
                     {
                         // We can skip the addrtaken, as next IL instruction consumes
                         // the address.
@@ -21272,6 +21279,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += 1;
         }
 
+        // Under OSR, if we also are keeping the original method entry around,
+        // mark that as implicitly referenced as well.
+        if (opts.IsOSR() && (block == fgEntryBB))
+        {
+            blockRefs += 1;
+        }
+
         /* Check the bbRefs */
         if (checkBBRefs)
         {
@@ -23154,19 +23168,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
         return;
     }
 
-    if (inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_SPECULATIVE)
-    {
-        // we defer the call to initClass() until inlining is completed in case it fails. If inlining succeeds,
-        // we will call initClass().
-        if (!(info.compCompHnd->initClass(nullptr /* field */, fncHandle /* method */,
-                                          inlineCandidateInfo->exactContextHnd /* context */) &
-              CORINFO_INITCLASS_INITIALIZED))
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLEE_CLASS_INIT_FAILURE);
-            return;
-        }
-    }
-
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // The inlining attempt cannot be failed starting from this point.
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -23497,6 +23498,8 @@ _Done:
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+
+    lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())
@@ -23850,18 +23853,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->inlineCandidateInfo->exactContextHnd;
-        CORINFO_CLASS_HANDLE   exactClass;
-
-        if (((SIZE_T)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-        {
-            exactClass = CORINFO_CLASS_HANDLE((SIZE_T)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-        }
-        else
-        {
-            exactClass = info.compCompHnd->getMethodClass(
-                CORINFO_METHOD_HANDLE((SIZE_T)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
-        }
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callILOffset);

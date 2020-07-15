@@ -151,7 +151,7 @@ namespace System.Threading
             /// <summary>
             /// The number of user-registered waits on this wait thread.
             /// </summary>
-            private int _numUserWaits = 0;
+            private int _numUserWaits;
 
             /// <summary>
             /// A list of removals of wait handles that are waiting for the wait thread to process.
@@ -160,7 +160,7 @@ namespace System.Threading
             /// <summary>
             /// The number of pending removals.
             /// </summary>
-            private int _numPendingRemoves = 0;
+            private int _numPendingRemoves;
 
             /// <summary>
             /// An event to notify the wait thread that there are pending adds or removals of wait handles so it needs to wake up.

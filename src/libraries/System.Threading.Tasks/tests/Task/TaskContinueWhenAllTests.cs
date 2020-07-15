@@ -16,7 +16,7 @@ namespace System.Threading.Tasks.Tests
         #region Test Methods
 
         // Test functionality of "bare" ContinueWhenAll overloads
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestContinueWhenAll_bare()
         {
             int smallSize = 2;
@@ -147,7 +147,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test functionality of ContinueWhenAll overloads w/ CancellationToken
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestContinueWhenAll_CancellationToken()
         {
             int smallSize = 2;
@@ -316,7 +316,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test functionality of ContinueWhenAll overloads w/ TaskContinuationOptions
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestContinueWhenAll_TaskContinuationOptions()
         {
             int smallSize = 2;
@@ -457,7 +457,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test functionality of "full up" ContinueWhenAll overloads
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestCWAll_CancellationToken_TaskContinuation_TaskScheduler()
         {
             int smallSize = 2;
@@ -628,7 +628,7 @@ namespace System.Threading.Tasks.Tests
             }// end i-loop (antecedents are futures or tasks)
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWhenAllTests_Exceptions()
         {
             int smallSize = 2;

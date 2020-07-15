@@ -63,7 +63,6 @@ public:
         DWORDLONG field;
         DWORDLONG method;
         DWORDLONG context;
-        DWORD     speculative;
     };
     struct DLDL
     {
@@ -631,13 +630,11 @@ public:
     void recInitClass(CORINFO_FIELD_HANDLE   field,
                       CORINFO_METHOD_HANDLE  method,
                       CORINFO_CONTEXT_HANDLE context,
-                      BOOL                   speculative,
                       CorInfoInitClassResult result);
     void dmpInitClass(const Agnostic_InitClass& key, DWORD value);
     CorInfoInitClassResult repInitClass(CORINFO_FIELD_HANDLE   field,
                                         CORINFO_METHOD_HANDLE  method,
-                                        CORINFO_CONTEXT_HANDLE context,
-                                        BOOL                   speculative);
+                                        CORINFO_CONTEXT_HANDLE context);
 
     void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
     void dmpGetMethodName(DLD key, DD value);

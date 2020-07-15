@@ -11,7 +11,7 @@ namespace System.Data
     internal class DataCommonEventSource : EventSource
     {
         internal static readonly DataCommonEventSource Log = new DataCommonEventSource();
-        private static long s_nextScopeId = 0;
+        private static long s_nextScopeId;
 
         private const int TraceEventId = 1;
 

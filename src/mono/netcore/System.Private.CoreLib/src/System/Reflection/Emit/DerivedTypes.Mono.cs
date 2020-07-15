@@ -394,12 +394,12 @@ namespace System.Reflection.Emit
             if (elementName == null)
                 return null;
             StringBuilder sb = new StringBuilder(elementName);
-            sb.Append("[");
+            sb.Append('[');
             for (int i = 1; i < rank; ++i)
-                sb.Append(",");
+                sb.Append(',');
             if (rank == 1)
-                sb.Append("*");
-            sb.Append("]");
+                sb.Append('*');
+            sb.Append(']');
             return sb.ToString();
         }
     }

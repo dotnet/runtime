@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.Primitives
     public abstract class ComposablePartCatalog : IEnumerable<ComposablePartDefinition>, IDisposable
     {
         private bool _isDisposed;
-        private volatile IQueryable<ComposablePartDefinition>? _queryableParts = null;
+        private volatile IQueryable<ComposablePartDefinition>? _queryableParts;
 
         internal static readonly List<Tuple<ComposablePartDefinition, ExportDefinition>> _EmptyExportsList = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 

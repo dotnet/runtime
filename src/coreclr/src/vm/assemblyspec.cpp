@@ -24,10 +24,6 @@
 #include "strongnameholders.h"
 #include "eventtrace.h"
 
-#ifdef FEATURE_COMINTEROP
-#include "clrprivbinderutil.h"
-#endif
-
 #include "../binder/inc/bindertracing.h"
 
 #ifdef _DEBUG

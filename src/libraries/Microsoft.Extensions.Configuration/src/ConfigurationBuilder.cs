@@ -47,9 +47,9 @@ namespace Microsoft.Extensions.Configuration
         public IConfigurationRoot Build()
         {
             var providers = new List<IConfigurationProvider>();
-            foreach (var source in Sources)
+            foreach (IConfigurationSource source in Sources)
             {
-                var provider = source.Build(this);
+                IConfigurationProvider provider = source.Build(this);
                 providers.Add(provider);
             }
             return new ConfigurationRoot(providers);

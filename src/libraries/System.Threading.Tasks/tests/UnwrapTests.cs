@@ -384,7 +384,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test Unwrap when the outer task for a non-generic inner task is marked as AttachedToParent.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void NonGeneric_AttachedToParent()
         {
             Exception error = new InvalidTimeZoneException();
@@ -409,7 +409,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test Unwrap when the outer task for a generic inner task is marked as AttachedToParent.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Generic_AttachedToParent()
         {
             Exception error = new InvalidTimeZoneException();
@@ -434,7 +434,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that Unwrap with a non-generic task doesn't use TaskScheduler.Current.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void NonGeneric_DefaultSchedulerUsed()
         {
             var scheduler = new CountingScheduler();
@@ -454,7 +454,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that Unwrap with a generic task doesn't use TaskScheduler.Current.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Generic_DefaultSchedulerUsed()
         {
             var scheduler = new CountingScheduler();
@@ -474,7 +474,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that a long chain of Unwraps can execute without overflowing the stack.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void RunStackGuardTests()
         {
             const int DiveDepth = 12000;

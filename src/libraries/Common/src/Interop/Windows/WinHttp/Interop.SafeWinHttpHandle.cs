@@ -15,7 +15,7 @@ internal partial class Interop
     {
         internal class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            private SafeWinHttpHandle? _parentHandle = null;
+            private SafeWinHttpHandle? _parentHandle;
 
             public SafeWinHttpHandle() : base(true)
             {

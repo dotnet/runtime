@@ -140,7 +140,7 @@ namespace Internal.NativeCrypto
 
     internal sealed class SafeKeyHandle : SafeBCryptHandle
     {
-        private SafeAlgorithmHandle? _parentHandle = null;
+        private SafeAlgorithmHandle? _parentHandle;
 
         public void SetParentHandle(SafeAlgorithmHandle parentHandle)
         {

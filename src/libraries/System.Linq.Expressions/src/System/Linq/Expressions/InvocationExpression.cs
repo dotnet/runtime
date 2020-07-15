@@ -67,7 +67,7 @@ namespace System.Linq.Expressions
             return Invoke(expression, arguments);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="index">The index of the argument expression to get.</param>
         /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual Expression GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the number of argument expressions of the node.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int ArgumentCount
         {
             get
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions
             return visitor.VisitInvocation(this);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             throw ContractUtils.Unreachable;

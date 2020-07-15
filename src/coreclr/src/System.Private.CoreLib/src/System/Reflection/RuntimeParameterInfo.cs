@@ -114,10 +114,10 @@ namespace System.Reflection
         private int m_tkParamDef;
         private MetadataImport m_scope;
         private Signature? m_signature;
-        private volatile bool m_nameIsCached = false;
-        private readonly bool m_noMetadata = false;
-        private bool m_noDefaultValue = false;
-        private MethodBase? m_originalMember = null;
+        private volatile bool m_nameIsCached;
+        private readonly bool m_noMetadata;
+        private bool m_noDefaultValue;
+        private MethodBase? m_originalMember;
         #endregion
 
         #region Internal Properties

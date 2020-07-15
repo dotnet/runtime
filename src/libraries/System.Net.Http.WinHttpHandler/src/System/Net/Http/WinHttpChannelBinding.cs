@@ -13,8 +13,8 @@ namespace System.Net.Http
 {
     internal class WinHttpChannelBinding : ChannelBinding
     {
-        private int _size = 0;
-        private string _cachedToString = null;
+        private int _size;
+        private string _cachedToString;
 
         internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {

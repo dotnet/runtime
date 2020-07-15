@@ -34,7 +34,7 @@ namespace System
                 return;
             }
 
-            char[] disallowedSimpleAssemblyNameChars = new char[]
+            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
             {
                 Path.DirectorySeparatorChar,
                 Path.AltDirectorySeparatorChar,

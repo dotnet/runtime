@@ -38,10 +38,14 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ReadyToRunSymbolNodeFactory
     {
         private readonly NodeFactory _codegenNodeFactory;
+        private readonly bool _verifyTypeAndFieldLayout;
 
-        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
+        public bool VerifyTypeAndFieldLayout => _verifyTypeAndFieldLayout;
+
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory, bool verifyTypeAndFieldLayout)
         {
             _codegenNodeFactory = codegenNodeFactory;
+            _verifyTypeAndFieldLayout = verifyTypeAndFieldLayout;
             CreateNodeCaches();
         }
 
@@ -91,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.Check_FieldOffset, key)
+                    new FieldFixupSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_FieldOffset : ReadyToRunFixupKind.Check_FieldOffset, key)
                 );
             });
 
@@ -129,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.Check_TypeLayout, key)
+                    _codegenNodeFactory.TypeSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_TypeLayout: ReadyToRunFixupKind.Check_TypeLayout, key)
                 );
             });
 

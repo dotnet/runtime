@@ -29,7 +29,7 @@ namespace System.Net
         private string? _protocolName;
         private string? _clientSpecifiedSpn;
 
-        private ChannelBinding? _channelBinding = null;
+        private ChannelBinding? _channelBinding;
 
         // If set, no more calls should be made.
         internal bool IsCompleted => _isCompleted;

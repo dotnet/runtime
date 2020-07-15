@@ -31,7 +31,6 @@ namespace System.Net.Mail
         private readonly SmtpClient? _client;
         private NetworkStream? _networkStream;
         internal TcpClient? _tcpClient;
-        internal int _port = 0;
         private SmtpReplyReaderFactory? _responseReader;
 
         private readonly ICredentialsByHost? _credentials;

@@ -10,12 +10,12 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class AttributeMetadata
     {
-        private readonly string _pszLastOriginatingDsaDN = null;
+        private readonly string _pszLastOriginatingDsaDN;
 
-        private string _originatingServerName = null;
-        private readonly DirectoryServer _server = null;
-        private readonly Hashtable _nameTable = null;
-        private readonly bool _advanced = false;
+        private string _originatingServerName;
+        private readonly DirectoryServer _server;
+        private readonly Hashtable _nameTable;
+        private readonly bool _advanced;
 
         internal AttributeMetadata(IntPtr info, bool advanced, DirectoryServer server, Hashtable table)
         {

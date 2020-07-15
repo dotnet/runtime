@@ -735,6 +735,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
+            case NI_AdvSimd_Arm64_AddSaturateScalar:
+                if (varTypeIsUnsigned(node->GetAuxiliaryType()) != varTypeIsUnsigned(intrin.baseType))
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_usqadd : INS_suqadd;
+
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                    }
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
+                break;
+
             // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:
             case NI_Vector64_get_AllBitsSet:

@@ -2031,7 +2031,7 @@ namespace System.Xml.Serialization
             public MemberMapping Mapping;
             public CollectionMember Collection;
             public int FixupIndex = -1;
-            public bool MultiRef = false;
+            public bool MultiRef;
             public Action<object> Source;
             public Func<object> GetSource;
             public Action<object> ArraySource;

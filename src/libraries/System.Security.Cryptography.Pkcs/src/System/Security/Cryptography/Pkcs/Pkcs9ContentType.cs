@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9ContentType()
-            : base(Oid.FromOidValue(Oids.ContentType, OidGroup.ExtensionOrAttribute))
+            : base(Oids.ContentTypeOid.CopyOid())
         {
         }
 
@@ -52,6 +52,6 @@ namespace System.Security.Cryptography.Pkcs
             return new Oid(contentTypeValue);
         }
 
-        private volatile Oid? _lazyContentType = null;
+        private volatile Oid? _lazyContentType;
     }
 }

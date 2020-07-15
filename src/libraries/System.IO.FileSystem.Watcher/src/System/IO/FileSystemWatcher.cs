@@ -31,13 +31,13 @@ namespace System.IO
         private NotifyFilters _notifyFilters = c_defaultNotifyFilters;
 
         // Flag to watch subtree of this directory
-        private bool _includeSubdirectories = false;
+        private bool _includeSubdirectories;
 
         // Flag to note whether we are attached to the thread pool and responding to changes
-        private bool _enabled = false;
+        private bool _enabled;
 
         // Are we in init?
-        private bool _initializing = false;
+        private bool _initializing;
 
         // Buffer size
         private uint _internalBufferSize = 8192;
@@ -65,10 +65,8 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
-#pragma warning disable CS8605 // Unboxing a possibly null value
             foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
                 s_notifyFiltersValidMask |= enumValue;
-#pragma warning restore CS8605
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
 #endif

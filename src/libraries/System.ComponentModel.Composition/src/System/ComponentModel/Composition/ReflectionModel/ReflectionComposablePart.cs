@@ -17,11 +17,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
     internal class ReflectionComposablePart : ComposablePart, ICompositionElement
     {
         private readonly ReflectionComposablePartDefinition _definition;
-        private volatile Dictionary<ImportDefinition, object?>? _importValues = null;
-        private volatile Dictionary<ImportDefinition, ImportingItem>? _importsCache = null;
-        private volatile Dictionary<int, ExportingMember>? _exportsCache = null;
+        private volatile Dictionary<ImportDefinition, object?>? _importValues;
+        private volatile Dictionary<ImportDefinition, ImportingItem>? _importsCache;
+        private volatile Dictionary<int, ExportingMember>? _exportsCache;
         private volatile bool _invokeImportsSatisfied = true;
-        private bool _initialCompositionComplete = false;
+        private bool _initialCompositionComplete;
         private volatile object? _cachedInstance;
         private readonly object _lock = new object();
 

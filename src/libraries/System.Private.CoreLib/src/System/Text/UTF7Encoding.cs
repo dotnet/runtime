@@ -27,9 +27,11 @@ namespace System.Text
         private const string optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
 
+#pragma warning disable MSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
+#pragma warning restore MSLIB0001
 
         // The set of base 64 characters.
         private byte[] _base64Bytes;
@@ -46,11 +48,13 @@ namespace System.Text
 
         private const int UTF7_CODEPAGE = 65000;
 
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding()
             : this(false)
         {
         }
 
+        [Obsolete(Obsoletions.SystemTextEncodingUTF7Message, DiagnosticId = Obsoletions.SystemTextEncodingUTF7DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public UTF7Encoding(bool allowOptionals)
             : base(UTF7_CODEPAGE) // Set the data item.
         {
@@ -854,7 +858,7 @@ namespace System.Text
         private sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
         {
             // Store our default string
-            private char cFallback = (char)0;
+            private char cFallback;
             private int iCount = -1;
             private int iSize;
 

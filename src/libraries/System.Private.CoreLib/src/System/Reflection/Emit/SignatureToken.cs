@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public struct SignatureToken
     {
-        public static readonly SignatureToken Empty = default;
+        public static readonly SignatureToken Empty;
 
         internal SignatureToken(int signatureToken)
         {

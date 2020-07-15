@@ -15,7 +15,7 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.All)]
     public class MonitoringDescriptionAttribute : DescriptionAttribute
     {
-        private bool _replaced = false;
+        private bool _replaced;
 
         /// <summary>
         ///     Constructs a new sys description.

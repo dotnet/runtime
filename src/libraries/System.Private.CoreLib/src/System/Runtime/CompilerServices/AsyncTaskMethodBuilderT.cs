@@ -229,9 +229,9 @@ namespace System.Runtime.CompilerServices
             box.Context = currentContext;
 
             // Log the creation of the state machine box object / task for this async method.
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCreation(box, "Async: " + stateMachine.GetType().Name);
+                TplEventSource.Log.TraceOperationBegin(box.Id, "Async: " + stateMachine.GetType().Name, 0);
             }
 
             // And if async debugging is enabled, track the task.
@@ -310,10 +310,10 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = AsyncCausalityTracer.LoggingOn;
+                bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
+                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
                 }
 
                 ExecutionContext? context = Context;
@@ -361,7 +361,7 @@ namespace System.Runtime.CompilerServices
 
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
             }
 
@@ -433,9 +433,9 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Completed);
+                TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
             }
 
             if (!task.TrySetResult(result))

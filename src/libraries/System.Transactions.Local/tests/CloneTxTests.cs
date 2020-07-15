@@ -24,7 +24,7 @@ namespace System.Transactions.Tests
             Transaction.Current = null;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(CloneType.Normal, IsolationLevel.Serializable, false, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.RepeatableRead, false, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.ReadCommitted, false, TransactionStatus.Committed)]

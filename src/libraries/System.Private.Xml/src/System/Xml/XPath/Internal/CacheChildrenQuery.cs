@@ -17,12 +17,12 @@ namespace MS.Internal.Xml.XPath
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery
     {
-        private XPathNavigator _nextInput = null;
+        private XPathNavigator _nextInput;
         private readonly StackNav _elementStk;
         private readonly StackInt _positionStk;
         private bool _needInput;
 #if DEBUG
-        private XPathNavigator _lastNode = null;
+        private XPathNavigator _lastNode;
 #endif
 
         public CacheChildrenQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)

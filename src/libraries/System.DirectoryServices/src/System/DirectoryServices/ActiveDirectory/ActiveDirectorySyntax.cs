@@ -61,9 +61,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal class Syntax
     {
-        public readonly string attributeSyntax = null;
-        public readonly int oMSyntax = 0;
-        public readonly OMObjectClass oMObjectClass = null;
+        public readonly string attributeSyntax;
+        public readonly int oMSyntax;
+        public readonly OMObjectClass oMObjectClass;
 
         public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass oMObjectClass)
         {

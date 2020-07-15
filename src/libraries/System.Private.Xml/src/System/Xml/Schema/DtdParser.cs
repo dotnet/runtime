@@ -155,9 +155,9 @@ namespace System.Xml
 
         // flags
         private bool _normalize = true;
-        private bool _validate = false;
+        private bool _validate;
         private bool _supportNamespaces = true;
-        private bool _v1Compat = false;
+        private bool _v1Compat;
 
         // cached character buffer
         private char[] _chars = null!;
@@ -179,26 +179,26 @@ namespace System.Xml
         private int _colonPos;
 
         // value of the internal subset
-        private StringBuilder? _internalSubsetValueSb = null;
+        private StringBuilder? _internalSubsetValueSb;
 
         // entities
-        private int _externalEntitiesDepth = 0;
-        private int _currentEntityId = 0;
+        private int _externalEntitiesDepth;
+        private int _currentEntityId;
 
         // free-floating DTD support
-        private bool _freeFloatingDtd = false;
-        private bool _hasFreeFloatingInternalSubset = false;
+        private bool _freeFloatingDtd;
+        private bool _hasFreeFloatingInternalSubset;
 
         // misc
         private StringBuilder _stringBuilder = null!;
-        private int _condSectionDepth = 0;
+        private int _condSectionDepth;
         private LineInfo _literalLineInfo = new LineInfo(0, 0);
         private char _literalQuoteChar = '"';
         private string _documentBaseUri = string.Empty;
         private string _externalDtdBaseUri = string.Empty;
 
-        private Dictionary<string, UndeclaredNotation>? _undeclaredNotations = null;
-        private int[]? _condSectionEntityIds = null;
+        private Dictionary<string, UndeclaredNotation>? _undeclaredNotations;
+        private int[]? _condSectionEntityIds;
 
         private const int CondSectionEntityIdsInitialSize = 2;
 

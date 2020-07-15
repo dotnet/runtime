@@ -41,8 +41,8 @@ namespace System.Data
         private readonly LinkedList<Func<T, object>> _selectors = new LinkedList<Func<T, object>>();
         private readonly LinkedList<Comparison<object>> _comparers = new LinkedList<Comparison<object>>();
 
-        private LinkedListNode<Func<T, object>> _currentSelector = null;
-        private LinkedListNode<Comparison<object>> _currentComparer = null;
+        private LinkedListNode<Func<T, object>> _currentSelector;
+        private LinkedListNode<Comparison<object>> _currentComparer;
 
         /// <summary>
         /// Adds a sorting selector/comparer in the correct order

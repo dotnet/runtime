@@ -88,6 +88,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\QueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\JsonObjectConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Object\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.cs" />
@@ -110,8 +111,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonDocumentConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\ObjectConverter.cs" />

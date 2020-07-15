@@ -700,7 +700,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private XsltAttribute[] _attributes = null;
+        private XsltAttribute[] _attributes;
         // Mapping of attribute names as they ordered in 'attributes' array
         // to there's numbers in actual stylesheet as they ordered in 'records' array
         private readonly int[] _xsltAttributeNumber = new int[21];

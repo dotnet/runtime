@@ -31,7 +31,20 @@ namespace System.Net.Http
             return s_enableActivityPropagation && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        // SendAsyncCore returns already completed ValueTask for when async: false is passed.
+        // Internally, it calls the synchronous Send method of the base class.
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, async: false, cancellationToken);
+            Debug.Assert(sendTask.IsCompleted);
+            return sendTask.GetAwaiter().GetResult();
+        }
+
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            SendAsyncCore(request, async: true, cancellationToken).AsTask();
+
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
             CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
@@ -57,7 +70,9 @@ namespace System.Net.Http
 
                 try
                 {
-                    return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    return async ?
+                        await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                        base.Send(request, cancellationToken);
                 }
                 finally
                 {
@@ -98,20 +113,26 @@ namespace System.Net.Http
                 InjectHeaders(currentActivity, request);
             }
 
-            Task<HttpResponseMessage>? responseTask = null;
+            HttpResponseMessage? response = null;
+            TaskStatus taskStatus = TaskStatus.RanToCompletion;
             try
             {
-                responseTask = base.SendAsync(request, cancellationToken);
-
-                return await responseTask.ConfigureAwait(false);
+                response = async ?
+                    await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    base.Send(request, cancellationToken);
+                return response;
             }
             catch (OperationCanceledException)
             {
+                taskStatus = TaskStatus.Canceled;
+
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
             }
             catch (Exception ex)
             {
+                taskStatus = TaskStatus.Faulted;
+
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
                     // If request was initially instrumented, Activity.Current has all necessary context for logging
@@ -127,12 +148,12 @@ namespace System.Net.Http
                 if (activity != null)
                 {
                     s_diagnosticListener.StopActivity(activity, new ActivityStopData(
-                        responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                        response,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
                         // and not retain all requests in Start
                         request,
-                        responseTask?.Status ?? TaskStatus.Faulted));
+                        taskStatus));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
@@ -140,10 +161,10 @@ namespace System.Net.Http
                     long timestamp = Stopwatch.GetTimestamp();
                     s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
                         new ResponseData(
-                            responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                            response,
                             loggingRequestId,
                             timestamp,
-                            responseTask?.Status ?? TaskStatus.Faulted));
+                            taskStatus));
                 }
             }
         }

@@ -89,7 +89,7 @@ namespace System.Xml.Xsl.XsltOld
         private RootAction _rootAction;
         private List<TheQuery> _queryStore;
         private readonly QueryBuilder _queryBuilder = new QueryBuilder();
-        private int _rtfCount = 0;
+        private int _rtfCount;
 
         // Used to load Built In templates
         public bool AllowBuiltInMode;

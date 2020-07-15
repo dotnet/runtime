@@ -280,8 +280,8 @@ namespace System.Runtime.Serialization.Json
         private bool _expectingFirstElementInNonPrimitiveChild;
         private int _maxBytesPerRead;
         private OnXmlDictionaryReaderClose _onReaderClose;
-        private bool _readServerTypeElement = false;
-        private int _scopeDepth = 0;
+        private bool _readServerTypeElement;
+        private int _scopeDepth;
         private JsonNodeType[] _scopes;
 
         private enum JsonComplexTextMode

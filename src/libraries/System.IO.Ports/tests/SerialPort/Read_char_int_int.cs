@@ -950,18 +950,9 @@ namespace System.IO.Ports.Tests
                     Fail("ERROR!!!: Expected to read {0} chars actually read {1}", xmitCharBuffer.Length, numRead);
                 }
 
-                if (encoding.EncodingName == Encoding.UTF7.EncodingName)
+                if (IsUTF7Encoding(encoding))
                 {
-                    //If UTF7Encoding is being used we might leave a - in the stream
-                    if (com1.BytesToRead == xmitByteBuffer.Length + 1)
-                    {
-                        int byteRead;
-
-                        if ('-' != (char)(byteRead = com1.ReadByte()))
-                        {
-                            Fail("Err_29282naie Expected '-' to be left in the stream with UTF7Encoding and read {0}", byteRead);
-                        }
-                    }
+                    Fail("UTF-7 encoding not expected to be passed to this test.");
                 }
 
                 if (xmitByteBuffer.Length != (numRead = com1.Read(rcvByteBuffer, 0, rcvByteBuffer.Length)))

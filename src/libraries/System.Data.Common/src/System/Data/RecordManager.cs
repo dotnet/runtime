@@ -13,7 +13,7 @@ namespace System.Data
 
         private int _lastFreeRecord;
         private int _minimumCapacity = 50;
-        private int _recordCapacity = 0;
+        private int _recordCapacity;
         private readonly List<int> _freeRecordList = new List<int>();
 
         private DataRow[] _rows;

@@ -14,7 +14,7 @@ namespace System.Text
         private unsafe char* _chars;
         private readonly unsafe char* _charStart;
         private readonly unsafe char* _charEnd;
-        private int _byteCountResult = 0;
+        private int _byteCountResult;
         private readonly EncodingNLS _enc;
         private readonly EncoderNLS? _encoder;
         internal EncoderFallbackBuffer fallbackBuffer;

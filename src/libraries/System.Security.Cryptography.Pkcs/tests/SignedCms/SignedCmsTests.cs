@@ -1156,7 +1156,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // CheckSignature doesn't read the public mutable data
             contentInfo.Content[0] ^= 0xFF;
+#if !NETCOREAPP
             contentInfo.ContentType.Value = Oids.Pkcs7Hashed;
+#endif
             cms.CheckSignature(true);
 
             using (X509Certificate2 signerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())

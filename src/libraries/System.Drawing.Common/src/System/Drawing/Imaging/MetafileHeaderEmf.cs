@@ -16,7 +16,7 @@ namespace System.Drawing.Imaging
         public MetafileType type = MetafileType.Invalid;
         public int size;
         public int version;
-        public EmfPlusFlags emfPlusFlags = 0;
+        public EmfPlusFlags emfPlusFlags;
         public float dpiX;
         public float dpiY;
         public int X;
