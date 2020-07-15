@@ -700,10 +700,7 @@ namespace System.Net
 
         internal CookieCollection CookieCutter(Uri uri, string? headerName, string setCookieHeader, bool isThrow)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
 
             CookieCollection cookies = new CookieCollection();
             CookieVariant variant = CookieVariant.Unknown;
@@ -729,7 +726,7 @@ namespace System.Net
                 do
                 {
                     Cookie? cookie = parser.Get();
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
                     if (cookie == null)
                     {

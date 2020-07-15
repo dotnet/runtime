@@ -317,7 +317,7 @@ namespace System.Text.Json
                 Debug.Assert(status == OperationStatus.Done);
                 Debug.Assert(consumed == utf16Text.Length);
 
-                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName);
+                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
             if (otherUtf8TextArray != null)
@@ -329,7 +329,7 @@ namespace System.Text.Json
             return result;
         }
 
-        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName)
+        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName, bool shouldUnescape)
         {
             CheckNotDisposed();
 
@@ -344,12 +344,12 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (otherUtf8Text.Length > segment.Length)
+            if (otherUtf8Text.Length > segment.Length || (!shouldUnescape && otherUtf8Text.Length != segment.Length))
             {
                 return false;
             }
 
-            if (row.HasComplexChildren)
+            if (row.HasComplexChildren && shouldUnescape)
             {
                 if (otherUtf8Text.Length < segment.Length / JsonConstants.MaxExpansionFactorWhileEscaping)
                 {

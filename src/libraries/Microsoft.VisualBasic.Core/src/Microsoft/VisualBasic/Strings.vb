@@ -303,8 +303,6 @@ Namespace Global.Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Source), "String"), NameOf(Source))
             End Try
@@ -487,8 +485,6 @@ EmptyMatchString:
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, "SourceArray", "String"))
@@ -973,8 +969,6 @@ RedimAndExit:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Character"))
                 End Try
@@ -1264,8 +1258,6 @@ RedimAndExit:
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         'Object could not be converted to required type
@@ -2000,8 +1992,6 @@ RedimAndExit:
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
             End Try
         End Function
@@ -2025,8 +2015,6 @@ RedimAndExit:
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         Throw New ArgumentException(SR.Format(SR.Argument_LCIDNotSupported1, CStr(LocaleID)))
@@ -2154,8 +2142,6 @@ RedimAndExit:
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 ValidLCID = False

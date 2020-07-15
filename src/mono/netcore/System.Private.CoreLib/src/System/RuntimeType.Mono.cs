@@ -2197,8 +2197,9 @@ namespace System
 
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1 || rank > 255)
+            if (rank < 1)
                 throw new IndexOutOfRangeException();
+
             return make_array_type(rank);
         }
 

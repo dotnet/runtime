@@ -59,6 +59,14 @@ PALEXPORT int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* 
 
 /*
 Function:
+EvpDigestOneShot
+
+Combines EVP_MD_CTX_create, EVP_DigestUpdate, and EVP_DigestFinal_ex in to a single operation.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize);
+
+/*
+Function:
 EvpMdSize
 
 Direct shim to EVP_MD_size.

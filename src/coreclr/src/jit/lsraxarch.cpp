@@ -70,7 +70,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -1042,7 +1042,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         ctrlExpr = call->gtCallAddr;
     }
 
-    RegisterType registerType = call->TypeGet();
+    RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1063,7 +1063,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates = retTypeDesc->GetABIReturnRegs();
         assert((int)genCountBits(dstCandidates) == dstCount);
     }
-    else if (varTypeIsFloating(registerType))
+    else if (varTypeUsesFloatReg(registerType))
     {
 #ifdef TARGET_X86
         // The return value will be on the X87 stack, and we will need to move it.

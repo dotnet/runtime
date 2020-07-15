@@ -179,6 +179,12 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
 
+if(CLR_CMAKE_HOST_OSX)
+    list(APPEND COREDAC_LIBRARIES
+        coreclrpal_dac
+    )
+endif(CLR_CMAKE_HOST_OSX)
+
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # Create the DAC module index header file containing the DAC build id

@@ -21,7 +21,7 @@ namespace System.Threading.Channels.Tests
             Assert.NotSame(e, c.Reader.ReadAllAsync());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadAllAsync_UseMoveNextAsyncAfterCompleted_ReturnsFalse(bool completeWhilePending)
@@ -75,7 +75,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAllAsync_UnavailableDataCompletesAsynchronously()
         {
             Channel<int> c = CreateChannel();
@@ -101,7 +101,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(128)]
@@ -139,7 +139,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(producedTotal, consumedTotal);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAllAsync_MultipleEnumerationsToEnd()
         {
             Channel<int> c = CreateChannel();
@@ -192,7 +192,7 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadAllAsync_DualConcurrentEnumeration_AllItemsEnumerated(bool sameEnumerable)
@@ -237,7 +237,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(producerTotal, consumerTotal);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadAllAsync_CanceledBeforeMoveNextAsync_Throws(bool dataAvailable)
@@ -259,7 +259,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAllAsync_CanceledAfterMoveNextAsync_Throws()
         {
             Channel<int> c = CreateChannel();

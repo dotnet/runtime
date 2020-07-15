@@ -2683,7 +2683,7 @@ bool IsLocalToQuote(const char *name)
     // No such thing as an empty name that doesn't require quoting (handled in IsNameToQuote)
     _ASSERTE(*name);
     // return true if there's a '.' anywhere in the name, after position 1
-    return !!strchr(name + 1, '.');
+    return strchr(name + 1, '.') != 0;
 }
 
 /********************************************************************/

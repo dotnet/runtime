@@ -256,8 +256,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))
             End Try

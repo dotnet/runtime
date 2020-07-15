@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
 
-            if (success)
+            if (success && !(arg == null && jsonParameterInfo.IgnoreDefaultValuesOnRead))
             {
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
             }

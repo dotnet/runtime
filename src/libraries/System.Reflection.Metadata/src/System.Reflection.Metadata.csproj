@@ -3,7 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
     <CLSCompliant>false</CLSCompliant>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -98,14 +99,14 @@
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="$(TargetFramework.StartsWith('netstandard'))" />
+    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="$(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('net4'))" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" Condition="$(TargetFramework.StartsWith('netstandard'))" />
+    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" Condition="$(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('net4'))" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
@@ -265,5 +266,10 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.IO.MemoryMappedFiles" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Reference Include="System.Buffers" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
   </ItemGroup>
 </Project>

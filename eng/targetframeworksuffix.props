@@ -88,8 +88,4 @@
       </PropertyGroup>
     </When>
   </Choose>
-
-  <PropertyGroup>
-    <EnablePInvokeAnalyzer Condition="'$(TargetsBrowser)' == 'true'">false</EnablePInvokeAnalyzer>
-  </PropertyGroup>
 </Project>

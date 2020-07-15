@@ -126,6 +126,13 @@ CLiteWeightStgdbRW::~CLiteWeightStgdbRW()
     {
         delete [] m_wszFileName;
     }
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    if (m_pPdbHeap != NULL)
+    {
+        delete m_pPdbHeap;
+        m_pPdbHeap = NULL;
+    }
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 }
 
 //*****************************************************************************
@@ -506,7 +513,9 @@ HRESULT CLiteWeightStgdbRW::InitNew()
 {
     InitializeLogging();
     LOG((LF_METADATA, LL_INFO10, "Metadata logging enabled\n"));
-
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    m_pPdbHeap = new PdbHeap();
+#endif
     //<TODO>@FUTURE: should probably init the pools here instead of in the MiniMd.</TODO>
     return m_MiniMd.InitNew();
 }
@@ -552,6 +561,24 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
                 &nIndex_Ignore));
         }
     }
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // [IMPORTANT]:
+    // Apparently, string pool must exist in the portable PDB metadata in order to be recognized
+    // by the VS debugger. For this purpose, we are adding a dummy " " value in cases when
+    // the string pool is empty.
+    // Interestingly enough, similar is done for user string pool (check above #549).
+    // TODO: do this in a more clever way, and check if/why/when this is necessary
+    if (m_MiniMd.m_StringHeap.GetUnalignedSize() <= 1)
+    {
+        if (!IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode) &&
+            !m_MiniMd.IsMinimalDelta())
+        {
+            UINT32 nIndex_Ignore;
+            IfFailGo(m_MiniMd.m_StringHeap.AddString(" ", &nIndex_Ignore));
+        }
+    }
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
     // If we're saving a delta metadata, figure out how much space it will take to
     // save the minimal metadata stream (used only to identify that we have a delta
@@ -614,6 +641,10 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     cbTotal += cbSize;
     IfFailGo(GetPoolSaveSize(BLOB_POOL_STREAM, MDPoolBlobs, &cbSize));
     cbTotal += cbSize;
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    IfFailGo(GetPoolSaveSize(PDB_STREAM, NULL, &cbSize));
+    cbTotal += cbSize;
+#endif
 
     // Finally, ask the storage system to add fixed overhead it needs for the
     // file format.  The overhead of each stream has already be calculated as
@@ -655,31 +686,51 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 {
     UINT32  cbSize = 0;     // Size of pool data.
     UINT32  cbStream;       // Size of just the stream.
-    HRESULT hr;
+    HRESULT hr = S_OK;
 
     *pcbSaveSize = 0;
 
-    // If there is no data, then don't bother.
-    if (m_MiniMd.IsPoolEmpty(iPool))
-        return (S_OK);
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // Treat PDB stream differently since we are not using StgPools
+    if (wcscmp(PDB_STREAM, szHeap) == 0)
+    {
+        if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
+        {
+            cbSize = m_pPdbHeap->GetSize();
+            IfFailGo(AddStreamToList(cbSize, szHeap));
+            IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
+            *pcbSaveSize = cbSize;
+        }
+        else
+        {
+            goto ErrExit;
+        }
+    }
+    else
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+    {
+        // If there is no data, then don't bother.
+        if (m_MiniMd.IsPoolEmpty(iPool))
+            return (S_OK);
 
-    // Ask the pool to size its data.
-    IfFailGo(m_MiniMd.GetPoolSaveSize(iPool, &cbSize));
-    cbStream = cbSize;
+        // Ask the pool to size its data.
+        IfFailGo(m_MiniMd.GetPoolSaveSize(iPool, &cbSize));
+        cbStream = cbSize;
 
-    // Add this item to the save list.
-    IfFailGo(AddStreamToList(cbSize, szHeap));
+        // Add this item to the save list.
+        IfFailGo(AddStreamToList(cbSize, szHeap));
 
 
-    // Ask the storage system to add stream fixed overhead.
-    IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
+        // Ask the storage system to add stream fixed overhead.
+        IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
 
-    // Log the size info.
-    LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-        szHeap, cbStream, cbSize));
+        // Log the size info.
+        LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
+            szHeap, cbStream, cbSize));
 
-    // Give the size of the pool to the caller's total.
-    *pcbSaveSize = cbSize;
+        // Give the size of the pool to the caller's total.
+        *pcbSaveSize = cbSize;
+    }
 
 ErrExit:
     return hr;
@@ -896,6 +947,9 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(SavePool(US_BLOB_POOL_STREAM, pStorage, MDPoolUSBlobs));
     IfFailGo(SavePool(GUID_POOL_STREAM, pStorage, MDPoolGuids));
     IfFailGo(SavePool(BLOB_POOL_STREAM, pStorage, MDPoolBlobs));
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    IfFailGo(SavePool(PDB_STREAM, pStorage, NULL));
+#endif
 
     // Write the header to disk.
     OptionValue ov;
@@ -929,17 +983,37 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
     int         iPool)                  // The pool to save.
 {
     IStream     *pIStream=0;            // For writing.
-    HRESULT     hr;
+    HRESULT     hr = S_OK;
 
-    // If there is no data, then don't bother.
-    if (m_MiniMd.IsPoolEmpty(iPool))
-        return (S_OK);
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // Treat PDB stream differently since we are not using StgPools
+    if (wcscmp(PDB_STREAM, szName) == 0)
+    {
+        if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
+        {
+            IfFailGo(pStorage->CreateStream(szName,
+                STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
+                0, 0, &pIStream));
+            IfFailGo(m_pPdbHeap->SaveToStream(pIStream));
+        }
+        else
+        {
+            goto ErrExit;
+        }
+    }
+    else
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+    {
+        // If there is no data, then don't bother.
+        if (m_MiniMd.IsPoolEmpty(iPool))
+            return (S_OK);
 
-    // Create the new stream to hold this table and save it.
-    IfFailGo(pStorage->CreateStream(szName,
+        // Create the new stream to hold this table and save it.
+        IfFailGo(pStorage->CreateStream(szName,
             STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStream));
-    IfFailGo(m_MiniMd.SavePoolToStream(iPool, pIStream));
+        IfFailGo(m_MiniMd.SavePoolToStream(iPool, pIStream));
+    }
 
 ErrExit:
     if (pIStream)

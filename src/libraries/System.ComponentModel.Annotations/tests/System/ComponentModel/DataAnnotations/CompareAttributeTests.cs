@@ -74,6 +74,34 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_IncludesMemberName_NetFx()
+        {
+            ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
+            validationContext.MemberName = nameof(CompareObject.CompareProperty);
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyCased));
+
+            ValidationResult validationResult = attribute.GetValidationResult("b", validationContext);
+
+            Assert.NotNull(validationResult.ErrorMessage);
+            Assert.Empty(validationResult.MemberNames);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_IncludesMemberName_Netcoreapp()
+        {
+            ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
+            validationContext.MemberName = nameof(CompareObject.CompareProperty);
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyCased));
+
+            ValidationResult validationResult = attribute.GetValidationResult("b", validationContext);
+
+            Assert.NotNull(validationResult.ErrorMessage);
+            Assert.Equal(new[] { nameof(CompareObject.CompareProperty) }, validationResult.MemberNames);
+        }
+
+        [Fact]
         public static void Validate_PrivateProperty_ThrowsArgumentException()
         {
             CompareAttribute attribute = new CompareAttribute("PrivateProperty");

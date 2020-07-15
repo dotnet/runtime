@@ -8,15 +8,10 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string? s_osDescription;
-        private static readonly object s_osLock = new object();
-        private static readonly object s_processLock = new object();
-        private static Architecture? s_osArch;
-        private static Architecture? s_processArch;
+        private static volatile int s_osArch = -1;
+        private static volatile int s_processArch = -1;
 
-        public static bool IsOSPlatform(OSPlatform osPlatform)
-        {
-            return OSPlatform.Windows == osPlatform;
-        }
+        internal static bool IsCurrentOSPlatform(string osPlatform) => osPlatform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
 
         public static string OSDescription
         {
@@ -42,34 +37,17 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                lock (s_osLock)
+                Debug.Assert(sizeof(Architecture) == sizeof(int));
+
+                int osArch = s_osArch;
+
+                if (osArch == -1)
                 {
-                    if (null == s_osArch)
-                    {
-                        Interop.Kernel32.SYSTEM_INFO sysInfo;
-                        Interop.Kernel32.GetNativeSystemInfo(out sysInfo);
-
-                        switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
-                        {
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                s_osArch = Architecture.Arm64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                s_osArch = Architecture.Arm;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                s_osArch = Architecture.X64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                s_osArch = Architecture.X86;
-                                break;
-                        }
-
-                    }
+                    Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    osArch = s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
-                Debug.Assert(s_osArch != null);
-                return s_osArch.Value;
+                return (Architecture)osArch;
             }
         }
 
@@ -77,33 +55,34 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                lock (s_processLock)
-                {
-                    if (null == s_processArch)
-                    {
-                        Interop.Kernel32.SYSTEM_INFO sysInfo;
-                        Interop.Kernel32.GetSystemInfo(out sysInfo);
+                Debug.Assert(sizeof(Architecture) == sizeof(int));
 
-                        switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
-                        {
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
-                                s_processArch = Architecture.Arm64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
-                                s_processArch = Architecture.Arm;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                s_processArch = Architecture.X64;
-                                break;
-                            case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                s_processArch = Architecture.X86;
-                                break;
-                        }
-                    }
+                int processArch = s_processArch;
+
+                if (processArch == -1)
+                {
+                    Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    processArch = s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
-                Debug.Assert(s_processArch != null);
-                return s_processArch.Value;
+                return (Architecture)processArch;
+            }
+        }
+
+        private static Architecture Map(Interop.Kernel32.ProcessorArchitecture processorArchitecture)
+        {
+            switch (processorArchitecture)
+            {
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
+                    return Architecture.Arm64;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
+                    return Architecture.Arm;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
+                    return Architecture.X64;
+                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
+                default:
+                    Debug.Assert(processorArchitecture == Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL, "Unidentified Architecture");
+                    return Architecture.X86;
             }
         }
     }

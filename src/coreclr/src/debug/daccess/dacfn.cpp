@@ -268,7 +268,7 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
         memset(contextPointers, 0, sizeof(T_KNONVOLATILE_CONTEXT_POINTERS));
     }
 
-    HRESULT hr = S_OK;
+    HRESULT hr = E_NOINTERFACE;
 
 #ifdef FEATURE_DATATARGET4
     ReleaseHolder<ICorDebugDataTarget4> dt;
@@ -277,9 +277,12 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
     {
         hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
     }
-    else
 #endif
+
+    if (hr == E_NOINTERFACE || hr == E_NOTIMPL)
     {
+        hr = S_OK;
+
         SIZE_T baseAddress = DacGlobalBase();
         if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
         {

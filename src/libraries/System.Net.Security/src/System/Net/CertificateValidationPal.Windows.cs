@@ -96,8 +96,6 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
-
             X509Certificate2? result = null;
             SafeFreeCertContext? remoteContext = null;
             try
@@ -121,11 +119,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(null, result, securityContext);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
         }
 
@@ -157,7 +151,7 @@ namespace System.Net
                                 byte[] x = new Span<byte>((byte*)elements[i].pCertContext, checked((int)elements[i].cbSize)).ToArray();
                                 var x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(securityContext, $"IssuerListEx[{issuers[i]}]");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(securityContext, $"IssuerListEx[{issuers[i]}]");
                             }
                         }
                     }
@@ -196,8 +190,6 @@ namespace System.Net
 
         private static unsafe uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(chainContext, cpp.dwFlags);
-
             Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
             status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
 
@@ -208,7 +200,7 @@ namespace System.Net
                     ref cpp,
                     ref status);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
             return status.dwError;
         }
     }

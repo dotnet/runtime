@@ -144,7 +144,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -223,7 +223,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -275,7 +275,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw new Win32Exception(errorCode);
             }
 

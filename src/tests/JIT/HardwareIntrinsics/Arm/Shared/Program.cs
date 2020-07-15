@@ -73,6 +73,8 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.LogInformation($"  Aes:       {Aes.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  ArmBase:   {ArmBase.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Crc32:     {Crc32.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  Dp:        {Dp.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  Rdm:       {Rdm.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sha1:      {Sha1.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sha256:    {Sha256.IsSupported}");
             TestLibrary.TestFramework.LogInformation(string.Empty);

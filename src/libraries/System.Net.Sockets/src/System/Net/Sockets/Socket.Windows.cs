@@ -19,8 +19,6 @@ namespace System.Net.Sockets
 
         public Socket(SocketInformation socketInformation)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             InitializeSockets();
 
             SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
@@ -79,8 +77,6 @@ namespace System.Net.Sockets
                 _handle = null!;
                 throw new SocketException((int)errorCode);
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private unsafe void LoadSocketTypeFromHandle(
@@ -111,8 +107,6 @@ namespace System.Net.Sockets
 
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, targetProcessId);
-
             ThrowIfDisposed();
 
             SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
@@ -128,7 +122,6 @@ namespace System.Net.Sockets
 
             Close(timeout: -1);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return info;
         }
 
@@ -224,7 +217,7 @@ namespace System.Net.Sockets
                     return;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, address);
 
             var endPoint = new IPEndPoint(address, 0);
             DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));
