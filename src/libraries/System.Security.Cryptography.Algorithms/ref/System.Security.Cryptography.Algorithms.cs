@@ -470,6 +470,7 @@ namespace System.Security.Cryptography
         public void AppendData(System.ReadOnlySpan<byte> data) { }
         public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { throw null; }
+        public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key) { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash() { throw null; }
         public int GetCurrentHash(System.Span<byte> destination) { throw null; }
