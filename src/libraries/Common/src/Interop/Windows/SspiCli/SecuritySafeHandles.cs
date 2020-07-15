@@ -308,12 +308,11 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS* authdata,
             out SafeFreeCredentials outCredential)
         {
-            int errorCode = -1;
             long timeStamp;
 
             outCredential = new SafeFreeCredential_SECURITY();
 
-            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                                 null,
                                 package,
                                 (int)intent,

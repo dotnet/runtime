@@ -18,8 +18,7 @@ namespace System.Net.Security
         private static readonly bool UseNewCryptoApi =
             // On newer Windows version we use new API to get TLS1.3.
             // API is supported since Windows 10 1809 (17763)but there is no reason to use at the moment.
-            Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) == 0 &&
-            osvi.dwMajorVersion >= 10 && osvi.dwBuildNumber >= 18836;
+            Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= 18836;
 
         private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
