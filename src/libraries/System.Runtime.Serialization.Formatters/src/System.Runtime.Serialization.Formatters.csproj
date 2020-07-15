@@ -17,6 +17,7 @@
     <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
+    <Compile Include="System\Runtime\Serialization\Obsoletions.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationFieldInfo.cs" />

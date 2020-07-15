@@ -118,9 +118,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b34a70799faa67f13c2e72852e4f3af463ff4d6c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20359.7">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20364.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>88c2807979f8762a121f8e4b217191672d334822</Sha>
+      <Sha>bf5a3a643815a8a46693d618d08dbc96f353ca9e</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20356.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -182,9 +182,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20361.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20363.5">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>3b524e4aa109ce5c8d9db5d6447386a0714d0d2d</Sha>
+      <Sha>e76321851c05c5016df3d1243885c02e875b9912</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20352.3">
       <Uri>https://github.com/dotnet/xharness</Uri>

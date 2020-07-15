@@ -41,7 +41,7 @@ namespace System.Net.Http
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new Utf8StringStream(_content));
 
-#if NETSTANDARD2_0
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             ReadOnlyMemory<byte> buffer = _content.AsMemoryBytes();

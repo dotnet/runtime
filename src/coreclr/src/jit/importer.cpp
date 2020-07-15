@@ -893,8 +893,10 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
                 // ABI handling of this argument.
                 // Note that this can happen, for example, if we have a SIMD intrinsic that returns a SIMD type
                 // with a different baseType than we've seen.
+                // We also need to ensure an OBJ node if we have a FIELD node that might be transformed to LCL_FLD
+                // or a plain GT_IND.
                 // TODO-Cleanup: Consider whether we can eliminate all of these cases.
-                if (gtGetStructHandleIfPresent(temp) != structType)
+                if ((gtGetStructHandleIfPresent(temp) != structType) || temp->OperIs(GT_FIELD))
                 {
                     forceNormalization = true;
                 }
@@ -1666,9 +1668,12 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_FIELD:
-            // Wrap it in a GT_OBJ.
+            // Wrap it in a GT_OBJ, if needed.
             structVal->gtType = structType;
-            structVal         = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            if ((structType == TYP_STRUCT) || forceNormalization)
+            {
+                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            }
             break;
 
         case GT_LCL_VAR:
