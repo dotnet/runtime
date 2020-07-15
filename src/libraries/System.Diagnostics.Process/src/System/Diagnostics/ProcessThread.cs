@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -94,7 +95,7 @@ namespace System.Diagnostics
                 }
                 return _priorityLevel.Value;
             }
-            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set
             {
                 PriorityLevelCore = value;

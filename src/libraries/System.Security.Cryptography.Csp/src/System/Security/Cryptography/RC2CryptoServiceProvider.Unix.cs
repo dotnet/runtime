@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -103,7 +104,7 @@ namespace System.Security.Cryptography
         public bool UseSalt
         {
             get { return false; }
-            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set
             {
                 // Don't allow a true value

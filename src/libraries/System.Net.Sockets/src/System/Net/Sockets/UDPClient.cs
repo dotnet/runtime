@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -192,7 +193,7 @@ namespace System.Net.Sockets
             }
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public void AllowNatTraversal(bool allowed)
         {
             _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);

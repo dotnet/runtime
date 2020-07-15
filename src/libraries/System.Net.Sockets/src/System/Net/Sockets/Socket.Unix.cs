@@ -4,12 +4,13 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public Socket(SocketInformation socketInformation)
         {
             // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
@@ -17,7 +18,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -107,7 +108,7 @@ namespace System.IO.Pipes
             return true;
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public unsafe int NumberOfServerInstances
         {
             get

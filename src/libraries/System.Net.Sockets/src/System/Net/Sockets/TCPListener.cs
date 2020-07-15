@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -111,7 +112,7 @@ namespace System.Net.Sockets
             }
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public void AllowNatTraversal(bool allowed)
         {
             if (_active)

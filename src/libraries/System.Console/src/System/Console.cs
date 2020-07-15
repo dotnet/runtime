@@ -281,13 +281,13 @@ namespace System
             set { ConsolePal.CursorSize = value; }
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static bool NumberLock
         {
             get { return ConsolePal.NumberLock; }
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static bool CapsLock
         {
             get { return ConsolePal.CapsLock; }
@@ -315,18 +315,18 @@ namespace System
         public static int BufferWidth
         {
             get { return ConsolePal.BufferWidth; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.BufferWidth = value; }
         }
 
         public static int BufferHeight
         {
             get { return ConsolePal.BufferHeight; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.BufferHeight = value; }
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void SetBufferSize(int width, int height)
         {
             ConsolePal.SetBufferSize(width, height);
@@ -335,38 +335,38 @@ namespace System
         public static int WindowLeft
         {
             get { return ConsolePal.WindowLeft; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.WindowLeft = value; }
         }
 
         public static int WindowTop
         {
             get { return ConsolePal.WindowTop; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.WindowTop = value; }
         }
 
         public static int WindowWidth
         {
             get { return ConsolePal.WindowWidth; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.WindowWidth = value; }
         }
 
         public static int WindowHeight
         {
             get { return ConsolePal.WindowHeight; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.WindowHeight = value; }
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void SetWindowPosition(int left, int top)
         {
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void SetWindowSize(int width, int height)
         {
             ConsolePal.SetWindowSize(width, height);
@@ -384,7 +384,7 @@ namespace System
 
         public static bool CursorVisible
         {
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             get { return ConsolePal.CursorVisible; }
             set { ConsolePal.CursorVisible = value; }
         }
@@ -413,7 +413,7 @@ namespace System
 
         public static string Title
         {
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             get { return ConsolePal.Title; }
             set
             {
@@ -426,19 +426,19 @@ namespace System
             ConsolePal.Beep();
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void Beep(int frequency, int duration)
         {
             ConsolePal.Beep(frequency, duration);
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
         {
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, ' ', ConsoleColor.Black, BackgroundColor);
         }
 
-        [MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
         {
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);
