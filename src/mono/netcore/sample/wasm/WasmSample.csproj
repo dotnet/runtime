@@ -44,8 +44,7 @@
       MainAssembly="bin\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      RemoteSources="@(RemoteSources)"
-      ICUDataFiles="@(ICUDataFiles)" />
+      RemoteSources="@(RemoteSources)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
