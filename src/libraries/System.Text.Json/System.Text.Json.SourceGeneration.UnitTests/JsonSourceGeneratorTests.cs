@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
-namespace System.Text.Json.CodeGenerator.UnitTests
+namespace System.Text.Json.SourceGeneration.UnitTests
 {
     public static class GeneratorTests
     {

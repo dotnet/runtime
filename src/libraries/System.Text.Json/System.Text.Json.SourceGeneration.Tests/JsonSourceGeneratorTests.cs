@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Text.Json.CodeGenerator.Tests
+namespace System.Text.Json.SourceGeneration.Tests
 {
     public class JsonSerializerSouceGeneratorTests
     {

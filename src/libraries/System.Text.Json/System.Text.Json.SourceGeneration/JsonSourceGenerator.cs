@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 
-namespace System.Text.Json.CodeGenerator
+namespace System.Text.Json.SourceGeneration
 {
     /// <summary>
     /// Base JsonSerializerSourceGenerator. This class will invoke CodeGenerator within Execute

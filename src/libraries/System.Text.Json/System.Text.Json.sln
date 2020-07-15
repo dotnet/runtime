@@ -23,11 +23,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2ED
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "codegenerator", "codegenerator\codegenerator.csproj", "{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "System.Text.Json.SourceGeneration\System.Text.Json.SourceGeneration.csproj", "{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "codegenerator.UnitTests", "codegenerator.UnitTests\codegenerator.UnitTests.csproj", "{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.UnitTests", "System.Text.Json.SourceGeneration.UnitTests\System.Text.Json.SourceGeneration.UnitTests.csproj", "{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "codegenerator.Tests", "codegenerator.Tests\codegenerator.Tests.csproj", "{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json.SourceGeneration.Tests", "System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj", "{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
