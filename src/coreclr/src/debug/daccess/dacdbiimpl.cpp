@@ -6380,7 +6380,8 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 
         // The size is not guaranteed to be aligned, we have to
         // do that ourself.
-        if (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 3)
+        if (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 3
+            || mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 4)
             size = AlignLarge(size);
         else
             size = Align(size);

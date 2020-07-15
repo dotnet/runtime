@@ -1498,13 +1498,6 @@
     ]
   },
   {
-    "Name": "System.Reflection.DispatchProxy",
-    "Description": "Provides a class to dynamically create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
-    "CommonTypes": [
-      "System.Reflection.DispatchProxy"
-    ]
-  },
-  {
     "Name": "System.Reflection.Emit",
     "Description": "Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk. The primary clients of these classes are script engines and compilers.",
     "CommonTypes": [

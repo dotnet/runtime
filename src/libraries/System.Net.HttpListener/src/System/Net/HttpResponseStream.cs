@@ -42,11 +42,8 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
+
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -61,7 +58,6 @@ namespace System.Net
             }
             if (_closed)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return;
             }
 
@@ -89,11 +85,8 @@ namespace System.Net
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"asyncResult:{asyncResult}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
+
             if (asyncResult == null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
@@ -104,7 +97,6 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 if (disposing)
@@ -112,7 +104,6 @@ namespace System.Net
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_closed:" + _closed);
                     if (_closed)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                         return;
                     }
                     _closed = true;
@@ -123,7 +114,6 @@ namespace System.Net
             {
                 base.Dispose(disposing);
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
     }
 }

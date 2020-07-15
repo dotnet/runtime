@@ -645,16 +645,12 @@ namespace System.Net.Http
         public void CancelPendingRequests()
         {
             CheckDisposed();
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
 
             // With every request we link this cancellation token source.
-            CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts,
-                new CancellationTokenSource());
+            CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts, new CancellationTokenSource());
 
             currentCts.Cancel();
             currentCts.Dispose();
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         #endregion Advanced Send Overloads

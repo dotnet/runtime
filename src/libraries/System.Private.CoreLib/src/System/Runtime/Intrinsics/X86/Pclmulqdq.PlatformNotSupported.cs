@@ -17,6 +17,13 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        public new abstract class X64 : Sse2.X64
+        {
+            internal X64() { }
+
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
+        }
+
         /// <summary>
         /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
         ///   PCLMULQDQ xmm, xmm/m128, imm8

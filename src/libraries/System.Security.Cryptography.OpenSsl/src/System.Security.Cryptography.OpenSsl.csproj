@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);netcoreapp3.0-Unix;netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);netcoreapp3.0-Unix;netcoreapp3.0;netstandard2.0;net47;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">4.1.0.0</AssemblyVersion>
+    <!-- We need to build against net47 because that is where ECParameters got added inbox. We ship as net461 in order to not require
+    the facades when the package is restored. -->
+    <PackageTargetFramework Condition="$(TargetFramework.StartsWith('net4'))">net461</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true' or '$(TargetsBrowser)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
@@ -104,7 +108,7 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' AND !$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -122,5 +126,10 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <SuppressPackageTargetFrameworkCompatibility Include="net461" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
   </ItemGroup>
 </Project>

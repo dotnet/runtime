@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
     {
         public NativeCppClassAttribute() { }
     }
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
+    [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple=true)]
     public sealed class CppInlineNamespaceAttribute : Attribute
     {
         public CppInlineNamespaceAttribute(string dottedName) {}

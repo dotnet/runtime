@@ -76,8 +76,6 @@ namespace System.Net
 
         internal void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             try
             {
                 _response?.Close();
@@ -101,12 +99,10 @@ namespace System.Net
                     }
                 }
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         internal void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ForceCancelRequest(RequestQueueHandle, Request.RequestId);
             try
             {
@@ -116,7 +112,6 @@ namespace System.Net
             {
                 (_user?.Identity as IDisposable)?.Dispose();
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         internal Interop.HttpApi.HTTP_VERB GetKnownMethod()

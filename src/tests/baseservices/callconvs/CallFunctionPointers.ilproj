@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>library</OutputType>
-
-    <!-- Disable test until we get new IL build tools -->
-    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CallFunctionPointers.il" />

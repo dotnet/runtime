@@ -15,7 +15,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlUdtStorage : DataStorage
     {
-        private object[] _values;
+        private object[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;
         private readonly bool _implementsIComparable;
 
@@ -36,19 +36,20 @@ namespace System.Data.Common
         // to support oracle types and other INUllable types that have static Null as field
         internal static object GetStaticNullForUdtType(Type type) => s_typeToNull.GetOrAdd(type, t =>
         {
-            PropertyInfo propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
+            // TODO: Is it OK for the null value of a UDT to be null? For now annotating is non-nullable.
+            PropertyInfo? propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
             if (propInfo != null)
             {
-                return propInfo.GetValue(null, null);
+                return propInfo.GetValue(null, null)!;
             }
 
-            FieldInfo fieldInfo = type.GetField("Null", BindingFlags.Public | BindingFlags.Static);
+            FieldInfo fieldInfo = type.GetField("Null", BindingFlags.Public | BindingFlags.Static)!;
             if (fieldInfo != null)
             {
-                return fieldInfo.GetValue(null);
+                return fieldInfo.GetValue(null)!;
             }
 
-            throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName);
+            throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName!);
         });
 
         public override bool IsNull(int record)
@@ -66,7 +67,7 @@ namespace System.Data.Common
             return (CompareValueTo(recordNo1, _values[recordNo2]));
         }
 
-        public override int CompareValueTo(int recordNo1, object value)
+        public override int CompareValueTo(int recordNo1, object? value)
         {
             if (DBNull.Value == value)
             {
@@ -84,7 +85,7 @@ namespace System.Data.Common
                 return nullableValue.IsNull ? 0 : 1; // left may be null, right is null
             }
 
-            throw ExceptionBuilder.IComparableNotImplemented(_dataType.AssemblyQualifiedName);
+            throw ExceptionBuilder.IComparableNotImplemented(_dataType.AssemblyQualifiedName!);
         }
 
         public override void Copy(int recordNo1, int recordNo2)
@@ -146,7 +147,7 @@ namespace System.Data.Common
         {
             if (_implementsIXmlSerializable)
             {
-                object Obj = System.Activator.CreateInstance(_dataType, true);
+                object Obj = System.Activator.CreateInstance(_dataType, true)!;
 
                 string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
                 StringReader strReader = new StringReader(tempStr);
@@ -175,11 +176,11 @@ namespace System.Data.Common
                     string xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
                     if (null != xsdTypeName)
                     {
-                        typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName;
+                        typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName!;
                     }
                 }
-                Type type = (typeName == null) ? _dataType : Type.GetType(typeName);
-                object Obj = System.Activator.CreateInstance(type, true);
+                Type type = (typeName == null) ? _dataType : Type.GetType(typeName)!;
+                object Obj = System.Activator.CreateInstance(type, true)!;
                 Debug.Assert(xmlReader is DataTextReader, "Invalid DataTextReader is being passed to customer");
                 ((IXmlSerializable)Obj).ReadXml(xmlReader);
                 return Obj;
@@ -210,7 +211,7 @@ namespace System.Data.Common
             return (strwriter.ToString());
         }
 
-        public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute xmlAttrib)
+        public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)
             {

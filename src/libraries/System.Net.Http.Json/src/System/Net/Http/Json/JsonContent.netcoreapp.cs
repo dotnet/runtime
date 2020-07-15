@@ -9,7 +9,10 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent
     {
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            => SerializeToStreamAsyncCore(stream, async: false, cancellationToken).GetAwaiter().GetResult();
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-            => SerializeToStreamAsyncCore(stream, cancellationToken);
+            => SerializeToStreamAsyncCore(stream, async: true, cancellationToken);
     }
 }

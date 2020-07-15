@@ -149,6 +149,19 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
+                if (CanBePolymorphic && options.ReferenceHandler != null)
+                {
+                    // Edge case where we want to lookup for a reference when parsing into typeof(object)
+                    // instead of return `value` as a JsonElement.
+                    Debug.Assert(TypeToConvert == typeof(object));
+                    Debug.Assert(value is JsonElement);
+
+                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, (JsonElement)(object)value, out object? referenceValue))
+                    {
+                        value = (T)referenceValue;
+                    }
+                }
+
                 return true;
             }
 

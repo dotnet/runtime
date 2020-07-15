@@ -146,7 +146,7 @@ case "$host" in
 		CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -s WASM=1"
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -s WASM=1"
 		libgc_threads=pthreads
-		platform_wasm=yes
+		host_wasm=yes
 		# FIXME:
 		RID="osx-x64"
 		COREARCH="wasm32"
@@ -584,7 +584,7 @@ AM_CONDITIONAL(HOST_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
 AM_CONDITIONAL(HOST_TIZEN, test x$platform_tizen = xyes)
 AM_CONDITIONAL(HOST_IOS, test x$platform_ios = xyes)
-AM_CONDITIONAL(HOST_WASM, test x$platform_wasm = xyes)
+AM_CONDITIONAL(HOST_WASM, test x$host_wasm = xyes)
 AM_CONDITIONAL(HOST_AIX, test x$host_aix = xyes)
 
 if test -z "$HOST_DARWIN_TRUE"; then :
@@ -1409,6 +1409,7 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
+   mono_feature_disable_cfgdir_config='yes'
    if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
@@ -6767,8 +6768,10 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 #
 if test "x$enable_llvm_runtime" = "xyes"; then
 	AC_SUBST(MONO_CXXLD, [$CXX])
+	AC_SUBST(MONO_LIBTOOL_TAG, '--tag=CXX')
 else
 	AC_SUBST(MONO_CXXLD, [$CC])
+	AC_SUBST(MONO_LIBTOOL_TAG, '')
 fi
 
 ### Set -Werror options
@@ -6866,6 +6869,9 @@ if test x$with_core = xonly; then
 			fi
 		elif test x$host_sunos = xyes; then
 			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes
+		elif test x$host_wasm = xyes; then
+			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes
 		else
 			GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"
