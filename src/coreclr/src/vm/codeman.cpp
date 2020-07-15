@@ -6610,14 +6610,15 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     DWORD rva = (DWORD)(currentPC - pRangeSection->LowAddress);
 
-    ReadyToRunInfo * pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
+    PTR_ReadyToRunInfo pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 
-    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+    PTR_IMAGE_DATA_DIRECTORY pDelayLoadMethodCallThunksDir = pReadyToRunInfo->GetDelayMethodCallThunksSection();
     if (pDelayLoadMethodCallThunksDir != NULL)
     {
         if (pDelayLoadMethodCallThunksDir->VirtualAddress <= rva

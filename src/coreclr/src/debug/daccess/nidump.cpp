@@ -3412,7 +3412,7 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
         {
             if (pNgenLayout->m_CodeSections[iRange].IsInRange((TADDR)addr))
             {
-                int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(PTR_TO_TADDR(m_decoder.GetBase()), rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
+                int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
                 if (MethodIndex >= 0)
                 {
 #ifdef FEATURE_EH_FUNCLETS
@@ -3434,7 +3434,7 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
 
         if (pNgenLayout->m_CodeSections[2].IsInRange((TADDR)addr))
         {
-            int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(PTR_TO_TADDR(m_decoder.GetBase()), rva, pNgenLayout->m_pRuntimeFunctions[2], 0, pNgenLayout->m_nRuntimeFunctions[2] - 1);
+            int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(rva, pNgenLayout->m_pRuntimeFunctions[2], 0, pNgenLayout->m_nRuntimeFunctions[2] - 1);
             if (ColdMethodIndex >= 0)
             {
                 PTR_RUNTIME_FUNCTION pRuntimeFunction;
@@ -6394,7 +6394,7 @@ void NativeImageDumper::EntryPointToString( TADDR pEntryPoint,
         {
             if (pNgenLayout->m_CodeSections[iRange].IsInRange(pEntryPoint))
             {
-                int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(PTR_TO_TADDR(m_decoder.GetBase()), rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
+                int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
                 if (MethodIndex >= 0)
                 {
 #ifdef FEATURE_EH_FUNCLETS
