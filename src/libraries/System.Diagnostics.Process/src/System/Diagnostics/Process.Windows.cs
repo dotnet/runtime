@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -368,12 +367,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return unchecked((int)Interop.Kernel32.GetCurrentProcessId());
-        }
-
         /// <summary>
         /// Gets a short-term handle to the process, with the given access.  If a handle exists,
         /// then it is reused.  If the process has exited, it throws an exception.
@@ -460,8 +453,7 @@ namespace System.Diagnostics
             //    * CreateProcess allows you to redirect all or none of the standard IO handles, so we use
             //      GetStdHandle for the handles that are not being redirected
 
-            StringBuilder commandLine = BuildCommandLine(startInfo.FileName, StartInfo.Arguments);
-            Process.AppendArguments(commandLine, StartInfo.ArgumentList);
+            StringBuilder commandLine = BuildCommandLine(startInfo);
 
             Interop.Kernel32.STARTUPINFO startupInfo = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
@@ -662,13 +654,9 @@ namespace System.Diagnostics
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private bool _signaled;
 
-        private static StringBuilder BuildCommandLine(string executableFileName, string arguments)
+        private static StringBuilder BuildCommandLine(ProcessStartInfo startInfo)
         {
             // Construct a StringBuilder with the appropriate command line
             // to pass to CreateProcess.  If the filename isn't already
@@ -676,8 +664,8 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             StringBuilder commandLine = new StringBuilder();
-            string fileName = executableFileName.Trim();
-            bool fileNameIsQuoted = (fileName.StartsWith('\"') && fileName.EndsWith('\"'));
+            ReadOnlySpan<char> fileName = startInfo.FileName.AsSpan().Trim();
+            bool fileNameIsQuoted = fileName.Length > 0 && fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
             if (!fileNameIsQuoted)
             {
                 commandLine.Append('"');
@@ -690,11 +678,7 @@ namespace System.Diagnostics
                 commandLine.Append('"');
             }
 
-            if (!string.IsNullOrEmpty(arguments))
-            {
-                commandLine.Append(' ');
-                commandLine.Append(arguments);
-            }
+            startInfo.AppendArgumentsTo(commandLine);
 
             return commandLine;
         }

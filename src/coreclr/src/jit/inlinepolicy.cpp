@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -1129,7 +1128,6 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     : DefaultPolicy(compiler, isPrejitRoot)
-    , m_Depth(0)
     , m_BlockCount(0)
     , m_Maxstack(0)
     , m_ArgCount(0)
@@ -1270,10 +1268,6 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
         case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
             m_BlockCount = value;
-            break;
-
-        case InlineObservation::CALLSITE_DEPTH:
-            m_Depth = value;
             break;
 
         case InlineObservation::CALLSITE_WEIGHT:
@@ -1810,7 +1804,6 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CallsiteFrequency");
     fprintf(file, ",InstructionCount");
     fprintf(file, ",LoadStoreCount");
-    fprintf(file, ",Depth");
     fprintf(file, ",BlockCount");
     fprintf(file, ",Maxstack");
     fprintf(file, ",ArgCount");
@@ -1893,7 +1886,6 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_CallsiteFrequency);
     fprintf(file, ",%u", m_InstructionCount);
     fprintf(file, ",%u", m_LoadStoreCount);
-    fprintf(file, ",%u", m_Depth);
     fprintf(file, ",%u", m_BlockCount);
     fprintf(file, ",%u", m_Maxstack);
     fprintf(file, ",%u", m_ArgCount);
@@ -2034,7 +2026,7 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
     {
         unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
 
-        if (m_Depth > depthLimit)
+        if (m_CallsiteDepth > depthLimit)
         {
             SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
             return;
@@ -2199,7 +2191,7 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
 
-    if (m_Depth > depthLimit)
+    if (m_CallsiteDepth > depthLimit)
     {
         SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
         return;

@@ -12,34 +12,29 @@ eventpipe_sources = \
 	ep.h		\
 	ep-block.c	\
 	ep-block.h	\
-	ep-block-internals.c	\
+	ep-buffer.c	\
 	ep-buffer.h	\
 	ep-buffer-manager.c	\
 	ep-buffer-manager.h	\
-	ep-buffer-manager-internals.c	\
 	ep-config.c	\
 	ep-config.h	\
-	ep-config-internals.c	\
+	ep-config-internals.h	\
+	ep-event.c	\
 	ep-event.h	\
 	ep-event-instance.h	\
 	ep-event-instance.c	\
-	ep-event-instance-internals.c	\
-	ep-event-internals.c	\
-	ep-event-payload-internals.c	\
+	ep-event-payload.c	\
 	ep-event-payload.h	\
 	ep-event-source.c	\
 	ep-event-source.h	\
-	ep-event-source-internals.c	\
 	ep-file.c	\
 	ep-file.h	\
-	ep-file-internals.c	\
-	ep-internals.c	\
+	ep-getter-setter.h	\
 	ep-metadata-generator.c	\
 	ep-metadata-generator.h	\
-	ep-metadata-generator-internals.c	\
 	ep-provider.c	\
 	ep-provider.h	\
-	ep-provider-internals.c	\
+	ep-provider-internals.h	\
 	ep-rt.h	\
 	ep-rt-config.h	\
 	ep-rt-config-mono.h	\
@@ -49,18 +44,14 @@ eventpipe_sources = \
 	ep-rt-types-mono.h	\
 	ep-thread.c	\
 	ep-thread.h	\
-	ep-thread-internals.c	\
 	ep-types.h	\
 	ep-session.c	\
 	ep-session.h	\
-	ep-session-internals.c	\
 	ep-session-provider.c	\
-	ep-session-provider-internals.h	\
-	ep-session-provider-internals.c	\
+	ep-stack-contents.c	\
+	ep-stack-contents.h	\
 	ep-stream.c	\
-	ep-stream.h	\
-	ep-stream-internals.c	\
-	ep-stack-contents.h
+	ep-stream.h
 
 
 libeventpipe_la_SOURCES = $(eventpipe_sources)

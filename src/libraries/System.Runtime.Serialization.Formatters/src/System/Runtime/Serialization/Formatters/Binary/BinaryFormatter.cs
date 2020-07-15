@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Collections.Concurrent;
@@ -19,7 +18,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal FormatterTypeStyle _typeFormat = FormatterTypeStyle.TypesAlways; // For version resiliency, always put out types
         internal FormatterAssemblyStyle _assemblyFormat = FormatterAssemblyStyle.Simple;
         internal TypeFilterLevel _securityLevel = TypeFilterLevel.Full;
-        internal object[]? _crossAppDomainArray = null;
+        internal object[]? _crossAppDomainArray;
 
         public FormatterTypeStyle TypeFormat { get { return _typeFormat; } set { _typeFormat = value; } }
         public FormatterAssemblyStyle AssemblyFormat { get { return _assemblyFormat; } set { _assemblyFormat = value; } }

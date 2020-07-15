@@ -5,7 +5,8 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 if (CLR_CMAKE_HOST_WIN32)
-    preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+    set (DEF_FILE  ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+    preprocess_file(${DEF_SOURCES} ${DEF_FILE})
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
@@ -65,8 +66,18 @@ add_library_clr(coreclr
     ${CLR_SOURCES}
 )
 
+add_library_clr(coreclr_static
+    STATIC
+    ${CLR_SOURCES}
+)
+
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
+add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
+
+add_dependencies(coreclr coreclr_def)
 add_dependencies(coreclr coreclr_exports)
+add_dependencies(coreclr_static coreclr_def)
+add_dependencies(coreclr_static coreclr_exports)
 
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
@@ -74,10 +85,6 @@ set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
-
-if(FEATURE_MERGE_JIT_AND_ENGINE)
-    set(CLRJIT_STATIC clrjit_static)
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
@@ -88,7 +95,6 @@ set(CORECLR_LIBRARIES
     cordbee_wks
     debug-pal
     ${LIB_UNWINDER}
-    cee_wks
     v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
@@ -97,7 +103,6 @@ set(CORECLR_LIBRARIES
     mdhotdata_full
     bcltype
     ceefgen
-    ${CLRJIT_STATIC}
     comfloat_wks
     corguids
     gcinfo
@@ -159,7 +164,12 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
-target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+if(FEATURE_MERGE_JIT_AND_ENGINE)
+    set(CLRJIT_STATIC clrjit_static)
+endif(FEATURE_MERGE_JIT_AND_ENGINE)
+
+target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks cee_wks_core)
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable cee_wks_core)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
@@ -217,6 +227,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr ADDITIONAL_DESTINATION sharedFramework)
+
+# publish coreclr_static lib
+_install(TARGETS coreclr_static DESTINATION lib)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

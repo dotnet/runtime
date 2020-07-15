@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -41,8 +41,8 @@ namespace System.Data
         private readonly LinkedList<Func<T, object>> _selectors = new LinkedList<Func<T, object>>();
         private readonly LinkedList<Comparison<object>> _comparers = new LinkedList<Comparison<object>>();
 
-        private LinkedListNode<Func<T, object>> _currentSelector = null;
-        private LinkedListNode<Comparison<object>> _currentComparer = null;
+        private LinkedListNode<Func<T, object>>? _currentSelector;
+        private LinkedListNode<Comparison<object>>? _currentComparer;
 
         /// <summary>
         /// Adds a sorting selector/comparer in the correct order
@@ -92,9 +92,9 @@ namespace System.Data
         /// Note: Comparison is done in the order it was Added.
         /// </summary>
         /// <returns>Comparison result of the combined Sort comparer expression</returns>
-        public int Compare(List<object> a, List<object> b)
+        public int Compare([AllowNull] List<object> a, [AllowNull] List<object> b)
         {
-            Debug.Assert(a.Count == Count);
+            Debug.Assert(a != null && b != null && a.Count == Count);
 
             int i = 0;
             foreach (Comparison<object> compare in _comparers)
@@ -131,7 +131,7 @@ namespace System.Data
 
             foreach (Func<T, object> selector in _selectors)
             {
-                if (selector == _currentSelector.Value)
+                if (selector == _currentSelector!.Value)
                 {
                     builder._currentSelector = builder._selectors.AddLast(selector);
                 }
@@ -144,7 +144,7 @@ namespace System.Data
 
             foreach (Comparison<object> comparer in _comparers)
             {
-                if (comparer == _currentComparer.Value)
+                if (comparer == _currentComparer!.Value)
                 {
                     builder._currentComparer = builder._comparers.AddLast(comparer);
                 }
@@ -166,20 +166,20 @@ namespace System.Data
 
             foreach (Func<T, object> selector in _selectors)
             {
-                if (selector == _currentSelector.Value)
+                if (selector == _currentSelector!.Value)
                 {
-                    builder._currentSelector = builder._selectors.AddLast(r => selector((T)(object)r));
+                    builder._currentSelector = builder._selectors.AddLast(r => selector((T)(object)r!));
                 }
                 else
                 {
-                    builder._selectors.AddLast(r => selector((T)(object)r));
+                    builder._selectors.AddLast(r => selector((T)(object)r!));
                 }
             }
 
 
             foreach (Comparison<object> comparer in _comparers)
             {
-                if (comparer == _currentComparer.Value)
+                if (comparer == _currentComparer!.Value)
                 {
                     builder._currentComparer = builder._comparers.AddLast(comparer);
                 }
@@ -191,6 +191,5 @@ namespace System.Data
 
             return builder;
         }
-
     }
 }

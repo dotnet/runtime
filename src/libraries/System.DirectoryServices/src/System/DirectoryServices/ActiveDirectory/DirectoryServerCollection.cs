@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -10,15 +9,15 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class DirectoryServerCollection : CollectionBase
     {
-        internal readonly string siteDN = null;
-        internal readonly string transportDN = null;
-        internal readonly DirectoryContext context = null;
-        internal bool initialized = false;
-        internal readonly Hashtable changeList = null;
+        internal readonly string siteDN;
+        internal readonly string transportDN;
+        internal readonly DirectoryContext context;
+        internal bool initialized;
+        internal readonly Hashtable changeList;
         private readonly ArrayList _copyList = new ArrayList();
-        private readonly DirectoryEntry _crossRefEntry = null;
-        private readonly bool _isADAM = false;
-        private readonly bool _isForNC = false;
+        private readonly DirectoryEntry _crossRefEntry;
+        private readonly bool _isADAM;
+        private readonly bool _isForNC;
 
         internal DirectoryServerCollection(DirectoryContext context, string siteDN, string transportName)
         {

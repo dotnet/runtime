@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "JitBench": {
-      "commandName": "Project",
-      "commandLineArgs": "--iterations 3 --benchmark MusicStore"
-    }
-  }
-}

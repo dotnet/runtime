@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,9 +45,9 @@ namespace System.Net.Http
         private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
 
         // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
-        private int _haveServerControlStream = 0;
-        private int _haveServerQpackDecodeStream = 0;
-        private int _haveServerQpackEncodeStream = 0;
+        private int _haveServerControlStream;
+        private int _haveServerQpackDecodeStream;
+        private int _haveServerQpackEncodeStream;
 
         // Manages MAX_STREAM count from server.
         private long _maximumRequestStreams;
@@ -146,7 +145,7 @@ namespace System.Net.Http
 
                 _ = _connectionClosedTask.ContinueWith(closeTask =>
                 {
-                    if (closeTask.IsFaulted && NetEventSource.IsEnabled)
+                    if (closeTask.IsFaulted && NetEventSource.Log.IsEnabled())
                     {
                         Trace($"{nameof(QuicConnection)} failed to close: {closeTask.Exception!.InnerException}");
                     }
@@ -320,7 +319,7 @@ namespace System.Net.Http
 
             if (firstException != null)
             {
-                if (NetEventSource.IsEnabled && !ReferenceEquals(firstException, abortException))
+                if (NetEventSource.Log.IsEnabled() && !ReferenceEquals(firstException, abortException))
                 {
                     // Lost the race to set the field to another exception, so just trace this one.
                     Trace($"{nameof(abortException)}=={abortException}");
@@ -370,7 +369,7 @@ namespace System.Net.Http
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,
                     // but doesn't specify what client should do if that is violated. Ignore for now.
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("HTTP/3 server sent GOAWAY with increasing stream ID. Retried requests may have been double-processed by server.");
                     }
@@ -569,7 +568,7 @@ namespace System.Net.Http
                         default:
                             // Unknown stream type. Per spec, these must be ignored and aborted but not be considered a connection-level error.
 
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 // Read the rest of the integer, which might be more than 1 byte, so we can log it.
 
@@ -698,7 +697,7 @@ namespace System.Net.Http
             {
                 if (settingsPayloadLength > MaximumSettingsPayloadLength)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Received SETTINGS frame with {settingsPayloadLength} byte payload exceeding the {MaximumSettingsPayloadLength} byte maximum.");
                     }

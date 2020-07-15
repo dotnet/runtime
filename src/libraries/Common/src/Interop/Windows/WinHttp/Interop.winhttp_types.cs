@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -154,6 +153,7 @@ internal partial class Interop
         public const uint WINHTTP_OPTION_HTTP_PROTOCOL_USED = 134;
         public const uint WINHTTP_PROTOCOL_FLAG_HTTP2 = 0x1;
         public const uint WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG = 0x1;
+        public const uint WINHTTP_OPTION_DISABLE_STREAM_QUEUE = 139;
 
         public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
         public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;

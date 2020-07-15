@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -15,11 +14,11 @@ namespace System.Xml.Schema
         private readonly Dictionary<XmlQualifiedName, SchemaAttDef> _attdefs = new Dictionary<XmlQualifiedName, SchemaAttDef>();
         private List<IDtdDefaultAttributeInfo>? _defaultAttdefs;
         private bool _isIdDeclared;
-        private bool _hasNonCDataAttribute = false;
+        private bool _hasNonCDataAttribute;
 
-        private bool _isAbstract = false;
-        private bool _isNillable = false;
-        private bool _hasRequiredAttribute = false;
+        private bool _isAbstract;
+        private bool _isNillable;
+        private bool _hasRequiredAttribute;
         private bool _isNotationDeclared;
         private readonly Dictionary<XmlQualifiedName, XmlQualifiedName> _prohibitedAttributes = new Dictionary<XmlQualifiedName, XmlQualifiedName>();
         private ContentValidator? _contentValidator;

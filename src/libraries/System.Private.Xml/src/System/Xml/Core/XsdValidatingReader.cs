@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.IO;
@@ -86,7 +85,7 @@ namespace System.Xml
         private ArrayList _defaultAttributes;
 
         // Inline Schema
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
 
         // Typed Value & PSVI
         private object? _atomicValue;

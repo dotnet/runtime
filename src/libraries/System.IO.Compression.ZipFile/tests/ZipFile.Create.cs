@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -283,19 +282,23 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
             }
 
-            FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
-            fileWithBadDate.Create().Dispose();
-            fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
+            // Browser VFS does not support saving file attributes, so skip
+            if (!PlatformDetection.IsBrowser)
+            {
+                FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
+                fileWithBadDate.Create().Dispose();
+                fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
 
-            string archivePath = GetTestFilePath();
-            using (FileStream output = File.Open(archivePath, FileMode.Create))
-            using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
-            {
-                archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
-            }
-            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
-            {
-                Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+                string archivePath = GetTestFilePath();
+                using (FileStream output = File.Open(archivePath, FileMode.Create))
+                using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
+                {
+                    archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
+                }
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+                }
             }
         }
 

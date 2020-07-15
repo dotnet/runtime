@@ -1,7 +1,6 @@
 // -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -71,7 +70,7 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, "managed"));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
@@ -150,7 +149,7 @@ public class WasmAppBuilder : Task
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
         {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;
@@ -163,8 +162,14 @@ public class WasmAppBuilder : Task
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
-            var refAssembly = mlc.LoadFromAssemblyName(aname);
-            Add(mlc, refAssembly);
+            try
+            {
+                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
+                Add(mlc, refAssembly);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }

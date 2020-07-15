@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -81,7 +80,7 @@ namespace System.Xml.Schema
     {
         private readonly ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
         private readonly ArrayList _KSs;                  // stack of KSStruct, will not become less
-        private int _KSpointer = 0;              // indicate current stack top (next available element);
+        private int _KSpointer;              // indicate current stack top (next available element);
 
         public int lastDepth
         {
@@ -163,7 +162,7 @@ namespace System.Xml.Schema
     {
         private class DecimalStruct
         {
-            private bool _isDecimal = false;         // rare case it will be used...
+            private bool _isDecimal;         // rare case it will be used...
             private readonly decimal[] _dvalue;               // to accelerate equals operation.  array <-> list
 
             public bool IsDecimal
@@ -188,12 +187,12 @@ namespace System.Xml.Schema
             }
         }
 
-        private DecimalStruct? _dstruct = null;
+        private DecimalStruct? _dstruct;
         private object? _ovalue;
         private readonly string _svalue;      // only for output
         private XmlSchemaDatatype _xsdtype;
         private readonly int _dim = 1;
-        private readonly bool _isList = false;
+        private readonly bool _isList;
 
         public int Dim
         {

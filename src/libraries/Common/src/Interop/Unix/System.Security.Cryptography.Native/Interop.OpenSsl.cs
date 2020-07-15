@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -199,42 +198,11 @@ internal static partial class Interop
                         }
                     }
 
-                    if (hasCertificateAndKey)
+                    if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
-                        bool hasCertReference = false;
-                        try
+                        if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext!.IntermediateCertificates))
                         {
-                            certHandle!.DangerousAddRef(ref hasCertReference);
-                            using (X509Certificate2 cert = new X509Certificate2(certHandle.DangerousGetHandle()))
-                            {
-                                X509Chain? chain = null;
-                                try
-                                {
-                                    chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false);
-                                    if (chain != null && !Ssl.AddExtraChainCertificates(context, chain))
-                                    {
-                                        throw CreateSslException(SR.net_ssl_use_cert_failed);
-                                    }
-                                }
-                                finally
-                                {
-                                    if (chain != null)
-                                    {
-                                        int elementsCount = chain.ChainElements.Count;
-                                        for (int i = 0; i < elementsCount; i++)
-                                        {
-                                            chain.ChainElements[i].Certificate!.Dispose();
-                                        }
-
-                                        chain.Dispose();
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (hasCertReference)
-                                certHandle!.DangerousRelease();
+                            throw CreateSslException(SR.net_ssl_use_cert_failed);
                         }
                     }
 

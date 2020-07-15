@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Inlining Policies
 //
@@ -227,7 +226,6 @@ protected:
         MAX_ARGS = 6
     };
 
-    unsigned    m_Depth;
     unsigned    m_BlockCount;
     unsigned    m_Maxstack;
     unsigned    m_ArgCount;

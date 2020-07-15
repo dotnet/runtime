@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -38,10 +37,14 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ReadyToRunSymbolNodeFactory
     {
         private readonly NodeFactory _codegenNodeFactory;
+        private readonly bool _verifyTypeAndFieldLayout;
 
-        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
+        public bool VerifyTypeAndFieldLayout => _verifyTypeAndFieldLayout;
+
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory, bool verifyTypeAndFieldLayout)
         {
             _codegenNodeFactory = codegenNodeFactory;
+            _verifyTypeAndFieldLayout = verifyTypeAndFieldLayout;
             CreateNodeCaches();
         }
 
@@ -91,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.Check_FieldOffset, key)
+                    new FieldFixupSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_FieldOffset : ReadyToRunFixupKind.Check_FieldOffset, key)
                 );
             });
 
@@ -106,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
                     useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.VirtualEntry,
                         cellKey.Method,
-                        cellKey.IsUnboxingStub, isInstantiatingStub: false),
+                        isInstantiatingStub: false),
                     cellKey.CallingMethod);
             });
 
@@ -114,7 +117,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     ctorKey.Method,
-                    isUnboxingStub: false,
                     isInstantiatingStub: ctorKey.Method.Method.HasInstantiation,
                     isPrecodeImportRequired: false);
 
@@ -129,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.Check_TypeLayout, key)
+                    _codegenNodeFactory.TypeSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_TypeLayout: ReadyToRunFixupKind.Check_TypeLayout, key)
                 );
             });
 
@@ -155,7 +157,6 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.MethodSignature(
                         key.IsIndirect ? ReadyToRunFixupKind.IndirectPInvokeTarget : ReadyToRunFixupKind.PInvokeTarget,
                         key.MethodWithToken,
-                        isUnboxingStub: false,
                         isInstantiatingStub: false));
             });
         }
@@ -341,12 +342,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateMethodHandleHelper(MethodWithToken method)
         {
-            bool useUnboxingStub = method.Method.IsUnboxingThunk();
-            if (useUnboxingStub)
-            {
-                method = new MethodWithToken(method.Method.GetUnboxedMethod(), method.Token, method.ConstrainedType);
-            }
-
             bool useInstantiatingStub = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method.Method;
 
             return new PrecodeHelperImport(
@@ -354,7 +349,6 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.MethodHandle,
                     method,
-                    isUnboxingStub: useUnboxingStub,
                     isInstantiatingStub: useInstantiatingStub));
         }
 
@@ -388,8 +382,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.MethodDictionary, 
-                    method, 
-                    isUnboxingStub: false,
+                    method,
                     isInstantiatingStub: true));
         }
 
@@ -423,9 +416,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, bool isUnboxingStub, MethodDesc callingMethod)
+        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, MethodDesc callingMethod)
         {
-            MethodAndCallSite cellKey = new MethodAndCallSite(method, isUnboxingStub, callingMethod);
+            MethodAndCallSite cellKey = new MethodAndCallSite(method, callingMethod);
             return _interfaceDispatchCells.GetOrAdd(cellKey);
         }
 
@@ -436,7 +429,6 @@ namespace ILCompiler.DependencyAnalysis
             TypeAndMethod ctorKey = new TypeAndMethod(
                 delegateType,
                 method,
-                isUnboxingStub: false,
                 isInstantiatingStub: false,
                 isPrecodeImportRequired: false);
             return _delegateCtors.GetOrAdd(ctorKey);
@@ -452,19 +444,17 @@ namespace ILCompiler.DependencyAnalysis
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>
         {
             public readonly MethodWithToken Method;
-            public readonly bool IsUnboxingStub;
             public readonly MethodDesc CallingMethod;
 
-            public MethodAndCallSite(MethodWithToken method, bool isUnboxingStub, MethodDesc callingMethod)
+            public MethodAndCallSite(MethodWithToken method, MethodDesc callingMethod)
             {
-                IsUnboxingStub = isUnboxingStub;
                 Method = method;
                 CallingMethod = callingMethod;
             }
 
             public bool Equals(MethodAndCallSite other)
             {
-                return Method.Equals(other.Method) && IsUnboxingStub == other.IsUnboxingStub && CallingMethod == other.CallingMethod;
+                return Method.Equals(other.Method) && CallingMethod == other.CallingMethod;
             }
 
             public override bool Equals(object obj)
@@ -475,8 +465,7 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode()
             {
                 return (CallingMethod != null ? unchecked(199 * CallingMethod.GetHashCode()) : 0)
-                    ^ unchecked(31 * Method.GetHashCode())
-                    ^ (IsUnboxingStub ? -0x80000000 : 0);
+                    ^ unchecked(31 * Method.GetHashCode());
             }
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.IO;
@@ -15,15 +14,13 @@ namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private static readonly object s_defaultValue = null;
-
         private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
 
-        private object[] _values;
+        private object?[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;
 
         internal ObjectStorage(DataColumn column, Type type)
-        : base(column, type, s_defaultValue, DBNull.Value, typeof(ICloneable).IsAssignableFrom(type), GetStorageType(type))
+        : base(column, type, null, DBNull.Value, typeof(ICloneable).IsAssignableFrom(type), GetStorageType(type))
         {
             _implementsIXmlSerializable = typeof(IXmlSerializable).IsAssignableFrom(type);
         }
@@ -35,8 +32,8 @@ namespace System.Data.Common
 
         public override int Compare(int recordNo1, int recordNo2)
         {
-            object valueNo1 = _values[recordNo1];
-            object valueNo2 = _values[recordNo2];
+            object? valueNo1 = _values[recordNo1];
+            object? valueNo2 = _values[recordNo2];
 
             if (valueNo1 == valueNo2)
                 return 0;
@@ -45,7 +42,7 @@ namespace System.Data.Common
             if (valueNo2 == null)
                 return 1;
 
-            IComparable icomparable = (valueNo1 as IComparable);
+            IComparable? icomparable = (valueNo1 as IComparable);
             if (null != icomparable)
             {
                 try
@@ -60,13 +57,13 @@ namespace System.Data.Common
             return CompareWithFamilies(valueNo1, valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo1, object value)
+        public override int CompareValueTo(int recordNo1, object? value)
         {
             object valueNo1 = Get(recordNo1);
 
             if (valueNo1 is IComparable)
             {
-                if (value.GetType() == valueNo1.GetType())
+                if (value!.GetType() == valueNo1.GetType())
                     return ((IComparable)valueNo1).CompareTo(value);
             }
 
@@ -90,7 +87,7 @@ namespace System.Data.Common
         }
 
 
-        private int CompareTo(object valueNo1, object valueNo2)
+        private int CompareTo(object? valueNo1, object? valueNo2)
         {
             if (valueNo1 == null)
                 return -1;
@@ -162,8 +159,8 @@ namespace System.Data.Common
                             return 0;
                         }
                     default:
-                        valueNo1 = valueNo1.ToString();
-                        valueNo2 = valueNo2.ToString();
+                        valueNo1 = valueNo1.ToString()!;
+                        valueNo2 = valueNo2.ToString()!;
                         break;
                 }
                 return ((IComparable)valueNo1).CompareTo(valueNo2);
@@ -177,7 +174,7 @@ namespace System.Data.Common
 
         public override object Get(int recordNo)
         {
-            object value = _values[recordNo];
+            object? value = _values[recordNo];
             if (null != value)
             {
                 return value;
@@ -319,7 +316,7 @@ namespace System.Data.Common
             }
             if (type == typeof(Type))
             {
-                return Type.GetType(s);
+                return Type.GetType(s)!;
             }
             if (type == typeof(Guid))
             {
@@ -333,7 +330,7 @@ namespace System.Data.Common
 
             if (_implementsIXmlSerializable)
             {
-                object Obj = System.Activator.CreateInstance(_dataType, true);
+                object Obj = System.Activator.CreateInstance(_dataType, true)!;
                 StringReader strReader = new StringReader(s);
                 using (XmlTextReader xmlTextReader = new XmlTextReader(strReader))
                 {
@@ -351,13 +348,13 @@ namespace System.Data.Common
         [MethodImpl(MethodImplOptions.NoInlining)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
-            object retValue = null;
+            object? retValue = null;
             bool isBaseCLRType = false;
             bool legacyUDT = false; // in 1.0 and 1.1 we used to call ToString on CDT obj. so if we have the same case
             // we need to handle the case when we have column type as object.
             if (null == xmlAttrib)
             { // this means type implements IXmlSerializable
-                Type type = null;
+                Type? type = null;
                 string typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName == null || typeName.Length == 0)
                 { // No CDT polumorphism
@@ -408,7 +405,7 @@ namespace System.Data.Common
                             throw ExceptionBuilder.CanNotDeserializeObjectType();
                         if (!isBaseCLRType)
                         {
-                            retValue = System.Activator.CreateInstance(type, true);
+                            retValue = System.Activator.CreateInstance(type, true)!;
                             Debug.Assert(xmlReader is DataTextReader, "Invalid DataTextReader is being passed to customer");
                             ((IXmlSerializable)retValue).ReadXml(xmlReader);
                         }
@@ -428,7 +425,7 @@ namespace System.Data.Common
                                 }
                                 else
                                 {
-                                    retValue = Convert.FromBase64String(retValue.ToString());
+                                    retValue = Convert.FromBase64String(retValue.ToString()!);
                                 }
                             }
                             xmlReader.Read();
@@ -441,7 +438,7 @@ namespace System.Data.Common
                 XmlSerializer deserializerWithRootAttribute = ObjectStorage.GetXmlSerializer(_dataType, xmlAttrib);
                 retValue = deserializerWithRootAttribute.Deserialize(xmlReader);
             }
-            return retValue;
+            return retValue!;
         }
 
         public override string ConvertObjectToXml(object value)
@@ -456,7 +453,7 @@ namespace System.Data.Common
             }
             if ((type == typeof(Type)) || ((type == typeof(object)) && (value is Type)))
             {
-                return ((Type)value).AssemblyQualifiedName;
+                return ((Type)value).AssemblyQualifiedName!;
             }
 
             if (!IsTypeCustomType(value.GetType()))
@@ -466,7 +463,7 @@ namespace System.Data.Common
 
             if (Type.GetTypeCode(value.GetType()) != TypeCode.Object)
             {
-                return value.ToString();
+                return value.ToString()!;
             }
 
             StringWriter strwriter = new StringWriter(FormatProvider);
@@ -484,7 +481,7 @@ namespace System.Data.Common
             return strwriter.ToString();
         }
 
-        public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute xmlAttrib)
+        public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)
             { // implements IXmlSerializable
@@ -505,14 +502,13 @@ namespace System.Data.Common
 
         protected override void CopyValue(int record, object store, BitArray nullbits, int storeIndex)
         {
-            object[] typedStore = (object[])store;
+            object?[] typedStore = (object?[])store;
             typedStore[storeIndex] = _values[record];
             bool isNull = IsNull(record);
             nullbits.Set(storeIndex, isNull);
 
-            if (!isNull && (typedStore[storeIndex] is DateTime))
+            if (!isNull && (typedStore[storeIndex] is DateTime dt))
             {
-                DateTime dt = (DateTime)typedStore[storeIndex];
                 if (dt.Kind == DateTimeKind.Local)
                 {
                     typedStore[storeIndex] = DateTime.SpecifyKind(dt.ToUniversalTime(), DateTimeKind.Local);
@@ -525,19 +521,15 @@ namespace System.Data.Common
             _values = (object[])store;
             for (int i = 0; i < _values.Length; i++)
             {
-                if (_values[i] is DateTime)
+                if (_values[i] is DateTime dt && dt.Kind == DateTimeKind.Local)
                 {
-                    DateTime dt = (DateTime)_values[i];
-                    if (dt.Kind == DateTimeKind.Local)
-                    {
-                        _values[i] = (DateTime.SpecifyKind(dt, DateTimeKind.Utc)).ToLocalTime();
-                    }
+                    _values[i] = (DateTime.SpecifyKind(dt, DateTimeKind.Utc)).ToLocalTime();
                 }
             }
         }
 
         private static readonly object s_tempAssemblyCacheLock = new object();
-        private static Dictionary<KeyValuePair<Type, XmlRootAttribute>, XmlSerializer> s_tempAssemblyCache;
+        private static Dictionary<KeyValuePair<Type, XmlRootAttribute>, XmlSerializer>? s_tempAssemblyCache;
         private static readonly XmlSerializerFactory s_serializerFactory = new XmlSerializerFactory();
 
         /// <summary>
@@ -569,11 +561,11 @@ namespace System.Data.Common
 
         internal static XmlSerializer GetXmlSerializer(Type type, XmlRootAttribute attribute)
         {
-            XmlSerializer serializer = null;
+            XmlSerializer? serializer = null;
             KeyValuePair<Type, XmlRootAttribute> key = new KeyValuePair<Type, XmlRootAttribute>(type, attribute);
 
             // _tempAssemblyCache is a readonly instance, lock on write to copy & add then replace the original instance.
-            Dictionary<KeyValuePair<Type, XmlRootAttribute>, XmlSerializer> cache = s_tempAssemblyCache;
+            Dictionary<KeyValuePair<Type, XmlRootAttribute>, XmlSerializer>? cache = s_tempAssemblyCache;
             if ((null == cache) || !cache.TryGetValue(key, out serializer))
             {   // not in cache, try again with lock because it may need to grow
                 lock (s_tempAssemblyCacheLock)

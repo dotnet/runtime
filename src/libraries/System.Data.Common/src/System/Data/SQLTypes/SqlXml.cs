@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Xml;
@@ -17,14 +16,14 @@ namespace System.Data.SqlTypes
     [XmlSchemaProvider("GetXsdType")]
     public sealed class SqlXml : INullable, IXmlSerializable
     {
-        private static readonly Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> s_sqlReaderDelegate = CreateSqlReaderDelegate();
+        private static readonly Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader> s_sqlReaderDelegate = CreateSqlReaderDelegate();
         private static readonly XmlReaderSettings s_defaultXmlReaderSettings = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment };
         private static readonly XmlReaderSettings s_defaultXmlReaderSettingsCloseInput = new XmlReaderSettings() { ConformanceLevel = ConformanceLevel.Fragment, CloseInput = true };
-        private static MethodInfo s_createSqlReaderMethodInfo;
-        private MethodInfo _createSqlReaderMethodInfo;
+        private static MethodInfo? s_createSqlReaderMethodInfo;
+        private MethodInfo? _createSqlReaderMethodInfo;
 
         private bool _fNotNull; // false if null, the default ctor (plain 0) will make it Null
-        private Stream _stream;
+        private Stream? _stream;
         private bool _firstCreateReader;
 
         public SqlXml()
@@ -39,7 +38,7 @@ namespace System.Data.SqlTypes
             SetNull();
         }
 
-        public SqlXml(XmlReader value)
+        public SqlXml(XmlReader? value)
         {
             // whoever pass in the XmlReader is responsible for closing it
             if (value == null)
@@ -54,7 +53,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public SqlXml(Stream value)
+        public SqlXml(Stream? value)
         {
             // whoever pass in the stream is responsible for closing it
             // similar to SqlBytes implementation
@@ -77,7 +76,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
             }
 
-            SqlXmlStreamWrapper stream = new SqlXmlStreamWrapper(_stream);
+            SqlXmlStreamWrapper stream = new SqlXmlStreamWrapper(_stream!);
 
             // if it is the first time we create reader and stream does not support CanSeek, no need to reset position
             if ((!_firstCreateReader || stream.CanSeek) && stream.Position != 0)
@@ -119,21 +118,20 @@ namespace System.Data.SqlTypes
             }
         }
 
-        private static Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> CreateSqlReaderDelegate()
+        private static Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader> CreateSqlReaderDelegate()
         {
             Debug.Assert(CreateSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
-            return CreateSqlReaderMethodInfo.CreateDelegate<Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>>();
+            return CreateSqlReaderMethodInfo.CreateDelegate<Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader>>();
         }
 
         private static MethodInfo CreateSqlReaderMethodInfo
         {
-            [DynamicDependency("CreateSqlReader", typeof(System.Xml.XmlReader))]
             get
             {
                 if (s_createSqlReaderMethodInfo == null)
                 {
-                    s_createSqlReaderMethodInfo = typeof(System.Xml.XmlReader).GetMethod("CreateSqlReader", BindingFlags.Static | BindingFlags.NonPublic);
+                    s_createSqlReaderMethodInfo = typeof(System.Xml.XmlReader).GetMethod("CreateSqlReader", BindingFlags.Static | BindingFlags.NonPublic)!;
                 }
 
                 return s_createSqlReaderMethodInfo;
@@ -153,7 +151,7 @@ namespace System.Data.SqlTypes
                 if (IsNull)
                     throw new SqlNullValueException();
 
-                StringWriter sw = new StringWriter((System.IFormatProvider)null);
+                StringWriter sw = new StringWriter((System.IFormatProvider)null!);
                 XmlWriterSettings writerSettings = new XmlWriterSettings();
                 writerSettings.CloseOutput = false;     // don't close the memory stream
                 writerSettings.ConformanceLevel = ConformanceLevel.Fragment;
@@ -215,7 +213,7 @@ namespace System.Data.SqlTypes
             return writerStream;
         }
 
-        XmlSchema IXmlSerializable.GetSchema()
+        XmlSchema? IXmlSerializable.GetSchema()
         {
             return null;
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -20,44 +19,44 @@ namespace System.Data
     [DefaultEvent("PositionChanged")]
     public class DataView : MarshalByValueComponent, IBindingListView, System.ComponentModel.ITypedList, ISupportInitializeNotification
     {
-        private DataViewManager _dataViewManager;
-        private DataTable _table;
-        private bool _locked = false;
-        private Index _index;
-        private Dictionary<string, Index> _findIndexes;
+        private DataViewManager? _dataViewManager;
+        private DataTable? _table;
+        private bool _locked;
+        private Index? _index;
+        private Dictionary<string, Index>? _findIndexes;
 
         private string _sort = string.Empty;
 
         /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
-        private System.Comparison<DataRow> _comparison;
+        private System.Comparison<DataRow>? _comparison;
 
         /// <summary>
         /// IFilter will allow LinqDataView to wrap <see cref='System.Predicate&lt;DataRow&gt;'/> instead of using a DataExpression
         /// </summary>
-        private IFilter _rowFilter = null;
+        private IFilter? _rowFilter;
 
         private DataViewRowState _recordStates = DataViewRowState.CurrentRows;
 
         private bool _shouldOpen = true;
-        private bool _open = false;
+        private bool _open;
         private bool _allowNew = true;
         private bool _allowEdit = true;
         private bool _allowDelete = true;
-        private bool _applyDefaultSort = false;
+        private bool _applyDefaultSort;
 
-        internal DataRow _addNewRow;
-        private ListChangedEventArgs _addNewMoved;
+        internal DataRow? _addNewRow;
+        private ListChangedEventArgs? _addNewMoved;
 
-        private System.ComponentModel.ListChangedEventHandler _onListChanged;
+        private System.ComponentModel.ListChangedEventHandler? _onListChanged;
         internal static ListChangedEventArgs s_resetEventArgs = new ListChangedEventArgs(ListChangedType.Reset, -1);
 
-        private DataTable _delayedTable = null;
-        private string _delayedRowFilter = null;
-        private string _delayedSort = null;
+        private DataTable? _delayedTable;
+        private string? _delayedRowFilter;
+        private string? _delayedSort;
         private DataViewRowState _delayedRecordStates = (DataViewRowState)(-1);
-        private bool _fInitInProgress = false;
-        private bool _fEndInitInProgress = false;
+        private bool _fInitInProgress;
+        private bool _fEndInitInProgress;
 
         /// <summary>
         /// You can't delay create the DataRowView instances since multiple thread read access is valid
@@ -81,17 +80,17 @@ namespace System.Data
 
             private DataRowReferenceComparer() { }
 
-            public bool Equals(DataRow x, DataRow y) => x == (object)y;
+            public bool Equals(DataRow? x, DataRow? y) => x == (object?)y;
 
             public int GetHashCode(DataRow obj) => obj._objectID;
         }
 
-        private readonly DataViewListener _dvListener = null;
+        private readonly DataViewListener _dvListener;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
-        internal DataView(DataTable table, bool locked)
+        internal DataView(DataTable? table, bool locked)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataView.DataView|INFO> {0}, table={1}, locked={2}", ObjectID, (table != null) ? table.ObjectID : 0, locked);
@@ -114,7 +113,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
-        public DataView(DataTable table) : this(table, false)
+        public DataView(DataTable? table) : this(table, false)
         {
             SetIndex2("", DataViewRowState.CurrentRows, null, true);
         }
@@ -123,7 +122,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
-        public DataView(DataTable table, string RowFilter, string Sort, DataViewRowState RowState)
+        public DataView(DataTable table, string? RowFilter, string? Sort, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> {0}, table={1}, RowFilter='{2}', Sort='{3}', RowState={4}",
@@ -163,7 +162,7 @@ namespace System.Data
             SetIndex(Sort, RowState, newFilter);
         }
 
-        internal DataView(DataTable table, System.Predicate<DataRow> predicate, System.Comparison<DataRow> comparison, DataViewRowState RowState)
+        internal DataView(DataTable table, System.Predicate<DataRow>? predicate, System.Comparison<DataRow>? comparison, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> %d#, table=%d, RowState=%d{ds.DataViewRowState}\n",
@@ -286,7 +285,7 @@ namespace System.Data
         /// Gets the <see cref='System.Data.DataViewManager'/> associated with this <see cref='System.Data.DataView'/> .
         /// </summary>
         [Browsable(false)]
-        public DataViewManager DataViewManager => _dataViewManager;
+        public DataViewManager? DataViewManager => _dataViewManager;
 
         [Browsable(false)]
         public bool IsInitialized => !_fInitInProgress;
@@ -304,11 +303,11 @@ namespace System.Data
         /// Gets or sets the expression used to filter which rows are viewed in the <see cref='System.Data.DataView'/>.
         /// </summary>
         [DefaultValue("")]
-        public virtual string RowFilter
+        public virtual string? RowFilter
         {
             get
             {
-                DataExpression expression = (_rowFilter as DataExpression);
+                DataExpression? expression = (_rowFilter as DataExpression);
                 return (expression == null ? "" : expression.Expression); // CONSIDER: return optimized expression here
             }
             set
@@ -339,11 +338,11 @@ namespace System.Data
         /// The predicate delegate that will determine if a DataRow should be contained within the view.
         /// This RowPredicate property is mutually exclusive with the RowFilter property.
         /// </summary>
-        internal Predicate<DataRow> RowPredicate
+        internal Predicate<DataRow>? RowPredicate
         {
             get
             {
-                RowPredicateFilter filter = (GetFilter() as RowPredicateFilter);
+                RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
                 return ((null != filter) ? filter._predicateFilter : null);
             }
             set
@@ -452,7 +451,7 @@ namespace System.Data
 
         /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
-        internal System.Comparison<DataRow> SortComparison
+        internal System.Comparison<DataRow>? SortComparison
         {
             get { return _comparison; }
             set
@@ -474,7 +473,7 @@ namespace System.Data
         [TypeConverterAttribute(typeof(DataTableTypeConverter))]
         [DefaultValue(null)]
         [RefreshProperties(RefreshProperties.All)]
-        public DataTable Table
+        public DataTable? Table
         {
             get { return _table; }
             set
@@ -519,7 +518,7 @@ namespace System.Data
             }
         }
 
-        object IList.this[int recordIndex]
+        object? IList.this[int recordIndex]
         {
             get { return this[recordIndex]; }
             set { throw ExceptionBuilder.SetIListObject(); }
@@ -555,7 +554,8 @@ namespace System.Data
 
                 Debug.Assert(null == _addNewRow, "AddNew addNewRow is not null");
 
-                _addNewRow = _table.NewRow();
+                // TODO: This will throw NRE if _table isn't set (e.g. default ctor)
+                _addNewRow = _table!.NewRow();
                 DataRowView drv = new DataRowView(this, _addNewRow);
                 _rowViewCache.Add(_addNewRow, drv);
                 OnListChanged(new ListChangedEventArgs(ListChangedType.ItemAdded, IndexOf(drv)));
@@ -722,33 +722,36 @@ namespace System.Data
         public int Find(object key) => FindByKey(key);
 
         /// <summary>Find index of a DataRowView instance that matches the specified primary key value.</summary>
-        internal virtual int FindByKey(object key) => _index.FindRecordByKey(key);
+        // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
+        internal virtual int FindByKey(object key) => _index!.FindRecordByKey(key);
 
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key values.
         /// </summary>
-        public int Find(object[] key) => FindByKey(key);
+        public int Find(object?[] key) => FindByKey(key);
 
         /// <summary>Find index of a DataRowView instance that matches the specified primary key values.</summary>
-        internal virtual int FindByKey(object[] key) => _index.FindRecordByKey(key);
+        // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
+        internal virtual int FindByKey(object?[] key) => _index!.FindRecordByKey(key);
 
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key value.
         /// </summary>
-        public DataRowView[] FindRows(object key) => FindRowsByKey(new object[] { key });
+        public DataRowView[] FindRows(object? key) => FindRowsByKey(new object?[] { key });
 
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key values.
         /// </summary>
-        public DataRowView[] FindRows(object[] key) => FindRowsByKey(key);
+        public DataRowView[] FindRows(object?[] key) => FindRowsByKey(key);
 
         /// <summary>Find DataRowView instances that match the specified primary key values.</summary>
-        internal virtual DataRowView[] FindRowsByKey(object[] key)
+        internal virtual DataRowView[] FindRowsByKey(object?[] key)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataView.FindRows|API> {0}", ObjectID);
             try
             {
-                Range range = _index.FindRecords(key);
+                // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
+                Range range = _index!.FindRecords(key);
                 return GetDataRowViewFromRange(range);
             }
             finally
@@ -760,7 +763,8 @@ namespace System.Data
         /// <summary>This method exists for LinqDataView to keep a level of abstraction away from the RBTree</summary>
         internal Range FindRecords<TKey, TRow>(Index.ComparisonBySelector<TKey, TRow> comparison, TKey key) where TRow : DataRow
         {
-            return _index.FindRecords(comparison, key);
+            // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
+            return _index!.FindRecords(comparison, key);
         }
 
         /// <summary>Convert a Range into a DataRowView[].</summary>
@@ -792,7 +796,7 @@ namespace System.Data
                     // MaintainDataView will translate the ItemAdded from the RowCollection into
                     // into either an ItemMoved or no event, since it didn't change position.
                     // also possible it's added to the RowCollection but filtered out of the view.
-                    _table.Rows.Add(newRow);
+                    _table!.Rows.Add(newRow);
                 }
                 else
                 {
@@ -835,7 +839,7 @@ namespace System.Data
 
         bool IList.IsFixedSize => false;
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             if (value == null)
             {
@@ -851,13 +855,13 @@ namespace System.Data
             throw ExceptionBuilder.CanNotClear();
         }
 
-        bool IList.Contains(object value) => (0 <= IndexOf(value as DataRowView));
+        bool IList.Contains(object? value) => (0 <= IndexOf(value as DataRowView));
 
-        int IList.IndexOf(object value) => IndexOf(value as DataRowView);
+        int IList.IndexOf(object? value) => IndexOf(value as DataRowView);
 
         /// <summary>Return positional index of a <see cref="DataRowView"/> in this DataView</summary>
         /// <remarks>Behavioral change: will now return -1 once a DataRowView becomes detached.</remarks>
-        internal int IndexOf(DataRowView rowview)
+        internal int IndexOf(DataRowView? rowview)
         {
             if (null != rowview)
             {
@@ -867,7 +871,7 @@ namespace System.Data
                 }
                 if ((null != _index) && (DataRowState.Detached != rowview.Row.RowState))
                 {
-                    DataRowView cached; // verify the DataRowView is one we currently track - not something previously detached
+                    DataRowView? cached; // verify the DataRowView is one we currently track - not something previously detached
                     if (_rowViewCache.TryGetValue(rowview.Row, out cached) && cached == (object)rowview)
                     {
                         return IndexOfDataRowView(rowview);
@@ -882,15 +886,15 @@ namespace System.Data
             // rowview.GetRecord() may return the proposed record
             // the index will only contain the original or current record, never proposed.
             // return index.GetIndex(rowview.GetRecord());
-            return _index.GetIndex(rowview.Row.GetRecordFromVersion(rowview.Row.GetDefaultRowVersion(RowStateFilter) & ~DataRowVersion.Proposed));
+            return _index!.GetIndex(rowview.Row.GetRecordFromVersion(rowview.Row.GetDefaultRowVersion(RowStateFilter) & ~DataRowVersion.Proposed));
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw ExceptionBuilder.InsertExternalObject();
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             int index = IndexOf(value as DataRowView);
             if (0 <= index)
@@ -906,14 +910,14 @@ namespace System.Data
 
         void IList.RemoveAt(int index) => Delete(index);
 
-        internal Index GetFindIndex(string column, bool keepIndex)
+        internal Index? GetFindIndex(string column, bool keepIndex)
         {
             if (_findIndexes == null)
             {
                 _findIndexes = new Dictionary<string, Index>();
             }
 
-            Index findIndex;
+            Index? findIndex;
             if (_findIndexes.TryGetValue(column, out findIndex))
             {
                 if (!keepIndex)
@@ -930,7 +934,7 @@ namespace System.Data
             {
                 if (keepIndex)
                 {
-                    findIndex = _table.GetIndex(column, _recordStates, GetFilter());
+                    findIndex = _table!.GetIndex(column, _recordStates, GetFilter());
                     _findIndexes[column] = findIndex;
                     findIndex.AddRef();
                 }
@@ -941,7 +945,8 @@ namespace System.Data
         #endregion
 
         #region IBindingList implementation
-
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         bool IBindingList.AllowNew => AllowNew;
         object IBindingList.AddNew() => AddNew();
         bool IBindingList.AllowEdit => AllowEdit;
@@ -962,9 +967,10 @@ namespace System.Data
             return null;
         }
 
-        ListSortDirection IBindingList.SortDirection => (_index._indexFields.Length == 1 && _index._indexFields[0].IsDescending) ?
+        ListSortDirection IBindingList.SortDirection => (_index!._indexFields.Length == 1 && _index._indexFields[0].IsDescending) ?
             ListSortDirection.Descending :
             ListSortDirection.Ascending;
+#nullable enable
         #endregion
 
         #region ListChanged & Initialized events
@@ -972,7 +978,7 @@ namespace System.Data
         /// <summary>
         /// Occurs when the list managed by the <see cref='System.Data.DataView'/> changes.
         /// </summary>
-        public event ListChangedEventHandler ListChanged
+        public event ListChangedEventHandler? ListChanged
         {
             add
             {
@@ -986,7 +992,7 @@ namespace System.Data
             }
         }
 
-        public event EventHandler Initialized;
+        public event EventHandler? Initialized;
 
         #endregion
 
@@ -1005,13 +1011,13 @@ namespace System.Data
             if (property != null)
             {
                 bool created = false;
-                Index findIndex = null;
+                Index? findIndex = null;
                 try
                 {
                     if ((null == _findIndexes) || !_findIndexes.TryGetValue(property.Name, out findIndex))
                     {
                         created = true;
-                        findIndex = _table.GetIndex(property.Name, _recordStates, GetFilter());
+                        findIndex = _table!.GetIndex(property.Name, _recordStates, GetFilter());
                         findIndex.AddRef();
                     }
                     Range recordRange = findIndex.FindRecords(key);
@@ -1019,7 +1025,7 @@ namespace System.Data
                     if (!recordRange.IsNull)
                     {
                         // check to see if key is equal
-                        return _index.GetIndex(findIndex.GetRecord(recordRange.Min));
+                        return _index!.GetIndex(findIndex.GetRecord(recordRange.Min));
                     }
                 }
                 finally
@@ -1076,7 +1082,7 @@ namespace System.Data
                     throw ExceptionBuilder.ArgumentNull(nameof(PropertyDescriptor));
                 }
 
-                if (!_table.Columns.Contains(property.Name))
+                if (!_table!.Columns.Contains(property.Name))
                 {
                     // just check if column does not exist, we will handle duplicate column in Sort
                     throw ExceptionBuilder.ColumnToSortIsOutOfRange(property.Name);
@@ -1112,6 +1118,8 @@ namespace System.Data
             return resultString.ToString();
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         void IBindingListView.RemoveFilter()
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.RemoveFilter|API> {0}", ObjectID);
@@ -1123,6 +1131,7 @@ namespace System.Data
             get { return RowFilter; }
             set { RowFilter = value; }
         }
+#nullable enable
 
         ListSortDescriptionCollection IBindingListView.SortDescriptions => GetSortDescriptions();
 
@@ -1167,10 +1176,10 @@ namespace System.Data
                 }
                 else
                 {
-                    DataSet dataSet = _table.DataSet;
+                    DataSet? dataSet = _table.DataSet;
                     if (dataSet != null)
                     {
-                        DataTable foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                        DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
                         if (foundTable != null)
                         {
                             return foundTable.TableName;
@@ -1191,13 +1200,13 @@ namespace System.Data
                 }
                 else
                 {
-                    DataSet dataSet = _table.DataSet;
+                    DataSet? dataSet = _table.DataSet;
                     if (dataSet == null)
                     {
                         return new PropertyDescriptorCollection(null);
                     }
 
-                    DataTable foundTable = dataSet.FindTable(_table, listAccessors, 0);
+                    DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
                     if (foundTable != null)
                     {
                         return foundTable.GetPropertyDescriptorCollection(null);
@@ -1212,7 +1221,7 @@ namespace System.Data
         /// <summary>
         /// Gets the filter for the <see cref='System.Data.DataView'/>.
         /// </summary>
-        internal virtual IFilter GetFilter() => _rowFilter;
+        internal virtual IFilter? GetFilter() => _rowFilter;
 
         private int GetRecord(int recordIndex)
         {
@@ -1221,8 +1230,8 @@ namespace System.Data
                 throw ExceptionBuilder.RowOutOfRange(recordIndex);
             }
 
-            return recordIndex == _index.RecordCount ?
-                _addNewRow.GetDefaultRecord() :
+            return recordIndex == _index!.RecordCount ?
+                _addNewRow!.GetDefaultRecord() :
                 _index.GetRecord(recordIndex);
         }
 
@@ -1240,10 +1249,10 @@ namespace System.Data
                 // then this special case code would go away
                 return _addNewRow;
             }
-            return _table._recordManager[GetRecord(index)];
+            return _table!._recordManager[GetRecord(index)]!;
         }
 
-        private DataRowView GetRowView(int record) => GetRowView(_table._recordManager[record]);
+        private DataRowView GetRowView(int record) => GetRowView(_table!._recordManager[record]!);
 
         private DataRowView GetRowView(DataRow dr) => _rowViewCache[dr];
 
@@ -1254,7 +1263,7 @@ namespace System.Data
                 OnListChanged(e);
             }
 
-            if (_addNewRow != null && _index.RecordCount == 0)
+            if (_addNewRow != null && _index!.RecordCount == 0)
             {
                 FinishAddNew(false);
             }
@@ -1288,9 +1297,9 @@ namespace System.Data
             IndexListChanged(this, e);
         }
 
-        internal void MaintainDataView(ListChangedType changedType, DataRow row, bool trackAddRemove)
+        internal void MaintainDataView(ListChangedType changedType, DataRow? row, bool trackAddRemove)
         {
-            DataRowView buffer = null;
+            DataRowView? buffer = null;
             switch (changedType)
             {
                 case ListChangedType.ItemAdded:
@@ -1367,8 +1376,8 @@ namespace System.Data
             DataCommonEventSource.Log.Trace("<ds.DataView.OnListChanged|INFO> {0}, ListChangedType={1}", ObjectID, e.ListChangedType);
             try
             {
-                DataColumn col = null;
-                string propertyName = null;
+                DataColumn? col = null;
+                string? propertyName = null;
                 switch (e.ListChangedType)
                 {
                     case ListChangedType.ItemChanged:
@@ -1448,14 +1457,14 @@ namespace System.Data
         {
             if (IsOpen)
             {
-                _index.Reset();
+                _index!.Reset();
             }
         }
 
         internal void ResetRowViewCache()
         {
             Dictionary<DataRow, DataRowView> rvc = new Dictionary<DataRow, DataRowView>(CountFromIndex, DataRowReferenceComparer.s_default);
-            DataRowView drv;
+            DataRowView? drv;
 
             if (null != _index)
             {
@@ -1463,7 +1472,7 @@ namespace System.Data
                 RBTree<int>.RBTreeEnumerator iterator = _index.GetEnumerator(0);
                 while (iterator.MoveNext())
                 {
-                    DataRow row = _table._recordManager[iterator.Current];
+                    DataRow row = _table!._recordManager[iterator.Current]!;
                     if (!_rowViewCache.TryGetValue(row, out drv))
                     {
                         drv = new DataRowView(this, row);
@@ -1481,7 +1490,7 @@ namespace System.Data
             _rowViewCache = rvc;
         }
 
-        internal void SetDataViewManager(DataViewManager dataViewManager)
+        internal void SetDataViewManager(DataViewManager? dataViewManager)
         {
             if (_table == null)
                 throw ExceptionBuilder.CanNotUse();
@@ -1518,12 +1527,12 @@ namespace System.Data
             }
         }
 
-        internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter newRowFilter)
+        internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             SetIndex2(newSort, newRowStates, newRowFilter, true);
         }
 
-        internal void SetIndex2(string newSort, DataViewRowState newRowStates, IFilter newRowFilter, bool fireEvent)
+        internal void SetIndex2(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.SetIndex|INFO> {0}, newSort='{1}', newRowStates={2}", ObjectID, newSort, newRowStates);
             _sort = newSort;
@@ -1575,7 +1584,7 @@ namespace System.Data
                 if (_open != _shouldOpen || force)
                 {
                     _open = _shouldOpen;
-                    Index newIndex = null;
+                    Index? newIndex = null;
                     if (_open)
                     {
                         if (_table != null)
@@ -1629,34 +1638,34 @@ namespace System.Data
 
         internal void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataRelationPropertyDescriptor NullProp = null;
+            DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
                 e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
                 e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
-            /*default*/ null
+            /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
         internal void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataRelationPropertyDescriptor NullProp = null;
+            DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
                 e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
                 e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
-            /*default*/ null
+            /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
         protected virtual void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataColumnPropertyDescriptor NullProp = null;
+            DataColumnPropertyDescriptor? NullProp = null;
             OnListChanged(
                 e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
                 e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
-                /*default*/ null
+                /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
@@ -1666,13 +1675,13 @@ namespace System.Data
         public DataTable ToTable() =>
             ToTable(null, false, Array.Empty<string>());
 
-        public DataTable ToTable(string tableName) =>
+        public DataTable ToTable(string? tableName) =>
             ToTable(tableName, false, Array.Empty<string>());
 
         public DataTable ToTable(bool distinct, params string[] columnNames) =>
             ToTable(null, distinct, columnNames);
 
-        public DataTable ToTable(string tableName, bool distinct, params string[] columnNames)
+        public DataTable ToTable(string? tableName, bool distinct, params string[] columnNames)
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.ToTable|API> {0}, TableName='{1}', distinct={2}", ObjectID, tableName, distinct);
 
@@ -1682,7 +1691,7 @@ namespace System.Data
             }
 
             DataTable dt = new DataTable();
-            dt.Locale = _table.Locale;
+            dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
             dt.TableName = ((null != tableName) ? tableName : _table.TableName);
             dt.Namespace = _table.Namespace;
@@ -1690,7 +1699,7 @@ namespace System.Data
 
             if (columnNames.Length == 0)
             {
-                columnNames = new string[Table.Columns.Count];
+                columnNames = new string[Table!.Columns.Count];
                 for (int i = 0; i < columnNames.Length; i++)
                 {
                     columnNames[i] = Table.Columns[i].ColumnName;
@@ -1703,7 +1712,7 @@ namespace System.Data
 
             for (int i = 0; i < columnNames.Length; i++)
             {
-                DataColumn dc = Table.Columns[columnNames[i]];
+                DataColumn? dc = Table!.Columns[columnNames[i]];
                 if (dc == null)
                 {
                     throw ExceptionBuilder.ColumnNotInTheUnderlyingTable(columnNames[i], Table.TableName);
@@ -1752,7 +1761,7 @@ namespace System.Data
         /// If <paramref name="view"/> is equivalent to the current view with regards to all properties.
         /// <see cref="RowFilter"/> and <see cref="Sort"/> may differ by <see cref="StringComparison.OrdinalIgnoreCase"/>.
         /// </summary>
-        public virtual bool Equals(DataView view)
+        public virtual bool Equals(DataView? view)
         {
             if ((null == view) ||
                Table != view.Table ||

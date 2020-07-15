@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -50,6 +49,8 @@ namespace Internal.Cryptography.Pal
         internal X500DistinguishedName Issuer;
         internal X500DistinguishedName Subject;
         internal List<X509Extension> Extensions;
+        internal string IssuerName;
+        internal string SubjectName;
 
         internal int Version => certificate.TbsCertificate.Version;
 
@@ -82,6 +83,8 @@ namespace Internal.Cryptography.Pal
             certificate.TbsCertificate.ValidateVersion();
             Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
             Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
+            IssuerName = Issuer.Name;
+            SubjectName = Subject.Name;
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);

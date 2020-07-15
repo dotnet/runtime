@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -11,6 +10,7 @@ namespace System.Net.Http
     {
         public ByteArrayContent(byte[] content) { }
         public ByteArrayContent(byte[] content, int offset, int count) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -140,6 +140,7 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected virtual System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
@@ -148,6 +149,8 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task LoadIntoBufferAsync(long maxBufferSize) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ReadAsByteArrayAsync() { throw null; }
         public System.Threading.Tasks.Task<byte[]> ReadAsByteArrayAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.IO.Stream ReadAsStream() { throw null; }
+        public System.IO.Stream ReadAsStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync() { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<string> ReadAsStringAsync() { throw null; }
@@ -249,6 +252,7 @@ namespace System.Net.Http
         public MultipartContent(string subtype) { }
         public MultipartContent(string subtype, string boundary) { }
         public virtual void Add(System.Net.Http.HttpContent content) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -271,6 +275,7 @@ namespace System.Net.Http
     public sealed partial class ReadOnlyMemoryContent : System.Net.Http.HttpContent
     {
         public ReadOnlyMemoryContent(System.ReadOnlyMemory<byte> content) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -310,6 +315,7 @@ namespace System.Net.Http
     {
         public StreamContent(System.IO.Stream content) { }
         public StreamContent(System.IO.Stream content, int bufferSize) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }

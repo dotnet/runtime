@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -19,8 +18,8 @@ namespace System.DirectoryServices.AccountManagement
             _p = p;
         }
 
-        private bool _badPasswordAttemptChanged = false;
-        private QbeMatchType _badPasswordAttemptVal = null;
+        private bool _badPasswordAttemptChanged;
+        private QbeMatchType _badPasswordAttemptVal;
         private readonly Principal _p;
 
         public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match)
@@ -37,8 +36,8 @@ namespace System.DirectoryServices.AccountManagement
             _badPasswordAttemptChanged = true;
         }
 
-        private bool _expirationTimeChanged = false;
-        private QbeMatchType _expirationTimeVal = null;
+        private bool _expirationTimeChanged;
+        private QbeMatchType _expirationTimeVal;
 
         public void AccountExpirationDate(DateTime expirationTime, MatchType match)
         {
@@ -54,8 +53,8 @@ namespace System.DirectoryServices.AccountManagement
             _expirationTimeChanged = true;
         }
 
-        private bool _lockoutTimeChanged = false;
-        private QbeMatchType _lockoutTimeVal = null;
+        private bool _lockoutTimeChanged;
+        private QbeMatchType _lockoutTimeVal;
 
         public void AccountLockoutTime(DateTime lockoutTime, MatchType match)
         {
@@ -71,8 +70,8 @@ namespace System.DirectoryServices.AccountManagement
             _lockoutTimeChanged = true;
         }
 
-        private bool _badLogonCountChanged = false;
-        private QbeMatchType _badLogonCountVal = null;
+        private bool _badLogonCountChanged;
+        private QbeMatchType _badLogonCountVal;
 
         public void BadLogonCount(int badLogonCount, MatchType match)
         {
@@ -88,8 +87,8 @@ namespace System.DirectoryServices.AccountManagement
             _badLogonCountChanged = true;
         }
 
-        private bool _logonTimeChanged = false;
-        private QbeMatchType _logonTimeVal = null;
+        private bool _logonTimeChanged;
+        private QbeMatchType _logonTimeVal;
 
         public void LastLogonTime(DateTime logonTime, MatchType match)
         {
@@ -105,8 +104,8 @@ namespace System.DirectoryServices.AccountManagement
             _logonTimeChanged = true;
         }
 
-        private bool _passwordSetTimeChanged = false;
-        private QbeMatchType _passwordSetTimeVal = null;
+        private bool _passwordSetTimeChanged;
+        private QbeMatchType _passwordSetTimeVal;
 
         public void LastPasswordSetTime(DateTime passwordSetTime, MatchType match)
         {

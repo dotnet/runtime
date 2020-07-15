@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,9 +12,6 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-
-        // ConsoleColor does not have a value to specify the 'Default' color
-        private readonly ConsoleColor? DefaultConsoleColor = null;
 
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
@@ -145,7 +141,7 @@ namespace Microsoft.Extensions.Logging.Console
                 levelString: logLevelString,
                 levelBackground: logLevelColors.Background,
                 levelForeground: logLevelColors.Foreground,
-                messageColor: DefaultConsoleColor,
+                messageColor: null,
                 logAsError: logLevel >= Options.LogToStandardErrorThreshold
             );
         }
@@ -267,30 +263,28 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            if (Options.DisableColors)
+            if (!Options.DisableColors)
             {
-                return new ConsoleColors(null, null);
+                // We must explicitly set the background color if we are setting the foreground color,
+                // since just setting one can look bad on the users console.
+                switch (logLevel)
+                {
+                    case LogLevel.Critical:
+                        return new ConsoleColors(ConsoleColor.White, ConsoleColor.Red);
+                    case LogLevel.Error:
+                        return new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red);
+                    case LogLevel.Warning:
+                        return new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black);
+                    case LogLevel.Information:
+                        return new ConsoleColors(ConsoleColor.DarkGreen, ConsoleColor.Black);
+                    case LogLevel.Debug:
+                        return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
+                    case LogLevel.Trace:
+                        return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
+                }
             }
 
-            // We must explicitly set the background color if we are setting the foreground color,
-            // since just setting one can look bad on the users console.
-            switch (logLevel)
-            {
-                case LogLevel.Critical:
-                    return new ConsoleColors(ConsoleColor.White, ConsoleColor.Red);
-                case LogLevel.Error:
-                    return new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red);
-                case LogLevel.Warning:
-                    return new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black);
-                case LogLevel.Information:
-                    return new ConsoleColors(ConsoleColor.DarkGreen, ConsoleColor.Black);
-                case LogLevel.Debug:
-                    return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
-                case LogLevel.Trace:
-                    return new ConsoleColors(ConsoleColor.Gray, ConsoleColor.Black);
-                default:
-                    return new ConsoleColors(DefaultConsoleColor, DefaultConsoleColor);
-            }
+            return new ConsoleColors(null, null);
         }
 
         private void GetScopeInformation(StringBuilder stringBuilder, bool multiLine)

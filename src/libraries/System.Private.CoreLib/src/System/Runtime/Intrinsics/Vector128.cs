@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -1682,9 +1681,9 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
-            if (AdvSimd.Arm64.IsSupported)
+            if (AdvSimd.IsSupported)
             {
-                return AdvSimd.Arm64.InsertSelectedScalar(vector.AsUInt64(), 0, value.ToVector128Unsafe().AsUInt64(), 0).As<ulong, T>();
+                return AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
             }
 
             return SoftwareFallback(vector, value);
@@ -1724,9 +1723,9 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
-            if (AdvSimd.Arm64.IsSupported)
+            if (AdvSimd.IsSupported)
             {
-                return AdvSimd.Arm64.InsertSelectedScalar(vector.AsUInt64(), 1, value.ToVector128Unsafe().AsUInt64(), 0).As<ulong, T>();
+                return AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
             }
 
             return SoftwareFallback(vector, value);

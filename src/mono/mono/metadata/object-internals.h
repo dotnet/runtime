@@ -801,6 +801,11 @@ typedef struct {
 	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
+typedef struct {
+	MonoObject object;
+	guint32 intType;
+} MonoClassInterfaceAttribute;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
@@ -2045,6 +2050,9 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
 
 char *
 mono_exception_get_managed_backtrace (MonoException *exc);
+
+gboolean
+mono_exception_try_get_managed_backtrace (MonoException *exc, const char *prefix, char **result);
 
 void
 mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);

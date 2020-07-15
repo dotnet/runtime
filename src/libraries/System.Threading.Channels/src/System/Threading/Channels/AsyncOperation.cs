@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -50,7 +49,7 @@ namespace System.Threading.Channels
         private readonly bool _runContinuationsAsynchronously;
 
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
-        private volatile int _completionReserved = 0;
+        private volatile int _completionReserved;
         /// <summary>The result of the operation.</summary>
         [MaybeNull, AllowNull]
         private TResult _result = default;

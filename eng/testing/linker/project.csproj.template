@@ -6,6 +6,7 @@
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one

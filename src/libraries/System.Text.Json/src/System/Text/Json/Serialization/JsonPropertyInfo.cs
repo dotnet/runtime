@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("PropertyInfo={PropertyInfo}")]
+    [DebuggerDisplay("MemberInfo={MemberInfo}")]
     internal abstract class JsonPropertyInfo
     {
         public static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
@@ -36,11 +35,11 @@ namespace System.Text.Json
 
         // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        public static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(PropertyInfo propertyInfo, JsonSerializerOptions options)
+        public static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
             jsonPropertyInfo.Options = options;
-            jsonPropertyInfo.PropertyInfo = propertyInfo;
+            jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.DeterminePropertyName();
             jsonPropertyInfo.IsIgnored = true;
 
@@ -54,12 +53,12 @@ namespace System.Text.Json
 
         private void DeterminePropertyName()
         {
-            if (PropertyInfo == null)
+            if (MemberInfo == null)
             {
                 return;
             }
 
-            JsonPropertyNameAttribute? nameAttribute = GetAttribute<JsonPropertyNameAttribute>(PropertyInfo);
+            JsonPropertyNameAttribute? nameAttribute = GetAttribute<JsonPropertyNameAttribute>(MemberInfo);
             if (nameAttribute != null)
             {
                 string name = nameAttribute.Name;
@@ -72,7 +71,7 @@ namespace System.Text.Json
             }
             else if (Options.PropertyNamingPolicy != null)
             {
-                string name = Options.PropertyNamingPolicy.ConvertName(PropertyInfo.Name);
+                string name = Options.PropertyNamingPolicy.ConvertName(MemberInfo.Name);
                 if (name == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(ParentClassType, this);
@@ -82,7 +81,7 @@ namespace System.Text.Json
             }
             else
             {
-                NameAsString = PropertyInfo.Name;
+                NameAsString = MemberInfo.Name;
             }
 
             Debug.Assert(NameAsString != null);
@@ -98,10 +97,12 @@ namespace System.Text.Json
                 Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
 
                 // Three possible values for ignoreCondition:
-                // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties wins
-                // WhenNull = only ignore when null, global IgnoreReadOnlyProperties loses
-                // Never = never ignore (always include), global IgnoreReadOnlyProperties loses
-                bool serializeReadOnlyProperty = ignoreCondition != null || !Options.IgnoreReadOnlyProperties;
+                // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties/Fields wins
+                // WhenNull = only ignore when null, global IgnoreReadOnlyProperties/Fields loses
+                // Never = never ignore (always include), global IgnoreReadOnlyProperties/Fields loses
+                bool serializeReadOnlyProperty = ignoreCondition != null || (MemberInfo is PropertyInfo
+                    ? !Options.IgnoreReadOnlyProperties
+                    : !Options.IgnoreReadOnlyFields);
 
                 // We serialize if there is a getter + not ignoring readonly properties.
                 ShouldSerialize = HasGetter && (HasSetter || serializeReadOnlyProperty);
@@ -129,7 +130,7 @@ namespace System.Text.Json
         {
             if (ignoreCondition != null)
             {
-                Debug.Assert(PropertyInfo != null);
+                Debug.Assert(MemberInfo != null);
                 Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
 
                 if (ignoreCondition != JsonIgnoreCondition.Never)
@@ -153,9 +154,9 @@ namespace System.Text.Json
 #pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
 
-        public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
+        public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
         {
-            return (TAttribute?)propertyInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
+            return (TAttribute?)memberInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
@@ -178,7 +179,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
@@ -189,7 +190,7 @@ namespace System.Text.Json
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
             ClassType = runtimeClassType;
-            PropertyInfo = propertyInfo;
+            MemberInfo = memberInfo;
             ConverterBase = converter;
             Options = options;
         }
@@ -301,7 +302,7 @@ namespace System.Text.Json
 
         public Type ParentClassType { get; private set; } = null!;
 
-        public PropertyInfo? PropertyInfo { get; private set; }
+        public MemberInfo? MemberInfo { get; private set; }
 
         public JsonClassInfo RuntimeClassInfo
         {
@@ -316,7 +317,7 @@ namespace System.Text.Json
             }
         }
 
-        public Type? RuntimePropertyType { get; private set; } = null;
+        public Type? RuntimePropertyType { get; private set; }
 
         public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 

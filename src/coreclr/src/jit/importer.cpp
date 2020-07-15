@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -199,7 +198,7 @@ inline void DECLSPEC_NORETURN Compiler::verRaiseVerifyException(INDEBUG(const ch
 // helper function that will tell us if the IL instruction at the addr passed
 // by param consumes an address at the top of the stack. We use it to save
 // us lvAddrTaken
-bool Compiler::impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fncHandle, CORINFO_MODULE_HANDLE scpHandle)
+bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
 {
     assert(!compIsForInlining());
 
@@ -1888,22 +1887,43 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         {
             pIndirection = pLookup->constLookup.addr;
         }
-        return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+        GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+
+#ifdef DEBUG
+        size_t handleToTrack;
+        if (handleFlags == GTF_ICON_TOKEN_HDL)
+        {
+            handleToTrack = 0;
+        }
+        else
+        {
+            handleToTrack = (size_t)compileTimeHandle;
+        }
+
+        if (handle != nullptr)
+        {
+            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+        }
+        else
+        {
+            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+        }
+#endif
+        return addr;
     }
-    else if (compIsForInlining())
+
+    if (pLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
     {
-        // Don't import runtime lookups when inlining
+        // Runtime does not support inlining of all shapes of runtime lookups
         // Inlining has to be aborted in such a case
+        assert(compIsForInlining());
         compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
         return nullptr;
     }
-    else
-    {
-        // Need to use dictionary-based access which depends on the typeContext
-        // which is only available at runtime, not at compile-time.
 
-        return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
-    }
+    // Need to use dictionary-based access which depends on the typeContext
+    // which is only available at runtime, not at compile-time.
+    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -1923,7 +1943,19 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
     {
         pIndirection = pLookup->addr;
     }
-    return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+    GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+#ifdef DEBUG
+    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
+    if (handle != nullptr)
+    {
+        addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+    }
+    else
+    {
+        addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
+    }
+#endif //  DEBUG
+    return addr;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(
@@ -1965,14 +1997,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            if (compIsForInlining())
-            {
-                // Don't import runtime lookups when inlining
-                // Inlining has to be aborted in such a case
-                compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
-                return nullptr;
-            }
-
             op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
@@ -2005,10 +2029,12 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // context parameter is this that we don't need the eager reporting logic.)
     lvaGenericsContextInUse = true;
 
+    Compiler* pRoot = impInlineRoot();
+
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
-        ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+        ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
         // Vtable pointer of this object
@@ -2020,7 +2046,8 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     {
         assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
 
-        ctxTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL); // Exact method descriptor as passed in as last arg
+        // Exact method descriptor as passed in
+        ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
@@ -2048,11 +2075,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-
-    // This method can only be called from the importer instance of the Compiler.
-    // In other word, it cannot be called by the instance of the Compiler for the inlinee.
-    assert(!compIsForInlining());
-
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
@@ -3407,6 +3429,9 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* dstAddr = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
     GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
+#ifdef DEBUG
+    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
+#endif
 
     return gtNewBlkOpNode(dst,   // dst
                           src,   // src
@@ -3530,7 +3555,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
             {
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+                // These intrinsics aren't defined recursively and so they will never be mustExpand
+                // Instead, they provide software fallbacks that will be executed instead.
+
+                assert(!mustExpand);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
 #endif // FEATURE_HW_INTRINSICS
         }
@@ -4010,7 +4039,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             noway_assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+            resolvedToken.tokenContext = impTokenLookupContextHandle;
             resolvedToken.tokenScope   = info.compScopeHnd;
             resolvedToken.token        = memberRef;
             resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
@@ -6892,14 +6921,27 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
 
     for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        // We should not be passing gc typed args to an unmanaged call.
         GenTree* arg = argUse.GetNode();
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
+
+        // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(arg->TypeGet()))
         {
-            assert(!"*** invalid IL: gc type passed to unmanaged call");
+            // Tolerate byrefs by retyping to native int.
+            //
+            // This is needed or we'll generate inconsistent GC info
+            // for this arg at the call site (gc info says byref,
+            // pinvoke sig says native int).
+            //
+            if (arg->TypeGet() == TYP_BYREF)
+            {
+                arg->ChangeType(TYP_I_IMPL);
+            }
+            else
+            {
+                assert(!"*** invalid IL: gc ref passed to unmanaged call");
+            }
         }
-
-        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -7086,7 +7128,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN_COMPILER
-            noway_assert(opts.IsReadyToRun());
+            assert(opts.IsReadyToRun());
+            assert(!compIsForInlining());
             CORINFO_LOOKUP_KIND kind;
             info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
             assert(kind.needsRuntimeLookup);
@@ -7159,6 +7202,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 /* Create the data member node */
                 op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
+#ifdef DEBUG
+                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
+#endif
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
@@ -7630,14 +7676,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 return TYP_UNDEF;
             }
 
-            /* For now ignore delegate invoke */
-
-            if (mflags & CORINFO_FLG_DELEGATE_INVOKE)
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_DELEGATE_INVOKE);
-                return TYP_UNDEF;
-            }
-
             /* For now ignore varargs */
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
             {
@@ -7759,20 +7797,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 if (callInfo->stubLookup.lookupKind.needsRuntimeLookup)
                 {
-
-                    if (compIsForInlining())
+                    if (callInfo->stubLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
                     {
-                        // Don't import runtime lookups when inlining
+                        // Runtime does not support inlining of all shapes of runtime lookups
                         // Inlining has to be aborted in such a case
-                        /* XXX Fri 3/20/2009
-                         * By the way, this would never succeed.  If the handle lookup is into the generic
-                         * dictionary for a candidate, you'll generate different dictionary offsets and the
-                         * inlined code will crash.
-                         *
-                         * To anyone code reviewing this, when could this ever succeed in the future?  It'll
-                         * always have a handle lookup.  These lookups are safe intra-module, but we're just
-                         * failing here.
-                         */
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
                         return TYP_UNDEF;
                     }
@@ -8004,7 +8032,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (mflags & CORINFO_FLG_DELEGATE_INVOKE)
     {
-        assert(!compIsForInlining());
         assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
         assert(mflags & CORINFO_FLG_FINAL);
 
@@ -8249,6 +8276,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // Instantiated generic method
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
         {
+            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+
             CORINFO_METHOD_HANDLE exactMethodHandle =
                 (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
 
@@ -8288,8 +8317,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         else
         {
             assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle =
-                (CORINFO_CLASS_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
 
             if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
             {
@@ -8348,17 +8376,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         assert(extraArg == nullptr);
         extraArg = gtNewCallArgs(instParam);
-    }
-
-    // Inlining may need the exact type context (exactContextHnd) if we're inlining shared generic code, in particular
-    // to inline 'polytypic' operations such as static field accesses, type tests and method calls which
-    // rely on the exact context. The exactContextHnd is passed back to the JitInterface at appropriate points.
-    // exactContextHnd is not currently required when inlining shared generic code into shared
-    // generic code, since the inliner aborts whenever shared code polytypic operations are encountered
-    // (e.g. anything marked needsRuntimeLookup)
-    if (exactContextNeedsRuntimeLookup)
-    {
-        exactContextHnd = nullptr;
     }
 
     if ((opcode == CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_DELEGATE) != 0))
@@ -9276,7 +9293,8 @@ REDO_RETURN_NODE:
     {
         // It is possible that we now have a lclVar of scalar type.
         // If so, don't transform it to GT_LCL_FLD.
-        if (lvaTable[op->AsLclVar()->GetLclNum()].lvType != info.compRetNativeType)
+        LclVarDsc* varDsc = lvaGetDesc(op->AsLclVarCommon());
+        if (genActualType(varDsc->TypeGet()) != genActualType(info.compRetNativeType))
         {
             op->ChangeOper(GT_LCL_FLD);
         }
@@ -18709,18 +18727,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             }
 
             // Speculatively check if initClass() can be done.
-            // If it can be done, we will try to inline the method. If inlining
-            // succeeds, then we will do the non-speculative initClass() and commit it.
-            // If this speculative call to initClass() fails, there is no point
-            // trying to inline this method.
+            // If it can be done, we will try to inline the method.
             initClassResult =
                 pParam->pThis->info.compCompHnd->initClass(nullptr /* field */, pParam->fncHandle /* method */,
-                                                           pParam->exactContextHnd /* context */,
-                                                           TRUE /* speculative */);
+                                                           pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE_SPEC);
+                pParam->result->NoteFatal(InlineObservation::CALLSITE_CANT_CLASS_INIT);
                 goto _exit;
             }
 
@@ -20669,7 +20683,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // final method that objClass inherits.
     CORINFO_CLASS_HANDLE derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
 
-    // Need to update call info too. This is fragile
+    // Need to update call info too. This is fragile and suboptimal
+    // https://github.com/dotnet/runtime/issues/38477
     // but hopefully the derived method conforms to
     // the base in most other ways.
     *method        = derivedMethod;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Specialized;
@@ -8,7 +7,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -86,8 +84,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type InterfaceType
         {
-            // TODO: replace this with DynamicallyAccessedMembersAttribute (https://github.com/dotnet/runtime/issues/37837)
-            [DynamicDependency("#ctor", typeof(TypeDescriptorInterface))]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             get => typeof(TypeDescriptorInterface);
         }
 
@@ -325,7 +322,7 @@ namespace System.ComponentModel
             // own cache state against the type. There shouldn't be
             // more than one of these, but walk anyway. Walk in
             // reverse order so that the most derived takes precidence.
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false).ToArray();
+            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
             bool providerAdded = false;
             for (int idx = attrs.Length - 1; idx >= 0; idx--)
             {

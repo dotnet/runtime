@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -57,7 +56,7 @@ namespace System.Net.Http
         private string[] _headerValues = Array.Empty<string>();
 
         private ValueTask<int>? _readAheadTask;
-        private int _readAheadTaskLock = 0; // 0 == free, 1 == held
+        private int _readAheadTaskLock; // 0 == free, 1 == held
         private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
@@ -86,7 +85,7 @@ namespace System.Net.Http
 
             _weakThisRef = new WeakReference<HttpConnection>(this);
 
-            if (NetEventSource.IsEnabled) TraceConnection(_stream);
+            if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
         public void Dispose() => Dispose(disposing: true);
@@ -97,7 +96,7 @@ namespace System.Net.Http
             // if the request and the response were running concurrently and both incurred an exception.
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
             {
-                if (NetEventSource.IsEnabled) Trace("Connection closing.");
+                if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
                 _pool.DecrementConnectionCount();
                 if (disposing)
                 {
@@ -157,7 +156,7 @@ namespace System.Net.Http
             catch (Exception error)
             {
                 // If reading throws, eat the error and don't pool the connection.
-                if (NetEventSource.IsEnabled) Trace($"Error performing read ahead: {error}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
                 Dispose();
                 _readAheadTask = new ValueTask<int>(0);
             }
@@ -332,7 +331,7 @@ namespace System.Net.Http
             _canRetry = true;
 
             // Send the request.
-            if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
@@ -437,7 +436,7 @@ namespace System.Net.Http
                 else
                 {
                     bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
-                    if (NetEventSource.IsEnabled) Trace($"Request content is not null, start processing it. hasExpectContinueHeader = {hasExpectContinueHeader}");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Request content is not null, start processing it. hasExpectContinueHeader = {hasExpectContinueHeader}");
 
                     // Send the body if there is one.  We prefer to serialize the sending of the content before
                     // we try to receive any response, but if ExpectContinue has been set, we allow the sending
@@ -487,7 +486,7 @@ namespace System.Net.Http
                         vt.IsCompletedSuccessfully ? vt.Result :
                         async ? await vt.ConfigureAwait(false) :
                         vt.AsTask().GetAwaiter().GetResult();
-                    if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
 
                     if (bytesRead == 0)
                     {
@@ -533,7 +532,7 @@ namespace System.Net.Http
                     }
 
                     // In case read hangs which eventually leads to connection timeout.
-                    if (NetEventSource.IsEnabled) Trace($"Current {response.StatusCode} response is an interim response or not expected, need to read for a final response.");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Current {response.StatusCode} response is an interim response or not expected, need to read for a final response.");
 
                     // Discard headers that come with the interim 1xx responses.
                     // RFC7231: 1xx responses are terminated by the first empty line after the status-line.
@@ -609,7 +608,7 @@ namespace System.Net.Http
                 }
 
                 // Now we are sure that the request was fully sent.
-                if (NetEventSource.IsEnabled) Trace("Request is fully sent.");
+                if (NetEventSource.Log.IsEnabled()) Trace("Request is fully sent.");
 
                 // We're about to create the response stream, at which point responsibility for canceling
                 // the remainder of the response lies with the stream.  Thus we dispose of our registration
@@ -622,7 +621,7 @@ namespace System.Net.Http
                 Stream responseStream;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
@@ -645,7 +644,7 @@ namespace System.Net.Http
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
                     {
-                        if (HttpTelemetry.IsEnabled) HttpTelemetry.Log.RequestStop();
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                         responseStream = EmptyReadStream.Instance;
                         CompleteResponse();
                     }
@@ -664,7 +663,7 @@ namespace System.Net.Http
                 }
                 ((HttpConnectionResponseContent)response.Content).SetStream(responseStream);
 
-                if (NetEventSource.IsEnabled) Trace($"Received response: {response}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {response}");
 
                 // Process Set-Cookie headers.
                 if (_pool.Settings._useCookies)
@@ -682,7 +681,7 @@ namespace System.Net.Http
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
                 allowExpect100ToContinue?.TrySetResult(false);
 
-                if (NetEventSource.IsEnabled) Trace($"Error sending request: {error}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Error sending request: {error}");
 
                 // In the rare case where Expect: 100-continue was used and then processing
                 // of the response headers encountered an error such that we weren't able to
@@ -761,7 +760,7 @@ namespace System.Net.Http
                 var weakThisRef = (WeakReference<HttpConnection>)s!;
                 if (weakThisRef.TryGetTarget(out HttpConnection? strongThisRef))
                 {
-                    if (NetEventSource.IsEnabled) strongThisRef.Trace("Cancellation requested. Disposing of the connection.");
+                    if (NetEventSource.Log.IsEnabled()) strongThisRef.Trace("Cancellation requested. Disposing of the connection.");
                     strongThisRef.Dispose();
                 }
             }, _weakThisRef);
@@ -790,7 +789,7 @@ namespace System.Net.Http
             // Flush any content that might still be buffered.
             await FlushAsync(async).ConfigureAwait(false);
 
-            if (NetEventSource.IsEnabled) Trace("Finished sending request content.");
+            if (NetEventSource.Log.IsEnabled()) Trace("Finished sending request content.");
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
@@ -806,12 +805,12 @@ namespace System.Net.Http
             // Send the content if we're supposed to.  Otherwise, we're done.
             if (sendRequestContent)
             {
-                if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Sending request content for Expect: 100-continue.");
                 await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                if (NetEventSource.IsEnabled) Trace($"Canceling request content for Expect: 100-continue.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Canceling request content for Expect: 100-continue.");
             }
         }
 
@@ -930,7 +929,7 @@ namespace System.Net.Http
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
-                if (NetEventSource.IsEnabled) connection.Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
                 return;
             }
 
@@ -1263,13 +1262,13 @@ namespace System.Net.Http
 
         private void WriteToStream(ReadOnlySpan<byte> source)
         {
-            if (NetEventSource.IsEnabled) Trace($"Writing {source.Length} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Writing {source.Length} bytes.");
             _stream.Write(source);
         }
 
         private ValueTask WriteToStreamAsync(ReadOnlyMemory<byte> source, bool async)
         {
-            if (NetEventSource.IsEnabled) Trace($"Writing {source.Length} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Writing {source.Length} bytes.");
 
             if (async)
             {
@@ -1452,7 +1451,7 @@ namespace System.Net.Http
                 await _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength)).ConfigureAwait(false) :
                 _stream.Read(_readBuffer, _readLength, _readBuffer.Length - _readLength);
 
-            if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
                 throw new IOException(SR.net_http_invalid_response_premature_eof);
@@ -1493,7 +1492,7 @@ namespace System.Net.Http
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int count = _stream.Read(destination);
-            if (NetEventSource.IsEnabled) Trace($"Received {count} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
             return count;
         }
 
@@ -1521,7 +1520,7 @@ namespace System.Net.Http
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
-            if (NetEventSource.IsEnabled) Trace($"Received {count} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
             return count;
         }
 
@@ -1552,7 +1551,7 @@ namespace System.Net.Http
             // Do a buffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int bytesRead = _stream.Read(_readBuffer, 0, _readBuffer.Length);
-            if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
 
             // Hand back as much data as we can fit.
@@ -1598,7 +1597,7 @@ namespace System.Net.Http
             // Do a buffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             int bytesRead = await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
-            if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
 
             // Hand back as much data as we can fit.
@@ -1612,7 +1611,7 @@ namespace System.Net.Http
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
-            if (NetEventSource.IsEnabled) Trace($"Copying {count} bytes to stream.");
+            if (NetEventSource.Log.IsEnabled()) Trace($"Copying {count} bytes to stream.");
             if (async)
             {
                 await destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, _readOffset, count), cancellationToken).ConfigureAwait(false);
@@ -1785,7 +1784,7 @@ namespace System.Net.Http
             // may not even have it any more.
             if (_readLength != _readOffset)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Unexpected data on connection after response read.");
                 }
@@ -1812,7 +1811,7 @@ namespace System.Net.Http
             }
 
             Debug.Assert(response.Content != null);
-            Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            Stream stream = response.Content.ReadAsStream(cancellationToken);
             HttpContentReadStream? responseStream = stream as HttpContentReadStream;
 
             Debug.Assert(responseStream != null || stream is EmptyReadStream);
@@ -1844,7 +1843,7 @@ namespace System.Net.Http
             // don't put the connection back in the pool.
             if (_connectionClose)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Connection will not be reused.");
                 }

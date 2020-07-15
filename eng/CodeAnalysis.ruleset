@@ -1,4 +1,12 @@
 ﻿<RuleSet Name="Microsoft.Analyzers.ManagedCodeAnalysis" Description="Microsoft.Analyzers.ManagedCodeAnalysis" ToolsVersion="14.0">
+   <Rules AnalyzerId="Microsoft.DotNet.CodeAnalysis" RuleNamespace="Microsoft.DotNet.CodeAnalysis.Analyzers">
+      <Rule Id="BCL0001" Action="Warning" />         <!-- Ensure minimum API surface is respected -->
+      <Rule Id="BCL0010" Action="Warning" />         <!-- AppContext default value expected to be true -->
+      <Rule Id="BCL0011" Action="Warning" />         <!-- AppContext default value defined in if statement with incorrect pattern -->
+      <Rule Id="BCL0012" Action="Warning" />         <!-- AppContext default value defined in if statement at root of switch case -->
+      <Rule Id="BCL0015" Action="None" />            <!-- Invalid P/Invoke call -->
+      <Rule Id="BCL0020" Action="Warning" />         <!-- Invalid SR.Format call -->
+   </Rules>
    <Rules AnalyzerId="Microsoft.CodeAnalysis.NetAnalyzers" RuleNamespace="Microsoft.CodeAnalysis.NetAnalyzers">
       <Rule Id="CA1000" Action="None" />             <!-- Do not declare static members on generic types -->
       <Rule Id="CA1001" Action="None" />             <!-- Types that own disposable fields should be disposable -->
@@ -78,7 +86,7 @@
       <Rule Id="CA1725" Action="Info" />             <!-- Parameter names should match base declaration -->
       <Rule Id="CA1801" Action="None" />             <!-- Review unused parameters -->
       <Rule Id="CA1802" Action="Warning" />          <!-- Use literals where appropriate -->
-      <Rule Id="CA1805" Action="Info" />             <!-- Do not initialize unnecessarily -->
+      <Rule Id="CA1805" Action="Warning" />          <!-- Do not initialize unnecessarily -->
       <Rule Id="CA1806" Action="None" />             <!-- Do not ignore method results -->
       <Rule Id="CA1810" Action="Warning" />          <!-- Initialize reference type static fields inline -->
       <Rule Id="CA1812" Action="None" />             <!-- Avoid uninstantiated internal classes -->
@@ -123,7 +131,7 @@
       <Rule Id="CA2200" Action="Warning" />          <!-- Rethrow to preserve stack details. -->
       <Rule Id="CA2201" Action="None" />             <!-- Do not raise reserved exception types -->
       <Rule Id="CA2207" Action="Warning" />          <!-- Initialize value type static fields inline -->
-      <Rule Id="CA2208" Action="Info" />             <!-- Instantiate argument exceptions correctly -->
+      <Rule Id="CA2208" Action="Warning" />          <!-- Instantiate argument exceptions correctly -->
       <Rule Id="CA2211" Action="None" />             <!-- Non-constant fields should not be visible -->
       <Rule Id="CA2213" Action="None" />             <!-- Disposable fields should be disposed -->
       <Rule Id="CA2214" Action="None" />             <!-- Do not call overridable methods in constructors -->
@@ -305,7 +313,7 @@
     <Rule Id="SA1401" Action="None" /> <!-- Fields should be private -->
     <Rule Id="SA1402" Action="None" /> <!-- File may only contain a single type -->
     <Rule Id="SA1403" Action="None" /> <!-- File may only contain a single namespace -->
-    <Rule Id="SA1404" Action="None" /> <!-- Code analysis suppression should have justification -->
+    <Rule Id="SA1404" Action="Warning" /> <!-- Code analysis suppression should have justification -->
     <Rule Id="SA1405" Action="None" /> <!-- Debug.Assert should provide message text -->
     <Rule Id="SA1407" Action="None" /> <!-- Arithmetic expressions should declare precedence -->
     <Rule Id="SA1408" Action="None" /> <!-- Conditional expressions should declare precedence -->

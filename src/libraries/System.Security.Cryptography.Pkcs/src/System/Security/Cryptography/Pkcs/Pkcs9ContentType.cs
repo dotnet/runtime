@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -16,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9ContentType()
-            : base(Oid.FromOidValue(Oids.ContentType, OidGroup.ExtensionOrAttribute))
+            : base(Oids.ContentTypeOid.CopyOid())
         {
         }
 
@@ -52,6 +51,6 @@ namespace System.Security.Cryptography.Pkcs
             return new Oid(contentTypeValue);
         }
 
-        private volatile Oid? _lazyContentType = null;
+        private volatile Oid? _lazyContentType;
     }
 }

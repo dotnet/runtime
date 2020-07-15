@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1974,6 +1973,12 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
+    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
+             (structPromotionInfo.fieldCnt > 1))
+    {
+        // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
+        shouldPromote = false;
+    }
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -3411,23 +3416,8 @@ void Compiler::lvaSortByRefCount()
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
         }
-        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT) &&
-                 (lvaGetDesc(varDsc->lvParentLcl)->lvRefCnt() > 1))
+        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {
-            // SSA must exclude struct fields that are not independently promoted
-            // as dependent fields could be assigned using a CopyBlock
-            // resulting in a single node causing multiple SSA definitions
-            // which isn't currently supported by SSA
-            //
-            // If the parent struct local ref count is less than 2, then either the struct is no longer
-            // referenced or the field is no longer referenced: we increment the struct local ref count in incRefCnts
-            // for each field use when the struct is dependently promoted. This can happen, e.g, if we've removed
-            // a block initialization for the struct. In that case we can still track the local field.
-            //
-            // TODO-CQ:  Consider using lvLclBlockOpAddr and only marking these LclVars
-            // untracked when a blockOp is used to assign the struct.
-            //
-            varDsc->lvTracked = 0; // so, don't mark as tracked
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_DepField));
         }
         else if (varDsc->lvPinned)
@@ -3653,6 +3643,53 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//----------------------------------------------------------------------------------------------
+// CanBeReplacedWithItsField: check if a whole struct reference could be replaced by a field.
+//
+// Arguments:
+//    comp - the compiler instance;
+//
+// Return Value:
+//    true if that can be replaced, false otherwise.
+//
+// Notes:
+//    The replacement can be made only for independently promoted structs
+//    with 1 field without holes.
+//
+bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
+{
+    if (!lvPromoted)
+    {
+        return false;
+    }
+
+    if (comp->lvaGetPromotionType(this) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    {
+        return false;
+    }
+    if (lvFieldCnt != 1)
+    {
+        return false;
+    }
+    if (lvContainsHoles)
+    {
+        return false;
+    }
+
+#if defined(FEATURE_SIMD)
+    // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+    // In order to do that we have to have its field `a` in memory. Right now lowering cannot
+    // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+    LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
+    if (varTypeIsSIMD(fieldDsc))
+    {
+        return false;
+    }
+#endif // FEATURE_SIMD
+
+    return true;
 }
 
 //------------------------------------------------------------------------

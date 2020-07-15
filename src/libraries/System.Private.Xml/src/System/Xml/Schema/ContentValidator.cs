@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -40,11 +39,11 @@ namespace System.Xml.Schema
     /// </summary>
     internal class SymbolsDictionary
     {
-        private int _last = 0;
+        private int _last;
         private readonly Hashtable _names;
-        private Hashtable? _wildcards = null;
+        private Hashtable? _wildcards;
         private readonly ArrayList _particles;
-        private object? _particleLast = null;
+        private object? _particleLast;
         private bool _isUpaEnforced = true;
 
         public SymbolsDictionary()
@@ -2159,7 +2158,7 @@ namespace System.Xml.Schema
         private readonly Hashtable _elements;     // unique terminal names to positions in Bitset mapping
         private readonly object[] _particles;
         private readonly BitSet _isRequired;      // required flags
-        private int _countRequired = 0;
+        private int _countRequired;
 
         public AllElementsContentValidator(XmlSchemaContentType contentType, int size, bool isEmptiable) : base(contentType, false, isEmptiable)
         {

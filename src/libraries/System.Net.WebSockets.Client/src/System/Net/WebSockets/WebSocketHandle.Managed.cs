@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -182,7 +181,7 @@ namespace System.Net.WebSockets
                 }
 
                 // Get the response stream and wrap it in a web socket.
-                Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                Stream connectedStream = response.Content.ReadAsStream();
                 Debug.Assert(connectedStream.CanWrite);
                 Debug.Assert(connectedStream.CanRead);
                 WebSocket = WebSocket.CreateFromStream(

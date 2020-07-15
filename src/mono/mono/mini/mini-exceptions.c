@@ -1446,9 +1446,9 @@ fill_frame_managed_info (MonoFrameSummary *frame, MonoMethod * method)
 typedef struct {
 	char *suffix;
 	char *exported_name;
-} MonoLibWhitelistEntry;
+} MonoLibAllowlistEntry;
 
-static GList *native_library_whitelist;
+static GList *native_library_allowlist;
 static gboolean allow_all_native_libraries = FALSE;
 
 static void
@@ -1457,10 +1457,10 @@ mono_crash_reporting_register_native_library (const char *module_path, const cha
 	// Examples: libsystem_pthread.dylib -> "pthread"
 	// Examples: libsystem_platform.dylib -> "platform"
 	// Examples: mono-sgen -> "mono" from above line
-	MonoLibWhitelistEntry *entry = g_new0 (MonoLibWhitelistEntry, 1);
+	MonoLibAllowlistEntry*entry = g_new0 (MonoLibAllowlistEntry, 1);
 	entry->suffix = g_strdup (module_path);
 	entry->exported_name = g_strdup (module_name);
-	native_library_whitelist = g_list_append (native_library_whitelist, entry);
+	native_library_allowlist = g_list_append (native_library_allowlist, entry);
 }
 
 static void
@@ -1470,7 +1470,7 @@ mono_crash_reporting_allow_all_native_libraries ()
 }
 
 static gboolean
-check_whitelisted_module (const char *in_name, const char **out_module)
+check_allowlisted_module (const char *in_name, const char **out_module)
 {
 #ifndef MONO_PRIVATE_CRASHES
 		return TRUE;
@@ -1498,8 +1498,8 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 		return TRUE;
 	}
 
-	for (GList *cursor = native_library_whitelist; cursor; cursor = cursor->next) {
-		MonoLibWhitelistEntry *iter = (MonoLibWhitelistEntry *) cursor->data;
+	for (GList *cursor = native_library_allowlist; cursor; cursor = cursor->next) {
+		MonoLibAllowlistEntry*iter = (MonoLibAllowlistEntry*) cursor->data;
 		if (!g_str_has_suffix (in_name, iter->suffix))
 			continue;
 		if (out_module)
@@ -1538,7 +1538,7 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, gint32 *out_offset, cons
 	if (!success)
 		return FALSE;
 
-	if (!check_whitelisted_module (fname, out_module))
+	if (!check_allowlisted_module (fname, out_module))
 		return FALSE;
 
 	*out_ip = mono_make_portable_ip ((intptr_t) saddr, (intptr_t) fbase);
@@ -3382,7 +3382,6 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 }
 
 #ifndef MONO_CROSS_COMPILE
-static gboolean handle_crash_loop = FALSE;
 
 /*
  * mono_handle_native_crash:
@@ -3394,9 +3393,6 @@ void
 mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-
-	if (handle_crash_loop)
-		return;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
@@ -3430,11 +3426,8 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		}
 	}
 
-	/* prevent infinite loops in crash handling */
-	handle_crash_loop = TRUE;
-
 	/*
-	 * A SIGSEGV indicates something went very wrong so we can no longer depend
+	 * A crash indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
 	 * with ones which have a greater chance of working.
 	 */

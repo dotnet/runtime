@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
 
@@ -8,7 +7,7 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     internal class ADSearcher
     {
-        private readonly DirectorySearcher _searcher = null;
+        private readonly DirectorySearcher _searcher;
         private static readonly TimeSpan s_defaultTimeSpan = new TimeSpan(0, 120, 0);
 
         public ADSearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope)

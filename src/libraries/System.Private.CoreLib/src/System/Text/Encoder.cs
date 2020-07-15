@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -20,9 +19,9 @@ namespace System.Text
     //
     public abstract class Encoder
     {
-        internal EncoderFallback? _fallback = null;
+        internal EncoderFallback? _fallback;
 
-        internal EncoderFallbackBuffer? _fallbackBuffer = null;
+        internal EncoderFallbackBuffer? _fallbackBuffer;
 
         protected Encoder()
         {

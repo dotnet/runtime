@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -2142,12 +2141,6 @@ namespace System.Xml
             {
                 i = 1;
             }
-#if XML10_FIFTH_EDITION
-            else if (_xmlCharType.IsNCNameSurrogateChar(ncname, 0))
-            { // surrogate ranges are same for NCName and StartNCName
-                i = 2;
-            }
-#endif
             else
             {
                 throw InvalidCharsException(ncname, 0);
@@ -2160,12 +2153,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(ncname, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     throw InvalidCharsException(ncname, i);

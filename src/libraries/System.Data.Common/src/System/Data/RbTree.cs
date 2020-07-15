@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if DEBUG
 //#define VerifyIndex
@@ -11,6 +10,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -96,19 +96,19 @@ namespace System.Data
         internal const int DefaultPageSize = 32; /* 512 = 2^9 32 million nodes*/
         internal const int NIL = 0;                  // 0th page, 0th slot for each tree till CLR static & generics issue is fixed
 
-        private TreePage[] _pageTable;          // initial size 4, then doubles (grows) - it never shrinks
-        private int[] _pageTableMap;
-        private int _inUsePageCount = 0;    // contains count of allocated pages per tree, its <= the capacity of  pageTable
+        private TreePage?[] _pageTable = default!; // initial size 4, then doubles (grows) - it never shrinks. Late-initialized to non-null in InitTree.
+        private int[] _pageTableMap = default!; // Late-initialized to non-null in InitTree
+        private int _inUsePageCount;    // contains count of allocated pages per tree, its <= the capacity of  pageTable
         private int _nextFreePageLine;   // used for keeping track of position of last used free page in pageTable
         public int root;
         private int _version;
 
-        private int _inUseNodeCount = 0; // total number of nodes currently in use by this tree.
-        private int _inUseSatelliteTreeCount = 0; // total number of satellite associated with this tree.
+        private int _inUseNodeCount; // total number of nodes currently in use by this tree.
+        private int _inUseSatelliteTreeCount; // total number of satellite associated with this tree.
         private readonly TreeAccessMethod _accessMethod;
 
-        protected abstract int CompareNode(K record1, K record2);
-        protected abstract int CompareSateliteTreeNode(K record1, K record2);
+        protected abstract int CompareNode([AllowNull] K record1, [AllowNull] K record2);
+        protected abstract int CompareSateliteTreeNode([AllowNull] K record1, [AllowNull] K record2);
 
         protected RBTree(TreeAccessMethod accessMethod)
         {
@@ -126,9 +126,9 @@ namespace System.Data
             AllocPage(DefaultPageSize);
 
             // alloc storage for reserved NIL node. segment 0, slot 0; Initialize NIL
-            _pageTable[0]._slots[0]._nodeColor = NodeColor.black;
-            _pageTable[0]._slotMap[0] = 0x1;
-            _pageTable[0].InUseCount = 1;
+            _pageTable[0]!._slots[0]._nodeColor = NodeColor.black;
+            _pageTable[0]!._slotMap[0] = 0x1;
+            _pageTable[0]!.InUseCount = 1;
 
             _inUseNodeCount = 1;
             _inUseSatelliteTreeCount = 0; // total number of satellite associated with this tree.
@@ -171,9 +171,9 @@ namespace System.Data
                 _pageTableMap = newPageTableMap;
                 _pageTable[freePageIndex] = new TreePage(size);
             }
-            _pageTable[freePageIndex].PageId = freePageIndex;
+            _pageTable[freePageIndex]!.PageId = freePageIndex;
             _inUsePageCount++;
-            return _pageTable[freePageIndex];
+            return _pageTable[freePageIndex]!;
         }
 
         /* MarkPageFull()
@@ -246,7 +246,7 @@ namespace System.Data
          */
         private void FreeNode(int nodeId)
         {
-            TreePage page = _pageTable[nodeId >> 16];
+            TreePage page = _pageTable[nodeId >> 16]!;
             int slotIndex = nodeId & 0xFFFF;
 
             page._slots[slotIndex] = default(Node);
@@ -337,10 +337,10 @@ namespace System.Data
          * Use bitmap associated with page to allocate a slot.
          * mark the slot as used and return its index.
          */
-        private int GetNewNode(K key)
+        private int GetNewNode([AllowNull] K key)
         {
             // find page with free slots, if none, allocate a new page
-            TreePage page = null;
+            TreePage? page = null;
 
             int freePageIndex = GetIndexOfPageWithFreeSlot(true);
             if (freePageIndex != -1)
@@ -359,7 +359,7 @@ namespace System.Data
                 page = AllocPage(64 * 1024);          // Page size to accomodate more than 16 million slots (Max 2 Billion and 16 million slots)
 
             // page contains atleast 1 free slot.
-            int slotId = page.AllocSlot(this);
+            int slotId = page!.AllocSlot(this);
 
             if (slotId == -1)
                 throw ExceptionBuilder.InternalRBTreeError(RBTreeError.NoFreeSlots);
@@ -1205,7 +1205,7 @@ namespace System.Data
             return root_id;
         }
 
-        private int SearchSubTree(int root_id, K key)
+        private int SearchSubTree(int root_id, [AllowNull] K key)
         {
             if (root_id != NIL && _accessMethod != TreeAccessMethod.KEY_SEARCH_AND_INDEX)
             {
@@ -1294,7 +1294,7 @@ namespace System.Data
             {
                 return new NodePath(SearchSubTree(Next(nodeId), key), nodeId);
             }
-            else if (!Key(nodeId).Equals(key))
+            else if (!Key(nodeId)!.Equals(key))
             {
                 nodeId = NIL;
             }
@@ -1556,7 +1556,7 @@ namespace System.Data
 
         // Begin: List of methods for making it easy to work with ArrayList
 
-        public int Add(K item) //Insert (int record)
+        public int Add([AllowNull] K item) //Insert (int record)
         {
             int nodeId = GetNewNode(item);
             RBInsert(NIL, nodeId, NIL, -1, false);
@@ -1578,7 +1578,7 @@ namespace System.Data
             // BIG ASSUMPTION: There is not satellite tree, this is INDEX_ONLY.
             if (nodeId != NIL)
             {
-                if ((object)Key(nodeId) == (object)item)
+                if ((object)Key(nodeId)! == (object)item!)
                 {
                     return GetIndexByNode(nodeId);
                 }
@@ -1663,7 +1663,8 @@ namespace System.Data
             int x_id = Minimum(root);
             for (int i = 0; i < count; ++i)
             {
-                array[index + i] = Key(x_id);
+                // Can't annotate generic array for element nullability
+                array[index + i] = Key(x_id)!;
                 x_id = Successor(x_id);
             }
         }
@@ -1677,7 +1678,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].rightId = rightNodeId;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._rightId = rightNodeId;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._rightId = rightNodeId;
         }
 
         private void SetLeft(int nodeId, int leftNodeId)
@@ -1687,7 +1688,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].leftId = leftNodeId;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._leftId = leftNodeId;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._leftId = leftNodeId;
         }
 
         private void SetParent(int nodeId, int parentNodeId)
@@ -1698,7 +1699,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].parentId = parentNodeId;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._parentId = parentNodeId;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._parentId = parentNodeId;
         }
 
         private void SetColor(int nodeId, NodeColor color)
@@ -1709,7 +1710,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].nodeColor = color;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._nodeColor = color;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._nodeColor = color;
         }
 
         private void SetKey(int nodeId, K key)
@@ -1719,7 +1720,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].keyOfNode = key;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._keyOfNode = key;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._keyOfNode = key;
         }
 
         private void SetNext(int nodeId, int nextNodeId)
@@ -1729,17 +1730,17 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].nextId = nextNodeId;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._nextId = nextNodeId;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._nextId = nextNodeId;
         }
 
         private void SetSubTreeSize(int nodeId, int size)
         {
             Debug.Assert(nodeId != NIL &&
-                         (size != 0 || _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._selfId == NIL) &&
-                         (size != 1 || _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._nextId == NIL), "SetSize");
+                         (size != 0 || _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._selfId == NIL) &&
+                         (size != 1 || _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._nextId == NIL), "SetSize");
 
             // this improves performance by reducing the impact of this heavily used method
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize = size;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize = size;
             VerifySize(nodeId, size);
         }
 
@@ -1750,7 +1751,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].subTreeSize += 1;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize += 1;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize += 1;
         }
 
 
@@ -1762,7 +1763,7 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].subTreeSize = myCorrectSize;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize = myCorrectSize;
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize = myCorrectSize;
         }
 
         private void DecreaseSize(int nodeId)
@@ -1772,8 +1773,8 @@ namespace System.Data
             int slotIndex = nodeId & 0xFFFF;
             page.Slots[slotIndex].subTreeSize -= 1;
             */
-            _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize -= 1;
-            VerifySize(nodeId, _pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize);
+            _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize -= 1;
+            VerifySize(nodeId, _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize);
         }
 
         [ConditionalAttribute("DEBUG")]
@@ -1791,7 +1792,7 @@ namespace System.Data
             int rightId = page.Slots[slotIndex].rightId;
             return rightId;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._rightId);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._rightId);
         }
 
         public int Left(int nodeId)
@@ -1802,7 +1803,7 @@ namespace System.Data
             int leftId = page.Slots[slotIndex].leftId;
             return leftId;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._leftId);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._leftId);
         }
 
         public int Parent(int nodeId)
@@ -1813,7 +1814,7 @@ namespace System.Data
             int parentId = page.Slots[slotIndex].parentId;
             return parentId;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._parentId);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._parentId);
         }
 
         private NodeColor color(int nodeId)
@@ -1824,7 +1825,7 @@ namespace System.Data
             NodeColor col = page.Slots[slotIndex].nodeColor;
             return col;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._nodeColor);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._nodeColor);
         }
 
         public int Next(int nodeId)
@@ -1835,7 +1836,7 @@ namespace System.Data
             int nextId = page.Slots[slotIndex].nextId;
             return nextId;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._nextId);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._nextId);
         }
 
         public int SubTreeSize(int nodeId)
@@ -1846,7 +1847,7 @@ namespace System.Data
             int size = page.Slots[slotIndex].subTreeSize;
             return size;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._subTreeSize);
+            return (_pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._subTreeSize);
         }
 
         public K Key(int nodeId)
@@ -1857,7 +1858,7 @@ namespace System.Data
             K key = page.Slots[slotIndex].keyOfNode;
             return key;
             */
-            return (_pageTable[nodeId >> 16]._slots[nodeId & 0xFFFF]._keyOfNode);
+            return _pageTable[nodeId >> 16]!._slots[nodeId & 0xFFFF]._keyOfNode!;
         }
 
         private enum NodeColor
@@ -1874,6 +1875,7 @@ namespace System.Data
             internal int _parentId;
             internal int _nextId;      // multiple records associated with same key
             internal int _subTreeSize;     // number of nodes in subtree rooted at the current node
+            [AllowNull, MaybeNull]
             internal K _keyOfNode;
             internal NodeColor _nodeColor;
         }
@@ -2040,6 +2042,7 @@ namespace System.Data
             private readonly RBTree<K> _tree;
             private readonly int _version;
             private int _index, _mainTreeNodeId;
+            [AllowNull, MaybeNull]
             private K _current;
 
             internal RBTreeEnumerator(RBTree<K> tree)
@@ -2091,11 +2094,12 @@ namespace System.Data
             {
                 get
                 {
-                    return _current;
+                    // TODO: Should throw if MoveNext hasn't been called
+                    return _current!;
                 }
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {

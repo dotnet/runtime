@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILMarshalers.cpp
 //
@@ -3666,7 +3665,8 @@ void ILAsAnyMarshalerBase::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(marshalerType);
     DWORD dwTmpLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
+    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(dwTmpLocalNum);
 
@@ -3763,7 +3763,8 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
+    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4379,7 +4380,8 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdFixedArrayMarshaler));
+    _ASSERTE(sizeof(MngdFixedArrayMarshaler) == sizeof(void*) * 4 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 4 + 16); // sizeof(MngdFixedArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4606,7 +4608,8 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdSafeArrayMarshaler));
+    _ASSERTE(sizeof(MngdSafeArrayMarshaler) == sizeof(void*) * 2 + 8);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 2 + 8); // sizeof(MngdSafeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4902,7 +4905,8 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdRefCustomMarshaler));
+    _ASSERTE(sizeof(MngdRefCustomMarshaler) == sizeof(void*));
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE); // sizeof(MngdRefCustomMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 

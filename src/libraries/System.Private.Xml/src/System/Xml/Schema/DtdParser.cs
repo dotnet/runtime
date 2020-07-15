@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -155,9 +154,9 @@ namespace System.Xml
 
         // flags
         private bool _normalize = true;
-        private bool _validate = false;
+        private bool _validate;
         private bool _supportNamespaces = true;
-        private bool _v1Compat = false;
+        private bool _v1Compat;
 
         // cached character buffer
         private char[] _chars = null!;
@@ -179,26 +178,26 @@ namespace System.Xml
         private int _colonPos;
 
         // value of the internal subset
-        private StringBuilder? _internalSubsetValueSb = null;
+        private StringBuilder? _internalSubsetValueSb;
 
         // entities
-        private int _externalEntitiesDepth = 0;
-        private int _currentEntityId = 0;
+        private int _externalEntitiesDepth;
+        private int _currentEntityId;
 
         // free-floating DTD support
-        private bool _freeFloatingDtd = false;
-        private bool _hasFreeFloatingInternalSubset = false;
+        private bool _freeFloatingDtd;
+        private bool _hasFreeFloatingInternalSubset;
 
         // misc
         private StringBuilder _stringBuilder = null!;
-        private int _condSectionDepth = 0;
+        private int _condSectionDepth;
         private LineInfo _literalLineInfo = new LineInfo(0, 0);
         private char _literalQuoteChar = '"';
         private string _documentBaseUri = string.Empty;
         private string _externalDtdBaseUri = string.Empty;
 
-        private Dictionary<string, UndeclaredNotation>? _undeclaredNotations = null;
-        private int[]? _condSectionEntityIds = null;
+        private Dictionary<string, UndeclaredNotation>? _undeclaredNotations;
+        private int[]? _condSectionEntityIds;
 
         private const int CondSectionEntityIdsInitialSize = 2;
 
@@ -2825,11 +2824,7 @@ namespace System.Xml
                         }
                         if (_chars[_curPos + 1] != 'C' || _chars[_curPos + 2] != 'L' ||
                              _chars[_curPos + 3] != 'U' || _chars[_curPos + 4] != 'D' ||
-                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6])
-#if XML10_FIFTH_EDITION
-                             || xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+6] )
-#endif
-                            )
+                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6]))
                         {
                             goto default;
                         }
@@ -2840,11 +2835,7 @@ namespace System.Xml
                     case 'G':
                         if (_chars[_curPos + 1] != 'N' || _chars[_curPos + 2] != 'O' ||
                              _chars[_curPos + 3] != 'R' || _chars[_curPos + 4] != 'E' ||
-                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5])
-#if XML10_FIFTH_EDITION
-                            ||xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+5] )
-#endif
-                            )
+                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5]))
                         {
                             goto default;
                         }
@@ -3013,11 +3004,6 @@ namespace System.Xml
                 {
                     _curPos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos+1], chars[curPos])) {
-                    curPos += 2;
-                }
-#endif
                 else
                 {
                     if (_curPos + 1 >= _charsUsed)
@@ -3042,11 +3028,6 @@ namespace System.Xml
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if ( curPos + 1 < charsUsed && xmlCharType.IsNameSurrogateChar(chars[curPos + 1], chars[curPos]) ) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -3072,11 +3053,7 @@ namespace System.Xml
                     }
                 }
                 // end of buffer
-                else if (_curPos == _charsUsed
-#if XML10_FIFTH_EDITION
-                    || ( curPos + 1 == charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) )
-#endif
-                    )
+                else if (_curPos == _charsUsed)
                 {
                     if (ReadDataInName())
                     {
@@ -3115,22 +3092,13 @@ namespace System.Xml
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos + 1], chars[curPos])) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
                     }
                 }
 
-                if (_curPos < _charsUsed
-#if XML10_FIFTH_EDITION
-                    && ( !xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) || curPos + 1 < charsUsed )
-#endif
-                    )
+                if (_curPos < _charsUsed)
                 {
                     if (_curPos - _tokenStartPos == 0)
                     {
@@ -3563,11 +3531,7 @@ namespace System.Xml
 
         private string ParseUnexpectedToken(int startPos)
         {
-            if (_xmlCharType.IsNCNameSingleChar(_chars[startPos])
-#if XML10_FIFTH_EDITION
-                || xmlCharType.IsNCNameHighSurrogateChar( chars[startPos] )
-#endif
-                )
+            if (_xmlCharType.IsNCNameSingleChar(_chars[startPos]))
             { // postpone the proper surrogate checking to the loop below
                 int endPos = startPos;
                 while (true)
@@ -3576,12 +3540,6 @@ namespace System.Xml
                     {
                         endPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if ( chars[endPos] != 0 && // check for end of the buffer
-                              xmlCharType.IsNCNameSurrogateChar( chars[endPos], chars[endPos + 1] ) ) {
-                        endPos += 2;
-                    }
-#endif
                     else
                     {
                         break;

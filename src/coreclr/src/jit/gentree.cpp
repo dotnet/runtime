@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -615,10 +614,6 @@ void GenTree::CopyReg(GenTree* from)
 //    In case of GT_COPY or GT_RELOAD of a multi-reg call,
 //    GT_COPY/GT_RELOAD is considered having a reg if it
 //    has a reg assigned to any of its positions.
-//
-// Assumption:
-//    In order for this to work properly, gtClearReg must be called
-//    prior to setting the register value.
 //
 bool GenTree::gtHasReg() const
 {
@@ -5921,17 +5916,26 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
         case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
-            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
+#ifdef DEBUG
+            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
+            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
 
             // Create the second indirection
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
@@ -6056,40 +6060,6 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
     baseType         = genActualType(baseType);
     GenTree* initVal = gtNewZeroConNode(baseType);
     initVal->gtType  = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-}
-
-//---------------------------------------------------------------------
-// gtNewSIMDVectorOne: create a GT_SIMD node for Vector<T>.One
-//
-// Arguments:
-//    simdType  -  simd vector type
-//    baseType  -  element type of vector
-//    size      -  size of vector in bytes
-GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
-{
-    GenTree* initVal;
-    if (varTypeIsSmallInt(baseType))
-    {
-        unsigned baseSize = genTypeSize(baseType);
-        int      val;
-        if (baseSize == 1)
-        {
-            val = 0x01010101;
-        }
-        else
-        {
-            val = 0x00010001;
-        }
-        initVal = gtNewIconNode(val);
-    }
-    else
-    {
-        initVal = gtNewOneConNode(baseType);
-    }
-
-    baseType        = genActualType(baseType);
-    initVal->gtType = baseType;
     return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
 }
 #endif // FEATURE_SIMD
@@ -6700,6 +6670,173 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
     }
 }
 
+//----------------------------------------------------------------------------
+// UsesDivideByConstOptimized:
+//    returns true if rationalize will use the division by constant
+//    optimization for this node.
+//
+// Arguments:
+//    this - a GenTreeOp node
+//    comp - the compiler instance
+//
+// Return Value:
+//    Return true iff the node is a GT_DIV,GT_UDIV, GT_MOD or GT_UMOD with
+//    an integer constant and we can perform the division operation using
+//    a reciprocal multiply or a shift operation.
+//
+bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    if (!OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD))
+    {
+        return false;
+    }
+#if defined(TARGET_ARM64)
+    if (OperIs(GT_MOD, GT_UMOD))
+    {
+        // MOD, UMOD not supported for ARM64
+        return false;
+    }
+#endif // TARGET_ARM64
+
+    bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+
+#if !defined(TARGET_64BIT)
+    if (dividend->OperIs(GT_LONG))
+    {
+        return false;
+    }
+#endif
+
+    if (dividend->IsCnsIntOrI())
+    {
+        // We shouldn't see a divmod with constant operands here but if we do then it's likely
+        // because optimizations are disabled or it's a case that's supposed to throw an exception.
+        // Don't optimize this.
+        return false;
+    }
+
+    ssize_t divisorValue;
+    if (divisor->IsCnsIntOrI())
+    {
+        divisorValue = static_cast<ssize_t>(divisor->AsIntCon()->IconValue());
+    }
+    else
+    {
+        ValueNum vn = divisor->gtVNPair.GetLiberal();
+        if (comp->vnStore->IsVNConstant(vn))
+        {
+            divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    const var_types divType = TypeGet();
+
+    if (divisorValue == 0)
+    {
+        // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
+        return false;
+    }
+    else if (isSignedDivide)
+    {
+        if (divisorValue == -1)
+        {
+            // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+            return false;
+        }
+        else if (isPow2(divisorValue))
+        {
+            return true;
+        }
+    }
+    else // unsigned divide
+    {
+        if (divType == TYP_INT)
+        {
+            // Clear up the upper 32 bits of the value, they may be set to 1 because constants
+            // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
+            divisorValue &= UINT32_MAX;
+        }
+
+        size_t unsignedDivisorValue = (size_t)divisorValue;
+        if (isPow2(unsignedDivisorValue))
+        {
+            return true;
+        }
+    }
+
+    const bool isDiv = OperIs(GT_DIV, GT_UDIV);
+
+    if (isDiv)
+    {
+        if (isSignedDivide)
+        {
+            // If the divisor is the minimum representable integer value then the result is either 0 or 1
+            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // If the divisor is greater or equal than 2^(N - 1) then the result is either 0 or 1
+            if (((divType == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
+                ((divType == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+            {
+                return true;
+            }
+        }
+    }
+
+// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    {
+        // All checks pass we can perform the division operation using a reciprocal multiply.
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// CheckDivideByConstOptimized:
+//      Checks if we can use the division by constant optimization
+//      on this node
+//      and if so sets the flag GTF_DIV_BY_CNS_OPT and
+//      set GTF_DONT_CSE on the constant node
+//
+// Arguments:
+//    this       - a GenTreeOp node
+//    comp       - the compiler instance
+//
+void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
+{
+    if (UsesDivideByConstOptimized(comp))
+    {
+        gtFlags |= GTF_DIV_BY_CNS_OPT;
+
+        // Now set DONT_CSE on the GT_CNS_INT divisor, note that
+        // with ValueNumbering we can have a non GT_CNS_INT divisior
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+        if (divisor->OperIs(GT_CNS_INT))
+        {
+            divisor->gtFlags |= GTF_DONT_CSE;
+        }
+    }
+}
+
 //
 //------------------------------------------------------------------------
 // gtBlockOpInit: Initializes a BlkOp GenTree
@@ -7187,7 +7324,10 @@ GenTree* Compiler::gtCloneExpr(
                 else
 #endif
                 {
-                    copy                                  = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+                    copy = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+#ifdef DEBUG
+                    copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
+#endif
                     copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
                 }
@@ -9922,6 +10062,18 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 }
                 goto DASH;
 
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
+                {
+                    printf("M"); // We will use a Multiply by reciprical
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
+
             case GT_LCL_FLD:
             case GT_LCL_VAR:
             case GT_LCL_VAR_ADDR:
@@ -10589,16 +10741,30 @@ void Compiler::gtDispConst(GenTree* tree)
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
-#ifdef TARGET_64BIT
                 }
+#ifdef TARGET_64BIT
                 else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
-                    printf(" 0x%llx", dspIconVal);
-#endif
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%llx", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%llx", -dspIconVal);
+                    }
                 }
+#endif
                 else
                 {
-                    printf(" 0x%X", dspIconVal);
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%X", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%X", -dspIconVal);
+                    }
                 }
 
                 if (tree->IsIconHandle())
@@ -17462,18 +17628,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                     if (context != nullptr)
                     {
-                        CORINFO_CLASS_HANDLE exactClass = nullptr;
-
-                        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-                        {
-                            exactClass = (CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                        }
-                        else
-                        {
-                            CORINFO_METHOD_HANDLE exactMethod =
-                                (CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                            exactClass = info.compCompHnd->getMethodClass(exactMethod);
-                        }
+                        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(context);
 
                         // Grab the signature in this context.
                         CORINFO_SIG_INFO sig;
@@ -18474,11 +18629,9 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     assert(gtOper == GT_SIMD);
     switch (AsSIMD()->gtSIMDIntrinsicID)
     {
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMul:
             return true;
         default:
             return false;
@@ -18639,6 +18792,43 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(
+    var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic)
+{
+    NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
+
+#if defined(TARGET_XARCH)
+#if defined(TARGET_X86)
+    if (varTypeIsLong(baseType) && !op1->IsIntegralConst())
+    {
+        // TODO-XARCH-CQ: It may be beneficial to emit the movq
+        // instruction, which takes a 64-bit memory address and
+        // works on 32-bit x86 systems.
+        unreached();
+    }
+#endif // TARGET_X86
+
+    if (size == 32)
+    {
+        hwIntrinsicID = NI_Vector256_Create;
+    }
+#elif defined(TARGET_ARM64)
+    if (size == 8)
+    {
+        hwIntrinsicID = NI_Vector64_Create;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
