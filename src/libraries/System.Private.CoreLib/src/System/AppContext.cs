@@ -140,8 +140,6 @@ namespace System
             {
                 s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
             }
-
-            SecureAppContext.Initialize();
         }
 #endif
     }

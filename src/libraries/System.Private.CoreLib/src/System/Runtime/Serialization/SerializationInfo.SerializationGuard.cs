@@ -11,39 +11,15 @@ namespace System.Runtime.Serialization
     {
         internal static AsyncLocal<bool> AsyncDeserializationInProgress { get; } = new AsyncLocal<bool>();
 
+        // Ideally this would be contained within the Formatters assembly, but
+        // ResourceReader.Core.cs also needs it for trimming away reflection
+        // code. So it's more convenient to keep it here and have multiple
+        // components depend on it.
         public static bool BinaryFormatterEnabled
-        {
-            get
-            {
-                // The "safe" value for this switch is DISABLED.
-                // This means that we want the feature to be disabled if it
-                // was disabled at app start *or* somebody later disabled it
-                // via a manual call to AppContext.SetSwitch.
-                //
-                // De Morgan's theorem:
-                //    final_disabled = disabled_A || disabled_B
-                // => final_disabled = !(!disabled_A && !disabled_B)
-                // => !final_disabled = !disabled_A && !disabled_B
-                // => final_enabled = enabled_A && enabled_B
-
-                return SecureAppContext.BinaryFormatterEnabled
-                    && LocalAppContextSwitches.BinaryFormatterEnabled;
-            }
-        }
+            => LocalAppContextSwitches.BinaryFormatterEnabled;
 
         public static bool SerializationGuardEnabled
-        {
-            get
-            {
-                // The "safe" value for this switch is ENABLED.
-                // This means that we want the feature to be enabled if it
-                // was enabled at app start *or* somebody later enabled it
-                // via a manual call to AppContext.SetSwitch.
-
-                return SecureAppContext.SerializationGuardEnabled
-                    || LocalAppContextSwitches.SerializationGuard;
-            }
-        }
+            => LocalAppContextSwitches.SerializationGuard;
 
 #if !CORECLR
         // On AoT, assume private members are reflection blocked, so there's no further protection required

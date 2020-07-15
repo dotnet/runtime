@@ -149,7 +149,6 @@
     <Compile Include="System\WeakReferenceTests.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
-    <Compile Include="System\AppContext\SecureAppContext.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
