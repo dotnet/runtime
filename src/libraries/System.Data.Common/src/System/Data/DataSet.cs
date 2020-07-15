@@ -382,8 +382,8 @@ namespace System.Data
                         byte[] buffer = (byte[])info.GetValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), typeof(byte[]));
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
-#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
+#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
 #pragma warning restore MSLIB0003
                         Tables.Add(dt);
