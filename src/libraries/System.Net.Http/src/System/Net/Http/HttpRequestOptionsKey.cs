@@ -7,11 +7,10 @@ namespace System.Net.Http
 {
     public readonly struct HttpRequestOptionsKey<TValue>
     {
-        private readonly string _key;
+        public string Key { get; }
         public HttpRequestOptionsKey(string key)
         {
-            _key = key;
+            Key = key;
         }
-        public string Key => _key;
     }
 }
