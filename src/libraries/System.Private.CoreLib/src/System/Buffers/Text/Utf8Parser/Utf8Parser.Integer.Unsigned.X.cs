@@ -17,8 +17,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -100,8 +99,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -183,8 +181,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -266,8 +263,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
