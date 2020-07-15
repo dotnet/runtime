@@ -2881,7 +2881,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif // FEATURE_HFA
 
 #ifdef TARGET_ARM
-        passUsingFloatRegs    = !callIsVararg && (isHfaArg || varTypeIsFloating(argx)) && !opts.compUseSoftFP;
+        passUsingFloatRegs    = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx)) && !opts.compUseSoftFP;
         bool passUsingIntRegs = passUsingFloatRegs ? false : (intArgRegNum < MAX_REG_ARG);
 
         // We don't use the "size" return value from InferOpSizeAlign().
@@ -2918,7 +2918,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #elif defined(TARGET_ARM64)
 
         assert(!callIsVararg || !isHfaArg);
-        passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeIsFloating(argx));
+        passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx));
 
 #elif defined(TARGET_AMD64)
 
@@ -5554,7 +5554,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     // If the index node is a floating-point type, notify the compiler
     // we'll potentially use floating point registers at the time of codegen.
-    if (varTypeIsFloating(tree->gtType))
+    if (varTypeUsesFloatReg(tree->gtType))
     {
         this->compFloatingPointUsed = true;
     }
