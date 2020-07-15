@@ -619,19 +619,23 @@ var MonoSupportLib = {
 						fileName = fileName.substr(1);
 
 					if (parentDirectory) {
-						console.log ("MONO_WASM: Creating directory '" + parentDirectory + "'");
+						if (ctx.tracing)
+							console.log ("MONO_WASM: Creating directory '" + parentDirectory + "'");
+
 						var pathRet = ctx.createPath(
 							"/", parentDirectory, true, true // fixme: should canWrite be false?
 						);
-					    console.log ("MONO_WASM: Directory create returned", pathRet);
+					} else {
+						parentDirectory = "/";
 					}
 
-					console.log ("MONO_WASM: Creating file '" + fileName + "'");
+					if (ctx.tracing)
+						console.log ("MONO_WASM: Creating file '" + fileName + "' in directory '" + parentDirectory + "'");
+
 					var fileRet = ctx.createDataFile (
-						parentDirectory || "/", fileName,
+						parentDirectory, fileName,
 						bytes, true, false, true
 					);
-				    console.log ("MONO_WASM: File create returned", fileRet);
 
 					break;
 
