@@ -6,6 +6,7 @@
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App.Crossgen2</SharedFrameworkName>
     <SharedFrameworkArchiveName>dotnet-crossgen2</SharedFrameworkArchiveName>
+    <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
@@ -43,8 +44,7 @@
         <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
       </RuntimeFiles>
       <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
-      <RuntimeFiles Remove="@(CrossgenFile)" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile)" />
     </ItemGroup>
   </Target>
 
