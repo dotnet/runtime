@@ -128,6 +128,7 @@ public:
     INT_CONFIG   (GCHeapHardLimitSOHPercent, "GCHeapHardLimitSOHPercent", NULL,                             0,                 "Specifies the GC heap SOH usage as a percentage of the total memory")              \
     INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", NULL,                             0,                 "Specifies the GC heap LOH usage as a percentage of the total memory")              \
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", NULL,                             0,                 "Specifies the GC heap POH usage as a percentage of the total memory")              \
+    INT_CONFIG   (GCEnabledInstructionSets, "GCEnabledInstructionSets", NULL,                        -1,                 "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
