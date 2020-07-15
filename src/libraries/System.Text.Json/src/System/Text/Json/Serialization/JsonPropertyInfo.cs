@@ -147,7 +147,6 @@ namespace System.Text.Json
                         ThrowHelper.ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(this);
                     }
                 }
-                // Else JsonIgnoreCondition == JsonIgnoreCondition.Never
             }
 #pragma warning disable CS0618 // IgnoreNullValues is obsolete
             else if (Options.IgnoreNullValues)
