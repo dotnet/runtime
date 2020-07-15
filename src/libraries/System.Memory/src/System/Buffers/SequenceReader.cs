@@ -161,7 +161,7 @@ namespace System.Buffers
             {
                 long remainingOffset = offset - (CurrentSpan.Length - CurrentSpanIndex);
                 SequencePosition nextPosition = _nextPosition;
-                ReadOnlyMemory<T> currentMemory = default;
+                ReadOnlyMemory<T> currentMemory;
 
                 while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
                 {

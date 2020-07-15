@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
+
 namespace System.ServiceProcess.Tests
 {
     public class Program
     {
         static int Main(string[] args)
         {
+            Thread.CurrentThread.Name = "Test Service";
             if (args.Length == 1 || args.Length == 2)
             {
                 TestService testService;

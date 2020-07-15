@@ -1198,7 +1198,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSuccessCases))]
         public static void ReadTestClassesWithExtensionOption(Type classType, byte[] data)
         {
-            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
+            var options = new JsonSerializerOptions { IncludeFields = true, ReferenceHandler = ReferenceHandler.Preserve };
             object obj = JsonSerializer.Deserialize(data, classType, options);
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();

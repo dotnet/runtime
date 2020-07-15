@@ -230,7 +230,7 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return Encoding.UTF8.GetString(Bytes);
 #else
             if (IsEmpty)
@@ -273,7 +273,7 @@ namespace System.Text
                 int utf16CharCount = Length + utf16CodeUnitCountAdjustment;
                 Debug.Assert(utf16CharCount <= Length && utf16CharCount >= 0);
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
                 return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
                 {

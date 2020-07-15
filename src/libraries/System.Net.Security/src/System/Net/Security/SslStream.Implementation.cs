@@ -35,7 +35,7 @@ namespace System.Net.Security
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
-        private readonly object _handshakeLock = new object();
+        private object _handshakeLock => _sslAuthenticationOptions!;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
         private const int FrameOverhead = 32;
@@ -403,9 +403,9 @@ namespace System.Net.Security
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                if ((_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null) ||
-                     NetEventSource.Log.IsEnabled())
+                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
+                    _sslAuthenticationOptions!.ServerOptionDelegate != null))
                 {
                     TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                 TlsFrameHelper.ProcessingOptions.All :
@@ -421,6 +421,14 @@ namespace System.Net.Security
                     {
                         // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
                         _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            SslServerAuthenticationOptions userOptions =
+                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_lastFrame.TargetName, _lastFrame.SupportedVersions),
+                                                                                    _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
+                            _sslAuthenticationOptions.UpdateOptions(userOptions);
+                        }
                     }
 
                     if (NetEventSource.Log.IsEnabled())

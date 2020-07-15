@@ -1411,11 +1411,11 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, activity.Events.Count());
             Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
             Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(0).Tags.Count());
 
             Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
             Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(1).Tags.Count());
         }
 
         [Fact]
@@ -1426,6 +1426,86 @@ namespace System.Diagnostics.Tests
             Assert.True(a1.IsAllDataRequested);
             Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
             Assert.Equal(1, a1.Tags.Count());
+        }
+
+        [Fact]
+        public void TestTagObjects()
+        {
+            Activity activity = new Activity("TagObjects");
+            Assert.Equal(0, activity.Tags.Count());
+            Assert.Equal(0, activity.TagObjects.Count());
+
+            activity.AddTag("s1", "s1").AddTag("s2", "s2").AddTag("s3", null);
+            Assert.Equal(3, activity.Tags.Count());
+            Assert.Equal(3, activity.TagObjects.Count());
+
+            KeyValuePair<string, string>[] tags = activity.Tags.ToArray();
+            KeyValuePair<string, object>[] tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags.Length, tagObjects.Length);
+
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+
+            activity.AddTag("s4", (object) null);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(4, activity.TagObjects.Count());
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags[3].Key, tagObjects[3].Key);
+            Assert.Equal(tags[3].Value, tagObjects[3].Value);
+
+            activity.AddTag("s5", 5);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(5, activity.TagObjects.Count());
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(5, tagObjects[4].Value);
+
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            Assert.Equal(5, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            activity.SetTag("s6", "s6");
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s5", "s6");
+            Assert.Equal(7, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s3", null); // remove the tag
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("key1", null, true,  1)]
+        [InlineData("key2", null, false, 0)]
+        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key4", "v2", false, 1)]
+        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        {
+            Activity a = new Activity("SetFirstTag");
+            if (add)
+            {
+                a.AddTag(key, value);
+            }
+            else
+            {
+                a.SetTag(key, value);
+            }
+
+            Assert.Equal(resultCount, a.TagObjects.Count());
         }
 
         public void Dispose()

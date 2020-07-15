@@ -63,6 +63,7 @@
 #include "interp.h"
 #include "interp-internals.h"
 #include "mintops.h"
+#include "interp-intrins.h"
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -1912,12 +1913,10 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
-		// This can happen on wasm !?
-		MonoException *thrown_exc = (MonoException*) mono_gchandle_get_target_internal (context->exc_gchandle);
-		if (exc)
-			*exc = (MonoObject*)thrown_exc;
-		else
-			mono_error_set_exception_instance (error, thrown_exc);
+		/*
+		 * This can happen on wasm where native frames cannot be skipped during EH.
+		 * EH processing will continue when control returns to the interpreter.
+		 */
 		return NULL;
 	}
 	return (MonoObject*)result.data.p;
@@ -2975,6 +2974,16 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			imethod->jit_entry = addr;
 			return addr;
 		}
+
+#ifdef ENABLE_NETCORE
+		/*
+		 * The runtime expects a function pointer unique to method and
+		 * the native caller expects a function pointer with the
+		 * right signature, so fail right away.
+		 */
+		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
+		return NULL;
+#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -5279,6 +5288,42 @@ call_newobj:
 			size_t size = sp [1].data.nati * sizeof (gpointer);
 			mono_gc_bzero_aligned (p, size);
 			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
+			sp -= 2;
+			interp_intrins_marvin_block ((guint32*)sp [0].data.p, (guint32*)sp [1].data.p);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
+			sp [-1].data.i = interp_intrins_ascii_chars_to_uppercase ((guint32)sp [-1].data.i);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII) {
+			sp--;
+			sp [-1].data.i = interp_intrins_ordinal_ignore_case_ascii ((guint32)sp [-1].data.i, (guint32)sp [0].data.i);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII) {
+			sp--;
+			sp [-1].data.i = interp_intrins_64ordinal_ignore_case_ascii ((guint64)sp [-1].data.l, (guint64)sp [0].data.l);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_U32_TO_DECSTR) {
+			MonoArray **cache_addr = (MonoArray**)frame->imethod->data_items [ip [1]];
+			MonoVTable *string_vtable = (MonoVTable*)frame->imethod->data_items [ip [2]];
+			sp [-1].data.o = (MonoObject*)interp_intrins_u32_to_decstr ((guint32)sp [-1].data.i, *cache_addr, string_vtable);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_WIDEN_ASCII_TO_UTF16) {
+			sp -= 2;
+			sp [-1].data.nati = interp_intrins_widen_ascii_to_utf16 ((guint8*)sp [-1].data.p, (mono_unichar2*)sp [0].data.p, sp [1].data.nati);
+			ip++;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {

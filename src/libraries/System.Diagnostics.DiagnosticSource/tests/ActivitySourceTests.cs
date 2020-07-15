@@ -318,10 +318,10 @@ namespace System.Diagnostics.Tests
                 links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key1-value1")));
                 links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key2-value2")));
 
-                List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
-                attributes.Add(new KeyValuePair<string, string>("tag1", "tagValue1"));
-                attributes.Add(new KeyValuePair<string, string>("tag2", "tagValue2"));
-                attributes.Add(new KeyValuePair<string, string>("tag3", "tagValue3"));
+                List<KeyValuePair<string, object>> attributes = new List<KeyValuePair<string, object>>();
+                attributes.Add(new KeyValuePair<string, object>("tag1", "tagValue1"));
+                attributes.Add(new KeyValuePair<string, object>("tag2", "tagValue2"));
+                attributes.Add(new KeyValuePair<string, object>("tag3", "tagValue3"));
 
                 using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
                 {
@@ -336,7 +336,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(ctx.TraceState, activity.TraceStateString);
                     Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
 
-                    foreach (KeyValuePair<string, string> pair in attributes)
+                    foreach (KeyValuePair<string, object> pair in attributes)
                     {
                         Assert.NotEqual(default, activity.Tags.FirstOrDefault((p) => pair.Key == p.Key && pair.Value == pair.Value));
                     }
@@ -431,6 +431,104 @@ namespace System.Diagnostics.Tests
 
                 Assert.NotEqual("99d43cb30a4cdb4fbeee3a19c29201b0", a.TraceId.ToHexString());
                 Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", b.TraceId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityContextIsRemote()
+        {
+            RemoteExecutor.Invoke(() => {
+                ActivityContext ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default);
+                Assert.False(ctx.IsRemote);
+
+                bool isRemote = false;
+
+                using ActivitySource aSource = new ActivitySource("RemoteContext");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "RemoteContext";
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    isRemote = activityOptions.Parent.IsRemote;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                foreach (bool b in new bool[] { true, false })
+                {
+                    ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default, b);
+                    Assert.Equal(b, ctx.IsRemote);
+
+                    aSource.StartActivity("a1", default, ctx);
+                    Assert.Equal(b , isRemote);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceIdAutoGeneration()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("TraceIdAutoGeneration");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "TraceIdAutoGeneration";
+
+                ActivityContext ctx = default;
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    ctx = activityOptions.Parent;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (aSource.StartActivity("a1", default, ctx))
+                {
+                    Assert.Equal(default, ctx);
+                }
+
+                listener.AutoGenerateRootContextTraceId = true;
+
+                Activity activity = aSource.StartActivity("a2", default, ctx);
+
+                Assert.NotNull(activity);
+                Assert.NotEqual(default, ctx);
+                Assert.Equal(ctx.TraceId, activity.TraceId);
+                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceIdAutoGenerationWithNullParentId()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("TraceIdAutoGenerationWithNullParent");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "TraceIdAutoGenerationWithNullParent";
+
+                ActivityContext ctx = default;
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    ctx = activityOptions.Parent;
+                    return ActivityDataRequest.AllData;
+                };
+
+                listener.AutoGenerateRootContextTraceId = true;
+                ActivitySource.AddActivityListener(listener);
+
+                Activity activity = aSource.StartActivity("a2", default, null);
+
+                Assert.NotNull(activity);
+                Assert.NotEqual(default, ctx);
+                Assert.Equal(ctx.TraceId, activity.TraceId);
+                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
             }).Dispose();
         }
 

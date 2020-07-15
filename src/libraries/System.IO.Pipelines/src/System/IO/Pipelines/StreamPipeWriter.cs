@@ -236,7 +236,7 @@ namespace System.IO.Pipelines
 
             if (!_leaveOpen)
             {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
                 InnerStream.Dispose();
@@ -355,7 +355,7 @@ namespace System.IO.Pipelines
 
                 if (returnSegment.Length > 0 && writeToStream)
                 {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                     InnerStream.Write(returnSegment.Memory.Span);
 #else
                     InnerStream.Write(returnSegment.Memory);

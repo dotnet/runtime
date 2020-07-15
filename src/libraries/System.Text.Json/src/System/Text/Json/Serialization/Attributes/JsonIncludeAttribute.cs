@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// When applied to a property, indicates that non-public getters and setters can be used for serialization and deserialization.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class JsonIncludeAttribute : JsonAttribute
     {
         /// <summary>
