@@ -36,9 +36,21 @@ namespace System.Text.Json.Serialization.Converters
             if (elementConverter.CanUseDirectReadOrWrite)
             {
                 // Fast path that avoids validation and extra indirection.
-                for (; index < list.Count; index++)
+
+                JsonNumberHandling? numberHandling = state.Current.NumberHandling;
+                if (numberHandling.HasValue && elementConverter.IsInternalConverterForNumberType)
                 {
-                    elementConverter.Write(writer, list[index], options);
+                    for (; index < list.Count; index++)
+                    {
+                        elementConverter.WriteNumberWithCustomHandling(writer, list[index], numberHandling.Value);
+                    }
+                }
+                else
+                {
+                    for (; index < list.Count; index++)
+                    {
+                        elementConverter.Write(writer, list[index], options);
+                    }
                 }
             }
             else

@@ -28,6 +28,7 @@ namespace System.Text.Json
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
+            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -38,6 +39,7 @@ namespace System.Text.Json
                 memberInfo,
                 converter,
                 ignoreCondition,
+                parentTypeNumberHandling,
                 options);
 
             switch (memberInfo)
@@ -89,7 +91,7 @@ namespace System.Text.Json
                     }
             }
 
-            GetPolicies(ignoreCondition, defaultValueIsNull: Converter.CanBeNull);
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -213,9 +215,13 @@ namespace System.Text.Json
             {
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
+                    JsonNumberHandling? numberHandling = state.Current.NumberHandling;
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    Set!(obj, fastvalue!);
+                    T fastValue = numberHandling.HasValue && Converter.IsInternalConverterForNumberType
+                        ? Converter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value)
+                        : Converter.Read(ref reader, RuntimePropertyType!, Options);
+
+                    Set!(obj, fastValue!);
                 }
 
                 success = true;
@@ -255,7 +261,10 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (Converter.CanUseDirectReadOrWrite)
                 {
-                    value = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    JsonNumberHandling? numberHandling = state.Current.NumberHandling;
+                    value = numberHandling.HasValue && Converter.IsInternalConverterForNumberType
+                        ? Converter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value)
+                        : Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }
                 else

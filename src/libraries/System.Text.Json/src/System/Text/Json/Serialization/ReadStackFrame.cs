@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -42,6 +43,9 @@ namespace System.Text.Json
         // Holds relevant state when deserializing objects with parameterized constructors.
         public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
+
+        // Whether to use custom number handling.
+        public JsonNumberHandling? NumberHandling;
 
         public void EndConstructorParameter()
         {
@@ -89,6 +93,7 @@ namespace System.Text.Json
             CtorArgumentStateIndex = 0;
             CtorArgumentState = null;
             JsonClassInfo = null!;
+            NumberHandling = null;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;

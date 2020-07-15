@@ -7,27 +7,13 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override short Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.String &&
-                options != null &&
-                (JsonNumberHandling.AllowReadingFromString & options.NumberHandling) != 0)
-            {
-                return reader.GetInt16WithQuotes();
-            }
-
             return reader.GetInt16();
         }
 
         public override void Write(Utf8JsonWriter writer, short value, JsonSerializerOptions options)
         {
-            if (options != null && ((JsonNumberHandling.WriteAsString & options.NumberHandling) != 0))
-            {
-                writer.WriteNumberValueAsString(value);
-            }
-            else
-            {
-                // For performance, lift up the writer implementation.
-                writer.WriteNumberValue((long)value);
-            }
+            // For performance, lift up the writer implementation.
+            writer.WriteNumberValue((long)value);
         }
 
         internal override short ReadWithQuotes(ref Utf8JsonReader reader)
@@ -39,5 +25,31 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WritePropertyName(value);
         }
+
+        internal override short ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            if (reader.TokenType == JsonTokenType.String &&
+                (JsonNumberHandling.AllowReadingFromString & handling) != 0)
+            {
+                return reader.GetInt16WithQuotes();
+            }
+
+            return reader.GetInt16();
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, short value, JsonNumberHandling handling)
+        {
+            if ((JsonNumberHandling.WriteAsString & handling) != 0)
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else
+            {
+                // For performance, lift up the writer implementation.
+                writer.WriteNumberValue((long)value);
+            }
+        }
+
+        internal override bool IsInternalConverterForNumberType => true;
     }
 }

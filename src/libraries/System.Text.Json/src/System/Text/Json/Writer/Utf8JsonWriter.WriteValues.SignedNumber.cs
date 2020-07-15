@@ -107,8 +107,8 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
-        internal void WriteNumberValueAsString(int value)
-            => WriteNumberValueAsString((long)value);
+        //internal void WriteNumberValueAsString(int value)
+        //    => WriteNumberValueAsString((long)value);
 
         internal void WriteNumberValueAsString(long value)
         {

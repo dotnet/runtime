@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -69,11 +68,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool CanBeNull { get; }
 
-        /// <summary>
-        /// Is the converter built-in.
-        /// </summary>
-        internal bool IsInternalConverter { get; set; }
-
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -84,14 +78,30 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Write(writer, value, options);
+            JsonNumberHandling? numberHandling = state.Current.NumberHandling;
+            if (numberHandling.HasValue)
+            {
+                WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
+            }
+            else
+            {
+                Write(writer, value, options);
+            }
             return true;
         }
 
         // Provide a default implementation for value converters.
         internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
-            value = Read(ref reader, typeToConvert, options);
+            JsonNumberHandling? numberHandling = state.Current.NumberHandling;
+            if (numberHandling.HasValue)
+            {
+                value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+            }
+            else
+            {
+                value = Read(ref reader, typeToConvert, options);
+            }
             return true;
         }
 
@@ -127,11 +137,21 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
+                JsonNumberHandling? numberHandling = state.Current.JsonClassInfo.PropertyInfoForClassInfo!.NumberHandling;
+
 #if !DEBUG
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options);
+                    if (IsInternalConverterForNumberType)
+                    {
+                        Debug.Assert(numberHandling.HasValue);
+                        value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
                 }
                 else
 #endif
@@ -140,7 +160,15 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options);
+                    if (numberHandling.HasValue && IsInternalConverterForNumberType)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
+
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
@@ -269,7 +297,17 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(!state.IsContinuation);
 
                         int originalPropertyDepth = writer.CurrentDepth;
-                        Write(writer, value, options);
+
+                        JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.DeclaredJsonPropertyInfo!.NumberHandling;
+                        if (IsInternalConverterForNumberType && numberHandling.HasValue)
+                        {
+                            WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
+                        }
+                        else
+                        {
+                            Write(writer, value, options);
+                        }
+
                         VerifyWrite(originalPropertyDepth, writer);
                     }
 
@@ -309,7 +347,17 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                Write(writer, value, options);
+                JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.DeclaredJsonPropertyInfo!.NumberHandling;
+                if (IsInternalConverterForNumberType && numberHandling.HasValue)
+                {
+                    WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
+                }
+                else
+                {
+                    Write(writer, value, options);
+                }
+
+                // TODO, for internal converters, do we need to verify write here?
                 VerifyWrite(originalPropertyDepth, writer);
                 return true;
             }
@@ -452,5 +500,11 @@ namespace System.Text.Json.Serialization
 
         internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
             => WriteWithQuotes(writer, (T)value, options, ref state);
+
+        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
     }
 }

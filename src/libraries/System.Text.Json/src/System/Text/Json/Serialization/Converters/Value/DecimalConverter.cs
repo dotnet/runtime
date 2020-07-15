@@ -7,26 +7,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.String &&
-                options != null &&
-                (JsonNumberHandling.AllowReadingFromString & options.NumberHandling) != 0)
-            {
-                return reader.GetDecimalWithQuotes();
-            }
-
             return reader.GetDecimal();
         }
 
         public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
         {
-            if (options != null && ((JsonNumberHandling.WriteAsString & options.NumberHandling) != 0))
-            {
-                writer.WriteNumberValueAsString(value);
-            }
-            else
-            {
-                writer.WriteNumberValue(value);
-            }
+            writer.WriteNumberValue(value);
         }
 
         internal override decimal ReadWithQuotes(ref Utf8JsonReader reader)
@@ -38,5 +24,30 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WritePropertyName(value);
         }
+
+        internal override decimal ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            if (reader.TokenType == JsonTokenType.String &&
+                (JsonNumberHandling.AllowReadingFromString & handling) != 0)
+            {
+                return reader.GetDecimalWithQuotes();
+            }
+
+            return reader.GetDecimal();
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, decimal value, JsonNumberHandling handling)
+        {
+            if ((JsonNumberHandling.WriteAsString & handling) != 0)
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else
+            {
+                writer.WriteNumberValue(value);
+            }
+        }
+
+        internal override bool IsInternalConverterForNumberType => true;
     }
 }

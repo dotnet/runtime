@@ -151,5 +151,50 @@ namespace System.Text.Json
             Debug.Assert(result);
             WriteNumberValueAsString(utf8Number.Slice(0, bytesWritten));
         }
+
+        internal void WriteFloatingPointConstant(double value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.NegativeInfinityLiteralConstantLength];
+            int bytesToWrite;
+            if (double.IsNaN(value))
+            {
+                utf8Number[0] = (byte)'N';
+                utf8Number[1] = (byte)'a';
+                utf8Number[2] = (byte)'N';
+                bytesToWrite = 3;
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                utf8Number[0] = (byte)'I';
+                utf8Number[1] = (byte)'n';
+                utf8Number[2] = (byte)'f';
+                utf8Number[3] = (byte)'i';
+                utf8Number[4] = (byte)'n';
+                utf8Number[5] = (byte)'i';
+                utf8Number[6] = (byte)'t';
+                utf8Number[7] = (byte)'y';
+                bytesToWrite = 8;
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                utf8Number[0] = (byte)'-';
+                utf8Number[1] = (byte)'I';
+                utf8Number[2] = (byte)'n';
+                utf8Number[3] = (byte)'f';
+                utf8Number[4] = (byte)'i';
+                utf8Number[5] = (byte)'n';
+                utf8Number[6] = (byte)'i';
+                utf8Number[7] = (byte)'t';
+                utf8Number[8] = (byte)'y';
+                bytesToWrite = 9;
+            }
+            else
+            {
+                WriteNumberValue(value);
+                return;
+            }
+
+            WriteNumberValueAsString(utf8Number.Slice(0, bytesToWrite));
+        }
     }
 }

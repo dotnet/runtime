@@ -7,26 +7,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override ulong Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.String &&
-                options != null &&
-                (JsonNumberHandling.AllowReadingFromString & options.NumberHandling) != 0)
-            {
-                return reader.GetUInt64WithQuotes();
-            }
-
             return reader.GetUInt64();
         }
 
         public override void Write(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options)
         {
-            if (options != null && ((JsonNumberHandling.WriteAsString & options.NumberHandling) != 0))
-            {
-                writer.WriteNumberValueAsString(value);
-            }
-            else
-            {
-                writer.WriteNumberValue(value);
-            }
+            writer.WriteNumberValue(value);
         }
 
         internal override ulong ReadWithQuotes(ref Utf8JsonReader reader)
@@ -38,5 +24,30 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WritePropertyName(value);
         }
+
+        internal override ulong ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            if (reader.TokenType == JsonTokenType.String &&
+                (JsonNumberHandling.AllowReadingFromString & handling) != 0)
+            {
+                return reader.GetUInt64WithQuotes();
+            }
+
+            return reader.GetUInt64();
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, ulong value, JsonNumberHandling handling)
+        {
+            if ((JsonNumberHandling.WriteAsString & handling) != 0)
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else
+            {
+                writer.WriteNumberValue(value);
+            }
+        }
+
+        internal override bool IsInternalConverterForNumberType => true;
     }
 }

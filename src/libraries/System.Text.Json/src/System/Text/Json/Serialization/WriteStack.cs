@@ -73,6 +73,7 @@ namespace System.Text.Json
             if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
                 Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
             }
 
             if (options.ReferenceHandler != null)
@@ -96,13 +97,21 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonClassInfo jsonClassInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeClassInfo;
+                    JsonPropertyInfo jsonPropertyInfo = Current.GetPolymorphicJsonPropertyInfo();
+                    JsonClassInfo jsonClassInfo = jsonPropertyInfo.RuntimeClassInfo;
+                    JsonNumberHandling? numberHandling = null;
+
+                    if (((ClassType.Enumerable | ClassType.Dictionary) & jsonClassInfo.ClassType) != 0)
+                    {
+                        numberHandling = jsonPropertyInfo.NumberHandling;
+                    }
 
                     AddCurrent();
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    Current.NumberHandling = numberHandling;
                 }
             }
             else if (_continuationCount == 1)

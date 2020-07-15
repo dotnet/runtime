@@ -334,5 +334,100 @@ namespace System.Text.Json
 
             return default;
         }
+
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)
+        {
+            if (span.Length == 3)
+            {
+                if (ValueIsNan(span))
+                {
+                    value = float.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (ValueIsPositiveInfinity(span))
+                {
+                    value = float.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (ValueIsNegativeInfinity(span))
+                {
+                    value = float.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = 0;
+            return false;
+        }
+
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out double value)
+        {
+            if (span.Length == 3)
+            {
+                if (ValueIsNan(span))
+                {
+                    value = double.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (ValueIsPositiveInfinity(span))
+                {
+                    value = double.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (ValueIsNegativeInfinity(span))
+                {
+                    value = double.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = 0;
+            return false;
+        }
+
+        private static bool ValueIsNan(ReadOnlySpan<byte> span)
+        {
+            Debug.Assert(span.Length == 3);
+            return span[0] == (byte)'N' && span[1] == (byte)'a' && span[2] == (byte)'N';
+        }
+
+        private static bool ValueIsPositiveInfinity(ReadOnlySpan<byte> span)
+        {
+            Debug.Assert(span.Length == 8);
+            return span[0] == (byte)'I' &&
+                span[1] == (byte)'n' &&
+                span[2] == (byte)'f' &&
+                span[3] == (byte)'i' &&
+                span[4] == (byte)'n' &&
+                span[5] == (byte)'i' &&
+                span[6] == (byte)'t' &&
+                span[7] == (byte)'y';
+        }
+
+        private static bool ValueIsNegativeInfinity(ReadOnlySpan<byte> span)
+        {
+            Debug.Assert(span.Length == 9);
+            return span[0] == (byte)'-' &&
+                span[1] == (byte)'I' &&
+                span[2] == (byte)'n' &&
+                span[3] == (byte)'f' &&
+                span[4] == (byte)'i' &&
+                span[5] == (byte)'n' &&
+                span[6] == (byte)'i' &&
+                span[7] == (byte)'t' &&
+                span[8] == (byte)'y';
+        }
     }
 }

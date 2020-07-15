@@ -542,6 +542,12 @@ namespace System.Text.Json.Serialization
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed partial class JsonNumberHandlingAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonNumberHandlingAttribute(System.Text.Json.Serialization.JsonNumberHandling handling) { }
+        public System.Text.Json.Serialization.JsonNumberHandling Handling { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple = false)]
     public sealed partial class JsonConstructorAttribute : System.Text.Json.Serialization.JsonAttribute
     {

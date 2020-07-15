@@ -109,15 +109,18 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
+                    JsonNumberHandling? numberHandling = null;
                     if (Current.JsonClassInfo.ClassType == ClassType.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
                             jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                            numberHandling = Current.JsonPropertyInfo.NumberHandling;
                         }
                         else
                         {
                             jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
+                            numberHandling = Current.CtorArgumentState!.JsonParameterInfo!.NumberHandling;
                         }
                     }
                     else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
@@ -135,6 +138,7 @@ namespace System.Text.Json
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    Current.NumberHandling = numberHandling;
                 }
             }
             else if (_continuationCount == 1)

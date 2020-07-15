@@ -417,60 +417,34 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
+            if (JsonReaderHelper.TryGetFloatingPointConstant(span, out float value))
+            {
+                return value;
+            }
+
             char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
-            if (Utf8Parser.TryParse(span, out float value, out int bytesConsumed, numberFormat)
+            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed, numberFormat)
                 && span.Length == bytesConsumed)
             {
-                bool shouldThrow = false;
-
-                // Enforce consistency between NETCOREAPP and NETFX given that
-                // Utf8Parser.TryParse behaves differently for these values.
-
-                if (float.IsNaN(value))
-                {
-                    if (!(span.Length == 3 && span[0] == (byte)'N' && span[1] == (byte)'a' && span[2] == (byte)'N'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-                else if (float.IsPositiveInfinity(value))
-                {
-                    if (!(
-                        span.Length == 8 &&
-                        span[0] == (byte)'I' &&
-                        span[1] == (byte)'n' &&
-                        span[2] == (byte)'f' &&
-                        span[3] == (byte)'i' &&
-                        span[4] == (byte)'n' &&
-                        span[5] == (byte)'i' &&
-                        span[6] == (byte)'t' &&
-                        span[7] == (byte)'y'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-                else if (float.IsNegativeInfinity(value))
-                {
-                    if (!(
-                        span.Length == 9 &&
-                        span[0] == (byte)'-' &&
-                        span[1] == (byte)'I' &&
-                        span[2] == (byte)'n' &&
-                        span[3] == (byte)'f' &&
-                        span[4] == (byte)'i' &&
-                        span[5] == (byte)'n' &&
-                        span[6] == (byte)'i' &&
-                        span[7] == (byte)'t' &&
-                        span[8] == (byte)'y'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-
-                if (!shouldThrow)
+                // NETCOREAPP implementation of the TryParse method above permits case-insenstive variants of the
+                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implmentation.
+                // The following logic reconciles the two implementations to enforce consistent behavior.
+                if (!float.IsNaN(value) && !float.IsPositiveInfinity(value) && !float.IsNegativeInfinity(value))
                 {
                     return value;
                 }
+            }
+
+            throw ThrowHelper.GetFormatException(NumericType.Single);
+        }
+
+        internal float GetSingleFloatingPointConstant()
+        {
+            ReadOnlySpan<byte> span = GetUnescapedSpan();
+
+            if (JsonReaderHelper.TryGetFloatingPointConstant(span, out float value))
+            {
+                return value;
             }
 
             throw ThrowHelper.GetFormatException(NumericType.Single);
@@ -503,60 +477,34 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
+            if (JsonReaderHelper.TryGetFloatingPointConstant(span, out double value))
+            {
+                return value;
+            }
+
             char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
-            if (Utf8Parser.TryParse(span, out double value, out int bytesConsumed, numberFormat)
+            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed, numberFormat)
                 && span.Length == bytesConsumed)
             {
-                bool shouldThrow = false;
-
-                // Enforce consistency between NETCOREAPP and NETFX given that
-                // Utf8Parser.TryParse behaves differently for these values.
-
-                if (double.IsNaN(value))
-                {
-                    if (!(span.Length == 3 && span[0] == (byte)'N' && span[1] == (byte)'a' && span[2] == (byte)'N'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-                else if (double.IsPositiveInfinity(value))
-                {
-                    if (!(
-                        span.Length == 8 &&
-                        span[0] == (byte)'I' &&
-                        span[1] == (byte)'n' &&
-                        span[2] == (byte)'f' &&
-                        span[3] == (byte)'i' &&
-                        span[4] == (byte)'n' &&
-                        span[5] == (byte)'i' &&
-                        span[6] == (byte)'t' &&
-                        span[7] == (byte)'y'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-                else if (double.IsNegativeInfinity(value))
-                {
-                    if (!(
-                        span.Length == 9 &&
-                        span[0] == (byte)'-' &&
-                        span[1] == (byte)'I' &&
-                        span[2] == (byte)'n' &&
-                        span[3] == (byte)'f' &&
-                        span[4] == (byte)'i' &&
-                        span[5] == (byte)'n' &&
-                        span[6] == (byte)'i' &&
-                        span[7] == (byte)'t' &&
-                        span[8] == (byte)'y'))
-                    {
-                        shouldThrow = true;
-                    }
-                }
-
-                if (!shouldThrow)
+                // NETCOREAPP implmentation of the TryParse method above permits case-insenstive variants of the
+                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implmentation.
+                // The following logic reconciles the two implementations to enforce consistent behavior.
+                if (!double.IsNaN(value) && !double.IsPositiveInfinity(value) && !double.IsNegativeInfinity(value))
                 {
                     return value;
                 }
+            }
+
+            throw ThrowHelper.GetFormatException(NumericType.Double);
+        }
+
+        internal double GetDoubleFloatingPointConstant()
+        {
+            ReadOnlySpan<byte> span = GetUnescapedSpan();
+
+            if (JsonReaderHelper.TryGetFloatingPointConstant(span, out double value))
+            {
+                return value;
             }
 
             throw ThrowHelper.GetFormatException(NumericType.Double);

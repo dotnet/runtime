@@ -16,9 +16,9 @@ namespace System.Text.Json.Serialization.Converters
         protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
-        protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
+        protected static JsonConverter<TElement> GetElementConverter(JsonClassInfo elementClassInfo)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)elementClassInfo.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -39,6 +39,8 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
+            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+
             if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
@@ -50,21 +52,41 @@ namespace System.Text.Json.Serialization.Converters
 
                 CreateCollection(ref reader, ref state, options);
 
-                JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
+                JsonConverter<TElement> elementConverter = GetElementConverter(elementClassInfo);
                 if (elementConverter.CanUseDirectReadOrWrite)
                 {
-                    // Fast path that avoids validation and extra indirection.
-                    while (true)
+                    // Use number handling on the enumerable property which was preserved when pushing it as a new ReadStackFrame, or
+                    // on the enumerable itself (likely custom). Handling on property wins.
+                    JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.JsonPropertyInfo!.NumberHandling;
+                    if (numberHandling.HasValue && elementConverter.IsInternalConverterForNumberType)
                     {
-                        reader.ReadWithVerify();
-                        if (reader.TokenType == JsonTokenType.EndArray)
+                        // Fast path that avoids validation and extra indirection.
+                        while (true)
                         {
-                            break;
+                            reader.ReadWithVerify();
+                            if (reader.TokenType == JsonTokenType.EndArray)
+                            {
+                                break;
+                            }
+                            // Obtain the CLR value from the JSON and apply to the object.
+                            TElement element = elementConverter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+                            Add(element!, ref state);
                         }
-
-                        // Obtain the CLR value from the JSON and apply to the object.
-                        TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
-                        Add(element!, ref state);
+                    }
+                    else
+                    {
+                        // Fast path that avoids validation and extra indirection.
+                        while (true)
+                        {
+                            reader.ReadWithVerify();
+                            if (reader.TokenType == JsonTokenType.EndArray)
+                            {
+                                break;
+                            }
+                            // Obtain the CLR value from the JSON and apply to the object.
+                            TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
+                            Add(element!, ref state);
+                        }
                     }
                 }
                 else
@@ -154,7 +176,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.ObjectState < StackFrameObjectState.ReadElements)
                 {
-                    JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
+                    JsonConverter<TElement> elementConverter = GetElementConverter(elementClassInfo);
 
                     // Process all elements.
                     while (true)
@@ -275,6 +297,9 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.MetadataPropertyName = metadata;
                     }
 
+                    // If this enumerable is not a property on an object, or no handling was specified on the property
+                    // use the handling specified on the enumrarable type (likely custom) or globally on JsonSerializerOptions.
+                    state.Current.NumberHandling ??= state.Current.JsonClassInfo.PropertyInfoForClassInfo!.NumberHandling;
                     state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 }
 

@@ -49,18 +49,32 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
+            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+
             JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
             if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite)
             {
+                JsonNumberHandling? numberHandling = state.Current.NumberHandling;
                 // Fast path that avoids validation and extra indirection.
-                do
+                if (numberHandling.HasValue && valueConverter.IsInternalConverterForNumberType)
                 {
-                    TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
-
-                    valueConverter.Write(writer, enumerator.Current.Value, options);
-                } while (enumerator.MoveNext());
+                    do
+                    {
+                        TKey key = enumerator.Current.Key;
+                        keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                        valueConverter.WriteNumberWithCustomHandling(writer, enumerator.Current.Value, numberHandling.Value);
+                    } while (enumerator.MoveNext());
+                }
+                else
+                {
+                    do
+                    {
+                        TKey key = enumerator.Current.Key;
+                        keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                        valueConverter.Write(writer, enumerator.Current.Value, options);
+                    } while (enumerator.MoveNext());
+                }
             }
             else
             {
