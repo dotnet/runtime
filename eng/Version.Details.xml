@@ -120,7 +120,7 @@
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20364.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>bf5a3a643815a8a46693d618d08dbc96f353ca9e</Sha>
+      <Sha>d75e68181dfd8cad98dfd1c42c3ac2f893690d66</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="9.0.1-alpha.1.20356.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>

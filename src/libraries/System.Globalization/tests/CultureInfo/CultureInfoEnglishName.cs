@@ -12,9 +12,15 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
             yield return new object[] { "en-US", "English (United States)" };
-            if (PlatformDetection.IsNotBrowser)
-                // Browser's ICU returns "French (FR)" instead for "fr-FR"
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser's ICU returns "French (FR)" for "fr-FR"
+                yield return new object[] { "fr-FR", "French (FR)" };
+            }
+            else
+            {
                 yield return new object[] { "fr-FR", "French (France)" };
+            }
         }
 
         [Theory]
