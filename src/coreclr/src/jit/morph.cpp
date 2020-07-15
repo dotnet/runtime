@@ -2708,8 +2708,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 #ifdef TARGET_ARM
-        // Don't attempt to CSE this constant
-        // This hits an assert: Assertion failed 'candidates != candidateBit' in lsra.cpp Line: 3723
+        // Issue #xxxx : Don't attempt to CSE this constant on ARM32
+        //
+        // This constant has specific register requirements, and LSRA doesn't currently correctly
+        // handle them when the value is in a CSE'd local.
         indirectCellAddress->SetDoNotCSE();
 #endif // TARGET_ARM
 
