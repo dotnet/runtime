@@ -941,7 +941,7 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-                    if ((AdvSimd.IsSupported || Sse41.X64.IsSupported) && BitConverter.IsLittleEndian)
+                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                     {
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
@@ -995,8 +995,7 @@ namespace System.Text.Unicode
                             if (AdvSimd.IsSupported)
                             {
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
-                                Vector128<byte> source = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(lower, AdvSimd.LoadVector128((short*)pInputBuffer + Vector128<short>.Count));
-                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, source.AsUInt32(), 0);
+                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
                             else
                             {
@@ -1026,8 +1025,7 @@ namespace System.Text.Unicode
                             if (AdvSimd.IsSupported)
                             {
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
-                                Vector128<byte> source = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(lower, AdvSimd.LoadVector128((short*)pOutputBuffer + Vector128<short>.Count));
-                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, source.AsUInt32().ToScalar());
+                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
                             else
                             {
