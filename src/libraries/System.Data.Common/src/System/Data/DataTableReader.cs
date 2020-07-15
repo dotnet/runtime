@@ -10,12 +10,12 @@ namespace System.Data
     {
         private readonly DataTable[] _tables;
         private bool _isOpen = true;
-        private DataTable _schemaTable;
+        private DataTable? _schemaTable;
 
         private int _tableCounter = -1;
         private int _rowCounter = -1;
-        private DataTable _currentDataTable;
-        private DataRow _currentDataRow;
+        private DataTable _currentDataTable = default!; // Always initialized in Init
+        private DataRow? _currentDataRow;
 
         private bool _hasRows = true;
         private bool _reachEORows;
@@ -23,7 +23,7 @@ namespace System.Data
         private bool _schemaIsChanged;
         private bool _started;
         private bool _readerIsInvalid;
-        private DataTableReaderListener _listener;
+        private DataTableReaderListener _listener = default!; // Always initialized in Init
         private bool _tableCleared;
 
         public DataTableReader(DataTable dataTable)
@@ -125,7 +125,7 @@ namespace System.Data
                 _listener.CleanUp();
             }
 
-            _listener = null;
+            _listener = null!;
             _schemaTable = null;
             _isOpen = false;
         }
@@ -335,7 +335,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (bool)_currentDataRow[ordinal];
+                return (bool)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -351,7 +351,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (byte)_currentDataRow[ordinal];
+                return (byte)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -361,14 +361,14 @@ namespace System.Data
             }
         }
 
-        public override long GetBytes(int ordinal, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int ordinal, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
             ValidateState(nameof(GetBytes));
             ValidateReader();
             byte[] tempBuffer;
             try
             {
-                tempBuffer = (byte[])_currentDataRow[ordinal];
+                tempBuffer = (byte[])_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -414,7 +414,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (char)_currentDataRow[ordinal];
+                return (char)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -424,14 +424,14 @@ namespace System.Data
             }
         }
 
-        public override long GetChars(int ordinal, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int ordinal, long dataIndex, char[]? buffer, int bufferIndex, int length)
         {
             ValidateState(nameof(GetChars));
             ValidateReader();
             char[] tempBuffer;
             try
             {
-                tempBuffer = (char[])_currentDataRow[ordinal];
+                tempBuffer = (char[])_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -484,7 +484,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (DateTime)_currentDataRow[ordinal];
+                return (DateTime)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -500,7 +500,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (decimal)_currentDataRow[ordinal];
+                return (decimal)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -516,7 +516,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (double)_currentDataRow[ordinal];
+                return (double)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             { // thrown by DataColumnCollection
@@ -546,7 +546,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (float)_currentDataRow[ordinal];
+                return (float)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -562,7 +562,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (Guid)_currentDataRow[ordinal];
+                return (Guid)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -578,7 +578,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (short)_currentDataRow[ordinal];
+                return (short)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -594,7 +594,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (int)_currentDataRow[ordinal];
+                return (int)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -610,7 +610,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (long)_currentDataRow[ordinal];
+                return (long)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -640,7 +640,7 @@ namespace System.Data
         {
             ValidateOpen(nameof(GetOrdinal));
             ValidateReader();
-            DataColumn dc = _currentDataTable.Columns[name];
+            DataColumn? dc = _currentDataTable.Columns[name];
 
             if (dc != null)
             {
@@ -658,7 +658,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (string)_currentDataRow[ordinal];
+                return (string)_currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -674,7 +674,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return _currentDataRow[ordinal];
+                return _currentDataRow![ordinal];
             }
             catch (IndexOutOfRangeException e)
             {
@@ -694,7 +694,7 @@ namespace System.Data
                 throw ExceptionBuilder.ArgumentNull(nameof(values));
             }
 
-            Array.Copy(_currentDataRow.ItemArray, values, _currentDataRow.ItemArray.Length > values.Length ? values.Length : _currentDataRow.ItemArray.Length);
+            Array.Copy(_currentDataRow!.ItemArray, values, _currentDataRow.ItemArray.Length > values.Length ? values.Length : _currentDataRow.ItemArray.Length);
             return (_currentDataRow.ItemArray.Length > values.Length ? values.Length : _currentDataRow.ItemArray.Length);
         }
         public override bool IsDBNull(int ordinal)
@@ -703,7 +703,7 @@ namespace System.Data
             ValidateReader();
             try
             {
-                return (_currentDataRow.IsNull(ordinal));
+                return (_currentDataRow!.IsNull(ordinal));
             }
             catch (IndexOutOfRangeException e)
             {
@@ -832,7 +832,7 @@ namespace System.Data
                 if (dc.Expression.Length != 0)
                 {
                     bool hasExternalDependency = false;
-                    DataColumn[] dependency = dc.DataExpression.GetDependency();
+                    DataColumn[] dependency = dc.DataExpression!.GetDependency();
                     for (int j = 0; j < dependency.Length; j++)
                     {
                         if (dependency[j].Table != table)
@@ -897,7 +897,8 @@ namespace System.Data
             if ((_currentDataRow == null) || (_currentDataTable == null))
             {
                 ReaderIsInvalid = true;
-                throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);
+                // TODO: This will throw an NRE
+                throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable!.TableName);
             }
 
             //See if without any event raing, if our rows are deleted, or removed! Reader is not invalid, user should be able to read and reach goo row

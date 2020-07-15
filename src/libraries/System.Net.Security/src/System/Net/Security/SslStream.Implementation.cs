@@ -435,7 +435,6 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.UpdateOptions(userOptions);
                         }
 
-                        Console.WriteLine("chainging name form {0} to {1} {2} {3}", _sslAuthenticationOptions!.TargetHost, _lastFrame.TargetName, _sslAuthenticationOptions!.TargetHost == null, _lastFrame.TargetName == null);
                     }
 
                     if (NetEventSource.Log.IsEnabled())

@@ -149,8 +149,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw exInner
                     Catch exInner As OutOfMemoryException
                         Throw exInner
-                    Catch exInner As System.Threading.ThreadAbortException
-                        Throw exInner
                     Catch
                         oTmp = Nothing
                     End Try
@@ -421,8 +419,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw exInner
                     Catch exInner As OutOfMemoryException
                         Throw exInner
-                    Catch exInner As System.Threading.ThreadAbortException
-                        Throw exInner
                     Catch exInner As Exception
                         oTmp = Nothing
                     End Try
@@ -572,8 +568,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Catch ex As StackOverflowException
                             Throw ex
                         Catch ex As OutOfMemoryException
-                            Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
                             Throw ex
                         Catch ex As Exception
                             ' If this assert is triggered due to an AccessViolationException,
@@ -819,8 +813,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Catch ex As StackOverflowException
                             Throw ex
                         Catch ex As OutOfMemoryException
-                            Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
                             Throw ex
                         Catch
                             ' If this assert is triggered because of an AccessViolation exception,

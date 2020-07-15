@@ -212,7 +212,7 @@ namespace System.Diagnostics
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
         public virtual bool IsThreadSafe { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string Name { get { throw null; } set { } }
         protected bool NeedIndent { get { throw null; } set { } }
         public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }

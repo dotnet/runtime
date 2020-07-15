@@ -54,13 +54,6 @@ namespace System.Linq.Parallel
             {
                 tr = InternalAggregate(ref toThrow);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 // If the exception is not an aggregate, we must wrap it up and throw that instead.

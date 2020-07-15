@@ -4812,10 +4812,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
-    assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
+    assert(!varTypeUsesFloatReg(type1) || varTypeUsesFloatReg(type2));
 
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
-    assert(!varTypeIsFloating(type1));
+    assert(!varTypeUsesFloatReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
     regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
@@ -4999,7 +4999,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 genConsumeReg(putArgRegNode);
 
                 // Validate the putArgRegNode has the right type.
-                assert(varTypeIsFloating(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
+                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
                 if (putArgRegNode->GetRegNum() != argReg)
                 {
                     inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), false), argReg, putArgRegNode->GetRegNum());
@@ -5910,12 +5910,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree      = treeNode->AsOp();
-    GenTree*   op1       = tree->gtOp1;
-    GenTree*   op2       = tree->gtOp2;
-    var_types  op1Type   = op1->TypeGet();
-    var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = tree->GetRegNum();
+    GenTreeOp* tree          = treeNode->AsOp();
+    GenTree*   op1           = tree->gtOp1;
+    GenTree*   op2           = tree->gtOp2;
+    var_types  op1Type       = op1->TypeGet();
+    var_types  op2Type       = op2->TypeGet();
+    regNumber  targetReg     = tree->GetRegNum();
+    emitter*   emit          = GetEmitter();
+    bool       canReuseFlags = false;
 
     genConsumeOperands(tree);
 
@@ -5947,6 +5949,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        if (compiler->opts.OptimizationEnabled())
+        {
+            canReuseFlags = true;
+        }
+
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
         ins = INS_test;
@@ -5997,7 +6004,15 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    bool needsOCFlags = !tree->OperIs(GT_EQ, GT_NE);
+    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), needsOCFlags))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+    }
+    else
+    {
+        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
@@ -7065,9 +7080,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
-    const bool srcFltReg = varTypeIsFloating(srcType) || varTypeIsSIMD(srcType);
+    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
-    const bool dstFltReg = varTypeIsFloating(targetType) || varTypeIsSIMD(targetType);
+    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
     assert(dstFltReg == genIsValidFloatReg(targetReg));
     if (srcFltReg != dstFltReg)
     {
@@ -7818,7 +7833,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         else
 #endif // TARGET_X86
         {
-            assert((varTypeIsFloating(type) && genIsValidFloatReg(srcReg)) ||
+            assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
                    (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
             ins = ins_Store(type);
         }
