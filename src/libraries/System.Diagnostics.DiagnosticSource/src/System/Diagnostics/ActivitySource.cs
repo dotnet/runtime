@@ -87,7 +87,7 @@ namespace System.Diagnostics
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, string?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
+        public Activity? StartActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
             => StartActivity(name, kind, parentContext, null, tags, links, startTime);
 
         /// <summary>
@@ -100,10 +100,10 @@ namespace System.Diagnostics
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, string?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
+        public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
             => StartActivity(name, kind, default, parentId, tags, links, startTime);
 
-        private Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, string?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime)
+        private Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime)
         {
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
@@ -169,12 +169,18 @@ namespace System.Diagnostics
             }
             else
             {
-                ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
-                var aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
+                ActivityContext initializedContext = context == default && Activity.Current != null ? Activity.Current.Context : context;
+                optionsWithContext = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivityDataRequest request, ref bool? canUseContext, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     GetRequestedData<ActivityContext>? getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
+                        if (listener.AutoGenerateRootContextTraceId && !canUseContext.HasValue && data.Parent == default)
+                        {
+                            ActivityContext ctx = new ActivityContext(ActivityTraceId.CreateRandom(), default, default);
+                            dataWithContext = new ActivityCreationOptions<ActivityContext>(data.Source, data.Name, ctx, data.Kind, data.Tags, data.Links);
+                            canUseContext = true;
+                        }
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref data);
                         if (dr > request)
                         {
@@ -185,7 +191,7 @@ namespace System.Diagnostics
                         return request != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
-                }, ref aco, ref dataRequest, ref useContext, ref optionsWithContext);
+                }, ref optionsWithContext, ref dataRequest, ref useContext, ref optionsWithContext);
             }
 
             if (dataRequest != ActivityDataRequest.None)
