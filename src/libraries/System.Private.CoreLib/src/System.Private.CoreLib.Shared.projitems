@@ -1705,8 +1705,19 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
+<<<<<<< HEAD
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
+=======
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
+>>>>>>> dd173fa4526... Move GetCurrentProcessId for Browser to managed
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
@@ -1812,6 +1823,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
     </Compile>
@@ -1824,6 +1838,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Browser\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Browser\Interop.GetCurrentProcessId.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
