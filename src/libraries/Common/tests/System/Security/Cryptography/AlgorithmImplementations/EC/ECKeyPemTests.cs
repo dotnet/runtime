@@ -31,8 +31,8 @@ namespace System.Security.Cryptography.Tests
         {
             using (TAlg key = CreateKey())
             {
-                key.ImportFromPem(
-@"-----BEGIN EC PRIVATE KEY-----
+                key.ImportFromPem(@"
+-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -48,8 +48,8 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         {
             using (TAlg key = CreateKey())
             {
-                key.ImportFromPem(
-@"-----BEGIN RSA PRIVATE KEY-----
+                key.ImportFromPem(@"
+-----BEGIN RSA PRIVATE KEY-----
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F

@@ -5,7 +5,7 @@
 
 # Certificate configuration
 
-$script:testDataUri = "https://github.com/dotnet/runtime-assets/archive/master.zip"
+$script:testDataUri = "https://github.com/dotnet/runtime-assets/archive/master.zip" 
 $script:testData = "runtime-assets"
 $script:certificatePath = "$($script:testData)\runtime-assets-master\System.Net.TestData"
 
@@ -24,9 +24,9 @@ Function DeleteTestData
 {
     if (Test-Path $script:testData)
     {
-        rmdir $script:testData -Recurse -Force
+        rmdir $script:testData -Recurse -Force 
     }
-
+    
     del ($testData + ".zip") -ErrorAction SilentlyContinue
 }
 
@@ -41,7 +41,7 @@ Function LoadCertificateAndRoot($fileName, $password)
 {
     $privateCerts = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
     $fullPath = GetFullPath $fileName
-
+   
     $privateCerts.Import($fullPath, $password, ("MachineKeySet", "PersistKeySet", "Exportable"))
 
     $privateKeyCert = $null
@@ -106,12 +106,12 @@ Function RemoveCertificates($filename, $password)
     Write-Host "Acquiring test data."
     DownloadTestData
     ($private, $root) = LoadCertificateAndRoot $fileName $password
-
+    
     Write-Host -ForegroundColor DarkGray "`tRemoving root certificate: $($root.Subject)"
     dir Cert:\LocalMachine\Root | where {$_.Subject -eq $root.Subject} | foreach { rm (Join-Path Cert:\LocalMachine\Root $_.Thumbprint) }
     Write-Host -ForegroundColor DarkGray "`tRemoving private key certificate: $($private.Subject)"
     dir Cert:\LocalMachine\My | where {$_.Subject -eq $private.Subject} | foreach { rm (Join-Path Cert:\LocalMachine\My $_.Thumbprint) -DeleteKey }
-
+    
     DeleteTestData
 }
 

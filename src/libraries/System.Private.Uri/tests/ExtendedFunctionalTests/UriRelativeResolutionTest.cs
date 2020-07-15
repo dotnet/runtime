@@ -11,6 +11,7 @@ namespace System.PrivateUri.Tests
     public class UriRelativeResolutionTest
     {
         // See RFC 3986 Section 5.2.2 and 5.4 http://www.ietf.org/rfc/rfc3986.txt
+
         private readonly Uri _fullBaseUri = new Uri("http://user:psw@host:9090/path1/path2/path3/fileA?query#fragment");
 
         [Fact]
