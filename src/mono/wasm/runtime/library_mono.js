@@ -697,7 +697,8 @@ var MonoSupportLib = {
 
 		_finalize_startup: function (args, ctx) {
 			MONO.loaded_assets = ctx.loaded_assets;
-			console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
+			if (ctx.tracing)
+				console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
 
 			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
