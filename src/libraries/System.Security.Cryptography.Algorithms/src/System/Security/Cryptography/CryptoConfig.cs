@@ -324,7 +324,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
             if (name == null)
@@ -445,7 +445,7 @@ namespace System.Security.Cryptography
             return retval;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);
