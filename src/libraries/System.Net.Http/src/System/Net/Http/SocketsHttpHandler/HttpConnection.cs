@@ -195,6 +195,8 @@ namespace System.Net.Http
 
         private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer, bool async)
         {
+            Debug.Assert(_currentRequest != null);
+
             if (headers.HeaderStore != null)
             {
                 foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
@@ -213,12 +215,14 @@ namespace System.Net.Http
                     Debug.Assert(headerValuesCount > 0, "No values for header??");
                     if (headerValuesCount > 0)
                     {
-                        await WriteStringAsync(_headerValues[0], async).ConfigureAwait(false);
+                        Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(header.Key.Name, _currentRequest);
+
+                        await WriteStringAsync(_headerValues[0], valueEncoding, async).ConfigureAwait(false);
 
                         if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
-                            await WriteStringAsync(cookiesFromContainer, async).ConfigureAwait(false);
+                            await WriteStringAsync(cookiesFromContainer, valueEncoding, async).ConfigureAwait(false);
 
                             cookiesFromContainer = null;
                         }
@@ -236,7 +240,7 @@ namespace System.Net.Http
                             for (int i = 1; i < headerValuesCount; i++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], async).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[i], valueEncoding, async).ConfigureAwait(false);
                             }
                         }
                     }
@@ -249,7 +253,10 @@ namespace System.Net.Http
             {
                 await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, async).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
-                await WriteStringAsync(cookiesFromContainer, async).ConfigureAwait(false);
+
+                Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, _currentRequest);
+                await WriteStringAsync(cookiesFromContainer, valueEncoding, async).ConfigureAwait(false);
+
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
             }
         }
@@ -956,22 +963,25 @@ namespace System.Net.Http
                 pos++;
             }
 
+            Debug.Assert(response.RequestMessage != null);
+            Encoding? valueEncoding = connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage);
+
             // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
             ReadOnlySpan<byte> value = line.Slice(pos);
             if (isFromTrailer)
             {
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                 response.TrailingHeaders.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
             else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
             {
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                 response.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
             else
             {
                 // Request headers returned on the response must be treated as custom headers.
-                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
@@ -1154,23 +1164,23 @@ namespace System.Net.Http
                 _writeOffset += bytes.Length;
                 return Task.CompletedTask;
             }
-            return WriteBytesSlowAsync(bytes, async);
+            return WriteBytesSlowAsync(bytes, bytes.Length, async);
         }
 
-        private async Task WriteBytesSlowAsync(byte[] bytes, bool async)
+        private async Task WriteBytesSlowAsync(byte[] bytes, int length, bool async)
         {
             int offset = 0;
             while (true)
             {
-                int remaining = bytes.Length - offset;
+                int remaining = length - offset;
                 int toCopy = Math.Min(remaining, _writeBuffer.Length - _writeOffset);
                 Buffer.BlockCopy(bytes, offset, _writeBuffer, _writeOffset, toCopy);
                 _writeOffset += toCopy;
                 offset += toCopy;
 
-                Debug.Assert(offset <= bytes.Length, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
+                Debug.Assert(offset <= length, $"Expected {nameof(offset)} to be <= {length}, got {offset}");
                 Debug.Assert(_writeOffset <= _writeBuffer.Length, $"Expected {nameof(_writeOffset)} to be <= {_writeBuffer.Length}, got {_writeOffset}");
-                if (offset == bytes.Length)
+                if (offset == length)
                 {
                     break;
                 }
@@ -1205,6 +1215,59 @@ namespace System.Net.Http
             // Otherwise, fall back to doing a normal slow string write; we could optimize away
             // the extra checks later, but the case where we cross a buffer boundary should be rare.
             return WriteStringAsyncSlow(s, async);
+        }
+
+        private Task WriteStringAsync(string s, Encoding? encoding, bool async)
+        {
+            if (encoding is null)
+            {
+                return WriteStringAsync(s, async);
+            }
+
+            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
+            int offset = _writeOffset;
+            int available = _writeBuffer.Length - offset;
+
+            if (encoding.IsSingleByte ? available >= s.Length : (ReferenceEquals(encoding, Encoding.UTF8) && available >= s.Length * 3))
+            {
+                int written = encoding.GetBytes(s, _writeBuffer.AsSpan(offset));
+                Debug.Assert(written == s.Length || (ReferenceEquals(encoding, Encoding.UTF8) && written <= s.Length * 3));
+                _writeOffset = offset + written;
+                return Task.CompletedTask;
+            }
+
+            // Otherwise, fall back to doing a normal slow string write
+            return WriteStringWithEncodingAsyncSlow(s, encoding, async);
+        }
+
+        private async Task WriteStringWithEncodingAsyncSlow(string s, Encoding encoding, bool async)
+        {
+            int length;
+
+            if (encoding.IsSingleByte)
+            {
+                length = s.Length;
+            }
+            else if (ReferenceEquals(encoding, Encoding.UTF8) && s.Length <= 1024)
+            {
+                // Avoid calculating the length if the rented array would be small anyway
+                length = s.Length * 3;
+            }
+            else
+            {
+                length = encoding.GetByteCount(s);
+            }
+
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
+            try
+            {
+                int written = encoding.GetBytes(s, rentedBuffer);
+                await WriteBytesSlowAsync(rentedBuffer, written, async).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
 
         private Task WriteAsciiStringAsync(string s, bool async)

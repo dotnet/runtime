@@ -101,7 +101,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string separator)
             {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeStringLiterals(values, separator, buffer.AvailableSpan, out bytesWritten))
+                while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding: null, buffer.AvailableSpan, out bytesWritten))
                 {
                     buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
                     FillAvailableSpaceWithOnes(buffer);
@@ -113,7 +113,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             void WriteLiteralHeader(string name, ReadOnlySpan<string> values)
             {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, buffer.AvailableSpan, out bytesWritten))
+                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding: null, buffer.AvailableSpan, out bytesWritten))
                 {
                     buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
                     FillAvailableSpaceWithOnes(buffer);
@@ -152,7 +152,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                     throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                 }
 
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, valueEncoding: null);
 
                 _headers.TryAddWithoutValidation(descriptor, headerValue.Split(',').Select(x => x.Trim()));
             }
