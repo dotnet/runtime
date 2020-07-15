@@ -579,6 +579,18 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
     return shortAsciiName;
 }
 
+static bool ShouldRedirectToCurrentLibrary(const void* libraryNameOrPath)
+{
+    if (!g_running_in_exe)
+        return false;
+
+    // Getting nullptr as name indicates redirection to current library
+    if (libraryNameOrPath == nullptr)
+        return true;
+
+    return false;
+}
+
 /*
 Function:
   PAL_LoadLibraryDirect
@@ -592,7 +604,7 @@ PALAPI
 PAL_LoadLibraryDirect(
     IN LPCWSTR lpLibFileName)
 {
-    if (!lpLibFileName && g_running_in_exe)
+    if (ShouldRedirectToCurrentLibrary(lpLibFileName))
     {
         return dlopen(NULL, RTLD_LAZY);
     }
@@ -1439,18 +1451,6 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
        first GetProcAddress call. */
     TRACE("Returning full path name of module\n");
     return module->lib_name;
-}
-
-static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
-{
-    if (!g_running_in_exe)
-        return false;
-
-    // Getting nullptr as name indicates redirection to current library
-    if (libraryNameOrPath == nullptr)
-        return true;
-
-    return false;
 }
 
 /*
