@@ -267,40 +267,38 @@ namespace System.Text.Json
 
         private class ParameterLookupEntry
         {
-            public ParameterLookupEntry(JsonPropertyInfo jsonPropertyInfo)
+            public ParameterLookupEntry(string name, Type type)
             {
-                JsonPropertyInfo = jsonPropertyInfo;
+                Name = name;
+                Type = type;
             }
 
-            public JsonPropertyInfo JsonPropertyInfo { get; }
-            public JsonPropertyInfo? DuplicateJsonPropertyInfo { get; set; } = null!;
+            public string Name { get; }
+            public Type Type { get; }
+            public string DuplicateName { get; set; } = null!;
+            public JsonPropertyInfo? JsonPropertyInfo { get; set; }
+
+            public override int GetHashCode()
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
+            }
+
+            public override bool Equals(object? obj)
+            {
+                Debug.Assert(obj is ParameterLookupEntry);
+
+                ParameterLookupEntry other = (ParameterLookupEntry)obj;
+                return Type == other.Type && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
         {
-            ParameterInfo[] parameters = constructorInfo!.GetParameters();
+            ParameterInfo[] parameters = constructorInfo.GetParameters();
             var parameterCache = new Dictionary<string, JsonParameterInfo>(
                 parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
-            // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
-            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C#
-            // record types or anonymous types are used.
-            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
-            // the parameter name to the object property name and do not use the JSON version of the name here.
-            var nameLookup = new Dictionary<string, ParameterLookupEntry>(PropertyCacheArray!.Length, StringComparer.OrdinalIgnoreCase);
-            foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
-            {
-                string propertyName = jsonProperty.MemberInfo!.Name;
-                var entry = new ParameterLookupEntry(jsonProperty);
-                if (!JsonHelpers.TryAdd(nameLookup, propertyName, entry))
-                {
-                    // More than one property has the same case-insensitive name.
-                    // Remember so we can throw a nice exception if this property is used as a parameter name.
-                    nameLookup[propertyName].DuplicateJsonPropertyInfo = jsonProperty;
-                }
-            }
-
-            Type GetMemberType(MemberInfo memberInfo)
+            static Type GetMemberType(MemberInfo memberInfo)
             {
                 Debug.Assert(memberInfo is PropertyInfo || memberInfo is FieldInfo);
 
@@ -309,25 +307,49 @@ namespace System.Text.Json
                     : Unsafe.As<FieldInfo>(memberInfo).FieldType;
             }
 
+            // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
+            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C#
+            // record types or anonymous types are used.
+            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
+            // the parameter name to the object property name and do not use the JSON version of the name here.
+            var nameLookup = new HashSet<ParameterLookupEntry>(PropertyCacheArray!.Length);
+            foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
+            {
+                string propertyName = jsonProperty.MemberInfo!.Name;
+                var entry = new ParameterLookupEntry(propertyName, GetMemberType(jsonProperty.MemberInfo));
+                if (nameLookup.Add(entry))
+                {
+                    entry.JsonPropertyInfo = jsonProperty;
+                }
+                else
+                {
+                    // More than one property has the same case-insensitive name and Type.
+                    // Remember so we can throw a nice exception if this property is used as a parameter name.
+                    nameLookup.TryGetValue(entry, out ParameterLookupEntry? existing);
+                    Debug.Assert(existing != null);
+                    existing!.DuplicateName = entry.Name;
+                }
+            }
+
             foreach (ParameterInfo parameterInfo in parameters)
             {
-                string parameterName = parameterInfo.Name!;
+                var paramToCheck = new ParameterLookupEntry(parameterInfo.Name!, parameterInfo.ParameterType);
 
-                if (nameLookup.TryGetValue(parameterName, out ParameterLookupEntry? matchingEntry) &&
-                    (parameterInfo.ParameterType == GetMemberType(matchingEntry.JsonPropertyInfo.MemberInfo!)))
+                if (nameLookup.TryGetValue(paramToCheck, out ParameterLookupEntry? matchingEntry))
                 {
-                    if (matchingEntry.DuplicateJsonPropertyInfo != null)
+                    if (matchingEntry.DuplicateName != null)
                     {
                         // Multiple object properties cannot bind to the same constructor parameter.
                         ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                             Type,
-                            parameterInfo,
-                            matchingEntry.JsonPropertyInfo.MemberInfo!,
-                            matchingEntry.DuplicateJsonPropertyInfo.MemberInfo!,
+                            parameterInfo.Name!,
+                            matchingEntry.Name,
+                            matchingEntry.DuplicateName,
                             constructorInfo);
                     }
 
-                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
+                    Debug.Assert(matchingEntry.JsonPropertyInfo != null);
+                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo!;
                     JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
                     parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
 

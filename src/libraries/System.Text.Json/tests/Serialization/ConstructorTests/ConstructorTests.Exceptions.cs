@@ -190,6 +190,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, obj.Prop);
         }
 
+        public record AgeRecord(int age)
+        {
+            public string Age { get; set; } = age.ToString();
+        }
+
+        [Fact]
+        public void RecordWithSamePropertyNameDifferentTypes()
+        {
+            AgeRecord obj = JsonSerializer.Deserialize<AgeRecord>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
+
         private record MyRecordWithUnboundCtorProperty(int IntProp1, int IntProp2)
         {
             public string StringProp { get; set; }
@@ -229,6 +241,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(5, obj.Prop);
         }
 #endif
+
+        [Fact]
+        public void PocoWithSamePropertyNameDifferentTypes()
+        {
+            AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
+
+        private class AgePoco
+        {
+            public AgePoco(int age)
+            {
+                this.age = age;
+            }
+            public int age { get; set; }
+
+            public string Age { get; set; }
+        }
 
         [Fact]
         public async Task DeserializePathForObjectFails()
