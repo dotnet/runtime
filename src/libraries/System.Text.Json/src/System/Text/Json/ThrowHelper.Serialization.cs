@@ -13,13 +13,6 @@ namespace System.Text.Json
     {
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity)
-        {
-            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_DeserializeWrongType(Type type, object value)
         {
             throw new ArgumentException(SR.Format(SR.DeserializeWrongType, type, value.GetType()));
@@ -184,18 +177,18 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
             Type parentType,
-            ParameterInfo parameterInfo,
-            MemberInfo firstMatch,
-            MemberInfo secondMatch,
+            string parameterName,
+            string firstMatchName,
+            string secondMatchName,
             ConstructorInfo constructorInfo)
         {
             throw new InvalidOperationException(
                 SR.Format(
                     SR.MultipleMembersBindWithConstructorParameter,
-                    firstMatch.Name,
-                    secondMatch.Name,
+                    firstMatchName,
+                    secondMatchName,
                     parentType,
-                    parameterInfo.Name,
+                    parameterName,
                     constructorInfo));
         }
 

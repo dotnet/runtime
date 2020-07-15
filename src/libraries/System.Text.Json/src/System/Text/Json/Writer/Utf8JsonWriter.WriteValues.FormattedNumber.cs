@@ -25,7 +25,11 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(utf8FormattedNumber);
             JsonWriterHelper.ValidateNumber(utf8FormattedNumber);
-            ValidateWritingValue();
+
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
 
             if (_options.Indented)
             {

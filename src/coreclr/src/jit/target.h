@@ -1590,7 +1590,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #define BITS_PER_BYTE              8
 #define REGNUM_MASK              ((1 << REGNUM_BITS) - 1)     // a n-bit mask use to encode multiple REGNUMs into a unsigned int
-#define RBM_ALL(type) (varTypeIsFloating(type) ? RBM_ALLFLOAT : RBM_ALLINT)
+#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -1896,7 +1896,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
 #else
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         regMask = genRegMaskFloat(regNum, type);
     }
@@ -1944,7 +1944,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         if (regReturn > REG_FP_LAST)
         {

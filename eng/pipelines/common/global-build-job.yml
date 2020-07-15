@@ -7,7 +7,7 @@ parameters:
   osSubgroup: ''
   container: ''
   crossrootfsDir: ''
-  variables: {}
+  variables: []
   timeoutInMinutes: ''
   pool: ''
   condition: true
@@ -54,7 +54,8 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
-      - ${{ parameters.variables }}
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml

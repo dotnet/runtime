@@ -138,6 +138,9 @@ namespace ILCompiler.DependencyAnalysis
                     _customPESectionAlignment);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
+                ISymbolDefinitionNode firstImportThunk = null;
+                ISymbolDefinitionNode lastImportThunk = null;
+                ObjectNode lastWrittenObjectNode = null;
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
@@ -162,6 +165,18 @@ namespace ILCompiler.DependencyAnalysis
                         nativeDebugDirectoryEntryNode = nddeNode;
                     }
 
+                    if (node is ImportThunk importThunkNode)
+                    {
+                        Debug.Assert(firstImportThunk == null || lastWrittenObjectNode is ImportThunk,
+                            "All the import thunks must be in single contiguous run");
+
+                        if (firstImportThunk == null)
+                        {
+                            firstImportThunk = importThunkNode;
+                        }
+                        lastImportThunk = importThunkNode;
+                    }
+
                     string name = null;
 
                     if (_mapFileBuilder != null)
@@ -180,10 +195,16 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
+                    lastWrittenObjectNode = node;
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
                 r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
+                if (firstImportThunk != null)
+                {
+                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
+                }
+                
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {

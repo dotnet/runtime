@@ -226,8 +226,12 @@ namespace Internal.JitInterface
             {
                 if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
-                    CompileMethodInternal(methodCodeNodeNeedingCode);
-                    codeGotPublished = true;
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    if (methodIL != null)
+                    {
+                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                        codeGotPublished = true;
+                    }
                 }
             }
             finally

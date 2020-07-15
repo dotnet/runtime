@@ -21,5 +21,17 @@ namespace Internal.Cryptography
         {
             return new HashProviderCng(hashAlgorithmId, key, isHmac: true);
         }
+
+        public static class OneShotHashProvider
+        {
+            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                using (HashProviderCng hashProvider = new HashProviderCng(hashAlgorithmId, null))
+                {
+                    hashProvider.AppendHashData(source);
+                    return hashProvider.FinalizeHashAndReset(destination);
+                }
+            }
+        }
     }
 }

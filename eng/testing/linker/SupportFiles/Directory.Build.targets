@@ -19,6 +19,15 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="EnsureAllAssembliesAreLinked"
+          AfterTargets="PrepareForILLink"> 
+    <ItemGroup>
+      <ManagedAssemblyToLink>
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+  </Target>
+
   <Target Name="PublishTrimmed" DependsOnTargets="RestoreProject;UpdateRuntimePack;Publish" />
 
 </Project>
