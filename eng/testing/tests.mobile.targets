@@ -146,7 +146,6 @@
       <ExtraAssemblies Include="$(PublishDir)System.Transactions.dll" />
       <ExtraAssemblies Include="$(PublishDir)System.Xml.dll" />
       <ExtraAssemblies Include="$(PublishDir)WindowsBase.dll" />
-      <ICUDataFiles Include="icudt.dat" />
     </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
@@ -156,10 +155,7 @@
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="@(ExtraAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      ICUDataFiles="@(ICUDataFiles)" />
-      <Copy SourceFiles="$(NuGetPackageRoot)\microsoft.netcore.runtime.icu.transport\$(MicrosoftNETCoreRuntimeICUTransportVersion)\runtimes\browser-wasm\native\lib\icudt.dat"
-            DestinationFiles="$(BundleDir)\icudt.dat" SkipUnchangedFiles="true"/>
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

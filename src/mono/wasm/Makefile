@@ -17,7 +17,7 @@ NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 
-all: build-native timezone-data
+all: build-native timezone-data icu-data
 
 #
 # EMSCRIPTEN SETUP
@@ -114,6 +114,9 @@ clean:
 
 timezone-data:
 	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
+
+icu-data:
+	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true

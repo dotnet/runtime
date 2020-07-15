@@ -30,7 +30,6 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
-    public ITaskItem[]? ICUDataFiles { get; set; }
 
     Dictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
@@ -73,7 +72,7 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, "managed"));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" })
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
@@ -121,8 +120,7 @@ public class WasmAppBuilder : Task
             var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
             var sEnableRemote = enableRemote ? "true" : "false";
 
-            foreach (var asset in ICUDataFiles!)
-                sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"{asset.ItemSpec}\", load_remote: {sEnableRemote} }},");
+            sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"icudt.dat\", load_remote: {sEnableRemote} }},");
 
             sw.WriteLine ("\t],");
 
