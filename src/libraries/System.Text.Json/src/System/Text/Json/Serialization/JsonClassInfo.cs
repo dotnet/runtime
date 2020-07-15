@@ -265,9 +265,9 @@ namespace System.Text.Json
             }
         }
 
-        private class ParameterLookupEntry
+        private sealed class ParameterLookupKey
         {
-            public ParameterLookupEntry(string name, Type type)
+            public ParameterLookupKey(string name, Type type)
             {
                 Name = name;
                 Type = type;
@@ -275,8 +275,6 @@ namespace System.Text.Json
 
             public string Name { get; }
             public Type Type { get; }
-            public string DuplicateName { get; set; } = null!;
-            public JsonPropertyInfo? JsonPropertyInfo { get; set; }
 
             public override int GetHashCode()
             {
@@ -285,11 +283,22 @@ namespace System.Text.Json
 
             public override bool Equals(object? obj)
             {
-                Debug.Assert(obj is ParameterLookupEntry);
+                Debug.Assert(obj is ParameterLookupKey);
 
-                ParameterLookupEntry other = (ParameterLookupEntry)obj;
+                ParameterLookupKey other = (ParameterLookupKey)obj;
                 return Type == other.Type && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
             }
+        }
+
+        private sealed class ParameterLookupValue
+        {
+            public ParameterLookupValue(JsonPropertyInfo jsonPropertyInfo)
+            {
+                JsonPropertyInfo = jsonPropertyInfo;
+            }
+
+            public string? DuplicateName { get; set; }
+            public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
@@ -312,30 +321,27 @@ namespace System.Text.Json
             // record types or anonymous types are used.
             // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
             // the parameter name to the object property name and do not use the JSON version of the name here.
-            var nameLookup = new HashSet<ParameterLookupEntry>(PropertyCacheArray!.Length);
+            var nameLookup = new Dictionary<ParameterLookupKey, ParameterLookupValue>(PropertyCacheArray!.Length);
+
             foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
             {
                 string propertyName = jsonProperty.MemberInfo!.Name;
-                var entry = new ParameterLookupEntry(propertyName, GetMemberType(jsonProperty.MemberInfo));
-                if (nameLookup.Add(entry))
-                {
-                    entry.JsonPropertyInfo = jsonProperty;
-                }
-                else
+                var key = new ParameterLookupKey(propertyName, GetMemberType(jsonProperty.MemberInfo));
+                var value= new ParameterLookupValue(jsonProperty);
+                if (!JsonHelpers.TryAdd(nameLookup, key, value))
                 {
                     // More than one property has the same case-insensitive name and Type.
                     // Remember so we can throw a nice exception if this property is used as a parameter name.
-                    nameLookup.TryGetValue(entry, out ParameterLookupEntry? existing);
-                    Debug.Assert(existing != null);
-                    existing!.DuplicateName = entry.Name;
+                    ParameterLookupValue existing = nameLookup[key];
+                    existing!.DuplicateName = propertyName;
                 }
             }
 
             foreach (ParameterInfo parameterInfo in parameters)
             {
-                var paramToCheck = new ParameterLookupEntry(parameterInfo.Name!, parameterInfo.ParameterType);
+                var paramToCheck = new ParameterLookupKey(parameterInfo.Name!, parameterInfo.ParameterType);
 
-                if (nameLookup.TryGetValue(paramToCheck, out ParameterLookupEntry? matchingEntry))
+                if (nameLookup.TryGetValue(paramToCheck, out ParameterLookupValue? matchingEntry))
                 {
                     if (matchingEntry.DuplicateName != null)
                     {
@@ -343,13 +349,13 @@ namespace System.Text.Json
                         ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                             Type,
                             parameterInfo.Name!,
-                            matchingEntry.Name,
+                            matchingEntry.JsonPropertyInfo.NameAsString,
                             matchingEntry.DuplicateName,
                             constructorInfo);
                     }
 
                     Debug.Assert(matchingEntry.JsonPropertyInfo != null);
-                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo!;
+                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
                     JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
                     parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
 
