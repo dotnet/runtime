@@ -15,8 +15,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-//        private static int s_uniqueNameInteger = 123;
-
         private SslAuthenticationOptions? _sslAuthenticationOptions;
 
         private int _nestedAuth;
@@ -66,12 +64,6 @@ namespace System.Net.Security
             try
             {
                 _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions, remoteCallback, localCallback);
-                /*
-                if (_sslAuthenticationOptions.TargetHost!.Length == 0)
-                {
-                    _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
-                }
-                */
                 _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
