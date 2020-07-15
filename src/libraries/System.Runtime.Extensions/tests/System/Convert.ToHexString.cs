@@ -60,7 +60,7 @@ namespace System.Tests
         [Fact]
         public static unsafe void InputTooLarge()
         {
-            Assert.Throws<OutOfMemoryException>(() => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
         }
     }
 }

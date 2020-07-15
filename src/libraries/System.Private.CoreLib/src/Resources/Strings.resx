@@ -1756,6 +1756,9 @@
   <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
   </data>
+  <data name="ArgumentOutOfRange_InputTooLarge" xml:space="preserve">
+    <value>Input is too large to be processed.</value>
+  </data>
   <data name="ArgumentOutOfRange_InvalidEraValue" xml:space="preserve">
     <value>Era value was not valid.</value>
   </data>

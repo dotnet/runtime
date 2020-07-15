@@ -326,13 +326,13 @@ namespace System.Net.NetworkInformation
 
         private static byte HexToByte(char val)
         {
-            byte result = (byte)HexConverter.FromChar(val);
+            int result = HexConverter.FromChar(val);
             if (result == 0xFF)
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
 
-            return result;
+            return (byte)result;
         }
     }
 }

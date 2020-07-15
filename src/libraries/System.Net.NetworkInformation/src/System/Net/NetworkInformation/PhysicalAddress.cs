@@ -91,7 +91,7 @@ namespace System.Net.NetworkInformation
 
         public override string ToString()
         {
-            return Convert.ToHexString(_address ?? Array.Empty<byte>());
+            return Convert.ToHexString(_address.AsSpan());
         }
 
         public byte[] GetAddressBytes()

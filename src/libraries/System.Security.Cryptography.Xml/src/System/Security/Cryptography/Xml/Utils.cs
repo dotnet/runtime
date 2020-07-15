@@ -729,8 +729,14 @@ namespace System.Security.Cryptography.Xml
         internal static byte[] DecodeHexString(string s)
         {
             string hexString = Utils.DiscardWhiteSpaces(s);
-            byte[] hex = new byte[hexString.Length / 2];
-            HexConverter.TryDecodeFromUtf16(hexString.AsSpan(0, hex.Length * 2), hex);
+            uint cbHex = (uint)hexString.Length / 2;
+            byte[] hex = new byte[cbHex];
+            int i = 0;
+            for (int index = 0; index < cbHex; index++)
+            {
+                hex[index] = (byte)((HexConverter.FromChar(hexString[i]) << 4) | HexConverter.FromChar(hexString[i + 1]));
+                i += 2;
+            }
             return hex;
         }
 

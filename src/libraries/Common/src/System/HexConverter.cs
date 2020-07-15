@@ -183,7 +183,7 @@ namespace System
                     break;
 
                 bytes[j++] = (byte)((byteHi << 4) | byteLo);
-                i+=2;
+                i += 2;
             }
 
             if (byteLo == 0xFF)
@@ -196,24 +196,23 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromChar(int c)
         {
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
-            return c >= charToHexLookup.Length ? 0xFF : charToHexLookup[c];
+            return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromUpperChar(int c)
         {
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
-            return c > 71 ? 0xFF : charToHexLookup[c];
+            return c > 71 ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromLowerChar(int c)
         {
-            if ('0' <= c && c <= '9')
-                return (byte)(c - '0');
-            if ('a' <= c && c <= 'f')
-                return (byte)(c - ('a' - 10));
+            if ((uint)(c - '0') <= '9' - '0')
+                return c - '0';
+
+            if ((uint)(c - 'a') <= 'f' - 'a')
+                return c - 'a' + 10;
 
             return 0xFF;
         }
