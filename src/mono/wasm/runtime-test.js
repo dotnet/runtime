@@ -130,6 +130,9 @@ while (true) {
 	} else if (args [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		args = args.slice (1);
+	} else if (args [0] == "--enable-gc") {
+		enable_gc = true;
+		args = args.slice (1);
 	} else if (args [0] == "--enable-zoneinfo") {
 		enable_zoneinfo = true;
 		args = args.slice (1);

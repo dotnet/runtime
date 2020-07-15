@@ -54,12 +54,13 @@ int32_t GlobalizationNative_LoadICU(void)
         ; // default ICU search path behavior will be used, see http://userguide.icu-project.org/icudata
 
     UErrorCode status = 0;
-    // Invoking u_init will probe to see if ICU common data is already available and if it is missing,
-    //  attempt to load it from the local filesystem.
-    u_init(&status);
+    UVersionInfo version;
+    // Request the CLDR version to perform basic ICU initialization and find out
+    //  whether it worked.
+    ulocdata_getCLDRVersion(version, &status);
 
     if (U_FAILURE(status)) {
-        log_icu_error("u_init", status);
+        log_icu_error("ulocdata_getCLDRVersion", status);
         return 0;
     }
 

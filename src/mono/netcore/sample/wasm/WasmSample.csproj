@@ -35,12 +35,12 @@
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
     <ItemGroup>
-      <AssetSources Include="./" />
-      <AssetSources Include="http://luminance.org/test/" />
-      <AssetSources Include="http://localhost/wasm-assets/" />
+      <RemoteSources Include="./" />
+      <RemoteSources Include="http://luminance.org/test/" />
+      <RemoteSources Include="http://localhost/wasm-assets/" />
     </ItemGroup>
     <ItemGroup>
-      <Assets Include="icudt.dat" />
+      <ICUDataFiles Include="icudt.dat" />
     </ItemGroup>
     <Copy SourceFiles="$(NuGetPackageRoot)\microsoft.netcore.runtime.icu.transport\$(MicrosoftNETCoreRuntimeICUTransportVersion)\runtimes\browser-wasm\native\lib\icudt.dat"
           DestinationFiles="$(AppDir)\icudt.dat" SkipUnchangedFiles="true"/>
@@ -50,8 +50,8 @@
       MainAssembly="bin\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      AssetSources="@(AssetSources)"
-      Assets="@(Assets)" />
+      RemoteSources="@(RemoteSources)"
+      ICUDataFiles="@(ICUDataFiles)" />
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
