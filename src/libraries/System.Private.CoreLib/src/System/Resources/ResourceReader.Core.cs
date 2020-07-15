@@ -37,7 +37,7 @@ namespace System.Resources
 
             _ums = stream as UnmanagedMemoryStream;
 
-            _permitDeserialization = permitDeserialization && SerializationInfo.BinaryFormatterEnabled;
+            _permitDeserialization = permitDeserialization;
 
             ReadResources();
         }
@@ -51,7 +51,10 @@ namespace System.Resources
 
             if (_binaryFormatter == null)
             {
-                InitializeBinaryFormatter();
+                if (!InitializeBinaryFormatter())
+                {
+                    throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+                }
             }
 
             Type type = FindType(typeIndex);
@@ -65,12 +68,11 @@ namespace System.Resources
             return graph;
         }
 
-        private void InitializeBinaryFormatter()
+        private bool InitializeBinaryFormatter()
         {
-            if (!SerializationInfo.BinaryFormatterEnabled)
+            if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
-                // allows the linker to trim away all the reflection goop below
-                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+                return false; // initialization failed
             }
 
             LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
@@ -89,6 +91,8 @@ namespace System.Resources
             });
 
             _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
+
+            return true; // initialization succeeded
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type

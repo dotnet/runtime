@@ -16,6 +16,10 @@
     <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
     <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />

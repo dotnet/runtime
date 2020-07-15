@@ -11,13 +11,6 @@ namespace System.Runtime.Serialization
     {
         internal static AsyncLocal<bool> AsyncDeserializationInProgress { get; } = new AsyncLocal<bool>();
 
-        // Ideally this would be contained within the Formatters assembly, but
-        // ResourceReader.Core.cs also needs it for trimming away reflection
-        // code. So it's more convenient to keep it here and have multiple
-        // components depend on it.
-        public static bool BinaryFormatterEnabled
-            => LocalAppContextSwitches.BinaryFormatterEnabled;
-
         public static bool SerializationGuardEnabled
             => LocalAppContextSwitches.SerializationGuard;
 

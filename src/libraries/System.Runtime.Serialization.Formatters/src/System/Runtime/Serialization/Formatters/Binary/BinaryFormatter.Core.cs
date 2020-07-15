@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public object Deserialize(Stream serializationStream)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
-            if (!SerializationInfo.BinaryFormatterEnabled)
+            if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public void Serialize(Stream serializationStream, object graph)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
-            if (!SerializationInfo.BinaryFormatterEnabled)
+            if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
