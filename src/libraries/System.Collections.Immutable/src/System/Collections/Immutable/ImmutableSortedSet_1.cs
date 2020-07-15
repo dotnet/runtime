@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && !NETFRAMEWORK
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
     #else
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>

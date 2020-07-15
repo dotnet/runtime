@@ -3,7 +3,8 @@
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Only the netcoreapp version supports the new reflection apis (IsSZArray, etc.) -->
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -77,8 +78,8 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFramework)' != 'netstandard2.0' And !$(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFramework)' == 'netstandard2.0' Or $(TargetFramework.StartsWith('net4'))" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />
@@ -154,5 +155,10 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
   </ItemGroup>
 </Project>

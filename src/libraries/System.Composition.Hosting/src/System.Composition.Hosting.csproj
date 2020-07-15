@@ -4,7 +4,8 @@
     <RootNamespace>
     </RootNamespace>
     <!-- CommonStrings needs RootNamespace to be empty -->
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
@@ -36,5 +37,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

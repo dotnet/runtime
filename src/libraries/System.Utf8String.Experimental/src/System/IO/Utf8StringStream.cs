@@ -57,7 +57,7 @@ namespace System.IO
         }
 
         public
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             override
 #endif
             int Read(Span<byte> buffer)
@@ -79,7 +79,7 @@ namespace System.IO
             return Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
         }
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return new ValueTask<int>(Read(buffer.Span));
@@ -127,13 +127,13 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException();
 #endif
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 #endif
         public override void WriteByte(byte value) => throw new NotSupportedException();

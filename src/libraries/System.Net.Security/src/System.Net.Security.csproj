@@ -23,6 +23,7 @@
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
+    <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />
     <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />

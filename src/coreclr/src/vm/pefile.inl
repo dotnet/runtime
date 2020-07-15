@@ -180,7 +180,7 @@ inline const SString &PEFile::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsDynamic())
+    if (IsDynamic() || m_identity->IsInBundle ())
     {
         return SString::Empty();
     }

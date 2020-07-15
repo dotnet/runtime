@@ -350,7 +350,7 @@ namespace System.Runtime.InteropServices
         System32 = 2048,
         SafeDirectories = 4096,
     }
-    [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
     public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute
     {
         public DynamicInterfaceCastableImplementationAttribute() { }
