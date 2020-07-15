@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
@@ -38,13 +39,13 @@ namespace System.Security.Cryptography
         {
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
             : this(dwKeySize, parameters, false)
         {
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public RSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters, true)
         {
@@ -172,7 +173,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// CspKeyContainerInfo property
         /// </summary>
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get

@@ -5,6 +5,7 @@ using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.IO;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -37,13 +38,13 @@ namespace System.Security.Cryptography
             KeySize = dwKeySize;
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
         }
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public DSACryptoServiceProvider(CspParameters parameters)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
@@ -55,7 +56,7 @@ namespace System.Security.Cryptography
         public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten) =>
             _impl.TryCreateSignature(hash, destination, out bytesWritten);
 
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [MinimumOSPlatform("windows7.0")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo))); }
