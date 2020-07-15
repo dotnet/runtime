@@ -17,6 +17,13 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return SHA512.TryHashData(source, destination, out bytesWritten);
         }
 
+        protected override byte[] HashData(byte[] source) => SHA512.HashData(source);
+
+        protected override byte[] HashData(ReadOnlySpan<byte> source) => SHA512.HashData(source);
+
+        protected override int HashData(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            SHA512.HashData(source, destination);
+
         [Fact]
         public void Sha512_Empty()
         {
