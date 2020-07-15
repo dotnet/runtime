@@ -213,7 +213,7 @@
     <_XUnitParallelMode>collections</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
-    <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
+    <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -diagnostics -internaldiagnostics -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
   </PropertyGroup>
 
   <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
