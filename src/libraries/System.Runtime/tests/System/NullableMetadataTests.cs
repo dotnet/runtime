@@ -128,10 +128,12 @@ namespace System.Runtime.Tests
             Assert.True(foundAtLeastOneNullableAttribute);
         }
 
-        [Fact]
-        public static void ShimsHaveOnlyTypeForwards()
+        [Theory]
+        [InlineData("mscorlib")]
+        [InlineData("System.Threading.Overlapped")]
+        public static void ShimsHaveOnlyTypeForwards(string assemblyName)
         {
-            Assembly assembly = Assembly.Load("mscorlib");
+            Assembly assembly = Assembly.Load(assemblyName);
 
             Assert.Empty(assembly.GetTypes());
             Assert.NotEmpty(assembly.GetForwardedTypes());
