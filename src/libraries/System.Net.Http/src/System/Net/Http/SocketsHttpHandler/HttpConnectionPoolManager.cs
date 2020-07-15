@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -294,7 +293,7 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
@@ -330,19 +329,57 @@ namespace System.Net.Http
                 // that need to be closed.
             }
 
-            return pool.SendAsync(request, doRequestAuth, cancellationToken);
+            return pool.SendAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
         {
-            return SendAsyncCore(request, proxyUri, doRequestAuth: false, isProxyConnect: true, cancellationToken);
+            return SendAsyncCore(request, proxyUri, async, doRequestAuth: false, isProxyConnect: true, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            return HttpTelemetry.Log.IsEnabled() && request.RequestUri != null ?
+                SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken) :
+                SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
+        }
+
+        private async ValueTask<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            Debug.Assert(request.RequestUri != null);
+            HttpTelemetry.Log.RequestStart(
+                request.RequestUri.Scheme,
+                request.RequestUri.IdnHost,
+                request.RequestUri.Port,
+                request.RequestUri.PathAndQuery,
+                request.Version.Major,
+                request.Version.Minor);
+            try
+            {
+                return await SendAsyncHelper(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e) when (LogException(e))
+            {
+                // This code should never run.
+                throw;
+            }
+
+            static bool LogException(Exception e)
+            {
+                HttpTelemetry.Log.RequestAborted();
+                HttpTelemetry.Log.RequestStop();
+
+                // Returning false means the catch handler isn't run.
+                // So the exception isn't considered to be caught so it will now propagate up the stack.
+                return false;
+            }
+        }
+
+        private ValueTask<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (_proxy == null)
             {
-                return SendAsyncCore(request, null, doRequestAuth, isProxyConnect: false, cancellationToken);
+                return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
             }
 
             // Do proxy lookup.
@@ -358,7 +395,7 @@ namespace System.Net.Http
 
                         if (multiProxy.ReadNext(out proxyUri, out bool isFinalProxy) && !isFinalProxy)
                         {
-                            return SendAsyncMultiProxy(request, doRequestAuth, multiProxy, proxyUri, cancellationToken);
+                            return SendAsyncMultiProxy(request, async, doRequestAuth, multiProxy, proxyUri, cancellationToken);
                         }
                     }
                     else
@@ -371,7 +408,7 @@ namespace System.Net.Http
             {
                 // Eat any exception from the IWebProxy and just treat it as no proxy.
                 // This matches the behavior of other handlers.
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Exception from {_proxy.GetType().Name}.GetProxy({request.RequestUri}): {ex}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception from {_proxy.GetType().Name}.GetProxy({request.RequestUri}): {ex}");
             }
 
             if (proxyUri != null && proxyUri.Scheme != UriScheme.Http)
@@ -379,15 +416,19 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
 
-            return SendAsyncCore(request, proxyUri, doRequestAuth, isProxyConnect: false, cancellationToken);
+            return SendAsyncCore(request, proxyUri, async, doRequestAuth, isProxyConnect: false, cancellationToken);
         }
 
         /// <summary>
         /// Iterates a request over a set of proxies until one works, or all proxies have failed.
         /// </summary>
+        /// <param name="request">The request message.</param>
+        /// <param name="async">Whether to execute the request synchronously or asynchronously.</param>
+        /// <param name="doRequestAuth">Whether to perform request authentication.</param>
         /// <param name="multiProxy">The set of proxies to use.</param>
         /// <param name="firstProxy">The first proxy try.</param>
-        private async Task<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
+        /// <param name="cancellationToken">The cancellation token to use for the operation.</param>
+        private async ValueTask<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool async, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
         {
             HttpRequestException rethrowException;
 
@@ -395,7 +436,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    return await SendAsyncCore(request, firstProxy, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
+                    return await SendAsyncCore(request, firstProxy, async, doRequestAuth, isProxyConnect: false, cancellationToken).ConfigureAwait(false);
                 }
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {
@@ -441,8 +482,6 @@ namespace System.Net.Http
         /// <summary>Removes unusable connections from each pool, and removes stale pools entirely.</summary>
         private void RemoveStalePools()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             Debug.Assert(_cleaningTimer != null);
 
             // Iterate through each pool in the set of pools.  For each, ask it to clear out
@@ -476,8 +515,6 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)

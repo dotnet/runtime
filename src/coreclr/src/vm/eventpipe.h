@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_H__
 #define __EVENTPIPE_H__
@@ -19,6 +18,7 @@ class EventPipeFile;
 class EventPipeEventSource;
 class EventPipeProvider;
 class EventPipeSession;
+class EventPipeSessionProvider;
 class IpcStream;
 enum class EventPipeSessionType;
 enum class EventPipeSerializationFormat;
@@ -64,13 +64,15 @@ public:
         EventPipeSerializationFormat format,
         const bool rundownRequested,
         IpcStream *const pStream,
-        const bool enableSampleProfiler = true);
+        EventPipeSessionSynchronousCallback callback = nullptr);
 
     // Disable tracing via the event pipe.
     static void Disable(EventPipeSessionID id);
 
     // Get the session for the specified session ID.
     static EventPipeSession *GetSession(EventPipeSessionID id);
+
+    static bool IsSessionEnabled(EventPipeSessionID id);
 
     // start sending the required events down the pipe
     // starting with file header info and then buffered events
@@ -93,6 +95,8 @@ public:
 
     // Get a provider.
     static EventPipeProvider *GetProvider(const SString &providerName);
+
+    static void AddProviderToSession(EventPipeSessionProvider *pProvider, EventPipeSession *pSession);
 
     // Delete a provider.
     static void DeleteProvider(EventPipeProvider *pProvider);
@@ -180,8 +184,7 @@ private:
     // Enable the specified EventPipe session.
     static bool EnableInternal(
         EventPipeSession *const pSession,
-        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue,
-        const bool enableSampleProfiler = true);
+        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
 
     // Callback function for the stack walker.  For each frame walked, this callback is invoked.
     static StackWalkAction StackWalkCallback(CrawlFrame *pCf, StackContents *pData);
@@ -215,6 +218,18 @@ private:
         return &s_configCrst;
     }
 
+    static void NotifyProfilerProviderCreated(EventPipeProvider *pProvider)
+    {
+#ifndef DACCESS_COMPILE
+        // Let the profiler know the provider has been created so it can register if it wants to
+        BEGIN_PIN_PROFILER(CORProfilerIsMonitoringEventPipe());
+        g_profControlBlock.pProfInterface->EventPipeProviderCreated(pProvider);
+        END_PIN_PROFILER();
+#endif // DACCESS_COMPILE
+    }
+
+    static bool SessionRequestedSampling(EventPipeSession *pSession);
+    
     static CrstStatic s_configCrst;
     static Volatile<EventPipeState> s_state;
     static EventPipeConfiguration s_config;
@@ -233,7 +248,6 @@ private:
     static unsigned int * s_pProcGroupOffsets;
 #endif
     static Volatile<uint32_t> s_numberOfSessions;
-    static bool s_enableSampleProfilerAtStartup;
 };
 
 static_assert(EventPipe::MaxNumberOfSessions == 64, "Maximum number of EventPipe sessions is not 64.");

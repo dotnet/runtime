@@ -7,13 +7,43 @@ trigger:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 pr:
   branches:
     include:
     - master
+    - dev/infrastructure
     - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 jobs:
 #
@@ -29,7 +59,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x64
+#    - Windows_NT_x64
     - OSX_x64
     - Linux_x64
     jobParameters:

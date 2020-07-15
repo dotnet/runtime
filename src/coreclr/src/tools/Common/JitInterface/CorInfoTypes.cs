@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -213,6 +212,7 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_THISOBJ,
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
+        CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND
@@ -350,6 +350,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,
         CORINFO_CALLCONV_PROPERTY = 0x8,
+        CORINFO_CALLCONV_UNMANAGED = 0x9,
         CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
         CORINFO_CALLCONV_MASK = 0x0f,     // Calling convention is bottom 4 bits
@@ -564,9 +565,8 @@ namespace Internal.JitInterface
         CORINFO_INITCLASS_NOT_REQUIRED = 0x00, // No class initialization required, but the class is not actually initialized yet
         // (e.g. we are guaranteed to run the static constructor in method prolog)
         CORINFO_INITCLASS_INITIALIZED = 0x01, // Class initialized
-        CORINFO_INITCLASS_SPECULATIVE = 0x02, // Class may be initialized speculatively
-        CORINFO_INITCLASS_USE_HELPER = 0x04, // The JIT must insert class initialization helper call.
-        CORINFO_INITCLASS_DONT_INLINE = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+        CORINFO_INITCLASS_USE_HELPER = 0x02, // The JIT must insert class initialization helper call.
+        CORINFO_INITCLASS_DONT_INLINE = 0x04, // The JIT should not inline the method requesting the class initialization. The class
         // initialization requires helper class now, but will not require initialization
         // if the method is compiled standalone. Or the method cannot be inlined due to some
         // requirement around class initialization such as shared generics.

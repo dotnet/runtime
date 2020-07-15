@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -13,22 +13,22 @@ namespace System.Data.Common
     [TypeConverter(typeof(DataTableMappingConverter))]
     public sealed class DataTableMapping : MarshalByRefObject, ITableMapping, ICloneable
     {
-        private DataTableMappingCollection _parent;
-        private DataColumnMappingCollection _columnMappings;
-        private string _dataSetTableName;
-        private string _sourceTableName;
+        private DataTableMappingCollection? _parent;
+        private DataColumnMappingCollection? _columnMappings;
+        private string? _dataSetTableName;
+        private string? _sourceTableName;
 
         public DataTableMapping()
         {
         }
 
-        public DataTableMapping(string sourceTable, string dataSetTable)
+        public DataTableMapping(string? sourceTable, string? dataSetTable)
         {
             SourceTable = sourceTable;
             DataSetTable = dataSetTable;
         }
 
-        public DataTableMapping(string sourceTable, string dataSetTable, DataColumnMapping[] columnMappings)
+        public DataTableMapping(string? sourceTable, string? dataSetTable, DataColumnMapping[]? columnMappings)
         {
             SourceTable = sourceTable;
             DataSetTable = dataSetTable;
@@ -49,7 +49,7 @@ namespace System.Data.Common
         {
             get
             {
-                DataColumnMappingCollection columnMappings = _columnMappings;
+                DataColumnMappingCollection? columnMappings = _columnMappings;
                 if (null == columnMappings)
                 {
                     columnMappings = new DataColumnMappingCollection();
@@ -60,13 +60,14 @@ namespace System.Data.Common
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string DataSetTable
         {
             get { return _dataSetTableName ?? string.Empty; }
             set { _dataSetTableName = value; }
         }
 
-        internal DataTableMappingCollection Parent
+        internal DataTableMappingCollection? Parent
         {
             get
             {
@@ -79,6 +80,7 @@ namespace System.Data.Common
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string SourceTable
         {
             get { return _sourceTableName ?? string.Empty; }
@@ -110,19 +112,19 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public DataColumn GetDataColumn(string sourceColumn, Type dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
+        public DataColumn? GetDataColumn(string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
             return DataColumnMappingCollection.GetDataColumn(_columnMappings, sourceColumn, dataType, dataTable, mappingAction, schemaAction);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public DataColumnMapping GetColumnMappingBySchemaAction(string sourceColumn, MissingMappingAction mappingAction)
+        public DataColumnMapping? GetColumnMappingBySchemaAction(string sourceColumn, MissingMappingAction mappingAction)
         {
             return DataColumnMappingCollection.GetColumnMappingBySchemaAction(_columnMappings, sourceColumn, mappingAction);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public DataTable GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
+        public DataTable? GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
         {
             if (null == dataSet)
             {
@@ -192,7 +194,7 @@ namespace System.Data.Common
                     object[] values = new object[] { mapping.SourceTable, mapping.DataSetTable, columnMappings };
                     Type[] types = new Type[] { typeof(string), typeof(string), typeof(DataColumnMapping[]) };
 
-                    ConstructorInfo ctor = typeof(DataTableMapping).GetConstructor(types);
+                    ConstructorInfo ctor = typeof(DataTableMapping).GetConstructor(types)!;
                     return new InstanceDescriptor(ctor, values);
                 }
                 return base.ConvertTo(context, culture, value, destinationType);

@@ -1,5 +1,4 @@
-<Project DefaultTargets="Build">
-  <Import Project="Directory.Build.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Build">
 
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
@@ -31,10 +30,20 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
+    <MonoCCompiler>$(Compiler)</MonoCCompiler>
+    <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
+    <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
+    <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
-  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
@@ -78,9 +87,14 @@
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 
-    <!-- We build LLVM bits for x64 without C++11 ABI -->
-    <ItemGroup Condition="'$(HostArch)' == 'x64' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
+    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    </ItemGroup>
+
+    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
+      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
 
     <!-- tvOS device specific options -->
@@ -580,6 +594,33 @@
       <_MonoSTRIPOption>STRIP="$(_MonoTuple)-strip"</_MonoSTRIPOption>
     </PropertyGroup>
 
+    <!-- x64 illumos cross build options -->
+    <PropertyGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoTuple>x86_64-sun-solaris2.10</_MonoTuple>
+      <_ToolPrefix>$(MonoCrossDir)/bin/x86_64-illumos</_ToolPrefix>
+
+      <_MonoRANLIBOption>RANLIB="$(_ToolPrefix)-ranlib"</_MonoRANLIBOption>
+      <_MonoAROption>AR="$(_ToolPrefix)-ar"</_MonoAROption>
+      <_MonoASOption>AS="$(_ToolPrefix)-as"</_MonoASOption>
+      <_MonoLDOption>LD="$(_ToolPrefix)-ld"</_MonoLDOption>
+      <_MonoSTRIPOption>STRIP="$(_ToolPrefix)-strip"</_MonoSTRIPOption>
+
+      <_MonoCCOption>CC="$(_ToolPrefix)-$(MonoCCompiler)"</_MonoCCOption>
+      <_MonoCXXOption>CXX="$(_ToolPrefix)-$(MonoCxxCompiler)"</_MonoCXXOption>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoConfigureParams Include="--host=$(_MonoTuple)" />
+      <_MonoConfigureParams Include="--target=$(_MonoTuple)" />
+
+      <_MonoCFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCFLAGS Include="-I$(MonoCrossDir)/include" />
+      <_MonoCXXFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoLDFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCCLDFLAGS Include="-XCClinker" />
+      <_MonoConfigureParams Include="--with-tls=pthread" />
+    </ItemGroup>
+
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
 
     <!-- WASM specific options -->
@@ -604,7 +645,10 @@
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
       <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,$(_MonoEnableMinimal)"/>
       <_MonoCFLAGS Include="-fexceptions" />
-      <_MonoCXXFLAGS Include="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0" />
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-fexceptions" />
+      <_MonoCXXFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-s DISABLE_EXCEPTION_CATCHING=0" />
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
 
       <!-- AOT cross-compiler configuration -->
@@ -675,7 +719,7 @@
       <_MonoCCLDFLAGSOption Condition="@(_MonoCCLDFLAGS->Count()) &gt; 0">CCLDFLAGS="@(_MonoCCLDFLAGS, ' ')"</_MonoCCLDFLAGSOption>
 
       <_MonoConfigureOptions>@(_MonoConfigureParams, ' ') @(_MonoAC_VARS, ' ') $(_MonoCFLAGSOption) $(_MonoCXXFLAGSOption) $(_MonoCPPFLAGSOption) $(_MonoCXXCPPFLAGSOption) $(_MonoLDFLAGSOption) $(_MonoCCLDFLAGSOption) $(_MonoCCOption) $(_MonoCXXOption) $(_MonoAROption) $(_MonoASOption) $(_MonoCPPOption) $(_MonoCXXCPPOption) $(_MonoDLLTOOLOption) $(_MonoLDOption) $(_MonoOBJDUMPOption) $(_MonoRANLIBOption) $(_MonoCMAKEOption) $(_MonoSTRIPOption)</_MonoConfigureOptions>
-      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
+      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(_MonoCCOption)' != '' and '$(_MonoCXXOption)' != ''">$(MonoProjectRoot)configure $(_MonoConfigureOptions)</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emconfigure $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
     </PropertyGroup>
@@ -888,11 +932,8 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
-  <Import Project="Directory.Build.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>

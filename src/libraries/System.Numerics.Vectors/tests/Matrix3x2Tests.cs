@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -187,7 +186,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateRotation (float, Vector2f)
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36587", RuntimeTestModes.JitStress)]
         public void Matrix3x2CreateRotationCenterTest()
         {
             float radians = MathHelper.ToRadians(30.0f);
@@ -686,7 +684,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateScale (Vector2f, Vector2f)
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36587", RuntimeTestModes.JitStress)]
         public void Matrix3x2CreateScaleCenterTest1()
         {
             Vector2 scale = new Vector2(3, 4);
@@ -746,7 +743,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateScale (float, float, Vector2f)
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36587", RuntimeTestModes.JitStress)]
         public void Matrix3x2CreateScaleCenterTest3()
         {
             Vector2 scale = new Vector2(3, 4);

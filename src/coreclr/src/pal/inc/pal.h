@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -377,7 +376,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath);
+    const char *szExePath, bool runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -449,12 +448,10 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
-#ifdef __APPLE__
 PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId();
-#endif
 
 static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 
@@ -2349,6 +2346,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #if defined(__APPLE__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__APPLE__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 120
+#elif defined(__APPLE__) && defined(HOST_ARM64)
 #define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__FreeBSD__) && defined(HOST_X86)
 #define PAL_CS_NATIVE_DATA_SIZE 12

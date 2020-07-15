@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -93,25 +92,20 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceType = serviceType;
         }
 
-        /// <inheritdoc />
         public ServiceLifetime Lifetime { get; }
 
-        /// <inheritdoc />
         public Type ServiceType { get; }
 
-        /// <inheritdoc />
         public Type? ImplementationType { get; }
 
-        /// <inheritdoc />
         public object? ImplementationInstance { get; }
 
-        /// <inheritdoc />
         public Func<IServiceProvider, object>? ImplementationFactory { get; }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            var lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
+            string? lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
 
             if (ImplementationType != null)
             {
@@ -138,7 +132,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             else if (ImplementationFactory != null)
             {
-                var typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
+                Type[]? typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
 
                 Debug.Assert(typeArguments.Length == 2);
 

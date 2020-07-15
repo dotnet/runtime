@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml;
@@ -10,7 +9,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class AttributeQuery : BaseAxisQuery
     {
-        private bool _onAttribute = false;
+        private bool _onAttribute;
 
         public AttributeQuery(Query qyParent, string Name, string Prefix, XPathNodeType Type) : base(qyParent, Name, Prefix, Type) { }
         private AttributeQuery(AttributeQuery other) : base(other)

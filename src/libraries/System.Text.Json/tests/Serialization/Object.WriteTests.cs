@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
@@ -20,16 +19,17 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(WriteSuccessCases))]
         public static void Write(ITestClass testObj)
         {
+            var options = new JsonSerializerOptions { IncludeFields = true };
             string json;
 
             {
                 testObj.Initialize();
                 testObj.Verify();
-                json = JsonSerializer.Serialize(testObj, testObj.GetType());
+                json = JsonSerializer.Serialize(testObj, testObj.GetType(), options);
             }
 
             {
-                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testObj.GetType());
+                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testObj.GetType(), options);
                 obj.Verify();
             }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -51,14 +50,14 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var filteredEnvVariables = envVariables
+            IEnumerable<DictionaryEntry> filteredEnvVariables = envVariables
                 .Cast<DictionaryEntry>()
                 .SelectMany(AzureEnvToAppEnv)
                 .Where(entry => ((string)entry.Key).StartsWith(_prefix, StringComparison.OrdinalIgnoreCase));
 
-            foreach (var envVariable in filteredEnvVariables)
+            foreach (DictionaryEntry envVariable in filteredEnvVariables)
             {
-                var key = ((string)envVariable.Key).Substring(_prefix.Length);
+                string key = ((string)envVariable.Key).Substring(_prefix.Length);
                 data[key] = (string)envVariable.Value;
             }
 
@@ -72,9 +71,9 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
         private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry)
         {
-            var key = (string)entry.Key;
-            var prefix = string.Empty;
-            var provider = string.Empty;
+            string key = (string)entry.Key;
+            string prefix = string.Empty;
+            string provider = string.Empty;
 
             if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
             {

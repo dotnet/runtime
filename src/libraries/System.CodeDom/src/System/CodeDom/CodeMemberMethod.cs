@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.CodeDom
 {
@@ -9,11 +8,11 @@ namespace System.CodeDom
         private readonly CodeParameterDeclarationExpressionCollection _parameters = new CodeParameterDeclarationExpressionCollection();
         private readonly CodeStatementCollection _statements = new CodeStatementCollection();
         private CodeTypeReference _returnType;
-        private CodeTypeReferenceCollection _implementationTypes = null;
-        private CodeAttributeDeclarationCollection _returnAttributes = null;
+        private CodeTypeReferenceCollection _implementationTypes;
+        private CodeAttributeDeclarationCollection _returnAttributes;
         private CodeTypeParameterCollection _typeParameters;
 
-        private int _populated = 0x0;
+        private int _populated;
         private const int ParametersCollection = 0x1;
         private const int StatementsCollection = 0x2;
         private const int ImplTypesCollection = 0x4;

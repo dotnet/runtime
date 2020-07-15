@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Xml;
@@ -25,7 +24,7 @@ namespace System.Data.SqlTypes
         {10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3};
 
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
-        private byte[] m_value; // the SqlGuid is null if m_value is null
+        private byte[]? m_value; // the SqlGuid is null if m_value is null
 
         // constructor
         // construct a SqlGuid.Null
@@ -70,7 +69,7 @@ namespace System.Data.SqlTypes
         // INullable
         public bool IsNull
         {
-            get { return (m_value == null); }
+            get { return (m_value is null); }
         }
 
         // property: Value
@@ -78,7 +77,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (IsNull)
+                if (m_value is null)
                     throw new SqlNullValueException();
                 else
                     return new Guid(m_value);
@@ -97,16 +96,16 @@ namespace System.Data.SqlTypes
             return x.Value;
         }
 
-        public byte[] ToByteArray()
+        public byte[]? ToByteArray()
         {
             byte[] ret = new byte[SizeOfGuid];
-            m_value.CopyTo(ret, 0);
+            m_value!.CopyTo(ret, 0); // TODO: NRE
             return ret;
         }
 
         public override string ToString()
         {
-            if (IsNull)
+            if (m_value is null)
                 return SQLResource.NullString;
 
             Guid g = new Guid(m_value);
@@ -130,8 +129,8 @@ namespace System.Data.SqlTypes
             {
                 byte b1, b2;
 
-                b1 = x.m_value[s_rgiGuidOrder[i]];
-                b2 = y.m_value[s_rgiGuidOrder[i]];
+                b1 = x.m_value![s_rgiGuidOrder[i]];
+                b2 = y.m_value![s_rgiGuidOrder[i]];
                 if (b1 != b2)
                     return (b1 < b2) ? EComparison.LT : EComparison.GT;
             }
@@ -255,7 +254,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlGuid)
             {
@@ -263,7 +262,7 @@ namespace System.Data.SqlTypes
 
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlGuid));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));
         }
 
         public int CompareTo(SqlGuid value)
@@ -281,7 +280,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlGuid))
             {
@@ -302,7 +301,7 @@ namespace System.Data.SqlTypes
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
@@ -321,7 +320,7 @@ namespace System.Data.SqlTypes
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (IsNull)
+            if (m_value is null)
             {
                 writer.WriteAttributeString("xsi", "nil", XmlSchema.InstanceNamespace, "true");
             }

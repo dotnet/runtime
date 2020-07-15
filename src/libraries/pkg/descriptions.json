@@ -949,6 +949,14 @@
     ]
   },
   {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
+    ]
+  },
+  {
     "Name": "System.Globalization",
     "Description": "Provides classes that define culture-related information, including language, country/region, calendars in use, format patterns for dates, currency, and numbers, and sort order for strings.",
     "CommonTypes": [
@@ -1487,13 +1495,6 @@
     "Description": "Provides classes that enable customized reflection contexts.",
     "CommonTypes": [
       "System.Reflection.Context.CustomReflectionContext"
-    ]
-  },
-  {
-    "Name": "System.Reflection.DispatchProxy",
-    "Description": "Provides a class to dynamically create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
-    "CommonTypes": [
-      "System.Reflection.DispatchProxy"
     ]
   },
   {

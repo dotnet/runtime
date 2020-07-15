@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -20,6 +19,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionStdCall    = 0x0002,
         UnmanagedCallingConventionThisCall   = 0x0003,
         CallingConventionVarargs             = 0x0005,
+        UnmanagedCallingConvention           = 0x0009,
 
         Static = 0x0010,
     }
@@ -57,6 +57,44 @@ namespace Internal.TypeSystem
             _embeddedSignatureData = embeddedSignatureData;
 
             Debug.Assert(parameters != null, "Parameters must not be null");
+        }
+
+        public MethodSignature ApplySubstitution(Instantiation substitution)
+        {
+            if (substitution.IsNull)
+                return this;
+
+            bool needsNewMethodSignature = false;
+            TypeDesc[] newParameters = _parameters; // Re-use existing array until conflict appears
+            TypeDesc returnTypeNew = _returnType.InstantiateSignature(substitution, default(Instantiation));
+            if (returnTypeNew != _returnType)
+            {
+                needsNewMethodSignature = true;
+                newParameters = (TypeDesc[])_parameters.Clone();
+            }
+
+            for (int i = 0; i < newParameters.Length; i++)
+            {
+                TypeDesc newParameter = newParameters[i].InstantiateSignature(substitution, default(Instantiation));
+                if (newParameter != newParameters[i])
+                {
+                    if (!needsNewMethodSignature)
+                    {
+                        needsNewMethodSignature = true;
+                        newParameters = (TypeDesc[])_parameters.Clone();
+                    }
+                    newParameters[i] = newParameter;
+                }
+            }
+
+            if (needsNewMethodSignature)
+            {
+                return new MethodSignature(_flags, _genericParameterCount, returnTypeNew, newParameters, _embeddedSignatureData);
+            }
+            else
+            {
+                return this;
+            }
         }
 
         public MethodSignatureFlags Flags

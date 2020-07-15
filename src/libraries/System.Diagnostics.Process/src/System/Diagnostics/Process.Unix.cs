@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -17,7 +16,7 @@ namespace System.Diagnostics
     {
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static volatile bool s_initialized = false;
+        private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
@@ -306,12 +305,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
-        }
-
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
         private bool IsParentOf(Process possibleChildProcess) =>
             Id == possibleChildProcess.ParentProcessId;
@@ -545,10 +538,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;

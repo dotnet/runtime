@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ namespace System.IO.Packaging
         private readonly ZipArchive _zipArchive;
         private readonly FileAccess _packageFileAccess;
         private readonly FileMode _packageFileMode;
-        private bool _disposed = false;
+        private bool _disposed;
 
         public ZipStreamManager(ZipArchive zipArchive, FileMode packageFileMode, FileAccess packageFileAccess)
         {

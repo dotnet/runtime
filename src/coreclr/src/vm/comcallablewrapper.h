@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -1260,7 +1259,7 @@ public:
     VOID Cleanup();
 
     // Used to neuter a CCW if its AD is being unloaded underneath it.
-    VOID Neuter(bool fSkipHandleCleanup = false);
+    VOID Neuter();
 
     ~SimpleComCallWrapper();
 

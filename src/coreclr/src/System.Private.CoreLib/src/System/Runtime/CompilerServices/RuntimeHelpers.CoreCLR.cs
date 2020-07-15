@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -11,9 +10,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        // The special dll name to be used for DllImport of QCalls
-        internal const string QCall = "QCall";
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
@@ -296,6 +292,40 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
 
+        private static unsafe void DispatchTailCalls(
+            IntPtr callersRetAddrSlot,
+            delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
+            IntPtr retVal)
+        {
+            IntPtr callersRetAddr;
+            TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
+            PortableTailCallFrame* prevFrame = tls->Frame;
+            if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
+            {
+                prevFrame->NextCall = callTarget;
+                return;
+            }
+
+            PortableTailCallFrame newFrame;
+            newFrame.Prev = prevFrame;
+
+            try
+            {
+                tls->Frame = &newFrame;
+
+                do
+                {
+                    newFrame.NextCall = null;
+                    callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
+                    callTarget = newFrame.NextCall;
+                } while (callTarget != null);
+            }
+            finally
+            {
+                tls->Frame = prevFrame;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern long GetILBytesJitted();
 
@@ -443,7 +473,7 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
-        public IntPtr NextCall;
+        public delegate*<IntPtr, IntPtr, IntPtr*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

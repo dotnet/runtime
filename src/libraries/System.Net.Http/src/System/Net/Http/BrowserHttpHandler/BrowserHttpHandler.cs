@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -371,7 +370,7 @@ namespace System.Net.Http
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
             {

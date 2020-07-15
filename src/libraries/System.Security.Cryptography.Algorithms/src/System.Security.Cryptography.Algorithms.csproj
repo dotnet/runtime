@@ -2,13 +2,17 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <NoWarn>CS1573;CS3016;CA5350;CA5351;CA5379;CA5384;CA5385;$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
-  <ItemGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetsBrowser)' == 'true'">--exclude-api-list ExcludeApiList.PNSE.Browser.txt</GeneratePlatformNotSupportedAdditionalParameters>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
@@ -118,6 +122,8 @@
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
+             Link="Common\System\Security\Cryptography\Oids.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
@@ -311,10 +317,12 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
@@ -571,9 +579,13 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

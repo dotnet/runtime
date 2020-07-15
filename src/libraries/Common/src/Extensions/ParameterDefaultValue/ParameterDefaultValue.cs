@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
@@ -16,7 +15,7 @@ namespace Microsoft.Extensions.Internal
         public static bool TryGetDefaultValue(ParameterInfo parameter, out object? defaultValue)
         {
             bool hasDefaultValue;
-            var tryToGetDefaultValue = true;
+            bool tryToGetDefaultValue = true;
             defaultValue = null;
 
             try
@@ -51,7 +50,7 @@ namespace Microsoft.Extensions.Internal
                     parameter.ParameterType.GetGenericTypeDefinition() == _nullable
                     )
                 {
-                    var underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
+                    Type? underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
                     if (underlyingType != null && underlyingType.IsEnum)
                     {
                         defaultValue = Enum.ToObject(underlyingType, defaultValue);

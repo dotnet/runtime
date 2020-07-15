@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -105,8 +104,15 @@ namespace System.Net.Security
         Sign = 1,
         EncryptAndSign = 2,
     }
+    public readonly struct SslClientHelloInfo
+    {
+        public string ServerName { get; }
+        public System.Security.Authentication.SslProtocols SslProtocols { get; }
+        internal SslClientHelloInfo(string serverName, System.Security.Authentication.SslProtocols sslProtocol) { throw null; }
+    }
     public delegate bool RemoteCertificateValidationCallback(object sender, System.Security.Cryptography.X509Certificates.X509Certificate? certificate, System.Security.Cryptography.X509Certificates.X509Chain? chain, System.Net.Security.SslPolicyErrors sslPolicyErrors);
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
+    public delegate System.Threading.Tasks.ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, System.Threading.CancellationToken cancellationToken);
     public readonly partial struct SslApplicationProtocol : System.IEquatable<System.Net.Security.SslApplicationProtocol>
     {
         private readonly object _dummy;
@@ -123,6 +129,11 @@ namespace System.Net.Security
         public static bool operator ==(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public static bool operator !=(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public override string ToString() { throw null; }
+    }
+    public sealed partial class SslStreamCertificateContext
+    {
+        internal SslStreamCertificateContext() { throw null; }
+        public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline = false) { throw null; }
     }
     public partial class SslClientAuthenticationOptions
     {
@@ -150,6 +161,7 @@ namespace System.Net.Security
         public System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? ServerCertificate { get { throw null; } set { } }
+        public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
     }
     public partial class SslStream : System.Net.Security.AuthenticatedStream
@@ -184,6 +196,7 @@ namespace System.Net.Security
         public override int ReadTimeout { get { throw null; } set { } }
         public virtual System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public virtual System.Security.Authentication.SslProtocols SslProtocol { get { throw null; } }
+        public string TargetHostName { get { throw null; } }
         public System.Net.TransportContext TransportContext { get { throw null; } }
         public override int WriteTimeout { get { throw null; } set { } }
         public void AuthenticateAsClient(System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions) { }
@@ -230,6 +243,7 @@ namespace System.Net.Security
         public override void Write(byte[] buffer, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     public enum TlsCipherSuite : ushort

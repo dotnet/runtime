@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.CPP
 // ===========================================================================
@@ -240,8 +239,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
 #endif // !CROSSGEN_COMPILE
 
-
-
+// g_coreclr_embedded indicates that coreclr is linked directly into the program
+#ifdef CORECLR_EMBEDDED
+bool g_coreclr_embedded = true;
+#else
+bool g_coreclr_embedded = false;
+#endif
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
@@ -291,12 +294,6 @@ HRESULT EnsureEEStarted()
     if (!g_fEEStarted)
     {
         BEGIN_ENTRYPOINT_NOTHROW;
-
-#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
-        STARTUP_FLAGS startupFlags = CorHost2::GetStartupFlags();
-        // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
-        AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
-#endif
 
 #ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
@@ -1675,10 +1672,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
         }
 
 #ifdef FEATURE_MULTICOREJIT
-        if (!AppX::IsAppXProcess()) // When running as Appx, make the delayed timer driven writing be the only option
-        {
-            MulticoreJitManager::StopProfileAll();
-        }
+        MulticoreJitManager::StopProfileAll();
 #endif
     }
 

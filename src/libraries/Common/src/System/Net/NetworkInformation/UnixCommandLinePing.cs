@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Globalization;
@@ -75,6 +74,9 @@ namespace System.Net.NetworkInformation
         /// <param name="packetSize">The packet size to use in the ping. Exact packet payload cannot be specified.</param>
         /// <param name="timeout">The timeout to use in the ping, in milliseconds.</param>
         /// <param name="address">A string representation of the IP address to ping.</param>
+        /// <param name="ipv4">true for ipv4; false for ipv6.</param>
+        /// <param name="ttl">The time to live.</param>
+        /// <param name="fragmentOption">Fragmentation options.</param>
         /// <returns>The constructed command line arguments, which can be passed to ping or ping6.</returns>
         public static string ConstructCommandLine(int packetSize, int timeout, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
         {

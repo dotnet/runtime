@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -158,7 +157,7 @@ namespace System.Xml
             public override void RemoveNamespace(string prefix, string uri) { }
             public override IEnumerator GetEnumerator() { return null!; }
             public override IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope) { return null!; }
-            public override string LookupNamespace(string prefix) { return string.Empty; }
+            public override string LookupNamespace(string? prefix) { return string.Empty; }
             public override string? LookupPrefix(string uri) { return null; }
             public override bool HasNamespace(string prefix) { return false; }
         }

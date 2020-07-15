@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -587,9 +586,17 @@ namespace System.Threading.Tasks.Dataflow
 
                     if (_nonGreedyState != null)
                     {
-                        // We can make a triggered batch using postponed messages
-                        if (_nonGreedyState.AcceptFewerThanBatchSize &&
-                            (_messages.Count > 0 || (_nonGreedyState.PostponedMessages.Count > 0 && boundedCapacityAvailable > 0)))
+                        // If a batch was triggered and we have any messages, we can create a batch from what we already have.
+                        if (_nonGreedyState.AcceptFewerThanBatchSize && _messages.Count > 0)
+                            return true;
+
+                        // At this point, to make a batch we'll need to consume postponed messages, but we can't do
+                        // that if we're declining all future messages.
+                        if (_decliningPermanently)
+                            return false;
+
+                        // If a batch was triggered and there are any postponed messages to retrieve and there's room available, try.
+                        if (_nonGreedyState.AcceptFewerThanBatchSize && _nonGreedyState.PostponedMessages.Count > 0 && boundedCapacityAvailable > 0)
                             return true;
 
                         if (_dataflowBlockOptions.Greedy)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -39,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         object GetRequiredService(System.Type serviceType);
     }
-    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object[] arguments);
+    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
     public static partial class ServiceCollectionServiceExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType) { throw null; }

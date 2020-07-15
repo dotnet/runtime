@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
@@ -671,6 +670,7 @@ namespace System.Xml
                                    // close an empty element or in CDATA section detection of double ]; _BUFFER[0] will always be 0
             }
         }
+
         private async Task EncodeCharsAsync(int startOffset, int endOffset, bool writeAllToStream)
         {
             // Write encoded text to stream
@@ -947,6 +947,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value

@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.Graphics.cs
 //
@@ -46,9 +46,9 @@ namespace System.Drawing
     public sealed partial class Graphics : MarshalByRefObject, IDisposable, IDeviceContext
     {
         internal IMacContext? maccontext;
-        private bool disposed = false;
-        private static float defDpiX = 0;
-        private static float defDpiY = 0;
+        private bool disposed;
+        private static float defDpiX;
+        private static float defDpiY;
 
         internal Graphics(IntPtr nativeGraphics) => NativeGraphics = nativeGraphics;
 

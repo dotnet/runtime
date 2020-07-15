@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapInfo.cpp
 //
@@ -2147,10 +2146,16 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // is because they often change the code they emit based on what ISAs are supported by the compiler,
         // but we don't know what the target machine will support.
         //
-        // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
+        // Additionally, we make sure none of the hardware intrinsic method bodies (except ARM64) get pregenerated in crossgen
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
-        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+
+        // For Arm64, AdvSimd/ArmBase is the baseline that is suported and hence we do pregenerate the method bodies
+        // of ARM64 harware intrinsic.
+        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
+#if !defined(TARGET_ARM64)
+        fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+#endif 
 
         if (fIsPlatformHWIntrinsic)
         {
@@ -3330,10 +3335,9 @@ BOOL ZapInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 CorInfoInitClassResult ZapInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
-    return m_pEEJitInfo->initClass(field, method, context, speculative);
+    return m_pEEJitInfo->initClass(field, method, context);
 }
 
 void ZapInfo::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -3725,18 +3729,18 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else
         {
             _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         break;
 

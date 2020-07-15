@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
@@ -152,7 +152,7 @@ namespace Internal.Cryptography.Pal
                     multiLine);
             }
 
-            public X509ContentType GetCertContentType(byte[] rawData)
+            public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
                 if (rawData == null || rawData.Length == 0)
@@ -161,15 +161,25 @@ namespace Internal.Cryptography.Pal
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
                 }
 
-                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
 
                 // Apple doesn't seem to recognize PFX files with no MAC, so try a quick maybe-it's-a-PFX test
                 if (contentType == X509ContentType.Unknown)
                 {
                     try
                     {
-                        PfxAsn.Decode(rawData, AsnEncodingRules.BER);
-                        contentType = X509ContentType.Pkcs12;
+                        unsafe
+                        {
+                            fixed (byte* pin = rawData)
+                            {
+                                using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
+                                {
+                                    PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                                }
+
+                                contentType = X509ContentType.Pkcs12;
+                            }
+                        }
                     }
                     catch (CryptographicException)
                     {

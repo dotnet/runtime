@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6790,8 +6789,8 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         if (refPosition->copyReg)
         {
             // This is a TEMPORARY copy
-            assert(isCandidateLocalRef(tree));
-            newNode->gtFlags |= GTF_VAR_DEATH;
+            assert(isCandidateLocalRef(tree) || tree->IsMultiRegLclVar());
+            newNode->SetLastUse(multiRegIdx);
         }
 
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use

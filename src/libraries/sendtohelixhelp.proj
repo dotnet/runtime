@@ -13,18 +13,29 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
     <!-- Normal jobs have a 30 minute (1800 sec.) timeout for arm/arm64, and 15 minute (900 sec.) timeout otherwise.
-         Stress modes can take considerably longer, so double those numbers.
+         Stress modes can take considerably longer, so double those numbers. And GCStress is even slower.
     -->
-    <TimeoutInSeconds Condition="'$(Scenario)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="
+        '$(Scenario)' == 'gcstress0x3' or
+        '$(Scenario)' == 'gcstress0xc' or
+        '$(Scenario)' == 'heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">5400</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == ''">1800</TimeoutInSeconds>
+
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
-    
+
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
-    
+
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
@@ -60,6 +71,10 @@
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
@@ -113,7 +128,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
-    
+
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <!--
       For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
@@ -147,7 +162,7 @@
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
     <ItemGroup>
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 

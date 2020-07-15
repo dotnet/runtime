@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
-    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <TrimMode>link</TrimMode>
+    <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PlatformManifestFile />

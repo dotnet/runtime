@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BrotliEncoderTests.cs" />
     <Compile Include="BrotliGoogleTestData.cs" />
     <Compile Include="CompressionStreamUnitTests.Brotli.cs" />
@@ -19,12 +20,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <!--
-    Manually copy the contentFiles over as on macOS 10.12 unicode characters cause items to be flagged with buildaction compile.
-    TODO: Remove when macOS 10.12 support ended.
-  -->
   <ItemGroup>
-    <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
-    <None Include="$(PkgSystem_IO_Compression_TestData)\contentFiles\any\any\**\*" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
   </ItemGroup>
 </Project>

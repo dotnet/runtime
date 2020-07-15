@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -84,8 +83,8 @@ namespace System.Runtime
         // walk once every 10 seconds, or when we will likely fail.  This
         // amortization scheme can reduce the cost of a memory gate by about
         // a factor of 100.
-        private static long s_hiddenLastKnownFreeAddressSpace = 0;
-        private static long s_hiddenLastTimeCheckingAddressSpace = 0;
+        private static long s_hiddenLastKnownFreeAddressSpace;
+        private static long s_hiddenLastTimeCheckingAddressSpace;
         private const int CheckThreshold = 10 * 1000;  // 10 seconds
 
         private static long LastKnownFreeAddressSpace

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -294,6 +293,8 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+            if (points.Length == 0)
+                throw new ArgumentException(null, nameof(points));
 
             fixed (PointF* p = points)
             {
@@ -312,6 +313,8 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+            if (points.Length == 0)
+                throw new ArgumentException(null, nameof(points));
 
             fixed (Point* p = points)
             {
@@ -526,6 +529,8 @@ namespace System.Drawing.Drawing2D
         {
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
+            if (rects.Length == 0)
+                throw new ArgumentException(null, nameof(rects));
 
             fixed (RectangleF* r = rects)
             {
@@ -545,6 +550,8 @@ namespace System.Drawing.Drawing2D
         {
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
+            if (rects.Length == 0)
+                throw new ArgumentException(null, nameof(rects));
 
             fixed (Rectangle* r = rects)
             {
@@ -639,6 +646,9 @@ namespace System.Drawing.Drawing2D
 
         public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
+            if (family == null)
+                throw new ArgumentNullException(nameof(family));
+
             Gdip.CheckStatus(Gdip.GdipAddPathString(
                 new HandleRef(this, _nativePath),
                 s,
@@ -652,6 +662,9 @@ namespace System.Drawing.Drawing2D
 
         public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
+            if (family == null)
+                throw new ArgumentNullException(nameof(family));
+
             Gdip.CheckStatus(Gdip.GdipAddPathStringI(
                 new HandleRef(this, _nativePath),
                 s,

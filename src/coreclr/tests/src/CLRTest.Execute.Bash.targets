@@ -69,14 +69,14 @@ WARNING:   When setting properties based on their current state (for example:
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
-      <GCBashScriptExitCode>0</GCBashScriptExitCode>
+      <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_GCStress" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
-  exit $(GCBashScriptExitCode)
+  exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
@@ -84,7 +84,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$RunInUnloadableContext" ]
 then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
-  exit $(GCBashScriptExitCode)
+  exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
@@ -93,12 +93,12 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
 then
   echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
-  exit $(GCBashScriptExitCode)
+  exit $(IncompatibleTestBashScriptExitCode)
 fi
 if [[ "$COMPlus_TieredCompilation" != "0" ]]
 then
   echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
-  exit $(GCBashScriptExitCode)
+  exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
@@ -106,7 +106,15 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_HeapVerify" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
-  exit $(GCBashScriptExitCode)
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$RunningIlasmRoundTrip" ]
+then
+  echo SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
@@ -248,15 +256,10 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
-      <BashCLRTestLaunchCmds>$(BashIlrtTestLaunchCmds)</BashCLRTestLaunchCmds>
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
-$(BashCLRTestLaunchCmds)
-if [ ! -z ${RunCrossGen+x} ]%3B then
-  TakeLock
-fi
 
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
@@ -265,17 +268,23 @@ else
     LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
 fi
 
+$(BashIlrtTestLaunchCmds)
+
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  TakeLock
+fi
+
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
-
 CLRTestExitCode=$?
+
 if [ ! -z ${RunCrossGen+x} ]%3B then
   ReleaseLock
 fi
+
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
-$(BashCLRTestLaunchCmds)
 echo export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
 export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
 echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")

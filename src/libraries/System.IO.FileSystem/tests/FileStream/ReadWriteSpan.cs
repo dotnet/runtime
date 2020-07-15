@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Linq;
@@ -137,7 +136,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => { fs.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task EmptyFile_ReadAsync_Succeeds()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -160,7 +159,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyFile_ReadAsync_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -189,7 +188,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyFile_CustomMemoryManager_ReadAsync_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -239,7 +238,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyWriteAsync_WritesExpectedData()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -255,7 +254,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NonEmptyWriteAsync_CustomMemoryManager_WritesExpectedData()
         {
             using (var mem = new NativeMemoryManager(TestBuffer.Length))

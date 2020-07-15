@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "diagnosticserver.h"
@@ -27,7 +26,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
     CONTRACTL
     {
+#ifndef DEBUG
         NOTHROW;
+#endif
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActiveConnections());
@@ -44,8 +45,10 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, "warning (%d): %s.\n", code, szMessage);
     };
 
+#ifndef DEBUG
     EX_TRY
     {
+#endif
         while (!s_shuttingDown)
         {
             IpcStream *pStream = IpcStreamFactory::GetNextAvailableStream(LoggingCallback);
@@ -97,13 +100,14 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 break;
             }
         }
+#ifndef DEBUG
     }
     EX_CATCH
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Exception caught in diagnostic thread. Leaving thread now.\n");
-        _ASSERTE(!"Hit an error in the diagnostic server thread\n.");
     }
     EX_END_CATCH(SwallowAllExceptions);
+#endif
 
     return 0;
 }
@@ -266,13 +270,13 @@ void DiagnosticServer::PauseForDiagnosticsMonitor()
         if (dwDotnetDiagnosticsMonitorPauseOnStart != 0)
         {
             _ASSERTE(s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid());
-            wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a server at '%s'.\n"), (LPWSTR)pDotnetDiagnosticsMonitorAddress);
-            fflush(stdout);
             STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
             const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);
             if (dwFiveSecondWait == WAIT_TIMEOUT)
             {
-                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waitied 5 seconds.");
+                wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a server at '%s'.\n"), (LPWSTR)pDotnetDiagnosticsMonitorAddress);
+                fflush(stdout);
+                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waited 5 seconds.");
                 const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
             }
         }

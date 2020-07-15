@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: compile.cpp
 //
@@ -1400,7 +1399,7 @@ mdToken CEECompileInfo::TryEncodeMethodAsToken(
     {
         _ASSERTE(pResolvedToken != NULL);
 
-        Module * pReferencingModule = (Module *)pResolvedToken->tokenScope;
+        Module * pReferencingModule = GetModule(pResolvedToken->tokenScope);
 
         if (!pReferencingModule->IsInCurrentVersionBubble())
             return mdTokenNil;
@@ -4803,7 +4802,7 @@ static BOOL CanSatisfyConstraints(Instantiation typicalInst, Instantiation candi
 
 
 //
-// This method has duplicated logic from bcl\system\collections\generic\comparer.cs
+// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 //
 static void SpecializeComparer(SString& ss, Instantiation& inst)
 {
@@ -4843,33 +4842,21 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
         CorElementType et = elemTypeHnd.GetVerifierCorElementType();
         if (et == ELEMENT_TYPE_I1 ||
             et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_I4)
-        {
-            ss.Set(W("System.Collections.Generic.Int32EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_I8 ||
+            et == ELEMENT_TYPE_U1 ||
             et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_U4)
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_U8)
         {
-            ss.Set(W("System.Collections.Generic.UInt32EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_I8)
-        {
-            ss.Set(W("System.Collections.Generic.Int64EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_U8)
-        {
-            ss.Set(W("System.Collections.Generic.UInt64EnumComparer`1"));
+            ss.Set(W("System.Collections.Generic.EnumComparer`1"));
             return;
         }
     }
 }
 
 //
-// This method has duplicated logic from bcl\system\collections\generic\equalitycomparer.cs
+// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 // and matching logic in jitinterface.cpp
 //
 static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
@@ -4907,23 +4894,17 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
 
     if (elemTypeHnd.IsEnum())
     {
-        // Note: We have different comparers for Short and SByte because for those types we need to make sure we call GetHashCode on the actual underlying type as the
-        // implementation of GetHashCode is more complex than for the other types.
         CorElementType et = elemTypeHnd.GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_U2 ||
+        if (et == ELEMENT_TYPE_I1 ||
             et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_I8 ||
             et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I1)
+            et == ELEMENT_TYPE_U2 ||
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_U8)
         {
             ss.Set(W("System.Collections.Generic.EnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I8 ||
-                 et == ELEMENT_TYPE_U8)
-        {
-            ss.Set(W("System.Collections.Generic.LongEnumEqualityComparer`1"));
             return;
         }
     }
@@ -5936,12 +5917,6 @@ void CEEPreloader::GenerateMethodStubs(
     // implementation details of the CLR.
     if (IsReadyToRunCompilation() && (!GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem() || !pMD->IsNDirect()))
         return;
-
-#if defined(TARGET_ARM) && defined(TARGET_UNIX)
-    // Cross-bitness compilation of il stubs does not work. Disable here.
-    if (IsReadyToRunCompilation())
-        return;
-#endif // defined(TARGET_ARM) && defined(TARGET_UNIX)
 
     DWORD dwNGenStubFlags = NDIRECTSTUB_FL_NGENEDSTUB;
 

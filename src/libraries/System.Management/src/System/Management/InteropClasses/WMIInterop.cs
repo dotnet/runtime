@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -1436,9 +1435,9 @@ namespace System.Management
         private class MTARequest
         {
             public AutoResetEvent evtDone = new AutoResetEvent(false);
-            public Type typeToCreate = null;
-            public object createdObject = null;
-            public Exception exception = null;
+            public Type typeToCreate;
+            public object createdObject;
+            public Exception exception;
 
             public MTARequest(Type typeToCreate)
             {
@@ -1451,7 +1450,7 @@ namespace System.Management
 
         private static readonly AutoResetEvent evtGo = new AutoResetEvent(false); // tells the worker to create an object on our behalf
 
-        private static bool workerThreadInitialized = false;
+        private static bool workerThreadInitialized;
         // Initialize worker thread
         // This is not done in a static constructor so that we don't do this in an MTA only application
         private static void InitWorkerThread()

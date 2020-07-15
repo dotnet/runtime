@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +20,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CopyToNoLengthParamName => null;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Concurrent_Enqueue_TryDequeue_AllItemsReceived()
         {
             int items = 1000;
@@ -57,7 +56,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Concurrent_Enqueue_TryPeek_TryDequeue_AllItemsSeen()
         {
             int items = 1000;
@@ -91,7 +90,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 4, 1024)]
         [InlineData(4, 1, 1024)]
         [InlineData(3, 3, 1024)]
@@ -247,7 +246,7 @@ namespace System.Collections.Concurrent.Tests
             GC.KeepAlive(queue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ManySegments_ConcurrentDequeues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -277,7 +276,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(Iters, dequeues);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -358,7 +357,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]

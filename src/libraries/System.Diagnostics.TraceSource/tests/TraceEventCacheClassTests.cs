@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -25,8 +24,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void ProcessIdTest()
         {
             var cache = new TraceEventCache();
-            var id = cache.ProcessId;
-            var expected = System.Diagnostics.Process.GetCurrentProcess().Id;
+            int id = cache.ProcessId;
+            int expected = Environment.ProcessId;
             Assert.Equal((int)expected, id);
         }
 
@@ -49,6 +48,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
         public void CallstackTest_NotEmpty()
         {
             var cache = new TraceEventCache();
@@ -56,6 +56,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
         public void CallstackTest_ContainsExpectedFrames()
         {
             var cache = new TraceEventCache();
