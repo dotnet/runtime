@@ -634,7 +634,7 @@ var MonoSupportLib = {
 
 					var fileRet = ctx.createDataFile (
 						parentDirectory, fileName,
-						bytes, true, false, true
+						bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
 					);
 
 					break;
