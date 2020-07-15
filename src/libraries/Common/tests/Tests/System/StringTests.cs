@@ -625,7 +625,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
-        
         public static void Compare(string strA, int indexA, string strB, int indexB, int length, StringComparison comparisonType, int expected)
         {
             bool hasNullInputs = (strA == null || strB == null);
