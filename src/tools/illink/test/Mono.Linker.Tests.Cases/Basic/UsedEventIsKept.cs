@@ -28,8 +28,6 @@ namespace Mono.Linker.Tests.Cases.Basic
 			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
 			[KeptMember ("Invoke()")]
-			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
-			[KeptMember ("EndInvoke(System.IAsyncResult)")]
 			public delegate void CustomDelegate ();
 
 			[Kept]
