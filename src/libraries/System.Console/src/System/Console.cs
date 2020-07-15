@@ -277,7 +277,7 @@ namespace System
         public static int CursorSize
         {
             get { return ConsolePal.CursorSize; }
-            [MinimumOSPlatformAttribute("windows7.0")]
+            [MinimumOSPlatform("windows7.0")]
             set { ConsolePal.CursorSize = value; }
         }
 
