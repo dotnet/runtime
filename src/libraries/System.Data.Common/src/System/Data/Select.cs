@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Data.Common;
@@ -13,29 +12,29 @@ namespace System.Data
         private readonly DataTable _table;
         private readonly IndexField[] _indexFields;
         private readonly DataViewRowState _recordStates;
-        private readonly DataExpression _rowFilter;
-        private readonly ExpressionNode _expression;
+        private readonly DataExpression? _rowFilter;
+        private readonly ExpressionNode? _expression;
 
-        private Index _index;
+        private Index? _index;
 
-        private int[] _records;
+        private int[]? _records;
         private int _recordCount;
 
-        private ExpressionNode _linearExpression;
+        private ExpressionNode? _linearExpression;
         private bool _candidatesForBinarySearch;
 
         private sealed class ColumnInfo
         {
-            public bool flag = false;               // Misc. Use
-            public bool equalsOperator = false;     // True when the associated expr has = Operator defined
-            public BinaryNode expr = null;          // Binary Search capable expression associated
+            public bool flag;               // Misc. Use
+            public bool equalsOperator;     // True when the associated expr has = Operator defined
+            public BinaryNode? expr;          // Binary Search capable expression associated
         }
 
-        private ColumnInfo[] _candidateColumns;
+        private ColumnInfo[]? _candidateColumns;
         private int _nCandidates;
         private int _matchedCandidates;
 
-        public Select(DataTable table, string filterExpression, string sort, DataViewRowState recordStates)
+        public Select(DataTable table, string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             _table = table;
             _indexFields = table.ParseSortString(sort);
@@ -55,6 +54,8 @@ namespace System.Data
         // Gathers all linear expressions in to this.linearExpression and all binary expressions in to their respective candidate columns expressions
         private void AnalyzeExpression(BinaryNode expr)
         {
+            Debug.Assert(_candidateColumns != null);
+
             if (_linearExpression == _expression)
                 return;
 
@@ -76,7 +77,7 @@ namespace System.Data
                 }
                 else
                 {
-                    UnaryNode unaryNode = expr._left as UnaryNode;
+                    UnaryNode? unaryNode = expr._left as UnaryNode;
                     if (unaryNode != null)
                     {
                         while (unaryNode._op == Operators.Noop && unaryNode._right is UnaryNode && ((UnaryNode)unaryNode._right)._op == Operators.Noop)
@@ -104,7 +105,7 @@ namespace System.Data
                 }
                 else
                 {
-                    UnaryNode unaryNode = expr._right as UnaryNode;
+                    UnaryNode? unaryNode = expr._right as UnaryNode;
                     if (unaryNode != null)
                     {
                         while (unaryNode._op == Operators.Noop && unaryNode._right is UnaryNode && ((UnaryNode)unaryNode._right)._op == Operators.Noop)
@@ -136,7 +137,7 @@ namespace System.Data
             {
                 if (expr._left is NameNode && expr._right is ConstNode)
                 {
-                    ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column.Ordinal];
+                    ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column!.Ordinal];
                     canColumn.expr = (canColumn.expr == null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
                     if (expr._op == Operators.EqualTo)
                     {
@@ -159,7 +160,7 @@ namespace System.Data
                         case Operators.LessOrEqual: expr._op = Operators.GreaterOrEqual; break;
                         default: break;
                     }
-                    ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column.Ordinal];
+                    ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column!.Ordinal];
                     canColumn.expr = (canColumn.expr == null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
                     if (expr._op == Operators.EqualTo)
                     {
@@ -176,6 +177,8 @@ namespace System.Data
 
         private bool CompareSortIndexDesc(IndexField[] fields)
         {
+            Debug.Assert(_candidateColumns != null);
+
             if (fields.Length < _indexFields.Length)
                 return false;
             int j = 0;
@@ -228,6 +231,8 @@ namespace System.Data
         // Returns no. of columns that are matched
         private int CompareClosestCandidateIndexDesc(IndexField[] fields)
         {
+            Debug.Assert(_candidateColumns != null);
+
             int count = (fields.Length < _nCandidates ? fields.Length : _nCandidates);
             int i = 0;
             for (; i < count; i++)
@@ -305,6 +310,8 @@ namespace System.Data
         // Based on the required sorting and candidate columns settings, create a new index; Should be called only when there is no existing index to be reused
         private void CreateIndex()
         {
+            Debug.Assert(_candidateColumns != null);
+
             if (_index == null)
             {
                 if (_nCandidates == 0)
@@ -442,9 +449,9 @@ namespace System.Data
         }
 
 
-        private bool IsOperatorIn(ExpressionNode enode)
+        private bool IsOperatorIn(ExpressionNode? enode)
         {
-            BinaryNode bnode = (enode as BinaryNode);
+            BinaryNode? bnode = (enode as BinaryNode);
             if (null != bnode)
             {
                 if (Operators.In == bnode._op ||
@@ -462,8 +469,10 @@ namespace System.Data
         // Based on the current index and candidate columns settings, build the linear expression; Should be called only when there is atleast something for Binary Searching
         private void BuildLinearExpression()
         {
+            Debug.Assert(_candidateColumns != null);
+
             int i;
-            IndexField[] fields = _index._indexFields;
+            IndexField[] fields = _index!._indexFields;
             int lenId = fields.Length;
             Debug.Assert(_matchedCandidates > 0 && _matchedCandidates <= lenId, "BuildLinearExpression : Invalid Index");
             for (i = 0; i < _matchedCandidates; i++)
@@ -482,9 +491,9 @@ namespace System.Data
                 {
                     if (!_candidateColumns[i].flag)
                     {
-                        if (_candidateColumns[i].expr != null)
+                        if (_candidateColumns[i].expr is { } expr)
                         {
-                            _linearExpression = (_linearExpression == null ? _candidateColumns[i].expr : new BinaryNode(_table, Operators.And, _candidateColumns[i].expr, _linearExpression));
+                            _linearExpression = (_linearExpression == null ? _candidateColumns[i].expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
                         }
                     }
                     else
@@ -500,6 +509,7 @@ namespace System.Data
             bool needSorting = true;
 
             InitCandidateColumns();
+            Debug.Assert(_candidateColumns != null);
 
             if (_expression is BinaryNode)
             {
@@ -540,7 +550,7 @@ namespace System.Data
                 needSorting = false;
             }
 
-            if (_index.RecordCount == 0)
+            if (_index!.RecordCount == 0)
                 return _table.NewRowArray(0);
 
             Range range;
@@ -581,14 +591,14 @@ namespace System.Data
             DataRow[] newRows = _table.NewRowArray(_recordCount);
             for (int i = 0; i < newRows.Length; i++)
             {
-                newRows[i] = _table._recordManager[_records[i]];
+                newRows[i] = _table._recordManager[_records![i]]!;
             }
             return newRows;
         }
 
         private bool AcceptRecord(int record)
         {
-            DataRow row = _table._recordManager[record];
+            DataRow? row = _table._recordManager[record];
 
             if (row == null)
                 return true;
@@ -607,7 +617,7 @@ namespace System.Data
                 version = DataRowVersion.Proposed;
             }
 
-            object val = _linearExpression.Eval(row, version);
+            object val = _linearExpression!.Eval(row, version);
             bool result;
             try
             {
@@ -615,7 +625,7 @@ namespace System.Data
             }
             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                throw ExprException.FilterConvertion(_rowFilter.Expression);
+                throw ExprException.FilterConvertion(_rowFilter!.Expression);
             }
             return result;
         }
@@ -674,10 +684,10 @@ namespace System.Data
                 // use InvariantCulture instead of DataTable.Locale because in the Danish related cultures
                 // sorting a Guid as a string has different results than in Invariant and English related cultures.
                 // This fix is restricted to DataTable.Select("GuidColumn = 'string literal'") types of queries
-                NameNode namedNode = null;
-                System.Globalization.CompareInfo comparer =
-                    ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column.DataType == typeof(Guid))) ||
-                     (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column.DataType == typeof(Guid))))
+                NameNode? namedNode = null;
+                System.Globalization.CompareInfo? comparer =
+                    ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column!.DataType == typeof(Guid))) ||
+                     (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column!.DataType == typeof(Guid))))
                      ? System.Globalization.CultureInfo.InvariantCulture.CompareInfo : null;
 
                 c = expr.BinaryCompare(vLeft, vRight, resultType, expr._op, comparer);
@@ -698,7 +708,9 @@ namespace System.Data
 
         private int Evaluate(int record)
         {
-            DataRow row = _table._recordManager[record];
+            Debug.Assert(_index != null && _candidateColumns != null);
+
+            DataRow? row = _table._recordManager[record];
 
             if (row == null)
                 return 0;
@@ -720,10 +732,10 @@ namespace System.Data
             IndexField[] fields = _index._indexFields;
             for (int i = 0; i < _matchedCandidates; i++)
             {
-                int columnOrdinal = fields[i].Column.Ordinal;
-                Debug.Assert(_candidateColumns[columnOrdinal] != null, "How come this is not a candidate column");
-                Debug.Assert(_candidateColumns[columnOrdinal].expr != null, "How come there is no associated expression");
-                int c = Eval(_candidateColumns[columnOrdinal].expr, row, version);
+                var candidateColumn = _candidateColumns[fields[i].Column.Ordinal];
+                Debug.Assert(candidateColumn != null, "How come this is not a candidate column");
+                Debug.Assert(candidateColumn.expr != null, "How come there is no associated expression");
+                int c = Eval(candidateColumn.expr, row, version);
                 if (c != 0)
                     return fields[i].IsDescending ? -c : c;
             }
@@ -732,6 +744,8 @@ namespace System.Data
 
         private int FindFirstMatchingRecord()
         {
+            Debug.Assert(_index != null);
+
             int rec = -1;
             int lo = 0;
             int hi = _index.RecordCount - 1;
@@ -749,6 +763,8 @@ namespace System.Data
 
         private int FindLastMatchingRecord(int lo)
         {
+            Debug.Assert(_index != null);
+
             int rec = -1;
             int hi = _index.RecordCount - 1;
             while (lo <= hi)
@@ -765,6 +781,8 @@ namespace System.Data
 
         private Range GetBinaryFilteredRecords()
         {
+            Debug.Assert(_index != null);
+
             if (_matchedCandidates == 0)
             {
                 return new Range(0, _index.RecordCount - 1);
@@ -782,6 +800,8 @@ namespace System.Data
 
         private int[] GetLinearFilteredRecords(Range range)
         {
+            Debug.Assert(_index != null);
+
             if (_linearExpression == null)
             {
                 int[] resultRecords = new int[range.Count];
@@ -809,6 +829,8 @@ namespace System.Data
 
         private DataRow[] GetLinearFilteredRows(Range range)
         {
+            Debug.Assert(_index != null);
+
             DataRow[] resultRows;
             if (_linearExpression == null)
             {
@@ -821,7 +843,7 @@ namespace System.Data
             {
                 if (AcceptRecord(iterator.Current))
                 {
-                    matchingRows.Add(_table._recordManager[iterator.Current]);
+                    matchingRows.Add(_table._recordManager[iterator.Current]!);
                 }
             }
             resultRows = _table.NewRowArray(matchingRows.Count);
@@ -843,16 +865,17 @@ namespace System.Data
                 }
             }
 
-            long id1 = _table._recordManager[record1] == null ? 0 : _table._recordManager[record1].rowID;
-            long id2 = _table._recordManager[record2] == null ? 0 : _table._recordManager[record2].rowID;
+            var (row1, row2) = (_table._recordManager[record1], _table._recordManager[record2]);
+
+            long id1 = row1 is null ? 0 : row1.rowID;
+            long id2 = row2 is null ? 0 : row2.rowID;
             int diff = (id1 < id2) ? -1 : ((id2 < id1) ? 1 : 0);
 
             // if they're two records in the same row, we need to be able to distinguish them.
-            if (diff == 0 && record1 != record2 &&
-                _table._recordManager[record1] != null && _table._recordManager[record2] != null)
+            if (diff == 0 && record1 != record2 && row1 != null && row2 != null)
             {
-                id1 = (int)_table._recordManager[record1].GetRecordState(record1);
-                id2 = (int)_table._recordManager[record2].GetRecordState(record2);
+                id1 = (int)row1.GetRecordState(record1);
+                id2 = (int)row2.GetRecordState(record2);
                 diff = (id1 < id2) ? -1 : ((id2 < id1) ? 1 : 0);
             }
 
@@ -867,7 +890,7 @@ namespace System.Data
             {
                 i = left;
                 j = right;
-                record = _records[i + j >> 1];
+                record = _records![i + j >> 1];
                 do
                 {
                     while (CompareRecords(_records[i], record) < 0) i++;

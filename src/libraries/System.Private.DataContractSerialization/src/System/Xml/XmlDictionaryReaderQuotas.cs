@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 using System.ComponentModel;
@@ -26,7 +25,7 @@ namespace System.Xml
         private int _maxDepth;
         private int _maxNameTableCharCount;
         private int _maxBytesPerRead;
-        private XmlDictionaryReaderQuotaTypes _modifiedQuotas = 0x00;
+        private XmlDictionaryReaderQuotaTypes _modifiedQuotas;
         private const int DefaultMaxDepth = 32;
         private const int DefaultMaxStringContentLength = 8192;
         private const int DefaultMaxArrayLength = 16384;

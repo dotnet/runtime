@@ -18,8 +18,6 @@
     <SingleFileHostIncludeFilename Include="libSystem.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.so" />
-    <SingleFileHostIncludeFilename Include="libclrjit.so" />
-    <SingleFileHostIncludeFilename Include="libcoreclr.so" />
 
     <!-- OSX -->
     <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.dylib" />
@@ -27,8 +25,6 @@
     <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.dylib" />
     <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.Apple.dylib" />
     <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" />
-    <SingleFileHostIncludeFilename Include="libclrjit.dylib" />
-    <SingleFileHostIncludeFilename Include="libcoreclr.dylib" />
 
     <!-- Windows -->
     <SingleFileHostIncludeFilename Include="clrcompression.dll" />

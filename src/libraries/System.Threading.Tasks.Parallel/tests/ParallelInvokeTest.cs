@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
@@ -151,7 +150,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke2()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -163,7 +162,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke3()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -199,7 +198,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke6()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -211,7 +210,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke7()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -247,7 +246,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke10()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters
@@ -259,7 +258,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ParallelInvoke11()
         {
             ParallelInvokeTestParameters parameters = new ParallelInvokeTestParameters

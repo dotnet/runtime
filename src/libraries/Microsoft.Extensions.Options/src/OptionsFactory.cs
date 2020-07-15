@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -43,8 +42,8 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public TOptions Create(string name)
         {
-            var options = CreateInstance(name);
-            foreach (var setup in _setups)
+            TOptions options = CreateInstance(name);
+            foreach (IConfigureOptions<TOptions> setup in _setups)
             {
                 if (setup is IConfigureNamedOptions<TOptions> namedSetup)
                 {
@@ -55,7 +54,7 @@ namespace Microsoft.Extensions.Options
                     setup.Configure(options);
                 }
             }
-            foreach (var post in _postConfigures)
+            foreach (IPostConfigureOptions<TOptions> post in _postConfigures)
             {
                 post.PostConfigure(name, options);
             }
@@ -63,9 +62,9 @@ namespace Microsoft.Extensions.Options
             if (_validations != null)
             {
                 var failures = new List<string>();
-                foreach (var validate in _validations)
+                foreach (IValidateOptions<TOptions> validate in _validations)
                 {
-                    var result = validate.Validate(name, options);
+                    ValidateOptionsResult result = validate.Validate(name, options);
                     if (result.Failed)
                     {
                         failures.AddRange(result.Failures);

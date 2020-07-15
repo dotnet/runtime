@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -128,15 +127,6 @@ namespace System
 
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
-
-            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
-            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
-            {
-                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
-                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
-                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
-                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
-            }
 
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {
@@ -1219,11 +1209,19 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            fixed (byte* bufPtr = buffer)
+            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
+            try
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
-                return result;
+                fixed (byte* bufPtr = buffer)
+                {
+                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
+                    Debug.Assert(result <= count);
+                    return result;
+                }
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
             }
         }
 

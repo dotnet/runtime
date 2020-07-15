@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -494,6 +493,7 @@ namespace System.Net.Http.Functional.Tests
                 bool exceptionLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -552,6 +552,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStopLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.Start();
 
@@ -602,7 +603,7 @@ namespace System.Net.Http.Functional.Tests
         public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
         {
             Assert.True(UseVersion.Major < 2, "The test currently only supports HTTP/1.");
-            RemoteExecutor.Invoke(useVersionString =>
+            RemoteExecutor.Invoke((useVersionString, testAsyncString) =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -640,7 +641,7 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClient client = CreateHttpClient(useVersionString))
                     {
                         request.Headers.Add("traceparent", customTraceParentHeader);
-                        client.SendAsync(request).Result.Dispose();
+                        client.SendAsync(bool.Parse(testAsyncString), request).Result.Dispose();
                     }
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
@@ -650,7 +651,7 @@ namespace System.Net.Http.Functional.Tests
                         "HttpRequestOut.Stop was not logged within 1 second timeout.");
                     diagnosticListenerObserver.Disable();
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [OuterLoop("Uses external server")]
@@ -751,7 +752,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
-            RemoteExecutor.Invoke(useVersionString =>
+            RemoteExecutor.Invoke((useVersionString , testAsyncString)=>
             {
                 bool exceptionLogged = false;
                 bool activityStopLogged = false;
@@ -795,7 +796,14 @@ namespace System.Net.Http.Functional.Tests
                         // modifier, and returns Task. If the call is not awaited, the current test method will continue
                         // run before the call is completed, thus Assert.Throws() will not capture the exception.
                         // We need to wait for the Task to complete synchronously, to validate the exception.
-                        Task sendTask = client.SendAsync(request);
+                        bool testAsync = bool.Parse(testAsyncString);
+                        Task sendTask = client.SendAsync(testAsync, request);
+                        if (!testAsync)
+                        {
+                            // In sync test case we execute client.Send(...) in separate thread to prevent deadlocks,
+                            // so it will never finish immediately and we need to wait for it.
+                            ((IAsyncResult)sendTask).AsyncWaitHandle.WaitOne();
+                        }
                         Assert.True(sendTask.IsFaulted);
                         Assert.IsType<NotSupportedException>(sendTask.Exception.InnerException);
                     }
@@ -806,7 +814,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(exceptionLogged, "Exception was not logged");
                     diagnosticListenerObserver.Disable();
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [OuterLoop("Uses external server")]

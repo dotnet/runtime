@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
@@ -10,12 +9,10 @@ using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -44,8 +41,8 @@ namespace System.Net
             (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
         };
 
-        private SafeHandle _requestQueueHandle;
-        private ThreadPoolBoundHandle _requestQueueBoundHandle;
+        private HttpListenerSession _currentSession;
+
         private bool _unsafeConnectionNtlmAuthentication;
 
         private HttpServerSessionHandle _serverSessionHandle;
@@ -53,8 +50,6 @@ namespace System.Net
 
         private bool _V2Initialized;
         private Dictionary<ulong, DisconnectAsyncResult> _disconnectResults;
-
-        internal SafeHandle RequestQueueHandle => _requestQueueHandle;
 
         private void ValidateV2Property()
         {
@@ -115,7 +110,7 @@ namespace System.Net
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
                 HttpListenerException exception = new HttpListenerException((int)statusCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"HttpSetUrlGroupProperty:: Property: {property} {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"HttpSetUrlGroupProperty:: Property: {property} {exception}");
                 throw exception;
             }
         }
@@ -153,31 +148,6 @@ namespace System.Net
                 ValidateV2Property();
                 Debug.Assert(_timeoutManager != null, "Timeout manager is not assigned");
                 return _timeoutManager;
-            }
-        }
-
-        private IntPtr DangerousGetHandle()
-        {
-            return ((HttpRequestQueueV2Handle)_requestQueueHandle).DangerousGetHandle();
-        }
-
-        internal ThreadPoolBoundHandle RequestQueueBoundHandle
-        {
-            get
-            {
-                if (_requestQueueBoundHandle == null)
-                {
-                    lock (_internalLock)
-                    {
-                        if (_requestQueueBoundHandle == null)
-                        {
-                            _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(_requestQueueHandle);
-                            if (NetEventSource.IsEnabled) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({_requestQueueHandle}) -> {_requestQueueBoundHandle}");
-                        }
-                    }
-                }
-
-                return _requestQueueBoundHandle;
             }
         }
 
@@ -243,15 +213,13 @@ namespace System.Net
                 //
                 _serverSessionHandle?.Dispose();
 
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"SetupV2Config {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"SetupV2Config {exception}");
                 throw;
             }
         }
 
         public void Start()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             // Make sure there are no race conditions between Start/Stop/Abort/Close/Dispose and
             // calls to SetupV2Config: Start needs to setup all resources (esp. in V2 where besides
             // the request handle, there is also a server session and a Url group. Abort/Stop must
@@ -266,6 +234,8 @@ namespace System.Net
                     {
                         return;
                     }
+
+                    Debug.Assert(_currentSession is null);
 
                     // SetupV2Config() is not called in the ctor, because it may throw. This would
                     // be a regression since in v1 the ctor never threw. Besides, ctors should do
@@ -294,12 +264,8 @@ namespace System.Net
                     _state = State.Closed;
                     CloseRequestQueueHandle();
                     CleanupV2Config();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Start {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Start {exception}");
                     throw;
-                }
-                finally
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
@@ -328,7 +294,7 @@ namespace System.Net
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"CloseV2Config {SR.Format(SR.net_listener_close_urlgroup_error, statusCode)}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"CloseV2Config {SR.Format(SR.net_listener_close_urlgroup_error, statusCode)}");
             }
             _urlGroupId = 0;
 
@@ -340,13 +306,13 @@ namespace System.Net
 
         private void AttachRequestQueueToUrlGroup()
         {
-            //
+            Debug.Assert(Monitor.IsEntered(_internalLock));
+
             // Set the association between request queue and url group. After this, requests for registered urls will
             // get delivered to this request queue.
-            //
             Interop.HttpApi.HTTP_BINDING_INFO info = default;
             info.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
-            info.RequestQueueHandle = DangerousGetHandle();
+            info.RequestQueueHandle = _currentSession.RequestQueueHandle.DangerousGetHandle();
 
             IntPtr infoptr = new IntPtr(&info);
 
@@ -377,13 +343,12 @@ namespace System.Net
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"DetachRequestQueueFromUrlGroup {SR.Format(SR.net_listener_detach_error, statusCode)}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"DetachRequestQueueFromUrlGroup {SR.Format(SR.net_listener_detach_error, statusCode)}");
             }
         }
 
         public void Stop()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 lock (_internalLock)
@@ -408,68 +373,29 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Stop {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         private unsafe void CreateRequestQueueHandle()
         {
-            uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
+            Debug.Assert(Monitor.IsEntered(_internalLock));
+            Debug.Assert(_currentSession is null);
 
-            HttpRequestQueueV2Handle requestQueueHandle = null;
-            statusCode =
-                Interop.HttpApi.HttpCreateRequestQueue(
-                    Interop.HttpApi.s_version, null, null, 0, out requestQueueHandle);
-
-            if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
-            {
-                throw new HttpListenerException((int)statusCode);
-            }
-
-            // Disabling callbacks when IO operation completes synchronously (returns ErrorCodes.ERROR_SUCCESS)
-            if (SkipIOCPCallbackOnSuccess &&
-                !Interop.Kernel32.SetFileCompletionNotificationModes(
-                    requestQueueHandle,
-                    Interop.Kernel32.FileCompletionNotificationModes.SkipCompletionPortOnSuccess |
-                    Interop.Kernel32.FileCompletionNotificationModes.SkipSetEventOnHandle))
-            {
-                throw new HttpListenerException(Marshal.GetLastWin32Error());
-            }
-
-            _requestQueueHandle = requestQueueHandle;
+            _currentSession = new HttpListenerSession(this);
         }
 
         private unsafe void CloseRequestQueueHandle()
         {
-            if ((_requestQueueHandle != null) && (!_requestQueueHandle.IsInvalid))
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
-                _requestQueueBoundHandle?.Dispose();
-                _requestQueueHandle.Dispose();
+            Debug.Assert(Monitor.IsEntered(_internalLock));
 
-                // CancelIoEx is called after Dispose to prevent a race condition involving parallel GetContext and
-                // HttpReceiveHttpRequest calls. Otherwise, calling CancelIoEx before Dispose might block the synchronous
-                // GetContext call until the next request arrives.
-                try
-                {
-                    Interop.Kernel32.CancelIoEx(_requestQueueHandle, null); // This cancels the synchronous call to HttpReceiveHttpRequest
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Ignore the exception since it only means that the queue handle has been successfully disposed
-                }
-            }
+            _currentSession?.CloseRequestQueueHandle();
+            _currentSession = null;
         }
 
         public void Abort()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -490,21 +416,18 @@ namespace System.Net
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Abort {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Abort {exception}");
                     throw;
                 }
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
 
         private void Dispose()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -519,13 +442,12 @@ namespace System.Net
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Dispose {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Dispose {exception}");
                     throw;
                 }
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
@@ -549,7 +471,7 @@ namespace System.Net
 
         private void AddPrefixCore(string registeredPrefix)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
 
             uint statusCode = Interop.HttpApi.HttpAddUrlToUrlGroup(
                                   _urlGroupId,
@@ -567,8 +489,6 @@ namespace System.Net
 
         public HttpListenerContext GetContext()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             SyncRequestContext memoryBlob = null;
             HttpListenerContext httpContext = null;
             bool stoleBlob = false;
@@ -588,15 +508,17 @@ namespace System.Net
                 uint size = 4096;
                 ulong requestId = 0;
                 memoryBlob = new SyncRequestContext((int)size);
+                HttpListenerSession session = _currentSession;
+
                 while (true)
                 {
                     while (true)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {requestId}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {requestId}");
                         uint bytesTransferred = 0;
                         statusCode =
                             Interop.HttpApi.HttpReceiveHttpRequest(
-                                _requestQueueHandle,
+                                session.RequestQueueHandle,
                                 requestId,
                                 (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY,
                                 memoryBlob.RequestBlob,
@@ -604,7 +526,7 @@ namespace System.Net
                                 &bytesTransferred,
                                 null);
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
 
                         if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && requestId != 0)
                         {
@@ -631,10 +553,10 @@ namespace System.Net
                         throw new HttpListenerException((int)statusCode);
                     }
 
-                    if (ValidateRequest(memoryBlob))
+                    if (ValidateRequest(session, memoryBlob))
                     {
                         // We need to hook up our authentication handling code here.
-                        httpContext = HandleAuthentication(memoryBlob, out stoleBlob);
+                        httpContext = HandleAuthentication(session, memoryBlob, out stoleBlob);
                     }
 
                     if (stoleBlob)
@@ -643,7 +565,7 @@ namespace System.Net
                         memoryBlob = null;
                         stoleBlob = false;
                     }
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, ":HandleAuthentication() returned httpContext" + httpContext);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, ":HandleAuthentication() returned httpContext" + httpContext);
                     // if the request survived authentication, return it to the user
                     if (httpContext != null)
                     {
@@ -661,7 +583,7 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"{exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"{exception}");
                 throw;
             }
             finally
@@ -671,16 +593,15 @@ namespace System.Net
                     memoryBlob.ReleasePins();
                     memoryBlob.Close();
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "RequestTraceIdentifier: " + (httpContext != null ? httpContext.Request.RequestTraceIdentifier.ToString() : "<null>"));
             }
         }
 
-        internal unsafe bool ValidateRequest(RequestContextBase requestMemory)
+        internal static unsafe bool ValidateRequest(HttpListenerSession session, RequestContextBase requestMemory)
         {
             // Block potential DOS attacks
             if (requestMemory.RequestBlob->Headers.UnknownHeaderCount > UnknownHeaderLimit)
             {
-                SendError(requestMemory.RequestBlob->RequestId, HttpStatusCode.BadRequest, null);
+                SendError(session, requestMemory.RequestBlob->RequestId, HttpStatusCode.BadRequest, null);
                 return false;
             }
             return true;
@@ -688,7 +609,6 @@ namespace System.Net
 
         public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ListenerAsyncResult asyncResult = null;
             try
             {
@@ -700,7 +620,7 @@ namespace System.Net
                 // prepare the ListenerAsyncResult object (this will have it's own
                 // event that the user can wait on for IO completion - which means we
                 // need to signal it when IO completes)
-                asyncResult = new ListenerAsyncResult(this, state, callback);
+                asyncResult = new ListenerAsyncResult(_currentSession, state, callback);
                 uint statusCode = asyncResult.QueueBeginGetContext();
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS &&
                     statusCode != Interop.HttpApi.ERROR_IO_PENDING)
@@ -712,12 +632,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"BeginGetContext {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"BeginGetContext {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -725,7 +641,6 @@ namespace System.Net
 
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             HttpListenerContext httpContext = null;
             try
             {
@@ -734,9 +649,8 @@ namespace System.Net
                 {
                     throw new ArgumentNullException(nameof(asyncResult));
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
-                ListenerAsyncResult castedAsyncResult = asyncResult as ListenerAsyncResult;
-                if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
+                if (!(asyncResult is ListenerAsyncResult castedAsyncResult) || !(castedAsyncResult.AsyncObject is HttpListenerSession session) || session.Listener != this)
                 {
                     throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
@@ -754,19 +668,15 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"EndGetContext {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"EndGetContext {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "EndGetContext " + httpContext == null ? "<no context>" : "HttpListenerContext" + httpContext.ToString() + " RequestTraceIdentifier#" + httpContext.Request.RequestTraceIdentifier);
             }
             return httpContext;
         }
 
-        internal HttpListenerContext HandleAuthentication(RequestContextBase memoryBlob, out bool stoleBlob)
+        internal HttpListenerContext HandleAuthentication(HttpListenerSession session, RequestContextBase memoryBlob, out bool stoleBlob)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
 
             string challenge = null;
             stoleBlob = false;
@@ -778,7 +688,7 @@ namespace System.Net
             ulong requestId = memoryBlob.RequestBlob->RequestId;
             bool isSecureConnection = memoryBlob.RequestBlob->pSslInfo != null;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HandleAuthentication() authorizationHeader: ({authorizationHeader})");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HandleAuthentication() authorizationHeader: ({authorizationHeader})");
 
             // if the app has turned on AuthPersistence, an anonymous request might
             // be authenticated by virtue of it coming on a connection that was
@@ -794,9 +704,9 @@ namespace System.Net
                     WindowsPrincipal principal = disconnectResult?.AuthenticatedConnection;
                     if (principal != null)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Principal: {principal} principal.Identity.Name: {principal.Identity.Name} creating request");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Principal: {principal} principal.Identity.Name: {principal.Identity.Name} creating request");
                         stoleBlob = true;
-                        HttpListenerContext ntlmContext = new HttpListenerContext(this, memoryBlob);
+                        HttpListenerContext ntlmContext = new HttpListenerContext(session, memoryBlob);
                         ntlmContext.SetIdentity(principal, null);
                         ntlmContext.Request.ReleasePins();
                         return ntlmContext;
@@ -805,7 +715,7 @@ namespace System.Net
                 else
                 {
                     // They sent an authorization - destroy their previous credentials.
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Clearing principal cache");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Clearing principal cache");
                     if (disconnectResult != null)
                     {
                         disconnectResult.AuthenticatedConnection = null;
@@ -837,7 +747,7 @@ namespace System.Net
                     oldContext = disconnectResult.Session;
                 }
 
-                httpContext = new HttpListenerContext(this, memoryBlob);
+                httpContext = new HttpListenerContext(session, memoryBlob);
 
                 AuthenticationSchemeSelector authenticationSelector = _authenticationDelegate;
                 if (authenticationSelector != null)
@@ -848,16 +758,16 @@ namespace System.Net
                         authenticationScheme = authenticationSelector(httpContext.Request);
                         // Cache the results of authenticationSelector (if any)
                         httpContext.AuthenticationSchemes = authenticationScheme;
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AuthenticationScheme: {authenticationScheme}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AuthenticationScheme: {authenticationScheme}");
                     }
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Error(this, SR.Format(SR.net_log_listener_delegate_exception, exception));
                             NetEventSource.Info(this, $"authenticationScheme: {authenticationScheme}");
                         }
-                        SendError(requestId, HttpStatusCode.InternalServerError, null);
+                        SendError(session, requestId, HttpStatusCode.InternalServerError, null);
                         FreeContext(ref httpContext, memoryBlob);
                         return null;
                     }
@@ -916,7 +826,7 @@ namespace System.Net
                         }
                         else
                         {
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unsupported_authentication_scheme, authorizationHeader, authenticationScheme));
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unsupported_authentication_scheme, authorizationHeader, authenticationScheme));
                         }
                     }
                 }
@@ -928,7 +838,7 @@ namespace System.Net
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), (authorizationHeader == null ? "<null>" : authorizationHeader)));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), (authorizationHeader == null ? "<null>" : authorizationHeader)));
 
                     // If anonymous is allowed, just return the context.  Otherwise go for the 401.
                     if ((authenticationScheme & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
@@ -965,12 +875,12 @@ namespace System.Net
                     IPrincipal principal = null;
                     SecurityStatusPal statusCodeNew;
                     ChannelBinding binding;
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Performing Authentication headerScheme: {headerScheme}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Performing Authentication headerScheme: {headerScheme}");
                     switch (headerScheme)
                     {
                         case AuthenticationSchemes.Negotiate:
                         case AuthenticationSchemes.Ntlm:
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"context: {oldContext} for connectionId: {connectionId}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"context: {oldContext} for connectionId: {connectionId}");
 
                             string package = headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate;
                             if (oldContext != null && oldContext.Package == package)
@@ -979,7 +889,7 @@ namespace System.Net
                             }
                             else
                             {
-                                binding = GetChannelBinding(connectionId, isSecureConnection, extendedProtectionPolicy);
+                                binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
                                 ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy, isSecureConnection);
                                 context = new NTAuthentication(true, package, CredentialCache.DefaultNetworkCredentials, null, contextFlags, binding);
                             }
@@ -990,14 +900,14 @@ namespace System.Net
                             }
                             catch (FormatException)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"FormatException from FormBase64String");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"FormatException from FormBase64String");
                                 httpError = HttpStatusCode.BadRequest;
                                 error = true;
                             }
                             if (!error)
                             {
                                 decodedOutgoingBlob = context.GetOutgoingBlob(bytes, false, out statusCodeNew);
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetOutgoingBlob returned IsCompleted: {context.IsCompleted} and statusCodeNew: {statusCodeNew}");
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetOutgoingBlob returned IsCompleted: {context.IsCompleted} and statusCodeNew: {statusCodeNew}");
                                 error = !context.IsValidContext;
                                 if (error)
                                 {
@@ -1039,7 +949,7 @@ namespace System.Net
                                             SafeDeleteContext securityContext = context.GetContext(out statusCodeNew);
                                             if (statusCodeNew.ErrorCode != SecurityStatusPalErrorCode.OK)
                                             {
-                                                if (NetEventSource.IsEnabled)
+                                                if (NetEventSource.Log.IsEnabled())
                                                 {
                                                     NetEventSource.Info(this,
                                                         $"HandleAuthentication GetContextToken failed with statusCodeNew: {statusCodeNew}");
@@ -1051,7 +961,7 @@ namespace System.Net
                                             {
                                                 SSPIWrapper.QuerySecurityContextToken(GlobalSSPI.SSPIAuth, securityContext, out userContext);
 
-                                                if (NetEventSource.IsEnabled)
+                                                if (NetEventSource.Log.IsEnabled())
                                                 {
                                                     NetEventSource.Info(this,
                                                         $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle().ToString("x8")}");
@@ -1064,7 +974,7 @@ namespace System.Net
                                                 // if appropriate, cache this credential on this connection
                                                 if (UnsafeConnectionNtlmAuthentication && context.ProtocolName == NegotiationInfoClass.NTLM)
                                                 {
-                                                    if (NetEventSource.IsEnabled)
+                                                    if (NetEventSource.Log.IsEnabled())
                                                     {
                                                         NetEventSource.Info(this,
                                                             $"HandleAuthentication inserting principal: {principal} for connectionId: {connectionId}");
@@ -1073,7 +983,7 @@ namespace System.Net
                                                     // We may need to call WaitForDisconnect.
                                                     if (disconnectResult == null)
                                                     {
-                                                        RegisterForDisconnectNotification(connectionId, ref disconnectResult);
+                                                        RegisterForDisconnectNotification(session, connectionId, ref disconnectResult);
                                                     }
                                                     if (disconnectResult != null)
                                                     {
@@ -1088,7 +998,7 @@ namespace System.Net
                                                     else
                                                     {
                                                         // Registration failed - UnsafeConnectionNtlmAuthentication ignored.
-                                                        if (NetEventSource.IsEnabled)
+                                                        if (NetEventSource.Log.IsEnabled())
                                                         {
                                                             NetEventSource.Info(this, $"HandleAuthentication RegisterForDisconnectNotification failed.");
                                                         }
@@ -1128,7 +1038,7 @@ namespace System.Net
                                 {
                                     string userName = inBlob.Substring(0, index);
                                     string password = inBlob.Substring(index + 1);
-                                    if (NetEventSource.IsEnabled)
+                                    if (NetEventSource.Log.IsEnabled())
                                     {
                                         NetEventSource.Info(this, $"Basic Identity found, userName: {userName}");
                                     }
@@ -1142,7 +1052,7 @@ namespace System.Net
                             }
                             catch (FormatException)
                             {
-                                if (NetEventSource.IsEnabled)
+                                if (NetEventSource.Log.IsEnabled())
                                 {
                                     NetEventSource.Info(this, $"FromBase64String threw a FormatException.");
                                 }
@@ -1152,7 +1062,7 @@ namespace System.Net
 
                     if (principal != null)
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(this, $"Got principal: {principal}, IdentityName: {principal.Identity.Name} for creating request.");
                         }
@@ -1161,7 +1071,7 @@ namespace System.Net
                     }
                     else
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(this, "Handshake has failed.");
                         }
@@ -1204,8 +1114,8 @@ namespace System.Net
                         // If we're sending something besides 401, do it here.
                         if (httpError != HttpStatusCode.Unauthorized)
                         {
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "ConnectionId:" + connectionId + " because of error:" + httpError.ToString());
-                            SendError(requestId, httpError, null);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "ConnectionId:" + connectionId + " because of error:" + httpError.ToString());
+                            SendError(session, requestId, httpError, null);
                             return null;
                         }
 
@@ -1217,7 +1127,7 @@ namespace System.Net
                 // Check if we need to call WaitForDisconnect, because if we do and it fails, we want to send a 500 instead.
                 if (disconnectResult == null && newContext != null)
                 {
-                    RegisterForDisconnectNotification(connectionId, ref disconnectResult);
+                    RegisterForDisconnectNotification(session, connectionId, ref disconnectResult);
 
                     // Failed - send 500.
                     if (disconnectResult == null)
@@ -1241,8 +1151,8 @@ namespace System.Net
                             }
                         }
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
-                        SendError(requestId, HttpStatusCode.InternalServerError, null);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
+                        SendError(session, requestId, HttpStatusCode.InternalServerError, null);
                         FreeContext(ref httpContext, memoryBlob);
                         return null;
                     }
@@ -1270,8 +1180,8 @@ namespace System.Net
                 // Send the 401 here.
                 if (httpContext == null)
                 {
-                    SendError(requestId, challenges != null && challenges.Count > 0 ? HttpStatusCode.Unauthorized : HttpStatusCode.Forbidden, challenges);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Scheme:" + authenticationScheme);
+                    SendError(session, requestId, challenges != null && challenges.Count > 0 ? HttpStatusCode.Unauthorized : HttpStatusCode.Forbidden, challenges);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Scheme:" + authenticationScheme);
                     return null;
                 }
 
@@ -1377,31 +1287,31 @@ namespace System.Net
             }
         }
 
-        private ChannelBinding GetChannelBinding(ulong connectionId, bool isSecureConnection, ExtendedProtectionPolicy policy)
+        private ChannelBinding GetChannelBinding(HttpListenerSession session, ulong connectionId, bool isSecureConnection, ExtendedProtectionPolicy policy)
         {
             if (policy.PolicyEnforcement == PolicyEnforcement.Never)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_disabled);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_cbt_disabled);
                 return null;
             }
 
             if (!isSecureConnection)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_http);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_cbt_http);
                 return null;
             }
 
             if (policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_trustedproxy);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_cbt_trustedproxy);
                 return null;
             }
 
-            ChannelBinding result = GetChannelBindingFromTls(connectionId);
+            ChannelBinding result = GetChannelBindingFromTls(session, connectionId);
 
-            if (NetEventSource.IsEnabled && result != null)
+            if (NetEventSource.Log.IsEnabled() && result != null)
                 NetEventSource.Info(this, "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_cbt);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_cbt);
             return result;
         }
 
@@ -1410,7 +1320,7 @@ namespace System.Net
             // Kerberos does SPN check already in ASC
             if (context.IsKerberos)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, SR.net_log_listener_no_spn_kerberos);
                 }
@@ -1420,7 +1330,7 @@ namespace System.Net
             // Don't check the SPN if Extended Protection is off or we already checked the CBT
             if (policy.PolicyEnforcement == PolicyEnforcement.Never)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, SR.net_log_listener_no_spn_disabled);
                 }
@@ -1429,7 +1339,7 @@ namespace System.Net
 
             if (ScenarioChecksChannelBinding(isSecureConnection, policy.ProtectionScenario))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
                 }
@@ -1443,7 +1353,7 @@ namespace System.Net
             {
                 if (policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         NetEventSource.Info(this,
                             SR.net_log_listener_no_spn_whensupported);
@@ -1452,7 +1362,7 @@ namespace System.Net
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         NetEventSource.Info(this,
                             SR.net_log_listener_spn_failed_always);
@@ -1462,7 +1372,7 @@ namespace System.Net
             }
             else if (string.Equals(clientSpn, "http/localhost", StringComparison.OrdinalIgnoreCase))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, SR.net_log_listener_no_spn_loopback);
                 }
@@ -1471,7 +1381,7 @@ namespace System.Net
             }
             else
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, SR.net_log_listener_spn, clientSpn);
                 }
@@ -1480,7 +1390,7 @@ namespace System.Net
 
                 bool found = serviceNames.Contains(clientSpn);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     if (found)
                     {
@@ -1492,7 +1402,7 @@ namespace System.Net
 
                         if (serviceNames.Count == 0)
                         {
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Info(this, SR.net_log_listener_spn_failed_empty);
                             }
@@ -1610,7 +1520,7 @@ namespace System.Net
                 challenge = challenge.Trim();
                 if (challenge.Length > 0)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, "challenge:" + challenge);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "challenge:" + challenge);
                     if (challenges == null)
                     {
                         challenges = new ArrayList(4);
@@ -1623,7 +1533,7 @@ namespace System.Net
         private ArrayList BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
             out NTAuthentication newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "AuthenticationScheme:" + authenticationScheme.ToString());
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "AuthenticationScheme:" + authenticationScheme.ToString());
             ArrayList challenges = null;
             newContext = null;
 
@@ -1645,22 +1555,22 @@ namespace System.Net
             return challenges;
         }
 
-        private void RegisterForDisconnectNotification(ulong connectionId, ref DisconnectAsyncResult disconnectResult)
+        private static void RegisterForDisconnectNotification(HttpListenerSession session, ulong connectionId, ref DisconnectAsyncResult disconnectResult)
         {
             Debug.Assert(disconnectResult == null);
 
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpWaitForDisconnect");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "Calling Interop.HttpApi.HttpWaitForDisconnect");
 
-                DisconnectAsyncResult result = new DisconnectAsyncResult(this, connectionId);
+                DisconnectAsyncResult result = new DisconnectAsyncResult(session, connectionId);
 
                 uint statusCode = Interop.HttpApi.HttpWaitForDisconnect(
-                    _requestQueueHandle,
+                    session.RequestQueueHandle,
                     connectionId,
                     result.NativeOverlapped);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpWaitForDisconnect returned:" + statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "Call to Interop.HttpApi.HttpWaitForDisconnect returned:" + statusCode);
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS ||
                     statusCode == Interop.HttpApi.ERROR_IO_PENDING)
@@ -1668,7 +1578,7 @@ namespace System.Net
                     // Need to make sure it's going to get returned before adding it to the hash.  That way it'll be handled
                     // correctly in HandleAuthentication's finally.
                     disconnectResult = result;
-                    DisconnectResults[connectionId] = disconnectResult;
+                    session.Listener.DisconnectResults[connectionId] = disconnectResult;
                 }
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
@@ -1680,13 +1590,13 @@ namespace System.Net
             catch (Win32Exception exception)
             {
                 uint statusCode = (uint)exception.NativeErrorCode;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpWaitForDisconnect threw, statusCode:" + statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "Call to Interop.HttpApi.HttpWaitForDisconnect threw, statusCode:" + statusCode);
             }
         }
 
-        private void SendError(ulong requestId, HttpStatusCode httpStatusCode, ArrayList challenges)
+        private static void SendError(HttpListenerSession session, ulong requestId, HttpStatusCode httpStatusCode, ArrayList challenges)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"RequestId: {requestId}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, $"RequestId: {requestId}");
             Interop.HttpApi.HTTP_RESPONSE httpResponse = default;
             httpResponse.Version = default;
             httpResponse.Version.MajorVersion = (ushort)1;
@@ -1738,10 +1648,10 @@ namespace System.Net
                             }
                         }
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendHtthttpResponse");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "Calling Interop.HttpApi.HttpSendHtthttpResponse");
                         statusCode =
                             Interop.HttpApi.HttpSendHttpResponse(
-                                _requestQueueHandle,
+                                session.RequestQueueHandle,
                                 requestId,
                                 0,
                                 &httpResponse,
@@ -1775,12 +1685,12 @@ namespace System.Net
                     }
                 }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "Call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
                 // if we fail to send a 401 something's seriously wrong, abort the request
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "SendUnauthorized returned:" + statusCode);
-                HttpListenerContext.CancelRequest(_requestQueueHandle, requestId);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, "SendUnauthorized returned:" + statusCode);
+                HttpListenerContext.CancelRequest(session.RequestQueueHandle, requestId);
             }
         }
 
@@ -1799,10 +1709,8 @@ namespace System.Net
             return (int)((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelTokenSize;
         }
 
-        internal ChannelBinding GetChannelBindingFromTls(ulong connectionId)
+        internal static ChannelBinding GetChannelBindingFromTls(HttpListenerSession session, ulong connectionId)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"connectionId: {connectionId}");
-
             // +128 since a CBT is usually <128 thus we need to call HRCC just once. If the CBT
             // is >128 we will get ERROR_MORE_DATA and call again
             int size = sizeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS) + 128;
@@ -1823,7 +1731,7 @@ namespace System.Net
                     // Http.sys team: ServiceName will always be null if
                     // HTTP_RECEIVE_SECURE_CHANNEL_TOKEN flag is set.
                     statusCode = Interop.HttpApi.HttpReceiveClientCertificate(
-                        RequestQueueHandle,
+                        session.RequestQueueHandle,
                         connectionId,
                         (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_SECURE_CHANNEL_TOKEN,
                         blobPtr,
@@ -1853,9 +1761,9 @@ namespace System.Net
                     }
                     else if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER)
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
-                            NetEventSource.Error(this, SR.net_ssp_dont_support_cbt);
+                            NetEventSource.Error(session.Listener, SR.net_ssp_dont_support_cbt);
                         }
                         return null; // old schannel library which doesn't support CBT
                     }
@@ -1875,7 +1783,7 @@ namespace System.Net
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
             private readonly ulong _connectionId;
-            private readonly HttpListener _httpListener;
+            private readonly HttpListenerSession _listenerSession;
             private readonly NativeOverlapped* _nativeOverlapped;
             private int _ownershipState;   // 0 = normal, 1 = in HandleAuthentication(), 2 = disconnected, 3 = cleaned up
 
@@ -1919,16 +1827,16 @@ namespace System.Net
                 }
             }
 
-            internal unsafe DisconnectAsyncResult(HttpListener httpListener, ulong connectionId)
+            internal unsafe DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {httpListener}, ConnectionId: {connectionId}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpListener: {session.Listener}, ConnectionId: {connectionId}");
                 _ownershipState = 1;
-                _httpListener = httpListener;
+                _listenerSession = session;
                 _connectionId = connectionId;
 
                 // we can call the Unsafe API here, we won't ever call user code
-                _nativeOverlapped = httpListener.RequestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
-                if (NetEventSource.IsEnabled) NetEventSource.Info($"DisconnectAsyncResult: ThreadPoolBoundHandle.AllocateNativeOverlapped({httpListener._requestQueueBoundHandle}) -> {_nativeOverlapped->GetHashCode()}");
+                _nativeOverlapped = session.RequestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"DisconnectAsyncResult: ThreadPoolBoundHandle.AllocateNativeOverlapped({session.RequestQueueBoundHandle}) -> {_nativeOverlapped->GetHashCode()}");
             }
 
             internal bool StartOwningDisconnectHandling()
@@ -1962,9 +1870,9 @@ namespace System.Net
 
             private static unsafe void IOCompleted(DisconnectAsyncResult asyncResult, uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
 
-                asyncResult._httpListener._requestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
+                asyncResult._listenerSession.RequestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
                 if (Interlocked.Exchange(ref asyncResult._ownershipState, 2) == 0)
                 {
                     asyncResult.HandleDisconnect();
@@ -1973,7 +1881,7 @@ namespace System.Net
 
             private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);
@@ -1981,8 +1889,10 @@ namespace System.Net
 
             private void HandleDisconnect()
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"DisconnectResults {_httpListener.DisconnectResults} removing for _connectionId: {_connectionId}");
-                _httpListener.DisconnectResults.Remove(_connectionId);
+                HttpListener listener = _listenerSession.Listener;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
+                listener.DisconnectResults.Remove(_connectionId);
                 if (_session != null)
                 {
                     _session.CloseContext();
@@ -1994,7 +1904,7 @@ namespace System.Net
                 IDisposable identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
                     (_authenticatedConnection.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
-                    (_httpListener.UnsafeConnectionNtlmAuthentication))
+                    (listener.UnsafeConnectionNtlmAuthentication))
                 {
                     identity.Dispose();
                 }

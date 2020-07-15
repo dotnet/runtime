@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -25,7 +24,7 @@ namespace System
         private IntPtr ArgPtr;                  // Pointer to remaining args.
         private int RemainingArgs;           // # of remaining args.
 
-#if TARGET_WINDOWS // Native Varargs are not supported on Unix
+#if (TARGET_WINDOWS && !TARGET_ARM)   // Native Varargs are not supported on Unix (all architectures) and Windows ARM
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
 

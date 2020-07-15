@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -184,14 +183,11 @@ namespace System.Net.Sockets
         {
             try
             {
-                Interop.Sys.SocketEvent* buffer = _buffer;
-                ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
-                ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                SocketAsyncContext? context = null;
+                SocketEventHandler handler = new SocketEventHandler(this);
                 while (true)
                 {
                     int numEvents = EventBufferCount;
-                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
+                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, handler.Buffer, &numEvents);
                     if (err != Interop.Error.SUCCESS)
                     {
                         throw new InternalException(err);
@@ -200,43 +196,7 @@ namespace System.Net.Sockets
                     // The native shim is responsible for ensuring this condition.
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
-                    bool enqueuedEvent = false;
-                    foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
-                    {
-                        IntPtr handle = socketEvent.Data;
-
-                        if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
-                        {
-                            if (context.PreferInlineCompletions)
-                            {
-                                context.HandleEventsInline(socketEvent.Events);
-                            }
-                            else
-                            {
-                                Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-
-                                if (events != Interop.Sys.SocketEvents.None)
-                                {
-                                    var ev = new SocketIOEvent(context, events);
-                                    eventQueue.Enqueue(ev);
-                                    enqueuedEvent = true;
-
-                                    // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                    // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                    // such code may keep the stack location live for longer than necessary
-                                    ev = default;
-                                }
-                            }
-
-                            // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                            // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                            // such code may keep the stack location live for longer than necessary
-                            context = null;
-                            contextWrapper = default;
-                        }
-                    }
-
-                    if (enqueuedEvent)
+                    if (handler.HandleSocketEvents(numEvents))
                     {
                         ScheduleToProcessEvents();
                     }
@@ -323,6 +283,56 @@ namespace System.Net.Sockets
             if (_port != (IntPtr)(-1))
             {
                 Interop.Sys.CloseSocketEventPort(_port);
+            }
+        }
+
+        // The JIT is allowed to arbitrarily extend the lifetime of locals, which may retain SocketAsyncContext references,
+        // indirectly preventing Socket instances to be finalized, despite being no longer referenced by user code.
+        // To avoid this, the event handling logic is delegated to a non-inlined processing method.
+        // See discussion: https://github.com/dotnet/runtime/issues/37064
+        // SocketEventHandler holds an on-stack cache of SocketAsyncEngine members needed by the handler method.
+        private readonly struct SocketEventHandler
+        {
+            public Interop.Sys.SocketEvent* Buffer { get; }
+
+            private readonly ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap;
+            private readonly ConcurrentQueue<SocketIOEvent> _eventQueue;
+
+            public SocketEventHandler(SocketAsyncEngine engine)
+            {
+                Buffer = engine._buffer;
+                _handleToContextMap = engine._handleToContextMap;
+                _eventQueue = engine._eventQueue;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public bool HandleSocketEvents(int numEvents)
+            {
+                bool enqueuedEvent = false;
+                foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(Buffer, numEvents))
+                {
+                    if (_handleToContextMap.TryGetValue(socketEvent.Data, out SocketAsyncContextWrapper contextWrapper))
+                    {
+                        SocketAsyncContext context = contextWrapper.Context;
+
+                        if (context.PreferInlineCompletions)
+                        {
+                            context.HandleEventsInline(socketEvent.Events);
+                        }
+                        else
+                        {
+                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+
+                            if (events != Interop.Sys.SocketEvents.None)
+                            {
+                                _eventQueue.Enqueue(new SocketIOEvent(context, events));
+                                enqueuedEvent = true;
+                            }
+                        }
+                    }
+                }
+
+                return enqueuedEvent;
             }
         }
 

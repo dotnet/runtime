@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +15,32 @@ namespace System.Net.Http
     /// </summary>
     internal static class StreamToStreamCopy
     {
+        /// <summary>Copies the source stream from its current position to the destination stream at its current position.</summary>
+        /// <param name="source">The source stream from which to copy.</param>
+        /// <param name="destination">The destination stream to which to copy.</param>
+        /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated. If zero, use the default buffer size.</param>
+        /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
+        public static void Copy(Stream source, Stream destination, int bufferSize, bool disposeSource)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(destination != null);
+            Debug.Assert(bufferSize >= 0);
+
+            if (bufferSize == 0)
+            {
+                source.CopyTo(destination);
+            }
+            else
+            {
+                source.CopyTo(destination, bufferSize);
+            }
+
+            if (disposeSource)
+            {
+                DisposeSource(source);
+            }
+        }
+
         /// <summary>Copies the source stream from its current position to the destination stream at its current position.</summary>
         /// <param name="source">The source stream from which to copy.</param>
         /// <param name="destination">The destination stream to which to copy.</param>
@@ -77,7 +102,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 // Dispose() should never throw, but since we're on an async codepath, make sure to catch the exception.
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
             }
         }
     }

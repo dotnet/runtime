@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Diagnostics
@@ -1012,8 +1011,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw ex
                     Catch ex As OutOfMemoryException
                         Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
-                        Throw ex
                     Catch
                         DecimalResult = -conv.ToDecimal(Nothing)
                         GoTo DecimalExit
@@ -1033,8 +1030,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         DoubleResult = -conv.ToDouble(Nothing)
@@ -2094,8 +2089,6 @@ DecimalExit:
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch 'e As OverflowException
                 Return CDec(i1) - CDec(i2)
@@ -3286,8 +3279,6 @@ DecimalExit:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw GetNoValidOperatorException(conv1, conv2)
                 End Try
@@ -3303,8 +3294,6 @@ DecimalExit:
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw GetNoValidOperatorException(conv1, conv2)

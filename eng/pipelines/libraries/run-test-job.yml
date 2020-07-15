@@ -77,9 +77,24 @@ jobs:
           parameters:
             displayName: Test Assets
             cleanUnpackFolder: false
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
+            unpackFolder: $(Build.SourcesDirectory)/artifacts
+
+        - ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra') }}:
+          # We need to find and download the GC stress dependencies (namely, coredistools). Put them
+          # in the 'sharedFramework' directory where we unpacked the CoreCLR build artifacts. The 'sharedFramework'
+          # directory is what is copied into the testhost.
+          - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+            - script: $(Build.SourcesDirectory)\src\coreclr\tests\setup-stress-dependencies.cmd
+                      /arch ${{ parameters.archType }}
+                      /outputdir $(_runtimeDownloadPath)/sharedFramework
+              displayName: Download GC stress dependencies
+          - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+            - script: $(Build.SourcesDirectory)/src/coreclr/tests/setup-stress-dependencies.sh
+                      --arch=${{ parameters.archType }}
+                      --outputDir=$(_runtimeDownloadPath)/sharedFramework
+              displayName: Download GC stress dependencies
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
@@ -92,16 +107,13 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
-            targetOS: ${{ parameters.osGroup }}
-            archGroup: ${{ parameters.archType }}
-            configuration: ${{ parameters.buildConfig }}
-            helixQueues: ${{ join('+', parameters.helixQueues) }}
-            msbuildScript: $(_msbuildCommand)
-            framework: ${{ parameters.framework }}
+            osGroup: ${{ parameters.osGroup }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            helixQueues: ${{ parameters.helixQueues }}
             testScope: ${{ parameters.testScope }}
             interpreter: ${{ parameters.interpreter }}
             creator: dotnet-bot
-            helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             extraHelixArguments: $(_extraHelixArguments)
 
@@ -109,7 +121,7 @@ jobs:
             # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
             # for clarity), and should remain in sync. This is only a subset; only the testGroups that are
             # used to test the libraries have been added here. More could be added if we decided to test the
-            # libraries with more stress modes (e.g., GCStress). The scenario tags are interpreted by
+            # libraries with more stress modes. The scenario tags are interpreted by
             # src\coreclr\tests\testenvironment.proj.
             #
             # The one difference here compared to eng/pipelines/common/templates/runtimes/run-test-job.yml is
@@ -147,3 +159,18 @@ jobs:
               - jitstress2_jitstressregs0x10
               - jitstress2_jitstressregs0x80
               - jitstress2_jitstressregs0x1000
+            ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
+              scenarios:
+              # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
+              # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.
+              # - gcstress0x3
+              - gcstress0xc
+            ${{ if in(parameters.coreclrTestGroup, 'gcstress-extra') }}:
+              scenarios:
+              - heapverify1
+              - gcstress0xc_zapdisable
+              - gcstress0xc_zapdisable_jitstress2
+              - gcstress0xc_zapdisable_heapverify1
+              - gcstress0xc_jitstress1
+              - gcstress0xc_jitstress2
+              - gcstress0xc_jitminopts_heapverify1

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -52,6 +51,82 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("OSX")));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("netbsd")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("mac")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("DARWIN")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOSX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]  // Tests RuntimeInformation OS platform
+        public void CheckiOS()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.iOS));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("netbsd")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("mac")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("DARWIN")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOSX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]  // Tests RuntimeInformation OS platform
+        public void ChecktvOS()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.tvOS));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("netbsd")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("mac")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("DARWIN")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOSX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]  // Tests RuntimeInformation OS platform
+        public void CheckAndroid()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID")));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("netbsd")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("mac")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("DARWIN")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOSX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Browser)]  // Tests RuntimeInformation OS platform
+        public void CheckBrowser()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")));
 
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));

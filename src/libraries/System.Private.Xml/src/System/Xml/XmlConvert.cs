@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Text;
@@ -615,26 +614,12 @@ namespace System.Xml
             return s_xmlCharType.IsStartNCNameSingleChar(ch);
         }
 
-#if XML10_FIFTH_EDITION
-        public static bool IsStartNCNameSurrogatePair(char lowChar, char highChar)
-        {
-            return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
-        }
-#endif
-
         // Name character types - as defined in Namespaces XML 1.0 spec (second edition) production [6] NCNameStartChar
         //                        combined with the production [4] NameChar of XML 1.0 spec
         public static bool IsNCNameChar(char ch)
         {
             return s_xmlCharType.IsNCNameSingleChar(ch);
         }
-
-#if XML10_FIFTH_EDITION
-        public static bool IsNCNameSurrogatePair(char lowChar, char highChar)
-        {
-            return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
-        }
-#endif
 
         // Valid XML character - as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static bool IsXmlChar(char ch)

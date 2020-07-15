@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -32,7 +31,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static RuntimeAssembly Create(string path)
         {
-            var assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
+            string assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
             if (assemblyName == null)
             {
                 throw new ArgumentException($"Provided path has empty file name '{path}'", nameof(path));

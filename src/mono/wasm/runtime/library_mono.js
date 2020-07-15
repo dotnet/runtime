@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
@@ -779,6 +778,49 @@ var MonoSupportLib = {
 			// and nested class names like Foo/Bar to Foo.Bar
 			return className.replace(/\//g, '.').replace(/`\d+/g, '');
 		},
+
+		mono_wasm_load_data: function (data, prefix) {
+			var dataview = new DataView(data.buffer);
+			var magic = dataview.getUint32(0, true);
+			//	get magic number
+			if (magic != 0x626c6174) {
+				throw new Error ("File is of wrong type");
+			}
+			var manifestSize = dataview.getUint32(4, true);
+			var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+			var manifest = JSON.parse(manifestContent);
+			data = data.slice(manifestSize+8);
+
+			// Create the folder structure
+			// /usr/share/zoneinfo
+			// /usr/share/zoneinfo/Africa
+			// /usr/share/zoneinfo/Asia
+			// ..
+			var p = prefix.slice(1).split('/');
+			p.forEach((v, i) => {
+				FS.mkdir(v);
+				Module['FS_createPath']("/" + p.slice(0, i).join('/'), v, true, true);
+			})
+			var folders = new Set()
+			manifest.filter(m => {
+				m = m[0].split('/')
+				if (m!= null) {
+					if (m.length > 2) folders.add(m.slice(0,m.length-1).join('/'));
+					folders.add(m[0]);
+				}	
+			});
+			folders.forEach(folder => {
+				Module['FS_createPath'](prefix, folder, true, true);
+			});
+
+			for (row of manifest) {
+				var name = row[0];
+				var length = row[1];
+				var bytes = data.slice(0, length);
+				Module['FS_createDataFile'](`${prefix}/${name}`, null, bytes, true, true);
+				data = data.slice(length);
+			}
+		}
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -993,7 +1035,7 @@ var MonoSupportLib = {
 	mono_wasm_fire_bp: function () {
 		console.log ("mono_wasm_fire_bp");
 		debugger;
-	}
+	},
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')

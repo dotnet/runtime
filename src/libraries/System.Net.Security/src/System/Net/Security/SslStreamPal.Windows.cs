@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,14 +15,10 @@ namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
-        private static readonly bool UseNewCryptoApi = Is1809OrNewer();
-        private static bool Is1809OrNewer()
-        {
+        private static readonly bool UseNewCryptoApi =
             // On newer Windows version we use new API to get TLS1.3.
             // API is supported since Windows 10 1809 (17763) but there is no reason to use at the moment.
-            return (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) == 0 &&
-                    osvi.dwMajorVersion >= 10 && osvi.dwBuildNumber >= 18836);
-        }
+            Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= 18836;
 
         private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
@@ -117,13 +112,15 @@ namespace System.Net.Security
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            // New crypto API does not allow to force NULL encryption.
+            // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
             return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                        AcquireCredentialsHandleLegcy(certificate, protocols, policy, isServer) :
-                        AcquireCredentialsHandleNew(certificate, protocols, policy, isServer);
+                        AcquireCredentialsHandleSchannelCred(certificate, protocols, policy, isServer) :
+                        AcquireCredentialsHandleSchCredentials(certificate, protocols, policy, isServer);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandleLegcy(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        // This is legacy crypto API used on .NET Framework and older Windows versions.
+        // It only supports TLS up to 1.2
+        public static SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -151,7 +148,7 @@ namespace System.Net.Security
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
                 Interop.SspiCli.SCHANNEL_CRED.CurrentVersion,
                 certificate,
@@ -162,7 +159,8 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleNew(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        // This function uses new crypto API to support TLS 1.3 and beyond.
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
@@ -204,15 +202,12 @@ namespace System.Net.Security
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
 
+            IntPtr certificateHandle = IntPtr.Zero;
             if (certificate != null)
             {
                 credential.cCreds = 1;
-                Span<IntPtr> certificates = stackalloc IntPtr[1];
-                certificates[0] = certificate.Handle;
-                fixed (void* ptr = &certificates[0])
-                {
-                    credential.paCred = ptr;
-                }
+                certificateHandle = certificate.Handle;
+                credential.paCred = &certificateHandle;
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
@@ -299,7 +294,7 @@ namespace System.Net.Security
 
                 if (errorCode != 0)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Info(securityContext, $"Encrypt ERROR {errorCode:X}");
                     resultSize = 0;
                     return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);

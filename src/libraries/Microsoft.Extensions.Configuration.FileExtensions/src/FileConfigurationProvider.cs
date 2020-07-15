@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -58,7 +57,7 @@ namespace Microsoft.Extensions.Configuration
 
         private void Load(bool reload)
         {
-            var file = Source.FileProvider?.GetFileInfo(Source.Path);
+            IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
             if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload

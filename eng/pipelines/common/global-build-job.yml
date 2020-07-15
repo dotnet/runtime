@@ -12,6 +12,8 @@ parameters:
   pool: ''
   condition: true
   isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  helixQueues: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -40,6 +42,12 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
+      - name: _cxx11Parameter
+        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
+          value: /p:MonoLLVMUseCxx11Abi=true
+        ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'arm64'))) }}:
+          value: /p:MonoLLVMUseCxx11Abi=false
+
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
@@ -64,7 +72,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -81,6 +89,8 @@ jobs:
           osSubgroup: ${{ parameters.osSubgroup }}
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          helixQueues: ${{ parameters.helixQueues }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -1128,6 +1127,9 @@ namespace System.Security.Permissions
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class PrincipalPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
+#if CAS_OBSOLETIONS
+        [System.ObsoleteAttribute("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", true, DiagnosticId = "MSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public PrincipalPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public bool Authenticated { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }

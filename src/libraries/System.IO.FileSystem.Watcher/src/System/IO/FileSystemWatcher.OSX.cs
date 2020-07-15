@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -75,10 +74,6 @@ namespace System.IO
                 token.Dispose();
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         private CancellationTokenSource? _cancellation;
 
@@ -185,7 +180,7 @@ namespace System.IO
                 // A reference to the RunLoop that we can use to start or stop a Watcher
                 private static CFRunLoopRef s_watcherRunLoop = IntPtr.Zero;
 
-                private static int s_scheduledStreamsCount = 0;
+                private static int s_scheduledStreamsCount;
 
                 private static readonly object s_lockObject = new object();
 

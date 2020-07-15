@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3237,7 +3236,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    AssertionDsc* curAssertion = optGetAssertion(index);
+    AssertionDsc* curAssertion         = optGetAssertion(index);
+    bool          assertionKindIsEqual = (curAssertion->assertionKind == OAK_EQUAL);
 
     // Allow or not to reverse condition for OAK_NOT_EQUAL assertions.
     bool allowReverse = true;
@@ -3252,7 +3252,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: ", index);
             printTreeID(op1);
-            printf(" %s ", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
+            printf(" %s ", assertionKindIsEqual ? "==" : "!=");
             if (genActualType(op1->TypeGet()) == TYP_INT)
             {
                 printf("%d\n", vnStore->ConstantValue<int>(vnCns));
@@ -3337,8 +3337,15 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         op1->gtVNPair.SetBoth(vnCns); // Preserve the ValueNumPair, as ChangeOperConst/SetOper will clear it.
 
-        // Also set the value number on the relop.
-        if (curAssertion->assertionKind == OAK_EQUAL)
+        // set foldResult to either 0 or 1
+        bool foldResult = assertionKindIsEqual;
+        if (tree->gtOper == GT_NE)
+        {
+            foldResult = !foldResult;
+        }
+
+        // Set the value number on the relop to 1 (true) or 0 (false)
+        if (foldResult)
         {
             tree->gtVNPair.SetBoth(vnStore->VNOneForType(TYP_INT));
         }
@@ -4948,6 +4955,12 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //
 Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
+    // Don't perform const prop on expressions marked with GTF_DONT_CSE
+    if (!tree->CanCSE())
+    {
+        return WALK_CONTINUE;
+    }
+
     // Don't propagate floating-point constants into a TYP_STRUCT LclVar
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
     if (tree->TypeGet() == TYP_STRUCT)

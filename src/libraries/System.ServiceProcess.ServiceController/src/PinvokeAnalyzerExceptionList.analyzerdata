@@ -1,2 +1,0 @@
-advapi32.dll!RegisterServiceCtrlHandlerEx
-advapi32.dll!StartServiceCtrlDispatcher

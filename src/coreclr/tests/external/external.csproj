@@ -97,6 +97,7 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <Target Name="CoreCompile">

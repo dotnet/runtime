@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -134,9 +133,9 @@ private:
     void LowerRet(GenTreeUnOp* ret);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
-    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void LowerCallStruct(GenTreeCall* call);
-    void LowerStoreCallStruct(GenTreeBlk* store);
+    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -177,9 +176,9 @@ private:
     GenTree* AddrGen(ssize_t addr);
     GenTree* AddrGen(void* addr);
 
-    GenTree* Ind(GenTree* tree)
+    GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
+        return comp->gtNewOperNode(GT_IND, type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)
@@ -283,16 +282,21 @@ private:
 #endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
+    void LowerStoreIndirCommon(GenTreeIndir* ind);
+    void LowerIndir(GenTreeIndir* ind);
     void LowerStoreIndir(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
+    void LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
     void LowerPutArgStk(GenTreePutArgStk* tree);
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable);
+
+    bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
@@ -321,11 +325,14 @@ private:
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_XARCH)
+    void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+#elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
         int8_t   i8[32];
@@ -406,11 +413,26 @@ private:
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (arg->OperIs(GT_CNS_LNG))
+#if defined(TARGET_64BIT)
+                if (arg->IsCnsIntOrI())
                 {
-                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
+                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
                     return true;
                 }
+#else
+                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+                {
+                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // We need to reconstruct the 64-bit value in order to handle this
+
+                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    gtLconVal <<= 32;
+                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+
+                    vecCns.i64[argIdx] = gtLconVal;
+                    return true;
+                }
+#endif // TARGET_64BIT
                 else
                 {
                     // We expect the VectorConstant to have been already zeroed

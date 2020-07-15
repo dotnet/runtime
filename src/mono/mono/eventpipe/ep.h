@@ -6,22 +6,7 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 #include "ep-types.h"
-#include "ep-stream.h"
-#include "ep-thread.h"
-#include "ep-block.h"
-#include "ep-event-payload.h"
-#include "ep-buffer.h"
-#include "ep-buffer-manager.h"
 #include "ep-stack-contents.h"
-#include "ep-event.h"
-#include "ep-event-instance.h"
-#include "ep-config.h"
-#include "ep-event-source.h"
-#include "ep-file.h"
-#include "ep-metadata-generator.h"
-#include "ep-provider.h"
-#include "ep-session.h"
-#include "ep-session-provider.h"
 #include "ep-rt.h"
 
 /*
@@ -176,6 +161,17 @@ ep_volatile_store_allow_write_without_barrier (uint64_t allow_write)
  * EventPipe.
  */
 
+#ifdef EP_CHECKED_BUILD
+void
+ep_requires_lock_held (void);
+
+void
+ep_requires_lock_not_held (void);
+#else
+#define ep_requires_lock_held()
+#define ep_requires_lock_not_held()
+#endif
+
 EventPipeSessionID
 ep_enable (
 	const ep_char8_t *output_path,
@@ -188,11 +184,25 @@ ep_enable (
 	IpcStream *stream,
 	bool enable_sample_profiler);
 
+EventPipeSessionID
+ep_enable_2 (
+	const ep_char8_t *output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const ep_char8_t *providers,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	bool rundown_requested,
+	IpcStream *stream,
+	bool enable_sample_profiler);
+
 void
 ep_disable (EventPipeSessionID id);
 
 EventPipeSession *
 ep_get_session (EventPipeSessionID session_id);
+
+void
+ep_start_streaming (EventPipeSessionID session_id);
 
 bool
 ep_enabled (void);
@@ -237,17 +247,24 @@ ep_get_next_event (EventPipeSessionID session_id);
 EventPipeWaitHandle
 ep_get_wait_handle (EventPipeSessionID session_id);
 
-void
-ep_start_streaming (EventPipeSessionID session_id);
+static
+inline
+bool
+ep_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents)
+{
+	//TODO: Implement.
+	ep_stack_contents_reset (stack_contents);
+	return ep_rt_walk_managed_stack_for_current_thread (stack_contents);
+}
 
 /*
  * EventPipePerf.
  */
 
-uint64_t
+int64_t
 ep_perf_counter_query (void);
 
-uint64_t
+int64_t
 ep_perf_frequency_query (void);
 
 #else /* ENABLE_PERFTRACING */

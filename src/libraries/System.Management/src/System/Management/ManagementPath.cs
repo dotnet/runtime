@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.ComponentModel;
@@ -77,7 +76,7 @@ namespace System.Management
 
         //Used to minimize the cases in which new wbemPath (WMI object path parser) objects need to be constructed
         //This is done for performance reasons.
-        private bool isWbemPathShared = false;
+        private bool isWbemPathShared;
 
         internal event IdentifierChangedEventHandler IdentifierChanged;
 

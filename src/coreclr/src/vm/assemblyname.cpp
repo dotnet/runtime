@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -21,6 +20,7 @@
 
 #include "assemblyname.hpp"
 #include "field.h"
+#include "strongnameholders.h"
 #include "strongnameinternal.h"
 #include "eeconfig.h"
 

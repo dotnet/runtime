@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -19,7 +18,7 @@ namespace System.Threading
         /// <returns>An object that represents a system mutex, if named, or a local mutex, if nameless.</returns>
         /// <exception cref="ArgumentException">.NET Framework only: The length of the name exceeds the maximum limit.</exception>
         /// <exception cref="WaitHandleCannotBeOpenedException">A mutex handle with system-wide <paramref name="name" /> cannot be created. A mutex handle of a different type might have the same name.</exception>
-        public static unsafe Mutex Create(bool initiallyOwned, string name, out bool createdNew, MutexSecurity mutexSecurity)
+        public static unsafe Mutex Create(bool initiallyOwned, string? name, out bool createdNew, MutexSecurity? mutexSecurity)
         {
             if (mutexSecurity == null)
             {
@@ -54,7 +53,7 @@ namespace System.Threading
             }
         }
 
-        private static void ValidateMutexHandle(SafeWaitHandle mutexHandle, string name, out bool createdNew)
+        private static void ValidateMutexHandle(SafeWaitHandle mutexHandle, string? name, out bool createdNew)
         {
             int errorCode = Marshal.GetLastWin32Error();
 

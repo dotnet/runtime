@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,11 +10,11 @@ namespace System.Data.Common
     {
         protected DbTransaction() : base() { }
 
-        public DbConnection Connection => DbConnection;
+        public DbConnection? Connection => DbConnection;
 
-        IDbConnection IDbTransaction.Connection => DbConnection;
+        IDbConnection? IDbTransaction.Connection => DbConnection;
 
-        protected abstract DbConnection DbConnection { get; }
+        protected abstract DbConnection? DbConnection { get; }
 
         public abstract IsolationLevel IsolationLevel { get; }
 

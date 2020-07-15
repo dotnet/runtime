@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -2567,9 +2566,7 @@ namespace System.Management
             //If we're not connected yet, this is the time to do it... We lock
             //the state to prevent 2 threads simultaneously doing the same
             //connection
-#pragma warning disable CA2002
             lock (this)
-#pragma warning restore CA2002
             {
                 // Make sure we have some kind of path if we get here. Note that
                 // we don't use a set to the Path property since that would trigger

@@ -97,6 +97,8 @@
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>
+      <!-- Clear the IsNative flag on System.PrivateCoreLib given that it is present in native dir but it is actually managed -->
+      <_runtimePackNativeFiles Update="@(_runtimePackNativeFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" IsNative="" />
 
       <FrameworkListRootAttributes Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -11,7 +10,6 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly TextWriter _textWriter;
 
-        /// <inheritdoc />
         public WindowsLogConsole(bool stdErr = false)
         {
             _textWriter = stdErr ? System.Console.Error : System.Console.Out;
@@ -39,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public void Write(string message, ConsoleColor? background, ConsoleColor? foreground)
         {
-            var colorChanged = SetColor(background, foreground);
+            bool colorChanged = SetColor(background, foreground);
             _textWriter.Write(message);
             if (colorChanged)
             {
@@ -49,7 +47,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public void WriteLine(string message, ConsoleColor? background, ConsoleColor? foreground)
         {
-            var colorChanged = SetColor(background, foreground);
+            bool colorChanged = SetColor(background, foreground);
             _textWriter.WriteLine(message);
             if (colorChanged)
             {

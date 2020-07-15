@@ -6,6 +6,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Base64EncodingTest.cs" />
     <Compile Include="ByteEncodingTest.cs" />
     <Compile Include="EightBitStreamTest.cs" />
@@ -91,6 +92,14 @@
              Link="ProductionCode\SmtpDateTime.cs" />
     <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs"
              Link="ProductionCode\MultiAsyncResult.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\ByteEncoder.cs"
+             Link="ProductionCode\ByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\Base64Encoder.cs"
+             Link="ProductionCode\Base64Encoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\IByteEncoder.cs"
+             Link="ProductionCode\IByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\QEncoder.cs"
+             Link="ProductionCode\QEncoder.cs" />
     <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs"
              Link="ProductionCode\TrackingStringDictionary.cs" />
     <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs"
@@ -158,7 +167,7 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"

@@ -62,7 +62,6 @@ set(UTILCODE_COMMON_SOURCES
 # of UTILCODE_SOURCES above after fixing compiler errors.
 if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
-    appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
     securitywrapper.cpp
@@ -98,7 +97,7 @@ convert_to_absolute_path(UTILCODE_CROSSGEN_SOURCES ${UTILCODE_CROSSGEN_SOURCES})
 convert_to_absolute_path(UTILCODE_STATICNOHOST_SOURCES ${UTILCODE_STATICNOHOST_SOURCES})
 
 add_library_clr(utilcode_dac STATIC ${UTILCODE_DAC_SOURCES})
-add_library_clr(utilcode STATIC ${UTILCODE_SOURCES})
+add_library_clr(utilcode OBJECT ${UTILCODE_SOURCES})
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 add_library_clr(utilcode_crossgen STATIC ${UTILCODE_CROSSGEN_SOURCES})
 

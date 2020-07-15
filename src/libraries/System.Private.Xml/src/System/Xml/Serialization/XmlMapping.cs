@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel;
@@ -26,11 +25,11 @@ namespace System.Xml.Serialization
     public abstract class XmlMapping
     {
         private readonly TypeScope _scope;
-        private bool _generateSerializer = false;
+        private bool _generateSerializer;
         private bool _isSoap;
         private readonly ElementAccessor _accessor;
         private string _key;
-        private readonly bool _shallow = false;
+        private readonly bool _shallow;
         private readonly XmlMappingAccess _access;
 
         internal XmlMapping(TypeScope scope, ElementAccessor accessor) : this(scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -66,7 +65,7 @@ namespace System.Net.WebSockets
 
             string parameters = string.Empty;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 parameters = string.Format(CultureInfo.InvariantCulture,
                     "ReceiveBufferSize: {0}, SendBufferSize: {1},  Protocols: {2}, KeepAliveInterval: {3}, innerStream: {4}, internalBuffer: {5}",
@@ -76,45 +75,33 @@ namespace System.Net.WebSockets
                     keepAliveInterval,
                     NetEventSource.GetHashCode(innerStream),
                     NetEventSource.GetHashCode(internalBuffer));
-
-                NetEventSource.Enter(this, parameters);
             }
 
             _thisLock = new object();
 
-            try
+            _innerStream = innerStream;
+            _internalBuffer = internalBuffer;
+            if (NetEventSource.Log.IsEnabled())
             {
-                _innerStream = innerStream;
-                _internalBuffer = internalBuffer;
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Associate(this, _innerStream);
-                    NetEventSource.Associate(this, _internalBuffer);
-                }
+                NetEventSource.Associate(this, _innerStream);
+                NetEventSource.Associate(this, _internalBuffer);
+            }
 
-                _closeOutstandingOperationHelper = new OutstandingOperationHelper();
-                _closeOutputOutstandingOperationHelper = new OutstandingOperationHelper();
-                _receiveOutstandingOperationHelper = new OutstandingOperationHelper();
-                _sendOutstandingOperationHelper = new OutstandingOperationHelper();
-                _state = WebSocketState.Open;
-                _subProtocol = subProtocol;
-                _sendFrameThrottle = new SemaphoreSlim(1, 1);
-                _closeStatus = null;
-                _closeStatusDescription = null;
-                _innerStreamAsWebSocketStream = innerStream as IWebSocketStream;
-                if (_innerStreamAsWebSocketStream != null)
-                {
-                    _innerStreamAsWebSocketStream.SwitchToOpaqueMode(this);
-                }
-                _keepAliveTracker = KeepAliveTracker.Create(keepAliveInterval);
-            }
-            finally
+            _closeOutstandingOperationHelper = new OutstandingOperationHelper();
+            _closeOutputOutstandingOperationHelper = new OutstandingOperationHelper();
+            _receiveOutstandingOperationHelper = new OutstandingOperationHelper();
+            _sendOutstandingOperationHelper = new OutstandingOperationHelper();
+            _state = WebSocketState.Open;
+            _subProtocol = subProtocol;
+            _sendFrameThrottle = new SemaphoreSlim(1, 1);
+            _closeStatus = null;
+            _closeStatusDescription = null;
+            _innerStreamAsWebSocketStream = innerStream as IWebSocketStream;
+            if (_innerStreamAsWebSocketStream != null)
             {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(this, parameters);
-                }
+                _innerStreamAsWebSocketStream.SwitchToOpaqueMode(this);
             }
+            _keepAliveTracker = KeepAliveTracker.Create(keepAliveInterval);
         }
 
         public override WebSocketState State
@@ -182,65 +169,51 @@ namespace System.Net.WebSockets
         private async Task<WebSocketReceiveResult> ReceiveAsyncCore(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-            }
-
             WebSocketReceiveResult receiveResult;
+
+            ThrowIfPendingException();
+            ThrowIfDisposed();
+            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
+
+            bool ownsCancellationTokenSource = false;
+            CancellationToken linkedCancellationToken = CancellationToken.None;
             try
             {
-                ThrowIfPendingException();
-                ThrowIfDisposed();
-                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
-
-                bool ownsCancellationTokenSource = false;
-                CancellationToken linkedCancellationToken = CancellationToken.None;
-                try
+                ownsCancellationTokenSource = _receiveOutstandingOperationHelper.TryStartOperation(cancellationToken,
+                    out linkedCancellationToken);
+                if (!ownsCancellationTokenSource)
                 {
-                    ownsCancellationTokenSource = _receiveOutstandingOperationHelper.TryStartOperation(cancellationToken,
-                        out linkedCancellationToken);
-                    if (!ownsCancellationTokenSource)
+                    lock (_thisLock)
                     {
-                        lock (_thisLock)
+                        if (_closeAsyncStartedReceive)
                         {
-                            if (_closeAsyncStartedReceive)
-                            {
-                                throw new InvalidOperationException(
-                                    SR.Format(SR.net_WebSockets_ReceiveAsyncDisallowedAfterCloseAsync, nameof(CloseAsync), nameof(CloseOutputAsync)));
-                            }
-
                             throw new InvalidOperationException(
-                                SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(ReceiveAsync)));
+                                SR.Format(SR.net_WebSockets_ReceiveAsyncDisallowedAfterCloseAsync, nameof(CloseAsync), nameof(CloseOutputAsync)));
                         }
-                    }
 
-                    EnsureReceiveOperation();
-                    receiveResult = await _receiveOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
-
-                    if (NetEventSource.IsEnabled && receiveResult.Count > 0)
-                    {
-                        NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, receiveResult.Count);
+                        throw new InvalidOperationException(
+                            SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(ReceiveAsync)));
                     }
                 }
-                catch (Exception exception)
+
+                EnsureReceiveOperation();
+                receiveResult = await _receiveOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
+
+                if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
                 {
-                    bool aborted = linkedCancellationToken.IsCancellationRequested;
-                    Abort();
-                    ThrowIfConvertibleException(nameof(ReceiveAsync), exception, cancellationToken, aborted);
-                    throw;
+                    NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, receiveResult.Count);
                 }
-                finally
-                {
-                    _receiveOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
-                }
+            }
+            catch (Exception exception)
+            {
+                bool aborted = linkedCancellationToken.IsCancellationRequested;
+                Abort();
+                ThrowIfConvertibleException(nameof(ReceiveAsync), exception, cancellationToken, aborted);
+                throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(this);
-                }
+                _receiveOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
             }
 
             return receiveResult;
@@ -279,84 +252,73 @@ namespace System.Net.WebSockets
             Debug.Assert(buffer.Array != null);
 
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "messageType: {0}, endOfMessage: {1}",
                     messageType,
                     endOfMessage);
-                NetEventSource.Enter(this, inputParameter);
             }
+
+            ThrowIfPendingException();
+            ThrowIfDisposed();
+            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived);
+            bool ownsCancellationTokenSource = false;
+            CancellationToken linkedCancellationToken = CancellationToken.None;
 
             try
             {
-                ThrowIfPendingException();
-                ThrowIfDisposed();
-                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived);
-                bool ownsCancellationTokenSource = false;
-                CancellationToken linkedCancellationToken = CancellationToken.None;
-
-                try
+                while (!(ownsCancellationTokenSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken)))
                 {
-                    while (!(ownsCancellationTokenSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken)))
+                    Task keepAliveTask;
+
+                    lock (SessionHandle)
                     {
-                        Task keepAliveTask;
+                        keepAliveTask = _keepAliveTask;
 
-                        lock (SessionHandle)
+                        if (keepAliveTask == null)
                         {
-                            keepAliveTask = _keepAliveTask;
-
-                            if (keepAliveTask == null)
+                            // Check whether there is still another outstanding send operation
+                            // Potentially the keepAlive operation has completed before this thread
+                            // was able to enter the SessionHandle-lock.
+                            _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
+                            if (ownsCancellationTokenSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken))
                             {
-                                // Check whether there is still another outstanding send operation
-                                // Potentially the keepAlive operation has completed before this thread
-                                // was able to enter the SessionHandle-lock.
-                                _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
-                                if (ownsCancellationTokenSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken))
-                                {
-                                    break;
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException(
-                                        SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(SendAsync)));
-                                }
+                                break;
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(
+                                    SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(SendAsync)));
                             }
                         }
-
-                        await keepAliveTask.SuppressContextFlow();
-                        ThrowIfPendingException();
-
-                        _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
                     }
 
-                    if (NetEventSource.IsEnabled && buffer.Count > 0)
-                    {
-                        NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, buffer.Count);
-                    }
+                    await keepAliveTask.SuppressContextFlow();
+                    ThrowIfPendingException();
 
-                    EnsureSendOperation();
-                    _sendOperation.BufferType = GetBufferType(messageType, endOfMessage);
-                    await _sendOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
-                }
-                catch (Exception exception)
-                {
-                    bool aborted = linkedCancellationToken.IsCancellationRequested;
-                    Abort();
-                    ThrowIfConvertibleException(nameof(SendAsync), exception, cancellationToken, aborted);
-                    throw;
-                }
-                finally
-                {
                     _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
                 }
+
+                if (NetEventSource.Log.IsEnabled() && buffer.Count > 0)
+                {
+                    NetEventSource.DumpBuffer(this, buffer.Array, buffer.Offset, buffer.Count);
+                }
+
+                EnsureSendOperation();
+                _sendOperation.BufferType = GetBufferType(messageType, endOfMessage);
+                await _sendOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
+            }
+            catch (Exception exception)
+            {
+                bool aborted = linkedCancellationToken.IsCancellationRequested;
+                Abort();
+                ThrowIfConvertibleException(nameof(SendAsync), exception, cancellationToken, aborted);
+                throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(this, inputParameter);
-                }
+                _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
             }
         }
 
@@ -406,11 +368,6 @@ namespace System.Net.WebSockets
         // MultiThreading: ThreadSafe; No-op if already in a terminal state
         public override void Abort()
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-            }
-
             bool thisLockTaken = false;
             bool sessionHandleLockTaken = false;
             try
@@ -447,10 +404,6 @@ namespace System.Net.WebSockets
             finally
             {
                 ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(this);
-                }
             }
         }
 
@@ -469,140 +422,129 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, statusDescription: {1}",
                     closeStatus,
                     statusDescription);
-                NetEventSource.Enter(this, inputParameter);
             }
 
+            ThrowIfPendingException();
+            if (IsStateTerminal(State))
+            {
+                return;
+            }
+            ThrowIfDisposed();
+
+            bool thisLockTaken = false;
+            bool sessionHandleLockTaken = false;
+            bool needToCompleteSendOperation = false;
+            bool ownsCloseOutputCancellationTokenSource = false;
+            bool ownsSendCancellationTokenSource = false;
+            CancellationToken linkedCancellationToken = CancellationToken.None;
             try
             {
+                TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
                 ThrowIfPendingException();
+                ThrowIfDisposed();
+
                 if (IsStateTerminal(State))
                 {
                     return;
                 }
-                ThrowIfDisposed();
 
-                bool thisLockTaken = false;
-                bool sessionHandleLockTaken = false;
-                bool needToCompleteSendOperation = false;
-                bool ownsCloseOutputCancellationTokenSource = false;
-                bool ownsSendCancellationTokenSource = false;
-                CancellationToken linkedCancellationToken = CancellationToken.None;
-                try
+                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived);
+                ownsCloseOutputCancellationTokenSource = _closeOutputOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
+                if (!ownsCloseOutputCancellationTokenSource)
                 {
-                    TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                    ThrowIfPendingException();
-                    ThrowIfDisposed();
+                    Task closeOutputTask = _closeOutputTask;
 
-                    if (IsStateTerminal(State))
+                    if (closeOutputTask != null)
                     {
-                        return;
-                    }
-
-                    ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived);
-                    ownsCloseOutputCancellationTokenSource = _closeOutputOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
-                    if (!ownsCloseOutputCancellationTokenSource)
-                    {
-                        Task closeOutputTask = _closeOutputTask;
-
-                        if (closeOutputTask != null)
-                        {
-                            ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                            await closeOutputTask.SuppressContextFlow();
-                            TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                        }
-                    }
-                    else
-                    {
-                        needToCompleteSendOperation = true;
-                        while (!(ownsSendCancellationTokenSource =
-                            _sendOutstandingOperationHelper.TryStartOperation(cancellationToken,
-                                out linkedCancellationToken)))
-                        {
-                            if (_keepAliveTask != null)
-                            {
-                                Task keepAliveTask = _keepAliveTask;
-
-                                ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                                await keepAliveTask.SuppressContextFlow();
-                                TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-
-                                ThrowIfPendingException();
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException(
-                                    SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(SendAsync)));
-                            }
-
-                            _sendOutstandingOperationHelper.CompleteOperation(ownsSendCancellationTokenSource);
-                        }
-
-                        EnsureCloseOutputOperation();
-                        _closeOutputOperation.CloseStatus = closeStatus;
-                        _closeOutputOperation.CloseReason = statusDescription;
-                        _closeOutputTask = _closeOutputOperation.Process(null, linkedCancellationToken);
-
                         ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                        await _closeOutputTask.SuppressContextFlow();
+                        await closeOutputTask.SuppressContextFlow();
                         TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-
-                        if (OnCloseOutputCompleted())
-                        {
-                            bool callCompleteOnCloseCompleted = false;
-
-                            try
-                            {
-                                callCompleteOnCloseCompleted = await StartOnCloseCompleted(
-                                    thisLockTaken, sessionHandleLockTaken, linkedCancellationToken).SuppressContextFlow();
-                            }
-                            catch (Exception)
-                            {
-                                // If an exception is thrown we know that the locks have been released,
-                                // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
-                                ResetFlagsAndTakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                                throw;
-                            }
-
-                            if (callCompleteOnCloseCompleted)
-                            {
-                                ResetFlagsAndTakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                                FinishOnCloseCompleted();
-                            }
-                        }
                     }
                 }
-                catch (Exception exception)
+                else
                 {
-                    bool aborted = linkedCancellationToken.IsCancellationRequested;
-                    Abort();
-                    ThrowIfConvertibleException(nameof(CloseOutputAsync), exception, cancellationToken, aborted);
-                    throw;
-                }
-                finally
-                {
-                    _closeOutputOutstandingOperationHelper.CompleteOperation(ownsCloseOutputCancellationTokenSource);
-
-                    if (needToCompleteSendOperation)
+                    needToCompleteSendOperation = true;
+                    while (!(ownsSendCancellationTokenSource =
+                        _sendOutstandingOperationHelper.TryStartOperation(cancellationToken,
+                            out linkedCancellationToken)))
                     {
+                        if (_keepAliveTask != null)
+                        {
+                            Task keepAliveTask = _keepAliveTask;
+
+                            ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+                            await keepAliveTask.SuppressContextFlow();
+                            TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+
+                            ThrowIfPendingException();
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(
+                                SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, nameof(SendAsync)));
+                        }
+
                         _sendOutstandingOperationHelper.CompleteOperation(ownsSendCancellationTokenSource);
                     }
 
-                    _closeOutputTask = null;
+                    EnsureCloseOutputOperation();
+                    _closeOutputOperation.CloseStatus = closeStatus;
+                    _closeOutputOperation.CloseReason = statusDescription;
+                    _closeOutputTask = _closeOutputOperation.Process(null, linkedCancellationToken);
+
                     ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+                    await _closeOutputTask.SuppressContextFlow();
+                    TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+
+                    if (OnCloseOutputCompleted())
+                    {
+                        bool callCompleteOnCloseCompleted = false;
+
+                        try
+                        {
+                            callCompleteOnCloseCompleted = await StartOnCloseCompleted(
+                                thisLockTaken, sessionHandleLockTaken, linkedCancellationToken).SuppressContextFlow();
+                        }
+                        catch (Exception)
+                        {
+                            // If an exception is thrown we know that the locks have been released,
+                            // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
+                            ResetFlagsAndTakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+                            throw;
+                        }
+
+                        if (callCompleteOnCloseCompleted)
+                        {
+                            ResetFlagsAndTakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
+                            FinishOnCloseCompleted();
+                        }
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+                bool aborted = linkedCancellationToken.IsCancellationRequested;
+                Abort();
+                ThrowIfConvertibleException(nameof(CloseOutputAsync), exception, cancellationToken, aborted);
+                throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
+                _closeOutputOutstandingOperationHelper.CompleteOperation(ownsCloseOutputCancellationTokenSource);
+
+                if (needToCompleteSendOperation)
                 {
-                    NetEventSource.Exit(this, inputParameter);
+                    _sendOutstandingOperationHelper.CompleteOperation(ownsSendCancellationTokenSource);
                 }
+
+                _closeOutputTask = null;
+                ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
             }
         }
 
@@ -707,15 +649,25 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             string inputParameter = string.Empty;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 inputParameter = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, statusDescription: {1}",
                     closeStatus,
                     statusDescription);
-                NetEventSource.Enter(this, inputParameter);
             }
 
+            ThrowIfPendingException();
+            if (IsStateTerminal(State))
+            {
+                return;
+            }
+            ThrowIfDisposed();
+
+            bool lockTaken = false;
+            Monitor.Enter(_thisLock, ref lockTaken);
+            bool ownsCloseCancellationTokenSource = false;
+            CancellationToken linkedCancellationToken = CancellationToken.None;
             try
             {
                 ThrowIfPendingException();
@@ -724,73 +676,166 @@ namespace System.Net.WebSockets
                     return;
                 }
                 ThrowIfDisposed();
+                ThrowOnInvalidState(State,
+                    WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
 
-                bool lockTaken = false;
-                Monitor.Enter(_thisLock, ref lockTaken);
-                bool ownsCloseCancellationTokenSource = false;
-                CancellationToken linkedCancellationToken = CancellationToken.None;
-                try
+                Task closeOutputTask;
+                ownsCloseCancellationTokenSource = _closeOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
+                if (ownsCloseCancellationTokenSource)
                 {
-                    ThrowIfPendingException();
-                    if (IsStateTerminal(State))
+                    closeOutputTask = _closeOutputTask;
+                    if (closeOutputTask == null && State != WebSocketState.CloseSent)
                     {
-                        return;
+                        _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
+
+                        closeOutputTask = CloseOutputAsync(closeStatus,
+                            statusDescription,
+                            linkedCancellationToken);
                     }
-                    ThrowIfDisposed();
-                    ThrowOnInvalidState(State,
-                        WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
+                }
+                else
+                {
+                    Debug.Assert(_closeReceivedTaskCompletionSource != null, "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
+                    closeOutputTask = _closeReceivedTaskCompletionSource.Task;
+                }
 
-                    Task closeOutputTask;
-                    ownsCloseCancellationTokenSource = _closeOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
-                    if (ownsCloseCancellationTokenSource)
+                if (closeOutputTask != null)
+                {
+                    ReleaseLock(_thisLock, ref lockTaken);
+                    try
                     {
-                        closeOutputTask = _closeOutputTask;
-                        if (closeOutputTask == null && State != WebSocketState.CloseSent)
-                        {
-                            _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
-
-                            closeOutputTask = CloseOutputAsync(closeStatus,
-                                statusDescription,
-                                linkedCancellationToken);
-                        }
+                        await closeOutputTask.SuppressContextFlow();
                     }
-                    else
+                    catch (Exception closeOutputError)
                     {
-                        Debug.Assert(_closeReceivedTaskCompletionSource != null, "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
-                        closeOutputTask = _closeReceivedTaskCompletionSource.Task;
-                    }
+                        Monitor.Enter(_thisLock, ref lockTaken);
 
-                    if (closeOutputTask != null)
-                    {
-                        ReleaseLock(_thisLock, ref lockTaken);
-                        try
+                        if (!CanHandleExceptionDuringClose(closeOutputError))
                         {
-                            await closeOutputTask.SuppressContextFlow();
-                        }
-                        catch (Exception closeOutputError)
-                        {
-                            Monitor.Enter(_thisLock, ref lockTaken);
-
-                            if (!CanHandleExceptionDuringClose(closeOutputError))
-                            {
-                                ThrowIfConvertibleException(nameof(CloseOutputAsync),
-                                    closeOutputError,
-                                    cancellationToken,
-                                    linkedCancellationToken.IsCancellationRequested);
-                                throw;
-                            }
-                        }
-
-                        // When closeOutputTask != null  and an exception thrown from await closeOutputTask is handled,
-                        // the lock will be taken in the catch-block. So the logic here avoids taking the lock twice.
-                        if (!lockTaken)
-                        {
-                            Monitor.Enter(_thisLock, ref lockTaken);
+                            ThrowIfConvertibleException(nameof(CloseOutputAsync),
+                                closeOutputError,
+                                cancellationToken,
+                                linkedCancellationToken.IsCancellationRequested);
+                            throw;
                         }
                     }
 
-                    if (OnCloseOutputCompleted())
+                    // When closeOutputTask != null  and an exception thrown from await closeOutputTask is handled,
+                    // the lock will be taken in the catch-block. So the logic here avoids taking the lock twice.
+                    if (!lockTaken)
                     {
+                        Monitor.Enter(_thisLock, ref lockTaken);
+                    }
+                }
+
+                if (OnCloseOutputCompleted())
+                {
+                    bool callCompleteOnCloseCompleted = false;
+
+                    try
+                    {
+                        // linkedCancellationToken can be CancellationToken.None if ownsCloseCancellationTokenSource==false
+                        // This is still ok because OnCloseOutputCompleted won't start any IO operation in this case
+                        callCompleteOnCloseCompleted = await StartOnCloseCompleted(
+                            lockTaken, false, linkedCancellationToken).SuppressContextFlow();
+                    }
+                    catch (Exception)
+                    {
+                        // If an exception is thrown we know that the locks have been released,
+                        // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
+                        ResetFlagAndTakeLock(_thisLock, ref lockTaken);
+                        throw;
+                    }
+
+                    if (callCompleteOnCloseCompleted)
+                    {
+                        ResetFlagAndTakeLock(_thisLock, ref lockTaken);
+                        FinishOnCloseCompleted();
+                    }
+                }
+
+                if (IsStateTerminal(State))
+                {
+                    return;
+                }
+
+                linkedCancellationToken = CancellationToken.None;
+
+                bool ownsReceiveCancellationTokenSource = _receiveOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
+                if (ownsReceiveCancellationTokenSource)
+                {
+                    _closeAsyncStartedReceive = true;
+                    ArraySegment<byte> closeMessageBuffer =
+                        new ArraySegment<byte>(new byte[HttpWebSocket.MinReceiveBufferSize]);
+                    EnsureReceiveOperation();
+                    Task<WebSocketReceiveResult> receiveAsyncTask = _receiveOperation.Process(closeMessageBuffer,
+                        linkedCancellationToken);
+                    ReleaseLock(_thisLock, ref lockTaken);
+
+                    WebSocketReceiveResult receiveResult = null;
+                    try
+                    {
+                        receiveResult = await receiveAsyncTask.SuppressContextFlow();
+                    }
+                    catch (Exception receiveException)
+                    {
+                        Monitor.Enter(_thisLock, ref lockTaken);
+
+                        if (!CanHandleExceptionDuringClose(receiveException))
+                        {
+                            ThrowIfConvertibleException(nameof(CloseAsync),
+                                receiveException,
+                                cancellationToken,
+                                linkedCancellationToken.IsCancellationRequested);
+                            throw;
+                        }
+                    }
+
+                    // receiveResult is NEVER NULL if WebSocketBase.ReceiveOperation.Process completes successfully
+                    // - but in the close code path we handle some exception if another thread was able to tranistion
+                    // the state into Closed successfully. In this case receiveResult can be NULL and it is safe to
+                    // skip the statements in the if-block.
+                    if (receiveResult != null)
+                    {
+                        if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
+                        {
+                            NetEventSource.DumpBuffer(this, closeMessageBuffer.Array, closeMessageBuffer.Offset, receiveResult.Count);
+                        }
+
+                        if (receiveResult.MessageType != WebSocketMessageType.Close)
+                        {
+                            throw new WebSocketException(WebSocketError.InvalidMessageType,
+                                SR.Format(SR.net_WebSockets_InvalidMessageType,
+                                    typeof(WebSocket).Name + "." + nameof(CloseAsync),
+                                    typeof(WebSocket).Name + "." + nameof(CloseOutputAsync),
+                                    receiveResult.MessageType));
+                        }
+                    }
+                }
+                else
+                {
+                    _receiveOutstandingOperationHelper.CompleteOperation(ownsReceiveCancellationTokenSource);
+                    ReleaseLock(_thisLock, ref lockTaken);
+                    await _closeReceivedTaskCompletionSource.Task.SuppressContextFlow();
+                }
+
+                // When ownsReceiveCancellationTokenSource is true and an exception is thrown, the lock will be taken.
+                // So this logic here is to avoid taking the lock twice.
+                if (!lockTaken)
+                {
+                    Monitor.Enter(_thisLock, ref lockTaken);
+                }
+
+                if (!IsStateTerminal(State))
+                {
+                    bool ownsSendCancellationSource = false;
+                    try
+                    {
+                        // We know that the CloseFrame has been sent at this point. So no Send-operation is allowed anymore and we
+                        // can hijack the _SendOutstandingOperationHelper to create a linkedCancellationToken
+                        ownsSendCancellationSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
+                        Debug.Assert(ownsSendCancellationSource, "'ownsSendCancellationSource' MUST be 'true' at this point.");
+
                         bool callCompleteOnCloseCompleted = false;
 
                         try
@@ -814,137 +859,23 @@ namespace System.Net.WebSockets
                             FinishOnCloseCompleted();
                         }
                     }
-
-                    if (IsStateTerminal(State))
+                    finally
                     {
-                        return;
-                    }
-
-                    linkedCancellationToken = CancellationToken.None;
-
-                    bool ownsReceiveCancellationTokenSource = _receiveOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
-                    if (ownsReceiveCancellationTokenSource)
-                    {
-                        _closeAsyncStartedReceive = true;
-                        ArraySegment<byte> closeMessageBuffer =
-                            new ArraySegment<byte>(new byte[HttpWebSocket.MinReceiveBufferSize]);
-                        EnsureReceiveOperation();
-                        Task<WebSocketReceiveResult> receiveAsyncTask = _receiveOperation.Process(closeMessageBuffer,
-                            linkedCancellationToken);
-                        ReleaseLock(_thisLock, ref lockTaken);
-
-                        WebSocketReceiveResult receiveResult = null;
-                        try
-                        {
-                            receiveResult = await receiveAsyncTask.SuppressContextFlow();
-                        }
-                        catch (Exception receiveException)
-                        {
-                            Monitor.Enter(_thisLock, ref lockTaken);
-
-                            if (!CanHandleExceptionDuringClose(receiveException))
-                            {
-                                ThrowIfConvertibleException(nameof(CloseAsync),
-                                    receiveException,
-                                    cancellationToken,
-                                    linkedCancellationToken.IsCancellationRequested);
-                                throw;
-                            }
-                        }
-
-                        // receiveResult is NEVER NULL if WebSocketBase.ReceiveOperation.Process completes successfully
-                        // - but in the close code path we handle some exception if another thread was able to tranistion
-                        // the state into Closed successfully. In this case receiveResult can be NULL and it is safe to
-                        // skip the statements in the if-block.
-                        if (receiveResult != null)
-                        {
-                            if (NetEventSource.IsEnabled && receiveResult.Count > 0)
-                            {
-                                NetEventSource.DumpBuffer(this, closeMessageBuffer.Array, closeMessageBuffer.Offset, receiveResult.Count);
-                            }
-
-                            if (receiveResult.MessageType != WebSocketMessageType.Close)
-                            {
-                                throw new WebSocketException(WebSocketError.InvalidMessageType,
-                                    SR.Format(SR.net_WebSockets_InvalidMessageType,
-                                        typeof(WebSocket).Name + "." + nameof(CloseAsync),
-                                        typeof(WebSocket).Name + "." + nameof(CloseOutputAsync),
-                                        receiveResult.MessageType));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _receiveOutstandingOperationHelper.CompleteOperation(ownsReceiveCancellationTokenSource);
-                        ReleaseLock(_thisLock, ref lockTaken);
-                        await _closeReceivedTaskCompletionSource.Task.SuppressContextFlow();
-                    }
-
-                    // When ownsReceiveCancellationTokenSource is true and an exception is thrown, the lock will be taken.
-                    // So this logic here is to avoid taking the lock twice.
-                    if (!lockTaken)
-                    {
-                        Monitor.Enter(_thisLock, ref lockTaken);
-                    }
-
-                    if (!IsStateTerminal(State))
-                    {
-                        bool ownsSendCancellationSource = false;
-                        try
-                        {
-                            // We know that the CloseFrame has been sent at this point. So no Send-operation is allowed anymore and we
-                            // can hijack the _SendOutstandingOperationHelper to create a linkedCancellationToken
-                            ownsSendCancellationSource = _sendOutstandingOperationHelper.TryStartOperation(cancellationToken, out linkedCancellationToken);
-                            Debug.Assert(ownsSendCancellationSource, "'ownsSendCancellationSource' MUST be 'true' at this point.");
-
-                            bool callCompleteOnCloseCompleted = false;
-
-                            try
-                            {
-                                // linkedCancellationToken can be CancellationToken.None if ownsCloseCancellationTokenSource==false
-                                // This is still ok because OnCloseOutputCompleted won't start any IO operation in this case
-                                callCompleteOnCloseCompleted = await StartOnCloseCompleted(
-                                    lockTaken, false, linkedCancellationToken).SuppressContextFlow();
-                            }
-                            catch (Exception)
-                            {
-                                // If an exception is thrown we know that the locks have been released,
-                                // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
-                                ResetFlagAndTakeLock(_thisLock, ref lockTaken);
-                                throw;
-                            }
-
-                            if (callCompleteOnCloseCompleted)
-                            {
-                                ResetFlagAndTakeLock(_thisLock, ref lockTaken);
-                                FinishOnCloseCompleted();
-                            }
-                        }
-                        finally
-                        {
-                            _sendOutstandingOperationHelper.CompleteOperation(ownsSendCancellationSource);
-                        }
+                        _sendOutstandingOperationHelper.CompleteOperation(ownsSendCancellationSource);
                     }
                 }
-                catch (Exception exception)
-                {
-                    bool aborted = linkedCancellationToken.IsCancellationRequested;
-                    Abort();
-                    ThrowIfConvertibleException(nameof(CloseAsync), exception, cancellationToken, aborted);
-                    throw;
-                }
-                finally
-                {
-                    _closeOutstandingOperationHelper.CompleteOperation(ownsCloseCancellationTokenSource);
-                    ReleaseLock(_thisLock, ref lockTaken);
-                }
+            }
+            catch (Exception exception)
+            {
+                bool aborted = linkedCancellationToken.IsCancellationRequested;
+                Abort();
+                ThrowIfConvertibleException(nameof(CloseAsync), exception, cancellationToken, aborted);
+                throw;
             }
             finally
             {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(this, inputParameter);
-                }
+                _closeOutstandingOperationHelper.CompleteOperation(ownsCloseCancellationTokenSource);
+                ReleaseLock(_thisLock, ref lockTaken);
             }
         }
 
@@ -1200,7 +1131,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(exception != null, "'exception' MUST NOT be NULL.");
 
-            if (NetEventSource.IsEnabled && !string.IsNullOrEmpty(methodName))
+            if (NetEventSource.Log.IsEnabled() && !string.IsNullOrEmpty(methodName))
             {
                 NetEventSource.Error(this, $"methodName: {methodName}, exception: {exception}");
             }
@@ -1338,7 +1269,7 @@ namespace System.Net.WebSockets
         {
             if (Interlocked.CompareExchange<Exception>(ref _pendingException, exception, null) == null)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, exception.ToString());
                 }
@@ -1406,7 +1337,7 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 string parameters = string.Format(CultureInfo.InvariantCulture,
                     "closeStatus: {0}, closeStatusDescription: {1}, _State: {2}",
@@ -1423,11 +1354,6 @@ namespace System.Net.WebSockets
 
             WebSocketBase thisPtr = sender as WebSocketBase;
             bool lockTaken = false;
-
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(thisPtr);
-            }
 
             CancellationToken linkedCancellationToken = CancellationToken.None;
             try
@@ -1486,11 +1412,6 @@ namespace System.Net.WebSockets
             finally
             {
                 ReleaseLock(thisPtr.SessionHandle, ref lockTaken);
-
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(thisPtr);
-                }
             }
         }
 

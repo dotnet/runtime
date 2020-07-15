@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.IO;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public sealed class Utf8StringContent : HttpContent
+    public sealed partial class Utf8StringContent : HttpContent
     {
         private const string DefaultMediaType = "text/plain";
 
@@ -43,7 +42,7 @@ namespace System.Net.Http
             Task.FromResult<Stream>(new Utf8StringStream(_content));
 
 #if NETSTANDARD2_0
-        protected async override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             ReadOnlyMemory<byte> buffer = _content.AsMemoryBytes();
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))

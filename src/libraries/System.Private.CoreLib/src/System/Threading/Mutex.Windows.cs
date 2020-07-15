@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Microsoft.Win32.SafeHandles;
@@ -25,7 +24,7 @@ namespace System.Threading
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
@@ -62,7 +61,7 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8

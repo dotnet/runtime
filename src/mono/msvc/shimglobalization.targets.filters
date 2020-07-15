@@ -30,6 +30,9 @@
     </ClCompile>             
     <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_icushim.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\entrypoints.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
     </ClCompile>      
     <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_calendarData.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>

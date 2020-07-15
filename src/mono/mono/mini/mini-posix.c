@@ -232,7 +232,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 			return;
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
+			mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info, ctx);
 		else
 			abort ();
 	}
@@ -254,7 +254,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	// running. Returns FALSE on unrecoverable error.
 	if (mono_dump_start ()) {
 		// Process was killed from outside since crash reporting wasn't running yet.
-		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, NULL);
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, NULL, ctx);
 	} else {
 		// Crash reporting already running and we got a second SIGTERM from as part of thread-summarizing
 		if (!mono_threads_summarize_execute (&mctx, &output, &hashes, FALSE, NULL, 0))
@@ -1107,7 +1107,7 @@ mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HAN
 }
 
 void
-mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
+mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining, void *context)
 {
 	if (!crash_chaining) {
 		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
@@ -1117,6 +1117,11 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 		abort ();
 #endif
 	}
+	mono_chain_signal (info->si_signo, info, context);
+
+	// we remove Mono's signal handlers from crashing signals in mono_handle_native_crash(), so re-raising will now allow the OS to handle the crash
+	// TODO: perhaps we can always use this to abort, instead of explicit exit()/abort() as we do above
+	raise (info->si_signo);
 }
 #endif /* !MONO_CROSS_COMPILE */
 

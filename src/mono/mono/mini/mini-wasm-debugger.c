@@ -38,6 +38,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboole
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
@@ -808,11 +809,13 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 		case MONO_TYPE_FNPTR: {
 			char *class_name = mono_type_full_name (type);
 			const void *val = *(const void **)addr;
-			char *val_str = g_strdup_printf ("(%s) %p", class_name, val);
+			char *descr = g_strdup_printf ("(%s) %p", class_name, val);
 
-			mono_wasm_add_typed_value ("pointer", val_str, (guint32)val);
+			EM_ASM ({
+				MONO.mono_wasm_add_typed_value ('pointer', $0, { ptr_addr: $1, klass_addr: $2 });
+			}, descr, val ? addr : 0, val ? mono_class_from_mono_type_internal (type) : 0);
 
-			g_free (val_str);
+			g_free (descr);
 			g_free (class_name);
 			break;
 		}
@@ -1279,6 +1282,19 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	describe_non_async_this (frame, method);
 
 	return TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
+{
+	MonoType *type = m_class_get_byval_arg (klass);
+	if (type->type != MONO_TYPE_PTR && type->type != MONO_TYPE_FNPTR) {
+		DEBUG_PRINTF (2, "BUG: mono_wasm_get_deref_ptr_value: Expected to get a ptr type, but got 0x%x\n", type->type);
+		return;
+	}
+
+	mono_wasm_add_properties_var ("deref", -1);
+	describe_value (type->data.type, value_addr, TRUE);
 }
 
 //FIXME this doesn't support getting the return value pseudo-var

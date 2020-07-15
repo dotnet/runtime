@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -18,8 +17,13 @@ namespace System.Security.Cryptography.Pkcs
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
         public System.Security.Cryptography.AsymmetricAlgorithm PrivateKey { get { throw null; } set { } }
     }
+    public sealed partial class ContentInfo
+    {
+        public static System.Security.Cryptography.Oid GetContentType(ReadOnlySpan<byte> encodedMessage) { throw null; }
+    }
     public sealed partial class EnvelopedCms
     {
+        public void Decode(System.ReadOnlySpan<byte> encodedMessage) { }
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
     }
     public sealed partial class Pkcs12Builder
@@ -196,6 +200,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class SignedCms
     {
         public void AddCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
+        public void Decode(System.ReadOnlySpan<byte> encodedMessage) { }
         public void RemoveCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
     }
     public sealed partial class SignerInfo
