@@ -434,7 +434,6 @@ namespace System.Net.Security
                                                                                     _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
                             _sslAuthenticationOptions.UpdateOptions(userOptions);
                         }
-
                     }
 
                     if (NetEventSource.Log.IsEnabled())
