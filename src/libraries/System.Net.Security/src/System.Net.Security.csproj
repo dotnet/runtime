@@ -150,6 +150,8 @@
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
@@ -158,6 +160,8 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SchProtocols.cs"
