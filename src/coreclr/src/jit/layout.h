@@ -195,7 +195,7 @@ public:
         }
     }
 
-    static bool AreMatching(const ClassLayout* layout1, const ClassLayout* layout2);
+    static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
 private:
     const BYTE* GetGCPtrs() const

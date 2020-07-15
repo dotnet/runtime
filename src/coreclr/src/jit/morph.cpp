@@ -9161,16 +9161,16 @@ GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
 
                 ClassLayout* lclVarLayout = lvaGetDesc(lclVar)->GetLayout();
                 ClassLayout* objLayout    = obj->GetLayout();
-                if (ClassLayout::AreMatching(lclVarLayout, objLayout))
+                if (ClassLayout::AreCompatible(lclVarLayout, objLayout))
                 {
-#ifdef DEUBUG
+#ifdef DEBUG
                     CORINFO_CLASS_HANDLE objClsHandle = obj->GetLayout()->GetClassHandle();
                     assert(objClsHandle != NO_CLASS_HANDLE);
-                    if (canFoldAsLclVar && verbose)
+                    if (verbose)
                     {
                         CORINFO_CLASS_HANDLE lclClsHnd = gtGetStructHandle(lclVar);
-                        printf("fold OBJ(ADDR(X)) [%06u] into X [%06u], ", dspTreeID(tree), dspTreeID(addrOp));
-                        printf("with %s handles\n", (lclClsHnd == objClsHandle) ? "matching", "different");
+                        printf("fold OBJ(ADDR(X)) [%06u] into X [%06u], ", dspTreeID(obj), dspTreeID(lclVar));
+                        printf("with %s handles\n", ((lclClsHnd == objClsHandle) ? "matching" : "different"));
                     }
 #endif
                     // Keep the DONT_CSE flag in sync

@@ -412,21 +412,21 @@ ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
-// AreMatching: check if 2 layouts are the same for copying.
+// AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
 //    layout1 - the first layout;
 //    layout2 - the second layout.
 //
 // Return value:
-//    true if matching, false otherwise.
+//    true if compatible, false otherwise.
 //
 // Notes:
-//    Layouts are called matching if they are equal or if
+//    Layouts are called compatible if they are equal or if
 //    they have the same size and the same GC slots.
 //
 // static
-bool ClassLayout::AreMatching(const ClassLayout* layout1, const ClassLayout* layout2)
+bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
 {
     CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
     CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
@@ -450,7 +450,7 @@ bool ClassLayout::AreMatching(const ClassLayout* layout1, const ClassLayout* lay
 
     if (!layout1->HasGCPtr() && !layout2->HasGCPtr())
     {
-        return false;
+        return true;
     }
 
     assert(layout1->HasGCPtr() && layout2->HasGCPtr());
