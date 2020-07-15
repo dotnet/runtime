@@ -877,7 +877,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_get_loaded_files: function() {
-			throw new Error ("mono_wasm_get_loaded_files was replaced by mono_wasm_get_loaded_assets");
+			return Object.keys(MONO.loaded_assets);
 		},
 
 		mono_wasm_get_loaded_asset_table: function() {
