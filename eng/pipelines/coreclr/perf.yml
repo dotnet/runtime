@@ -61,6 +61,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Browser_wasm
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
