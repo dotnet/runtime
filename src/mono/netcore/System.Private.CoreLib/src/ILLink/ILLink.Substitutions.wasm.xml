@@ -9,7 +9,7 @@
     <type fullname="System.Runtime.CompilerServices.RuntimeFeature">
       <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="false" />
     </type>
-    <type fullname="System.Runtime.Serialization.SerializationInfo">
+    <type fullname="System.LocalAppContextSwitches">
       <method signature="System.Boolean get_BinaryFormatterEnabled()" body="stub" value="false" />
     </type>
   </assembly>

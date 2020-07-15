@@ -7,6 +7,13 @@
     <!-- When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
     <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CS0649</NoWarn>
   </PropertyGroup>
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
