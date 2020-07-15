@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -431,6 +430,39 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 }
+            }
+        }
+
+        [Fact]
+        public static void CopyResult_RawData()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] first = cert.RawData;
+                byte[] second = cert.RawData;
+                Assert.NotSame(first, second);
+            }
+        }
+
+        [Fact]
+        public static void MutateDistinguishedName_IssuerName_DoesNotImpactIssuer()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] issuerBytes = cert.IssuerName.RawData;
+                Array.Clear(issuerBytes, 0, issuerBytes.Length);
+                Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
+            }
+        }
+
+        [Fact]
+        public static void MutateDistinguishedName_SubjectName_DoesNotImpactSubject()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] subjectBytes = cert.SubjectName.RawData;
+                Array.Clear(subjectBytes, 0, subjectBytes.Length);
+                Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
             }
         }
 

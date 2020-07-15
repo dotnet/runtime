@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Enable nullability as part of annotation System.Data.{Odbc,OleDb}
+#nullable disable
+#pragma warning disable CS8632
 
 using System.Collections;
 using System.Data.SqlTypes;
@@ -472,7 +475,7 @@ namespace System.Data.Common
             return IndexOutOfRange(SR.Format(SR.SQL_InvalidDataLength, length.ToString(CultureInfo.InvariantCulture)));
         }
 
-        internal static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
+        internal static bool CompareInsensitiveInvariant(string? strvalue, string? strconst) =>
             0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase);
 
         internal static int DstCompare(string strA, string strB) => CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, ADP.DefaultCompareOptions);

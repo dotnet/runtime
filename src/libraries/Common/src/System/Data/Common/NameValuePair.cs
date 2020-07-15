@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Remove this after System.Data.{Odbc,OleDb} are null-annotated
+#pragma warning disable CS8632
 
 using System.Diagnostics;
 
@@ -9,11 +11,11 @@ namespace System.Data.Common
     internal sealed class NameValuePair
     {
         private readonly string _name;
-        private readonly string _value;
+        private readonly string? _value;
         private readonly int _length;
-        private NameValuePair _next;
+        private NameValuePair? _next;
 
-        internal NameValuePair(string name, string value, int length)
+        internal NameValuePair(string name, string? value, int length)
         {
             Debug.Assert(!string.IsNullOrEmpty(name), "empty keyname");
             _name = name;
@@ -31,9 +33,9 @@ namespace System.Data.Common
         }
 
         internal string Name => _name;
-        internal string Value => _value;
+        internal string? Value => _value;
 
-        internal NameValuePair Next
+        internal NameValuePair? Next
         {
             get { return _next; }
             set

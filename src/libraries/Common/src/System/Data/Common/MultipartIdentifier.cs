@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-
-
+// TODO: Remove this after System.Data.{Odbc,OleDb} are null-annotated
+#pragma warning disable CS8632
 //------------------------------------------------------------------------------
 
 using System.Text;
@@ -25,7 +24,7 @@ namespace System.Data.Common
             If a is the starting quote char then c would be the ending quote char
             otherwise if b is the starting quote char then d would be the ending quote character.
         */
-        internal static string[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, string property, bool ThrowOnEmptyMultipartName)
+        internal static string?[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, string property, bool ThrowOnEmptyMultipartName)
         {
             return ParseMultipartIdentifier(name, leftQuote, rightQuote, '.', MaxParts, true, property, ThrowOnEmptyMultipartName);
         }
@@ -48,7 +47,7 @@ namespace System.Data.Common
             * limit:      number of names to parse out
             * removequote:to remove the quotes on the returned string
             */
-        private static void IncrementStringCount(string name, string[] ary, ref int position, string property)
+        private static void IncrementStringCount(string name, string?[] ary, ref int position, string property)
         {
             ++position;
             int limit = ary.Length;
@@ -64,7 +63,7 @@ namespace System.Data.Common
             return char.IsWhiteSpace(ch);
         }
 
-        internal static string[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, char separator, int limit, bool removequotes, string property, bool ThrowOnEmptyMultipartName)
+        internal static string?[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, char separator, int limit, bool removequotes, string property, bool ThrowOnEmptyMultipartName)
         {
             if (limit <= 0)
             {
@@ -76,13 +75,13 @@ namespace System.Data.Common
                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
 
-            string[] parsedNames = new string[limit];   // return string array
+            string?[] parsedNames = new string?[limit];   // return string array
             int stringCount = 0;                        // index of current string in the buffer
             MPIState state = MPIState.MPI_Value;        // Initialize the starting state
 
             StringBuilder sb = new StringBuilder(name.Length); // String buffer to hold the string being currently built, init the string builder so it will never be resized
-            StringBuilder whitespaceSB = null;                  // String buffer to hold whitespace used when parsing nonquoted strings  'a b .  c d' = 'a b' and 'c d'
-            char rightQuoteChar = ' ';                          // Right quote character to use given the left quote character found.
+            StringBuilder? whitespaceSB = null;                // String buffer to hold whitespace used when parsing nonquoted strings  'a b .  c d' = 'a b' and 'c d'
+            char rightQuoteChar = ' ';                         // Right quote character to use given the left quote character found.
             for (int index = 0; index < name.Length; ++index)
             {
                 char testchar = name[index];
@@ -183,7 +182,7 @@ namespace System.Data.Common
                             }
                             else
                             {
-                                whitespaceSB.Append(testchar);
+                                whitespaceSB!.Append(testchar);
                             }
                             break;
                         }

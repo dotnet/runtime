@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -55,13 +54,6 @@ namespace System.Linq.Parallel
             {
                 tr = InternalAggregate(ref toThrow);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 // If the exception is not an aggregate, we must wrap it up and throw that instead.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: JITinterface.CPP
 //
@@ -9824,7 +9823,15 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 
     JIT_TO_EE_TRANSITION();
 
-    if (method != 0)
+    if (method == NULL)
+    {
+        // check the call site signature
+        result = NDirect::MarshalingRequired(
+                    NULL,
+                    callSiteSig->pSig,
+                    GetModule(callSiteSig->scope));
+    }
+    else
     {
         MethodDesc* ftn = GetMethod(method);
         _ASSERTE(ftn->IsNDirect());
@@ -9853,14 +9860,6 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         // without NDirectImportPrecode.
         result = TRUE;
 #endif
-    }
-    else
-    {
-        // check the call site signature
-        result = NDirect::MarshalingRequired(
-                    GetMethod(method),
-                    callSiteSig->pSig,
-                    GetModule(callSiteSig->scope));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13940,7 +13939,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
     pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
     pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
     pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
-    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrLoadTailCallDispatcherMD();
     return true;
 }
 

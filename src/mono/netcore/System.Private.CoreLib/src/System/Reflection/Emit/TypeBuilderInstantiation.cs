@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Reflection.Emit.TypeBuilderInstantiation
 //
@@ -36,6 +38,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
@@ -69,6 +72,8 @@ namespace System.Reflection.Emit
             this.type_arguments = args;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         internal override Type InternalResolve()
         {
             Type gtd = generic_type.InternalResolve();

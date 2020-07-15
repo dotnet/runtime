@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
@@ -580,22 +579,11 @@ public:
     ===========================================================================
     */
 
-    // Finalizes all registered objects for shutdown, even if they are still reachable.
-    virtual void SetFinalizeQueueForShutdown(bool fHasLock) = 0;
-
     // Gets the number of finalizable objects.
     virtual size_t GetNumberOfFinalizable() = 0;
 
-    // Traditionally used by the finalizer thread on shutdown to determine
-    // whether or not to time out. Returns true if the GC lock has not been taken.
-    virtual bool ShouldRestartFinalizerWatchDog() = 0;
-
     // Gets the next finalizable object.
     virtual Object* GetNextFinalizable() = 0;
-
-    // Sets whether or not the GC should report all finalizable objects as
-    // ready to be finalized, instead of only collectable objects.
-    virtual void SetFinalizeRunOnShutdown(bool value) = 0;
 
     /*
     ===========================================================================

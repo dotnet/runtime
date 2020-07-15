@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -157,5 +156,17 @@ namespace System.Text.Json.Serialization
                 setMethodInfo.Invoke(obj, new object[] { value! });
             };
         }
+
+        public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj)
+            {
+                return (TProperty)fieldInfo.GetValue(obj)!;
+            };
+
+        public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj, TProperty value)
+            {
+                fieldInfo.SetValue(obj, value);
+            };
     }
 }

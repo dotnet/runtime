@@ -29,6 +29,9 @@ set(MDRUNTIME_HEADERS
   ../inc/mdcolumndescriptors.h
   ../inc/metamodel.h
   ../inc/metamodelro.h
+  ../inc/pdbheap.h
+  ../inc/portablepdbmdds.h
+  ../inc/portablepdbmdi.h
   ../inc/recordpool.h
   metamodelcolumndefs.h
   mdinternaldisp.h
@@ -57,3 +60,7 @@ target_precompile_header(TARGET mdruntime-dbi HEADER stdafx.h)
 add_library_clr(mdruntime_crossgen ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntime_crossgen HEADER stdafx.h)
+
+add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
+target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_precompile_header(TARGET mdruntime_ppdb HEADER stdafx.h)

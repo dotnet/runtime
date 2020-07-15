@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -18,7 +17,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe ref T AsRef<T>(void* source) { throw null; }
         public static ref T AsRef<T>(in T source) { throw null; }
 #if NETSTANDARD2_1
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
 #endif
         public static T As<T>(object? o) where T : class? { throw null; }

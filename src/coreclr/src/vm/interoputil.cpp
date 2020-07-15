@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1486,7 +1485,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         // COM+ objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+            GetThread()->SetApartment(Thread::AS_InMTA);
 
         // set the finalizer event
         FinalizerThread::EnableFinalization();

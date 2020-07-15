@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Remove this after System.Data.{Odbc,OleDb} are null-annotated
+#pragma warning disable CS8632
 
 namespace System.Data.Common
 {
@@ -38,14 +40,14 @@ namespace System.Data.Common
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || obj.GetType() != typeof(DbConnectionPoolKey))
             {
                 return false;
             }
 
-            DbConnectionPoolKey key = obj as DbConnectionPoolKey;
+            DbConnectionPoolKey? key = obj as DbConnectionPoolKey;
 
             return (key != null && _connectionString == key._connectionString);
         }

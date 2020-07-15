@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -1778,11 +1777,22 @@ namespace System.Tests
                 new object[] { typeof(IntPtr), default(IntPtr) },
                 new object[] { typeof(UIntPtr), default(UIntPtr) },
 
+                // Primitives enums
+                new object[] { typeof(SByteEnum), default(SByteEnum) },
+                new object[] { typeof(ByteEnum), default(ByteEnum) },
+                new object[] { typeof(Int16Enum), default(Int16Enum) },
+                new object[] { typeof(UInt16Enum), default(UInt16Enum) },
+                new object[] { typeof(Int32Enum), default(Int32Enum) },
+                new object[] { typeof(UInt32Enum), default(UInt32Enum) },
+                new object[] { typeof(Int64Enum), default(Int64Enum) },
+                new object[] { typeof(UInt64Enum), default(UInt64Enum) },
+
                 // Array, pointers
                 new object[] { typeof(int[]), default(int[]) },
+                new object[] { typeof(string[]), default(string[]) },
                 new object[] { typeof(int*), null },
 
-                // Classes, structs, interfaces, enums
+                // Classes, structs, interface
                 new object[] { typeof(NonGenericClass1), default(NonGenericClass1) },
                 new object[] { typeof(GenericClass<int>), default(GenericClass<int>) },
                 new object[] { typeof(NonGenericStruct), default(NonGenericStruct) },
@@ -1791,7 +1801,6 @@ namespace System.Tests
                 new object[] { typeof(GenericInterface<int>), default(GenericInterface<int>) },
                 new object[] { typeof(AbstractClass), default(AbstractClass) },
                 new object[] { typeof(StaticClass), default(StaticClass) },
-                new object[] { typeof(Int32Enum), default(Int32Enum) }
             };
         }
 
@@ -1872,6 +1881,10 @@ namespace System.Tests
             yield return new object[] { typeof(GenericClass<>) };
             yield return new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] };
+            yield return new object[] { typeof(TypedReference) };
+            yield return new object[] { typeof(ArgIterator) };
+            yield return new object[] { typeof(RuntimeArgumentHandle) };
+            yield return new object[] { typeof(Span<int>) };
         }
 
         [Theory]
@@ -1884,6 +1897,21 @@ namespace System.Tests
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1]));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new long[1]));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1], new int[1]));
+        }
+
+        [Fact]
+        public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
+        {
+            // This cannot be a [Theory] due to https://github.com/xunit/xunit/issues/1325.
+            foreach (Type elementType in Helpers.NonRuntimeTypes)
+            {
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1]));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new long[1]));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1], new int[1]));
+            }
         }
 
         [Fact]
@@ -1947,6 +1975,18 @@ namespace System.Tests
         public void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
+        }
+
+        [Theory]
+        [InlineData(33)]
+        [InlineData(256)]
+        [InlineData(257)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39002", TestRuntimes.Mono)]
+        public void CreateInstance_RankMoreThanMaxRank_ThrowsTypeLoadException(int length)
+        {
+            var lengths = new int[length];
+            var lowerBounds = new int[length];
+            Assert.Throws<TypeLoadException>(() => Array.CreateInstance(typeof(int), lengths, lowerBounds));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
@@ -4279,21 +4319,6 @@ namespace System.Tests
             Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
-        }
-
-        [Fact]
-        public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
-        {
-            // This cannot be a [Theory] due to https://github.com/xunit/xunit/issues/1325.
-            foreach (Type elementType in Helpers.NonRuntimeTypes)
-            {
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1]));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new long[1]));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1], new int[1]));
-            }
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)

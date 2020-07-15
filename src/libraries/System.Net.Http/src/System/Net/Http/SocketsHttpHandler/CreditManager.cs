@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -23,7 +22,7 @@ namespace System.Net.Http
             Debug.Assert(owner != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(name));
 
-            if (NetEventSource.IsEnabled) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
+            if (NetEventSource.Log.IsEnabled()) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
             _owner = owner;
             _name = name;
             _current = initialCredit;
@@ -51,12 +50,12 @@ namespace System.Net.Http
                     Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
 
                     int granted = Math.Min(amount, _current);
-                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
+                    if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
                     _current -= granted;
                     return new ValueTask<int>(granted);
                 }
 
-                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
+                if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
                 // Otherwise, create a new waiter.
                 CreditWaiter waiter = cancellationToken.CanBeCanceled ?
@@ -88,7 +87,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. {nameof(amount)}={amount}, current={_current}");
+                if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. {nameof(amount)}={amount}, current={_current}");
 
                 if (_disposed)
                 {

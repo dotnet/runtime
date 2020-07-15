@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -437,7 +436,10 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 
 //  Move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
+                                     regNumber reg,
+                                     ssize_t   imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -5908,12 +5910,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree      = treeNode->AsOp();
-    GenTree*   op1       = tree->gtOp1;
-    GenTree*   op2       = tree->gtOp2;
-    var_types  op1Type   = op1->TypeGet();
-    var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = tree->GetRegNum();
+    GenTreeOp* tree          = treeNode->AsOp();
+    GenTree*   op1           = tree->gtOp1;
+    GenTree*   op2           = tree->gtOp2;
+    var_types  op1Type       = op1->TypeGet();
+    var_types  op2Type       = op2->TypeGet();
+    regNumber  targetReg     = tree->GetRegNum();
+    emitter*   emit          = GetEmitter();
+    bool       canReuseFlags = false;
 
     genConsumeOperands(tree);
 
@@ -5945,6 +5949,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        if (compiler->opts.OptimizationEnabled())
+        {
+            canReuseFlags = true;
+        }
+
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
         ins = INS_test;
@@ -5995,7 +6004,15 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    bool needsOCFlags = !tree->OperIs(GT_EQ, GT_NE);
+    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), needsOCFlags))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+    }
+    else
+    {
+        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
