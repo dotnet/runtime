@@ -5219,16 +5219,55 @@ BOOL MetaSig::IsReturnTypeVoid() const
 
 #ifndef DACCESS_COMPILE
 
+namespace
+{
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ const Module *pModule,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            FORBID_FAULT;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        IMDInternalImport *pInternalImport = pModule->GetMDImport();
+        if (TypeFromToken(token) == mdtTypeDef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeDef(token, nameOut, namespaceOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else if (TypeFromToken(token) == mdtTypeRef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeRef(token, namespaceOut, nameOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else
+        {
+            return E_INVALIDARG;
+        }
+
+        return S_OK;
+    }
+}
+
 //----------------------------------------------------------
 // Returns the unmanaged calling convention.
 //----------------------------------------------------------
 /*static*/
-BOOL
-MetaSig::GetUnmanagedCallingConvention(
-    Module *        pModule,
-    PCCOR_SIGNATURE pSig,
-    ULONG           cSig,
-    CorPinvokeMap * pPinvokeMapOut)
+HRESULT
+MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
+    _In_ Module *pModule,
+    _In_ PCCOR_SIGNATURE pSig,
+    _In_ ULONG cSig,
+    _Out_ CorUnmanagedCallingConvention *callConvOut)
 {
     CONTRACTL
     {
@@ -5236,53 +5275,61 @@ MetaSig::GetUnmanagedCallingConvention(
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
+        PRECONDITION(callConvOut != NULL);
     }
     CONTRACTL_END
-
 
     // Instantiations aren't relevant here
     MetaSig msig(pSig, cSig, pModule, NULL);
     PCCOR_SIGNATURE pWalk = msig.m_pRetType.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
+
+    *callConvOut = (CorUnmanagedCallingConvention)0;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
 
         pWalk++;
         if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
-        {
-            return FALSE; // Bad formatting
-        }
+            return E_FAIL; // Bad formatting
+
         mdToken tk;
         pWalk += CorSigUncompressToken(pWalk, &tk);
 
-        if (fIsOptional)
+        if (!fIsOptional)
+            continue;
+
+        LPCSTR typeNamespace;
+        LPCSTR typeName;
+
+        // Check for CallConv types specified in modopt
+        if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))
+            continue;
+
+        if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
+            continue;
+
+        const struct {
+            LPCSTR name;
+            CorUnmanagedCallingConvention value;
+        } knownCallConvs[] = {
+            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
+            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
+            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
+            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+
+        for (const auto &callConv : knownCallConvs)
         {
-            if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvCdecl", pModule, tk))
+            // Take the first recognized calling convention in metadata.
+            if (::strcmp(typeName, callConv.name) == 0)
             {
-                *pPinvokeMapOut = pmCallConvCdecl;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvStdcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvStdcall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvThiscall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvThiscall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvFastcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvFastcall;
-                return TRUE;
+                *callConvOut = callConv.value;
+                return S_OK;
             }
         }
     }
 
-    *pPinvokeMapOut = (CorPinvokeMap)0;
-    return TRUE;
+    return S_FALSE;
 }
 
 //---------------------------------------------------------------------------------------
