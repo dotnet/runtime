@@ -6530,6 +6530,11 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    if (comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
