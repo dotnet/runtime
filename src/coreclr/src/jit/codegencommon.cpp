@@ -4503,10 +4503,11 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         argRegCount = varDsc->lvHfaSlots();
                         for (int i = 1; i < argRegCount; i++)
                         {
-                            int       nextArgNum = argNum + i;
-                            regNumber nextRegNum =
-                                genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
-                            noway_assert(regArgTab[nextArgNum].varNum == varNum);
+                            int         nextArgNum  = argNum + i;
+                            regArgElem* nextArgElem = &regArgTab[nextArgNum];
+                            var_types   nextArgType = nextArgElem->getRegType(compiler);
+                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            noway_assert(nextArgElem->varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);

@@ -1857,9 +1857,10 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
             canPromote = false;
         }
 #if defined(FEATURE_SIMD) && defined(TARGET_ARMARCH)
-        // Don't promote a struct with a struct field unless it is the only field or an opaque SIMD type.
         else if (fieldCnt > 1)
         {
+            // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
+            // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
             for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
             {
                 if (varTypeIsStruct(structPromotionInfo.fields[i].fldType) &&
@@ -1885,9 +1886,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
             {
                 for (unsigned i = 0; canPromote && (i < regCount); i++)
                 {
-                    var_types fieldType = structPromotionInfo.fields[i].fldType;
-                    if (varTypeUsesFloatReg(fieldType) !=
-                        (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE))
+                    lvaStructFieldInfo* fieldInfo = &(structPromotionInfo.fields[i]);
+                    var_types           fieldType = fieldInfo->fldType;
+                    // We don't currently support passing SIMD types in registers.
+                    if (varTypeIsSIMD(fieldType))
+                    {
+                        canPromote = false;
+                    }
+                    else if (varTypeUsesFloatReg(fieldType) !=
+                             (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE))
                     {
                         canPromote = false;
                     }
@@ -5176,7 +5183,7 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 //                             to the one assigned by the register allocator.
 //
 // Arguments:
-//    varDsc - the local variable
+//    varDsc - the local variable descriptor
 //
 void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 {
