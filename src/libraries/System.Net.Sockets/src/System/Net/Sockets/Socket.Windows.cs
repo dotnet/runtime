@@ -6,7 +6,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -17,6 +16,7 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public Socket(SocketInformation socketInformation)
         {
             InitializeSockets();
@@ -105,6 +105,7 @@ namespace System.Net.Sockets
             blocking = true;
         }
 
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             ThrowIfDisposed();

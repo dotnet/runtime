@@ -325,6 +325,7 @@ namespace System.Net.Sockets
         public bool DisconnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public System.Net.Sockets.SocketInformation DuplicateAndClose(int targetProcessId) { throw null; }
         public System.Net.Sockets.Socket EndAccept(out byte[]? buffer, System.IAsyncResult asyncResult) { throw null; }
         public System.Net.Sockets.Socket EndAccept(out byte[]? buffer, out int bytesTransferred, System.IAsyncResult asyncResult) { throw null; }
