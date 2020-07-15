@@ -584,13 +584,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		_load_bytes_into_heap: function (bytes) {
-			var memoryOffset = Module._malloc (bytes.length);
-			var heapBytes = new Uint8Array (Module.HEAPU8.buffer, memoryOffset, bytes.length);
-			heapBytes.set (bytes);
-			return memoryOffset;
-		},
-
 		_handle_loaded_asset: function (ctx, asset, blob) {
 			var bytes = new Uint8Array (blob);
 			console.log ("MONO_WASM: Loaded:", asset.name, bytes.length);
@@ -603,7 +596,7 @@ var MonoSupportLib = {
 					ctx.loaded_files.push (virtualName);
 				case "heap":
 				case "icu":
-					offset = this._load_bytes_into_heap (bytes);
+					offset = this.mono_wasm_load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
 					break;
 
@@ -647,7 +640,7 @@ var MonoSupportLib = {
 			if (asset.behavior === "assembly")
 				ctx.mono_wasm_add_assembly (virtualName, offset, bytes.length);
 			else if (asset.behavior === "icu") {
-				if (ctx.mono_wasm_load_icu_data (offset) === 1)
+				if (this.mono_wasm_load_icu_data (offset))
 					ctx.num_icu_assets_loaded_successfully += 1;
 				else
 					console.error ("Error loading ICU asset", asset.name);
@@ -701,6 +694,24 @@ var MonoSupportLib = {
 			}
 		},
 
+		// @bytes must be a typed array. space is allocated for it in the native heap
+		//  and it is copied to that location. returns the address of the allocation.
+		mono_wasm_load_bytes_into_heap: function (bytes) {
+			var memoryOffset = Module._malloc (bytes.length);
+			var heapBytes = new Uint8Array (Module.HEAPU8.buffer, memoryOffset, bytes.length);
+			heapBytes.set (bytes);
+			return memoryOffset;
+		},
+
+		// @offset must be the address of an ICU data archive in the native heap.
+		// returns true on success.
+		mono_wasm_load_icu_data: function (offset) {
+			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
+			var ok = (fn (offset)) === 1;
+			if (ok)
+				this.num_icu_assets_loaded_successfully++;
+		},
+
 		_finalize_startup: function (args, ctx) {
 			MONO.loaded_assets = ctx.loaded_assets;
 			MONO.loaded_files = ctx.loaded_files;
@@ -713,7 +724,7 @@ var MonoSupportLib = {
 
 			console.log ("MONO_WASM: Initializing mono runtime");
 
-			this._globalization_init (args, ctx);
+			this.mono_wasm_globalization_init (args.globalization_mode);
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
@@ -745,17 +756,17 @@ var MonoSupportLib = {
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
 
+			this.num_icu_assets_loaded_successfully = 0;
+
 			var ctx = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
-				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
 				loaded_assets: Object.create (null),
 				// dlls and pdbs, used by blazor and the debugger
 				loaded_files: [],
 				createPath: Module['FS_createPath'],
-				createDataFile: Module['FS_createDataFile'],
-				num_icu_assets_loaded_successfully: 0
+				createDataFile: Module['FS_createDataFile']
 			};
 
 			if (ctx.tracing)
@@ -869,16 +880,20 @@ var MonoSupportLib = {
 			});
 		},
 
-		_globalization_init: function (args, ctx) {
+		// Performs setup for globalization.
+		// @globalization_mode is one of "icu", "invariant", or "auto".
+		// "auto" will use "icu" if any ICU data archives have been loaded,
+		//  otherwise "invariant".
+		mono_wasm_globalization_init: function (globalization_mode) {
 			var invariantMode = false;
 
-			if (args.globalization_mode === "invariant")
+			if (globalization_mode === "invariant")
 				invariantMode = true;
 
 			if (!invariantMode) {
-				if (ctx.num_icu_assets_loaded_successfully > 0) {
+				if (this.num_icu_assets_loaded_successfully > 0) {
 					console.log ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
-				} else if (args.globalization_mode !== "icu") {
+				} else if (globalization_mode !== "icu") {
 					console.log ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
 					invariantMode = true;
 				} else {
