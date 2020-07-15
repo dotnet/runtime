@@ -28,10 +28,12 @@ add_custom_command(OUTPUT ${EVENTPIPE_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
-add_library_clr(eventpipe OBJECT ${EVENTPIPE_SOURCES})
-set_target_properties(eventpipe PROPERTIES LINKER_LANGUAGE CXX)
-add_dependencies(eventpipe eventing_headers)
+add_library_clr(eventpipe_obj OBJECT ${EVENTPIPE_SOURCES})
+set_target_properties(eventpipe_obj PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(eventpipe_obj eventing_headers)
+add_library_clr(eventpipe INTERFACE)
+target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)
 
 if (NOT CLR_CMAKE_TARGET_WIN32)
-  _install(TARGETS eventpipe DESTINATION lib)
+  _install(TARGETS eventpipe_obj DESTINATION lib)
 endif()
