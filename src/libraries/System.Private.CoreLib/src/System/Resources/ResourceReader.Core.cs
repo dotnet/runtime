@@ -69,7 +69,8 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
-        private bool InitializeBinaryFormatter()        {
+        private bool InitializeBinaryFormatter()
+        {
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 return false; // initialization failed
