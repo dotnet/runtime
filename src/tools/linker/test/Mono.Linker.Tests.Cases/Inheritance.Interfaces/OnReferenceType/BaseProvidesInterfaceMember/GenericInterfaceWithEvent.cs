@@ -18,8 +18,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 
 		[Kept]
 		[KeptMember ("Invoke()")]
-		[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
-		[KeptMember ("EndInvoke(System.IAsyncResult)")]
 		[KeptMember (".ctor(System.Object,System.IntPtr)")]
 		[KeptBaseType (typeof (System.MulticastDelegate))]
 		delegate void CustomDelegate<T> ();
