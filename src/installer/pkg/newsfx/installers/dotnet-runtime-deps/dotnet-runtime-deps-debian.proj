@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildDebPackage)' == 'true'">true</GenerateInstallers>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DebianIgnoredDependencies>
+      [
+        "liblldb-3.5",
+        "liblldb-3.6"
+      ]
+    </DebianIgnoredDependencies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6;zlib1g"/>
+    <LinuxPackageDependency Include="libssl1.0.0 | libssl1.0.2 | libssl1.1" />
+    <KnownLibIcuVersion Include="66;65;63;60;57;55;52" />
+    <LibIcuPackageDependency Include="libicu" Dependencies="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
+    <LinuxPackageDependency
+      Include="%(LibIcuPackageDependency.Dependencies)" />
+    <DebJsonProperty Include="debian_ignored_dependencies" Value="$(DebianIgnoredDependencies)" />
+ </ItemGroup>
+</Project>

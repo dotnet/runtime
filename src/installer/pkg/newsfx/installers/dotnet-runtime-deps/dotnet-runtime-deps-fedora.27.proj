@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' == 'true'">true</GenerateInstallers>
+    <PackageTargetOS>fedora.27</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="compat-openssl10;libicu;krb5-libs" />
+  </ItemGroup>
+</Project>

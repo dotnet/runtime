@@ -1,0 +1,8 @@
+<Project>
+  <Target Name="PublishSharedFrameworkToDisk">
+    <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
+    <MakeDir Directories="$(SharedFrameworkOutputPath)" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

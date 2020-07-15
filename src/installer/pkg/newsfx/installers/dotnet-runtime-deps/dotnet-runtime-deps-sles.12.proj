@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' == 'true'">true</GenerateInstallers>
+    <PackageTargetOS>sles.12</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libopenssl1_1;libicu;krb5" />
+  </ItemGroup>
+</Project>

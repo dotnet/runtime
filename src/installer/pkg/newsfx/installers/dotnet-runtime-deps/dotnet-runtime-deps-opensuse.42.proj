@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' == 'true'">true</GenerateInstallers>
+    <PackageTargetOS>opensuse.42</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libopenssl1_0_0;libicu;krb5" />
+  </ItemGroup>
+</Project>
