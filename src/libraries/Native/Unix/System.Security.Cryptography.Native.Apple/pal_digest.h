@@ -56,3 +56,10 @@ Get the digest of the data already loaded into ctx, without resetting ctx.
 Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
 PALEXPORT int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput);
+
+/*
+Combines DigestCreate, DigestUpdate, and DigestFinal in to a single operation.
+
+Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
+*/
+PALEXPORT int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pBuf, int32_t cbBuf, uint8_t* pOutput, int32_t cbOutput, int32_t* pcbDigest);
