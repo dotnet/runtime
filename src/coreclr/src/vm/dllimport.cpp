@@ -6309,6 +6309,7 @@ namespace
 #if defined(TARGET_LINUX)
         if (g_coreclr_embedded)
         {
+            // this matches exactly the names in  Interop.Libraries.cs 
             static const LPCWSTR toRedirect[] = {
                 W("libSystem.Native"),
                 W("libSystem.IO.Compression.Native"),
@@ -6316,7 +6317,7 @@ namespace
                 W("libSystem.Security.Cryptography.Native.OpenSsl")
             };
 
-            int count = sizeof(toRedirect) / sizeof(toRedirect[0]);
+            int count = lengthof(toRedirect);
             for (int i = 0; i < count; ++i)
             {
                 if (wcscmp(wszLibName, toRedirect[i]) == 0)
