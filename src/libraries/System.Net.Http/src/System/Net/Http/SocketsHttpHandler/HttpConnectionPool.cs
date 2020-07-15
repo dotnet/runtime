@@ -288,7 +288,6 @@ namespace System.Net.Http
 
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
-        public bool IsSecure => _sslOptionsHttp11 != null;
         public HttpConnectionKind Kind => _kind;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
@@ -348,8 +347,7 @@ namespace System.Net.Http
                 }
             }
 
-            // Allow HTTP/3 only when user requests exact version. ALPN is not yet supported by HTTP/3 and implmentation is still experimental.
-            if (_http3Enabled && request.Version.Major >= 3 && request.VersionPolicy == HttpVersionPolicy.RequestVersionExact)
+            if (_http3Enabled && (request.Version.Major >= 3 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
             {
                 HttpAuthority? authority = _http3Authority;
                 if (authority != null)
@@ -357,20 +355,19 @@ namespace System.Net.Http
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
-
-            // If we got here, we cannot provide HTTP/3 connection so do not continue to attempt at getting/creating a lowered one.
+            // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
                 throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
             }
 
-            if (_http2Enabled && 
-               (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            if (_http2Enabled && (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher) &&
+               // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
+               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
             }
-
-            // If we got here, we cannot provide HTTP/2 connection so do not continue to attempt at getting/creating a lowered one.
+            // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
                 throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
@@ -640,9 +637,9 @@ namespace System.Net.Http
                 {
                     _http2Enabled = false;
 
-                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        // ToDo: Could this even happen if we do not allow HTTP/1.1 in ALPN for different version policies?
+                        // Could this even happen if we do not allow HTTP/1.1 in ALPN for different version policies?
                         throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.");
                     }
 
@@ -739,7 +736,20 @@ namespace System.Net.Http
                     Trace("Attempting new HTTP3 connection.");
                 }
 
-                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                QuicConnection quicConnection;
+                try
+                {
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                    lock (SyncObj)
+                    {
+                        ExpireAltSvcAuthority();
+                    }
+                    throw;
+                }
 
                 //TODO: NegotiatedApplicationProtocol not yet implemented.
 #if false

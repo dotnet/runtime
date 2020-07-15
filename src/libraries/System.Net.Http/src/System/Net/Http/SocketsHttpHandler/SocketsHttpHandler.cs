@@ -341,6 +341,9 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
             }
 
+            // Do not allow upgrades for synchronous requests, that might lead to asynchronous code-paths.
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
