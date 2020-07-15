@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.Tracing;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -10,9 +11,22 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
+        private PollingCounter _connectionEstablishedCounter;
+        private PollingCounter _bytesReceivedCounter;
+        private PollingCounter _bytesSentCounter;
+        private PollingCounter _datagramsReceivedCounter;
+        private PollingCounter _datagramsSentCounter;
+
+        private long _connectionEstablished;
+        private long _bytesReceived;
+        private long _bytesSent;
+        private long _datagramsReceived;
+        private long _datagramsSent;
+
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string? address)
         {
+            Interlocked.Increment(ref _connectionEstablished);
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 WriteEvent(eventId: 1, address ?? "");
@@ -70,6 +84,59 @@ namespace System.Net.Sockets
         {
             ConnectFailed(error, exceptionMessage);
             ConnectStop();
+        }
+
+        [NonEvent]
+        public void BytesReceived(long count)
+        {
+            Interlocked.Add(ref _bytesReceived, count);
+        }
+
+        [NonEvent]
+        public void BytesSent(long count)
+        {
+            Interlocked.Add(ref _bytesSent, count);
+        }
+
+        [NonEvent]
+        public void DatagramsReceived(long count)
+        {
+            Interlocked.Add(ref _datagramsReceived, count);
+        }
+
+        [NonEvent]
+        public void DatagramsSent(long count)
+        {
+            Interlocked.Add(ref _datagramsSent, count);
+        }
+
+        protected override void OnEventCommand(EventCommandEventArgs command)
+        {
+            if (command.Command == EventCommand.Enable)
+            {
+                // This is the convention for initializing counters in the RuntimeEventSource (lazily on the first enable command).
+
+                _connectionEstablishedCounter ??= new PollingCounter("connections-established", this, () => Interlocked.Read(ref _connectionEstablished))
+                {
+                    DisplayName = "Bytes Received",
+                };
+                _bytesReceivedCounter ??= new PollingCounter("bytes-received", this, () => Interlocked.Read(ref _bytesReceived))
+                {
+                    DisplayName = "Bytes Received",
+                };
+                _bytesSentCounter ??= new PollingCounter("bytes-sent", this, () => Interlocked.Read(ref _bytesSent))
+                {
+                    DisplayName = "Bytes Sent",
+                };
+                _datagramsReceivedCounter ??= new PollingCounter("datagrams-received", this, () => Interlocked.Read(ref _datagramsReceived))
+                {
+                    DisplayName = "Datagrams Received",
+                };
+                _datagramsSentCounter ??= new PollingCounter("datagrams-sent", this, () => Interlocked.Read(ref _datagramsSent))
+                {
+                    DisplayName = "Datagrams Sent",
+                };
+            }
         }
     }
 }
