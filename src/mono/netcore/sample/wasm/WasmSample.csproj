@@ -36,7 +36,6 @@
     </ItemGroup>
     <ItemGroup>
       <RemoteSources Include="./" />
-      <RemoteSources Include="http://luminance.org/test/" />
       <RemoteSources Include="http://localhost/wasm-assets/" />
     </ItemGroup>
     <ItemGroup>
