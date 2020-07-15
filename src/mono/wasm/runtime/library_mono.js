@@ -608,7 +608,31 @@ var MonoSupportLib = {
 
 				case "vfs":
 					// FIXME
-					throw new Error ("Unimplemented behavior: vfs");
+					var lastSlash = virtualName.lastIndexOf("/");
+					var parentDirectory = (lastSlash > 0)
+						? virtualName.substr(0, lastSlash)
+						: null;
+					var fileName = (lastSlash > 0)
+						? virtualName.substr(lastSlash + 1)
+						: virtualName;
+					if (fileName.startsWith("/"))
+						fileName = fileName.substr(1);
+
+					if (parentDirectory) {
+						console.log ("MONO_WASM: Creating directory '" + parentDirectory + "'");
+						var pathRet = ctx.createPath(
+							"/", parentDirectory, true, true // fixme: should canWrite be false?
+						);
+					    console.log ("MONO_WASM: Directory create returned", pathRet);
+					}
+
+					console.log ("MONO_WASM: Creating file '" + fileName + "'");
+					var fileRet = ctx.createDataFile (
+						parentDirectory || "/", fileName,
+						bytes, true, false, true
+					);
+				    console.log ("MONO_WASM: File create returned", fileRet);
+
 					break;
 
 				default:
@@ -673,6 +697,7 @@ var MonoSupportLib = {
 
 		_finalize_startup: function (args, ctx) {
 			MONO.loaded_assets = ctx.loaded_assets;
+			console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
 
 			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['number']);
 
@@ -722,6 +747,7 @@ var MonoSupportLib = {
 				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
 				loaded_assets: Object.create (null),
 				createPath: Module['FS_createPath'],
+				createDataFile: Module['FS_createDataFile'],
 				num_icu_assets_loaded_successfully: 0
 			};
 
@@ -803,9 +829,9 @@ var MonoSupportLib = {
 
 					try {
 						if (asset.name === attemptUrl) {
-							console.log ("Attempting to fetch", attemptUrl);
+							console.log ("Attempting to fetch '" + attemptUrl + "'");
 						} else {
-							console.log ("Attempting to fetch", attemptUrl, "for", asset.name);
+							console.log ("Attempting to fetch '" + attemptUrl + "' for ", asset.name);
 						}
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
@@ -832,15 +858,22 @@ var MonoSupportLib = {
 					console.log ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
 					invariantMode = true;
 				} else {
-					console.error ("MONO_WASM: ERROR: invariant globalization mode is inactive and no ICU data archives were loaded.");
+					var msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
+					console.error ("MONO_WASM: ERROR: " + msg);
+					throw new Error (msg);
 				}
 			}
 
-			this.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", invariantMode ? "1" : "0");
+			if (invariantMode)
+				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 		},
 
 		mono_wasm_get_loaded_files: function() {
-			throw new Error("not implemented");
+			throw new Error ("mono_wasm_get_loaded_files was replaced by mono_wasm_get_loaded_assets");
+		},
+
+		mono_wasm_get_loaded_asset_table: function() {
+			return MONO.loaded_assets;
 		},
 
 		mono_wasm_clear_all_breakpoints: function() {

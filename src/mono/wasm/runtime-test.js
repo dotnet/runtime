@@ -201,11 +201,14 @@ var Module = {
 			App.init ();
 		};
 		config.fetch_file_cb = function (asset) {
+			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
+			/*
 			var content = new Uint8Array (read (asset, 'binary'));
 			var path = asset.substr(config.deploy_prefix.length);
 			writeContentToFile(content, path);
+			*/
 
 			if (typeof window != 'undefined') {
 				return fetch (asset, { credentials: 'same-origin' });
