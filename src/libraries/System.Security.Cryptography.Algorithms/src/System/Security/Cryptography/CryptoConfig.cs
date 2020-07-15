@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -323,6 +324,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
             if (name == null)
@@ -443,6 +445,7 @@ namespace System.Security.Cryptography
             return retval;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);
