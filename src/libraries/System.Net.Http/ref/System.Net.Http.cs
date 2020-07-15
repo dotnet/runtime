@@ -230,8 +230,25 @@ namespace System.Net.Http
         public string Key { get { throw null; } }
     }
 
-    public sealed class HttpRequestOptions : System.Collections.Generic.Dictionary<string, object> 
-    { 
+    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>
+    {
+        public HttpRequestOptions() { }
+        public void Add(string key, object? value) { throw null; }
+        public bool ContainsKey(string key) { throw null; }
+        public System.Collections.Generic.ICollection<string> Keys { get { throw null; } }
+        public bool Remove(string key) { throw null; }
+        public bool TryGetValue(string key, out object? value) { throw null; }
+        public System.Collections.Generic.ICollection<object?> Values { get { throw null; } }
+        public object? this[string key] { get { throw null; } set { } }
+        public void Add(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public void Clear() { throw null; }
+        public bool Contains(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public void CopyTo(System.Collections.Generic.KeyValuePair<string, object?>[] array, int arrayIndex) { throw null; }
+        public int Count { get { throw null; } }
+        public bool IsReadOnly { get { throw null; } }
+        public bool Remove(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
     }
