@@ -7493,7 +7493,7 @@ inline bool GenTree::HasLastUse()
 //
 inline void GenTree::SetLastUse(int regIndex)
 {
-    unsigned int bitToSet = gtFlags |= GetLastUseBit(regIndex);
+    gtFlags |= GetLastUseBit(regIndex);
 }
 
 //-----------------------------------------------------------------------------------

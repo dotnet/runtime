@@ -1913,12 +1913,10 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
-		// This can happen on wasm !?
-		MonoException *thrown_exc = (MonoException*) mono_gchandle_get_target_internal (context->exc_gchandle);
-		if (exc)
-			*exc = (MonoObject*)thrown_exc;
-		else
-			mono_error_set_exception_instance (error, thrown_exc);
+		/*
+		 * This can happen on wasm where native frames cannot be skipped during EH.
+		 * EH processing will continue when control returns to the interpreter.
+		 */
 		return NULL;
 	}
 	return (MonoObject*)result.data.p;
@@ -2976,6 +2974,16 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			imethod->jit_entry = addr;
 			return addr;
 		}
+
+#ifdef ENABLE_NETCORE
+		/*
+		 * The runtime expects a function pointer unique to method and
+		 * the native caller expects a function pointer with the
+		 * right signature, so fail right away.
+		 */
+		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
+		return NULL;
+#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;

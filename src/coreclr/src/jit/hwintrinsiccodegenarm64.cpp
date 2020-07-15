@@ -718,6 +718,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_Arm64_StorePair:
+            case NI_AdvSimd_Arm64_StorePairNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, op2Reg, op3Reg, op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_StorePairScalar:
+            case NI_AdvSimd_Arm64_StorePairScalarNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
+                break;
+
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
                 if (intrin.op1->isContainedFltOrDblImmed())

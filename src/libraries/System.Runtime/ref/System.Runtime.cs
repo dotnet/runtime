@@ -4658,7 +4658,7 @@ namespace System
         [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual bool IsReservedCharacter(char character) { throw null; }
         public bool IsWellFormedOriginalString() { throw null; }
-        public static bool IsWellFormedUriString([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? uriString, System.UriKind uriKind) { throw null; }
+        public static bool IsWellFormedUriString([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, System.UriKind uriKind) { throw null; }
         [System.ObsoleteAttribute("The method has been deprecated. Please use MakeRelativeUri(Uri uri). https://go.microsoft.com/fwlink/?linkid=14202")]
         public string MakeRelative(System.Uri toUri) { throw null; }
         public System.Uri MakeRelativeUri(System.Uri uri) { throw null; }
@@ -5724,8 +5724,9 @@ namespace System.Diagnostics
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerTypeProxyAttribute : System.Attribute
     {
-        public DebuggerTypeProxyAttribute(string typeName) { }
-        public DebuggerTypeProxyAttribute(System.Type type) { }
+        public DebuggerTypeProxyAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string typeName) { }
+        public DebuggerTypeProxyAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string ProxyTypeName { get { throw null; } }
         public System.Type? Target { get { throw null; } set { } }
         public string? TargetTypeName { get { throw null; } set { } }

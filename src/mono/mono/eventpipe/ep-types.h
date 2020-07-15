@@ -177,7 +177,11 @@ typedef void (*EventPipeCallback)(
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
 	EventFilterDescriptor *filter_data,
-	void *callback_context);
+	void *callback_data);
+
+typedef void (*EventPipeCallbackDataFree)(
+	EventPipeCallback callback,
+	void *callback_data);
 
 /*
  * EventFilterDescriptor.

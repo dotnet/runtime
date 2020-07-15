@@ -7299,13 +7299,15 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    tree - The tree node under consideration
 //
 // Return Value:
-//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is an ADDR,
-//    whose arg in turn is a LCL_VAR, return that LCL_VAR node, else nullptr.
+//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
+//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
+//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
+//    - else nullptr.
 //
 // static
-GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
+GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 {
-    GenTree* res = nullptr;
+    GenTreeLclVar* res = nullptr;
     if (tree->OperIsIndir())
     {
         GenTree* addr = tree->AsIndir()->Addr();
@@ -7338,12 +7340,12 @@ GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
             GenTree* lclvar = addr->AsOp()->gtOp1;
             if (lclvar->OperGet() == GT_LCL_VAR)
             {
-                res = lclvar;
+                res = lclvar->AsLclVar();
             }
         }
         else if (addr->OperGet() == GT_LCL_VAR_ADDR)
         {
-            res = addr;
+            res = addr->AsLclVar();
         }
     }
     return res;
@@ -7458,7 +7460,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
         {
-            JITDUMP("\nmarking helper call [06%u] as special dce...\n", result->gtTreeID);
+            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
             result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
         }
     }

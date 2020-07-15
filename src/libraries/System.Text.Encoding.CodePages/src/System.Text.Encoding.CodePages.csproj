@@ -2,13 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
-    <PackageTargetFramework Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
@@ -72,6 +68,11 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
+    <Reference Include="System" />
   </ItemGroup>
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
   <PropertyGroup>
