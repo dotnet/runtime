@@ -2716,6 +2716,236 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Sqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>

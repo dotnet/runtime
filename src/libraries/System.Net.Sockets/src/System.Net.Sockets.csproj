@@ -14,6 +14,7 @@
     <!-- All configurations -->
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
+    <Compile Include="System\Net\Sockets\SocketsTelemetry.cs" />
     <Compile Include="System\Net\Sockets\SocketTaskExtensions.cs" />
     <Compile Include="System\Net\Sockets\IOControlCode.cs" />
     <Compile Include="System\Net\Sockets\IPPacketInformation.cs" />

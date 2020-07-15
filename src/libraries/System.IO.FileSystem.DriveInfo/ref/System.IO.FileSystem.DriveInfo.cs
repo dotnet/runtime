@@ -17,7 +17,7 @@ namespace System.IO
         public System.IO.DirectoryInfo RootDirectory { get { throw null; } }
         public long TotalFreeSpace { get { throw null; } }
         public long TotalSize { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string VolumeLabel { get { throw null; } set { } }
         public static System.IO.DriveInfo[] GetDrives() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }

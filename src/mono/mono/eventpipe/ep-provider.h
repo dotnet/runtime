@@ -32,8 +32,10 @@ struct _EventPipeProvider_Internal {
 	// List of every event currently associated with the provider.
 	// New events can be added on-the-fly.
 	ep_rt_event_list_t event_list;
-	// The optional provider callback.
+	// The optional provider callback function.
 	EventPipeCallback callback_func;
+	// The optional provider callback_data free callback function.
+	EventPipeCallbackDataFree callback_data_free_func;
 	// The optional provider callback data pointer.
 	void *callback_data;
 	// The configuration object.
@@ -96,6 +98,7 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data);
 
 void

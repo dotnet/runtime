@@ -49,7 +49,7 @@ namespace System.Data
     {
         internal Constraint() { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string ConstraintName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
@@ -110,32 +110,32 @@ namespace System.Data
         public long AutoIncrementSeed { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((long)1)]
         public long AutoIncrementStep { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Caption { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MappingType.Element)]
         public virtual System.Data.MappingType ColumnMapping { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string ColumnName { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataSetDateTime.UnspecifiedLocal)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public System.Data.DataSetDateTime DateTimeMode { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Expression { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(-1)]
         public int MaxLength { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Namespace { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int Ordinal { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Prefix { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ReadOnly { get { throw null; } set { } }
@@ -248,7 +248,7 @@ namespace System.Data
         public virtual System.Data.UniqueConstraint? ParentKeyConstraint { get { throw null; } }
         public virtual System.Data.DataTable ParentTable { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string RelationName { get { throw null; } set { } }
         protected void CheckStateForProperty() { }
         protected internal void OnPropertyChanging(System.ComponentModel.PropertyChangedEventArgs pcevent) { }
@@ -290,20 +290,20 @@ namespace System.Data
     {
         protected internal DataRow(System.Data.DataRowBuilder builder) { }
         public bool HasErrors { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[System.Data.DataColumn column] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[System.Data.DataColumn column, System.Data.DataRowVersion version] { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[int columnIndex] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[int columnIndex, System.Data.DataRowVersion version] { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[string columnName] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[string columnName, System.Data.DataRowVersion version] { get { throw null; } }
         public object?[] ItemArray { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string RowError { get { throw null; } set { } }
         public System.Data.DataRowState RowState { get { throw null; } }
         public System.Data.DataTable Table { get { throw null; } }
@@ -403,21 +403,21 @@ namespace System.Data
     }
     public static partial class DataRowExtensions
     {
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
-        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, [System.Diagnostics.CodeAnalysis.AllowNull] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, [System.Diagnostics.CodeAnalysis.AllowNull] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, string columnName, [System.Diagnostics.CodeAnalysis.AllowNull] T value) { }
+        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
+        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
+        public static void SetField<T>(this System.Data.DataRow row, string columnName, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
     }
     [System.FlagsAttribute]
     public enum DataRowState
@@ -441,9 +441,9 @@ namespace System.Data
         public System.Data.DataView DataView { get { throw null; } }
         public bool IsEdit { get { throw null; } }
         public bool IsNew { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[int ndx] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[string property] { get { throw null; } set { } }
         public System.Data.DataRow Row { get { throw null; } }
         public System.Data.DataRowVersion RowVersion { get { throw null; } }
@@ -502,10 +502,10 @@ namespace System.Data
         public bool IsInitialized { get { throw null; } }
         public System.Globalization.CultureInfo Locale { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Namespace { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Prefix { get { throw null; } set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.DataRelationCollection Relations { get { throw null; } }
@@ -645,7 +645,7 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataView DefaultView { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DisplayExpression { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
@@ -661,7 +661,7 @@ namespace System.Data
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Data.DataRelationCollection ParentRelations { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Prefix { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.SerializationFormat.Xml)]
         public System.Data.SerializationFormat RemotingFormat { get { throw null; } set { } }
@@ -675,7 +675,7 @@ namespace System.Data
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string TableName { get { throw null; } set { } }
         public event System.Data.DataColumnChangeEventHandler? ColumnChanged { add { } remove { } }
         public event System.Data.DataColumnChangeEventHandler? ColumnChanging { add { } remove { } }
@@ -970,7 +970,7 @@ namespace System.Data
         public DataViewManager() { }
         public DataViewManager(System.Data.DataSet? dataSet) { }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Data.DataSet? DataSet { get { throw null; } set { } }
         public string DataViewSettingCollectionString { get { throw null; } set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
@@ -1036,10 +1036,10 @@ namespace System.Data
         public bool ApplyDefaultSort { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataViewManager? DataViewManager { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string RowFilter { get { throw null; } set { } }
         public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Sort { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataTable? Table { get { throw null; } }
@@ -1054,7 +1054,7 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsSynchronized { get { throw null; } }
         public virtual System.Data.DataViewSetting this[System.Data.DataTable table] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.MaybeNull]
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public virtual System.Data.DataViewSetting this[int index] { get { throw null; } set { } }
         public virtual System.Data.DataViewSetting? this[string tableName] { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -1069,7 +1069,7 @@ namespace System.Data
         public DBConcurrencyException(string? message) { }
         public DBConcurrencyException(string? message, System.Exception? inner) { }
         public DBConcurrencyException(string? message, System.Exception? inner, System.Data.DataRow[]? dataRows) { }
-        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Data.DataRow? Row { get { throw null; } set { } }
         public int RowCount { get { throw null; } }
         public void CopyToRows(System.Data.DataRow[] array) { }
@@ -1218,9 +1218,9 @@ namespace System.Data
         System.Data.DbType DbType { get; set; }
         System.Data.ParameterDirection Direction { get; set; }
         bool IsNullable { get; }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         string ParameterName { get; set; }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         string SourceColumn { get; set; }
         System.Data.DataRowVersion SourceVersion { get; set; }
         object? Value { get; set; }
@@ -1272,7 +1272,7 @@ namespace System.Data
     }
     public partial interface IDbCommand : System.IDisposable
     {
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         string CommandText { get; set; }
         int CommandTimeout { get; set; }
         System.Data.CommandType CommandType { get; set; }
@@ -1290,7 +1290,7 @@ namespace System.Data
     }
     public partial interface IDbConnection : System.IDisposable
     {
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         string ConnectionString { get; set; }
         int ConnectionTimeout { get; }
         string Database { get; }
@@ -1560,7 +1560,7 @@ namespace System.Data
     public static partial class TypedTableBaseExtensions
     {
         public static System.Data.EnumerableRowCollection<TRow> AsEnumerable<TRow>(this System.Data.TypedTableBase<TRow> source) where TRow : System.Data.DataRow { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static TRow ElementAtOrDefault<TRow>(this System.Data.TypedTableBase<TRow> source, int index) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector, System.Collections.Generic.IComparer<TKey> comparer) where TRow : System.Data.DataRow { throw null; }
@@ -1694,10 +1694,10 @@ namespace System.Data.Common
         public DataColumnMapping() { }
         public DataColumnMapping(string? sourceColumn, string? dataSetColumn) { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataSetColumn { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SourceColumn { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
@@ -1759,10 +1759,10 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.Common.DataColumnMappingCollection ColumnMappings { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataSetTable { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SourceTable { get { throw null; } set { } }
         System.Data.IColumnMappingCollection System.Data.ITableMapping.ColumnMappings { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1851,7 +1851,7 @@ namespace System.Data.Common
         protected DbCommand() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public abstract string CommandText { get; set; }
         public abstract int CommandTimeout { get; set; }
         [System.ComponentModel.DefaultValueAttribute(System.Data.CommandType.Text)]
@@ -1911,7 +1911,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(System.Data.Common.CatalogLocation.Start)]
         public virtual System.Data.Common.CatalogLocation CatalogLocation { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(".")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string CatalogSeparator { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.ConflictOption.CompareAllSearchableValues)]
         public virtual System.Data.ConflictOption ConflictOption { get { throw null; } set { } }
@@ -1919,13 +1919,13 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Data.Common.DbDataAdapter? DataAdapter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string QuotePrefix { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string QuoteSuffix { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(".")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string SchemaSeparator { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool SetAllValues { get { throw null; } set { } }
@@ -1955,7 +1955,7 @@ namespace System.Data.Common
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public abstract string ConnectionString { get; set; }
         public virtual int ConnectionTimeout { get { throw null; } }
         public abstract string Database { get; }
@@ -2004,7 +2004,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool BrowsableConnectionString { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string ConnectionString { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public virtual int Count { get { throw null; } }
@@ -2013,7 +2013,7 @@ namespace System.Data.Common
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual object this[string keyword] { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public virtual System.Collections.ICollection Keys { get { throw null; } }
@@ -2051,7 +2051,7 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
         public override string ToString() { throw null; }
-        public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
+        public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
     public abstract partial class DbDataAdapter : System.Data.Common.DataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
@@ -2322,13 +2322,13 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract bool IsNullable { get; set; }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public abstract string ParameterName { get; set; }
         public virtual byte Precision { get { throw null; } set { } }
         public virtual byte Scale { get { throw null; } set { } }
         public abstract int Size { get; set; }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public abstract string SourceColumn { get; set; }
         [System.ComponentModel.DefaultValueAttribute(false)]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -2404,7 +2404,7 @@ namespace System.Data.Common
         public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
         public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
         public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
-        public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
+        public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
         public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
     public abstract partial class DbProviderFactory

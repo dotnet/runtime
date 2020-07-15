@@ -129,6 +129,11 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+    
+    # Temporary workaround to: https://github.com/dotnet/runtime/issues/39238
+    - subset: testsproj
+      include:
+      - src/libraries/tests.proj
 
 #
 # Build CoreCLR checked
@@ -311,20 +316,33 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: testsProjContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        # update once: https://github.com/dotnet/runtime/issues/39238 is fixed
+        condition: >-
+          or(
+          eq(variables['testsProjContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #

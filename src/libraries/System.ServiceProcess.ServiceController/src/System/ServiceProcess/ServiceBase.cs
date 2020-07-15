@@ -305,6 +305,8 @@ namespace System.ServiceProcess
         /// <devdoc>
         ///    <para>Disposes of the resources (other than memory ) used by
         ///       the <see cref='System.ServiceProcess.ServiceBase'/>.</para>
+        ///    This is called from <see cref="Run(ServiceBase[])"/> when all
+        ///    services in the process have entered the SERVICE_STOPPED state.
         /// </devdoc>
         protected override void Dispose(bool disposing)
         {

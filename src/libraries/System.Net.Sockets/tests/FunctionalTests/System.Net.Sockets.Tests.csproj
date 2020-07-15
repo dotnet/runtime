@@ -39,6 +39,7 @@
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
     <Compile Include="TcpListenerTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="TimeoutTest.cs" />
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
