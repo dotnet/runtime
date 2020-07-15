@@ -59,8 +59,9 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedFormattedString, d.ToString("HH:mm:ss", dtfi));
         }
 
+        [Theory]
         // Browser's ICU doesn't support NativeCalendarName
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
         public void NativeCalendarName_Get_ReturnsExpected(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {

@@ -13,8 +13,15 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, CalendarWeekRule.FirstDay };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, CalendarWeekRule.FirstDay };
 
-            if (PlatformDetection.IsNotBrowser) // "br-FR" is not presented in Browser's ICU
+            if (PlatformDetection.IsNotBrowser)
+            {
                 yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
+            }
+            else
+            {
+                // "br-FR" is not presented in Browser's ICU. Let's test ru-RU instead.
+                yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
+            }
         }
 
         [Theory]

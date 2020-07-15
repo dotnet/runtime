@@ -12,11 +12,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
             yield return new object[] { "en-US", "English (United States)" };
-            if (PlatformDetection.IsNotBrowser)
-            {
-                // Browser's ICU doesn't contain en-CA locale
-                yield return new object[] { "en-CA", "English (Canada)" };
-            }
+            yield return new object[] { "en-CA", "English (Canada)" };
         }
 
         [Theory]
