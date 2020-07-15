@@ -48,7 +48,8 @@ namespace System.Net.Http
         private int _freeStreamSlots;
         private long _freeStreamSlotsExpiration;
         private const int SlotExpirationPeriod = 1000;
-        // _maxConcurrentStreams == 0 in the beginning because SETTINGS frame is sent asynchronously, so allow requests under the most commont stream limit to proceed.
+        // _maxConcurrentStreams == int.MaxValue in the beginning because SETTINGS frame is sent asynchronously, but we want to avoid too much retries,
+        // thus allow requests under the most commont stream limit to proceed.
         // Once SETTINGS is received, _freeStreamSlots will be set to the actual value and requests above the limit will be retried.
         // It takes an effect only if multiple HTTP/2 connections is enabled on the pool.
         private const int InitialSlotsLimit = 100;
@@ -142,13 +143,14 @@ namespace System.Net.Http
                 if (currentSlots == 0)
                 {
                     long currentExpiration = Interlocked.Read(ref _freeStreamSlotsExpiration);
-                    if (currentExpiration > Environment.TickCount64)
+                    long tickCount = Environment.TickCount64;
+                    if (currentExpiration > tickCount)
                     {
                         // No empty slots and it's too soon to request the latest value from the credit manager.
                         return false;
                     }
 
-                    Interlocked.Exchange(ref _freeStreamSlotsExpiration, Environment.TickCount64 + SlotExpirationPeriod);
+                    Interlocked.Exchange(ref _freeStreamSlotsExpiration, tickCount + SlotExpirationPeriod);
 
                     int refreshedSlots = _concurrentStreams.Current;
                     if (refreshedSlots == 0)
@@ -666,10 +668,12 @@ namespace System.Net.Http
             if (_expectingSettingsAck)
             {
                 Volatile.Write(ref _freeStreamSlots, effectiveValue);
+                _pool.StreamSlotAvailable(effectiveValue);
             }
             else
             {
                 Interlocked.Add(ref _freeStreamSlots, delta);
+                _pool.StreamSlotAvailable(delta);
             }
             _concurrentStreams.AdjustCredit(delta);
         }
@@ -1381,7 +1385,7 @@ namespace System.Net.Http
             {
                 ReleaseStreamSlot();
                 _concurrentStreams.AdjustCredit(1);
-                _pool.StreamSlotAvailable();
+                _pool.StreamSlotAvailable(1);
                 throw;
             }
             finally
@@ -1868,7 +1872,7 @@ namespace System.Net.Http
 
             ReleaseStreamSlot();
             _concurrentStreams.AdjustCredit(1);
-            _pool.StreamSlotAvailable();
+            _pool.StreamSlotAvailable(1);
         }
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes

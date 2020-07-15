@@ -2014,6 +2014,77 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsEnabled_MaxConcurrentStreamsIncreasedAfterLimitIsReached_WaitingRequestsUnblocked()
+        {
+            const int MaxConcurrentStreams = 2;
+            const int TotalRequestCount = 10;
+            CancellationTokenSource cts = new CancellationTokenSource();
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            using SocketsHttpHandler handler = CreateHandler(2);
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                server.AllowMultipleConnections = true;
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                Http2LoopbackConnection[] connections = new[] {
+                    await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams),
+                    await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams)
+                };
+
+                Task<List<int>>[] acceptTasks = new[] { AcceptRequests(connections[0]), AcceptRequests(connections[1])};
+
+                await Task.WhenAll(acceptTasks);
+
+                List<int>[] acceptedStreams = new[] { acceptTasks[0].Result, acceptTasks[1].Result };
+                int acceptedStreamCount = acceptedStreams.Sum(l => l.Count);
+                Assert.Equal(MaxConcurrentStreams * 2, acceptedStreamCount);
+
+                int warmUpRequestCount = sendTasks.Count;
+                for (int i = 0; i < TotalRequestCount - warmUpRequestCount; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                uint sufficentStreamsOnConnection0 = TotalRequestCount - MaxConcurrentStreams;
+
+                await connections[0].WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = sufficentStreamsOnConnection0 })).ConfigureAwait(false);
+                await connections[0].ExpectSettingsAckAsync();
+
+                List<int> remainingStreams = await AcceptRequests(connections[0]);
+
+                Assert.Equal(TotalRequestCount, acceptedStreamCount + remainingStreams.Count);
+
+                await SendResponses(connections[0], acceptedStreams[0].Concat(remainingStreams));
+                await SendResponses(connections[1], acceptedStreams[1]);
+
+                await VerifySendTasks(sendTasks);
+            }
+
+            async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection)
+            {
+                List<int> streamIds = new List<int>();
+                while (true)
+                {
+                    try
+                    {
+                        streamIds.Add(await connection.ReadRequestHeaderAsync());
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return streamIds;
+                    }
+                }
+            }
+
+            async Task SendResponses(Http2LoopbackConnection connection, IEnumerable<int> streamIds)
+            {
+                foreach (int streamId in streamIds)
+                {
+                    await connection.SendDefaultResponseAsync(streamId);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_AllRemaningRequestsHandledBySecondConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2166,10 +2237,10 @@ namespace System.Net.Http.Functional.Tests
             return connection;
         }
 
-        private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int TotalRequestCount)
+        private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
             int streamId = -1;
-            for (int i = 0; i < TotalRequestCount; i++)
+            for (int i = 0; i < totalRequestCount; i++)
             {
                 try
                 {
@@ -2184,7 +2255,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
-            return (TotalRequestCount, streamId);
+            return (totalRequestCount, streamId);
         }
     }
 

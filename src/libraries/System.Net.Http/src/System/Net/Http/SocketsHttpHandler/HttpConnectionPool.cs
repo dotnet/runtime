@@ -69,8 +69,9 @@ namespace System.Net.Http
         // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
         // It's declared volatile to ensure read operations consistency outside locks.
         private volatile Http2Connection[]? _http2Connections;
-        private SemaphoreSlim? _freeStreamSlots;
+        private volatile SemaphoreSlim? _releasedStreamSlots;
         private int _waitingRequestCount;
+        private volatile bool _connectionReleasedStreamSlot;
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
@@ -678,12 +679,13 @@ namespace System.Net.Http
             return null;
         }
 
-        private async Task<Http2Connection?> GetHttp2ConnectionAcceptingNewStreams()
+        private async ValueTask<Http2Connection?> GetHttp2ConnectionAcceptingNewStreams()
         {
             if (!_poolManager.Settings.EnableMultipleHttp2Connections)
             {
                 // Fast shortcut for the most common case.
                 Http2Connection[]? localConnections = _http2Connections;
+                Debug.Assert(localConnections is null || localConnections.Length > 0);
                 return localConnections != null && IsAlive(localConnections[0]) ? localConnections[0] : null;
             }
 
@@ -716,18 +718,27 @@ namespace System.Net.Http
 
                 // Connection maximum is reached. Wait for a free slot on any existing connection.
 
-                SemaphoreSlim? localfreeConnections;
+                SemaphoreSlim? localReleasedStreamSlots;
                 lock (SyncObj)
                 {
-                    _waitingRequestCount++;
-                    if (_freeStreamSlots == null)
+                    if (_connectionReleasedStreamSlot)
                     {
-                        _freeStreamSlots = new SemaphoreSlim(0);
+                        _connectionReleasedStreamSlot = false;
+                        // Connection released at least one stream slot while _freeStreamSlots was null.
+                        // There is no need to wait because those available slots can now be aquired via a regular routine above.
+                        continue;
                     }
-                    localfreeConnections = _freeStreamSlots;
+
+                    _waitingRequestCount++;
+                    if (_releasedStreamSlots == null)
+                    {
+
+                        _releasedStreamSlots = new SemaphoreSlim(0);
+                    }
+                    localReleasedStreamSlots = _releasedStreamSlots;
                 }
 
-                await localfreeConnections.WaitAsync().ConfigureAwait(false);
+                await localReleasedStreamSlots.WaitAsync().ConfigureAwait(false);
 
                 lock (SyncObj)
                 {
@@ -735,7 +746,7 @@ namespace System.Net.Http
                     if (_waitingRequestCount == 0)
                     {
                         // No more waiting requests. Stop tracking available stream slots.
-                        _freeStreamSlots = null;
+                        _releasedStreamSlots = null;
                     }
                 }
             }
@@ -772,12 +783,26 @@ namespace System.Net.Http
             }
         }
 
-        public void StreamSlotAvailable()
+        public void StreamSlotAvailable(int count)
         {
-            if (EnableMultipleHttp2Connections)
+            // Decreasing stream slots doesn't have any effect on waiting requests.
+            if (EnableMultipleHttp2Connections && count > 0)
             {
-                SemaphoreSlim? localFreeConnections = Volatile.Read(ref _freeStreamSlots);
-                localFreeConnections?.Release();
+                if (!_connectionReleasedStreamSlot)
+                {
+                    lock (SyncObj)
+                    {
+                        // Signal there is at least one free slot.
+                        _connectionReleasedStreamSlot = true;
+                        // First slot is released under a lock to make sure that
+                        // waiting requests will either see _connectionReleasedStreamSlot == true or acquire a slot from _freeStreamSlots.
+                        _releasedStreamSlots?.Release(count);
+                    }
+                }
+                else
+                {
+                    _releasedStreamSlots?.Release(count);
+                }
             }
         }
 
@@ -1501,7 +1526,7 @@ namespace System.Net.Http
                     if (localHttp2Connections[0] == connection)
                     {
                         _http2Connections = null;
-                        _freeStreamSlots?.Release(int.MaxValue);
+                        _releasedStreamSlots?.Release(int.MaxValue);
                     }
                     return;
                 }
@@ -1524,7 +1549,7 @@ namespace System.Net.Http
 
                     _http2Connections = newHttp2Connections;
                     // Wake up all waiting requests to create a new connection that will handle them.
-                    _freeStreamSlots?.Release(int.MaxValue);
+                    _releasedStreamSlots?.Release(int.MaxValue);
                 }
             }
         }

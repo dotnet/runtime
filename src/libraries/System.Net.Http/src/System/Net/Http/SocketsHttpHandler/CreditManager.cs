@@ -160,6 +160,8 @@ namespace System.Net.Http
 
         private int TryRequestCreditNoLock(int amount)
         {
+            Debug.Assert(!Monitor.IsEntered(SyncObject), "Shouldn't be called outside lock.");
+
             if (_disposed)
             {
                 throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
