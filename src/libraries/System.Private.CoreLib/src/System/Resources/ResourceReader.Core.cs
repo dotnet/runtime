@@ -51,7 +51,14 @@ namespace System.Resources
 
             if (_binaryFormatter == null)
             {
-                InitializeBinaryFormatter();
+                if (!InitializeBinaryFormatter())
+                {
+                    // The linker trimmed away the BinaryFormatter implementation and we can't call into it.
+                    // We'll throw an exception with the same text that BinaryFormatter would have thrown
+                    // had we been able to call into it. Keep this resource string in sync with the same
+                    // resource from the Formatters assembly.
+                    throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+                }
             }
 
             Type type = FindType(typeIndex);
@@ -66,19 +73,10 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
-        private void InitializeBinaryFormatter()
+        private bool InitializeBinaryFormatter()
         {
-            // If BinaryFormatter support is hardcoded to disabled (e.g., wasm projects), early-exit now so
-            // that we don't run any of the reflection logic before. This also prevents the linker from seeing
-            // the GetType call below and keeping an unneeded reference to the Formatters assembly.
-            //
-            // Use a unique resource string so that we can provide a better error message in the case of
-            // "I tried to call into BinaryFormatter but was blocked." Keep this message text in sync with
-            // the same resource in the Formatters assembly.
-            if (!LocalAppContextSwitches.BinaryFormatterEnabled)
-            {
-                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
-            }
+            // If BinaryFormatter support is disabled for the app, the linker will replace this entire
+            // method body with "return false;", skipping all reflection code below.
 
             LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
@@ -96,6 +94,8 @@ namespace System.Resources
             });
 
             _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
+
+            return true; // initialization successful
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type
