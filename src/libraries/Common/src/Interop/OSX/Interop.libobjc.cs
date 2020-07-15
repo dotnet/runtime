@@ -69,19 +69,19 @@ internal static partial class Interop
 
         internal static void SetCreationOrModificationTimeOfFileInternal(string path, bool isModificationDate, DateTimeOffset time)
         {
-            NSDate = objc_getClass("NSDate");
-            NSDictionary = objc_getClass("NSDictionary");
-            NSFileManager = objc_getClass("NSFileManager");
-            NSString = objc_getClass("NSString");
-            alloc = sel_getUid("alloc");
-            initWithUTF8String_ = sel_getUid("initWithUTF8String:");
-            initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
-            dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
-            defaultManager = sel_getUid("defaultManager");
-            setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
-            release = sel_getUid("release");
-            NSFileCreationOrModificationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, isModificationDate ? "NSFileModificationDate" : "NSFileCreationDate");
-            DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
+            var NSDate = objc_getClass("NSDate");
+            var NSDictionary = objc_getClass("NSDictionary");
+            var NSFileManager = objc_getClass("NSFileManager");
+            var NSString = objc_getClass("NSString");
+            var alloc = sel_getUid("alloc");
+            var initWithUTF8String_ = sel_getUid("initWithUTF8String:");
+            var initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
+            var dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
+            var defaultManager = sel_getUid("defaultManager");
+            var setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
+            var release = sel_getUid("release");
+            var NSFileCreationOrModificationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, isModificationDate ? "NSFileModificationDate" : "NSFileCreationDate");
+            var DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
 
             var date = objc_msgSend(NSDate, alloc);
             date = objc_msgSend(date, initWithTimeIntervalSince1970_, (time - DateTimeOffset.UnixEpoch).TotalSeconds);
