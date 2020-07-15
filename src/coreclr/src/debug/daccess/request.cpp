@@ -530,7 +530,7 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
 
 DacpJitCodeHeapInfo ClrDataAccess::DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr)
 {
-    DacpJitCodeHeapInfo jitCodeHeapInfo = { 0 };
+    DacpJitCodeHeapInfo jitCodeHeapInfo;
 
     TADDR targetVtblPtrForHeapType = VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)heapAddr);
     if (targetVtblPtrForHeapType == LoaderCodeHeap::VPtrTargetVTable())
