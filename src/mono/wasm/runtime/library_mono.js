@@ -589,16 +589,19 @@ var MonoSupportLib = {
 			}
 		},
 
-		_handle_loaded_asset: function (ctx, asset, blob) {
+		_handle_loaded_asset: function (ctx, asset, url, blob) {
 			var bytes = new Uint8Array (blob);
-			console.log ("MONO_WASM: Loaded:", asset.name, bytes.length);
+			if (ctx.tracing)
+				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
+			else
+				console.log ("MONO_WASM: Loaded:", asset.name);
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
 
 			switch (asset.behavior) {
 				case "assembly":
-					ctx.loaded_files.push (virtualName);
+					ctx.loaded_files.push (url);
 				case "heap":
 				case "icu":
 					offset = this.mono_wasm_load_bytes_into_heap (bytes);
@@ -824,9 +827,9 @@ var MonoSupportLib = {
 				}
 			};
 
-			var processFetchResponseBuffer = function (asset, blob) {
+			var processFetchResponseBuffer = function (asset, url, blob) {
 				try {
-					MONO._handle_loaded_asset (ctx, asset, blob);
+					MONO._handle_loaded_asset (ctx, asset, url, blob);
 				} catch (exc) {
 					console.error ("Unhandled exception in processFetchResponseBuffer", exc);
 					throw exc;
@@ -853,7 +856,7 @@ var MonoSupportLib = {
 
 					try {
 						var bufferPromise = response ['arrayBuffer'] ();
-						bufferPromise.then (processFetchResponseBuffer.bind (this, asset));
+						bufferPromise.then (processFetchResponseBuffer.bind (this, asset, response.url));
 					} catch (exc) {
 						console.error ("MONO_WASM: Unhandled exception in handleFetchResponse for asset", asset.name, exc);
 						attemptNextSource ();
