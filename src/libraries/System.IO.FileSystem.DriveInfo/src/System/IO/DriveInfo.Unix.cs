@@ -111,6 +111,7 @@ namespace System.IO
             {
                 return Name;
             }
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 throw new PlatformNotSupportedException();

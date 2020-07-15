@@ -138,6 +138,7 @@ namespace System.IO
 
                 return new string(volumeName);
             }
+            [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
             set
             {
                 uint oldMode;
