@@ -960,8 +960,8 @@ namespace System.Text.Unicode
                                 }
 
                                 Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(utf16Data);
-                                Vector128<sbyte> source = AdvSimd.ExtractNarrowingSaturateUpper(lower, AdvSimd.LoadVector128((short*)pInputBuffer));
-                                AdvSimd.Store((ulong*)pOutputBuffer, source.AsUInt64());
+                                Vector128<sbyte> result = AdvSimd.ExtractNarrowingSaturateUpper(lower, utf16Data);
+                                AdvSimd.Store((ulong*)pOutputBuffer, result.AsUInt64());
                             }
                             else
                             {
