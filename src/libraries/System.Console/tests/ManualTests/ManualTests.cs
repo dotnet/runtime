@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.IO;
 using Xunit;
 
 namespace System
@@ -19,6 +20,26 @@ namespace System
             string expectedLine = $"This is a test of Console.{(consoleIn ? "In." : "")}ReadLine.";
             Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
             string result = consoleIn ? Console.In.ReadLine() : Console.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadLineFromOpenStandardInput()
+        {
+            string expectedLine = "aab";
+
+            // Use Console.ReadLine
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            string result = Console.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+
+            // ReadLine from Console.OpenStandardInput
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            using Stream inputStream = Console.OpenStandardInput();
+            using StreamReader reader = new StreamReader(inputStream);
+            result = reader.ReadLine();
             Assert.Equal(expectedLine, result);
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
         }
@@ -115,18 +136,6 @@ namespace System
                         shift: modifiers.HasFlag(ConsoleModifiers.Shift))
                 };
             }
-        }
-
-        [ConditionalFact(nameof(ManualTestsEnabled))]
-        public static void OpenStandardInput()
-        {
-            Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
-            var stream = Console.OpenStandardInput();
-            var textReader = new System.IO.StreamReader(stream);
-            var result = textReader.ReadLine();
-
-            Assert.Equal("console", result);
-            AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
