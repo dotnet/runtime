@@ -18,16 +18,11 @@ parameters:
 
   packageDistroList:
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
-    imageRid: ubuntu.14.04
-    rids: []
+    packageType: deb
+    packagingArgs: /p:BuildDebPackage=true
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
-    imageRid: rhel.7
-    rids:
-    - centos.7
-    - fedora.27
-    - opensuse.42
-    - oraclelinux.7
-    - sles.12
+    packageType: rpm
+    packagingArgs: /p:BuildRpmPackage=true
 
   isOfficialBuild: false
   useOfficialAllConfigurations: false
@@ -114,7 +109,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset installer -ci
+        build.cmd -subset corehost+newsfx+installer.pkgprojs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -132,7 +127,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(Build.SourcesDirectory)/build.sh -subset corehost+newsfx+installer.pkgprojs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -243,7 +238,7 @@ jobs:
         $(PreserveNuGetAuthDockerArgs)
 
     - name: installersSubsetArg
-      value: --subset Installers
+      value: --subset newsfx
 
     - name: BaseJobBuildCommand
       value: |
@@ -320,15 +315,6 @@ jobs:
     - name: LibrariesArtifactNameAllConfigurations
       value: libraries_bin_official_allconfigurations
 
-  # Download all upstream platforms and incorporate in the platform manifest.
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - name: AllArtifactsDownloadPath
-      value: 'artifacts/transport/AllArtifacts'
-    - name: AllArtifactsArgs
-      value: >-
-        /p:AllArtifactsDownloadPath=${{ parameters.buildCommandSourcesDirectory }}$(AllArtifactsDownloadPath)
-        /p:BuildFullPlatformManifest=true
-
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
@@ -348,10 +334,6 @@ jobs:
         parameters.liveLibrariesBuildConfig) }}
   - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
     - libraries_build_allconfigurations_Windows_NT_x64_Release
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - ${{ each platform in parameters.platforms }}:
-      - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 
@@ -402,23 +384,6 @@ jobs:
         $(runtimeFlavorName)Product_*/**
         libraries_bin_*/**
         !*Logs*
-
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - ${{ each platform in parameters.platforms }}:
-      - task: ExtractFiles@1
-        displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
-        inputs:
-          archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
-          cleanUnpackFolder: false
-      - task: ExtractFiles@1
-        displayName: 'Unzip Libraries artifacts: ${{ platform }}'
-        inputs:
-          archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
-          cleanUnpackFolder: false
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -483,17 +448,7 @@ jobs:
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
           subsetArg: $(installersSubsetArg)
-
-      - ${{ each rid in packageBuild.rids }}:
-        # Build distro-dependent packages.
-        - template: steps/build-linux-package.yml
-          parameters:
-            distroRid: ${{ rid }}
-            image: ${{ packageBuild.image }}
-            outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
-            packageStepDescription: Runtime Deps installers
-            packagingArgs: /p:BuildDistroIndependentInstallers=false
-            subsetArg: $(installersSubsetArg)
+          packagingArgs: ${{ packageBuild.packagingArgs }}
 
   - ${{ if ne(parameters.container, '') }}:
     # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
