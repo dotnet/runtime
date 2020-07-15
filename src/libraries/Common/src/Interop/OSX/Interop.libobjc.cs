@@ -69,9 +69,23 @@ internal static partial class Interop
 
         internal static void SetCreationOrModificationTimeOfFileInternal(string path, bool isModificationDate, DateTimeOffset time)
         {
+            NSDate = objc_getClass("NSDate");
+            NSDictionary = objc_getClass("NSDictionary");
+            NSFileManager = objc_getClass("NSFileManager");
+            NSString = objc_getClass("NSString");
+            alloc = sel_getUid("alloc");
+            initWithUTF8String_ = sel_getUid("initWithUTF8String:");
+            initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
+            dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
+            defaultManager = sel_getUid("defaultManager");
+            setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
+            release = sel_getUid("release");
+            NSFileCreationOrModificationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, isModificationDate ? "NSFileModificationDate" : "NSFileCreationDate");
+            DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
+
             var date = objc_msgSend(NSDate, alloc);
             date = objc_msgSend(date, initWithTimeIntervalSince1970_, (time - DateTimeOffset.UnixEpoch).TotalSeconds);
-            var fileAttributes = objc_msgSend(NSDictionary, dictionaryWithObject_forKey_, date, isModificationDate ? NSFileModificationDate : NSFileCreationDate);
+            var fileAttributes = objc_msgSend(NSDictionary, dictionaryWithObject_forKey_, date, NSFileCreationOrModificationDate);
             var native_filePath = objc_msgSend(NSString, alloc);
             native_filePath = objc_msgSend(native_filePath, initWithUTF8String_, path);
             try
@@ -87,22 +101,8 @@ internal static partial class Interop
                 objc_msgSend(date, release);
                 objc_msgSend(fileAttributes, release);
                 objc_msgSend(native_filePath, release);
+                objc_msgSend(NSFileCreationOrModificationDate, release);
             }
         }
-
-        private static IntPtr NSDate = objc_getClass("NSDate");
-        private static IntPtr NSDictionary = objc_getClass("NSDictionary");
-        private static IntPtr NSFileManager = objc_getClass("NSFileManager");
-        private static IntPtr NSString = objc_getClass("NSString");
-        private static IntPtr alloc = sel_getUid("alloc");
-        private static IntPtr initWithUTF8String_ = sel_getUid("initWithUTF8String:");
-        private static IntPtr initWithTimeIntervalSince1970_ = sel_getUid("initWithTimeIntervalSince1970:");
-        private static IntPtr dictionaryWithObject_forKey_ = sel_getUid("dictionaryWithObject:forKey:");
-        private static IntPtr defaultManager = sel_getUid("defaultManager");
-        private static IntPtr setAttributes_ofItemAtPath_error_ = sel_getUid("setAttributes:ofItemAtPath:error:");
-        private static IntPtr release = sel_getUid("release");
-        private static IntPtr NSFileCreationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, "NSFileCreationDate");
-        private static IntPtr NSFileModificationDate = objc_msgSend(objc_msgSend(NSString, alloc), initWithUTF8String_, "NSFileModificationDate");
-        private static IntPtr DefaultNSFileManager = objc_msgSend(NSFileManager, defaultManager);
     }
 }
