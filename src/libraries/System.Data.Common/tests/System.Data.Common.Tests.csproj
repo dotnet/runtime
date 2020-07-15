@@ -112,6 +112,7 @@
     <Compile Include="System\Data\VersionNotFoundException.cs" />
     <Compile Include="System\Data\XmlDataLoaderTest.cs" />
     <Compile Include="System\Data\XmlDataReaderTest.cs" />
+    <Compile Include="System\Data\RestrictedTypeHandlingTests.cs" />
     <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
