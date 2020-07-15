@@ -12,7 +12,9 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, CalendarWeekRule.FirstDay };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, CalendarWeekRule.FirstDay };
-            yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
+
+            if (PlatformDetection.IsNotBrowser) // "br-FR" is not presented in Browser's ICU
+                yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
         }
 
         [Theory]

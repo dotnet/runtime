@@ -27,8 +27,6 @@ namespace System.Globalization.Tests
         [InlineData("en-CA")]
         [InlineData("fa-IR")]
         [InlineData("fr-CD")]
-        [InlineData("as")]
-        [InlineData("es-BO")]
         [InlineData("fr-CA")]
         public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
         {
@@ -44,6 +42,14 @@ namespace System.Globalization.Tests
 
             NumberFormatInfo format = culture.NumberFormat;
             Assert.Contains(format.CurrencyNegativePattern, NumberFormatInfoData.GetCurrencyNegativePatterns(locale));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("as")] // Browser's ICU doesn't contain these locales
+        [InlineData("es-BO")]
+        public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale_NotBrowser(string locale)
+        {
+            CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(locale);
         }
 
         [Theory]

@@ -226,7 +226,15 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
             }
 
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            var locales = new List<string> { "tr", "tr-TR"};
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't contain these locales
+                locales.Add("az");
+                locales.Add("az-Latn-AZ");
+            }
+
+            foreach (string cultureName in locales)
             {
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
@@ -348,8 +356,16 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\u0149", "\u0149" };
             }
 
+            var locales = new List<string> { "tr", "tr-TR"};
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't contain these locales
+                locales.Add("az");
+                locales.Add("az-Latn-AZ");
+            }
+
             // Turkish i
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in locales)
             {
                 yield return new object[] { cultureName, "i", "\u0130" };
                 yield return new object[] { cultureName, "\u0130", "\u0130" };

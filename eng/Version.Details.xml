@@ -118,7 +118,7 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>629993236116221fba87fe1de6d7893dd02c3722</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20359.5">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20364.1">
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha />
     </Dependency>
