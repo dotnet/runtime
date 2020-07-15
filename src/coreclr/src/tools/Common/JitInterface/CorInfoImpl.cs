@@ -137,7 +137,7 @@ namespace Internal.JitInterface
 
         private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
 
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, out bool methodNoIL, MethodIL methodIL = null)
         {
             _isFallbackBodyCompilation = methodIL != null;
 
@@ -147,8 +147,10 @@ namespace Internal.JitInterface
             // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
             if (methodIL == null)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                methodNoIL = true;
+                return;
             }
+            methodNoIL = false;
 
             _methodScope = methodInfo.scope;
 
