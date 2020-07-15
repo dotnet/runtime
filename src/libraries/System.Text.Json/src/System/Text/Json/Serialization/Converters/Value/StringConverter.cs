@@ -14,7 +14,15 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value);
+            // For performance, lift up the writer implementation.
+            if (value == null)
+            {
+                writer.WriteNullValue();
+            }
+            else
+            {
+                writer.WriteStringValue(value.AsSpan());
+            }
         }
 
         internal override string ReadWithQuotes(ref Utf8JsonReader reader)
