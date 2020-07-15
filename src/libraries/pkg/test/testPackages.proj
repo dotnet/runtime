@@ -180,7 +180,7 @@
       <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(PackageOutputPath)</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(ArtifactsPackagesDir)</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
       <TestRestoreCommand  Condition="'$(TestPackages)' != ''">$(TestRestoreCommand) /p:TestPackages=$(TestPackages)</TestRestoreCommand>

@@ -2782,7 +2782,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
@@ -11089,7 +11089,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeIsFloating(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
             break;
 
         case GT_IL_OFFSET:
@@ -15348,7 +15348,7 @@ GenTree* Compiler::gtNewTempAssign(
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
-    if (varTypeIsFloating(dstTyp) && (compFloatingPointUsed == false))
+    if (varTypeUsesFloatReg(dstTyp) && (compFloatingPointUsed == false))
     {
         compFloatingPointUsed = true;
     }
@@ -19165,7 +19165,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType0));
+            noway_assert(varTypeUsesFloatReg(regType0));
             resultReg = REG_FLOATRET;
         }
     }
@@ -19186,9 +19186,9 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType1));
+            noway_assert(varTypeUsesFloatReg(regType1));
 
-            if (varTypeIsFloating(regType0))
+            if (varTypeUsesFloatReg(regType0))
             {
                 resultReg = REG_FLOATRET_1;
             }

@@ -11,9 +11,6 @@ namespace System.Runtime.Serialization
     {
         internal static AsyncLocal<bool> AsyncDeserializationInProgress { get; } = new AsyncLocal<bool>();
 
-        public static bool SerializationGuardEnabled
-            => LocalAppContextSwitches.SerializationGuard;
-
 #if !CORECLR
         // On AoT, assume private members are reflection blocked, so there's no further protection required
         // for the thread's DeserializationTracker
@@ -114,7 +111,7 @@ namespace System.Runtime.Serialization
 #endif
         public static DeserializationToken StartDeserialization()
         {
-            if (SerializationGuardEnabled)
+            if (LocalAppContextSwitches.SerializationGuard)
             {
 #if CORECLR
                 StackCrawlMark stackMark = StackCrawlMark.LookForMe;
