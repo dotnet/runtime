@@ -54,14 +54,25 @@ int32_t GlobalizationNative_LoadICU(void)
         ; // default ICU search path behavior will be used, see http://userguide.icu-project.org/icudata
 
     UErrorCode status = 0;
-    UVersionInfo version;
-    // Request the CLDR version to perform basic ICU initialization and find out
-    //  whether it worked.
-    ulocdata_getCLDRVersion(version, &status);
+    // FIXME: Recommended approach for checking data validity, but fails with:
+    // WASM-ERR: ICU call ulocdata_getCLDRVersion failed with error #2 'U_MISSING_RESOURCE_ERROR'.
+    if (0) {
+        UVersionInfo version;
+        // Request the CLDR version to perform basic ICU initialization and find out
+        //  whether it worked.
+        ulocdata_getCLDRVersion(version, &status);
 
-    if (U_FAILURE(status)) {
-        log_icu_error("ulocdata_getCLDRVersion", status);
-        return 0;
+        if (U_FAILURE(status)) {
+            log_icu_error("ulocdata_getCLDRVersion", status);
+            return 0;
+        }
+    } else {
+        u_init(&status);
+
+        if (U_FAILURE(status)) {
+            log_icu_error("u_init", status);
+            return 0;
+        }
     }
 
     return 1;
