@@ -239,7 +239,7 @@
 
   <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
   <Choose>
-    <When Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <When Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
       </ItemGroup>
