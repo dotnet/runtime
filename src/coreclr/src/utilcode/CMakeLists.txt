@@ -98,7 +98,7 @@ convert_to_absolute_path(UTILCODE_STATICNOHOST_SOURCES ${UTILCODE_STATICNOHOST_S
 
 add_library_clr(utilcode_dac STATIC ${UTILCODE_DAC_SOURCES})
 add_library_clr(utilcode_obj OBJECT ${UTILCODE_SOURCES})
-add_library_clr(utilcode INTERFACE)
+add_library(utilcode INTERFACE)
 target_sources(utilcode INTERFACE $<TARGET_OBJECTS:utilcode_obj>)
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 add_library_clr(utilcode_crossgen STATIC ${UTILCODE_CROSSGEN_SOURCES})

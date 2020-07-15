@@ -55,7 +55,7 @@ target_precompile_header(TARGET mdruntimerw_dac HEADER stdafx.h)
 add_library_clr(mdruntimerw_wks_obj OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdruntimerw_wks_obj HEADER stdafx.h)
-add_library_clr(mdruntimerw_wks INTERFACE)
+add_library(mdruntimerw_wks INTERFACE)
 target_sources(mdruntimerw_wks INTERFACE $<TARGET_OBJECTS:mdruntimerw_wks_obj>)
 
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})

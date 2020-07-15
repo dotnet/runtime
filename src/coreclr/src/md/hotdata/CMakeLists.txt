@@ -35,7 +35,7 @@ target_precompile_header(TARGET mdhotdata_dac HEADER external.h)
 
 add_library_clr(mdhotdata_full_obj OBJECT ${MDHOTDATA_SOURCES})
 target_precompile_header(TARGET mdhotdata_full_obj HEADER external.h)
-add_library_clr(mdhotdata_full INTERFACE)
+add_library(mdhotdata_full INTERFACE)
 target_sources(mdhotdata_full INTERFACE $<TARGET_OBJECTS:mdhotdata_full_obj>)
 
 add_library_clr(mdhotdata_crossgen ${MDHOTDATA_SOURCES})

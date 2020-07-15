@@ -52,7 +52,7 @@ target_precompile_header(TARGET mdruntime_dac HEADER stdafx.h)
 add_library_clr(mdruntime_wks_obj OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdruntime_wks_obj HEADER stdafx.h)
-add_library_clr(mdruntime_wks INTERFACE)
+add_library(mdruntime_wks INTERFACE)
 target_sources(mdruntime_wks INTERFACE $<TARGET_OBJECTS:mdruntime_wks_obj>)
 
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})

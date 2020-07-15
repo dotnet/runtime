@@ -39,5 +39,5 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 target_precompile_header(TARGET cordbee_wks_obj HEADER stdafx.h)
 add_dependencies(cordbee_wks_obj eventing_headers)
-add_library_clr(cordbee_wks INTERFACE)
+add_library(cordbee_wks INTERFACE)
 target_sources(cordbee_wks INTERFACE $<TARGET_OBJECTS:cordbee_wks_obj>)

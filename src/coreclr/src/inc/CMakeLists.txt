@@ -59,7 +59,7 @@ endif(FEATURE_JIT_PITCHING)
 
 # Compile *_i.cpp to lib
 _add_library(corguids_obj OBJECT ${CORGUIDS_SOURCES})
-_add_library(corguids INTERFACE)
+add_library(corguids INTERFACE)
 target_sources(corguids INTERFACE $<TARGET_OBJECTS:corguids_obj>)
 
 # Binplace the inc files for packaging later.

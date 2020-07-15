@@ -22,7 +22,7 @@ convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})
 if(CLR_CMAKE_HOST_UNIX)
     add_library_clr(unwinder_wks_obj OBJECT ${UNWINDER_SOURCES})
     add_dependencies(unwinder_wks_obj eventing_headers)
-    add_library_clr(unwinder_wks INTERFACE)
+    add_library(unwinder_wks INTERFACE)
     target_sources(unwinder_wks INTERFACE $<TARGET_OBJECTS:unwinder_wks_obj>)
 endif(CLR_CMAKE_HOST_UNIX)
 

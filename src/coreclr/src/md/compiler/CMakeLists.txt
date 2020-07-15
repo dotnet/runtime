@@ -71,7 +71,7 @@ target_precompile_header(TARGET mdcompiler_dac HEADER stdafx.h)
 add_library_clr(mdcompiler_wks_obj OBJECT ${MDCOMPILER_WKS_SOURCES})
 target_compile_definitions(mdcompiler_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_header(TARGET mdcompiler_wks_obj HEADER stdafx.h)
-add_library_clr(mdcompiler_wks INTERFACE)
+add_library(mdcompiler_wks INTERFACE)
 target_sources(mdcompiler_wks INTERFACE $<TARGET_OBJECTS:mdcompiler_wks_obj>)
 
 add_library_clr(mdcompiler-dbi ${MDCOMPILER_SOURCES})

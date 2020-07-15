@@ -31,7 +31,7 @@ add_custom_command(OUTPUT ${EVENTPIPE_SOURCES}
 add_library_clr(eventpipe_obj OBJECT ${EVENTPIPE_SOURCES})
 set_target_properties(eventpipe_obj PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_obj eventing_headers)
-add_library_clr(eventpipe INTERFACE)
+add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)
 
 if (NOT CLR_CMAKE_TARGET_WIN32)
