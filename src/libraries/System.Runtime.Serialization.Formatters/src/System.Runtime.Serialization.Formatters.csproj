@@ -5,6 +5,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- On certain runtimes BinaryFormatter isn't supported at all. -->
+    <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);BINARYFORMATTER_PNSE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />

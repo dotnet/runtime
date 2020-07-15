@@ -14,6 +14,7 @@ namespace System.Collections.Tests
     {
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable expected = NonGenericIEnumerableFactory(count);

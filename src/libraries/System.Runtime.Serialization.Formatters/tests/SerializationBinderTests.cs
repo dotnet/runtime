@@ -23,6 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
         public void BindToType_AllValuesTracked()
         {
             var s = new MemoryStream();

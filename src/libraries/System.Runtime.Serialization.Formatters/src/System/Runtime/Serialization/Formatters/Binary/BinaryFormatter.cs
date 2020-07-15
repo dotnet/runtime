@@ -38,10 +38,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public object Deserialize(Stream serializationStream)
         {
-            // don't refactor this check out into a helper method; linker will have difficulty pruning
+            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
             if (!SerializationInfo.BinaryFormatterEnabled)
             {
-                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+                throw CreateBinaryFormatterDisallowedException();
             }
 
             if (serializationStream == null)
@@ -82,10 +82,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Serialize(Stream serializationStream, object graph)
         {
-            // don't refactor this check out into a helper method; linker will have difficulty pruning
+            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
             if (!SerializationInfo.BinaryFormatterEnabled)
             {
-                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+                throw CreateBinaryFormatterDisallowedException();
             }
 
             if (serializationStream == null)
@@ -112,5 +112,19 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 string assemblyName = FormatterServices.GetClrAssemblyName(t, out bool hasTypeForwardedFrom);
                 return new TypeInformation(FormatterServices.GetClrTypeFullName(t), assemblyName, hasTypeForwardedFrom);
             });
+
+        private static Exception CreateBinaryFormatterDisallowedException()
+        {
+            // If we're in an environment where BinaryFormatter never has a
+            // chance of succeeding, use PNSE. Otherwise use regular NSE.
+
+            string message = SR.BinaryFormatter_SerializationDisallowed;
+
+#if BINARYFORMATTER_PNSE
+            throw new PlatformNotSupportedException(message);
+#else
+            throw new NotSupportedException(message);
+#endif
+        }
     }
 }

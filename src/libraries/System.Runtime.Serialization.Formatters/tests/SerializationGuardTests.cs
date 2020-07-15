@@ -13,6 +13,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
     public static class SerializationGuardTests
     {
         [Fact]

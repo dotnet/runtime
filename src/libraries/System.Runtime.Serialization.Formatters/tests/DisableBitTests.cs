@@ -24,12 +24,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             MemoryStream ms = new MemoryStream();
             BinaryFormatter bf = new BinaryFormatter();
-            var ex = Assert.Throws<NotSupportedException>(() => bf.Serialize(ms, "A string to serialize."));
+            var ex = Assert.Throws<PlatformNotSupportedException>(() => bf.Serialize(ms, "A string to serialize."));
             Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
 
             // Then test deserialization
 
-            ex = Assert.Throws<NotSupportedException>(() => bf.Deserialize(ms));
+            ex = Assert.Throws<PlatformNotSupportedException>(() => bf.Deserialize(ms));
             Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
         }
 

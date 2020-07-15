@@ -401,6 +401,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // BinaryFormatter not supported in browser
         public void ComparerSerialization()
         {
             // Strings switch between randomized and non-randomized comparers,
