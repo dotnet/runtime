@@ -6530,8 +6530,11 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-    return false;
-#if 0 // the optimization is temporary disabled due to https://github.com/dotnet/wpf/issues/3226 issue.
+    if (comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
@@ -6575,6 +6578,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 
@@ -6597,7 +6601,10 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         blkNode->SetData(src);
         BlockRange().Remove(initVal);
     }
+    else
+    {
+        assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
+    }
     LowerStoreIndirCommon(blkNode);
     return true;
-#endif
 }
