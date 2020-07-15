@@ -4,6 +4,15 @@
 ##
 
 #!/usr/bin/env python3
+#
+# This is a tool to generate the bitonic sorter code that is used for small arrays.
+#
+# usage: bitonic_gen.py [-h] [--vector-isa VECTOR_ISA [VECTOR_ISA ...]]
+#                     [--break-inline BREAK_INLINE] [--output-dir OUTPUT_DIR]
+#
+# the files in src/coreclr/src/gc/vxsort/smallsort checked in can be generated with:
+#   python bitonic_gen.py --output-dir c:\temp --vector-isa AVX2 AVX512
+#
 import argparse
 import os
 from enum import Enum

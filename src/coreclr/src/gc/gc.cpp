@@ -2084,58 +2084,9 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 #ifdef USE_INTROSORT
 #define _sort introsort::sort
 #elif defined(USE_VXSORT)
-#define _sort do_vxsort
-#ifdef USE_VXSORT
-
-// above this threshold, using AVX2 for sorting will likely pay off
-// despite possible downclocking on some devices
-const size_t AVX2_THRESHOLD_SIZE = 8 * 1024;
-
-// above this threshold, using AVX51F for sorting will likely pay off
-// despite possible downclocking on current devices
-const size_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
-
-void do_vxsort (uint8_t** low, uint8_t** high, unsigned int depth)
-{
-    assert (IsSupportedInstructionSet (InstructionSet::AVX2));
-    // use AVX512F only if the list is large enough to pay for downclocking impact
-    if (IsSupportedInstructionSet (InstructionSet::AVX512F) && ((high -low) > AVX512F_THRESHOLD_SIZE))
-    {
-        do_vxsort_avx512 (low, high);
-    }
-    else
-    {
-        do_vxsort_avx2 (low, high);
-    }
-#ifdef _DEBUG
-    for (uint8_t** p = low; p < high; p++)
-    {
-        assert (p[0] <= p[1]);
-    }
-#endif
-}
-
-void do_vxsort (int32_t* low, int32_t* high, unsigned int depth)
-{
-    assert (IsSupportedInstructionSet(InstructionSet::AVX2));
-    // use AVX512F only if the list is large enough to pay for downclocking impact
-    if (IsSupportedInstructionSet (InstructionSet::AVX512F) && ((high - low) > AVX512F_THRESHOLD_SIZE))
-    {
-        do_vxsort_avx512 (low, high);
-    }
-    else
-    {
-        do_vxsort_avx2 (low, high);
-    }
-#ifdef _DEBUG
-    for (int32_t* p = low; p < high; p++)
-    {
-        assert (p[0] <= p[1]);
-    }
-#endif
-}
-#endif //USE_VXSORT
-
+// in this case we have do_vxsort which takes an additional range that
+// all items to be sorted are contained in
+// so do not #define _sort
 #else //USE_INTROSORT
 #define _sort qsort1
 void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
@@ -8308,7 +8259,81 @@ private:
 
 };
 
-#endif //USE_INTROSORT
+#endif //defined(USE_INTROSORT) || defined(USE_VXSORT)
+
+#ifdef USE_VXSORT
+static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, uint8_t* range_high)
+{
+    // above this threshold, using AVX2 for sorting will likely pay off
+    // despite possible downclocking on some devices
+    const size_t AVX2_THRESHOLD_SIZE = 8 * 1024;
+
+    // above this threshold, using AVX51F for sorting will likely pay off
+    // despite possible downclocking on current devices
+    const size_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
+
+    if (item_count <= 1)
+        return;
+
+    if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
+    {
+        // is the range small enough for a 32-bit sort?
+        // the 32-bit sort is almost twice as fast
+        ptrdiff_t range = range_high - range_low;
+        assert(sizeof(uint8_t*) == (1 << 3));
+        ptrdiff_t scaled_range = range >> 3;
+        if ((uint32_t)scaled_range == scaled_range)
+        {
+            dprintf (3, ("Sorting mark lists as 32-bit offsets"));
+
+            do_pack_avx2 (item_array, item_count, range_low);
+
+            int32_t* item_array_32 = (int32_t*)item_array;
+
+            // use AVX512F only if the list is large enough to pay for downclocking impact
+            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
+            {
+                do_vxsort_avx512 (item_array_32, &item_array_32[item_count - 1]);
+            }
+            else
+            {
+                do_vxsort_avx2 (item_array_32, &item_array_32[item_count - 1]);
+            }
+
+            do_unpack_avx2 (item_array_32, item_count, range_low);
+        }
+        else
+        {
+            dprintf(3, ("Sorting mark lists"));
+
+            // use AVX512F only if the list is large enough to pay for downclocking impact
+            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
+            {
+                do_vxsort_avx512 (item_array, &item_array[item_count - 1]);
+            }
+            else
+            {
+                do_vxsort_avx2 (item_array, &item_array[item_count - 1]);
+            }
+        }
+    }
+    else
+    {
+        dprintf (3, ("Sorting mark lists"));
+        introsort::sort (item_array, &item_array[item_count - 1], 0);
+    }
+#ifdef _DEBUG
+    // check the array is sorted
+    for (ptrdiff_t i = 0; i < item_count - 1; i++)
+    {
+        assert (item_array[i] <= item_array[i + 1]);
+    }
+    // check that the ends of the array are indeed in range
+    // together with the above this implies all elements are in range
+    assert ((range_low <= item_array[0]) && (item_array[item_count - 1] <= range_high));
+#endif
+}
+#endif //USE_VXSORT
 
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
@@ -8368,7 +8393,7 @@ void gc_heap::sort_mark_list()
     }
 
     // give up if this is not an ephemeral GC or the mark list size is unreasonably large
-    if (total_mark_list_size > total_ephemeral_size/256)
+    if (total_mark_list_size > (total_ephemeral_size / 256))
     {
         mark_list_index = mark_list_end + 1;
         // let's not count this as a mark list overflow
@@ -8378,116 +8403,72 @@ void gc_heap::sort_mark_list()
 
 #ifdef USE_VXSORT
     ptrdiff_t item_count = mark_list_index - mark_list;
-    // conservatively use AVX2 only for large mark lists,
-    // and do runtime test to check whether AVX2 is indeed available 
-    if (item_count > AVX2_THRESHOLD_SIZE && IsSupportedInstructionSet (InstructionSet::AVX2))
-    {
+//#define WRITE_SORT_DATA
 #if defined(_DEBUG) || defined(WRITE_SORT_DATA)
         // in debug, make a copy of the mark list
         // for checking and debugging purposes
-        uint8_t** mark_list_copy = &g_mark_list_copy[heap_number * mark_list_size];
-        uint8_t** mark_list_copy_index = &mark_list_copy[item_count];
-        for (ptrdiff_t i = 0; i < item_count; i++)
-        {
-            uint8_t* item = mark_list[i];
-            mark_list_copy[i] = item;
-        }
+    uint8_t** mark_list_copy = &g_mark_list_copy[heap_number * mark_list_size];
+    uint8_t** mark_list_copy_index = &mark_list_copy[item_count];
+    for (ptrdiff_t i = 0; i < item_count; i++)
+    {
+        uint8_t* item = mark_list[i];
+        mark_list_copy[i] = item;
+    }
 #endif // defined(_DEBUG) || defined(WRITE_SORT_DATA)
 
-        // is the range small enough for a 32-bit sort?
-        ptrdiff_t range = high - low;
-        assert(sizeof(uint8_t*) == (1<<3));
-        ptrdiff_t scaled_range = range >> 3;
-        if ((uint32_t)scaled_range == scaled_range)
-        {
-            dprintf (3, ("Sorting mark lists as 32-bit offsets"));
+    ptrdiff_t start = get_cycle_count();
 
-//#define WRITE_SORT_DATA
+    do_vxsort (mark_list, item_count, low, high);
 
-            // first step: scale the pointers down to 32-bit offsets
-            uint8_t** mark_list = this->mark_list;
-            int32_t* mark_list_32 = (int32_t*)mark_list;
-            do_pack_avx2 (mark_list, item_count, low);
-            // sort the 32-bit offsets
-            if (item_count > 0)
-            {
-                ptrdiff_t start = get_cycle_count();
-
-                _sort (&mark_list_32[0], &mark_list_32[item_count - 1], 0);
-
-                ptrdiff_t elapsed_cycles = get_cycle_count() - start;
-                int log2_item_count = index_of_highest_set_bit (item_count);
-                double elapsed_cyles_by_n_log_n = (double)elapsed_cycles / item_count / log2_item_count;
-
-//                printf ("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
+    ptrdiff_t elapsed_cycles = get_cycle_count() - start;
 
 #ifdef WRITE_SORT_DATA
-                char file_name[256];
-                sprintf_s (file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
+    char file_name[256];
+    sprintf_s (file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
 
-                FILE* f;
-                errno_t err = fopen_s (&f, file_name, "wb");
+    FILE* f;
+    errno_t err = fopen_s (&f, file_name, "wb");
 
-                if (err == 0)
-                {
-                    size_t magic = 'SDAT';
-                    if (fwrite (&magic, sizeof(magic), 1, f) != 1)
-                        printf ("fwrite failed\n");
-                    if (fwrite (&elapsed_cycles, sizeof(elapsed_cycles), 1, f) != 1)
-                        printf ("fwrite failed\n");
-                    if (fwrite (&low, sizeof(low), 1, f) != 1)
-                        printf ("fwrite failed\n");
-                    if (fwrite (&item_count, sizeof(item_count), 1, f) != 1)
-                        printf ("fwrite failed\n");
-                    if (fwrite (mark_list_copy, sizeof(mark_list_copy[0]), item_count, f) != item_count)
-                        printf ("fwrite failed\n");
-                    if (fwrite (&magic, sizeof(magic), 1, f) != 1)
-                        printf ("fwrite failed\n");
-                    if (fclose (f) != 0)
-                        printf ("fclose failed\n");
-                }
-#endif
-            }
-
-            do_unpack_avx2 (mark_list_32, item_count, low);
-        }
-        else
-        {
-            dprintf (3, ("Sorting mark lists"));
-            if (mark_list_index > mark_list)
-                _sort (mark_list, mark_list_index - 1, 0);
-        }
-#ifdef _DEBUG
-        // in debug, sort the copy as well using the proven sort, so we can check we got the right result
-        if (mark_list_copy_index > mark_list_copy)
-        {
-            introsort::sort (mark_list_copy, mark_list_copy_index - 1, 0);
-        }
-        for (ptrdiff_t i = 0; i < item_count; i++)
-        {
-            uint8_t* item = mark_list[i];
-            assert(mark_list_copy[i] == item);
-        }
-#endif //_DEBUG
-    }
-    else
-#endif //USE_VXSORT
+    if (err == 0)
     {
-        dprintf (3, ("Sorting mark lists"));
-        if (mark_list_index > mark_list)
-        {
-            ptrdiff_t start = get_cycle_count();
-
-            introsort::sort (mark_list, mark_list_index - 1, 0);
-
-            ptrdiff_t elapsed_cycles = get_cycle_count() - start;
-            size_t item_count = mark_list_index - mark_list;
-            int log2_item_count = index_of_highest_set_bit (item_count);
-            double elapsed_cyles_by_n_log_n = (double)elapsed_cycles / item_count / log2_item_count;
-
-//            printf ("GC#%d: first phase of sort_mark_list for heap %d took %u cycles to sort %u entries (cost/(n*log2(n) = %5.2f)\n", settings.gc_index, this->heap_number, elapsed_cycles, item_count, elapsed_cyles_by_n_log_n);
-        }
+        size_t magic = 'SDAT';
+        if (fwrite (&magic, sizeof(magic), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&elapsed_cycles, sizeof(elapsed_cycles), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&low, sizeof(low), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&item_count, sizeof(item_count), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (mark_list_copy, sizeof(mark_list_copy[0]), item_count, f) != item_count)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&magic, sizeof(magic), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fclose (f) != 0)
+            dprintf (3, ("fclose failed\n"));
     }
+#endif
+
+#ifdef _DEBUG
+    // in debug, sort the copy as well using the proven sort, so we can check we got the right result
+    if (mark_list_copy_index > mark_list_copy)
+    {
+        introsort::sort (mark_list_copy, mark_list_copy_index - 1, 0);
+    }
+    for (ptrdiff_t i = 0; i < item_count; i++)
+    {
+        uint8_t* item = mark_list[i];
+        assert (mark_list_copy[i] == item);
+    }
+#endif //_DEBUG
+
+#else //USE_VXSORT
+    dprintf (3, ("Sorting mark lists"));
+    if (mark_list_index > mark_list)
+    {
+        introsort::sort (mark_list, mark_list_index - 1, 0);
+    }
+#endif
 
 //    printf("first phase of sort_mark_list for heap %d took %u cycles to sort %u entries\n", this->heap_number, GetCycleCount32() - start, mark_list_index - mark_list);
 //    start = GetCycleCount32();
@@ -22312,38 +22293,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
 #ifndef MULTIPLE_HEAPS
 #ifdef USE_VXSORT
-        ptrdiff_t entry_count = mark_list_index - mark_list;
-        // conservatively use AVX2 only for large mark lists,
-        // and do runtime test to check whether AVX2 is indeed available 
-        if (entry_count > AVX2_THRESHOLD_SIZE && IsSupportedInstructionSet (InstructionSet::AVX2))
-        {
-            int32_t* mark_list_32 = (int32_t*)mark_list;
-            uint8_t* low = slow;
-            ptrdiff_t range = shigh - low;
-            if ((uint32_t)range == range)
-            {
-                do_pack_avx2 (mark_list, entry_count, low);
-                _sort (&mark_list_32[0], &mark_list_32[entry_count - 1], 0);
-                do_unpack_avx2 (mark_list_32, entry_count, low);
-#ifdef _DEBUG
-                uint8_t*high = heap_segment_allocated (ephemeral_heap_segment);
-                for (ptrdiff_t i = 0; i < entry_count; i++)
-                {
-                    uint8_t* item = mark_list[i];
-                    assert (low <= item && item < high);
-                }
-#endif //_DEBUG
-            }
-            else
-            {
-                _sort (&mark_list[0], mark_list_index - 1, 0);
-            }
-        }
-        else
+        do_vxsort (mark_list, mark_list_index - mark_list, slow, shigh);
+#else //USE_VXSORT
+        _sort (&mark_list[0], mark_list_index - 1, 0);
 #endif //USE_VXSORT
-        {
-            introsort::sort (&mark_list[0], mark_list_index - 1, 0);
-        }
 
         //printf ("using mark list at GC #%d", dd_collection_count (dynamic_data_of (0)));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);

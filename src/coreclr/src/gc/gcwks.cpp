@@ -21,7 +21,7 @@
 #undef SERVER_GC
 #endif
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 #include "vxsort/do_vxsort.h"
 #endif
 
