@@ -599,8 +599,9 @@ var MonoSupportLib = {
 			var offset = null;
 
 			switch (asset.behavior) {
-				case "heap":
 				case "assembly":
+					ctx.loaded_files.push (virtualName);
+				case "heap":
 				case "icu":
 					offset = this._load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
@@ -690,6 +691,7 @@ var MonoSupportLib = {
 		//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
 		//      "invariant": operate in invariant globalization mode.
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args) {
 			try {
 				return this._load_assets_and_runtime (args);
@@ -701,8 +703,11 @@ var MonoSupportLib = {
 
 		_finalize_startup: function (args, ctx) {
 			MONO.loaded_assets = ctx.loaded_assets;
-			if (ctx.tracing)
+			MONO.loaded_files = ctx.loaded_files;
+			if (ctx.tracing) {
 				console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
+				console.log ("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
+			}
 
 			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
@@ -746,6 +751,8 @@ var MonoSupportLib = {
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
 				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
 				loaded_assets: Object.create (null),
+				// dlls and pdbs, used by blazor and the debugger
+				loaded_files: [],
 				createPath: Module['FS_createPath'],
 				createDataFile: Module['FS_createDataFile'],
 				num_icu_assets_loaded_successfully: 0
@@ -885,8 +892,9 @@ var MonoSupportLib = {
 				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 		},
 
+		// Used by the debugger to enumerate loaded dlls and pdbs
 		mono_wasm_get_loaded_files: function() {
-			return Object.keys(MONO.loaded_assets);
+			return MONO.loaded_files;
 		},
 
 		mono_wasm_get_loaded_asset_table: function() {
