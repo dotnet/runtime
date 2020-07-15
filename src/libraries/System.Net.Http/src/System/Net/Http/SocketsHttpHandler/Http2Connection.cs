@@ -46,8 +46,6 @@ namespace System.Net.Http
         private int _pendingWriters;
         private bool _lastPendingWriterShouldFlush;
         private int _freeStreamSlots;
-        private long _freeStreamSlotsExpiration;
-        private const int SlotExpirationPeriod = 1000;
         // _maxConcurrentStreams == int.MaxValue in the beginning because SETTINGS frame is sent asynchronously, but we want to avoid too much retries,
         // thus allow requests under the most commont stream limit to proceed.
         // Once SETTINGS is received, _freeStreamSlots will be set to the actual value and requests above the limit will be retried.
@@ -142,32 +140,9 @@ namespace System.Net.Http
             {
                 if (currentSlots == 0)
                 {
-                    long currentExpiration = Interlocked.Read(ref _freeStreamSlotsExpiration);
-                    long tickCount = Environment.TickCount64;
-                    if (currentExpiration > tickCount)
-                    {
-                        // No empty slots and it's too soon to request the latest value from the credit manager.
-                        return false;
-                    }
-
-                    Interlocked.Exchange(ref _freeStreamSlotsExpiration, tickCount + SlotExpirationPeriod);
-
-                    int refreshedSlots = _concurrentStreams.Current;
-                    if (refreshedSlots == 0)
-                    {
-                        // Credit manager reported no available slots.
-                        return false;
-                    }
-
-                    int prevFreeStreamSlots = Interlocked.CompareExchange(ref _freeStreamSlots, refreshedSlots, 0);
-                    if (prevFreeStreamSlots != 0)
-                    {
-                        // Other thread already updated _freeStreamSlots, so let's try acquiring a free slot again.
-                        currentSlots = prevFreeStreamSlots;
-                        continue;
-                    }
-                    currentSlots = refreshedSlots;
+                    return false;
                 }
+
                 int reducedSlots = currentSlots - 1;
                 int oldFreeStreamSlots = Interlocked.CompareExchange(ref _freeStreamSlots, reducedSlots, currentSlots);
                 if (oldFreeStreamSlots == currentSlots)
