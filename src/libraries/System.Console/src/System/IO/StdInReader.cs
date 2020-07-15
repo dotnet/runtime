@@ -85,9 +85,6 @@ namespace System.IO
             if (isEnter || _readLineSB.Length > 0)
             {
                 line = _readLineSB.ToString();
-            }
-            else
-            {
                 _readLineSB.Clear();
             }
             return line;
