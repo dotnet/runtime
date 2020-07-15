@@ -735,13 +735,8 @@ var MonoSupportLib = {
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
 
-			console.log ("mono_wasm_load_runtime_with_args", JSON.stringify(args));
-
-			this._apply_configuration_from_args (args);
-
-			var fetch_file_cb = this._get_fetch_file_cb_from_args (args);
-
 			var ctx = {
+				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
 				mono_wasm_load_icu_data: Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']),
@@ -750,6 +745,13 @@ var MonoSupportLib = {
 				createDataFile: Module['FS_createDataFile'],
 				num_icu_assets_loaded_successfully: 0
 			};
+
+			if (ctx.tracing)
+				console.log ("mono_wasm_load_runtime_with_args", JSON.stringify(args));
+
+			this._apply_configuration_from_args (args);
+
+			var fetch_file_cb = this._get_fetch_file_cb_from_args (args);
 
 			var onPendingRequestComplete = function () {
 				--ctx.pending_count;
@@ -837,9 +839,11 @@ var MonoSupportLib = {
 
 					try {
 						if (asset.name === attemptUrl) {
-							console.log ("Attempting to fetch '" + attemptUrl + "'");
+							if (ctx.tracing)
+								console.log ("Attempting to fetch '" + attemptUrl + "'");
 						} else {
-							console.log ("Attempting to fetch '" + attemptUrl + "' for", asset.name);
+							if (ctx.tracing)
+								console.log ("Attempting to fetch '" + attemptUrl + "' for", asset.name);
 						}
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
