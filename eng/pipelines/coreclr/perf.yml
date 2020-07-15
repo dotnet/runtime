@@ -63,7 +63,7 @@ jobs:
     - Linux_x64
     - Browser_wasm
     jobParameters:
-    - buildArgs: -s mono+libs
+      buildArgs: -s mono+libs
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
