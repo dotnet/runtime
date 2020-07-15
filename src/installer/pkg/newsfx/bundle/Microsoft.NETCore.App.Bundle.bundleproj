@@ -8,8 +8,10 @@
     -->
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <SharedFrameworkArchiveName>dotnet-runtime</SharedFrameworkArchiveName>
+    <GenerateArchive>true</GenerateArchive>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64;osx-x64</RuntimeIdentifiers>
     <BundleNameSuffix>Runtime</BundleNameSuffix>
     <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template.xml</MacOSBundleTemplate>
@@ -22,5 +24,13 @@
     <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" />
     <BundleComponentReference Include="../installers/dotnet-host.proj" />
   </ItemGroup>
+
+  <Target Name="PublishSharedFrameworkToDisk">
+    <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
+
+    <MSBuild Projects="@(BundleComponentReference)"
+             Targets="PublishSharedFrameworkToDisk"
+             Properties="SharedFrameworkOutputPath=$(SharedFrameworkOutputPath)" />
+  </Target>
 
 </Project>

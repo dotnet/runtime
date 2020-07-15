@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <GenerateInstallers>true</GenerateInstallers>
+    <SharedFrameworkArchiveName>dotnet-hostfxr-internal</SharedFrameworkArchiveName>
     <SharedFrameworkInstallerName>dotnet-hostfxr</SharedFrameworkInstallerName>
     <SharedFrameworkInstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-hostfxr-internal</SharedFrameworkInstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>

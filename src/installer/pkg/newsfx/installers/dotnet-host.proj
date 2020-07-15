@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <GenerateInstallers>true</GenerateInstallers>
+    <GenerateArchive>false</GenerateArchive>
     <SharedFrameworkInstallerName>dotnet-host</SharedFrameworkInstallerName>
     <SharedFrameworkInstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-host-internal</SharedFrameworkInstallerName>
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
