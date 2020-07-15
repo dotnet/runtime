@@ -781,8 +781,9 @@ class MetaSig
 
         //----------------------------------------------------------
         // Gets the unmanaged calling convention by reading any modopts.
-        // If there are multiple modopts specifying recognized calling conventions, the last one wins.
-        // e.g. if the signature has modopt(cdecl) modopt(stdcall), the stdcall convention is returned.
+        // If there are multiple modopts specifying recognized calling
+        // conventions, the first one that is found in the metadata wins.
+        // Note: the order in the metadata is the reverse of that in IL.
         //
         // Returns:
         //   E_FAIL - Signature had an invalid format

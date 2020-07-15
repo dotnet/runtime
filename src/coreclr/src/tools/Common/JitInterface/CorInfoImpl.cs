@@ -532,8 +532,7 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                // The last specified modopt in IL is first in the signature byte stream,
-                // so return once we find a recognized calling convention.
+                // Take the first recognized calling convention in metadata.
                 switch (defType.Name)
                 {
                     case "CallConvCdecl":
