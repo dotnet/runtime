@@ -876,6 +876,7 @@ class EEJitManager : public IJitManager
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
+    friend class DacDbiInterfaceImpl;
 #endif
     friend class CheckDuplicatedStructLayouts;
     friend class CodeHeapIterator;
