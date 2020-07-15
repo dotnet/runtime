@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
   <ItemGroup>
-     <ProjectReference Include="..\..\coreclr\tests\src\baseservices\mono\runningmono.csproj" /> 
+     <TestAssemblyList Include="/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -10,7 +10,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)\runtimes\browser-wasm</RuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildThisFileDirectory)\bin\$(Configuration)\publish</AppDir>
   </PropertyGroup>
@@ -20,22 +20,33 @@
              Properties="Configuration=$(Configuration)" Targets="Restore;Build;Publish" />
   </Target>
 
+  <Target Name="ReadAssemblyNames">
+       <ReadLinesFromFile File="@(TestAssemblyList)" >
+            <Output TaskParameter="Lines" ItemName="TestAssemblyItems"/>
+       </ReadLinesFromFile>
+  </Target>
+
+
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build;ReadAssemblyNames">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
-      <AssemblySearchPaths Include="$(RuntimePackDir)\native"/>
-      <AssemblySearchPaths Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
+  
+    <Message Importance="High" Text="@(TestAssemblyItems)"/>
+
     <WasmAppBuilder
       AppDir="$(AppDir)"
-      RuntimePackDir="$(RuntimePackDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin/net5.0/WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="test_dlls/runningmono.dll" />
+      ExtraAssemblies="@(TestAssemblyItems)"
+      />
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 

@@ -52,6 +52,14 @@
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
 
+  <Target Name="GenerateTestAssemblyList" AfterTargets="Build">
+	<PropertyGroup>
+		<TestAssemblyListPath>$(RepoRoot)/artifacts/tests/coreclr/$(OSPlatformConfig)/</TestAssemblyListPath>
+	</PropertyGroup>	
+	<Message Importance="High" Text="Generating test_assemblies.txt:  $(TestAssemblyListPath)" />
+	<Exec ConsoleToMSBuild="true" Command="find $(TestAssemblyListPath) -name *.dll > $(TestAssemblyListPath)/test_assemblies.txt" />
+  </Target> 
+
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
   <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
 </Project>
