@@ -781,16 +781,22 @@ var MonoSupportLib = {
 				var sourcesList = asset.load_remote ? args.remote_sources : [""];
 
 				var handleFetchResponse = function (response) {
-					try {
-						if (!response.ok) {
+					if (!response.ok) {
+						try {
 							attemptNextSource ();
-						} else {
-							var bufferPromise = response ['arrayBuffer'] ();
-							bufferPromise.then (processFetchResponseBuffer.bind (this, asset));
+							return;
+						} catch (exc) {
+							console.error ("MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset", asset.name, exc);
+							throw exc;
 						}
+					}
+
+					try {
+						var bufferPromise = response ['arrayBuffer'] ();
+						bufferPromise.then (processFetchResponseBuffer.bind (this, asset));
 					} catch (exc) {
-						console.error ("Unhandled exception in handleFetchResponse", exc);
-						throw exc;
+						console.error ("MONO_WASM: Unhandled exception in handleFetchResponse for asset", asset.name, exc);
+						attemptNextSource ();
 					}
 				};
 
@@ -798,13 +804,15 @@ var MonoSupportLib = {
 					if (sourceIndex >= sourcesList.length) {
 						var msg = "MONO_WASM: Failed to load " + asset.name;
 						try {
-							console.error (msg);
-							if (asset.is_optional)
-								return;
-							else if (asset.name.match (/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors)
-								return;
-							else
+							var isOk = asset.is_optional ||
+								(asset.name.match (/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors);
+
+							if (isOk)
+								console.log (msg);
+							else {
+								console.error (msg);
 								throw new Error (msg);
+							}
 						} finally {
 							onPendingRequestComplete ();
 						}
@@ -831,7 +839,7 @@ var MonoSupportLib = {
 						if (asset.name === attemptUrl) {
 							console.log ("Attempting to fetch '" + attemptUrl + "'");
 						} else {
-							console.log ("Attempting to fetch '" + attemptUrl + "' for ", asset.name);
+							console.log ("Attempting to fetch '" + attemptUrl + "' for", asset.name);
 						}
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
