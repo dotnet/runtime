@@ -16,7 +16,7 @@ static inline uint32_t GetStringLength(const WCHAR *&value)
     return static_cast<uint32_t>(wcslen(value) + 1);
 }
 
-static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const WCHAR *&value)
+static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const WCHAR *value)
 {
     uint32_t stringLen = GetStringLength(value);
     S_UINT16 totalStringSizeInBytes(stringLen * sizeof(WCHAR) + sizeof(uint32_t));
@@ -39,20 +39,14 @@ uint16_t ProcessInfoPayload::GetSize()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The protocol buffer is defined as:
-    // X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
-    // uint = 4 little endian bytes
-    // long = 8 little endian bytes
-    // GUID = 16 little endian bytes
-    // wchar = 2 little endian bytes, UTF16 encoding
-    // array<T> = uint length, length # of Ts
-    // string = (array<wchar> where the last char must = 0) or (length = 0)
+    // see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+    // for definition of serialization format
 
-    // uint64_t ProcessId;
-    // GUID RuntimeCookie;
-    // LPCWSTR CommandLine;
-    // LPCWSTR OS;
-    // LPCWSTR Arch;
+    // uint64_t ProcessId;  -> 8 bytes
+    // GUID RuntimeCookie;  -> 16 bytes
+    // LPCWSTR CommandLine; -> 4 bytes + strlen * sizeof(WCHAR)
+    // LPCWSTR OS;          -> 4 bytes + strlen * sizeof(WCHAR)
+    // LPCWSTR Arch;        -> 4 bytes + strlen * sizeof(WCHAR)
 
     S_UINT16 size = S_UINT16(0);
     size += sizeof(ProcessId);
@@ -88,6 +82,9 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
         PRECONDITION(lpBuffer != nullptr);
     }
     CONTRACTL_END;
+
+    // see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+    // for definition of serialization format
 
     bool fSuccess = true;
     // uint64_t ProcessId;
