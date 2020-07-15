@@ -37,7 +37,6 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 var creds = new NetworkCredential("username", "password", "domain");
 
                 handler.DefaultProxyCredentials = null;
@@ -54,9 +53,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ProxyExplicitlyProvided_DefaultCredentials_Ignored()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             var explicitProxyCreds = new NetworkCredential("rightusername", "rightpassword");
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             var defaultSystemProxyCreds = new NetworkCredential("wrongusername", "wrongpassword");
             string expectCreds = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{explicitProxyCreds.UserName}:{explicitProxyCreds.Password}"));
 
@@ -92,7 +89,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
             const string ExpectedUsername = "rightusername";
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             const string ExpectedPassword = "rightpassword";
             LoopbackServer.Options options = new LoopbackServer.Options { IsProxy = true, Username = ExpectedUsername, Password = ExpectedPassword };
 

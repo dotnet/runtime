@@ -579,7 +579,6 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]                
                 handler.Credentials = new NetworkCredential("unused", "unused");
                 using (HttpClient client = CreateHttpClient(handler))
                 {

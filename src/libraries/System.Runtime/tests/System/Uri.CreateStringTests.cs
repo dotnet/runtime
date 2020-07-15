@@ -120,9 +120,7 @@ namespace System.Tests
             yield return new object[] { "http://@host:90#fragment", "http", "", "host", UriHostNameType.Dns, 90, false, false };
             yield return new object[] { "http://userinfo@host:90#fragment", "http", "userinfo", "host", UriHostNameType.Dns, 90, false, false };
             yield return new object[] { "http://userinfo@host#fragment", "http", "userinfo", "host", UriHostNameType.Dns, 80, true, false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { "http://user:password@host", "http", "user:password", "host", UriHostNameType.Dns, 80, true, false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { "http://user:80@host:90", "http", "user:80", "host", UriHostNameType.Dns, 90, false, false };
             yield return new object[] { "http://host:0", "http", "", "host", UriHostNameType.Dns, 0, false, false };
             yield return new object[] { "http://host:80", "http", "", "host", UriHostNameType.Dns, 80, true, false };
@@ -364,7 +362,6 @@ namespace System.Tests
             yield return new object[] { "telnet://host/", "telnet", "", "host", UriHostNameType.Dns, 23, true, false };
             yield return new object[] { "telnet://host:80", "telnet", "", "host", UriHostNameType.Dns, 80, false, false };
             yield return new object[] { "telnet://userinfo@host/", "telnet", "userinfo", "host", UriHostNameType.Dns, 23, true, false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { "telnet://username:password@host/", "telnet", "username:password", "host", UriHostNameType.Dns, 23, true, false };
             yield return new object[] { "telnet://host?query#fragment", "telnet", "", "host", UriHostNameType.Dns, 23, true, false };
             yield return new object[] { "telnet://host#fragment", "telnet", "", "host", UriHostNameType.Dns, 23, true, false };
@@ -426,7 +423,6 @@ namespace System.Tests
             yield return new object[] { "http://abc\u1234\u2345\u3456@host/", "http", "abc%E1%88%B4%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234abc\u2345\u3456@host/", "http", "%E1%88%B4abc%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234\u2345\u3456abc@host/", "http", "%E1%88%B4%E2%8D%85%E3%91%96abc", "host", UriHostNameType.Dns, 80, true, false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { "http://userinfo!~+-_*()[]:;&$=123USERINFO@host/", "http", "userinfo!~+-_*()[]:;&$=123USERINFO", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://%68%65%6C%6C%6F@host/", "http", "hello", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u00A3@host/", "http", "%C2%A3", "host", UriHostNameType.Dns, 80, true, false };

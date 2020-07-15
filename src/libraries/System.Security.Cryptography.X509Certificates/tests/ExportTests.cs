@@ -76,8 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxWithPassword()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            const string password = "Cotton";
+            const string password = "password";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
             {
@@ -95,8 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxVerifyPassword()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            const string password = "Cotton";
+            const string password = "password";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
             {
@@ -112,8 +110,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
 
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                const string password = "Cotton";
+                const string password = "password";
 
                 byte[] pfx = cert.Export(X509ContentType.Pkcs12, password);
 

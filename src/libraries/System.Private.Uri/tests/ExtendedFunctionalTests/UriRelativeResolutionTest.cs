@@ -11,8 +11,6 @@ namespace System.PrivateUri.Tests
     public class UriRelativeResolutionTest
     {
         // See RFC 3986 Section 5.2.2 and 5.4 http://www.ietf.org/rfc/rfc3986.txt
-
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
         private readonly Uri _fullBaseUri = new Uri("http://user:psw@host:9090/path1/path2/path3/fileA?query#fragment");
 
         [Fact]
@@ -386,7 +384,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToSamePath_ReturnsQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/path3/fileA?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
 
@@ -397,7 +394,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToLastSlash_ReturnsDotSlashPlusQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/path3/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
@@ -411,7 +407,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToLastSlash_ReturnsDotSlash()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/path3/");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
@@ -424,7 +419,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToLastSlashWithExtra_ReturnsDotSlashPlusQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/path3/Path4/fileb?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
@@ -437,7 +431,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToSecondToLastSlash_ReturnsDoubleDotSlashPlusQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
@@ -450,7 +443,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToThirdToLastSlash_ReturnsDoubleDoubleDotSlashPlusQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
@@ -463,7 +455,6 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseMadeRelativeToEmptyPath_ReturnsTrippleDoubleDotSlashPlusQueryAndFragment()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             Uri compareUri = new Uri("http://user:psw@host:9090/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric

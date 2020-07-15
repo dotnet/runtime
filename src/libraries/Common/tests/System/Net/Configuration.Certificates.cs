@@ -15,7 +15,6 @@ namespace System.Net.Test.Common
     {
         public static partial class Certificates
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy password.")]
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
             private const int MutexTimeoutMs = 120_000;
@@ -63,7 +62,7 @@ namespace System.Net.Test.Common
                     }
                 }
             }
-            
+
             // These Get* methods make a copy of the certificates so that consumers own the lifetime of the
             // certificates handed back.  Consumers are expected to dispose of their certs when done with them.
 

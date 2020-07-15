@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 aes.Mode = CipherMode.CBC;
                 aes.KeySize = 256;
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]                
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
                 aes.Padding = PaddingMode.Zeros;
 

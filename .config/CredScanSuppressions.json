@@ -1,15 +1,61 @@
 {
- "tool": "Credential Scanner",
- "suppressions": [
-  {
-    "file": [
-      "/src/libraries/Common/src/System/Security/Cryptography/EccSecurityTransforms.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.LimitedPrivate.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyFileTests.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs"  
-    ],
-    "_justification": "Mostly test files. Other files contain harmless examples or constants."
-  },
- ]
+    "tool": "Credential Scanner",
+    "suppressions": [
+        {
+            "_justification": "Unit test containing connection strings under the test.",
+            "file": [
+                "src/libraries/System.Data.Common/tests/System/Data/Common/DbConnectionStringBuilderTest.cs"
+            ]
+        },
+        {
+            "_justification": "Private key for testing purpose.",
+            "file": [
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/DSA/DSAKeyPemTests.cs",
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyPemTests.cs",
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
+                "src/libraries/System.Security.Cryptography.X509Certificates/tests/TestData.cs"
+            ],
+            "placeholder": [
+                "-----BEGIN PRIVATE KEY-----",
+                "-----BEGIN * PRIVATE KEY-----"
+            ]
+        },
+        {
+            "_justification": "Test credential for Uri testing",
+            "file": [
+                "src/libraries/System.Private.Uri/tests/ExtendedFunctionalTests/UriRelativeResolutionTest.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderTests.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriRelativeResolutionTest.cs",
+                "src/libraries/System.Runtime/tests/System/Uri.CreateStringTests.cs"
+            ],
+            "placeholder": [
+                "//user:psw@",
+                "//userinfo1:userinfo2@",
+                "//userinfo!~+-_*()[]:;&$=123USERINFO@"
+            ]
+        },
+        {
+            "_justification": "Generic test password.",
+            "file": [
+                "src/libraries/Common/tests/System/Net/Configuration.Certificates.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Authentication.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.DefaultProxyCredentials.cs",
+                "src/libraries/Common/tests/System/Net/Prerequisites/Deployment/setup_certificates.ps1",
+                "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
+                "src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
+                "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs"
+            ],
+            "placeholder": [
+                "\"rightpassword\"",
+                "\"wrongpassword\"",
+                "\"mono\"",
+                "\"unused\"",
+                "\"testcertificate\"",
+                "\"password1\"",
+                "//*:password1@"
+                /* Credential Scanner already consider "password", "WRONGPASSWORD" as false positive in some cases, hence they are not in this list. */
+            ]
+        }
+    ]
 }

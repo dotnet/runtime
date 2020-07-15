@@ -214,7 +214,6 @@ namespace System.PrivateUri.Tests
         [InlineData(null, "")]
         public void Password_Get_Set(string value, string expected)
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             var uriBuilder = new UriBuilder("http://userinfo1:userinfo2@domain/path?query#fragment");
             uriBuilder.Password = value;
             Assert.Equal(expected, uriBuilder.Password);
@@ -324,19 +323,12 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new UriBuilder(), new UriBuilder(), true };
             yield return new object[] { new UriBuilder(), null, false };
 
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), true };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://domain.com:80/path/file?query#fragment"), true }; // Ignores userinfo
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment2"), true }; // Ignores fragment
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@host.com:80/path/file?query#fragment"), false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@domain.com:90/path/file?query#fragment"), false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@domain.com:80/path2/file?query#fragment"), false };
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
             yield return new object[] { new UriBuilder("http://username:password@domain.com:80/path/file?query#fragment"), new UriBuilder("http://username:password@domain.com:80/path/file?query2#fragment"), false };
 
             yield return new object[] { new UriBuilder("unknown:"), new UriBuilder("unknown:"), true };

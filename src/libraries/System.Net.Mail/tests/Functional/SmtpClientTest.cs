@@ -293,8 +293,7 @@ namespace System.Net.Mail.Tests
         {
             using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            client.Credentials = new NetworkCredential("Foo", "Bar");
+            client.Credentials = new NetworkCredential("user", "password");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             client.Send(msg);
@@ -304,8 +303,8 @@ namespace System.Net.Mail.Tests
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
-            Assert.Equal("Foo", server.Username);
-            Assert.Equal("Bar", server.Password);
+            Assert.Equal("user", server.Username);
+            Assert.Equal("password", server.Password);
             Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
@@ -506,8 +505,7 @@ namespace System.Net.Mail.Tests
 
             using (SmtpClient client = server.CreateClient())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                client.Credentials = new NetworkCredential("Foo", "Bar");
+                client.Credentials = new NetworkCredential("user", "password");
                 MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
                 if (asyncSend)
                 {

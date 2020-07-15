@@ -28,9 +28,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static void ImportFromPem_RSAPrivateKey_Simple()
         {
             using (RSA rsa = RSAFactory.Create())
-            {                
+            {
                 string pem = @"
-                // [SuppressMessage(\"Microsoft.Security\", \"CS002:SecretInNextLine\", Justification=\"Unit test dummy certificate.\")]
 -----BEGIN RSA PRIVATE KEY-----
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
@@ -53,7 +52,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C
@@ -78,7 +76,6 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
@@ -125,7 +122,6 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
@@ -166,7 +162,6 @@ MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN CERTIFICATE-----
 MIICTzCCAgmgAwIBAgIJAMQtYhFJ0+5jMA0GCSqGSIb3DQEBBQUAMIGSMQswCQYD
@@ -204,7 +199,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN CERTIFICATE-----
 $$ I AM NOT A PEM
@@ -230,7 +224,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
@@ -258,7 +251,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN RSA PRIVATE KEY-----
 MII=
@@ -282,7 +274,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PUBLIC KEY-----
 MII=
@@ -306,7 +297,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN RSA PUBLIC KEY-----
 MII=
@@ -330,7 +320,6 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MII=
@@ -377,7 +366,6 @@ pBORBb0=
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 The below PEM is a 1024-bit DSA key.
 -----BEGIN PRIVATE KEY-----
@@ -498,7 +486,6 @@ CA7ffFk=
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C

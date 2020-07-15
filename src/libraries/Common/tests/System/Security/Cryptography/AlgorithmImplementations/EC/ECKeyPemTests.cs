@@ -31,9 +31,8 @@ namespace System.Security.Cryptography.Tests
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
-                key.ImportFromPem(@"
------BEGIN EC PRIVATE KEY-----
+                key.ImportFromPem(
+@"-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -49,9 +48,8 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
-                key.ImportFromPem(@"
------BEGIN RSA PRIVATE KEY-----
+                key.ImportFromPem(
+@"-----BEGIN RSA PRIVATE KEY-----
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -76,7 +74,6 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 key.ImportFromPem(@"
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
@@ -94,7 +91,6 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 key.ImportFromPem(@"
 -----BEGIN RSA PRIVATE KEY-----
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
@@ -168,7 +164,6 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 key.ImportFromPem(@"
 -----BEGIN RSA PRIVATE KEY-----
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
@@ -415,7 +410,6 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
         {
             using (TAlg key = CreateKey())
             {
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy certificate.")]
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP

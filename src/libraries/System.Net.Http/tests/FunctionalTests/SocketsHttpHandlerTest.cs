@@ -1520,8 +1520,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using  (var handler = new HttpClientHandler())
                 {
-                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "def"));
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "password"));
 
                     using (HttpClient client = CreateHttpClient(handler))
                     {
@@ -1853,10 +1852,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
                 Assert.Throws(expectedExceptionType, () => handler.CookieContainer = new CookieContainer());
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                Assert.Throws(expectedExceptionType, () => handler.Credentials = new NetworkCredential("anotheruser", "anotherpassword"));
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                Assert.Throws(expectedExceptionType, () => handler.DefaultProxyCredentials = new NetworkCredential("anotheruser", "anotherpassword"));
+                Assert.Throws(expectedExceptionType, () => handler.Credentials = new NetworkCredential("anotheruser", "password"));
+                Assert.Throws(expectedExceptionType, () => handler.DefaultProxyCredentials = new NetworkCredential("anotheruser", "password"));
                 Assert.Throws(expectedExceptionType, () => handler.MaxAutomaticRedirections = 2);
                 Assert.Throws(expectedExceptionType, () => handler.MaxConnectionsPerServer = 2);
                 Assert.Throws(expectedExceptionType, () => handler.MaxResponseHeadersLength = 2);

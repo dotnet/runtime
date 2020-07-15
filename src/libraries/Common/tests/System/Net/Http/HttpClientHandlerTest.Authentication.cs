@@ -188,8 +188,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 Task serverTask = server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
-                
-                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.Unauthorized, credentials), serverTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.Unauthorized, new NetworkCredential("wronguser", "wrongpassword")), serverTask);
             }, options);
         }
 
