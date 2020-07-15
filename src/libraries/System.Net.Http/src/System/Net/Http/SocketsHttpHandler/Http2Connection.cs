@@ -822,7 +822,7 @@ namespace System.Net.Http
             if (!_writeChannel.Writer.TryWrite(writeEntry))
             {
                 Debug.Assert(_abortException is not null);
-                ThrowRequestAborted(_abortException);
+                return Task.FromException(GetRequestAbortedException(_abortException));
             }
 
             return writeEntry.Task;
@@ -1824,9 +1824,12 @@ namespace System.Net.Http
         private static void ThrowRetry(string message, Exception innerException) =>
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
 
+        private static Exception GetRequestAbortedException(Exception? innerException = null) =>
+            new IOException(SR.net_http_request_aborted, innerException);
+
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
-            throw new IOException(SR.net_http_request_aborted, innerException);
+            throw GetRequestAbortedException(innerException);
 
         [DoesNotReturn]
         private static void ThrowProtocolError() =>

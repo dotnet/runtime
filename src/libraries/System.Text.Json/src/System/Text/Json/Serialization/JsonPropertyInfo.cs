@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -126,7 +125,7 @@ namespace System.Text.Json
             }
         }
 
-        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition, bool isReferenceType)
         {
             if (ignoreCondition != null)
             {
@@ -143,8 +142,11 @@ namespace System.Text.Json
             else if (Options.IgnoreNullValues)
             {
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
-                IgnoreDefaultValuesOnRead = true;
-                IgnoreDefaultValuesOnWrite = true;
+                if (isReferenceType)
+                {
+                    IgnoreDefaultValuesOnRead = true;
+                    IgnoreDefaultValuesOnWrite = true;
+                }
             }
             else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
             {
@@ -162,11 +164,11 @@ namespace System.Text.Json
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, bool isReferenceType)
         {
             DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            DetermineIgnoreCondition(ignoreCondition);
+            DetermineIgnoreCondition(ignoreCondition, isReferenceType);
         }
 
         public abstract object? GetValueAsObject(object obj);

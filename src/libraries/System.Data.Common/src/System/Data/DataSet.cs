@@ -304,7 +304,9 @@ namespace System.Data
                     {
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         MemoryStream memStream = new MemoryStream();
+#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         bf.Serialize(memStream, Tables[i]);
+#pragma warning restore MSLIB0003
                         memStream.Position = 0;
                         info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
                     }
@@ -382,7 +384,9 @@ namespace System.Data
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
+#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
+#pragma warning restore MSLIB0003
                         Tables.Add(dt);
                     }
 
@@ -1960,9 +1964,11 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader reader, bool denyResolving)
         {
+            IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
+                restrictedScope = TypeLimiter.EnterRestrictedScope(this);
                 DataTable.DSRowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
@@ -2230,6 +2236,7 @@ namespace System.Data
             }
             finally
             {
+                restrictedScope?.Dispose();
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
         }
@@ -2466,9 +2473,11 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
+            IDisposable? restictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, mode={1}, denyResolving={2}", ObjectID, mode, denyResolving);
             try
             {
+                restictedScope = TypeLimiter.EnterRestrictedScope(this);
                 XmlReadMode ret = mode;
 
                 if (reader == null)
@@ -2710,6 +2719,7 @@ namespace System.Data
             }
             finally
             {
+                restictedScope?.Dispose();
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
         }

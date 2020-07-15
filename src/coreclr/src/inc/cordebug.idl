@@ -3313,6 +3313,45 @@ interface ICorDebugProcess10 : IUnknown
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
+// The memory range described by this structure is a closed-open
+// interval, that is only the start is inclusive.
+typedef struct _COR_MEMORY_RANGE
+{
+    CORDB_ADDRESS start;          // The start address of the range.
+    CORDB_ADDRESS end;            // The end address of the range.
+} COR_MEMORY_RANGE;
+
+[
+    object,
+    local,
+    uuid(D1A0BCFC-5865-4437-BE3F-36F022951F8A),
+    pointer_default(unique)
+]
+interface ICorDebugMemoryRangeEnum : ICorDebugEnum
+{
+    /*
+     * Gets the next "celt" number of objects in the enumeration.
+     * The actual number of objects retrieved is returned in "pceltFetched".
+     * Returns S_FALSE if the actual number of objects retrieved is smaller
+     * than the number of objects requested.
+     */
+    HRESULT Next([in] ULONG celt,
+                 [out, size_is(celt),
+                  length_is(*pceltFetched)] COR_MEMORY_RANGE objects[],
+                 [out] ULONG *pceltFetched);
+};
+
+[
+    object,
+    local,
+    uuid(344B37AA-F2C0-4D3B-9909-91CCF787DA8C),
+    pointer_default(unique)
+]
+interface ICorDebugProcess11 : IUnknown
+{
+    HRESULT EnumerateLoaderHeapMemoryRegions([out] ICorDebugMemoryRangeEnum** ppRanges);
+}
+
 // Event types MODULE_LOADED and MODULE_UNLOADED implement this interface
 [
     object,

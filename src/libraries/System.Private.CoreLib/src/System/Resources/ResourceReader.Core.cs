@@ -64,6 +64,7 @@ namespace System.Resources
             return graph;
         }
 
+        // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
         private void InitializeBinaryFormatter()
         {
             LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
