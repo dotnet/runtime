@@ -955,15 +955,15 @@ namespace System.Text.Unicode
                             if (AdvSimd.IsSupported)
                             {
                                 Vector128<short> isUtf16DataNonAscii = AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask);
-                                bool hasNonAsciiDataInVector = AdvSimd.Arm64.MinAcross(isUtf16DataNonAscii).ToScalar() != 0;
+                                bool hasNonAsciiDataInVector = AdvSimd.Arm64.MaxPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;
+
                                 if (hasNonAsciiDataInVector)
                                 {
                                     goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                                 }
 
-                                Vector64<sbyte> lower = AdvSimd.ExtractNarrowingSaturateLower(utf16Data);
-                                Vector128<sbyte> result = AdvSimd.ExtractNarrowingSaturateUpper(lower, utf16Data);
-                                AdvSimd.Store((ulong*)pOutputBuffer, result.AsUInt64());
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                AdvSimd.Store(pOutputBuffer, lower);
                             }
                             else
                             {
