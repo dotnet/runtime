@@ -37,7 +37,7 @@ namespace TypeSystemTests
             {
                 sb.Append(data.kind.ToString());
                 sb.Append(data.index);
-                sb.Append(data.type.ToString());
+                sb.Append(((MetaDataType)data.type).Name);
             }
             return sb.ToString();
         }
@@ -50,7 +50,10 @@ namespace TypeSystemTests
 
             // All modopts that are at the very beginning of the signature are given index 0.1.1.1
             // Both the index and the order in the modopt array are significant for signature comparison
-            Assert.Equal("OptionalCustomModifier0.1.1.1charOptionalCustomModifier0.1.1.1voidOptionalCustomModifier0.1.2.1[ILTestAssembly]FooModifier", GetModOptMethodSignatureInfo(methodWith2ModOptsAtStartOfSig));
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[0].index);
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[1].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[2].index);
+            Assert.Equal("OptionalCustomModifier0.1.1.1CharOptionalCustomModifier0.1.1.1VoidOptionalCustomModifier0.1.2.1FooModifier", GetModOptMethodSignatureInfo(methodWith2ModOptsAtStartOfSig));
         }
 
         [Fact]
@@ -60,7 +63,10 @@ namespace TypeSystemTests
             MethodSignature methodWithModOptAtStartOfSigAndAfterByRef = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method2")).Signature;
 
             // A modopts after an E_T_BYREF will look like 0.1.1.2.1.1
-            Assert.Equal("OptionalCustomModifier0.1.1.1charOptionalCustomModifier0.1.1.2.1.1voidOptionalCustomModifier0.1.2.1[ILTestAssembly]FooModifier", GetModOptMethodSignatureInfo(methodWithModOptAtStartOfSigAndAfterByRef));
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[0].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[1].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[2].index);
+            Assert.Equal("OptionalCustomModifier0.1.1.1CharOptionalCustomModifier0.1.1.2.1.1VoidOptionalCustomModifier0.1.2.1FooModifier", GetModOptMethodSignatureInfo(methodWithModOptAtStartOfSigAndAfterByRef));
         }
 
         [Fact]
