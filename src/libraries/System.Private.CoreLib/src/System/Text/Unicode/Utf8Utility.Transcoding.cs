@@ -883,7 +883,7 @@ namespace System.Text.Unicode
             // is not enabled.
 
             Unsafe.SkipInit(out Vector128<short> nonAsciiUtf16DataMask);
-            if (Sse41.X64.IsSupported)
+            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
