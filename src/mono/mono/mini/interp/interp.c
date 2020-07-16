@@ -5269,6 +5269,23 @@ call_newobj:
 			ip++;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
+			gpointer ptr = sp [-2].data.p;
+			int len = sp [-1].data.i;
+			if (len < 0)
+				THROW_EX (mono_get_exception_argument_out_of_range ("length"), ip);
+			*(gpointer*)vt_sp = ptr;
+			*(gint32*)((gpointer*)vt_sp + 1) = len;
+			sp [-2].data.p = vt_sp;
+#if SIZEOF_VOID_P == 8
+			vt_sp += ALIGN_TO (12, MINT_VT_ALIGNMENT);
+#else
+			vt_sp += ALIGN_TO (8, MINT_VT_ALIGNMENT);
+#endif
+			sp--;
+			ip++;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
 			gpointer *byreference_this = (gpointer*)sp [-1].data.p;
 			sp [-1].data.p = *byreference_this;

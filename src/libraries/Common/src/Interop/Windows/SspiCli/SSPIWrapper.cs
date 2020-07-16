@@ -110,14 +110,28 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCHANNEL_CRED scc)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
-
-            SafeFreeCredentials? outCredential = null;
             int errorCode = secModule.AcquireCredentialsHandle(
                                             package,
                                             intent,
                                             ref scc,
-                                            out outCredential);
+                                            out SafeFreeCredentials outCredential);
+
+            if (errorCode != 0)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
+                throw new Win32Exception(errorCode);
+            }
+
+            return outCredential;
+        }
+
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCH_CREDENTIALS* scc)
+        {
+            int errorCode = secModule.AcquireCredentialsHandle(
+                                            package,
+                                            intent,
+                                            scc,
+                                            out SafeFreeCredentials outCredential);
 
             if (errorCode != 0)
             {
