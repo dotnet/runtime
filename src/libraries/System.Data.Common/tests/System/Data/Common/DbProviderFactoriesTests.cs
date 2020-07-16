@@ -15,6 +15,7 @@ namespace System.Data.Common
         private TestProviderFactory() { }
     }
 
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public class DbProviderFactoriesTests
     {
         [Fact]
@@ -69,6 +70,7 @@ namespace System.Data.Common
         public void RegisterFactoryWithTypeNameTest()
         {
             ClearRegisteredFactories();
+            Console.WriteLine("Name: " + typeof(System.Data.SqlClient.SqlClientFactory).AssemblyQualifiedName);
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory).AssemblyQualifiedName));
         }
 
