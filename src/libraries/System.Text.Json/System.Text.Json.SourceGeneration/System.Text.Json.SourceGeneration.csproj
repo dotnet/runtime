@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
+
+    <!-- update dependencies brought in transitively from CodeAnalysis to avoid referencing 1.x packages -->
+    <PackageReference Include="NETStandard.Library" Version="2.0.3" ExcludeAssets="All" />
+    <PackageReference Include="System.Composition" Version="1.4.1" />
+
+    <PackageDestination Include="analyzers\dotnet\cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="JsonSourceGenerator.cs" />
+  </ItemGroup>
+
+</Project>

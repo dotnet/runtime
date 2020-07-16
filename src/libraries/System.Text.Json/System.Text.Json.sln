@@ -1,6 +1,7 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27213.1
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.Tests", "tests\System.Text.Json.Tests.csproj", "{5F553243-042C-45C0-8E49-C739131E11C3}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -20,7 +21,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "System.Text.Json.SourceGeneration\System.Text.Json.SourceGeneration.csproj", "{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.UnitTests", "System.Text.Json.SourceGeneration.UnitTests\System.Text.Json.SourceGeneration.UnitTests.csproj", "{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json.SourceGeneration.Tests", "System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj", "{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +51,18 @@ Global
 		{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C42D5CBB-DAC5-4892-8E69-ED3183A6409E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08FDD841-6001-46AE-87A4-9DB2C7BAAC8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37E5E8FB-1220-49B3-BE0E-CFFC079DA040}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6287A51-AE21-4680-BBF3-BE4BA4AFF311}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
