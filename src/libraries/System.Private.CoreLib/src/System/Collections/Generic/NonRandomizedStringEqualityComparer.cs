@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -12,71 +12,67 @@ namespace System.Collections.Generic
     // randomized string hashing.
     [Serializable] // Required for compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
     // Needs to be public to support binary serialization compatibility
-    public sealed class NonRandomizedStringEqualityComparer : INonRandomizedEqualityComparer<string?>, ISerializable
+    public class NonRandomizedStringEqualityComparer : IEqualityComparer<string?>, IEqualityComparerProxy<string?>, ISerializable
     {
-        internal static readonly IEqualityComparer<string?> AroundDefaultComparer = new NonRandomizedStringEqualityComparer(wrapsOrdinalComparer: false);
-        internal static readonly IEqualityComparer<string?> AroundStringComparerOrdinal = new NonRandomizedStringEqualityComparer(wrapsOrdinalComparer: true);
+        // Dictionary<...>.Comparer and similar methods need to return the original IEqualityComparer
+        // that was passed in to the ctor. The caller chooses one of these singletons so that the
+        // GetUnderlyingEqualityComparer method can return the correct value.
 
-        // Flag indicates whether this instance wraps EqualityComparer<string>.Default
-        // or StringComparer.Ordinal.
-        private readonly bool _wrapsOrdinalComparer;
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new NonRandomizedStringEqualityComparer(EqualityComparer<string?>.Default);
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new NonRandomizedStringEqualityComparer(StringComparer.Ordinal);
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new NonRandomizedOrdinalIgnoreCaseComparer();
 
-        private NonRandomizedStringEqualityComparer(bool wrapsOrdinalComparer)
+        private readonly IEqualityComparer<string?> _underlyingComparer;
+
+        private NonRandomizedStringEqualityComparer(IEqualityComparer<string?> underlyingComparer)
         {
-            _wrapsOrdinalComparer = wrapsOrdinalComparer;
+            Debug.Assert(underlyingComparer != null);
+            _underlyingComparer = underlyingComparer;
         }
 
         // This is used by the serialization engine.
-        private NonRandomizedStringEqualityComparer(SerializationInfo information, StreamingContext context)
-            : this(wrapsOrdinalComparer: false)
+        protected NonRandomizedStringEqualityComparer(SerializationInfo information, StreamingContext context)
+            : this(EqualityComparer<string?>.Default)
         {
         }
 
-        public bool Equals(string? x, string? y) => string.Equals(x, y);
+        public virtual bool Equals(string? x, string? y) => string.Equals(x, y); // Ordinal
 
-        public int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCode() ?? 0;
+        public virtual int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCode() ?? 0; // Ordinal
 
-        public IEqualityComparer<string?> GetRandomizedComparer()
+        internal virtual RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
         {
-            return (_wrapsOrdinalComparer)
-                ? (IEqualityComparer<string?>)StringComparer.Ordinal
-                : (IEqualityComparer<string?>)EqualityComparer<string>.Default;
+            return RandomizedStringEqualityComparer.Create(_underlyingComparer, ignoreCase: false);
         }
+
+        // Gets the comparer that should be returned back to the caller when querying the
+        // ICollection.Comparer property. Also used for serialization purposes.
+        public virtual IEqualityComparer<string?> GetUnderlyingEqualityComparer() => _underlyingComparer;
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // We are doing this to stay compatible with .NET Framework.
+            // Our own collection types will never call this (since this type is a proxy),
+            // but perhaps third-party collection types could try serializing an instance
+            // of this.
             info.SetType(typeof(GenericEqualityComparer<string>));
         }
-    }
 
-    internal sealed class NonRandomizedStringOrdinalIgnoreCaseEqualityComparer : INonRandomizedEqualityComparer<string?>
-    {
-        internal static readonly IEqualityComparer<string?> Instance
-            = new NonRandomizedStringOrdinalIgnoreCaseEqualityComparer();
-
-        private NonRandomizedStringOrdinalIgnoreCaseEqualityComparer() { }
-
-        public bool Equals(string? x, string? y)
+        private sealed class NonRandomizedOrdinalIgnoreCaseComparer : NonRandomizedStringEqualityComparer
         {
-            if (ReferenceEquals(x, y))
+            internal NonRandomizedOrdinalIgnoreCaseComparer()
+                : base(StringComparer.OrdinalIgnoreCase)
             {
-                return true;
             }
 
-            if (x is null || y is null || x.Length != y.Length)
-            {
-                return false;
-            }
+            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
 
-            return CompareInfo.EqualsOrdinalIgnoreCase(
-                ref x.GetRawStringData(),
-                ref y.GetRawStringData(),
-                y.Length);
+            public override int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCodeOrdinalIgnoreCase() ?? 0;
+
+            internal override RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
+            {
+                return RandomizedStringEqualityComparer.Create(_underlyingComparer, ignoreCase: true);
+            }
         }
-
-        public int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCodeOrdinalIgnoreCase() ?? 0;
-
-        public IEqualityComparer<string?> GetRandomizedComparer() => StringComparer.OrdinalIgnoreCase;
     }
 }

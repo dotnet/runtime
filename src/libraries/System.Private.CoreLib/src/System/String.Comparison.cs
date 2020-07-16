@@ -42,7 +42,27 @@ namespace System
             return SpanHelpers.SequenceCompareTo(ref Unsafe.Add(ref strA.GetRawStringData(), indexA), countA, ref Unsafe.Add(ref strB.GetRawStringData(), indexB), countB);
         }
 
-        private static bool EqualsOrdinalIgnoreCase(string strA, string strB)
+        internal static bool EqualsOrdinalIgnoreCase(string? strA, string? strB)
+        {
+            if (ReferenceEquals(strA, strB))
+            {
+                return true;
+            }
+
+            if (strA is null || strB is null)
+            {
+                return false;
+            }
+
+            if (strA.Length != strB.Length)
+            {
+                return false;
+            }
+
+            return EqualsOrdinalIgnoreCaseNoLengthCheck(strA, strB);
+        }
+
+        private static bool EqualsOrdinalIgnoreCaseNoLengthCheck(string strA, string strB)
         {
             Debug.Assert(strA.Length == strB.Length);
 
@@ -645,7 +665,7 @@ namespace System
                     if (this.Length != value.Length)
                         return false;
 
-                    return EqualsOrdinalIgnoreCase(this, value);
+                    return EqualsOrdinalIgnoreCaseNoLengthCheck(this, value);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
@@ -701,7 +721,7 @@ namespace System
                     if (a.Length != b.Length)
                         return false;
 
-                    return EqualsOrdinalIgnoreCase(a, b);
+                    return EqualsOrdinalIgnoreCaseNoLengthCheck(a, b);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));

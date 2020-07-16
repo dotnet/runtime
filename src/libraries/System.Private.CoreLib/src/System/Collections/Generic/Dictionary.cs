@@ -67,15 +67,15 @@ namespace System.Collections.Generic
             {
                 if (_comparer is null)
                 {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.AroundDefaultComparer;
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundDefaultComparer;
                 }
                 else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
                 {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.AroundStringComparerOrdinal;
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinal;
                 }
                 else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
                 {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringOrdinalIgnoreCaseEqualityComparer.Instance;
+                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinalIgnoreCase;
                 }
             }
         }
@@ -139,10 +139,21 @@ namespace System.Collections.Generic
             HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
-        public IEqualityComparer<TKey> Comparer =>
-            (_comparer is INonRandomizedEqualityComparer<TKey> castComparer)
-            ? castComparer.GetComparerForSerialization()
-            : (_comparer ?? EqualityComparer<TKey>.Default);
+        public IEqualityComparer<TKey> Comparer
+        {
+            get
+            {
+                if (typeof(TKey).IsValueType)
+                {
+                    // we currently don't use proxies for value type 'TKey'
+                    return _comparer ?? EqualityComparer<TKey>.Default;
+                }
+                else
+                {
+                    return EqualityComparerProxy.GetUnderlyingEqualityComparer(_comparer);
+                }
+            }
+        }
 
         public int Count => _count - _freeCount;
 
@@ -313,12 +324,7 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, _version);
-
-            IEqualityComparer<TKey> comparerToSerialize = (_comparer is INonRandomizedEqualityComparer<TKey> castComparer)
-                ? castComparer.GetComparerForSerialization()
-                : (_comparer ?? EqualityComparer<TKey>.Default);
-
-            info.AddValue(ComparerName, comparerToSerialize, typeof(IEqualityComparer<TKey>));
+            info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
             if (_buckets != null)
@@ -648,7 +654,7 @@ namespace System.Collections.Generic
             _version++;
 
             // Value types never rehash
-            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is INonRandomizedEqualityComparer<TKey>)
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -720,8 +726,8 @@ namespace System.Collections.Generic
 
             if (!typeof(TKey).IsValueType && forceNewHashCodes)
             {
-                Debug.Assert(_comparer is INonRandomizedEqualityComparer<TKey>);
-                _comparer = ((INonRandomizedEqualityComparer<TKey>)_comparer).GetRandomizedComparer();
+                Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+                _comparer = (IEqualityComparer<TKey>)((NonRandomizedStringEqualityComparer)_comparer).GetRandomizedEqualityComparer();
 
                 for (int i = 0; i < count; i++)
                 {
