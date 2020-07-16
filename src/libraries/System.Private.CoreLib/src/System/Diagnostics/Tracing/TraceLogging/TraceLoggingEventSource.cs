@@ -677,11 +677,21 @@ namespace System.Diagnostics.Tracing
 
                             if (m_Dispatchers != null)
                             {
-                                if (LocalAppContextSwitches.DisableEventListenerFiltering ||
-                                    (((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0)))
+                                // If filtering is disabled, just write to all listeners.
+                                if (LocalAppContextSwitches.DisableEventListenerFiltering)
                                 {
                                     var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
                                     WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
+                                }
+                                // otherwise, check whether any of the listeners are subscribed to this event before writing to all listeners.
+                                else
+                                {
+                                    if (((EventKeywords)descriptor.Keywords != 0) ||
+                                        ((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0))
+                                    {
+                                        var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
+                                        WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
+                                    }
                                 }
                             }
                         }

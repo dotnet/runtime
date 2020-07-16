@@ -2169,8 +2169,9 @@ namespace System.Diagnostics.Tracing
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
-                if (LocalAppContextSwitches.DisableEventListenerFiltering ||
-                    (dispatcher.m_EventEnabled[eventId] && dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)))
+                if (eventId == -1 ?
+                    (LocalAppContextSwitches.DisableEventListenerFiltering || dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
+                    (dispatcher.m_EventEnabled[eventId]))
                 {
                     {
                         try
@@ -2652,7 +2653,7 @@ namespace System.Diagnostics.Tracing
                                 m_matchAnyKeyword = unchecked(m_matchAnyKeyword | commandArgs.matchAnyKeyword);
                         }
 
-                        if (commandArgs.dispatcher != null)
+                        if (commandArgs.dispatcher != null && commandArgs.dispatcher.m_Listener != null)
                         {
                             commandArgs.dispatcher.UpdateLevelAndKeyword(commandArgs.level, commandArgs.matchAnyKeyword);
                             m_EventListenersMaxLevel = commandArgs.level > m_EventListenersMaxLevel ? commandArgs.level : m_EventListenersMaxLevel;
@@ -2728,8 +2729,11 @@ namespace System.Diagnostics.Tracing
                                     break;
                                 }
 
-                                maxLevel = maxLevel > dispatcher.m_Level ? maxLevel : dispatcher.m_Level;
-                                unionKeywords |= dispatcher.m_Keywords;
+                                if (dispatcher.m_Listener != null)
+                                {
+                                    maxLevel = maxLevel > dispatcher.m_Level ? maxLevel : dispatcher.m_Level;
+                                    unionKeywords |= dispatcher.m_Keywords;
+                                }
                             }
                             m_eventData[i].EnabledForAnyListener = isEnabledForAnyListener;
                             m_EventListenersMaxLevel = maxLevel;
