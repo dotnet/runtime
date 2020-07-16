@@ -68,7 +68,7 @@ namespace System.Net.Http
 
         private bool _http2Enabled;
         // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
-        private Http2Connection[]? _http2Connections;
+        private volatile Http2Connection[]? _http2Connections;
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
@@ -515,6 +515,13 @@ namespace System.Net.Http
                     }
                 }
 
+                if (currentHttp2Connections != null && _poolManager.Settings.EnableMultipleHttp2Connections && currentHttp2Connections.Count == _poolManager.Settings._maxHttp2ConnectionsPerServer)
+                {
+                    // All connections are busy so pick a random one to wait on it.
+                    int randomIndex = request.GetHashCode() % _poolManager.Settings._maxHttp2ConnectionsPerServer;
+                    return (currentHttp2Connections[randomIndex], false, null);
+                }
+
                 // Recheck if HTTP2 has been disabled by a previous attempt.
                 if (_http2Enabled)
                 {
@@ -816,16 +823,6 @@ namespace System.Net.Http
                     if (NetEventSource.IsEnabled)
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
-                    }
-
-                    // Eat exception and try again.
-                    continue;
-                }
-                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnNewConnection)
-                {
-                    if (NetEventSource.IsEnabled)
-                    {
-                        Trace($"Retrying request on a new connection after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again.
@@ -1422,7 +1419,7 @@ namespace System.Net.Http
 
                     if (invalidatedIndex < localHttp2Connections.Length - 1)
                     {
-                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - i);
+                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
                     }
 
                     _http2Connections = newHttp2Connections;

@@ -555,7 +555,4 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
-  <data name="net_http_max_active_streams_number_reached" xml:space="preserve">
-    <value>Reached the maximum number of streams on the HTTP/2 connection.</value>
-  </data>
 </root>

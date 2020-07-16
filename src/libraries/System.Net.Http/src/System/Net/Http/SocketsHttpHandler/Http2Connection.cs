@@ -1172,7 +1172,7 @@ namespace System.Net.Http
                     {
                         // Maximum number of streams reached
                         _canAddNewStream = false;
-                        throw new HttpRequestException(SR.net_http_max_active_streams_number_reached, null, RequestRetryType.RetryOnNewConnection);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
                     }
                 }
                 else
