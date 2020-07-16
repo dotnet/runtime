@@ -533,6 +533,16 @@ namespace System.Net.Test.Common
 
             public async Task<string> ReadLineAsync()
             {
+                byte[] lineBytes = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                if (lineBytes is null)
+                    return null;
+
+                return Encoding.ASCII.GetString(lineBytes);
+            }
+
+            private async Task<byte[]> ReadLineBytesAsync()
+            {
                 int index = 0;
                 int startSearch = _readStart;
 
@@ -578,7 +588,7 @@ namespace System.Net.Test.Common
                     if (_readBuffer[_readStart + stringLength] == '\n') { stringLength--; }
                     if (_readBuffer[_readStart + stringLength] == '\r') { stringLength--; }
 
-                    string line = System.Text.Encoding.ASCII.GetString(_readBuffer, _readStart, stringLength + 1);
+                    byte[] line = _readBuffer.AsSpan(_readStart, stringLength + 1).ToArray();
                     _readStart = index + 1;
                     return line;
                 }
@@ -609,6 +619,32 @@ namespace System.Net.Test.Common
                 string line;
                 while (!string.IsNullOrEmpty(line = await ReadLineAsync().ConfigureAwait(false)))
                 {
+                    lines.Add(line);
+                }
+
+                if (line == null)
+                {
+                    throw new IOException("Unexpected EOF trying to read request header");
+                }
+
+                return lines;
+            }
+
+            private async Task<List<byte[]>> ReadRequestHeaderBytesAsync()
+            {
+                var lines = new List<byte[]>();
+
+                byte[] line;
+
+                while (true)
+                {
+                    line = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                    if (line is null || line.Length == 0)
+                    {
+                        break;
+                    }
+
                     lines.Add(line);
                 }
 
@@ -658,24 +694,24 @@ namespace System.Net.Test.Common
 
             public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
             {
-                List<string> headerLines = null;
                 HttpRequestData requestData = new HttpRequestData();
 
-                headerLines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+                List<byte[]> headerLines = await ReadRequestHeaderBytesAsync().ConfigureAwait(false);
 
                 // Parse method and path
-                string[] splits = headerLines[0].Split(' ');
+                string[] splits = Encoding.ASCII.GetString(headerLines[0]).Split(' ');
                 requestData.Method = splits[0];
                 requestData.Path = splits[1];
 
                 // Convert header lines to key/value pairs
                 // Skip first line since it's the status line
-                foreach (var line in headerLines.Skip(1))
+                foreach (byte[] lineBytes in headerLines.Skip(1))
                 {
+                    string line = Encoding.ASCII.GetString(lineBytes);
                     int offset = line.IndexOf(':');
                     string name = line.Substring(0, offset);
                     string value = line.Substring(offset + 1).TrimStart();
-                    requestData.Headers.Add(new HttpHeaderData(name, value));
+                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes));
                 }
 
                 if (requestData.Method != "GET")
@@ -755,7 +791,7 @@ namespace System.Net.Test.Common
 
             public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
             {
-                string headerString = null;
+                MemoryStream headerBytes = new MemoryStream();
                 int contentLength = -1;
                 bool isChunked = false;
                 bool hasContentLength  = false;
@@ -780,22 +816,35 @@ namespace System.Net.Test.Common
                             isChunked = true;
                         }
 
-                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
+                        headerBytes.Write(Encoding.ASCII.GetBytes(headerData.Name));
+                        headerBytes.Write(stackalloc byte[] { (byte)':', (byte)' ' });
+                        headerBytes.Write((headerData.ValueEncoding ?? Encoding.ASCII).GetBytes(headerData.Value));
+                        headerBytes.Write(stackalloc byte[] { (byte)'\r', (byte)'\n' });
                     }
                 }
 
                 bool endHeaders = content != null || isFinal;
                 if (statusCode != null)
                 {
-                    // If we need to send status line, prepped it to headers and possibly add missing headers to the end.
-                    headerString =
+                    byte[] temp = headerBytes.ToArray();
+
+                    headerBytes.SetLength(0);
+
+                    headerBytes.Write(Encoding.ASCII.GetBytes(
                         $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "") +
-                        headerString +
-                        (endHeaders ? "\r\n" : "");
+                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "")));
+
+                    headerBytes.Write(temp);
+
+                    if (endHeaders)
+                    {
+                        headerBytes.Write(stackalloc byte[] { (byte)'\r', (byte)'\n' });
+                    }
                 }
 
-                await SendResponseAsync(headerString).ConfigureAwait(false);
+                headerBytes.Position = 0;
+                await headerBytes.CopyToAsync(_stream).ConfigureAwait(false);
+
                 if (content != null)
                 {
                     await SendResponseBodyAsync(content, isFinal: isFinal, requestId: requestId).ConfigureAwait(false);
