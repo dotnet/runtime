@@ -12,7 +12,8 @@
 #include <unicode/localpointer.h>
 #include <unicode/utrace.h>
 
-static void log_icu_error (const char * name, UErrorCode status) {
+static void log_icu_error(const char * name, UErrorCode status)
+{
     const char * statusText = u_errorName(status);
     fprintf(stderr, "ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
 }
