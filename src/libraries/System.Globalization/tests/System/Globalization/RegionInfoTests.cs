@@ -90,8 +90,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        // RegionInfo.NativeName is not supported by Browser's ICU
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [InlineData("GB", "United Kingdom")]
         [InlineData("SE", "Sverige")]
         [InlineData("FR", "France")]

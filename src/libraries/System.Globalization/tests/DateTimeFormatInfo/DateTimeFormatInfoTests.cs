@@ -60,8 +60,6 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        // Browser's ICU doesn't support NativeCalendarName
-        [PlatformSpecific(~TestPlatforms.Browser)]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
         public void NativeCalendarName_Get_ReturnsExpected(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {
