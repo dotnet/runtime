@@ -23,7 +23,7 @@ namespace System.Net.Security.Tests
         private readonly ITestOutputHelper _logVerbose;
         private readonly X509Certificate2 _serverCertificate;
 
-        public static bool IsNotWindows7 => !PlatformDetection.IsWindows7;
+        public static bool SupportsTls11 => PlatformDetection.SupportsTls11;
 
         public ServerAsyncAuthenticateTest(ITestOutputHelper output)
         {
@@ -99,7 +99,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsTls11))]
         [InlineData(SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls12)]
         public async Task ServerAsyncAuthenticate_SniSetVersion_Success(SslProtocols version)
