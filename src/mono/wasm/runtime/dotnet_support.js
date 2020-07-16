@@ -29,7 +29,7 @@ var DotNetSupportLib = {
 			return MONO.string_decoder.copy (mono_obj);
 		}
 	},
-	mono_wasm_invoke_js_marshalled: function(exceptionMessage, asyncHandleLongPtr, functionName, argsJson) {
+	mono_wasm_invoke_js_marshalled: function(exceptionMessage, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid) {
 
 		var mono_string = DOTNET._dotnet_get_global()._mono_string_cached
 			|| (DOTNET._dotnet_get_global()._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
@@ -54,10 +54,10 @@ var DotNetSupportLib = {
 			}
 
 			if (asyncHandleJsNumber) {
-				dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString);
+				dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
 				return 0;
 			} else {
-				var resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString);
+				var resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
 				return resultJson === null ? 0 : mono_string(resultJson);
 			}
 		} catch (ex) {
