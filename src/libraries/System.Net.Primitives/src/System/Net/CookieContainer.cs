@@ -919,8 +919,8 @@ namespace System.Net
             // - The cookie-path is a prefix of the request-path, and the first character of the request-path that is not included in the cookie-path is a %x2F ("/") character.
             if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
                 return false;
-            return requestPath.Length <= cookiePath.Length ||
-                   cookiePath.Length > 0 && cookiePath[cookiePath.Length - 1] == '/' ||
+            return requestPath.Length == cookiePath.Length ||
+                   cookiePath.Length > 0 && cookiePath[^1] == '/' ||
                    requestPath[cookiePath.Length] == '/';
         }
 

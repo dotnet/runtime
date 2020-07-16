@@ -802,7 +802,7 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(expectedPath, actualCookie.Path);
         }
 
-        // Test math-match as defined in
+        // Test path-match as defined in
         // https://tools.ietf.org/html/rfc6265#section-5.1.4
         public static readonly TheoryData<bool, string[], string, int> PathMatchData = new TheoryData<bool, string[], string, int>
         {
@@ -812,6 +812,9 @@ namespace System.Net.Primitives.Unit.Tests
             {false, new [] {"/a/foo", "/a/lol"}, "/a/foo/1/2/3", 1},
             {false, new [] {"/a/", "/x"}, "/a/hello", 1},
             {false, new [] {"", "/x"}, "/y", 1},
+            {false, new [] {"//"}, "/", 0},
+            {false, new [] {"//"}, "//", 1},
+            {false, new [] {"", "/", "//", "///"}, "///", 4},
 
             // Should not match the second half of the criteria:
             // "The cookie-path is a prefix of the request-path, and the first
