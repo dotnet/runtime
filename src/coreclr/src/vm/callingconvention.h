@@ -1490,7 +1490,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-#ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
+#ifdef ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
         {
             _ASSERTE(!thValueType.IsNull());
 
@@ -1548,13 +1548,17 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 flags |= RETURN_HAS_RET_BUFFER;
                 break;
             }
-#endif
-
+            
             if  (size <= ENREGISTERED_RETURNTYPE_MAXSIZE)
                 break;
+#else
+
+            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+                break;
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 #endif // UNIX_AMD64_ABI
         }
-#endif // ENREGISTERED_RETURNTYPE_MAXSIZE
+#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 
         // Value types are returned using return buffer by default
         flags |= RETURN_HAS_RET_BUFFER;
