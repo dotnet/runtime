@@ -290,6 +290,49 @@ interface ICLRDebuggingLibraryProvider2 : IUnknown
         [out] LPWSTR* ppResolvedModulePath);
 }
 
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider3                                                     **
+ ** Implemented by API user                                                           **
+ ** This interface allows the debugger to provide module paths which are needed for   **
+ ** debugging a particular CLR such as mscordbi and mscordacwks.                      **
+ **************************************************************************************/
+[
+    uuid(5C3BACDF-4024-488E-B413-DC0CAA8ABA73),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider3 : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a module path     **
+    ** which is needed for debugging. The debugger may use any available means to    **
+    ** locate and/or procure the module. See the security note below for important   **
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    ** inBuildId - The buildId of the module being requested                         **
+    ** inBuildIdSize - The size of the buildId for the module being requested        **
+    ** ppResolvedModulePath - Where *ppResolvedModulePath is a null terminated       **
+    **                        path to the module dll. On Windows it should be        **
+    **                        allocated with CoTaskMemAlloc. On Unix it should be    **
+    **                        allocated with malloc. Failure leave it untouched. See **
+    **                        security note below!                                   **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideLibrary3(
+        [in] const WCHAR* pwszFileName,
+        [in] ULONG32 inBuildIdSize,
+        [in, size_is(inBuildIdSize)] LPBYTE inBuildId,
+        [out] LPWSTR* ppResolvedModulePath);
+}
+
 /**************************************************************************************
  ** ICLRDebugging                                                                    **
  ** Activated using mscoree!CLRCreateInstance.                                       **
