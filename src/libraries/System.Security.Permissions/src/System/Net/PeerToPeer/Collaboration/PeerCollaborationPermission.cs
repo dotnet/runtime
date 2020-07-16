@@ -6,7 +6,7 @@ using System.Security.Permissions;
 
 namespace System.Net.PeerToPeer.Collaboration
 {
-#if CAS_OBSOLETIONS
+#if NET50_OBSOLETIONS
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class PeerCollaborationPermission : CodeAccessPermission, IUnrestrictedPermission

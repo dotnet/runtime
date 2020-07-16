@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Security
 {
-#if CAS_OBSOLETIONS
+#if NET50_OBSOLETIONS
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [Serializable]

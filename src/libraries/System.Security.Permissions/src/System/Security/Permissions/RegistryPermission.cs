@@ -5,7 +5,7 @@ using System.Security.AccessControl;
 
 namespace System.Security.Permissions
 {
-#if CAS_OBSOLETIONS
+#if NET50_OBSOLETIONS
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed partial class RegistryPermission : CodeAccessPermission, IUnrestrictedPermission

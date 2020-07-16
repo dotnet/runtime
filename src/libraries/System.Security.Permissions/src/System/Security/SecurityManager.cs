@@ -13,7 +13,7 @@ namespace System.Security
         [Obsolete]
         public static bool SecurityEnabled { get; set; }
         public static bool CurrentThreadRequiresSecurityContextCapture() { return false; }
-#if CAS_OBSOLETIONS
+#if NET50_OBSOLETIONS
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public static PermissionSet GetStandardSandbox(Evidence evidence) { return default(PermissionSet); }
