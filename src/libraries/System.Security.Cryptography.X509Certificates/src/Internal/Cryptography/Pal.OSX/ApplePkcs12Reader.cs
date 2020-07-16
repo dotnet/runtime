@@ -15,7 +15,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class ApplePkcs12Reader : UnixPkcs12Reader
     {
-        internal ApplePkcs12Reader(byte[] data)
+        internal ApplePkcs12Reader(ReadOnlySpan<byte> data)
         {
             ParsePkcs12(data);
         }
@@ -23,7 +23,7 @@ namespace Internal.Cryptography.Pal
         protected override ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data)
         {
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
-                data.ToArray(),
+                data.Span,
                 X509ContentType.Cert,
                 SafePasswordHandle.InvalidHandle,
                 SafeTemporaryKeychainHandle.InvalidHandle,

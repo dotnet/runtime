@@ -500,7 +500,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateFromAxisAngle(Vector3f,float)
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/36586", RuntimeTestModes.JitStress)]
         public void Matrix4x4CreateFromAxisAngleTest()
         {
             float radians = MathHelper.ToRadians(-30.0f);

@@ -722,17 +722,17 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PwdInfoAllowReversiblePasswordEncryption, typeof(ComputerPrincipal),       null,   null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)}
         };
 
-        private static readonly Hashtable s_userPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_userPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_userPropertyMappingTableByProperty;
+        private static readonly Hashtable s_userPropertyMappingTableByWinNT;
 
-        private static readonly Hashtable s_groupPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_groupPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_groupPropertyMappingTableByProperty;
+        private static readonly Hashtable s_groupPropertyMappingTableByWinNT;
 
-        private static readonly Hashtable s_computerPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_computerPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_computerPropertyMappingTableByProperty;
+        private static readonly Hashtable s_computerPropertyMappingTableByWinNT;
 
-        private static readonly Dictionary<string, ObjectMask> s_validPropertyMap = null;
-        private static readonly Dictionary<Type, ObjectMask> s_maskMap = null;
+        private static readonly Dictionary<string, ObjectMask> s_validPropertyMap;
+        private static readonly Dictionary<Type, ObjectMask> s_maskMap;
 
         [Flags]
         private enum ObjectMask

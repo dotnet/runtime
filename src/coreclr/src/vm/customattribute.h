@@ -105,7 +105,6 @@ public:
         CaNamedArgArrayREF* ppCustomAttributeNamedArguments,
         AssemblyBaseObject* pAssemblyUNSAFE);
 
-private:
     static HRESULT ParseAttributeArgumentValues(
         void* pCa,
         INT32 cCa,
@@ -116,6 +115,7 @@ private:
         COUNT_T cNamedArgs,
         DomainAssembly* pDomainAssembly);
 
+private:
     static HRESULT ParseCaValue(
         CustomAttributeParser &ca,
         CaValue* pCaArg,

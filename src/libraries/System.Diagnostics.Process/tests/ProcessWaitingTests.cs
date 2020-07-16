@@ -119,7 +119,7 @@ namespace System.Diagnostics.Tests
             Assert.False(Process.GetCurrentProcess().WaitForExit(milliseconds));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(0)]  // poll
         [InlineData(10)] // real timeout
         public async Task CurrentProcess_WaitAsyncNeverCompletes(int milliseconds)

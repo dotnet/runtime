@@ -21,7 +21,6 @@ namespace System.Data.Odbc
         private WeakReference _weakTransaction;
 
         private OdbcConnectionHandle _connectionHandle;
-        private readonly ConnectionState _extraState = default(ConnectionState);    // extras, like Executing and Fetching, that we add to the State.
 
         public OdbcConnection(string connectionString) : this()
         {
@@ -155,7 +154,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                return (this.State | _extraState);
+                return this.State;
             }
         }
 

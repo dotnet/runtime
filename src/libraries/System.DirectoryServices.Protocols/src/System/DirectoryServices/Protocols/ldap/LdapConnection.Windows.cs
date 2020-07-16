@@ -9,7 +9,7 @@ namespace System.DirectoryServices.Protocols
 {
     public partial class LdapConnection
     {
-        private bool _setFQDNDone = false;
+        private bool _setFQDNDone;
 
         private void InternalInitConnectionHandle(string hostname)
         {

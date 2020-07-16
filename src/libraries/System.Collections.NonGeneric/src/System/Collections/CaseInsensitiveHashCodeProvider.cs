@@ -13,7 +13,7 @@ namespace System.Collections
     [Obsolete("Please use StringComparer instead.")]
     public class CaseInsensitiveHashCodeProvider : IHashCodeProvider
     {
-        private static volatile CaseInsensitiveHashCodeProvider? s_invariantCaseInsensitiveHashCodeProvider = null;
+        private static volatile CaseInsensitiveHashCodeProvider? s_invariantCaseInsensitiveHashCodeProvider;
         private readonly CompareInfo _compareInfo;
 
         public CaseInsensitiveHashCodeProvider()

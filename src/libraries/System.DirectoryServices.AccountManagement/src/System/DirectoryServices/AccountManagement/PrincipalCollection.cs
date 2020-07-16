@@ -671,8 +671,8 @@ namespace System.DirectoryServices.AccountManagement
         private readonly List<Principal> _removedValuesPending = new List<Principal>();
 
         // Has this collection been cleared?
-        private bool _clearPending = false;
-        private bool _clearCompleted = false;
+        private bool _clearPending;
+        private bool _clearCompleted;
 
         internal bool ClearCompleted
         {
@@ -693,7 +693,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // To support disposal
-        private bool _disposed = false;
+        private bool _disposed;
 
         private void CheckDisposed()
         {

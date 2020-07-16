@@ -485,7 +485,7 @@ namespace Internal.Cryptography.Pal
                 // Since CloneTo always says the store is empty, no measurable work is ever done.
             }
 
-            SafeHandle? IStorePal.SafeHandle { get; } = null;
+            SafeHandle? IStorePal.SafeHandle { get; }
         }
     }
 }

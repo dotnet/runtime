@@ -4,43 +4,10 @@
 
 namespace System.Runtime.InteropServices
 {
-    public class StandardOleMarshalObject : MarshalByRefObject, IMarshal
+    public class StandardOleMarshalObject : MarshalByRefObject
     {
         protected StandardOleMarshalObject()
         {
-        }
-
-        int IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out Guid pCid)
-        {
-            pCid = Guid.Empty;
-            return HResults.E_NOTIMPL;
-        }
-
-        int IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize)
-        {
-            pSize = -1;
-            return HResults.E_NOTIMPL;
-        }
-
-        int IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags)
-        {
-            return HResults.E_NOTIMPL;
-        }
-
-        int IMarshal.UnmarshalInterface(IntPtr pStm, ref Guid riid, out IntPtr ppv)
-        {
-            ppv = IntPtr.Zero;
-            return HResults.E_NOTIMPL;
-        }
-
-        int IMarshal.ReleaseMarshalData(IntPtr pStm)
-        {
-            return HResults.E_NOTIMPL;
-        }
-
-        int IMarshal.DisconnectObject(int dwReserved)
-        {
-            return HResults.E_NOTIMPL;
         }
     }
 }

@@ -85,12 +85,6 @@ struct AutoExpVisibleValue
   private:
     union
     {
-        // Only include a class name here if it is customarily referred to through an abstract interface.
-
-#if defined(FEATURE_APPX)
-        const class AppXBindResultImpl                      *_asAppXBindResultImpl;
-#endif
-
         const void                                          *_pPreventEmptyUnion;
     };
 };

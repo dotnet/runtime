@@ -1949,11 +1949,11 @@ namespace System.Net
         #region Supporting Types
         private sealed class ProgressData
         {
-            internal long BytesSent = 0;
+            internal long BytesSent;
             internal long TotalBytesToSend = -1;
-            internal long BytesReceived = 0;
+            internal long BytesReceived;
             internal long TotalBytesToReceive = -1;
-            internal bool HasUploadPhase = false;
+            internal bool HasUploadPhase;
 
             internal void Reset()
             {

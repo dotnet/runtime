@@ -93,9 +93,9 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //
-        private readonly string _username = null;
-        private readonly string _password = null;
-        private string _domainname = null;
-        private string _parsedUserName = null;
+        private readonly string _username;
+        private readonly string _password;
+        private string _domainname;
+        private string _parsedUserName;
     }
 }

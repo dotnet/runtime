@@ -276,4 +276,10 @@
   <data name="CompositeRootPath" xml:space="preserve">
     <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
   </data>
+  <data name="ManagedCppNotSupported" xml:space="preserve">
+    <value>Error: managed C++ is not supported: '{0}'</value>
+  </data>
+  <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
+    <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
+  </data>
 </root>

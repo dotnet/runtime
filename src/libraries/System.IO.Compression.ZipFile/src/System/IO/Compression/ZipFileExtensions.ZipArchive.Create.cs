@@ -37,6 +37,7 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
         ///
+        /// <param name="destination">The zip archive to add the file to.</param>
         /// <param name="sourceFileName">The path to the file on the file system to be copied from. The path is permitted to specify
         /// relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to be created.</param>
@@ -67,6 +68,7 @@ namespace System.IO.Compression
         /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
         ///
+        /// <param name="destination">The zip archive to add the file to.</param>
         /// <param name="sourceFileName">The path to the file on the file system to be copied from. The path is permitted to specify relative
         /// or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to be created.</param>

@@ -36,7 +36,7 @@ namespace System.IO.Tests
         public Task NonExistentPathAsync() => Assert.ThrowsAsync<DirectoryNotFoundException>(
             async () => await WriteAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), "Text"));
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NullContent_CreatesFileAsync()
         {
             string path = GetTestFilePath();

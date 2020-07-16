@@ -223,7 +223,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
         private bool _isServer;
-        private bool _handshakeCompleted = false;
+        private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
 

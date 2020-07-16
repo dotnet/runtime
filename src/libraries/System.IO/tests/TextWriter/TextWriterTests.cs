@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -463,7 +464,7 @@ namespace System.IO.Tests
 
         #region Write Async Overloads
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteAsyncCharTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -473,7 +474,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteAsyncStringTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -484,7 +485,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteAsyncCharArrayIndexCountTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -498,7 +499,7 @@ namespace System.IO.Tests
 
         #region WriteLineAsync Overloads
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineAsyncTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -508,7 +509,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineAsyncCharTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -518,7 +519,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineAsyncStringTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -529,7 +530,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineAsyncCharArrayIndexCount()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -563,7 +564,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteCharMemoryTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -574,7 +575,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WriteLineCharMemoryTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
@@ -611,10 +612,15 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
+            if (!isSynchronized && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
                 TextWriter tw = isSynchronized ? TextWriter.Synchronized(ctw) : ctw;
@@ -624,10 +630,15 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
+            if (!isSynchronized && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
                 TextWriter tw = isSynchronized ? TextWriter.Synchronized(ctw) : ctw;

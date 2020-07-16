@@ -11,7 +11,7 @@ namespace System.Transactions
     /// </summary>
     internal readonly struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
     {
-        public static readonly TransactionTraceIdentifier Empty = default;
+        public static TransactionTraceIdentifier Empty => default;
 
         public TransactionTraceIdentifier(string transactionIdentifier, int cloneIdentifier)
         {

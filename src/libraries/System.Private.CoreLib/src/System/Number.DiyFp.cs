@@ -20,6 +20,7 @@ namespace System
         {
             public const int DoubleImplicitBitIndex = 52;
             public const int SingleImplicitBitIndex = 23;
+            public const int HalfImplicitBitIndex = 10;
 
             public const int SignificandSize = 64;
 
@@ -54,6 +55,20 @@ namespace System
                 return result;
             }
 
+            // Computes the two boundaries of value.
+            //
+            // The bigger boundary (mPlus) is normalized.
+            // The lower boundary has the same exponent as mPlus.
+            //
+            // Precondition:
+            //  The value encoded by value must be greater than 0.
+            public static DiyFp CreateAndGetBoundaries(Half value, out DiyFp mMinus, out DiyFp mPlus)
+            {
+                var result = new DiyFp(value);
+                result.GetBoundaries(HalfImplicitBitIndex, out mMinus, out mPlus);
+                return result;
+            }
+
             public DiyFp(double value)
             {
                 Debug.Assert(double.IsFinite(value));
@@ -65,6 +80,13 @@ namespace System
             {
                 Debug.Assert(float.IsFinite(value));
                 Debug.Assert(value > 0.0f);
+                f = ExtractFractionAndBiasedExponent(value, out e);
+            }
+
+            public DiyFp(Half value)
+            {
+                Debug.Assert(Half.IsFinite(value));
+                Debug.Assert((float)value > 0.0f);
                 f = ExtractFractionAndBiasedExponent(value, out e);
             }
 

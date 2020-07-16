@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
     // object also maintains the inclusive prefix list in a tokenized form.
     internal class ExcAncestralNamespaceContextManager : AncestralNamespaceContextManager
     {
-        private readonly Hashtable _inclusivePrefixSet = null;
+        private readonly Hashtable _inclusivePrefixSet;
 
         internal ExcAncestralNamespaceContextManager(string inclusiveNamespacesPrefixList)
         {

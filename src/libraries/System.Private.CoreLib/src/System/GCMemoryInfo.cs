@@ -11,16 +11,18 @@ namespace System
     // if you change this!
     //
     /// <summary>
-    /// This represents the size and the fragmenation of a generation on entry and on exit
-    /// of the GC reported in GCMemoryInfo.
-    /// SizeBeforeBytes/SizeAfterBytes is the total size of the generation, including
-    /// fragmentation. Fragmentation is the same as FragmentedBytes, but for a generation.
+    /// Represents the size and the fragmenation of a generation on entry and on exit
+    /// of the GC reported in <see cref="GCMemoryInfo"/>.
     /// </summary>
     public readonly struct GCGenerationInfo
     {
+        /// <summary>Size in bytes on entry to the reported collection.</summary>
         public long SizeBeforeBytes { get; }
+        /// <summary>Fragmentation in bytes on entry to the reported collection.</summary>
         public long FragmentationBeforeBytes { get; }
+        /// <summary>Size in bytes on exit from the reported collection.</summary>
         public long SizeAfterBytes { get; }
+        /// <summary>Fragmentation in bytes on exit from the reported collection.</summary>
         public long FragmentationAfterBytes { get; }
     }
 
@@ -28,22 +30,28 @@ namespace System
     // make sure you change the def in gc\gcinterface.h
     // if you change this!
     //
-    /// <summary>
+    /// <summary>Specifies the kind of a garbage collection.</summary>
+    /// <remarks>
     /// A GC can be one of the 3 kinds - ephemeral, full blocking or background.
     /// Their frequencies are very different. Ephemeral GCs happen much more often than
-    /// the other two kinds. Background GCs usually happen not very frequently and
+    /// the other two kinds. Background GCs usually happen infrequently, and
     /// full blocking GCs usually happen very infrequently. In order to sample the very
-    /// infrequent GCs we separate the kinds so users can ask for all 3 kinds while maintaining
-    /// a reasonable sampling rate, eg, if you are sampling once every second, without this
-    /// distinction, you may never observe a background GC. With this distinction you can
+    /// infrequent GCs, collections are separated into kinds so callers can ask for all three kinds while maintaining
+    /// a reasonable sampling rate, e.g. if you are sampling once every second, without this
+    /// distinction, you may never observe a background GC. With this distinction, you can
     /// always get info of the last GC of the kind you specify.
-    /// </summary>
+    /// </remarks>
     public enum GCKind
     {
-        Any = 0,          // any of the following kind
-        Ephemeral = 1,    // gen0 or gen1 GC
-        FullBlocking = 2, // blocking gen2 GC
-        Background = 3    // background GC (always gen2)
+        /// <summary>Any kind of collection.</summary>
+        Any = 0,
+        /// <summary>A gen0 or gen1 collection.</summary>
+        Ephemeral = 1,
+        /// <summary>A blocking gen2 collection.</summary>
+        FullBlocking = 2,
+        /// <summary>A background collection.</summary>
+        /// <remarks>This is always a gen2 collection.</remarks>
+        Background = 3
     };
 
     [StructLayout(LayoutKind.Sequential)]
@@ -78,14 +86,15 @@ namespace System
         internal ReadOnlySpan<TimeSpan> PauseDurationsAsSpan => MemoryMarshal.CreateReadOnlySpan<TimeSpan>(ref _pauseDuration0, 2);
     }
 
-    /// <summary>
-    /// A GC is identified by its Index which starts from 1 and increases with each GC (see more explanation
+    /// <summary>Provides a set of APIs that can be used to retrieve garbage collection information.</summary>
+    /// <remarks>
+    /// A GC is identified by its Index. which starts from 1 and increases with each GC (see more explanation
     /// of it in the Index prooperty).
     /// If you are asking for a GC that does not exist, eg, you called the GC.GetGCMemoryInfo API
     /// before a GC happened, or you are asking for a GC of GCKind.FullBlocking and no full blocking
     /// GCs have happened, you will get all 0's in the info, including the Index. So you can use Index 0
     /// to detect that no GCs, or no GCs of the kind you specified have happened.
-    /// </summary>
+    /// </remarks>
     public readonly struct GCMemoryInfo
     {
         private readonly GCMemoryInfoData _data;

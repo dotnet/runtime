@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
         private int _handleCount;
 
         private readonly int[] _gcCounts = new int[3];
-        private int _gcGeneration = 0;
+        private int _gcGeneration;
 
         public HandleCollector(string? name, int initialThreshold) :
             this(name, initialThreshold, int.MaxValue)

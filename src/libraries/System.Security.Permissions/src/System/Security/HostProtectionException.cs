@@ -49,9 +49,9 @@ namespace System.Security
             DemandedResources = (HostProtectionResource)info.GetValue(DemandedResourcesName, typeof(HostProtectionResource));
         }
 
-        public HostProtectionResource DemandedResources { get; } = default;
+        public HostProtectionResource DemandedResources { get; }
 
-        public HostProtectionResource ProtectedResources { get; } = default;
+        public HostProtectionResource ProtectedResources { get; }
 
         private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
         {

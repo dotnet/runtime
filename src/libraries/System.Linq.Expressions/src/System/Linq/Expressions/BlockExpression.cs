@@ -107,19 +107,19 @@ namespace System.Linq.Expressions
         internal virtual bool SameVariables(ICollection<ParameterExpression>? variables) =>
             variables == null || variables.Count == 0;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameExpressions(ICollection<Expression> expressions)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual Expression GetExpression(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual int ExpressionCount
         {
             get
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
             throw ContractUtils.Unreachable;
@@ -149,7 +149,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of BlockExpression which is being used.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;
@@ -708,13 +708,13 @@ namespace System.Linq.Expressions
             return -1;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Insert(int index, Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void RemoveAt(int index)
         {
             throw ContractUtils.Unreachable;
@@ -731,7 +731,7 @@ namespace System.Linq.Expressions
 
                 return _block.GetExpression(index);
             }
-            [ExcludeFromCodeCoverage] // Unreachable
+            [ExcludeFromCodeCoverage(Justification = "Unreachable")]
             set
             {
                 throw ContractUtils.Unreachable;
@@ -742,13 +742,13 @@ namespace System.Linq.Expressions
 
         #region ICollection<Expression> Members
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Add(Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Clear()
         {
             throw ContractUtils.Unreachable;
@@ -783,7 +783,7 @@ namespace System.Linq.Expressions
 
         public int Count => _block.ExpressionCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool IsReadOnly
         {
             get
@@ -792,7 +792,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool Remove(Expression item)
         {
             throw ContractUtils.Unreachable;

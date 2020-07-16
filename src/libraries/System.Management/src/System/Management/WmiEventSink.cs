@@ -9,7 +9,7 @@ namespace System.Management
 
     internal class WmiEventSink : IWmiEventSource
     {
-        private static int s_hash = 0;
+        private static int s_hash;
         private readonly int hash;
         private readonly ManagementOperationObserver watcher;
         private readonly object context;

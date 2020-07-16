@@ -278,7 +278,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>The maximum number of tasks that may be used concurrently to process messages.</summary>
         private int _maxDegreeOfParallelism = 1;
         /// <summary>Whether the code using this block will only ever have a single producer accessing the block at any given time.</summary>
-        private bool _singleProducerConstrained = false;
+        private bool _singleProducerConstrained;
 
         /// <summary>Initializes the <see cref="ExecutionDataflowBlockOptions"/>.</summary>
         public ExecutionDataflowBlockOptions() { }

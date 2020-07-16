@@ -11,7 +11,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class BlockingCollectionCancellationTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InternalCancellation_CompleteAdding_Negative()
         {
             BlockingCollection<int> coll1 = new BlockingCollection<int>();
@@ -27,7 +27,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while waiting
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InternalCancellation_WakingUp()
         {
             for (int test = 0; test < 2; test++)
@@ -61,7 +61,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExternalCancel_Negative()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(); //empty collection.
@@ -97,7 +97,7 @@ namespace System.Collections.Concurrent.Tests
                cs.Token);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExternalCancel_AddToAny()
         {
             for (int test = 0; test < 3; test++)

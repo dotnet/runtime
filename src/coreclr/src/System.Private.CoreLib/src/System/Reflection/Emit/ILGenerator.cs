@@ -63,10 +63,10 @@ namespace System.Reflection.Emit
         internal int m_localCount;
         internal SignatureHelper m_localSignature;
 
-        private int m_maxStackSize = 0;     // Maximum stack size not counting the exceptions.
+        private int m_maxStackSize;     // Maximum stack size not counting the exceptions.
 
-        private int m_maxMidStack = 0;      // Maximum stack size for a given basic block.
-        private int m_maxMidStackCur = 0;   // Running count of the maximum stack size for the current basic block.
+        private int m_maxMidStack;      // Maximum stack size for a given basic block.
+        private int m_maxMidStackCur;   // Running count of the maximum stack size for the current basic block.
 
         internal int CurrExcStackCount => m_currExcStackCount;
 

@@ -569,7 +569,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly bool _recursive;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         private readonly SAMStoreCtx _storeCtx;
 
@@ -582,8 +582,8 @@ namespace System.DirectoryServices.AccountManagement
 
         private List<string> _groupsToVisit = new List<string>();
 
-        private DirectoryEntry _current = null; // current member of the group (if enumerating local group and found a real principal)
-        private Principal _currentFakePrincipal = null;  // current member of the group (if enumerating local group and found a fake pricipal)
+        private DirectoryEntry _current; // current member of the group (if enumerating local group and found a real principal)
+        private Principal _currentFakePrincipal;  // current member of the group (if enumerating local group and found a fake pricipal)
 
         private UnsafeNativeMethods.IADsGroup _group;            // the group whose membership we're currently enumerating over
         private readonly UnsafeNativeMethods.IADsGroup _originalGroup;    // the group whose membership we started off with (before recursing)
@@ -592,10 +592,10 @@ namespace System.DirectoryServices.AccountManagement
 
         // foreign
         private List<DirectoryEntry> _foreignMembers = new List<DirectoryEntry>();
-        private Principal _currentForeign = null; // current member of the group (if enumerating foreign principal)
+        private Principal _currentForeign; // current member of the group (if enumerating foreign principal)
 
         private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
-        private ResultSet _foreignResultSet = null; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
+        private ResultSet _foreignResultSet; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
     }
 
     internal class SAMMembersSetBookmark : ResultSetBookmark

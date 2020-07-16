@@ -90,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public bool Equals(Key other) => _name == other._name && _parent == other._parent;
 
 #if  DEBUG
-            [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+            [ExcludeFromCodeCoverage(Justification = "Typed overload should always be the method called")]
 #endif
             public override bool Equals(object obj)
             {

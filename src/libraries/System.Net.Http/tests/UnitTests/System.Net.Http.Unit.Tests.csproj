@@ -74,6 +74,8 @@
              Link="ProductionCode\System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs"
              Link="ProductionCode\System\Net\Http\ByteArrayContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\CancellationHelper.cs"
+             Link="ProductionCode\System\Net\Http\CancellationHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\ClientCertificateOption.cs"
              Link="ProductionCode\System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\DelegatingHandler.cs"

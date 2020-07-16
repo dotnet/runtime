@@ -242,10 +242,6 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
         internal static string? GetExePath(int processId = -1)

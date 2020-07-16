@@ -11,7 +11,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class GetHostByNameTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginGetHostByName_BadName_Throws()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostByName("BadName", null, null);
@@ -29,7 +29,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.Loopback, entry.AddressList[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginGetHostByName_MachineNameWithIPv4_MatchesGetHostByName()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostByName(TestSettings.LocalHost, null, null);
@@ -113,7 +113,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));

@@ -98,7 +98,7 @@ namespace System.Collections.Concurrent.Tests
             AssertSetsEqual(expected, actual);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Add_TakeFromAnotherThread_ExpectedItemsTaken()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(oracle.Count, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 1, 100, true)]
         [InlineData(100, 4, 10, false)]
         [InlineData(1000, 11, 100, true)]

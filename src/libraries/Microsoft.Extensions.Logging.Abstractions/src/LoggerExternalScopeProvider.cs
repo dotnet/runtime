@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
         /// <inheritdoc />
         public IDisposable Push(object state)
         {
-            var parent = _currentScope.Value;
+            Scope parent = _currentScope.Value;
             var newScope = new Scope(this, state, parent);
             _currentScope.Value = newScope;
 

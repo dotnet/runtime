@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Internal
         public static bool TryGetDefaultValue(ParameterInfo parameter, out object? defaultValue)
         {
             bool hasDefaultValue;
-            var tryToGetDefaultValue = true;
+            bool tryToGetDefaultValue = true;
             defaultValue = null;
 
             try
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Internal
                     parameter.ParameterType.GetGenericTypeDefinition() == _nullable
                     )
                 {
-                    var underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
+                    Type? underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
                     if (underlyingType != null && underlyingType.IsEnum)
                     {
                         defaultValue = Enum.ToObject(underlyingType, defaultValue);

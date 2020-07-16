@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.Xslt
 {
     internal class KeyMatchBuilder : XPathBuilder, XPathPatternParser.IPatternBuilder
     {
-        private int _depth = 0;
+        private int _depth;
         private readonly PathConvertor _convertor;
 
         public KeyMatchBuilder(IXPathEnvironment env) : base(env)

@@ -27,7 +27,7 @@ namespace System.Xml.Schema
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
         private XmlQualifiedName _substitutionGroup = XmlQualifiedName.Empty;
         private XmlQualifiedName _typeName = XmlQualifiedName.Empty;
-        private XmlSchemaType? _type = null;
+        private XmlSchemaType? _type;
 
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
         private XmlSchemaType? _elementType;

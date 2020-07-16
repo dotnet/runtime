@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(stopWatch.ElapsedMilliseconds >= timeout);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(50)]

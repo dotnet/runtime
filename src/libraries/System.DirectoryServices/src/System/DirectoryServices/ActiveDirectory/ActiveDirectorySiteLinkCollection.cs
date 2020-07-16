@@ -9,9 +9,9 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySiteLinkCollection : CollectionBase
     {
-        internal DirectoryEntry de = null;
-        internal bool initialized = false;
-        internal DirectoryContext context = null;
+        internal DirectoryEntry de;
+        internal bool initialized;
+        internal DirectoryContext context;
 
         internal ActiveDirectorySiteLinkCollection() { }
 

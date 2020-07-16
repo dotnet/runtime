@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <ClsCompliant>false</ClsCompliant>
     <Nullable>annotations</Nullable>
   </PropertyGroup>

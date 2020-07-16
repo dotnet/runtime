@@ -54,7 +54,7 @@ namespace System.Reflection.Emit
 #pragma warning restore
         #endregion
 
-        public void SetBaseTypeConstraint(Type? baseTypeConstraint)
+        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             this.base_type = baseTypeConstraint ?? typeof(object);
         }

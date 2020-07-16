@@ -1364,7 +1364,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal override void DumpState()
         {
             base.DumpState();

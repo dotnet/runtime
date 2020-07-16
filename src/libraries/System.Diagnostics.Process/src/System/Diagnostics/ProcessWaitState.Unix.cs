@@ -98,6 +98,8 @@ namespace System.Diagnostics
         /// increments its ref count, and returns it.
         /// </summary>
         /// <param name="processId">The process ID for which we need wait state.</param>
+        /// <param name="isNewChild">Whether the wait state will represent a newly created child process.</param>
+        /// <param name="usesTerminal">Whether the wait state will represent a process that is expected to use the terminal.</param>
         /// <returns>The wait state object.</returns>
         internal static ProcessWaitState AddRef(int processId, bool isNewChild, bool usesTerminal)
         {
@@ -218,6 +220,9 @@ namespace System.Diagnostics
 
         /// <summary>Initialize the wait state object.</summary>
         /// <param name="processId">The associated process' ID.</param>
+        /// <param name="isChild">Whether the target process is a child of the current process.</param>
+        /// <param name="usesTerminal">Whether the target process is expected to use the terminal.</param>
+        /// <param name="exitTime">The approximate time the process exited.</param>
         private ProcessWaitState(int processId, bool isChild, bool usesTerminal, DateTime exitTime = default)
         {
             Debug.Assert(processId >= 0);

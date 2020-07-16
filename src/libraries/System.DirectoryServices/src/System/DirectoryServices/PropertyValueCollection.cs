@@ -22,9 +22,9 @@ namespace System.DirectoryServices
 
         private readonly DirectoryEntry _entry;
         private UpdateType _updateType = UpdateType.None;
-        private readonly ArrayList _changeList = null;
-        private readonly bool _allowMultipleChange = false;
-        private readonly bool _needNewBehavior = false;
+        private readonly ArrayList _changeList;
+        private readonly bool _allowMultipleChange;
+        private readonly bool _needNewBehavior;
 
         internal PropertyValueCollection(DirectoryEntry entry, string propertyName)
         {

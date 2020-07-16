@@ -155,7 +155,7 @@ namespace System.IO.Compression
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];

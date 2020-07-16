@@ -578,7 +578,6 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30003", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
         {
             Func<string, string, int> runsAsRoot = (string username, string useRootGroupsArg) =>

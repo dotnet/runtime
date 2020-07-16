@@ -15,14 +15,16 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerContext
     {
         private string _mutualAuthentication;
+        internal HttpListenerSession ListenerSession { get; private set; }
 
-        internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
+        internal HttpListenerContext(HttpListenerSession session, RequestContextBase memoryBlob)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpListener {httpListener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
-            _listener = httpListener;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpListener {session.Listener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
+            _listener = session.Listener;
+            ListenerSession = session;
             Request = new HttpListenerRequest(this, memoryBlob);
-            AuthenticationSchemes = httpListener.AuthenticationSchemes;
-            ExtendedProtectionPolicy = httpListener.ExtendedProtectionPolicy;
+            AuthenticationSchemes = _listener.AuthenticationSchemes;
+            ExtendedProtectionPolicy = _listener.ExtendedProtectionPolicy;
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {Request}");
         }
 
@@ -41,9 +43,9 @@ namespace System.Net
 
         internal HttpListener Listener => _listener;
 
-        internal SafeHandle RequestQueueHandle => _listener.RequestQueueHandle;
+        internal SafeHandle RequestQueueHandle => ListenerSession.RequestQueueHandle;
 
-        internal ThreadPoolBoundHandle RequestQueueBoundHandle => _listener.RequestQueueBoundHandle;
+        internal ThreadPoolBoundHandle RequestQueueBoundHandle => ListenerSession.RequestQueueBoundHandle;
 
         internal ulong RequestId => Request.RequestId;
 

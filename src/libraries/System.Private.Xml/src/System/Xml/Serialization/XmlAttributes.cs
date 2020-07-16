@@ -42,7 +42,7 @@ namespace System.Xml.Serialization
         private XmlEnumAttribute _xmlEnum;
         private bool _xmlIgnore;
         private bool _xmlns;
-        private object _xmlDefaultValue = null;
+        private object _xmlDefaultValue;
         private XmlRootAttribute _xmlRoot;
         private XmlTypeAttribute _xmlType;
         private XmlAnyAttributeAttribute _xmlAnyAttribute;

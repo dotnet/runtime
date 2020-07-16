@@ -36,21 +36,21 @@ namespace Microsoft.DotNet.PlatformAbstractions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(string s)
         {
-            var hashCode = (s != null) ? s.GetHashCode() : 0;
+            int hashCode = (s != null) ? s.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(object o)
         {
-            var hashCode = (o != null) ? o.GetHashCode() : 0;
+            int hashCode = (o != null) ? o.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add<TValue>(TValue value, IEqualityComparer<TValue> comparer)
         {
-            var hashCode = value != null ? comparer.GetHashCode(value) : 0;
+            int hashCode = value != null ? comparer.GetHashCode(value) : 0;
             Add(hashCode);
         }
 

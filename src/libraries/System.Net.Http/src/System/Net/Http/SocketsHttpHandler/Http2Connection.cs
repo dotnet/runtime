@@ -64,7 +64,7 @@ namespace System.Net.Http
         // report a cancellation to the user, but also block the connection until
         // the write completes. We avoid actually canceling the write, as we would
         // then have to close the whole connection.
-        private Task? _inProgressWrite = null;
+        private Task? _inProgressWrite;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -362,16 +362,23 @@ namespace System.Net.Http
             int streamId = frameHeader.StreamId;
             Http2Stream? http2Stream = GetStream(streamId);
 
-            // Note, http2Stream will be null if this is a closed stream.
-            // We will still process the headers, to ensure the header decoding state is up-to-date,
-            // but we will discard the decoded headers.
-
-            http2Stream?.OnHeadersStart();
+            IHttpHeadersHandler headersHandler;
+            if (http2Stream != null)
+            {
+                http2Stream.OnHeadersStart();
+                headersHandler = http2Stream;
+            }
+            else
+            {
+                // http2Stream will be null if this is a closed stream. We will still process the headers,
+                // to ensure the header decoding state is up-to-date, but we will discard the decoded headers.
+                headersHandler = NopHeadersHandler.Instance;
+            }
 
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 frameHeader.EndHeadersFlag,
-                http2Stream);
+                headersHandler);
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             while (!frameHeader.EndHeadersFlag)
@@ -386,16 +393,23 @@ namespace System.Net.Http
                 _hpackDecoder.Decode(
                     _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength),
                     frameHeader.EndHeadersFlag,
-                    http2Stream);
+                    headersHandler);
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
             }
 
             _hpackDecoder.CompleteDecode();
 
-            if (http2Stream != null)
-            {
-                http2Stream.OnHeadersComplete(endStream);
-            }
+            http2Stream?.OnHeadersComplete(endStream);
+        }
+
+        /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
+        private sealed class NopHeadersHandler : IHttpHeadersHandler
+        {
+            public static readonly NopHeadersHandler Instance = new NopHeadersHandler();
+            void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
+            void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index) { }
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
         }
 
         private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
@@ -1665,7 +1679,7 @@ namespace System.Net.Http
 
         // Note that this is safe to be called concurrently by multiple threads.
 
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) Trace($"{request}");
 

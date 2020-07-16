@@ -147,8 +147,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static IEnumerable<Type> FindIConfigureOptions(Type type)
         {
-            var serviceTypes = type.GetTypeInfo().ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType && 
+            IEnumerable<Type> serviceTypes = type.GetTypeInfo().ImplementedInterfaces
+                .Where(t => t.GetTypeInfo().IsGenericType &&
                 (t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>)
                 || t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>)));
             if (!serviceTypes.Any())
@@ -170,8 +170,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, Type configureType)
         {
             services.AddOptions();
-            var serviceTypes = FindIConfigureOptions(configureType);
-            foreach (var serviceType in serviceTypes)
+            IEnumerable<Type> serviceTypes = FindIConfigureOptions(configureType);
+            foreach (Type serviceType in serviceTypes)
             {
                 services.AddTransient(serviceType, configureType);
             }
@@ -187,8 +187,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, object configureInstance)
         {
             services.AddOptions();
-            var serviceTypes = FindIConfigureOptions(configureInstance.GetType());
-            foreach (var serviceType in serviceTypes)
+            IEnumerable<Type> serviceTypes = FindIConfigureOptions(configureInstance.GetType());
+            foreach (Type serviceType in serviceTypes)
             {
                 services.AddSingleton(serviceType, configureInstance);
             }

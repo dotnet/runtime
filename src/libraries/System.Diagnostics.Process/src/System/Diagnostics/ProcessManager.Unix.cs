@@ -66,10 +66,6 @@ namespace System.Diagnostics
                 machineName != Interop.Sys.GetHostName();
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         internal static void ThrowIfRemoteMachine(string machineName)
         {
             if (IsRemoteMachine(machineName))

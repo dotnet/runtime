@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);0649;CA1810</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netcoreapp2.0-Windows_NT;$(NetCoreAppCurrent)-OSX;netcoreapp2.0-OSX;$(NetCoreAppCurrent)-Linux;netcoreapp2.0-Linux;netstandard2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>

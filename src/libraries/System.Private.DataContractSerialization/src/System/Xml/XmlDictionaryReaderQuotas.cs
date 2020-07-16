@@ -26,7 +26,7 @@ namespace System.Xml
         private int _maxDepth;
         private int _maxNameTableCharCount;
         private int _maxBytesPerRead;
-        private XmlDictionaryReaderQuotaTypes _modifiedQuotas = 0x00;
+        private XmlDictionaryReaderQuotaTypes _modifiedQuotas;
         private const int DefaultMaxDepth = 32;
         private const int DefaultMaxStringContentLength = 8192;
         private const int DefaultMaxArrayLength = 16384;

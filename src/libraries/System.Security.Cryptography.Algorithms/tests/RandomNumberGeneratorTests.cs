@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void ConcurrentAccess()
         {
             const int ParallelTasks = 3;

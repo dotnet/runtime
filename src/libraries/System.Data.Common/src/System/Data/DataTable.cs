@@ -32,7 +32,7 @@ namespace System.Data
     public class DataTable : MarshalByValueComponent, IListSource, ISupportInitializeNotification, ISerializable, IXmlSerializable
     {
         private DataSet _dataSet;
-        private DataView _defaultView = null;
+        private DataView _defaultView;
 
         /// <summary>
         /// Monotonically increasing number representing the order <see cref="DataRow"/> have been added to <see cref="DataRowCollection"/>.
@@ -48,7 +48,7 @@ namespace System.Data
         private readonly ConstraintCollection _constraintCollection;
 
         //SimpleContent implementation
-        private int _elementColumnCount = 0;
+        private int _elementColumnCount;
 
         // relations
         internal DataRelationCollection _parentRelationsCollection;
@@ -64,9 +64,9 @@ namespace System.Data
         private int _shadowCount;
 
         // props
-        internal PropertyCollection _extendedProperties = null;
+        internal PropertyCollection _extendedProperties;
         private string _tableName = string.Empty;
-        internal string _tableNamespace = null;
+        internal string _tableNamespace;
         private string _tablePrefix = string.Empty;
         internal DataExpression _displayExpression;
         internal bool _fNestedInDataset = true;
@@ -85,48 +85,45 @@ namespace System.Data
         internal string _encodedTableName;           // For XmlDataDocument only
         internal DataColumn _xmlText;            // text values of a complex xml element
         internal DataColumn _colUnique;
-        internal bool _textOnly = false;         // the table has only text value with possible attributes
         internal decimal _minOccurs = 1;    // default = 1
         internal decimal _maxOccurs = 1;    // default = 1
-        internal bool _repeatableElement = false;
-        private object _typeName = null;
+        internal bool _repeatableElement;
+        private object _typeName;
 
         // primary key info
         internal UniqueConstraint _primaryKey;
         internal IndexField[] _primaryIndex = Array.Empty<IndexField>();
-        private DataColumn[] _delayedSetPrimaryKey = null;
+        private DataColumn[] _delayedSetPrimaryKey;
 
         // Loading Schema and/or Data related optimization
         private Index _loadIndex;
-        private Index _loadIndexwithOriginalAdded = null;
-        private Index _loadIndexwithCurrentDeleted = null;
+        private Index _loadIndexwithOriginalAdded;
+        private Index _loadIndexwithCurrentDeleted;
         private int _suspendIndexEvents;
 
-        private bool _savedEnforceConstraints = false;
-        private bool _inDataLoad = false;
+        private bool _savedEnforceConstraints;
+        private bool _inDataLoad;
         private bool _initialLoad;
-        private readonly bool _schemaLoading = false;
         private bool _enforceConstraints = true;
-        internal bool _suspendEnforceConstraints = false;
+        internal bool _suspendEnforceConstraints;
 
-        protected internal bool fInitInProgress = false;
-        private readonly bool _inLoad = false;
-        internal bool _fInLoadDiffgram = false;
+        protected internal bool fInitInProgress;
+        internal bool _fInLoadDiffgram;
 
         private byte _isTypedDataTable; // 0 == unknown, 1 = yes, 2 = No
         private DataRow[] _emptyDataRowArray;
 
         // Property Descriptor Cache for DataBinding
-        private PropertyDescriptorCollection _propertyDescriptorCollectionCache = null;
+        private PropertyDescriptorCollection _propertyDescriptorCollectionCache;
 
         // Cache for relation that has this table as nested child table.
         private DataRelation[] _nestedParentRelations = Array.Empty<DataRelation>();
 
         // Dependent column list for expression evaluation
-        internal List<DataColumn> _dependentColumns = null;
+        internal List<DataColumn> _dependentColumns;
 
         // events
-        private bool _mergingData = false;
+        private bool _mergingData;
         private DataRowChangeEventHandler _onRowChangedDelegate;
         private DataRowChangeEventHandler _onRowChangingDelegate;
         private DataRowChangeEventHandler _onRowDeletingDelegate;
@@ -148,7 +145,7 @@ namespace System.Data
         internal readonly List<DataView> _delayedViews = new List<DataView>();
         private readonly List<DataViewListener> _dataViewListeners = new List<DataViewListener>();
 
-        internal Hashtable _rowDiffId = null;
+        internal Hashtable _rowDiffId;
         internal readonly ReaderWriterLockSlim _indexesLock = new ReaderWriterLockSlim();
         internal int _ukColumnPositionForInference = -1;
 
@@ -1544,8 +1541,6 @@ namespace System.Data
             }
         }
 
-        internal bool SchemaLoading => _schemaLoading;
-
         internal void CacheNestedParent()
         {
             _nestedParentRelations = FindNestedParentRelations();
@@ -2777,7 +2772,7 @@ namespace System.Data
                 if (deferredException != null)
                     throw deferredException;
 
-                if (EnforceConstraints && !_inLoad)
+                if (EnforceConstraints)
                 {
                     // if we are evaluating expression, we need to validate constraints
                     int columnCount = _columnCollection.Count;
@@ -4156,7 +4151,7 @@ namespace System.Data
         private DataRowChangeEventArgs RaiseRowChanging(DataRowChangeEventArgs args, DataRow eRow, DataRowAction eAction, bool fireEvent)
         {
             // check all constraints
-            if (EnforceConstraints && !_inLoad)
+            if (EnforceConstraints)
             {
                 int columnCount = _columnCollection.Count;
                 for (int i = 0; i < columnCount; ++i)

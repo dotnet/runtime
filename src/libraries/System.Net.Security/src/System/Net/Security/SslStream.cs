@@ -655,6 +655,14 @@ namespace System.Net.Security
             }
         }
 
+        public string TargetHostName
+        {
+            get
+            {
+                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
+            }
+        }
+
         //
         // Stream contract implementation.
         //

@@ -396,6 +396,7 @@ namespace System.Data.Common
             return currentPosition;
         }
 
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'. This file is built into libraries that don't have string.Contains(char).
         private static bool IsValueValidInternal(string keyvalue)
         {
             if (null != keyvalue)
@@ -423,6 +424,7 @@ namespace System.Data.Common
             }
             return false;
         }
+#pragma warning restore CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
 
 #if DEBUG
         private static Dictionary<string, string> SplitConnectionString(string connectionString, Dictionary<string, string> synonyms, bool firstKey)

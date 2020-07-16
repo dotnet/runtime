@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="flags">The flags for the argument.</param>
         /// <param name="name">The name of the argument, if named; otherwise null.</param>
-        public static CSharpArgumentInfo Create(CSharpArgumentInfoFlags flags, string name)
+        public static CSharpArgumentInfo Create(CSharpArgumentInfoFlags flags, string? name)
         {
             return new CSharpArgumentInfo(flags, name);
         }

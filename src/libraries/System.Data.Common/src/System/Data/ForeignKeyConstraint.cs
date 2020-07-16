@@ -27,11 +27,11 @@ namespace System.Data
         private DataKey _parentKey;
 
         // Design time serialization
-        internal string _constraintName = null;
-        internal string[] _parentColumnNames = null;
-        internal string[] _childColumnNames = null;
-        internal string _parentTableName = null;
-        internal string _parentTableNamespace = null;
+        internal string _constraintName;
+        internal string[] _parentColumnNames;
+        internal string[] _childColumnNames;
+        internal string _parentTableName;
+        internal string _parentTableNamespace;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.ForeignKeyConstraint'/> class with the specified parent and

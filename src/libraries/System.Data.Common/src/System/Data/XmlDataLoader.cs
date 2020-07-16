@@ -16,19 +16,18 @@ namespace System.Data
     internal sealed class XmlDataLoader
     {
         private readonly DataSet _dataSet;
-        private XmlToDatasetMap _nodeToSchemaMap = null;
+        private XmlToDatasetMap _nodeToSchemaMap;
         private readonly Hashtable _nodeToRowMap;
-        private readonly Stack<DataRow> _childRowsStack = null;
-        private readonly Hashtable _htableExcludedNS = null;
-        private readonly bool _fIsXdr = false;
-        internal bool _isDiffgram = false;
+        private readonly Stack<DataRow> _childRowsStack;
+        private readonly bool _fIsXdr;
+        internal bool _isDiffgram;
 
-        private XmlElement _topMostNode = null;
-        private readonly bool _ignoreSchema = false;
+        private XmlElement _topMostNode;
+        private readonly bool _ignoreSchema;
 
         private readonly DataTable _dataTable;
-        private readonly bool _isTableLevel = false;
-        private bool _fromInference = false;
+        private readonly bool _isTableLevel;
+        private bool _fromInference;
 
         internal XmlDataLoader(DataSet dataset, bool IsXdr, bool ignoreSchema)
         {
@@ -239,13 +238,7 @@ namespace System.Data
 
         private bool FExcludedNamespace(string ns)
         {
-            if (ns.Equals(Keywords.XSD_XMLNS_NS))
-                return true;
-
-            if (_htableExcludedNS == null)
-                return false;
-
-            return _htableExcludedNS.Contains(ns);
+            return ns.Equals(Keywords.XSD_XMLNS_NS);
         }
 
         private bool FIgnoreNamespace(XmlNode node)
@@ -555,7 +548,7 @@ namespace System.Data
             row[col] = col.ConvertXmlToObject(xmlText);
         }
 
-        private XmlReader _dataReader = null;
+        private XmlReader _dataReader;
         private object _XSD_XMLNS_NS;
         private object _XDR_SCHEMA;
         private object _XDRNS;

@@ -22,7 +22,7 @@ namespace System.Data
     {
         private DataViewManager _dataViewManager;
         private DataTable _table;
-        private bool _locked = false;
+        private bool _locked;
         private Index _index;
         private Dictionary<string, Index> _findIndexes;
 
@@ -35,16 +35,16 @@ namespace System.Data
         /// <summary>
         /// IFilter will allow LinqDataView to wrap <see cref='System.Predicate&lt;DataRow&gt;'/> instead of using a DataExpression
         /// </summary>
-        private IFilter _rowFilter = null;
+        private IFilter _rowFilter;
 
         private DataViewRowState _recordStates = DataViewRowState.CurrentRows;
 
         private bool _shouldOpen = true;
-        private bool _open = false;
+        private bool _open;
         private bool _allowNew = true;
         private bool _allowEdit = true;
         private bool _allowDelete = true;
-        private bool _applyDefaultSort = false;
+        private bool _applyDefaultSort;
 
         internal DataRow _addNewRow;
         private ListChangedEventArgs _addNewMoved;
@@ -52,12 +52,12 @@ namespace System.Data
         private System.ComponentModel.ListChangedEventHandler _onListChanged;
         internal static ListChangedEventArgs s_resetEventArgs = new ListChangedEventArgs(ListChangedType.Reset, -1);
 
-        private DataTable _delayedTable = null;
-        private string _delayedRowFilter = null;
-        private string _delayedSort = null;
+        private DataTable _delayedTable;
+        private string _delayedRowFilter;
+        private string _delayedSort;
         private DataViewRowState _delayedRecordStates = (DataViewRowState)(-1);
-        private bool _fInitInProgress = false;
-        private bool _fEndInitInProgress = false;
+        private bool _fInitInProgress;
+        private bool _fEndInitInProgress;
 
         /// <summary>
         /// You can't delay create the DataRowView instances since multiple thread read access is valid
@@ -86,7 +86,7 @@ namespace System.Data
             public int GetHashCode(DataRow obj) => obj._objectID;
         }
 
-        private readonly DataViewListener _dvListener = null;
+        private readonly DataViewListener _dvListener;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);

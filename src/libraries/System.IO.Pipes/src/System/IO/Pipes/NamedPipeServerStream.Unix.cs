@@ -170,10 +170,6 @@ namespace System.IO.Pipes
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // This method calls a delegate while impersonating the client.
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {

@@ -41,6 +41,7 @@ namespace Internal.Cryptography
         }
 
         public int HashSizeInBits => _hMacProvider.HashSizeInBytes * 8;
+        public int HashSizeInBytes => _hMacProvider.HashSizeInBytes;
 
         public void ChangeKey(byte[] key)
         {
@@ -88,8 +89,14 @@ namespace Internal.Cryptography
         public byte[] FinalizeHashAndReset() =>
             _hMacProvider.FinalizeHashAndReset();
 
+        public int FinalizeHashAndReset(Span<byte> destination) =>
+            _hMacProvider.FinalizeHashAndReset(destination);
+
         public bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten) =>
             _hMacProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
+
+        public int GetCurrentHash(Span<byte> destination) =>
+            _hMacProvider.GetCurrentHash(destination);
 
         public void Dispose(bool disposing)
         {

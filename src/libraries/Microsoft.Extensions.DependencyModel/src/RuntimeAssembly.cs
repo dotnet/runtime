@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static RuntimeAssembly Create(string path)
         {
-            var assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
+            string assemblyName = System.IO.Path.GetFileNameWithoutExtension(path);
             if (assemblyName == null)
             {
                 throw new ArgumentException($"Provided path has empty file name '{path}'", nameof(path));

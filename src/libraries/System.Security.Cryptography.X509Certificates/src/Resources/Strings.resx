@@ -292,6 +292,12 @@
   <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
     <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
   </data>
+  <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
+    <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
+  </data>
+  <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
+    <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>
   </data>
@@ -420,5 +426,8 @@
   </data>
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
+  </data>
+  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
+    <value>System.Security.Cryptography is not supported on Browser.</value>
   </data>
 </root>

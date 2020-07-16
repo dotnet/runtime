@@ -106,12 +106,22 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
-        return StatusCode::CoreClrResolveFailure;
-    }
+        // in a single-file case we may not need coreclr,
+        // otherwise fail early.
+        if (!bundle::info_t::is_single_file_bundle())
+        {
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            return StatusCode::CoreClrResolveFailure;
+        }
 
-    // Get path in which CoreCLR is present.
-    clr_dir = get_directory(clr_path);
+        // save for tracing purposes.
+        clr_dir = clr_path;
+    }
+    else
+    {
+        // Get path in which CoreCLR is present.
+        clr_dir = get_directory(clr_path);
+    }
 
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.

@@ -3614,6 +3614,64 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	return FALSE;
 }
 
+static MonoType*
+mono_type_get_underlying_type_ignore_byref (MonoType *type)
+{
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
+		return mono_class_enum_basetype_internal (type->data.klass);
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
+		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
+	return type;
+}
+
+/**
+ * mono_byref_type_is_assignable_from:
+ * \param type The type assignee
+ * \param ctype The type being assigned
+ * \param signature_assignment whether this is a signature assginment check according to ECMA rules, or reflection
+ *
+ * Given two byref types, returns \c TRUE if values of the second type are assignable to locations of the first type.
+ *
+ * The \p signature_assignment parameter affects comparing T& and U& where T and U are both reference types.  Reflection
+ * does an IsAssignableFrom check for T and U here, but ECMA I.8.7.2 says that the verification types of T and U must be
+ * identical. If \p signature_assignment is \c TRUE we do an ECMA check, otherwise, reflection.
+ */
+gboolean
+mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
+{
+	g_assert (type->byref);
+	g_assert (ctype->byref);
+	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
+	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
+
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
+	MonoClass *klassc = mono_class_from_mono_type_internal (ot);
+
+	if (mono_type_is_primitive (t)) {
+		return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
+	} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
+		return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
+	} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
+		return t->type == ot->type;
+	} else {
+		if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
+			return FALSE;
+
+		if (m_class_is_valuetype (klass))
+			return klass == klassc;
+		if (m_class_is_valuetype (klassc))
+			return FALSE;
+		/* 
+		 * assignment compatability for location types, ECMA I.8.7.2 - two managed pointer types T& and U& are
+		 * assignment compatible if the verification types of T and U are identical. 
+		 */
+		if (signature_assignment)
+			return klass == klassc;
+		/* the reflection IsAssignableFrom does a subtype comparison here for reference types only */
+		return mono_class_is_assignable_from_internal (klass, klassc);
+	}
+}
+
 /**
  * mono_class_is_assignable_from_internal:
  * \param klass the class to be assigned to
@@ -3650,6 +3708,31 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	return result;
 }
 
+/*
+ * ECMA I.8.7.3 general assignment compatability is defined in terms of an "intermediate type"
+ * whereas ECMA I.8.7.1 assignment compatability for signature types is defined in terms of a "reduced type".
+ *
+ * This matters when we're comparing arrays of IntPtr.  IntPtr[] is generally
+ * assignable to int[] or long[], depending on architecture.  But for signature
+ * compatability, IntPtr[] is distinct from both of them.
+ *
+ * Similarly for ulong* and IntPtr*, etc.
+ */
+static MonoClass*
+composite_type_to_reduced_element_type (MonoClass *array_klass)
+{
+	switch (m_class_get_byval_arg (m_class_get_element_class (array_klass))->type) {
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return mono_defaults.int_class;
+	default:
+		return m_class_get_cast_class (array_klass);
+	}
+}
+
+static void
+mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error);
+
 /**
  * mono_class_is_assignable_from_checked:
  * \param klass the class to be assigned to
@@ -3663,6 +3746,20 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
  */
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+{
+	const gboolean for_sig = FALSE;
+	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
+}
+
+void
+mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+{
+	const gboolean for_sig = TRUE;
+	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
+}
+
+void
+mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error)
 {
 	g_assert (result);
 	if (klass == oklass) {
@@ -3830,8 +3927,14 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		eclass = m_class_get_cast_class (klass);
-		eoclass = m_class_get_cast_class (oklass);
+		if (signature_assignment) {
+			eclass = composite_type_to_reduced_element_type (klass);
+			eoclass = composite_type_to_reduced_element_type (oklass);
+		} else {
+			eclass = m_class_get_cast_class (klass);
+			eoclass = m_class_get_cast_class (oklass);
+		}
+
 
 		/* 
 		 * a is b does not imply a[] is b[] when a is a valuetype, and
@@ -3897,6 +4000,40 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 		else
 			mono_class_is_assignable_from_checked (m_class_get_cast_class (klass), oklass, result, error);
 		return;
+	} else if (m_class_get_class_kind (klass) == MONO_CLASS_POINTER) {
+		if (m_class_get_class_kind (oklass) != MONO_CLASS_POINTER) {
+			*result = FALSE;
+			return;
+		}
+
+		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
+			/*
+			 * if both klass and oklass are fnptr, and they're equal, we would have returned at the
+			 * beginning.
+			 */
+			/* Is this right? or do we need to look at signature compatability? */
+			*result = FALSE;
+			return;
+		}
+
+		if (m_class_get_byval_arg (oklass)->type != MONO_TYPE_PTR) {
+			*result = FALSE;
+		}
+		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR);
+
+		MonoClass *eclass;
+		MonoClass *eoclass;
+		if (signature_assignment) {
+			eclass = composite_type_to_reduced_element_type (klass);
+			eoclass = composite_type_to_reduced_element_type (oklass);
+		} else {
+			eclass = m_class_get_cast_class (klass);
+			eoclass = m_class_get_cast_class (oklass);
+		}
+
+		*result = (eclass == eoclass);
+		return;
+
 	} else if (klass == mono_defaults.object_class) {
 		if (m_class_get_class_kind (oklass) == MONO_CLASS_POINTER)
 			*result = FALSE;

@@ -17,7 +17,7 @@ namespace System.Data
     [DefaultProperty("Table")]
     public abstract class DataRelationCollection : InternalDataCollectionBase
     {
-        private DataRelation _inTransition = null;
+        private DataRelation _inTransition;
 
         private int _defaultNameIndex = 1;
 
@@ -684,7 +684,7 @@ namespace System.Data
         {
             private readonly DataSet _dataSet;
             private readonly ArrayList _relations;
-            private DataRelation[] _delayLoadingRelations = null;
+            private DataRelation[] _delayLoadingRelations;
 
             internal DataSetRelationCollection(DataSet dataSet)
             {

@@ -26,8 +26,22 @@ include(../lib_static.cmake)
 add_definitions(-DFEATURE_LIBHOST=1)
 add_definitions(-DNETHOST_EXPORT)
 
+# Copy static lib PDB to the project output directory
+if (WIN32)
+    set_target_properties(libnethost PROPERTIES
+        COMPILE_PDB_NAME "libnethost"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+endif(WIN32)
+
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
-install(TARGETS libnethost DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
+
+# Only Windows creates a symbols file for static libs.
+if (WIN32)
+    install_with_stripped_symbols(libnethost TARGETS corehost)
+else()
+    install(TARGETS libnethost DESTINATION corehost)
+endif(WIN32)

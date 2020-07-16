@@ -64,7 +64,9 @@ namespace System.Net.WebSockets
                 }
 
                 if (!char.IsLetterOrDigit(ch) &&
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'.  This file is built into a project that doesn't have string.Contains(char).
                     Separators.IndexOf(ch) >= 0)
+#pragma warning restore CA2249
                 {
                     invalidChar = ch.ToString();
                     break;

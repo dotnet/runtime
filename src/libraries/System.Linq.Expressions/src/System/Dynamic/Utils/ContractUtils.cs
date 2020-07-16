@@ -15,7 +15,7 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// Returns an exception object to be thrown when code is supposed to be unreachable.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public static Exception Unreachable
         {
             get

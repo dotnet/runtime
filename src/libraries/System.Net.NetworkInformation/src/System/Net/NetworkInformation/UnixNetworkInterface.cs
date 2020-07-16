@@ -16,7 +16,7 @@ namespace System.Net.NetworkInformation
         internal List<UnixUnicastIPAddressInformation> _unicastAddresses = new List<UnixUnicastIPAddressInformation>();
         internal List<IPAddress>? _multicastAddresses;
         // If this is an ipv6 device, contains the Scope ID.
-        protected uint? _ipv6ScopeId = null;
+        protected uint? _ipv6ScopeId;
 
         protected UnixNetworkInterface(string name)
         {

@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptors));
             }
 
-            foreach (var descriptor in descriptors)
+            foreach (ServiceDescriptor? descriptor in descriptors)
             {
                 collection.Add(descriptor);
             }
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptors));
             }
 
-            foreach (var d in descriptors)
+            foreach (ServiceDescriptor? d in descriptors)
             {
                 collection.TryAdd(d);
             }
@@ -596,7 +596,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptor));
             }
 
-            var implementationType = descriptor.GetImplementationType();
+            Type? implementationType = descriptor.GetImplementationType();
 
             if (implementationType == typeof(object) ||
                 implementationType == descriptor.ServiceType)
@@ -647,7 +647,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptors));
             }
 
-            foreach (var d in descriptors)
+            foreach (ServiceDescriptor? d in descriptors)
             {
                 services.TryAddEnumerable(d);
             }
@@ -674,7 +674,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptor));
             }
 
-            var registeredServiceDescriptor = collection.FirstOrDefault(s => s.ServiceType == descriptor.ServiceType);
+            ServiceDescriptor? registeredServiceDescriptor = collection.FirstOrDefault(s => s.ServiceType == descriptor.ServiceType);
             if (registeredServiceDescriptor != null)
             {
                 collection.Remove(registeredServiceDescriptor);
@@ -707,9 +707,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            for (var i = collection.Count - 1; i >= 0; i--)
+            for (int i = collection.Count - 1; i >= 0; i--)
             {
-                var descriptor = collection[i];
+                ServiceDescriptor? descriptor = collection[i];
                 if (descriptor.ServiceType == serviceType)
                 {
                     collection.RemoveAt(i);

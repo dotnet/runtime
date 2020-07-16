@@ -16,7 +16,7 @@ namespace System.Drawing.Drawing2D
         // Handle to native line cap object
         internal SafeCustomLineCapHandle nativeCap = null!;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         // For subclass creation
         internal CustomLineCap() { }

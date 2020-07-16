@@ -121,7 +121,7 @@ namespace System.DirectoryServices.Protocols
     {
         private SearchResultReferenceCollection _referenceCollection = new SearchResultReferenceCollection();
         private SearchResultEntryCollection _entryCollection = new SearchResultEntryCollection();
-        internal bool searchDone = false;
+        internal bool searchDone;
         internal SearchResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
 
         public SearchResultReferenceCollection References

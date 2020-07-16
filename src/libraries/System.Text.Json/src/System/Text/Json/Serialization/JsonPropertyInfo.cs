@@ -316,7 +316,7 @@ namespace System.Text.Json
             }
         }
 
-        public Type? RuntimePropertyType { get; private set; } = null;
+        public Type? RuntimePropertyType { get; private set; }
 
         public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 

@@ -11,14 +11,14 @@ namespace System.Net.NameResolution.Tests
 {
     public class ResolveTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginResolve_BadName_Throws()
         {
             IAsyncResult asyncObject = Dns.BeginResolve("BadName", null, null);
             Assert.ThrowsAny<SocketException>(() => Dns.EndResolve(asyncObject));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginResolve_BadIPv4String_ReturnsOnlyGivenIP()
         {
             IAsyncResult asyncObject = Dns.BeginResolve("0.0.1.1", null, null);
@@ -29,7 +29,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.Parse("0.0.1.1"), entry.AddressList[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginResolve_Loopback_MatchesResolve()
         {
             IAsyncResult asyncObject = Dns.BeginResolve(IPAddress.Loopback.ToString(), null, null);

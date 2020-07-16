@@ -26,9 +26,5 @@ namespace Internal.Cryptography
             CRYPT_OID_INFO oidInfo = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, friendlyName, oidGroup, fallBackToAllGroups);
             return oidInfo.OID;
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

@@ -220,24 +220,6 @@ library mscorsvc
 
     }
 
-#ifdef FEATURE_APPX
-    //*****************************************************************************
-    // ICorSvcAppX contains AppX-related method
-    //*****************************************************************************[
-
-    [
-        object,
-        uuid(5c814791-559e-4f7f-83ce-184a4ccbae24),
-        pointer_default(unique),
-    ]
-    interface ICorSvcAppX : IUnknown
-    {
-        HRESULT SetPackage([in] BSTR pPackageFullName);
-
-        HRESULT SetLocalAppDataDirectory([in] BSTR pLocalAppDataDirectory);
-    }
-#endif
-
     //*****************************************************************************
     // ICorSvcLogger is used to log various messages to the service process
     //*****************************************************************************[

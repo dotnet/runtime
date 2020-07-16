@@ -61,7 +61,6 @@ private:
 
     // Lock to protect access to the per-thread buffer list and total allocation size.
     SpinLock m_lock;
-    Volatile<BOOL> m_writeEventSuspending;
 
     // Event for synchronizing real time reading
     CLREvent m_waitEvent;

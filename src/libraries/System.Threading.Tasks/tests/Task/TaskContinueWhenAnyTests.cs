@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Tests
     {
         #region TaskFactory.ContinueWhenAny tests
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWhenAnyTests()
         {
             TaskCompletionSource<int> tcs = null;

@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
-            var realizedService = ResolverBuilder.Build(callSite);
+            Func<ServiceProviderEngineScope, object> realizedService = ResolverBuilder.Build(callSite);
             RealizedServices[callSite.ServiceType] = realizedService;
             return realizedService;
         }

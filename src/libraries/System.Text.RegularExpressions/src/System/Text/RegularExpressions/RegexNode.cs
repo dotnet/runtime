@@ -1858,7 +1858,7 @@ namespace System.Text.RegularExpressions
                 _ => $"(unknown {Type})"
             };
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public string Description()
         {
             var sb = new StringBuilder(TypeName);
@@ -1930,10 +1930,10 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString()
         {
             RegexNode? curNode = this;

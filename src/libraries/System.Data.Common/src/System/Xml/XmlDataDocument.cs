@@ -44,10 +44,10 @@ namespace System.Xml
         private object _foliationLock;
         internal const string XSI_NIL = "xsi:nil";
         internal const string XSI = "xsi";
-        private bool _bForceExpandEntity = false;
-        internal XmlAttribute _attrXml = null;
-        internal bool _bLoadFromDataSet = false;
-        internal bool _bHasXSINIL = false;
+        private bool _bForceExpandEntity;
+        internal XmlAttribute _attrXml;
+        internal bool _bLoadFromDataSet;
+        internal bool _bHasXSINIL;
 
         internal void AddPointer(IXmlDataVirtualNode pointer)
         {

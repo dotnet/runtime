@@ -21,6 +21,7 @@
 
 #include "assemblyname.hpp"
 #include "field.h"
+#include "strongnameholders.h"
 #include "strongnameinternal.h"
 #include "eeconfig.h"
 

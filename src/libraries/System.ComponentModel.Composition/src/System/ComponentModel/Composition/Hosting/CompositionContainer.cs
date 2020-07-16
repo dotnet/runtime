@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
         private IDisposable? _disposableAncestorExportProvider;
 
         private readonly ReadOnlyCollection<ExportProvider> _providers;
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
         private readonly object _lock = new object();
         private static readonly ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
@@ -81,6 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="providers">
         ///     A <see cref="Array"/> of <see cref="ExportProvider"/> objects which provide
         ///     the <see cref="CompositionContainer"/> access to <see cref="Export"/> objects,
@@ -99,6 +100,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="isThreadSafe">
         ///     <see cref="bool"/> indicates whether container instances are threadsafe.
         /// </param>
@@ -120,6 +122,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="compositionOptions">
         ///     <see cref="CompositionOptions"/> enumeration with flags controlling the composition.
         /// </param>
@@ -572,6 +575,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the
         /// <see cref="Export"/> to get.</param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <returns></returns>
         /// <result>
         /// An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match

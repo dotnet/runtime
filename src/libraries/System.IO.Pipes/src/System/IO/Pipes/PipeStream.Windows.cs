@@ -316,10 +316,6 @@ namespace System.IO.Pipes
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private unsafe int ReadFileNative(SafePipeHandle handle, Span<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             DebugAssertHandleValid(handle);

@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <NoWarn>$(NoWarn);CS1574;CS3016;CA5379;CA5384</NoWarn>
+    <NoWarn>$(NoWarn);CA5384</NoWarn>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
@@ -15,6 +15,9 @@
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <!-- Currently the netstandard build is locked to the $(NetFrameworkCurrent) API -->
     <AssemblyVersion Condition="$(TargetFramework.StartsWith('netstandard'))">4.0.4.0</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
@@ -355,6 +358,8 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
+             Link="Common\System\Security\Cryptography\Oids.Shared.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
     </AsnXml>

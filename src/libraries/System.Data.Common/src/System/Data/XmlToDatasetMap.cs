@@ -98,7 +98,7 @@ namespace System.Data
 
         private XmlNodeIdHashtable _tableSchemaMap;              // Holds all the tables information
 
-        private TableSchemaInfo _lastTableSchemaInfo = null;
+        private TableSchemaInfo _lastTableSchemaInfo;
 
         // Used to infer schema
 

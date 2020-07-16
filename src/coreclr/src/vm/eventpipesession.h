@@ -9,12 +9,11 @@
 
 #include "common.h"
 #include "threadsuspend.h"
+#include "eventpipesessionprovider.h"
 
 class EventPipeBufferManager;
 class EventPipeEventInstance;
 class EventPipeFile;
-class EventPipeSessionProvider;
-class EventPipeSessionProviderList;
 class EventPipeThread;
 
 // TODO: Revisit the need of this enum and its usage.
@@ -22,7 +21,8 @@ enum class EventPipeSessionType
 {
     File,
     Listener,
-    IpcStream
+    IpcStream,
+    Synchronous
 };
 
 enum class EventPipeSerializationFormat
@@ -68,6 +68,9 @@ private:
     // For determininig if a particular session needs rundown events
     const bool m_rundownRequested;
 
+    // For synchronous sessions
+    EventPipeSessionSynchronousCallback m_synchronousCallback;
+
     // Start date and time in UTC.
     FILETIME m_sessionStartTime;
 
@@ -105,7 +108,8 @@ public:
         uint32_t circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
-        bool rundownEnabled = false);
+        EventPipeSessionSynchronousCallback callback = nullptr);
+
     ~EventPipeSession();
 
     uint64_t GetMask() const
@@ -182,6 +186,12 @@ public:
         return m_pIpcStreamingThread;
     }
 
+    EventPipeSessionProviderIterator GetProviders()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pProviderList->GetProviders();
+    }
+
     // Add a new provider to the session.
     void AddSessionProvider(EventPipeSessionProvider *pProvider);
 
@@ -190,7 +200,11 @@ public:
 
     bool WriteAllBuffersToFile(bool *pEventsWritten);
 
-    bool WriteEventBuffered(
+    // If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
+    // put the event in a buffer and return as quick as possible. If a session is
+    // synchronous (callback to the profiler) then this method will block until the
+    // profiler is done parsing and reacting to it.
+    bool WriteEvent(
         Thread *pThread,
         EventPipeEvent &event,
         EventPipeEventPayload &payload,

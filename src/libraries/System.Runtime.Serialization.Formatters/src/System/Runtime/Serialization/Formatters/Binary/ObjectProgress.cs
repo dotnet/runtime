@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal bool _isInitial;
         internal int _count; //Progress count
         internal BinaryTypeEnum _expectedType = BinaryTypeEnum.ObjectUrt;
-        internal object? _expectedTypeInformation = null;
+        internal object? _expectedTypeInformation;
 
         internal string? _name;
         internal InternalObjectTypeE _objectTypeEnum = InternalObjectTypeE.Empty;

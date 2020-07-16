@@ -128,13 +128,13 @@ Note that these conventions are different from the CLR C++ Coding Conventions, d
   * [15.8 Memory allocation](#15.8)
   * [15.9 Obsoleting functions, classes and macros](#15.9)
 
-# <a name="4"/>4 Principles
+# <a name="4"></a>4 Principles
 
 As stated above, the primary purpose of these conventions is to improve readability and understandability of the source code, by making it easier for any developer, now or in the future, to easily read, understand, and modify any portion of the source code.
 
 It is assumed that developers should be able to use the Visual Studio editor and debugger to the fullest extent possible. Thus, the conventions should allow us to leverage Visual Studio IntelliSense, editing and formatting, debugging, and so forth. The conventions will not preclude the use of other editors. For example, function declaration commenting style should be such that IntelliSense will automatically display that comment when typing that function name at a use site. Indenting style should be such that using Visual Studio automatic formatting rules creates correctly formatted code.
 
-# <a name="5"/>5 Spaces, not tabs
+# <a name="5"></a>5 Spaces, not tabs
 
 Use spaces, not tabs. Files should not contain tab characters.
 
@@ -142,7 +142,7 @@ Indenting is 4 characters per indent level.
 
 In Visual Studio, go to "Tools | Options ... | Text Editor | All Languages | Tabs", edit the tab size setting to be 4 spaces, and select the "Insert spaces" radio-button to enable conversion of tabs to spaces.
 
-# <a name="6"/>6 Source code line width
+# <a name="6"></a>6 Source code line width
 
 A source code line should be limited to a reasonable length, so it fits in a reasonably-sized editor window without scrolling or wrapping. Consider 120 characters the baseline of reasonable, adjusted for per-site judgment.
 
@@ -155,25 +155,25 @@ A source code line should be limited to a reasonable length, so it fits in a rea
 
 Many editors support display of a vertical line at a specified column position. Enable this in your editor to easily know when you write past the specified maximum column position. Visual Studio has this feature if you install the "Productivity Power Tools": https://visualstudiogallery.msdn.microsoft.com/3a96a4dc-ba9c-4589-92c5-640e07332afd.
 
-# <a name="7"/>7 Commenting
+# <a name="7"></a>7 Commenting
 
-## <a name="7.1"/>7.1 General
+## <a name="7.1"></a>7.1 General
 
 A comment should never just restate what the code does. Instead it should answer a question about the code, such as why, when, or how. Comments that say we must do something need to also state why we must do this.
 
 Avoid using abbreviations or acronyms; it harms readability.
 
-### <a name="7.1.1"/>7.1.1 Comment style
+### <a name="7.1.1"></a>7.1.1 Comment style
 
 We prefer end-of-line style `//` comments to original C `/* */` comments.
 
 One important exception is when adding a small comment within an argument list to help document the argument, e.g., `PrintIt(/* AlignIt */ true);` (However, see section FIXTHIS for the suggested alternative to the form.)
 
-### <a name="7.1.2"/>7.1.2 Spelling and grammar
+### <a name="7.1.2"></a>7.1.2 Spelling and grammar
 
 Check for spelling and grammar errors in your comments: just because you can understand the comment when you write it doesn't mean somebody else will parse it in the same way. Carefully consider the poor reader, especially those for whom English is not their first language.
 
-### <a name="7.1.3"/>7.1.3 Bug IDs
+### <a name="7.1.3"></a>7.1.3 Bug IDs
 
 Don't put the bug or issue identifier (ID) of a fixed bug or completed feature in the source code comments. Such IDs become obsolete when (and not if) the bug tracking system changes, and are an indirect source of information. Also, understanding the bug report might be difficult in the absence of fresh context. Rather, the essence of the bug fix should be distilled into an appropriate comment. The precise condition that a case covers should be specified in the comment, as for all code.
 
@@ -183,11 +183,11 @@ Bug IDs of active bugs may be used in the source code to prevent other people fr
 
 One thing that would be useful is for a particular case in code to be associated with a test case that exercises the case. This only makes sense if the case in question is localized to one or a few locations in the code, not pervasive and spread throughout the code. However, we don't currently have a good mechanism for referencing test cases (or other external metadata).
 
-### <a name="7.1.4"/>7.1.4 Email names
+### <a name="7.1.4"></a>7.1.4 Email names
 
 Email names or full names should not be used in the source code as people move on to other projects, leave the company, leave another company when working on the JIT in the open source world, or simply stop working on the JIT for some reason. For example, a comment that states, "Talk to JohnDoe to understand this code" isn't helpful after JohnDoe has left the company or is otherwise not available.
 
-### <a name="7.1.5"/>7.1.5 TODO
+### <a name="7.1.5"></a>7.1.5 TODO
 
 "TODO" comments in the code should be used to identify areas in the code that:
 
@@ -220,11 +220,11 @@ Examples:
     // case above: if (arm_Valid_Imm_For_Instr(ins, val)) ...
 ```
 
-### <a name="7.1.6"/>7.1.6 Performance
+### <a name="7.1.6"></a>7.1.6 Performance
 
 Be sure to comment the performance characteristics (memory and time) of an API, class, sensitive block of code, line of code that looks simple but actually does something complex, etc.
 
-## <a name="7.2"/>7.2 File header comment
+## <a name="7.2"></a>7.2 File header comment
 
 C and C++ source files (header files and implementation files) must include a file header comment at the beginning of the file that describes the file, gives the file owner, and gives some basic information about the purpose of the file, related documents, etc. The format of this header is as follows:
 
@@ -239,7 +239,7 @@ C and C++ source files (header files and implementation files) must include a fi
 
 Major components usually occupy their own file. The top of the file is a good place to document the design of that component, including any information that would be helpful to a new reader of the code. A reference can be made to an actual design and implementation document (specification), but that document must be co-located with the source code, and not on some server that is unlikely to remain active for as long as the source will live.
 
-## <a name="7.3"/>7.3 Commenting code blocks
+## <a name="7.3"></a>7.3 Commenting code blocks
 
 Properly commented code blocks allow code to be scanned through and read like a book. There are a number of different commenting conventions that can be used for blocks of code, ranging from comments with significant whitespace to help visually distinguish major code segments to follow, down to single end-of-line comments to annotate individual statements or expressions. Choose the comment style that creates the most readable code.
 
@@ -311,7 +311,7 @@ CorElementType MetaSig::NextArgNormalized()
 }
 ```
 
-## <a name="7.4"/>7.4 Commenting variables
+## <a name="7.4"></a>7.4 Commenting variables
 
 All global variables and C++ class data members must be commented at the point of declaration.
 
@@ -344,7 +344,7 @@ class Thread
 };
 ```
 
-## <a name="7.5"/>7.5 Commenting `#ifdefs`
+## <a name="7.5"></a>7.5 Commenting `#ifdefs`
 
 Do specify the macro name in a comment at the end of the closing `#endif` of a long or nested `#if`/`#ifdef`.
 
@@ -405,11 +405,11 @@ Wrong:
 #endif // _TARGET_ARM_
 ```
 
-# <a name="8"/>8 Naming Conventions
+# <a name="8"></a>8 Naming Conventions
 
 Names should be sufficiently descriptive to immediately indicate the purpose of the function or variable.
 
-## <a name="8.1"/>8.1 General
+## <a name="8.1"></a>8.1 General
 
 It is useful for names to be unique, to make it easier to search for them in the code. For example, it might make sense for every class to implement a debug-only `dump()` function. It's a simple name, and descriptive. However, if you do a simple textual search ("grep" or "findstr", or "Find in Files" in Visual Studio) for "dump", you will find far too many to be useful. Additionally, Visual Studio IntelliSense often gets confused when using "Go To Reference" or "Find All References" for such a common word that appears in many places (especially for our imprecise IntelliSense projects), rendering IntelliSense browsing also less useful.
 
@@ -437,7 +437,7 @@ Bad:
 bool isVerificationDisabled, dontStressHeap;
 ```
 
-## <a name="8.2"/>8.2 Hungarian or other prefix/postfix naming
+## <a name="8.2"></a>8.2 Hungarian or other prefix/postfix naming
 
 We do not follow "Hungarian" naming, with a detailed set of name prefix requirements. We do suggest or require prefixes in a few cases, described below.
 
@@ -452,7 +452,7 @@ Two common Hungarian conventions that we do not encourage are:
 
 It is often helpful to choose a short, descriptive prefix for all members of a class, e.g. "lv" for local variables, or "emit" for the emitter. This short prefix also helps make the name unique, and easier to find with "grep". Thus, you might have "m_lvFoo" for a non-static member variable of a class that is using a "lv" prefix.
 
-## <a name="8.3"/>8.3 Macro names
+## <a name="8.3"></a>8.3 Macro names
 
 All macros and macro constants should have uppercase names. Words within a name must be separated by underscores. The following statements illustrate some macro and macro constant names:
 
@@ -479,7 +479,7 @@ All macro parameter names should be surrounded by parentheses in the macro defin
 
 All this being said, there still are some cases where macros are useful, such as the JIT phase list or instruction table, where data is defined in a header file by a series of macro functions that must be defined before #including the header file. This allows the macro function to be defined in different ways and the header file to be included multiple times to create different definitions from the same data. Look, for example, at instrsxarch.h. (Unfortunately, this technique confuses Visual Studio Intellisense.)
 
-## <a name="8.4"/>8.4 Local variables
+## <a name="8.4"></a>8.4 Local variables
 
 Local function variables should be named using camelCasing:
 
@@ -496,7 +496,7 @@ TypeHandle     thConstraintType; // constraint for the type argument
 MethodDesc*    pOverridingMD;    // the override for the given method
 ```
 
-## <a name="8.5"/>8.5 Global variables
+## <a name="8.5"></a>8.5 Global variables
 
 Global variables follow the same rules as local variable names, but should be prefixed by a "g_". The following global variable declarations illustrate variable names that adhere to this convention:
 
@@ -505,7 +505,7 @@ EEConfig*   g_Config;            // Configuration manager interface
 bool        g_isVerifierEnabled; // Is the verifier enabled?
 ```
 
-## <a name="8.6"/>8.6 Function parameters
+## <a name="8.6"></a>8.6 Function parameters
 
 Function parameters follow the same rules as local variables
 
@@ -513,7 +513,7 @@ Function parameters follow the same rules as local variables
 int Point(int x, int y) : m_x(x), m_y(y) {}
 ```
 
-## <a name="8.7"/>8.7 Non-static C++ member variables
+## <a name="8.7"></a>8.7 Non-static C++ member variables
 
 Non-static C++ member variables should follow the same rules as local variable names, but should be prefixed by "m_".
 
@@ -534,7 +534,7 @@ class MetaSig
 };
 ```
 
-## <a name="8.8"/>8.8 Static member variables
+## <a name="8.8"></a>8.8 Static member variables
 
 Static C++ member variables should follow the same rules as non-static member variable names, but should be prefixed by "s_" instead of "m_".
 
@@ -546,7 +546,7 @@ class Thread
 };
 ```
 
-## <a name="8.9"/>8.9 Functions, including member functions
+## <a name="8.9"></a>8.9 Functions, including member functions
 
 Functions should be named in PascalCasing format:
 
@@ -570,7 +570,7 @@ bool                lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask);
 
 This makes it more likely that the names are globally unique. The tag can start either with a lower or upper case.
 
-## <a name="8.10"/>8.10 Classes
+## <a name="8.10"></a>8.10 Classes
 
 C++ class names should be named in PascalCasing format. A "C" prefix should not be used (thus, use `FooBar`, not `CFooBar` as is used in some conventions). The following C++ class declaration demonstrates proper adherence to this convention:
 
@@ -590,7 +590,7 @@ class ICorStaticInfo : public virtual ICorMethodInfo
 };
 ```
 
-## <a name="8.11"/>8.11 Enums
+## <a name="8.11"></a>8.11 Enums
 
 Enum type names are PascalCased, like function names.
 
@@ -611,7 +611,7 @@ enum RoundLevel
 
 > The JIT is currently very inconsistent with respect to enum type and element naming standards. Perhaps we should adopt the VM standard of prefixing enum names with "k", and using PascalCasing for names, with a Hungarian-style per-enum prefix. For example, kRoundLevelNever or kRLNever / kRLCmpConst.
 
-# <a name="9"/>9 Function Structure
+# <a name="9"></a>9 Function Structure
 
 The term "function" here refers to both C-style functions as well as C++ member functions, unless otherwise specified.
 
@@ -624,7 +624,7 @@ Some code uses a third type of file, an "implementation header file" (or .hpp fi
 
 It is acceptable to put very small inline member function implementations directly in the header file, at the point of declaration.
 
-## <a name="9.1"/>9.1 In a header file
+## <a name="9.1"></a>9.1 In a header file
 
 This is the format for the declaration of a function in a header file.
 
@@ -670,7 +670,7 @@ void Foo(int i);
 T Min<T>(T a, T b);
 ```
 
-### <a name="9.1.1"/>9.1.1 Comments for function declarations
+### <a name="9.1.1"></a>9.1.1 Comments for function declarations
 
 Function declarations in a header file should have a few lines of documentation using single-line comments, indicating the intent of the prototyped function.
 
@@ -702,7 +702,7 @@ public:
 };
 ```
 
-## <a name="9.2"/>9.2 In an implementation file
+## <a name="9.2"></a>9.2 In an implementation file
 
 Typically for each header file in the project there will be an implementation file that contains the function implementations and it is named using the .cpp suffix.
 
@@ -710,13 +710,13 @@ The signature of a function definition in the implementation file should use the
 
 Generally the order of the functions in the implementation file should match to the order in the header file.
 
-### <a name="9.2.1"/>9.2.1 Function size
+### <a name="9.2.1"></a>9.2.1 Function size
 
 It is recommended that functions bodies (from the opening brace to the closing brace) are no more than 200 lines of text (including any empty lines and lines with just a single brace in the function body). A large function is difficult to scan and understand.
 
 Use your best judgment here.
 
-## <a name="9.3"/>9.3 Function definitions
+## <a name="9.3"></a>9.3 Function definitions
 
 If the header file uses simple comments for the function prototypes, then the function definition in the implementation file should include a full, descriptive function header. If the header file uses a full function header comments for the function prototypes, then the function definition in the implementation file can use a few descriptive lines of comments. That is, there should be a full descriptive comment for the function, but only in one place. The recommendation is to place the detailed comments at the definition site. One primary reason for this choice is that most code readers spend much more time looking at the implementation files than they do looking at the header files.
 
@@ -744,7 +744,7 @@ BOOL IsVarArg(Module*         pModule,
 }
 ```
 
-## <a name="9.4"/>9.4 Function header comment
+## <a name="9.4"></a>9.4 Function header comment
 
 All functions, except trivial accessors and wrappers, should have a function header comment which describes the behavior and the implementation details of the function. The format of the function header in an implementation file is as shown below.
 
@@ -781,7 +781,7 @@ If you can formulate any assumptions as asserts in the code itself, you should d
 <function definition>
 ```
 
-### <a name="9.4.1"/>9.4.1 Example
+### <a name="9.4.1"></a>9.4.1 Example
 
 The following is a sample of a completed function definition:
 
@@ -814,9 +814,9 @@ BOOL MetaSig::IsVarArg(Module*         pModule,
 }
 ```
 
-## <a name="9.5"/>9.5 Specific function information
+## <a name="9.5"></a>9.5 Specific function information
 
-### <a name="9.5.1"/>9.5.1 Constructor with member initialization list
+### <a name="9.5.1"></a>9.5.1 Constructor with member initialization list
 
 This is the format to use for specifying the member initialization list
 
@@ -835,7 +835,7 @@ ClassName::ClassName(<type-name>*    <argument-name>,
 
 Note that the order of the initializers is defined by C++ to be member declaration order, and some compilers will report an error if the order is incorrect.
 
-# <a name="10"/>10 Local Variable Declarations
+# <a name="10"></a>10 Local Variable Declarations
 
 Generally, variables should be declared at or close to the location of their first initialization, especially for large functions. For small functions, it is fine to declare all the locals at the start of the method.
 
@@ -856,7 +856,7 @@ int     errorCode = 0;
 FindIllegalCharacter(name, &iPosition, &errorCode);
 ```
 
-## <a name="10.1"/>10.1 Pointer declarations
+## <a name="10.1"></a>10.1 Pointer declarations
 
 For pointer declaration, there should be no space between the type and the `*`, and one or more spaces between the `*` and the following symbol being declared. This emphasizes that the `*` is logically part of the type declaration (even though the C/C++ parser binds the `*` to the name).
 
@@ -926,9 +926,9 @@ int **   ppi;
 int * *  ppi;
 ```
 
-# <a name="11"/>11 Spacing
+# <a name="11"></a>11 Spacing
 
-## <a name="11.1"/>11.1 Logical and arithmetic expressions
+## <a name="11.1"></a>11.1 Logical and arithmetic expressions
 
 The following example illustrates correct spacing of parentheses for expressions:
 
@@ -960,7 +960,7 @@ if (a < b + c)       // binary expression "b + c" is not parenthesized
 x = sizeof f;        // "sizeof" requires parentheses: sizeof(f)
 ```
 
-## <a name="11.2"/>11.2 Continuing statements on multiple lines
+## <a name="11.2"></a>11.2 Continuing statements on multiple lines
 
 When wrapping statements, binary operators are left hanging after the left expression, so that the continuation is obvious. The right expression is indented to match the left expression. Additional spaces between the parentheses may be inserted as necessary in order to clarify how a complex conditional expression is expected to be evaluated. In fact, additional spaces are encouraged so that it is easy to read the condition.
 
@@ -989,7 +989,7 @@ if ((condition1)
  && (condition2B)))
 ```
 
-## <a name="11.3"/>11.3 Function call
+## <a name="11.3"></a>11.3 Function call
 
 When calling a function, use the following formatting:
 
@@ -1054,7 +1054,7 @@ GenTreePtr asgStmt = gtNewStmt(asg, ilOffset);
 *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, asgStmt);
 ```
 
-## <a name="11.4"/>11.4 Arrays
+## <a name="11.4"></a>11.4 Arrays
 
 Array indices should not have spaces around them.
 
@@ -1068,7 +1068,7 @@ Wrong:
 int val = array[ i ] + array[ j * k ];
 ```
 
-# <a name="12"/>12 Control Structures
+# <a name="12"></a>12 Control Structures
 
 The structure for control-flow structures like `if`, `while`, and `do-while` blocks is as follows:
 
@@ -1088,7 +1088,7 @@ Each distinct statement must be on a separate line. While this improves readabil
 
 It is generally a good idea to leave a blank line after a control structure, for readability.
 
-## <a name="12.1"/>12.1 Braces for `if`
+## <a name="12.1"></a>12.1 Braces for `if`
 
 Braces are required for all `else` blocks of all `if` statements. However, "then" blocks (the true case of an `if` statement) may omit braces if:
 
@@ -1155,7 +1155,7 @@ if (x != 5)
     }
 ```
 
-## <a name="12.3"/>12.3 Braces for looping structures
+## <a name="12.3"></a>12.3 Braces for looping structures
 
 Similar spacing should be used for `for`, `while` and `do-while` statements. These examples show correct placement of braces:
 
@@ -1209,7 +1209,7 @@ Foo* p;
 for (p = start; p != q; p = p->Next);
 ```
 
-## <a name="12.4"/>12.4 `switch` statements
+## <a name="12.4"></a>12.4 `switch` statements
 
 For `switch` statements, each `case` label must be aligned to the same column as the `switch` (and the opening brace). The code body for each `case` label should be indented one level. Note that this implies that each case label must exist on its own line; do not place multiple case labels on the same line.
 
@@ -1253,7 +1253,7 @@ default:
 }
 ```
 
-## <a name="12.5"/>12.5 Examples
+## <a name="12.5"></a>12.5 Examples
 
 The following skeletal statements illustrate the proper indentation and placement of braces for control structures. In all cases, indentations consist of four spaces each.
 
@@ -1293,7 +1293,7 @@ int MyClass::FooBar(int    iArgumentOne /* = 0 */,
 }
 ```
 
-# <a name="13"/>13 C++ Classes
+# <a name="13"></a>13 C++ Classes
 
 The format for a C++ class declaration is as follows.
 
@@ -1413,9 +1413,9 @@ private:
 };
 ```
 
-# <a name="14"/>14 Preprocessor
+# <a name="14"></a>14 Preprocessor
 
-## <a name="14.1"/>14.1 Conditional compilation
+## <a name="14.1"></a>14.1 Conditional compilation
 
 Prefer `#if` over `#ifdef` for conditional compilation. This allows setting the macro to 0 to disable it. `#ifdef` will not work in this case, and instead requires ensuring that the macro is not defined.
 
@@ -1439,7 +1439,7 @@ If you have conditional `#if`/`#ifdef` in the source, explain what they do, just
 
 Minimize conditional compilation by defining good abstractions, partitioning files better, or defining appropriate constants or macros.
 
-### <a name="14.1.1"/>14.1.1 `#if FEATURE`
+### <a name="14.1.1"></a>14.1.1 `#if FEATURE`
 
 If a new or existing feature is being added or modified then use a `#define FEATURE_XXX` to both highlight the code used to implement this and to allow the JIT to be compiled both with and without the feature.
 
@@ -1453,13 +1453,13 @@ void                Compiler::optValnumCSEinit()
 
 Note that periodically we do need to go through and remove FEATURE_* defines that are always enabled, and will never be disabled.
 
-### <a name="14.1.2"/>14.1.2 Disabling code
+### <a name="14.1.2"></a>14.1.2 Disabling code
 
 It is generally discouraged to permanently disable code by commenting it out or by putting `#if 0` around it, in an attempt to keep it around for reference. This reduces the hygiene of the code base over time and such disabled code is rarely actually useful. Instead, such disabled code should be entirely deleted. If you do disable code without deleting it, then you must add a comment as to why the code is disabled, and why it is better to leave the code disabled than it is to delete it.
 
 One exception is that it is often useful to `#if 0` code that is useful for debugging an area, but is not otherwise useful. Even in this case, however, it is probably better to introduce a COMPlus_* variable to enable the special debugging mode.
 
-### <a name="14.1.3"/>14.1.3 Debug code
+### <a name="14.1.3"></a>14.1.3 Debug code
 
 Use `#ifdef DEBUG` for debug-only code. Do not use `#ifdef _DEBUG` (with a leading underscore).
 
@@ -1513,7 +1513,7 @@ if (verbose)
 
 Always put debug-only code under `#ifdef DEBUG` (or the equivalent). Do not assume the compiler will get rid of your debug-only code in a non-debug build flavor. This also documents more clearly that you intend the code to be debug-only.
 
-## <a name="14.2"/>14.2 `#define` constants
+## <a name="14.2"></a>14.2 `#define` constants
 
 Use `const` or `enum` instead of `#define` for constants when possible. The value will still be constant-folded, but the `const` adds type safety.
 
@@ -1525,7 +1525,7 @@ If you do use `#define` constants, the values of multiple constant defines shoul
 #define DEVICE_NAME                 L"MyDevice"
 ```
 
-## <a name="14.3"/>14.3 Macro functions
+## <a name="14.3"></a>14.3 Macro functions
 
 Expressions (except very simple constants) should be enclosed in parentheses to prevent incorrect multiple expansion of the macro arguments.
 
@@ -1533,17 +1533,17 @@ Enclose all argument instances in parentheses.
 
 Macro arguments should be named with two leading underscores, to prevent their names from being confused with normal source code names, such as variable or function names.
 
-### <a name="14.3.1"/>14.3.1 Macro functions versus C++ inline functions
+### <a name="14.3.1"></a>14.3.1 Macro functions versus C++ inline functions
 
 All macro functions should be replaced with a C++ inline function or C++ inline template function if possible. This allows type checking of arguments, and avoids the problem of macro-expansion of macro arguments.
 
-### <a name="14.3.2"/>14.3.2 Line continuation
+### <a name="14.3.2"></a>14.3.2 Line continuation
 
 All the `\` at the end of a multi-line macro definition should be aligned with each other.
 
 There must be no `\` on the last line of a multi-line macro definition.
 
-### <a name="14.3.3"/>14.3.3 Multi-statement macro functions
+### <a name="14.3.3"></a>14.3.3 Multi-statement macro functions
 
 Functional macro definitions with multiple statements or with `if` statements should use `do { <statements> } while(0)` to ensure that the statements will always be compiled together as a single statement block. This ensures that those who mistake the macro for a function don't accidentally split the statements into multiple scopes when the macro is used. Example: consider a macro used like this:
 
@@ -1571,11 +1571,11 @@ Right:
 
 The braces ensure the statement block isn't split. The `do { ... } while(0)` ensures that uses of the macro always end with a semicolon.
 
-### <a name="14.3.4"/>14.3.4 Control flow
+### <a name="14.3.4"></a>14.3.4 Control flow
 
 Avoid using control flow inside of preprocessor functions. Since these read like function calls in the source it is best if they also act like function calls. The expectation should be that all arguments will get evaluated one time and we should avoid strange behavior such as only evaluating an argument if a prior argument evaluates to true or evaluating some argument multiple times.
 
-### <a name="14.3.5"/>14.3.5 Scope
+### <a name="14.3.5"></a>14.3.5 Scope
 
 Macros that require a pair of macros due to the introduction of a scope are strongly discouraged in the JIT. These do exist in the VM and the convention there is to have a _BEGIN and _END suffix at the end of a common all caps macro name.
 
@@ -1584,7 +1584,7 @@ Macros that require a pair of macros due to the introduction of a scope are stro
 #define PAL_CPP_EHUNWIND_END    }
 ```
 
-### <a name="14.3.6"/>14.3.6 Examples
+### <a name="14.3.6"></a>14.3.6 Examples
 
 ```c++
 #define MIN(_x, _y)               (((__x) < (__y)) ? (__x) : (__y))
@@ -1602,21 +1602,21 @@ Macros that require a pair of macros due to the introduction of a scope are stro
     while(0)
 ```
 
-# <a name="15"/>15 Language Usage Rules
+# <a name="15"></a>15 Language Usage Rules
 
 The following rules are not related to formatting; they provide guidance to improve semantic clarity.
 
-## <a name="15.1"/>15.1 C/C++ general
+## <a name="15.1"></a>15.1 C/C++ general
 
-### <a name="15.1.1"/>15.1.1 Casts
+### <a name="15.1.1"></a>15.1.1 Casts
 
 Instead of C-style casts, use `static_cast<>`, `const_cast<>` and `reinterpret_cast<>` for pointers as they are more expressive and type-safe.
 
-### <a name="15.1.2"/>15.1.2 Globals
+### <a name="15.1.2"></a>15.1.2 Globals
 
 Avoid global variables as they pollute the global namespace and require careful handling to ensure thread safety. Prefer static class variables.
 
-### <a name="15.1.3"/>15.1.3 `bool` versus `BOOL`
+### <a name="15.1.3"></a>15.1.3 `bool` versus `BOOL`
 
 `bool` is a built-in C++ language type. `bool` variables contain the value `true` or `false`. When stored (such as a member of a struct), it is one byte in size, and `true` is stored as one, `false` as zero.
 
@@ -1634,7 +1634,7 @@ Wrong:
 BOOL isComplete = TRUE;
 ```
 
-### <a name="15.1.4"/>15.1.4 `NULL` and `nullptr`
+### <a name="15.1.4"></a>15.1.4 `NULL` and `nullptr`
 
 Use the C++11 `nullptr` keyword when assigning a "null" to a pointer variable, or comparing a pointer variable against "null". Do not use `NULL`.
 
@@ -1655,7 +1655,7 @@ if (p == 0)
     ...
 ```
 
-### <a name="15.1.5"/>15.1.5 Use of zero
+### <a name="15.1.5"></a>15.1.5 Use of zero
 
 Integers should be explicitly checked against 0. Pointers should be explicitly checked against `nullptr`. Types that have a legal zero value should use a named zero value, not an explicit zero. For example, `regMaskTP` is a register mask type. Use `RBM_NONE` instead of a constant zero for it.
 
@@ -1691,7 +1691,7 @@ if (i)
     ...
 ```
 
-### <a name="15.1.6"/>15.1.6 Nested assignment
+### <a name="15.1.6"></a>15.1.6 Nested assignment
 
 Do not use assignments within `if` or other control-flow statements.
 
@@ -1706,7 +1706,7 @@ Wrong:
 if ((x = strlen(szMethodName)) > 5)
 ```
 
-### <a name="15.1.7"/>15.1.7 `if` conditions
+### <a name="15.1.7"></a>15.1.7 `if` conditions
 
 Do not place constants first in comparison checks (unless that reads more naturally), as a trick to avoid accidental assignment in a condition, as assignment within a condition will be a compiler error in our builds.
 
@@ -1720,7 +1720,7 @@ Wrong:
 if (5 == x)
 ```
 
-### <a name="15.1.8"/>15.1.8 `const`
+### <a name="15.1.8"></a>15.1.8 `const`
 
 Use of the `const` qualifier is encouraged.
 
@@ -1730,7 +1730,7 @@ It is specifically encouraged to mark class member function as `const`, especial
 var_types TypeGet() const { return gtType; }
 ```
 
-### <a name="15.1.9"/>15.1.9 Ternary operators
+### <a name="15.1.9"></a>15.1.9 Ternary operators
 
 Ternary operators `?:` are best used to make quick and simple decisions inside function invocations. Don't use it as a replacement for the `if` statement. Note that putting individual statements on their own line makes it easy to set debugging breakpoints on them. Use of nested ternary operators is strongly discouraged. Using it for simple assignment of a single condition is fine. It's recommended that the "then" and "else" conditions of the ternary operator do not have side-effects.
 
@@ -1762,7 +1762,7 @@ Wrong:
 x = (a == b) ? ((c == d) ? 1 : 2) : 3; // nested ?: disallowed
 ```
 
-### <a name="15.1.10"/>15.1.10 Use of `goto`
+### <a name="15.1.10"></a>15.1.10 Use of `goto`
 
 The `goto` statement should be avoided.
 
@@ -1779,7 +1779,7 @@ SHIFT:
 
 You should think very hard about other ways to code this to avoid using a `goto`. One of the biggest problems is that the `goto` label can be targeted from anyplace in the function, which makes understanding the code very difficult.
 
-## <a name="15.2"/>15.2 Source file organization
+## <a name="15.2"></a>15.2 Source file organization
 
 The general guideline is that header files should not be bigger than 1000 lines and implementation files should not be bigger than 5000 lines of code (including comments, function headers, etc.). Files larger than this should be split up and organized in some better logical fashion.
 
@@ -1795,19 +1795,19 @@ Maintain clear visual separation and identification of "segments" of API, and in
 <blank line>
 ```
 
-## <a name="15.3"/>15.3 Function declarations
+## <a name="15.3"></a>15.3 Function declarations
 
-### <a name="15.3.1"/>15.3.1 Default arguments
+### <a name="15.3.1"></a>15.3.1 Default arguments
 
 Avoid default arguments values unless the argument has very little semantic impact, especially when adding a new argument to an existing method. Avoiding default values forces all call sites to think about the argument value to use, and prevents call sites from silently opting into unexpected behavior.
 
-### <a name="15.3.2"/>15.3.2 Overloading
+### <a name="15.3.2"></a>15.3.2 Overloading
 
 Never overload functions on a primitive type (e.g. `Foo(int i)` and `Foo(long l)`).
 
 Avoid operator overloading unless the overload matches the "natural" semantics of the operator when applied to integral types.
 
-### <a name="15.3.3"/>15.3.3 Enums versus primitive parameter types
+### <a name="15.3.3"></a>15.3.3 Enums versus primitive parameter types
 
 Use enums rather than primitive types for function arguments as it promotes type-safety, and the function signature is more descriptive.
 
@@ -1843,15 +1843,15 @@ Good:
 Bar(DS_ALLOW_DUPS, FORMAT_FIT_TO_SCREEN);
 ```
 
-### <a name="15.3.4"/>15.3.4 Functions returning pointers
+### <a name="15.3.4"></a>15.3.4 Functions returning pointers
 
 Functions that return pointers must think carefully about whether a `nullptr` return value could be ambiguous between success with a `nullptr` return value and failure.
 
-### <a name="15.3.5"/>15.3.5 Reference arguments
+### <a name="15.3.5"></a>15.3.5 Reference arguments
 
 Never use non-const reference arguments as the call-site has no indication that the argument may change. Const reference arguments may be used as they do not have the above problem, and are also required for operators.
 
-### <a name="15.3.6"/>15.3.6 Resource release
+### <a name="15.3.6"></a>15.3.6 Resource release
 
 If you call a function to release a resource and pass it a pointer or handle, you must set the pointer to `nullptr` or handle to `INVALID_HANDLE`. This ensures that the pointer or handle will not be accidentally used in code that follows.
 
@@ -1860,33 +1860,33 @@ CloseHandle(hMyFile);
 hMyFile = INVALID_HANDLE;
 ```
 
-### <a name="15.3.7"/>15.3.7 OUT parameters
+### <a name="15.3.7"></a>15.3.7 OUT parameters
 
 Functions with OUT parameters must initialize them (e.g., to 0 or `nullptr`) on entry to the function. If the function fails, this protects the caller from accidental use of potentially uninitialized values.
 
-## <a name="15.4"/>15.4 STL usage
+## <a name="15.4"></a>15.4 STL usage
 
 > JIT STL usage rules need to be specified.
 
-## <a name="15.5"/>15.5 C++ class design
+## <a name="15.5"></a>15.5 C++ class design
 
-### <a name="15.5.1"/>15.5.1 Public data members
+### <a name="15.5.1"></a>15.5.1 Public data members
 
 Do not declare public data members. Instead, public accessor functions should be exposed to access class members.
 
-### <a name="15.5.2"/>15.5.2 Friend functions
+### <a name="15.5.2"></a>15.5.2 Friend functions
 
 Avoid friend functions - they expose internals of the class to the friend function, making subsequent changes to the class more fragile. However, it is notably worse to make everything public.
 
-### <a name="15.5.3"/>15.5.3 Constructors
+### <a name="15.5.3"></a>15.5.3 Constructors
 
 If you declare a constructor, make sure to initialize all the class data members.
 
-### <a name="15.5.4"/>15.5.4  Destructors
+### <a name="15.5.4"></a>15.5.4  Destructors
 
 The JIT uses a specialized memory allocator that does not release memory until compilation is complete. Thus, it is generally bad to declare or require destructors and the calling of `delete`, since memory will never be reclaimed, and JIT developers used to never dealing with deallocation are also likely to omit calls to `delete`.
 
-### <a name="15.5.5"/>15.5.5 Operator overloading
+### <a name="15.5.5"></a>15.5.5 Operator overloading
 
 Define operators such as `=`, `==`, and `!=` only if you really want and use this capability, and can make them super-efficient.
 
@@ -1894,7 +1894,7 @@ Never define an operator to do anything other than the standard semantics for bu
 
 Never hide expensive work behind an operator. If it's not super efficient then make it an explicit method call.
 
-### <a name="15.5.6"/>15.5.6 Copy constructor and assignment operator
+### <a name="15.5.6"></a>15.5.6 Copy constructor and assignment operator
 
 The compiler will automatically create a default copy constructor and assignment operator for a class. If that is undesirable, use the C++11 delete functions feature to prevent that, as so:
 
@@ -1905,7 +1905,7 @@ private:
     MyClass& operator=(const MyClass&) = delete;
 ```
 
-### <a name="15.5.7"/>15.5.7 Virtual functions
+### <a name="15.5.7"></a>15.5.7 Virtual functions
 
 An overridden virtual method is explicitly declared virtual for clarity.
 
@@ -1913,7 +1913,7 @@ Virtual functions have overhead, so don't use them unless you need polymorphism.
 
 However, note that virtual functions are often a cleaner, clearer, and faster solution than alternatives.
 
-### <a name="15.5.8"/>15.5.8 Inheritance
+### <a name="15.5.8"></a>15.5.8 Inheritance
 
 Don't use inheritance just because it will work. Use it sparingly and judiciously, when it makes sense to the situation. Deeply nested hierarchies can be confusing to understand.
 
@@ -1921,11 +1921,11 @@ Be careful with inheritance vs. containment. When in doubt, use containment.
 
 Don't use multiple implementation inheritance.
 
-### <a name="15.5.9"/>15.5.9 Global class objects
+### <a name="15.5.9"></a>15.5.9 Global class objects
 
 Never declare a global instance of a class that has a constructor. Such constructors run in a non-deterministic order which is bad for reliability, and they have to be executed during process startup which is bad for startup performance. It is better to use lazy initialization in such a case.
 
-## <a name="15.6"/>15.6 Exceptions
+## <a name="15.6"></a>15.6 Exceptions
 
 Exceptions should be thrown only on true error paths, not in the general execution of a function. Exceptions are quite expensive on some platforms. What is an error path is a subjective choice depending on the scenario.
 
@@ -1933,13 +1933,13 @@ Do not catch all exceptions blindly. Catching all exceptions may mask a genuine 
 
 Use care when referencing local variables within the "catch" and "finally" blocks, as their values may be an undefined state if an exception occurs.
 
-## <a name="15.7"/>15.7 Code tuning for performance optimization
+## <a name="15.7"></a>15.7 Code tuning for performance optimization
 
 In general, code should be written to be readable first, and optimized for performance second. Don't optimize for the compiler! This will help to keep the code understandable, maintainable, and less prone to bugs.
 
 In the case of tight loops and code that has been analyzed to be a performance bottleneck, performance optimizations take a higher priority. Talk to the performance team if in doubt.
 
-## <a name="15.8"/>15.8 Memory allocation
+## <a name="15.8"></a>15.8 Memory allocation
 
 All memory required during the compilation of a method must be allocated using the `Compiler`'s arena allocator. This allocator takes care of deallocating all the memory when compilation ends, avoiding memory leaks and simplifying memory management.
 
@@ -1977,7 +1977,7 @@ Note that certain classes (e.g. `GenTree`) provide their own `new` operator over
 
 Debug/checked code that needs to allocate memory outside of method compilation can use the `HostAllocator` class and the associated `new` operator. This is a normal memory allocator that requires manual memory deallocation.
 
-## <a name="15.9"/>15.9 Obsoleting functions, classes and macros
+## <a name="15.9"></a>15.9 Obsoleting functions, classes and macros
 
 The Visual C++ compiler has support built in for marking various user defined constructs as deprecated. This functionality is accessed via one of two mechanisms:
 

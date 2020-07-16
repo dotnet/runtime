@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Internal
     /// Marks the constructor to be used when activating type using <see cref="ActivatorUtilities"/>.
     /// </summary>
 
+    [AttributeUsage(AttributeTargets.All)]
 #if ActivatorUtilities_In_DependencyInjection
     public
 #else

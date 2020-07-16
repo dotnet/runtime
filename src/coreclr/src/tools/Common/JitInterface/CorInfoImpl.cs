@@ -620,8 +620,18 @@ namespace Internal.JitInterface
             return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(type)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
         }
 
+        private static CORINFO_CONTEXT_STRUCT* contextFromMethodBeingCompiled()
+        {
+            return (CORINFO_CONTEXT_STRUCT*)1;
+        }
+
         private MethodDesc methodFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled;
+            }
+
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return null;
@@ -634,18 +644,28 @@ namespace Internal.JitInterface
 
         private TypeDesc typeFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled.OwningType;
+            }
+
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return HandleToObject((CORINFO_CLASS_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
             else
             {
-                return methodFromContext(contextStruct).OwningType;
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
             }
         }
 
         private TypeSystemEntity entityFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
+            }
+
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
@@ -990,8 +1010,10 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                    Debug.Assert((!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                        methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
                         (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
+                    Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }
@@ -1014,7 +1036,9 @@ namespace Internal.JitInterface
             // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>).
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
-            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
+
+            var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1060,7 +1084,9 @@ namespace Internal.JitInterface
         private void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
-            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
+
+            var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1618,12 +1644,12 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
         }
 
-        private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, bool speculative)
+        private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             FieldDesc fd = field == null ? null : HandleToObject(field);
             Debug.Assert(fd == null || fd.IsStatic);
 
-            MethodDesc md = HandleToObject(method);
+            MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
             if (_isFallbackBodyCompilation ||
@@ -1672,6 +1698,13 @@ namespace Internal.JitInterface
 
             if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
+                if (fd == null && method != null && context == contextFromMethodBeingCompiled())
+                {
+                    // If we're inling a call to a method in our own type, then we should already
+                    // have triggered the .cctor when caller was itself called.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
                 return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
@@ -1686,10 +1719,7 @@ namespace Internal.JitInterface
                 // Handled above
                 Debug.Assert(!typeToInit.IsBeforeFieldInit);
 
-                // Note that jit has both methods the same if asking whether to emit cctor
-                // for a given method's code (as opposed to inlining codegen).
-                MethodDesc contextMethod = methodFromContext(context);
-                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
+                if (method != null && typeToInit == MethodBeingCompiled.OwningType)
                 {
                     // If we're inling a call to a method in our own type, then we should already
                     // have triggered the .cctor when caller was itself called.

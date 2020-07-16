@@ -2028,8 +2028,8 @@ namespace System.Xml.Serialization
         private readonly Hashtable _idNames = new Hashtable();
         private Hashtable _enums;
         private readonly Hashtable _createMethods = new Hashtable();
-        private int _nextCreateMethodNumber = 0;
-        private int _nextIdNumber = 0;
+        private int _nextCreateMethodNumber;
+        private int _nextIdNumber;
 
         internal Hashtable Enums
         {

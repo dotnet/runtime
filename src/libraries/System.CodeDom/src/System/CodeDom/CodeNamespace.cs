@@ -12,7 +12,7 @@ namespace System.CodeDom
         private readonly CodeCommentStatementCollection _comments = new CodeCommentStatementCollection();
         private readonly CodeTypeDeclarationCollection _classes = new CodeTypeDeclarationCollection();
 
-        private int _populated = 0x0;
+        private int _populated;
         private const int ImportsCollection = 0x1;
         private const int CommentsCollection = 0x2;
         private const int TypesCollection = 0x4;

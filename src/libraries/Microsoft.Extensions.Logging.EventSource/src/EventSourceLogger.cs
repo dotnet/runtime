@@ -57,11 +57,12 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 return;
             }
+            string message = null;
 
             // See if they want the formatted message
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                string message = formatter(state, exception);
+                message = formatter(state, exception);
                 _eventSource.FormattedMessage(
                     logLevel,
                     _factoryID,
@@ -74,8 +75,8 @@ namespace Microsoft.Extensions.Logging.EventSource
             // See if they want the message as its component parts.
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message))
             {
-                var exceptionInfo = GetExceptionInfo(exception);
-                var arguments = GetProperties(state);
+                ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
+                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
 
                 _eventSource.Message(
                     logLevel,
@@ -93,8 +94,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                 string exceptionJson = "{}";
                 if (exception != null)
                 {
-                    var exceptionInfo = GetExceptionInfo(exception);
-                    var exceptionInfoData = new[]
+                    ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
+                    KeyValuePair<string, string>[] exceptionInfoData = new[]
                     {
                         new KeyValuePair<string, string>("TypeName", exceptionInfo.TypeName),
                         new KeyValuePair<string, string>("Message", exceptionInfo.Message),
@@ -103,7 +104,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                     };
                     exceptionJson = ToJson(exceptionInfoData);
                 }
-                var arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                message ??= formatter(state, exception);
                 _eventSource.MessageJson(
                     logLevel,
                     _factoryID,
@@ -111,7 +113,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                     eventId.Id,
                     eventId.Name,
                     exceptionJson,
-                    ToJson(arguments));
+                    ToJson(arguments),
+                    message);
             }
         }
 
@@ -122,12 +125,12 @@ namespace Microsoft.Extensions.Logging.EventSource
                 return NullScope.Instance;
             }
 
-            var id = Interlocked.Increment(ref _activityIds);
+            int id = Interlocked.Increment(ref _activityIds);
 
             // If JsonMessage is on, use JSON format
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.JsonMessage))
             {
-                var arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
                 _eventSource.ActivityJsonStart(id, _factoryID, CategoryName, ToJson(arguments));
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, true);
             }
@@ -135,7 +138,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message) ||
                 _eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                var arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
                 _eventSource.ActivityStart(id, _factoryID, CategoryName, arguments);
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, false);
             }
@@ -196,9 +199,9 @@ namespace Microsoft.Extensions.Logging.EventSource
             if (state is IReadOnlyList<KeyValuePair<string, object>> keyValuePairs)
             {
                 var arguments = new KeyValuePair<string, string>[keyValuePairs.Count];
-                for (var i = 0; i < keyValuePairs.Count; i++)
+                for (int i = 0; i < keyValuePairs.Count; i++)
                 {
-                    var keyValuePair = keyValuePairs[i];
+                    KeyValuePair<string, object> keyValuePair = keyValuePairs[i];
                     arguments[i] = new KeyValuePair<string, string>(keyValuePair.Key, keyValuePair.Value?.ToString());
                 }
                 return arguments;
@@ -213,7 +216,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             using var writer = new Utf8JsonWriter(stream);
 
             writer.WriteStartObject();
-            foreach (var keyValue in keyValues)
+            foreach (KeyValuePair<string, string> keyValue in keyValues)
             {
                 writer.WriteString(keyValue.Key, keyValue.Value);
             }
@@ -221,7 +224,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             writer.Flush();
 
-            if (!stream.TryGetBuffer(out var buffer))
+            if (!stream.TryGetBuffer(out ArraySegment<byte> buffer))
             {
                 buffer = new ArraySegment<byte>(stream.ToArray());
             }

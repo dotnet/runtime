@@ -9,7 +9,7 @@ namespace System.CodeDom
         private CodeTypeReference _type;
         private bool _hasGet;
         private bool _hasSet;
-        private CodeTypeReferenceCollection _implementationTypes = null;
+        private CodeTypeReferenceCollection _implementationTypes;
 
         public CodeTypeReference PrivateImplementationType { get; set; }
 

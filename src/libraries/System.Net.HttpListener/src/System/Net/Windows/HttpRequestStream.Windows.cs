@@ -289,7 +289,7 @@ namespace System.Net
             private readonly ThreadPoolBoundHandle _boundHandle;
             internal NativeOverlapped* _pOverlapped;
             internal void* _pPinnedBuffer;
-            internal uint _dataAlreadyRead = 0;
+            internal uint _dataAlreadyRead;
 
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
 

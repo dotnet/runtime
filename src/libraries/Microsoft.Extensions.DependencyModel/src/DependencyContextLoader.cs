@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             DependencyContext context = null;
-            using (var reader = _jsonReaderFactory())
+            using (IDependencyContextReader reader = _jsonReaderFactory())
             {
                 if (IsEntryAssembly(assembly))
                 {
@@ -73,9 +73,9 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (context != null)
                 {
-                    foreach (var extraPath in _nonEntryPointDepsPaths)
+                    foreach (string extraPath in _nonEntryPointDepsPaths)
                     {
-                        var extraContext = LoadContext(reader, extraPath);
+                        DependencyContext extraContext = LoadContext(reader, extraPath);
                         if (extraContext != null)
                         {
                             context = context.Merge(extraContext);
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.DependencyModel
             if (!string.IsNullOrEmpty(location))
             {
                 Debug.Assert(_fileSystem.File.Exists(location));
-                using (var stream = _fileSystem.File.OpenRead(location))
+                using (Stream stream = _fileSystem.File.OpenRead(location))
                 {
                     return reader.Read(stream);
                 }
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
-            using (var stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
+            using (Stream stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
             {
                 if (stream != null)
                 {
@@ -114,10 +114,10 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            var depsJsonFile = GetDepsJsonPath(assembly);
+            string depsJsonFile = GetDepsJsonPath(assembly);
             if (!string.IsNullOrEmpty(depsJsonFile))
             {
-                using (var stream = _fileSystem.File.OpenRead(depsJsonFile))
+                using (Stream stream = _fileSystem.File.OpenRead(depsJsonFile))
                 {
                     return reader.Read(stream);
                 }
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (!depsJsonFileExists)
             {
-                // in some cases (like .NET Framework shadow copy) the Assembly Location 
+                // in some cases (like .NET Framework shadow copy) the Assembly Location
                 // and CodeBase will be different, so also try the CodeBase
                 string assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
                 if (!string.IsNullOrEmpty(assemblyCodeBase) &&

@@ -35,7 +35,7 @@ namespace System.Net
         private int _clientCertificateError;
         private RequestContextBase _memoryBlob;
         private readonly HttpListenerContext _httpContext;
-        private bool _isDisposed = false;
+        private bool _isDisposed;
         internal const uint CertBoblSize = 1500;
         private string _serviceName;
 
@@ -555,7 +555,7 @@ namespace System.Net
 
         internal ChannelBinding GetChannelBinding()
         {
-            return HttpListenerContext.Listener.GetChannelBindingFromTls(_connectionId);
+            return HttpListener.GetChannelBindingFromTls(HttpListenerContext.ListenerSession, _connectionId);
         }
 
         internal void CheckDisposed()

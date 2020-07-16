@@ -26,7 +26,7 @@ namespace System.Xml.Serialization
         private bool _shareTypes;
         private Hashtable _mergedSchemas;
         internal Hashtable delayedSchemas = new Hashtable();
-        private bool _isCompiled = false;
+        private bool _isCompiled;
         private static volatile XmlSchema s_xsd;
         private static volatile XmlSchema s_xml;
 

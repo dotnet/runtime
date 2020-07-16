@@ -48,9 +48,15 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        // Null turns into the empty span here, which is correct for compat.
         public X509Certificate(byte[] data)
+            : this(new ReadOnlySpan<byte>(data))
         {
-            if (data != null && data.Length != 0)
+        }
+
+        private protected X509Certificate(ReadOnlySpan<byte> data)
+        {
+            if (!data.IsEmpty)
             {
                 // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
                 using (var safePasswordHandle = new SafePasswordHandle((string?)null))
@@ -98,6 +104,19 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        private protected X509Certificate(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (rawData.IsEmpty)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
         public X509Certificate(IntPtr handle)
         {
             Pal = CertificatePal.FromHandle(handle);
@@ -126,6 +145,19 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
+        private protected X509Certificate(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));

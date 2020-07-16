@@ -1,26 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
-    <!-- Common -->
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
-             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
-    <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
-             Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
-             Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs" Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Net\WebSockets\WebSocketHandle.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
@@ -28,25 +25,15 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.Handles" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

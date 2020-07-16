@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 var fileList = new List<string>(files.Count());
 
                 // normalize
-                foreach (var file in files)
+                foreach (string file in files)
                 {
                     fileList.Add(Path.GetFullPath(file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)));
                 }
@@ -82,16 +82,16 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
             var dict = new Dictionary<string, List<string>>();
-            foreach (var file in _files)
+            foreach (string file in _files)
             {
                 if (!IsRootDirectory(FullName, file))
                 {
                     continue;
                 }
 
-                var endPath = file.Length;
-                var beginSegment = FullName.Length + 1;
-                var endSegment = file.IndexOfAny(DirectorySeparators, beginSegment, endPath - beginSegment);
+                int endPath = file.Length;
+                int beginSegment = FullName.Length + 1;
+                int endSegment = file.IndexOfAny(DirectorySeparators, beginSegment, endPath - beginSegment);
 
                 if (endSegment == -1)
                 {
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 }
                 else
                 {
-                    var name = file.Substring(0, endSegment);
+                    string name = file.Substring(0, endSegment);
                     List<string> list;
                     if (!dict.TryGetValue(name, out list))
                     {
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 }
             }
 
-            foreach (var item in dict)
+            foreach (KeyValuePair<string, List<string>> item in dict)
             {
                 yield return new InMemoryDirectoryInfo(item.Key, item.Value, true);
             }
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             }
             else
             {
-                var normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+                string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
                 return new InMemoryDirectoryInfo(normPath, _files, true);
             }
         }
@@ -150,8 +150,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Instance of <see cref="FileInfoBase"/> if the file exists, null otherwise.</returns>
         public override FileInfoBase GetFile(string path)
         {
-            var normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-            foreach (var file in _files)
+            string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+            foreach (string file in _files)
             {
                 if (string.Equals(file, normPath))
                 {

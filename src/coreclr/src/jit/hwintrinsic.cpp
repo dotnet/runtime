@@ -91,6 +91,10 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType)
 {
+    if (m_simdHandleCache == nullptr)
+    {
+        return NO_CLASS_HANDLE;
+    }
     if (simdType == TYP_SIMD16)
     {
         switch (simdBaseType)
@@ -1021,6 +1025,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AdvSimd_SubtractWideningUpper:
                         assert(varTypeIsSIMD(op1->TypeGet()));
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op1ClsHnd));
+                        break;
+
+                    case NI_AdvSimd_Arm64_AddSaturateScalar:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
                     default:

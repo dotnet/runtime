@@ -1123,10 +1123,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         }
     }
 #ifdef TARGET_ARM64
-    else if (addr->OperGet() == GT_CLS_VAR_ADDR)
+    else if (addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         // These nodes go into an addr mode:
         // - GT_CLS_VAR_ADDR turns into a constant.
+        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
 
         // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirNode, addr);

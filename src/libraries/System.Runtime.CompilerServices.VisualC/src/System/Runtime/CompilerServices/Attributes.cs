@@ -39,23 +39,6 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Types used in Custom Modifier to specify calling conventions.
-    public class CallConvCdecl
-    {
-    }
-
-    public class CallConvStdcall
-    {
-    }
-
-    public class CallConvThiscall
-    {
-    }
-
-    public class CallConvFastcall
-    {
-    }
-
     [AttributeUsage(AttributeTargets.All)]
     internal sealed class DecoratedNameAttribute : Attribute
     {

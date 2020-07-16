@@ -726,6 +726,20 @@ get_data_item_index (TransformData *td, void *ptr)
 	return index;
 }
 
+static guint16
+get_data_item_index_nonshared (TransformData *td, void *ptr)
+{
+	guint index;
+	if (td->max_data_items == td->n_data_items) {
+		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
+		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
+	}
+	index = td->n_data_items;
+	td->data_items [index] = ptr;
+	++td->n_data_items;
+	return index;
+}
+
 gboolean
 mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
@@ -1457,6 +1471,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			if (mini_should_insert_breakpoint (td->method))
 				*op = MINT_BREAK;
 		}
+	} else if (in_corlib &&
+			!strcmp (klass_name_space, "System") &&
+			!strcmp (klass_name, "SpanHelpers") &&
+			!strcmp (tm, "ClearWithReferences")) {
+		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
@@ -2493,6 +2512,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [1] = vt_stack_used;
 				td->last_ins->data [2] = vt_res_size;
 				td->last_ins->data [3] = save_last_error;
+				/* Cache slot */
+				td->last_ins->data [4] = get_data_item_index_nonshared (td, NULL);
 			} else {
 				interp_add_ins (td, MINT_CALLI);
 				td->last_ins->data [1] = vt_stack_used;
@@ -4710,7 +4731,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						vt_stack_used += size;
 					}
 				}
-				if (vt_stack_used != 0 || vt_res_size != 0) {
+				if ((vt_stack_used != 0 || vt_res_size != 0) &&
+						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR) {
+					/* FIXME Remove this once vtsp and sp are unified */
 					interp_add_ins (td, MINT_VTRESULT);
 					td->last_ins->data [0] = vt_res_size;
 					WRITE32_INS (td->last_ins, 1, &vt_stack_used);
@@ -4907,8 +4930,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
 					/* First we pop the vt object from the stack. Then we push the field */
-					/* FIXME unaligned field load ? */
 					int opcode = MINT_LDFLD_VT_I1 + mt - MINT_TYPE_I1;
+#ifdef NO_UNALIGNED_ACCESS
+					if (field->offset % SIZEOF_VOID_P != 0) {
+						if (mt == MINT_TYPE_I8)
+							opcode = MINT_LDFLD_VT_I8_UNALIGNED;
+						else if (mt == MINT_TYPE_R8)
+							opcode = MINT_LDFLD_VT_R8_UNALIGNED;
+					}
+#endif
 					interp_add_ins (td, opcode);
 					g_assert (m_class_is_valuetype (klass));
 					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
@@ -4980,8 +5010,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						/* the vtable of the field might not be initialized at this point */
 						mono_class_vtable_checked (domain, field_klass, error);
 						goto_if_nok (error, exit);
-
-						td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						if (m_class_has_references (field_klass)) {
+							td->last_ins->data [1] = get_data_item_index (td, field_klass);
+						} else {
+							td->last_ins->opcode = MINT_STFLD_VT_NOREF;
+							td->last_ins->data [1] = mono_class_value_size (field_klass, NULL);
+						}
 					}
 				}
 			}
@@ -6217,6 +6251,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					g_warning("CEE_LOCALLOC: stack not empty");
 				++td->ip;
 				SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_MP);
+				td->has_localloc = TRUE;
 				break;
 #if 0
 			case CEE_UNUSED57: ves_abort(); break;
@@ -7560,6 +7595,22 @@ interp_optimize_code (TransformData *td)
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
 }
 
+/*
+ * Very few methods have localloc. Handle it separately to not impact performance
+ * of other methods. We replace the normal return opcodes with opcodes that also
+ * reset the localloc stack.
+ */
+static void
+interp_fix_localloc_ret (TransformData *td)
+{
+	g_assert (td->has_localloc);
+	InterpInst *ins;
+	for (ins = td->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode >= MINT_RET && ins->opcode <= MINT_RET_VT)
+			ins->opcode += MINT_RET_LOCALLOC - MINT_RET;
+	}
+}
+
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
@@ -7635,6 +7686,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 
 	generate_code (td, method, header, generic_context, error);
 	goto_if_nok (error, exit);
+
+	if (td->has_localloc)
+		interp_fix_localloc_ret (td);
 
 	interp_optimize_code (td);
 

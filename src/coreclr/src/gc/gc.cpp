@@ -35186,8 +35186,7 @@ HRESULT GCHeap::Initialize()
         {
             gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
         }
-        // This tells the system there is a hard limit, but otherwise we will not compare against this value.
-        gc_heap::heap_hard_limit = 1;
+        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
     }
     else
     {
@@ -35222,8 +35221,7 @@ HRESULT GCHeap::Initialize()
             {
                 gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
             }
-            // This tells the system there is a hard limit, but otherwise we will not compare against this value.
-            gc_heap::heap_hard_limit = 1;
+            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
         }
     }
 

@@ -16,7 +16,7 @@ namespace System.Windows.Forms
     internal static class DpiHelper
     {
         private const double LogicalDpi = 96.0;
-        private static bool s_isInitialized = false;
+        private static bool s_isInitialized;
         /// <summary>
         /// The primary screen's (device) current horizontal DPI
         /// </summary>
@@ -27,8 +27,8 @@ namespace System.Windows.Forms
         /// </summary>
         private static double s_deviceDpiY = LogicalDpi;
 
-        private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
-        private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
+        private static double s_logicalToDeviceUnitsScalingFactorX;
+        private static double s_logicalToDeviceUnitsScalingFactorY;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()

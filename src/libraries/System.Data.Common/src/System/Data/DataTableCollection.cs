@@ -17,13 +17,13 @@ namespace System.Data
     [ListBindable(false)]
     public sealed class DataTableCollection : InternalDataCollectionBase
     {
-        private readonly DataSet _dataSet = null;
+        private readonly DataSet _dataSet;
         private readonly ArrayList _list = new ArrayList();
         private int _defaultNameIndex = 1;
-        private DataTable[] _delayedAddRangeTables = null;
+        private DataTable[] _delayedAddRangeTables;
 
-        private CollectionChangeEventHandler _onCollectionChangedDelegate = null;
-        private CollectionChangeEventHandler _onCollectionChangingDelegate = null;
+        private CollectionChangeEventHandler _onCollectionChangedDelegate;
+        private CollectionChangeEventHandler _onCollectionChangingDelegate;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);

@@ -65,6 +65,7 @@ namespace System.Text.Encodings.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
         public static void VerifyCodePageAttributes(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
@@ -81,6 +82,7 @@ namespace System.Text.Encodings.Tests
             Assert.Equal(windowsCodePage, encoding.WindowsCodePage);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Normalization_TestData))]
         public static void NormalizationTest(int codepage, bool normalized, bool normalizedC, bool normalizedD, bool normalizedKC, bool normalizedKD)

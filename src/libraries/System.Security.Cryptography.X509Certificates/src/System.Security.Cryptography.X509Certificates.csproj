@@ -3,9 +3,12 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS3016;CA5379;CA5384;CA5385</NoWarn>
+    <NoWarn>$(NoWarn);CA5384</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
@@ -20,10 +23,16 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
+             Link="Common\System\Security\Cryptography\Oids.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemEnumerator.cs"
+             Link="Common\Internal\Cryptography\PemEnumerator.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
+             Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
     </AsnXml>
@@ -679,6 +688,6 @@
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="@(AsnXml)" /> 
+    <None Include="@(AsnXml)" />
   </ItemGroup>
 </Project>

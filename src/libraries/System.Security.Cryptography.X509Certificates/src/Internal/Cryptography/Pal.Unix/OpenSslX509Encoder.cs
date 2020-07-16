@@ -53,7 +53,7 @@ namespace Internal.Cryptography.Pal
                 multiLine);
         }
 
-        public X509ContentType GetCertContentType(byte[] rawData)
+        public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
         {
             {
                 ICertificatePal? certPal;

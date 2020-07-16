@@ -116,10 +116,6 @@ namespace System.IO
                 _directoryHandle.Dispose();
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // Current "session" ID to ignore old events whenever we stop then restart.
         private int _currentSession;
 

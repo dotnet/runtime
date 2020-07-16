@@ -177,7 +177,7 @@ namespace System.Diagnostics.Tracing
 
     internal static class EventPipe
     {
-        private static ulong s_sessionID = 0;
+        private static ulong s_sessionID;
 
         internal static void Enable(EventPipeConfiguration configuration)
         {

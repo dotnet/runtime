@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, root.ZeroLengthProperty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestJsonPathDoesNotFailOnMultiThreads()
         {
             const int ThreadCount = 8;

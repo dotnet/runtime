@@ -10,7 +10,6 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly TextWriter _textWriter;
 
-        /// <inheritdoc />
         public AnsiSystemConsole(bool stdErr = false)
         {
             _textWriter = stdErr ? System.Console.Error : System.Console.Out;

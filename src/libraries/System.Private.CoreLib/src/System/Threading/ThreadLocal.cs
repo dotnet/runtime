@@ -682,7 +682,7 @@ namespace System.Threading
         private class IdManager
         {
             // The next ID to try
-            private int _nextIdToTry = 0;
+            private int _nextIdToTry;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
             private readonly List<bool> _freeIds = new List<bool>();

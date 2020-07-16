@@ -44,14 +44,6 @@ namespace System.Net.Http.Json.Functional.Tests
 
         [Theory]
         [MemberData(nameof(WriteAsyncInputLatin))]
-        public Task WriteAsync_Works_WhenOutputIs_UTF7(string message)
-        {
-            Encoding targetEncoding = Encoding.UTF7;
-            return WriteAsyncTest(targetEncoding, message);
-        }
-
-        [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
         public Task WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(string message)
         {
             // Arrange

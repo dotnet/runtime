@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Configuration
 
         private void Load(bool reload)
         {
-            var file = Source.FileProvider?.GetFileInfo(Source.Path);
+            IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
             if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload

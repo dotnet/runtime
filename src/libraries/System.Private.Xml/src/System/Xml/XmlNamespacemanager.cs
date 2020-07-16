@@ -33,7 +33,7 @@ namespace System.Xml
         private NamespaceDeclaration[]? _nsdecls;
 
         // index of last declaration
-        private int _lastDecl = 0;
+        private int _lastDecl;
 
         // name table
         private readonly XmlNameTable? _nameTable;

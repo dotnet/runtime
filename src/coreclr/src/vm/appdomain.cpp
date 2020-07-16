@@ -122,34 +122,6 @@ ULONG               SystemDomain::s_dNumAppDomains = 0;
 
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
-
-
-// comparison function to be used for matching clsids in our clsid hash table
-BOOL CompareCLSID(UPTR u1, UPTR u2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GUID *pguid = (GUID *)(u1 << 1);
-    _ASSERTE(pguid != NULL);
-
-    MethodTable *pMT= (MethodTable *)u2;
-    _ASSERTE(pMT!= NULL);
-
-    GUID guid;
-    pMT->GetGuid(&guid, TRUE);
-    if (!IsEqualIID(guid, *pguid))
-        return FALSE;
-
-    return TRUE;
-}
-
 #ifndef CROSSGEN_COMPILE
 // Constructor for the LargeHeapHandleBucket class.
 LargeHeapHandleBucket::LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -940,47 +912,6 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
 
 #endif // !DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE
-
-// Insert class in the hash table
-void AppDomain::InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert /*=FALSE*/)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        MODE_ANY;
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    CVID cvid;
-
-    // Ensure that registered classes are activated for allocation
-    pMT->EnsureInstanceActive();
-
-    // Note that it is possible for multiple classes to claim the same CLSID, and in such a
-    // case it is arbitrary which one we will return for a future query for a given app domain.
-
-    pMT->GetGuid(&cvid, fForceInsert);
-
-    if (!IsEqualIID(cvid, GUID_NULL))
-    {
-        //<TODO>@todo get a better key</TODO>
-        LPVOID val = (LPVOID)pMT;
-        {
-            LockHolder lh(this);
-
-            if (LookupClass(cvid) != pMT)
-            {
-                m_clsidHash.InsertValue(GetKeyFromGUID(&cvid), val);
-            }
-        }
-    }
-}
-
-#endif // DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
 #ifndef CROSSGEN_COMPILE
 #ifndef DACCESS_COMPILE
@@ -1723,20 +1654,6 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 }
 #endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
 
-#if defined(FEATURE_CLASSIC_COMINTEROP) && !defined(CROSSGEN_COMPILE)
-
-MethodTable *AppDomain::LoadCOMClass(GUID clsid,
-                                     BOOL bLoadRecord/*=FALSE*/,
-                                     BOOL* pfAssemblyInReg/*=NULL*/)
-{
-    // @CORESYSTODO: what to do here?
-    // If implemented, this should handle checking that the type actually has the requested CLSID
-    return NULL;
-}
-
-#endif // FEATURE_CLASSIC_COMINTEROP && !CROSSGEN_COMPILE
-
-
 /*static*/
 bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 {
@@ -2345,11 +2262,6 @@ void AppDomain::Init()
 
     m_ReflectionCrst.Init(CrstReflection, CRST_UNSAFE_ANYMODE);
     m_RefClassFactCrst.Init(CrstClassFactInfoHash);
-
-    {
-        LockOwner lock = {&m_DomainCrst, IsOwnerOfCrst};
-        m_clsidHash.Init(0,&CompareCLSID,true, &lock); // init hash table
-    }
 
     SetStage(STAGE_READYFORMANAGEDCODE);
 
@@ -4053,113 +3965,6 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     return fFailure;
 }
 
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT AppDomain::BindAssemblySpecForHostedBinder(
-    AssemblySpec *   pSpec,
-    IAssemblyName *  pAssemblyName,
-    ICLRPrivBinder * pBinder,
-    PEAssembly **    ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
-    PRECONDITION(CheckPointer(ppAssembly));
-    PRECONDITION(pSpec->GetCodeBase() == nullptr);
-
-    HRESULT hr = S_OK;
-
-
-    // The Fusion binder can throw (to preserve compat, since it will actually perform an assembly
-    // load as part of it's bind), so we need to be careful here to catch any FileNotFoundException
-    // objects if fThrowIfNotFound is false.
-    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-
-    // We return HRESULTs here on failure instead of throwing as failures here are not necessarily indicative
-    // of an actual application problem. Returning an error code is substantially faster than throwing, and
-    // should be used when possible.
-    IfFailRet(pBinder->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-    IfFailRet(BindHostedPrivAssembly(nullptr, pPrivAssembly, pAssemblyName, ppAssembly));
-
-
-    return S_OK;
-}
-
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT
-AppDomain::BindHostedPrivAssembly(
-    PEAssembly *       pParentAssembly,
-    ICLRPrivAssembly * pPrivAssembly,
-    IAssemblyName *    pAssemblyName,
-    PEAssembly **      ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pPrivAssembly));
-    PRECONDITION(CheckPointer(ppAssembly));
-
-    HRESULT hr = S_OK;
-
-    *ppAssembly = nullptr;
-
-    // See if result has been previously loaded.
-    {
-        DomainAssembly* pDomainAssembly = FindAssembly(pPrivAssembly);
-        if (pDomainAssembly != nullptr)
-        {
-            *ppAssembly = clr::SafeAddRef(pDomainAssembly->GetFile());
-        }
-    }
-
-    if (*ppAssembly != nullptr)
-    {   // Already exists: return the assembly.
-        return S_OK;
-    }
-
-    // Get the IL PEFile.
-    PEImageHolder pPEImageIL;
-    {
-        // Does not already exist, so get the resource for the assembly and load it.
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceIL;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_IL, &dwImageType, &pIResourceIL));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_IL);
-
-        pPEImageIL = PEImage::OpenImage(pIResourceIL, MDInternalImport_Default);
-    }
-
-    // See if an NI is available.
-    DWORD dwAvailableImages;
-    IfFailRet(pPrivAssembly->GetAvailableImageTypes(&dwAvailableImages));
-    _ASSERTE(dwAvailableImages & ASSEMBLY_IMAGE_TYPE_IL); // Just double checking that IL bit is always set.
-
-    // Get the NI PEFile if available.
-    PEImageHolder pPEImageNI;
-#ifdef FEATURE_PREJIT
-    if (dwAvailableImages & ASSEMBLY_IMAGE_TYPE_NATIVE)
-    {
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceNI;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_NATIVE, &dwImageType, &pIResourceNI));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_NATIVE || FAILED(hr));
-
-        pPEImageNI = PEImage::OpenImage(pIResourceNI, MDInternalImport_TrustedNativeImage);
-    }
-#endif // FEATURE_PREJIT
-    _ASSERTE(pPEImageIL != nullptr);
-
-    // Create a PEAssembly using the IL and NI images.
-    PEAssemblyHolder pPEAssembly = PEAssembly::Open(pParentAssembly, pPEImageIL, pPEImageNI, pPrivAssembly);
-
-    // The result.
-    *ppAssembly = pPEAssembly.Extract();
-
-    return S_OK;
-} // AppDomain::BindHostedPrivAssembly
-
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(
     AssemblySpec *         pSpec,
@@ -4560,9 +4365,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateBinderContext()
+CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
 {
-    CONTRACT(IUnknown *)
+    CONTRACT(CLRPrivBinderCoreCLR *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -6031,11 +5836,6 @@ void AppDomain::UnPublishHostedAssembly(
                 m_hostAssemblyMapForOrigFile.Remove(pAssembly->GetOriginalFile()->GetHostAssembly());
             }
         }
-    }
-    else
-    {
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
     }
 }
 

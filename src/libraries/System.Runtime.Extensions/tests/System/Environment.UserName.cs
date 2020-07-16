@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/38164", TestPlatforms.Browser)]
     public class EnvironmentUserName
     {
         [Fact]

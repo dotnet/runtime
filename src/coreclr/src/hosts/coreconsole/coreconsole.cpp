@@ -27,7 +27,7 @@ class StringBuffer {
     StringBuffer& operator =(const StringBuffer&);
 
 public:
-    StringBuffer() : m_capacity(0), m_buffer(nullptr), m_length(0) {
+    StringBuffer() : m_buffer(nullptr), m_capacity(0), m_length(0) {
     }
 
     ~StringBuffer() {
@@ -116,7 +116,7 @@ public:
     wchar_t m_coreCLRDirectoryPath[MAX_LONGPATH];
 
     HostEnvironment(Logger *logger)
-        : m_log(logger), m_CLRRuntimeHost(nullptr) {
+        : m_CLRRuntimeHost(nullptr), m_log(logger) {
 
             // Discover the path to this exe's module. All other files are expected to be in the same directory.
             DWORD thisModuleLength = ::GetModuleFileNameW(::GetModuleHandleW(nullptr), m_hostPath, MAX_LONGPATH);

@@ -97,10 +97,6 @@ namespace System.Globalization
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(strInput != null);

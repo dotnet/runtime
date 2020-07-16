@@ -612,6 +612,8 @@ Exit
 
     add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
     mov         x1, x12                         ; pThunk
+    mov         x2, #0                          ; sectionIndex
+    mov         x3, #0                          ; pModule
 
     bl          ExternalMethodFixupWorker
 

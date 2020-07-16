@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal FormatterTypeStyle _typeFormat = FormatterTypeStyle.TypesAlways; // For version resiliency, always put out types
         internal FormatterAssemblyStyle _assemblyFormat = FormatterAssemblyStyle.Simple;
         internal TypeFilterLevel _securityLevel = TypeFilterLevel.Full;
-        internal object[]? _crossAppDomainArray = null;
+        internal object[]? _crossAppDomainArray;
 
         public FormatterTypeStyle TypeFormat { get { return _typeFormat; } set { _typeFormat = value; } }
         public FormatterAssemblyStyle AssemblyFormat { get { return _assemblyFormat; } set { _assemblyFormat = value; } }

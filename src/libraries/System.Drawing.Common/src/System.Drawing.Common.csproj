@@ -219,7 +219,7 @@
     <Compile Include="misc\GDI\DeviceContextType.cs" />
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs"
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -366,6 +366,7 @@
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Text.Encoding.Extensions" />

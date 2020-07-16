@@ -98,7 +98,7 @@ private:
     T* m_pArray;
 };
 
-class Profiler : public ICorProfilerCallback8
+class Profiler : public ICorProfilerCallback10
 {
 private:
     std::atomic<int> refCount;
@@ -205,6 +205,21 @@ public:
     HRESULT STDMETHODCALLTYPE ModuleInMemorySymbolsUpdated(ModuleID moduleId) override;
     HRESULT STDMETHODCALLTYPE DynamicMethodJITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock, LPCBYTE ilHeader, ULONG cbILHeader) override;
     HRESULT STDMETHODCALLTYPE DynamicMethodJITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock) override;
+    HRESULT STDMETHODCALLTYPE DynamicMethodUnloaded(FunctionID functionId) override;
+    HRESULT STDMETHODCALLTYPE EventPipeEventDelivered(
+        EVENTPIPE_PROVIDER provider,
+        DWORD eventId,
+        DWORD eventVersion,
+        ULONG cbMetadataBlob,
+        LPCBYTE metadataBlob,
+        ULONG cbEventData,
+        LPCBYTE eventData,
+        LPCGUID pActivityId,
+        LPCGUID pRelatedActivityId,
+        ThreadID eventThread,
+        ULONG numStackFrames,
+        UINT_PTR stackFrames[]) override;
+    HRESULT STDMETHODCALLTYPE EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;

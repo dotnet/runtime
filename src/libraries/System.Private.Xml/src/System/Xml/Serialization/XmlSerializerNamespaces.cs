@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializerNamespaces
     {
-        private Dictionary<string, string> _namespaces = null;
+        private Dictionary<string, string> _namespaces;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

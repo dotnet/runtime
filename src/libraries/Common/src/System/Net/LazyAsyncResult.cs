@@ -41,7 +41,6 @@ namespace System.Net
         }
 
 #if DEBUG
-        internal object? _debugAsyncChain = null;    // Optionally used to track chains of async calls.
         private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 

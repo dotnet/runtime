@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
 
             options.CaptureScopes = _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
 
-            foreach (var configurationSection in _configuration.GetChildren())
+            foreach (IConfigurationSection configurationSection in _configuration.GetChildren())
             {
                 if (configurationSection.Key.Equals(LogLevelKey, StringComparison.OrdinalIgnoreCase))
                 {
@@ -42,11 +42,11 @@ namespace Microsoft.Extensions.Logging
                 }
                 else
                 {
-                    var logLevelSection = configurationSection.GetSection(LogLevelKey);
+                    IConfigurationSection logLevelSection = configurationSection.GetSection(LogLevelKey);
                     if (logLevelSection != null)
                     {
                         // Load logger specific rules
-                        var logger = configurationSection.Key;
+                        string logger = configurationSection.Key;
                         LoadRules(options, logLevelSection, logger);
                     }
                 }
@@ -55,11 +55,11 @@ namespace Microsoft.Extensions.Logging
 
         private void LoadRules(LoggerFilterOptions options, IConfigurationSection configurationSection, string logger)
         {
-            foreach (var section in configurationSection.AsEnumerable(true))
+            foreach (System.Collections.Generic.KeyValuePair<string, string> section in configurationSection.AsEnumerable(true))
             {
-                if (TryGetSwitch(section.Value, out var level))
+                if (TryGetSwitch(section.Value, out LogLevel level))
                 {
-                    var category = section.Key;
+                    string category = section.Key;
                     if (category.Equals(DefaultCategory, StringComparison.OrdinalIgnoreCase))
                     {
                         category = null;

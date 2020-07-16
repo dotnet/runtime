@@ -14,7 +14,7 @@ extern "C"
     int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init);
     int HOSTPOLICY_CALLTYPE corehost_unload();
     corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer);
-    int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract);
+    int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, uint32_t options, /*out*/ corehost_context_contract *context_contract);
     int HOSTPOLICY_CALLTYPE corehost_main(const int argc, const pal::char_t* argv[]);
     int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
 }
@@ -24,20 +24,16 @@ int hostpolicy_resolver::load(
     pal::dll_t* dll,
     hostpolicy_contract_t &hostpolicy_contract)
 {
-    static hostpolicy_contract_t contract;
-
     trace::info(_X("Using internal hostpolicy"));
 
-    contract.load = corehost_load;
-    contract.unload = corehost_unload;
-    contract.set_error_writer = corehost_set_error_writer;
-    contract.initialize = corehost_initialize;
-    contract.corehost_main = corehost_main;
-    contract.corehost_main_with_output_buffer = corehost_main_with_output_buffer;
+    hostpolicy_contract.load = corehost_load;
+    hostpolicy_contract.unload = corehost_unload;
+    hostpolicy_contract.set_error_writer = corehost_set_error_writer;
+    hostpolicy_contract.initialize = corehost_initialize;
+    hostpolicy_contract.corehost_main = corehost_main;
+    hostpolicy_contract.corehost_main_with_output_buffer = corehost_main_with_output_buffer;
 
-    hostpolicy_contract = contract;
     *dll = nullptr;
-
     return StatusCode::Success;
 }
 

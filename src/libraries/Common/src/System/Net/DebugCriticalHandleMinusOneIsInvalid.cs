@@ -20,9 +20,6 @@ namespace System.Net
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Creating SafeHandle");
-#if TRACE_VERBOSE
-            _trace += Environment.StackTrace;
-#endif //TRACE_VERBOSE
         }
 
         ~DebugCriticalHandleMinusOneIsInvalid()

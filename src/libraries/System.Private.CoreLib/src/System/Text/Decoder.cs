@@ -20,9 +20,9 @@ namespace System.Text
     //
     public abstract class Decoder
     {
-        internal DecoderFallback? _fallback = null;
+        internal DecoderFallback? _fallback;
 
-        internal DecoderFallbackBuffer? _fallbackBuffer = null;
+        internal DecoderFallbackBuffer? _fallbackBuffer;
 
         protected Decoder()
         {

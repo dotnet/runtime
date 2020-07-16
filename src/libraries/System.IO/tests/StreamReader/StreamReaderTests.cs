@@ -513,6 +513,7 @@ namespace System.IO.Tests
         [InlineData(0, true)]
         [InlineData(1, false)]
         [InlineData(1, true)]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
             Func<StreamReader, CancellationToken, Task<int>> func = method switch

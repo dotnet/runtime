@@ -8,9 +8,9 @@ namespace System.Configuration
 {
     public class SettingsPropertyValueCollection : IEnumerable, ICloneable, ICollection
     {
-        private readonly Hashtable _indices = null;
-        private ArrayList _values = null;
-        private bool _readOnly = false;
+        private readonly Hashtable _indices;
+        private ArrayList _values;
+        private bool _readOnly;
 
         public SettingsPropertyValueCollection()
         {

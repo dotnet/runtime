@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryRemove(string name)
         {
             name = name ?? Options.DefaultName;
-            return _cache.TryRemove(name, out var ignored);
+            return _cache.TryRemove(name, out Lazy<TOptions> ignored);
         }
     }
 }

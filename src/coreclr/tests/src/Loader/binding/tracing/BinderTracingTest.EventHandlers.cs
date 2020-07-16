@@ -71,7 +71,7 @@ namespace BinderTracingTests
             }
         }
 
-        [BinderTest]
+        [BinderTest(additionalLoadsToTrack: new string[] { SubdirectoryAssemblyName + "Mismatch" })]
         public static BindOperation AssemblyLoadContextResolving_NameMismatch()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
@@ -98,7 +98,7 @@ namespace BinderTracingTests
         public static BindOperation AssemblyLoadContextResolving_MultipleHandlers()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
-            CustomALC alc = new CustomALC(nameof(AssemblyLoadContextResolving_NameMismatch));
+            CustomALC alc = new CustomALC(nameof(AssemblyLoadContextResolving_MultipleHandlers));
             using (var handlerNull = new Handlers(HandlerReturn.Null, alc))
             using (var handlerLoad = new Handlers(HandlerReturn.RequestedAssembly, alc))
             {
@@ -175,7 +175,7 @@ namespace BinderTracingTests
             }
         }
 
-        [BinderTest]
+        [BinderTest(additionalLoadsToTrack: new string[] { SubdirectoryAssemblyName + "Mismatch" })]
         public static BindOperation AppDomainAssemblyResolve_NameMismatch()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
@@ -229,7 +229,7 @@ namespace BinderTracingTests
             }
         }
 
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" })]
         public static BindOperation AssemblyLoadFromResolveHandler_LoadDependency()
         {
             string assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
@@ -268,7 +268,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" })]
         public static BindOperation AssemblyLoadFromResolveHandler_MissingDependency()
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

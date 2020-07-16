@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization
     internal class CodeObject
 #endif
     {
-        private IDictionary _userData = null;
+        private IDictionary _userData;
 
         public CodeObject() { }
 

@@ -163,3 +163,12 @@ int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t 
             return -2;
     }
 }
+
+int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
+{
+    if (ctx == NULL || pOutput == NULL || cbOutput < ctx->cbDigest)
+        return -1;
+
+    DigestCtx dup = *ctx;
+    return AppleCryptoNative_DigestFinal(&dup, pOutput, cbOutput);
+}

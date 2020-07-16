@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     internal class WinHttpTransportContext : TransportContext
     {
-        private WinHttpChannelBinding _channelBinding = null;
+        private WinHttpChannelBinding _channelBinding;
 
         internal WinHttpTransportContext()
         {

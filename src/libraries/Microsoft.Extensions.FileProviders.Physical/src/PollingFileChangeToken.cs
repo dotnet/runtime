@@ -87,13 +87,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return _hasChanged;
                 }
 
-                var currentTime = DateTime.UtcNow;
+                DateTime currentTime = DateTime.UtcNow;
                 if (currentTime - _lastCheckedTimeUtc < PollingInterval)
                 {
                     return _hasChanged;
                 }
 
-                var lastWriteTimeUtc = GetLastWriteTimeUtc();
+                DateTime lastWriteTimeUtc = GetLastWriteTimeUtc();
                 if (_previousWriteTimeUtc != lastWriteTimeUtc)
                 {
                     _previousWriteTimeUtc = lastWriteTimeUtc;

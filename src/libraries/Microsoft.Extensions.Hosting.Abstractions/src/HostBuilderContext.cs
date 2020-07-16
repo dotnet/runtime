@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Hosting
         /// The <see cref="IConfiguration" /> containing the merged configuration of the application and the <see cref="IHost" />.
         /// </summary>
         public IConfiguration Configuration { get; set; }
-        
+
         /// <summary>
         /// A central location for sharing state between components during the host building process.
         /// </summary>

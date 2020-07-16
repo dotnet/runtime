@@ -11,15 +11,15 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal class ENUM_SERVICE_STATUS
         {
-            internal string? serviceName = null;
-            internal string? displayName = null;
-            internal int serviceType = 0;
-            internal int currentState = 0;
-            internal int controlsAccepted = 0;
-            internal int win32ExitCode = 0;
-            internal int serviceSpecificExitCode = 0;
-            internal int checkPoint = 0;
-            internal int waitHint = 0;
+            internal string? serviceName;
+            internal string? displayName;
+            internal int serviceType;
+            internal int currentState;
+            internal int controlsAccepted;
+            internal int win32ExitCode;
+            internal int serviceSpecificExitCode;
+            internal int checkPoint;
+            internal int waitHint;
         }
     }
 }

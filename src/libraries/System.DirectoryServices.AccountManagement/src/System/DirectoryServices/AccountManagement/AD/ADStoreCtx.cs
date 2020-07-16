@@ -28,10 +28,10 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         protected internal NetCred Credentials { get { return this.credentials; } }
-        protected NetCred credentials = null;
+        protected NetCred credentials;
 
         protected internal AuthenticationTypes AuthTypes { get { return this.authTypes; } }
         protected AuthenticationTypes authTypes;
@@ -2421,21 +2421,19 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         protected object domainInfoLock = new object();
-        protected string domainFlatName = null;
-        protected string domainDnsName = null;
-        protected string forestDnsName = null;
-        protected string userSuppliedServerName = null;
-        protected string defaultNamingContext = null;
-        protected string contextBasePartitionDN = null; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
-        protected string dnsHostName = null;
-        protected ulong lockoutDuration = 0;
+        protected string domainFlatName;
+        protected string domainDnsName;
+        protected string forestDnsName;
+        protected string userSuppliedServerName;
+        protected string defaultNamingContext;
+        protected string contextBasePartitionDN; //contains the DN of the Partition to which the user supplied context base (this.ctxBase) belongs.
+        protected string dnsHostName;
+        protected ulong lockoutDuration;
 
         protected enum StoreCapabilityMap
         {
             ASQSearch = 1,
         }
-
-        protected StoreCapabilityMap storeCapability = 0;
 
         // Must be called inside of lock(domainInfoLock)
         protected virtual void LoadDomainInfo()

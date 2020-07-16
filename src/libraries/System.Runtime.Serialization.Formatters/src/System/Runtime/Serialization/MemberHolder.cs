@@ -8,7 +8,6 @@ namespace System.Runtime.Serialization
 {
     internal sealed class MemberHolder
     {
-        internal readonly MemberInfo[]? _members = null;
         internal readonly Type _memberType;
         internal readonly StreamingContext _context;
 

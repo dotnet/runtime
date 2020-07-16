@@ -21,14 +21,14 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             get
             {
-                var scopes = GetOrCreateScopes();
+                CacheEntryStack scopes = GetOrCreateScopes();
                 return scopes.Peek();
             }
         }
 
         internal static IDisposable EnterScope(CacheEntry entry)
         {
-            var scopes = GetOrCreateScopes();
+            CacheEntryStack scopes = GetOrCreateScopes();
 
             var scopeLease = new ScopeLease(scopes);
             Scopes = scopes.Push(entry);
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static CacheEntryStack GetOrCreateScopes()
         {
-            var scopes = Scopes;
+            CacheEntryStack scopes = Scopes;
             if (scopes == null)
             {
                 scopes = CacheEntryStack.Empty;

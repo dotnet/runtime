@@ -69,7 +69,6 @@
       <BinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </BinPlaceItem>
-      <BinPlaceItem Remove="@(BinPlaceItem)" Condition="'$(RuntimeFlavor)' != 'Mono' and '%(BinPlaceItem.Filename)' == 'System.Private.CoreLib'" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <TestHostBinPlaceItem Include="@(RuntimeFiles)" />

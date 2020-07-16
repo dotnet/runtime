@@ -169,9 +169,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ImportPkcs7DerByteSpan_Chain()
+        {
+            using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes.AsSpan()))
+            {
+                X509Certificate2Collection collection = ic.Collection;
+                Assert.Equal(3, collection.Count);
+            }
+        }
+
+        [Fact]
         public static void ImportPkcs7PemBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes))
+            {
+                X509Certificate2Collection collection = ic.Collection;
+                Assert.Equal(3, collection.Count);
+            }
+        }
+
+        [Fact]
+        public static void ImportPkcs7PemByteSpan_Chain()
+        {
+            using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes.AsSpan()))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(3, collection.Count);
@@ -212,24 +232,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
-        public static void ImportPkcs12Bytes_Single_VerifyContents(X509KeyStorageFlags keyStorageFlags)
+        public static void ImportPkcs12Bytes_Single_VerifyContents_ArrayString(X509KeyStorageFlags keyStorageFlags)
+        {
+            using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
+            {
+                ImportPkcs12Bytes_Single_VerifyContents(ic);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12Bytes_Single_VerifyContents_SpanSpan(X509KeyStorageFlags keyStorageFlags)
+        {
+            ReadOnlySpan<byte> rawData = TestData.PfxData.AsSpan();
+            ReadOnlySpan<char> password = TestData.PfxDataPassword.AsSpan();
+
+            using (ImportedCollection ic = Cert.Import(rawData, password, keyStorageFlags))
+            {
+                ImportPkcs12Bytes_Single_VerifyContents(ic);
+            }
+        }
+
+        private static void ImportPkcs12Bytes_Single_VerifyContents(ImportedCollection ic)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
             {
-                using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
+                X509Certificate2Collection cc2 = ic.Collection;
+                int count = cc2.Count;
+                Assert.Equal(1, count);
+
+                using (X509Certificate2 c = cc2[0])
                 {
-                    X509Certificate2Collection cc2 = ic.Collection;
-                    int count = cc2.Count;
-                    Assert.Equal(1, count);
+                    // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
+                    Assert.NotSame(pfxCer, c);
 
-                    using (X509Certificate2 c = cc2[0])
-                    {
-                        // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
-                        Assert.NotSame(pfxCer, c);
-
-                        Assert.Equal(pfxCer, c);
-                        Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
-                    }
+                    Assert.Equal(pfxCer, c);
+                    Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
                 }
             }
         }
@@ -248,9 +286,53 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12File_Single_SpanPassword(X509KeyStorageFlags keyStorageFlags)
+        {
+            Span<char> password = stackalloc char[30];
+            password.Fill('Z');
+            TestData.PfxDataPassword.AsSpan().CopyTo(password.Slice(1));
+            password = password.Slice(1, TestData.PfxDataPassword.Length);
+
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), password, keyStorageFlags))
+            {
+                X509Certificate2Collection cc2 = ic.Collection;
+                int count = cc2.Count;
+                Assert.Equal(1, count);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
         public static void ImportPkcs12Bytes_Chain(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(TestData.ChainPfxBytes, TestData.ChainPfxPassword, keyStorageFlags))
+            {
+                X509Certificate2Collection certs = ic.Collection;
+                int count = certs.Count;
+                Assert.Equal(3, count);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12ByteSpan_Chain(X509KeyStorageFlags keyStorageFlags)
+        {
+            using (ImportedCollection ic = Cert.Import(TestData.ChainPfxBytes.AsSpan(), TestData.ChainPfxPassword, keyStorageFlags))
+            {
+                X509Certificate2Collection certs = ic.Collection;
+                int count = certs.Count;
+                Assert.Equal(3, count);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12ByteSpan_Chain_SpanPassword(X509KeyStorageFlags keyStorageFlags)
+        {
+            ReadOnlySpan<byte> data = TestData.ChainPfxBytes.AsSpan();
+            ReadOnlySpan<char> password = TestData.ChainPfxPassword.AsSpan();
+
+            using (ImportedCollection ic = Cert.Import(data, password, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;

@@ -98,7 +98,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "System.Xml" })]
         public static BindOperation LoadFromAssemblyName()
         {
             AssemblyName assemblyName = new AssemblyName("System.Xml");
@@ -136,7 +136,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "System.Xml" })]
         public static BindOperation PlatformAssembly()
         {
             var assemblyName = new AssemblyName("System.Xml");
@@ -164,7 +164,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true, testSetup: nameof(PlatformAssembly))]
+        [BinderTest(isolate: true, testSetup: nameof(PlatformAssembly), additionalLoadsToTrack: new string[] { "System.Xml" })]
         public static BindOperation PlatformAssembly_Cached()
         {
             BindOperation bind = PlatformAssembly();

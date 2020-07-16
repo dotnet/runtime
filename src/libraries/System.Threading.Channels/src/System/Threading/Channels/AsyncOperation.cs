@@ -50,7 +50,7 @@ namespace System.Threading.Channels
         private readonly bool _runContinuationsAsynchronously;
 
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
-        private volatile int _completionReserved = 0;
+        private volatile int _completionReserved;
         /// <summary>The result of the operation.</summary>
         [MaybeNull, AllowNull]
         private TResult _result = default;

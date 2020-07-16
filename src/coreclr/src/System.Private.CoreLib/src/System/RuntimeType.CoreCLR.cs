@@ -2314,6 +2314,11 @@ namespace System
 
         #region Private\Internal Members
 
+        internal IntPtr GetUnderlyingNativeHandle()
+        {
+            return m_handle;
+        }
+
         internal override bool CacheEquals(object? o)
         {
             return (o is RuntimeType t) && (t.m_handle == m_handle);

@@ -84,7 +84,7 @@ namespace System.Management
         private readonly string propertyName;
 
         private object propertyValue;
-        private long propertyNullEnumValue = 0;
+        private long propertyNullEnumValue;
         private int propertyType;
         private int propertyFlavor;
         private QualifierDataCollection qualifiers;

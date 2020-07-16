@@ -31,6 +31,23 @@ var BindingSupportLib = {
 			if (this.init)
 				return;
 		
+			Array.prototype[Symbol.for("wasm type")] = 1;
+			ArrayBuffer.prototype[Symbol.for("wasm type")] = 2;
+			DataView.prototype[Symbol.for("wasm type")] = 3;
+			Function.prototype[Symbol.for("wasm type")] =  4;
+			Map.prototype[Symbol.for("wasm type")] = 5;
+			if (typeof SharedArrayBuffer !== "undefined")
+				SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
+			Int8Array.prototype[Symbol.for("wasm type")] = 10;
+			Uint8Array.prototype[Symbol.for("wasm type")] = 11;
+			Uint8ClampedArray.prototype[Symbol.for("wasm type")] = 12;
+			Int16Array.prototype[Symbol.for("wasm type")] = 13;
+			Uint16Array.prototype[Symbol.for("wasm type")] = 14;
+			Int32Array.prototype[Symbol.for("wasm type")] = 15;
+			Uint32Array.prototype[Symbol.for("wasm type")] = 16;
+			Float32Array.prototype[Symbol.for("wasm type")] = 17;
+			Float64Array.prototype[Symbol.for("wasm type")] = 18;
+
 			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
 			this.find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']);
 			this.find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
@@ -345,7 +362,7 @@ var BindingSupportLib = {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 			if (!!(js_obj.buffer instanceof ArrayBuffer && js_obj.BYTES_PER_ELEMENT)) 
 			{
-				var arrayType = 0;	
+				var arrayType = 0;
 				if (js_obj instanceof Int8Array)
 					arrayType = 11;
 				if (js_obj instanceof Uint8Array)
@@ -830,54 +847,6 @@ var BindingSupportLib = {
 
 			return this.call_method (method, null, signature, args);
 		},
-		wasm_get_core_type: function (obj)
-		{
-			switch (true)
-			{
-				case obj instanceof Array:
-					return 1;
-				case obj instanceof ArrayBuffer:
-					return 2;
-				case obj instanceof DataView:
-					return 3;
-				case obj instanceof Function:
-					return 4;
-				case obj instanceof Map:
-					return 5;
-				case obj instanceof SharedArrayBuffer:
-					return 6;
-				case obj instanceof Int8Array:
-					return 10;
-				case obj instanceof Uint8Array:
-					return 11;
-				case obj instanceof Uint8ClampedArray:
-					return 12;
-				case obj instanceof Int16Array:
-					return 13;
-				case obj instanceof Uint16Array:
-					return 14;
-				case obj instanceof Int32Array:
-					return 15;
-				case obj instanceof Uint32Array:
-					return 16;
-				case obj instanceof Float32Array:
-					return 17;
-				case obj instanceof Float64Array:
-					return 18;
-				default:
-					return undefined;
-			}
-		},
-		get_wasm_type: function(obj) {
-			var coreType = obj[Symbol.for("wasm type")];
-			if (typeof coreType === "undefined") {
-				coreType = this.wasm_get_core_type(obj);
-				if (typeof coreType !== "undefined") {
-					obj.constructor.prototype[Symbol.for("wasm type")] = coreType;
-				}
-		  	}
-			return coreType;
-		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.
 		mono_wasm_register_obj: function(obj) {
@@ -892,14 +861,9 @@ var BindingSupportLib = {
 								this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
-					var wasm_type = this.get_wasm_type(obj);
-					var ownsHandle = true;
-
-					// If this is the global object we do not want to release it.
-					if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
-						ownsHandle = false;
-
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, ownsHandle, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					var wasm_type = obj[Symbol.for("wasm type")];
+					obj.__owns_handle__ = true;
+					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}

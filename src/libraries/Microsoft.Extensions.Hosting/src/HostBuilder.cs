@@ -136,10 +136,10 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildHostConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder()
+            IConfigurationBuilder configBuilder = new ConfigurationBuilder()
                 .AddInMemoryCollection(); // Make sure there's some default storage since there are no default providers
 
-            foreach (var buildAction in _configureHostConfigActions)
+            foreach (Action<IConfigurationBuilder> buildAction in _configureHostConfigActions)
             {
                 buildAction(configBuilder);
             }
@@ -188,11 +188,11 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildAppConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder()
+            IConfigurationBuilder configBuilder = new ConfigurationBuilder()
                 .SetBasePath(_hostingEnvironment.ContentRootPath)
                 .AddConfiguration(_hostConfiguration, shouldDisposeConfiguration: true);
 
-            foreach (var buildAction in _configureAppConfigActions)
+            foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)
             {
                 buildAction(_hostBuilderContext, configBuilder);
             }
@@ -219,14 +219,14 @@ namespace Microsoft.Extensions.Hosting
             services.AddOptions();
             services.AddLogging();
 
-            foreach (var configureServicesAction in _configureServicesActions)
+            foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
                 configureServicesAction(_hostBuilderContext, services);
             }
 
-            var containerBuilder = _serviceProviderFactory.CreateBuilder(services);
+            object containerBuilder = _serviceProviderFactory.CreateBuilder(services);
 
-            foreach (var containerAction in _configureContainerActions)
+            foreach (IConfigureContainerAdapter containerAction in _configureContainerActions)
             {
                 containerAction.ConfigureContainer(_hostBuilderContext, containerBuilder);
             }

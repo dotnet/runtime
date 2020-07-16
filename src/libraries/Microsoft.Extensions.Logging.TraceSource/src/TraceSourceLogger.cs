@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             {
                 return;
             }
-            var message = string.Empty;
+            string message = string.Empty;
             if (formatter != null)
             {
                 message = formatter(state, exception);
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
                 return false;
             }
 
-            var traceEventType = GetEventType(logLevel);
+            TraceEventType traceEventType = GetEventType(logLevel);
             return _traceSource.Switch.ShouldTrace(traceEventType);
         }
 

@@ -362,21 +362,6 @@ inline BOOL MethodTable::HasExplicitGuid()
     return (guid != GUID_NULL);
 }
 
-//==========================================================================================
-// Get the GUID used for WinRT interop
-//   * if the type is not a WinRT type or a redirected interfae return FALSE
-inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return FALSE;
-}
-
 #endif // FEATURE_COMINTEROP
 
 //==========================================================================================

@@ -106,10 +106,10 @@ DWORD __stdcall StackSampler::SamplingThreadProc(void* arg)
 
 // Constructor
 StackSampler::StackSampler()
-    : m_nSampleAfter(0)
+    : m_crstJitInfo(CrstStackSampler, (CrstFlags)(CRST_UNSAFE_ANYMODE))
     , m_nSampleEvery(s_knDefaultSamplingIntervalMsec)
+    , m_nSampleAfter(0)
     , m_nNumMethods(s_knDefaultNumMethods)
-    , m_crstJitInfo(CrstStackSampler, (CrstFlags) (CRST_UNSAFE_ANYMODE))
 {
     // When to start sampling after the thread launch.
     int nSampleAfter = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StackSamplingAfter);

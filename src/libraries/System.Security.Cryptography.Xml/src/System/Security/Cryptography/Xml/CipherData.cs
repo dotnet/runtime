@@ -8,9 +8,9 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class CipherData
     {
-        private XmlElement _cachedXml = null;
-        private CipherReference _cipherReference = null;
-        private byte[] _cipherValue = null;
+        private XmlElement _cachedXml;
+        private CipherReference _cipherReference;
+        private byte[] _cipherValue;
 
         public CipherData() { }
 

@@ -26,7 +26,7 @@ namespace System.Threading.Tests
             semaphoreSlim.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -50,7 +50,7 @@ namespace System.Threading.Tests
             // currently we don't expose this.. but it was verified manually
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously()
         {
             await Task.Run(async () => // escape xunit's SynchronizationContext

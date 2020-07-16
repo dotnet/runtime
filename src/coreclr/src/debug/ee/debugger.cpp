@@ -12896,8 +12896,8 @@ private:
 // is a valid Remap Breakpoint location (not in a special offset, must be empty stack, and not in a handler.
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
-    : m_pOffsetToHandlerInfo(NULL),
-      m_pJitInfo(pJitInfo)
+    : m_pJitInfo(pJitInfo),
+    m_pOffsetToHandlerInfo(NULL)      
 {
     CONTRACTL
     {

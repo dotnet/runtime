@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
         private object? def_value;
         private MethodBuilder? set_method;
         private MethodBuilder? get_method;
-        private int table_idx = 0;
+        private int table_idx;
         internal TypeBuilder typeb;
         private Type[]? returnModReq;
         private Type[]? returnModOpt;

@@ -37,9 +37,9 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogSession Session { get; set; }
 
-        public bool TolerateQueryErrors { get; set; } = false;
+        public bool TolerateQueryErrors { get; set; }
 
-        public bool ReverseDirection { get; set; } = false;
+        public bool ReverseDirection { get; set; }
 
         internal string Path { get; }
 

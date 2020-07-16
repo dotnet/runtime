@@ -11,12 +11,12 @@ namespace System.Data
 {
     internal sealed class DataExpression : IFilter
     {
-        internal string _originalExpression = null;  // original, unoptimized string
+        internal string _originalExpression;  // original, unoptimized string
 
-        private readonly bool _parsed = false;
-        private bool _bound = false;
-        private ExpressionNode _expr = null;
-        private DataTable _table = null;
+        private readonly bool _parsed;
+        private bool _bound;
+        private ExpressionNode _expr;
+        private DataTable _table;
         private readonly StorageType _storageType;
         private readonly Type _dataType;  // This set if the expression is part of ExpressionCoulmn
         private DataColumn[] _dependency = Array.Empty<DataColumn>();

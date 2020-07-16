@@ -9,7 +9,7 @@
   <PropertyGroup>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' or '$(TargetsBrowser)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->

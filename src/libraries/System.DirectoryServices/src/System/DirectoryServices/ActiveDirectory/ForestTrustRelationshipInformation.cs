@@ -16,7 +16,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private ArrayList _binaryData = new ArrayList();
         private Hashtable _excludedNameTime = new Hashtable();
         private ArrayList _binaryDataTime = new ArrayList();
-        internal bool retrieved = false;
+        internal bool retrieved;
 
         internal ForestTrustRelationshipInformation(DirectoryContext context, string source, DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
         {

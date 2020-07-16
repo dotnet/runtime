@@ -780,7 +780,7 @@ namespace System.Net.Sockets
             /// the pool.  If it completes asynchronously, then it's the responsibility of whoever
             /// accesses this second, so we track whether it's already been accessed.
             /// </summary>
-            internal bool _accessed = false;
+            internal bool _accessed;
 
             internal TaskSocketAsyncEventArgs() :
                 base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose Task, which handles it

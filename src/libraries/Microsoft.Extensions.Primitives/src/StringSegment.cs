@@ -147,8 +147,8 @@ namespace Microsoft.Extensions.Primitives
         /// </returns>
         public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
         {
-            var minLength = Math.Min(a.Length, b.Length);
-            var diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
+            int minLength = Math.Min(a.Length, b.Length);
+            int diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
             if (diff == 0)
             {
                 diff = a.Length - b.Length;
@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var textLength = text.Length;
+            int textLength = text.Length;
             if (!HasValue || Length != textLength)
             {
                 return false;
@@ -311,8 +311,8 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var result = false;
-            var textLength = text.Length;
+            bool result = false;
+            int textLength = text.Length;
 
             if (HasValue && Length >= textLength)
             {
@@ -339,9 +339,9 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var result = false;
-            var textLength = text.Length;
-            var comparisonLength = Offset + Length - textLength;
+            bool result = false;
+            int textLength = text.Length;
+            int comparisonLength = Offset + Length - textLength;
 
             if (HasValue && comparisonLength > 0)
             {
@@ -434,7 +434,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            var offset = Offset + start;
+            int offset = Offset + start;
 
             if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
             {
@@ -446,7 +446,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
 
-            var index = Buffer.IndexOf(c, offset, count);
+            int index = Buffer.IndexOf(c, offset, count);
             if (index != -1)
             {
                 index -= Offset;
@@ -494,7 +494,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOfAny(char[] anyOf, int startIndex, int count)
         {
-            var index = -1;
+            int index = -1;
 
             if (HasValue)
             {
@@ -553,7 +553,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The zero-based index position of value if that character is found, or -1 if it is not.</returns>
         public int LastIndexOf(char value)
         {
-            var index = -1;
+            int index = -1;
 
             if (HasValue)
             {
@@ -579,14 +579,14 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
         public unsafe StringSegment TrimStart()
         {
-            var trimmedStart = Offset;
-            var length = Offset + Length;
+            int trimmedStart = Offset;
+            int length = Offset + Length;
 
             fixed (char* p = Buffer)
             {
                 while (trimmedStart < length)
                 {
-                    var c = p[trimmedStart];
+                    char c = p[trimmedStart];
 
                     if (!char.IsWhiteSpace(c))
                     {
@@ -606,14 +606,14 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
         public unsafe StringSegment TrimEnd()
         {
-            var offset = Offset;
-            var trimmedEnd = offset + Length - 1;
+            int offset = Offset;
+            int trimmedEnd = offset + Length - 1;
 
             fixed (char* p = Buffer)
             {
                 while (trimmedEnd >= offset)
                 {
-                    var c = p[trimmedEnd];
+                    char c = p[trimmedEnd];
 
                     if (!char.IsWhiteSpace(c))
                     {
@@ -646,7 +646,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns></returns>
         public static bool IsNullOrEmpty(StringSegment value)
         {
-            var res = false;
+            bool res = false;
 
             if (!value.HasValue || value.Length == 0)
             {
@@ -657,9 +657,9 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
+        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
         /// </summary>
-        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
+        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
         public override string ToString()
         {
             return Value ?? string.Empty;
