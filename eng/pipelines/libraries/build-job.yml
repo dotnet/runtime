@@ -104,6 +104,18 @@ jobs:
                 sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
                 targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
 
+            - task: CopyFiles@2
+              displayName: Prepare runtime folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+
+            - task: CopyFiles@2
+              displayName: Prepare ref folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+
           - task: CopyFiles@2
             displayName: Prepare shared framework ref assemblies to publish
             inputs:
