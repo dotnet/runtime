@@ -342,6 +342,41 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void TryingToAddExpiredEntryDoesNotIncreaseCacheSize()
+        {
+            var testClock = new TestClock();
+            var cache = new MemoryCache(new MemoryCacheOptions { Clock = testClock, SizeLimit = 10 });
+
+            var entryOptions = new MemoryCacheEntryOptions
+            {
+                Size = 5,
+                AbsoluteExpiration = testClock.UtcNow.Add(TimeSpan.FromMinutes(-1))
+            };
+
+            cache.Set("key", "value", entryOptions);
+            
+            Assert.Null(cache.Get("key"));
+            Assert.Equal(0, cache.Size);
+        }
+
+        [Fact]
+        public void TryingToAddEntryWithExpiredTokenDoesNotIncreaseCacheSize()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+            var testExpirationToken = new TestExpirationToken { HasChanged = true };
+            var entryOptions = new MemoryCacheEntryOptions
+            {
+                Size = 5,
+                ExpirationTokens = { testExpirationToken }
+            };
+
+            cache.Set("key", "value", entryOptions);
+            
+            Assert.Null(cache.Get("key"));
+            Assert.Equal(0, cache.Size);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task CompactsToLessThanLowWatermarkUsingLRUWhenHighWatermarkExceeded()
         {
