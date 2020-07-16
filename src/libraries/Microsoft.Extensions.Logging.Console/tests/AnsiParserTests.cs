@@ -248,16 +248,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        private class TestAnsiSystemConsole : IAnsiSystemConsole
-        {
-            public string Message { get; private set; }
-
-            public void Write(string message)
-            {
-                Message = message;
-            }
-        }
-
         private static bool IsBackgroundColorNotSupported(ConsoleColor color)
         {
             return AnsiParser.GetBackgroundColorEscapeCode(color).Equals(
