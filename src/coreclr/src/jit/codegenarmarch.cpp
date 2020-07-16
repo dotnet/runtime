@@ -820,6 +820,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 }
                 else // addrNode is used
                 {
+                    assert(!addrNode->isContained());
                     // Generate code to load the address that we need into a register
                     genConsumeAddress(addrNode);
                     addrReg = addrNode->GetRegNum();
@@ -1270,6 +1271,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         else // addrNode is used
         {
             assert(addrNode != nullptr);
+            assert(!addrNode->isContained());
 
             // Generate code to load the address that we need into a register
             genConsumeAddress(addrNode);
