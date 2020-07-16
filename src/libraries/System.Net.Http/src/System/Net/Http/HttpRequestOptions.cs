@@ -38,7 +38,7 @@ namespace System.Net.Http
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value)
         {
-            if (TryGetValue(key.Key, out object? _value) && _value is TValue tvalue)
+            if (Options.TryGetValue(key.Key, out object? _value) && _value is TValue tvalue)
             {
                 value = tvalue;
                 return true;
