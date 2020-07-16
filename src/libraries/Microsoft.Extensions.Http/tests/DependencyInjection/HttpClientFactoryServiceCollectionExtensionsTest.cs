@@ -948,13 +948,17 @@ namespace Microsoft.Extensions.DependencyInjection
             var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/");
             var response = await client.HttpClient.SendAsync(request);
 
+#nullable enable
+            request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
+#nullable disable
+
             Assert.Same(
                 services.GetRequiredService<SingletonService>(),
-                request.Options[nameof(SingletonService)]);
+                optService);
 
             Assert.Same(
                 client.Service,
-                request.Options[nameof(SingletonService)]);
+                optService);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -979,17 +983,21 @@ namespace Microsoft.Extensions.DependencyInjection
                 var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/");
                 var response = await client.HttpClient.SendAsync(request);
 
+#nullable enable
+                request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
+#nullable disable
+
                 Assert.Same(
                     services.GetRequiredService<SingletonService>(),
-                    request.Options[nameof(SingletonService)]);
+                    optService);
 
                 Assert.Same(
                     scope.ServiceProvider.GetRequiredService<SingletonService>(),
-                    request.Options[nameof(SingletonService)]);
+                    optService);
 
                 Assert.Same(
                     client.Service,
-                    request.Options[nameof(SingletonService)]);
+                    optService);
             }
         }
 
@@ -1035,9 +1043,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/");
                 var response = await client.HttpClient.SendAsync(request);
 
+#nullable enable
+                request.Options.TryGetValue(new HttpRequestOptionsKey<ScopedService>(nameof(ScopedService)), out ScopedService? optService);
+#nullable disable
+
                 Assert.NotSame(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
-                    request.Options[nameof(ScopedService)]);
+                    optService);
 
                 Assert.Same(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
@@ -1045,7 +1057,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 Assert.NotSame(
                     client.Service,
-                    request.Options[nameof(ScopedService)]);
+                    optService);
             }
         }
 
@@ -1069,13 +1081,17 @@ namespace Microsoft.Extensions.DependencyInjection
             var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/");
             var response = await client.HttpClient.SendAsync(request);
 
+#nullable enable
+            request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
+#nullable disable
+
             Assert.NotSame(
                 services.GetRequiredService<TransientService>(),
-                request.Options[nameof(TransientService)]);
+                optService);
 
             Assert.NotSame(
                 client.Service,
-                request.Options[nameof(TransientService)]);
+                optService);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1100,13 +1116,17 @@ namespace Microsoft.Extensions.DependencyInjection
                 var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/");
                 var response = await client.HttpClient.SendAsync(request);
 
+#nullable enable
+            request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
+#nullable disable
+
                 Assert.NotSame(
                     services.GetRequiredService<TransientService>(),
-                    request.Options[nameof(TransientService)]);
+                    optService);
 
                 Assert.NotSame(
                     client.Service,
-                    request.Options[nameof(TransientService)]);
+                    optService);
             }
         }
 
@@ -1304,7 +1324,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options[nameof(SingletonService)] = Service;
+                request.Options.Set(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), Service);
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
@@ -1320,7 +1340,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options[nameof(ScopedService)] = Service;
+                request.Options.Set(new HttpRequestOptionsKey<ScopedService>(nameof(ScopedService)), Service);
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
@@ -1336,7 +1356,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options[nameof(TransientService)] = Service;
+                request.Options.Set(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), Service);
                 return Task.FromResult(new HttpResponseMessage());
             }
         }
