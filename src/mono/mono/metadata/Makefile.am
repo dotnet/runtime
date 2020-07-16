@@ -154,12 +154,18 @@ nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 									@ICU_SHIM_PATH@/pal_localeStringData.c \
 									@ICU_SHIM_PATH@/pal_normalization.c \
 									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
-									@ICU_SHIM_PATH@/pal_icushim.c \
 									@ICU_SHIM_PATH@/entrypoints.c
 
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
-endif
-endif
+
+if STATIC_ICU
+nodist_libmonoruntime_shimglobalization_la_SOURCES += @ICU_SHIM_PATH@/pal_icushim_static.c
+else
+nodist_libmonoruntime_shimglobalization_la_SOURCES += @ICU_SHIM_PATH@/pal_icushim.c
+endif # STATIC_ICU
+
+endif # HAVE_SYS_ICU
+endif # ENABLE_NETCORE
 
 if !ENABLE_NETCORE
 culture_libraries = ../culture/libmono-culture.la
@@ -498,7 +504,7 @@ libmonoruntimeinclude_HEADERS = \
 	sgen-bridge.h		\
 	threads.h		\
 	tokentype.h		\
-	verify.h		
+	verify.h
 
 if !ENABLE_MSVC_ONLY
 
