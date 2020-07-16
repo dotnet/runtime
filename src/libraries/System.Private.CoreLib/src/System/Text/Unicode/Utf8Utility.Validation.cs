@@ -731,18 +731,19 @@ namespace System.Text.Unicode
         }
 
         private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                            Vector128.Create(0x80402010_08040201).AsByte() :
-                                            Vector128.Create(0x01020408_10204080).AsByte();
+            Vector128.Create((ushort)0x1001).AsByte() :
+            Vector128.Create((ushort)0x0110).AsByte();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort GetNonAsciiBytes(Vector128<byte> value)
         {
-            Debug.Assert(AdvSimd.Arm64.IsSupported);
+            if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             return extractedBits.AsUInt16().ToScalar();
         }
