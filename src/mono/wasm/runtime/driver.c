@@ -359,12 +359,12 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 #endif
 
 	const char* appctx_keys[1];
-    appctx_keys[0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys[0] = "APP_CONTEXT_BASE_DIRECTORY";
 
-    const char* appctx_values[1];
-    appctx_values[0] = "/";
-    
-    monovm_initialize(1, appctx_keys, appctx_values);
+	const char* appctx_values[1];
+	appctx_values[0] = "/";
+
+	monovm_initialize(1, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
