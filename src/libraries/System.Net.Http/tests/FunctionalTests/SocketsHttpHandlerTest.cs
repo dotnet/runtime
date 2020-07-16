@@ -2223,7 +2223,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
+        private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
             int count = 0;
             foreach (Task<HttpResponseMessage> sendTask in sendTasks)
