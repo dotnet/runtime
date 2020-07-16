@@ -22,6 +22,9 @@ namespace System.Text.Json
 
         public object? CreateObjectWithArgs { get; set; }
 
+        // Add method delegate for non-generic Stack and Queue; and types that derive from them.
+        public object? AddMethodDelegate { get; set; }
+
         public ClassType ClassType { get; private set; }
 
         public JsonPropertyInfo? DataExtensionProperty { get; private set; }
