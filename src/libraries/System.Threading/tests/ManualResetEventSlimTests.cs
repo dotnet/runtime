@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace System.Threading.Tests
         }
 
         // Uses 3 events to coordinate between two threads. Very little validation.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunManualResetEventSlimTest1_SimpleWait()
         {
             ManualResetEventSlim ev1 = new ManualResetEventSlim(false);

@@ -4,7 +4,7 @@
     <TestResultsName>testResults.xml</TestResultsName>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) xunit.console.dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</RunScriptCommand>
@@ -13,13 +13,15 @@
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -nologo</RunScriptCommand>
     <RunScriptCommand Condition="'$(ArchiveTests)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
-
-    <!-- Add local and global options to the argument stack. -->
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(TestDisableAppDomain)' == 'true'">$(RunScriptCommand) -noappdomain</RunScriptCommand>
     <RunScriptCommand Condition="'$(TestDisableParallelization)' == 'true'">$(RunScriptCommand) -maxthreads 1</RunScriptCommand>
+    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Add local and global options to the argument stack. -->
     <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
     <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(TestDisableAppDomain)' == 'true'">$(RunScriptCommand) -noappdomain</RunScriptCommand>
 
     <!-- Add to run argument string -->
     <RunScriptCommand>$(RunScriptCommand)$(_withCategories.Replace(';', ' -trait category='))</RunScriptCommand>

@@ -527,4 +527,10 @@
   <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
+  <data name="FormatBoolean" xml:space="preserve">
+    <value>The JSON value is not in a supported Boolean format.</value>
+  </data>
+  <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
+    <value>The type '{0}' is not a supported Dictionary key type.</value>
+  </data>
 </root>

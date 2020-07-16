@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.cpp
 //
@@ -1532,9 +1531,6 @@ NDirectStubLinker::NDirectStubLinker(
     m_pCleanupFinallyBeginLabel(NULL),
     m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),
-#ifdef FEATURE_COMINTEROP
-    m_dwWinRTFactoryObjectLocalNum(-1),
-#endif // FEATURE_COMINTEROP
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
     m_fCleanupWorkListIsSetup(FALSE),
@@ -2083,7 +2079,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
                 // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                 pcsEmit->EmitLDC(1);
                 pcsEmit->EmitSHR_UN();
@@ -2096,7 +2092,14 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
                 // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+
+#ifdef _DEBUG // There are five more pointer values for _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 8 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 8 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#else // _DEBUG
+                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 3 + 8);
+                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
+#endif // _DEBUG
                 pcsEmit->EmitADD();
 
                 if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
@@ -3015,7 +3018,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 // Either MD or signature & module must be given.
 /*static*/
-BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*/, Module *pModule /*= NULL*/)
+BOOL NDirect::MarshalingRequired(
+    _In_opt_ MethodDesc* pMD,
+    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ Module* pModule,
+    _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
     {
@@ -3049,9 +3056,23 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
         if (GetLCIDParameterIndex(pMD) != -1)
             return TRUE;
 
-        // making sure that cctor has run may be handled by stub
-        if (pMD->IsNDirect() && ((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-            return TRUE;
+        if (pMD->IsNDirect())
+        {
+            // A P/Invoke marked with UnmanagedCallersOnlyAttribute
+            // doesn't technically require marshalling. However, we
+            // don't support a DllImport with this attribute and we
+            // error out during IL Stub generation so we indicate that
+            // when checking if an IL Stub is needed.
+            //
+            // Callers can indicate the check doesn't need to be performed.
+            if (unmanagedCallersOnlyRequiresMarshalling && pMD->HasUnmanagedCallersOnlyAttribute())
+                return TRUE;
+
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            // Make sure running cctor can be handled by stub
+            if (pNMD->IsClassConstructorTriggeredByILStub())
+                return TRUE;
+        }
 
         callConv = sigInfo.GetCallConv();
     }
@@ -3109,7 +3130,7 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
                         return TRUE;
                     }
                 }
-                if (i > 0) dwStackSize += sizeof(SLOT);
+                if (i > 0) dwStackSize += TARGET_POINTER_SIZE;
                 break;
             }
 
@@ -3364,7 +3385,7 @@ static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
     if (fThisCall)
     {
         // -1 means that the argument is not on the stack
-        return (stackSize >= sizeof(SLOT) ? (stackSize - sizeof(SLOT)) : (UINT)-1);
+        return (stackSize >= TARGET_POINTER_SIZE ? (stackSize - TARGET_POINTER_SIZE) : (UINT)-1);
     }
 #endif // TARGET_X86
     return stackSize;
@@ -3462,8 +3483,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     //
     // Marshal the return value.
     //
-
-    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
+    UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? TARGET_POINTER_SIZE : 0);
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
 
     // Normally we would like this to be false so that we use the correct signature
@@ -3580,7 +3600,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         fStubNeedsCOM |= info.MarshalerRequiresCOM();
 
         // make sure that the first parameter is enregisterable
-        if (info.GetNativeArgSize() > sizeof(SLOT))
+        if (info.GetNativeArgSize() > TARGET_POINTER_SIZE)
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
 
         argidx++;
@@ -3599,7 +3619,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                            pParamTokenArray,
                                            nlType,
                                            nlFlags,
-                                           0,
+                                           1, // Indicating as the first argument
                                            pss,
                                            isInstanceMethod,
                                            argOffset,
@@ -3631,7 +3651,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
             MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
             if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
-                nativeStackSize += sizeof(LPVOID);
+                nativeStackSize += TARGET_POINTER_SIZE;
             }
         }
     }
@@ -3644,7 +3664,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         if (argidx == iLCIDArg)
         {
             pss->MarshalLCID(argidx);
-            nativeStackSize += sizeof(LPVOID);
+            nativeStackSize += TARGET_POINTER_SIZE;
 
             if (SF_IsReverseStub(dwStubFlags))
                 argOffset++;
@@ -3662,7 +3682,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
         if (fThisCall && argidx == 1)
         {
             // make sure that the first parameter is enregisterable
-            if (info.GetNativeArgSize() > sizeof(SLOT))
+            if (info.GetNativeArgSize() > TARGET_POINTER_SIZE)
                 COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
         }
 
@@ -3675,7 +3695,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (argidx == iLCIDArg)
     {
         pss->MarshalLCID(argidx);
-        nativeStackSize += sizeof(LPVOID);
+        nativeStackSize += TARGET_POINTER_SIZE;
 
         if (SF_IsReverseStub(dwStubFlags))
             argOffset++;
@@ -3718,7 +3738,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
-            nativeStackSize += sizeof(LPVOID);
+            nativeStackSize += TARGET_POINTER_SIZE;
     }
 
     if (pMD->IsDynamicMethod())
@@ -3732,8 +3752,8 @@ static void CreateNDirectStubWorker(StubState*         pss,
 #ifdef TARGET_X86
         if (fThisCall)
         {
-            _ASSERTE(nativeStackSize >= sizeof(SLOT));
-            nativeStackSize -= sizeof(SLOT);
+            _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
+            nativeStackSize -= TARGET_POINTER_SIZE;
         }
 #else // TARGET_X86
         //
@@ -3850,7 +3870,7 @@ static void CreateStructStub(ILStubState* pss,
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
-        pDMD->SetNativeStackArgSize(4 * sizeof(SLOT)); // The native stack arg size is constant since the signature for struct stubs is constant.
+        pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -4182,15 +4202,21 @@ static void CreateNDirectStubAccessMetadata(
     }
 
     int lcidArg = -1;
+
+    // Check if we have a MethodDesc to query for additional data.
     if (pSigDesc->m_pMD != NULL)
     {
-        lcidArg = GetLCIDParameterIndex(pSigDesc->m_pMD);
+        MethodDesc* pMD = pSigDesc->m_pMD;
+
+        // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
+        // presently supported.
+        if (pMD->HasUnmanagedCallersOnlyAttribute())
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
 
         // Check to see if we need to do LCID conversion.
+        lcidArg = GetLCIDParameterIndex(pMD);
         if (lcidArg != -1 && lcidArg > (*pNumArgs))
-        {
             COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
-        }
     }
 
     (*piLCIDArg) = lcidArg;
@@ -5184,14 +5210,10 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 {
     STANDARD_VM_CONTRACT;
 
-    BOOL fGcMdaEnabled = FALSE;
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
 #ifdef FEATURE_PREJIT
-        if (fGcMdaEnabled)
-            return NULL;
-
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
@@ -5204,23 +5226,17 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return ((fGcMdaEnabled && !pNMD->IsQCall()) ? NULL : pNMD->ndirect.m_pStubMD.GetValueMaybeNull());
+        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
     }
 #endif // FEATURE_COMINTEROP
     else if (pMD->IsEEImpl())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
         if (SF_IsReverseStub(dwStubFlags))
         {
@@ -6624,7 +6640,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pMD->ShouldSuppressGCTransition() || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pMD->ShouldSuppressGCTransition()
+                || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //
@@ -6764,19 +6781,21 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
         {
             case IMAGE_CEE_CS_CALLCONV_C:
-                    unmgdCallConv = pmCallConvCdecl;
-                    break;
+                unmgdCallConv = pmCallConvCdecl;
+                break;
             case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    unmgdCallConv = pmCallConvStdcall;
-                    break;
+                unmgdCallConv = pmCallConvStdcall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    unmgdCallConv = pmCallConvThiscall;
-                    break;
+                unmgdCallConv = pmCallConvThiscall;
+                break;
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    unmgdCallConv = pmCallConvFastcall;
-                    break;
+                unmgdCallConv = pmCallConvFastcall;
+                break;
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                COMPlusThrow(kNotImplementedException);
             default:
-                    COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();

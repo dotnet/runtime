@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -102,6 +101,8 @@ using namespace CorUnix;
 //
 
 extern "C" BOOL CRTInitStdStreams( void );
+
+extern bool g_running_in_exe;
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
@@ -786,8 +787,10 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath)
+PAL_InitializeCoreCLR(const char *szExePath, bool runningInExe)
 {
+    g_running_in_exe = runningInExe;
+
     // Fake up a command line to call PAL initialization with.
     int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
     if (result != 0)

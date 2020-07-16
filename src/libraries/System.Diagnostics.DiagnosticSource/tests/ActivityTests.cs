@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -188,32 +187,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-        /// <summary>
-        /// Tests overflow in Id generation when parentId has a single (root) node
-        /// </summary>
-        [Fact]
-        public void ActivityIdNonHierarchicalOverflow()
-        {
-            // find out Activity Id length on this platform in this AppDomain
-            Activity testActivity = new Activity("activity")
-                .Start();
-            var expectedIdLength = testActivity.Id.Length;
-            testActivity.Stop();
-
-            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
-            // it causes overflow during Id generation, and new root Id is generated for the new Activity
-            var parentId = '|' + new string('a', 1022) + '.';
-
-            var activity = new Activity("activity")
-                .SetParentId(parentId)
-                .Start();
-
-            Assert.Equal(parentId, activity.ParentId);
-
-            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
-            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
-            Assert.DoesNotContain('#', activity.Id);
-        }
 
         /// <summary>
         /// Tests activity start and stop
@@ -238,7 +211,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationNoParent()
         {
             var orphan1 = new Activity("orphan1");
@@ -254,10 +227,11 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.Hierarchical);
             parent.Start();
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
@@ -535,11 +509,11 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_HierarchicalIsDefault()
+        public void IdFormat_W3CIsDefaultForNet5()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            Assert.Equal(PlatformDetection.IsNetCore ? ActivityIdFormat.W3C : ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
@@ -618,6 +592,20 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IdFormat_WithTheEnvironmentSwitch()
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL", "true");
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Activity activity = new Activity("activity15");
+                activity.Start();
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -633,13 +621,23 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
+        public void IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat()
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-            Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+            }
+            else
+            {
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1239,7 +1237,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1256,7 +1254,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1295,7 +1293,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
@@ -1413,11 +1411,11 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, activity.Events.Count());
             Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
             Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(0).Tags.Count());
 
             Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
             Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(1).Tags.Count());
         }
 
         [Fact]
@@ -1428,6 +1426,86 @@ namespace System.Diagnostics.Tests
             Assert.True(a1.IsAllDataRequested);
             Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
             Assert.Equal(1, a1.Tags.Count());
+        }
+
+        [Fact]
+        public void TestTagObjects()
+        {
+            Activity activity = new Activity("TagObjects");
+            Assert.Equal(0, activity.Tags.Count());
+            Assert.Equal(0, activity.TagObjects.Count());
+
+            activity.AddTag("s1", "s1").AddTag("s2", "s2").AddTag("s3", null);
+            Assert.Equal(3, activity.Tags.Count());
+            Assert.Equal(3, activity.TagObjects.Count());
+
+            KeyValuePair<string, string>[] tags = activity.Tags.ToArray();
+            KeyValuePair<string, object>[] tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags.Length, tagObjects.Length);
+
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+
+            activity.AddTag("s4", (object) null);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(4, activity.TagObjects.Count());
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags[3].Key, tagObjects[3].Key);
+            Assert.Equal(tags[3].Value, tagObjects[3].Value);
+
+            activity.AddTag("s5", 5);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(5, activity.TagObjects.Count());
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(5, tagObjects[4].Value);
+
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            Assert.Equal(5, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            activity.SetTag("s6", "s6");
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s5", "s6");
+            Assert.Equal(7, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s3", null); // remove the tag
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("key1", null, true,  1)]
+        [InlineData("key2", null, false, 0)]
+        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key4", "v2", false, 1)]
+        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        {
+            Activity a = new Activity("SetFirstTag");
+            if (add)
+            {
+                a.AddTag(key, value);
+            }
+            else
+            {
+                a.SetTag(key, value);
+            }
+
+            Assert.Equal(resultCount, a.TagObjects.Count());
         }
 
         public void Dispose()

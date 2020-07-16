@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,8 +9,8 @@ namespace Microsoft.Extensions.DependencyModel
 {
     internal class DependencyContextPaths
     {
-        private static readonly string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
-        private static readonly string FxDepsFileProperty = "FX_DEPS_FILE";
+        private const string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
+        private const string FxDepsFileProperty = "FX_DEPS_FILE";
 
         public static DependencyContextPaths Current { get; } = GetCurrent();
 
@@ -33,18 +32,18 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContextPaths GetCurrent()
         {
-            var deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
-            var fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
+            object deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
+            object fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
 
             return Create(deps as string, fxDeps as string);
         }
 
         internal static DependencyContextPaths Create(string depsFiles, string sharedRuntime)
         {
-            var files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            var application = files != null && files.Length > 0 ? files[0] : null;
+            string[] files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            string application = files != null && files.Length > 0 ? files[0] : null;
 
-            var nonApplicationPaths = files?
+            string[] nonApplicationPaths = files?
                 .Skip(1) // the application path
                 .ToArray();
 

@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project (${DOTNET_PROJECT_NAME})
 
@@ -19,7 +18,7 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
 )
 list(APPEND HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/../hostfxr_resolver_t.h
+    ${CMAKE_CURRENT_LIST_DIR}/../hostfxr_resolver.h
 )
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})

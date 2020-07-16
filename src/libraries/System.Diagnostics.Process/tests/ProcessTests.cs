@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -409,10 +408,19 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StartTime);
         }
 
+        [Fact]
+        public void GetCurrentProcess_Id_EqualsCurrentProcessId()
+        {
+            using Process current = Process.GetCurrentProcess();
+            Assert.Equal(Environment.ProcessId, current.Id);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestId()
         {
             CreateDefaultProcess();
+
+            Assert.NotEqual(Environment.ProcessId, _process.Id);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -1051,12 +1059,7 @@ namespace System.Diagnostics.Tests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId =
-#if TargetsWindows
-                Interop.GetCurrentProcessId();
-#else
-                Interop.getpid();
-#endif
+            int currentProcessId = Environment.ProcessId;
 
             Assert.Equal(currentProcessId, current.Id);
         }

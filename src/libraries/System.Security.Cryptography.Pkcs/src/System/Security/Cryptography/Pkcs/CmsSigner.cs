@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class CmsSigner
     {
-        private static readonly Oid s_defaultAlgorithm = Oid.FromOidValue(Oids.Sha256, OidGroup.HashAlgorithm);
+        private static readonly Oid s_defaultAlgorithm = Oids.Sha256Oid;
 
         private SubjectIdentifierType _signerIdentifierType;
 
@@ -94,7 +93,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
-            DigestAlgorithm = new Oid(s_defaultAlgorithm);
+            DigestAlgorithm = s_defaultAlgorithm.CopyOid();
             PrivateKey = privateKey;
         }
 
@@ -216,12 +215,12 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             bool signed;
-            Oid? signatureAlgorithm;
+            string? signatureAlgorithm;
             ReadOnlyMemory<byte> signatureValue;
 
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
-                signatureAlgorithm = new Oid(Oids.NoSignature, null);
+                signatureAlgorithm = Oids.NoSignature;
                 signatureValue = dataHash;
                 signed = true;
             }
@@ -243,7 +242,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             newSignerInfo.SignatureValue = signatureValue;
-            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!.Value!;
+            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!;
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             certs.AddRange(Certificates);

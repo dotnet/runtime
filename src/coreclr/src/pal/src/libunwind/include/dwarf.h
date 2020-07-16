@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #define dwarf_h
 
 #include <libunwind.h>
+#include <stdatomic.h>
 
 struct dwarf_cursor;    /* forward-declaration */
 struct elf_dyn_info;
@@ -347,7 +348,7 @@ struct dwarf_rs_cache
     /* hash table that maps instruction pointer to rs index: */
     unsigned short *hash;
 
-    uint32_t generation;        /* generation number */
+    _Atomic uint32_t generation;        /* generation number */
 
     /* rs cache: */
     dwarf_reg_state_t *buckets;

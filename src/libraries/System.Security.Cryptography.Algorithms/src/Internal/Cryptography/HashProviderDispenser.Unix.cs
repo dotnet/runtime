@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -14,43 +13,48 @@ namespace Internal.Cryptography
     {
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            switch (hashAlgorithmId)
-            {
-                case HashAlgorithmNames.SHA1:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha1());
-                case HashAlgorithmNames.SHA256:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha256());
-                case HashAlgorithmNames.SHA384:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha384());
-                case HashAlgorithmNames.SHA512:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha512());
-                case HashAlgorithmNames.MD5:
-                    return new EvpHashProvider(Interop.Crypto.EvpMd5());
-            }
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+            return new EvpHashProvider(evpType);
         }
 
-        public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
+        public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            switch (hashAlgorithmId)
-            {
-                case HashAlgorithmNames.SHA1:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha1(), key);
-                case HashAlgorithmNames.SHA256:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha256(), key);
-                case HashAlgorithmNames.SHA384:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha384(), key);
-                case HashAlgorithmNames.SHA512:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha512(), key);
-                case HashAlgorithmNames.MD5:
-                    return new HmacHashProvider(Interop.Crypto.EvpMd5(), key);
-            }
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+            return new HmacHashProvider(evpType, key);
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
+        private static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch {
+            HashAlgorithmNames.SHA1 => Interop.Crypto.EvpSha1(),
+            HashAlgorithmNames.SHA256 => Interop.Crypto.EvpSha256(),
+            HashAlgorithmNames.SHA384 => Interop.Crypto.EvpSha384(),
+            HashAlgorithmNames.SHA512 => Interop.Crypto.EvpSha512(),
+            HashAlgorithmNames.MD5 => Interop.Crypto.EvpMd5(),
+            _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
+        };
+
+        internal static class OneShotHashProvider
+        {
+            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+                Debug.Assert(evpType != IntPtr.Zero);
+
+                int hashSize = Interop.Crypto.EvpMdSize(evpType);
+
+                if (hashSize <= 0 || destination.Length < hashSize)
+                    throw new CryptographicException();
+
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    uint length = (uint)destination.Length;
+                    Check(Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, ref length));
+                    Debug.Assert(length == hashSize);
+                }
+
+                return hashSize;
+            }
+        }
 
         private sealed class EvpHashProvider : HashProvider
         {
@@ -77,32 +81,29 @@ namespace Internal.Cryptography
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                var result = new byte[_hashSize];
-                bool success = TryFinalizeHashAndReset(result, out int bytesWritten);
-                Debug.Assert(success);
-                Debug.Assert(result.Length == bytesWritten);
-                return result;
-            }
-
-            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-            {
-                if (destination.Length < _hashSize)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+                Debug.Assert(destination.Length >= _hashSize);
 
                 uint length = (uint)destination.Length;
                 Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
                 Debug.Assert(length == _hashSize);
-                bytesWritten = (int)length;
 
                 // Reset the algorithm provider.
                 Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
 
-                return true;
+                return _hashSize;
+            }
+
+            public override int GetCurrentHash(Span<byte> destination)
+            {
+                Debug.Assert(destination.Length >= _hashSize);
+
+                uint length = (uint)destination.Length;
+                Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+
+                return _hashSize;
             }
 
             public override int HashSizeInBytes => _hashSize;
@@ -138,30 +139,27 @@ namespace Internal.Cryptography
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                var hash = new byte[_hashSize];
-                bool success = TryFinalizeHashAndReset(hash, out int bytesWritten);
-                Debug.Assert(success);
-                Debug.Assert(hash.Length == bytesWritten);
-                return hash;
-            }
-
-            public override unsafe bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-            {
-                if (destination.Length < _hashSize)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+                Debug.Assert(destination.Length >= _hashSize);
 
                 int length = destination.Length;
                 Check(Interop.Crypto.HmacFinal(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
                 Debug.Assert(length == _hashSize);
-                bytesWritten = length;
 
                 Check(Interop.Crypto.HmacReset(_hmacCtx));
-                return true;
+                return _hashSize;
+            }
+
+            public override int GetCurrentHash(Span<byte> destination)
+            {
+                Debug.Assert(destination.Length >= _hashSize);
+
+                int length = destination.Length;
+                Check(Interop.Crypto.HmacCurrent(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+
+                return _hashSize;
             }
 
             public override int HashSizeInBytes => _hashSize;

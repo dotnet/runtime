@@ -1,6 +1,5 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
-; See the LICENSE file in the project root for more information.
 
 ;; ==++==
 ;;
@@ -46,7 +45,6 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
-    IMPORT  g_TrapReturningThreads
     IMPORT  g_dispatch_cache_chain_success_counter
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
@@ -612,6 +610,8 @@ Exit
 
     add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
     mov         x1, x12                         ; pThunk
+    mov         x2, #0                          ; sectionIndex
+    mov         x3, #0                          ; pModule
 
     bl          ExternalMethodFixupWorker
 

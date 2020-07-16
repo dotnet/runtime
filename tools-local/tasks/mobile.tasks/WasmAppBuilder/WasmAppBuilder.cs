@@ -1,7 +1,6 @@
 // -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -29,8 +28,7 @@ public class WasmAppBuilder : Task
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
-    public ITaskItem[]? ExtraFiles { get; set; }
-
+    public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     Dictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
 
@@ -72,14 +70,51 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, "managed"));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        if (ExtraFiles != null)
+        var filesToMap = new Dictionary<string, List<string>>();
+        if (FilesToIncludeInFileSystem != null)
         {
-            foreach (var item in ExtraFiles)
-                File.Copy(item.ItemSpec, Path.Join(AppDir, Path.GetFileName(item.ItemSpec)),  true);
+            string supportFilesDir = Path.Join(AppDir, "supportFiles");
+            Directory.CreateDirectory(supportFilesDir);
+
+            foreach (var item in FilesToIncludeInFileSystem)
+            {
+                string? targetPath = item.GetMetadata("TargetPath");
+                if (string.IsNullOrEmpty(targetPath))
+                {
+                    targetPath = Path.GetFileName(item.ItemSpec);
+                }
+
+                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                targetPath = targetPath.Replace('\\', '/');
+
+                string? directory = Path.GetDirectoryName(targetPath);
+
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(Path.Join(supportFilesDir, directory));
+                }
+                else
+                {
+                    directory = "/";
+                }
+
+                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, targetPath), true);
+
+                if (filesToMap.TryGetValue(directory, out List<string>? files))
+                {
+                    files.Add(Path.GetFileName(targetPath));
+                }
+                else
+                {
+                    files = new List<string>();
+                    files.Add(Path.GetFileName(targetPath));
+                    filesToMap[directory] = files;
+                }
+            }
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
@@ -88,19 +123,33 @@ public class WasmAppBuilder : Task
             sw.WriteLine("\tvfs_prefix: \"managed\",");
             sw.WriteLine("\tdeploy_prefix: \"managed\",");
             sw.WriteLine("\tenable_debugging: 0,");
-            sw.WriteLine("\tfile_list: [");
+            sw.WriteLine("\tassembly_list: [");
             foreach (var assembly in _assemblies.Values)
             {
-                sw.Write("\"" + Path.GetFileName(assembly.Location) + "\"");
-                sw.Write(", ");
+                sw.Write("\t\t\"" + Path.GetFileName(assembly.Location) + "\"");
+                sw.WriteLine(",");
             }
-            sw.WriteLine ("],");
+            sw.WriteLine ("\t],");
+            sw.WriteLine("\tfiles_to_map: [");
+            foreach (KeyValuePair<string, List<string>> keyValuePair in filesToMap)
+            {
+                sw.WriteLine("\t{");
+                sw.WriteLine($"\t\tdirectory: \"{keyValuePair.Key}\",");
+                sw.WriteLine("\t\tfiles: [");
+                foreach (string file in keyValuePair.Value)
+                {
+                    sw.WriteLine($"\t\t\t\"{file}\",");
+                }
+                sw.WriteLine("\t\t],");
+                sw.WriteLine("\t},");
+            }
+            sw.WriteLine ("\t],");
             sw.WriteLine ("}");
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
         {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;
@@ -113,8 +162,14 @@ public class WasmAppBuilder : Task
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
-            var refAssembly = mlc.LoadFromAssemblyName(aname);
-            Add(mlc, refAssembly);
+            try
+            {
+                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
+                Add(mlc, refAssembly);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }

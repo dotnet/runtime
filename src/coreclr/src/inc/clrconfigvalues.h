@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CLRConfigValues.h
 //
@@ -395,6 +394,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse, W("InterpreterHWIntrinsicsIsSupportedFalse"), 0, "If non-zero, force get_IsSupported to return false for hardware intrinsics") // for internal testing purposes
 #endif
 // The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
@@ -483,6 +484,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenSimulateDiskFull, W("NGenSimulateDiskFull"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), (DWORD)-1, "Generate partial NGen images")
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
+
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images", CLRConfig::EEConfig_default)
 
 #ifdef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
@@ -710,6 +713,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 // Diagnostics Server
 //
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorAddress, W("DOTNET_DiagnosticsMonitorAddress"), "NamedPipe path without '\\\\.\\pipe\\' on Windows; Full path of Unix Domain Socket on Linux/Unix.  Used for Diagnostics Monitoring Agents.", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorPauseOnStart, W("DOTNET_DiagnosticsMonitorPauseOnStart"), 1, "If DOTNET_DiagnosticsMonitorAddress is set, this will cause the runtime to pause during startup.  Resume using the Diagnostics IPC ResumeStartup command.", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng

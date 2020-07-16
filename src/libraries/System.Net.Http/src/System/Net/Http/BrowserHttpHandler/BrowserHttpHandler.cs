@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -281,6 +280,7 @@ namespace System.Net.Http
             private readonly JSObject _abortController;
             private readonly CancellationTokenSource _abortCts;
             private readonly CancellationTokenRegistration _abortRegistration;
+            private bool _isDisposed;
 
             public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
             {
@@ -313,17 +313,17 @@ namespace System.Net.Http
             // Protected implementation of Dispose pattern.
             protected virtual void Dispose(bool disposing)
             {
+                if (_isDisposed)
+                    return;
+
+                _isDisposed = true;
                 if (disposing)
                 {
-                    // Free any other managed objects here.
-                    //
                     _abortCts.Cancel();
                     _abortCts.Dispose();
                     _abortRegistration.Dispose();
                 }
 
-                // Free any unmanaged objects here.
-                //
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }
@@ -370,7 +370,7 @@ namespace System.Net.Http
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
             {

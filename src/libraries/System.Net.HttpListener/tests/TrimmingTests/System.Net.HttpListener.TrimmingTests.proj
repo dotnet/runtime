@@ -1,0 +1,17 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="CookieExtensionsTest.Clone.cs">
+      <AdditionalSourceFiles>CookieExtensionsTest.Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CookieExtensionsTest.InternalAdd.cs">
+      <AdditionalSourceFiles>CookieExtensionsTest.Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="CookieExtensionsTest.ToServerString.cs">
+      <AdditionalSourceFiles>CookieExtensionsTest.Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

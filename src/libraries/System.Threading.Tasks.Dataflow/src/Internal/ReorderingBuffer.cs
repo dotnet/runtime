@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -46,7 +45,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Action used to output items in order.</summary>
         private readonly Action<object, TOutput> _outputAction;
         /// <summary>The ID of the next item that should be released from the reordering buffer.</summary>
-        private long _nextReorderedIdToOutput = 0;
+        private long _nextReorderedIdToOutput;
 
         /// <summary>Gets the object used to synchronize all access to the reordering buffer's internals.</summary>
         private object ValueLock { get { return _reorderingBuffer; } }

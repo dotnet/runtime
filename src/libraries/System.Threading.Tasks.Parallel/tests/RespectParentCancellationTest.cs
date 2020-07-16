@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
@@ -94,21 +93,21 @@ namespace System.Threading.Tasks.Tests
 
         public static class TestMethods
         {
-            [Fact]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
             public static void RespectParentCancellation1()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.For);
                 test.RealRun();
             }
 
-            [Fact]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
             public static void RespectParentCancellation2()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.For64);
                 test.RealRun();
             }
 
-            [Fact]
+            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
             public static void RespectParentCancellation3()
             {
                 RespectParentCancellationTest test = new RespectParentCancellationTest(API.Foreach);

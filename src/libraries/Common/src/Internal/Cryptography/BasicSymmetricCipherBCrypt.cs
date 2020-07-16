@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -61,28 +60,23 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
 
             int numBytesWritten;
+
             if (_encrypting)
             {
-                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
             }
             else
             {
-                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
             }
 
-            if (numBytesWritten != count)
+            if (numBytesWritten != input.Length)
             {
                 // CNG gives us no way to tell BCryptDecrypt() that we're decrypting the final block, nor is it performing any
                 // padding /depadding for us. So there's no excuse for a provider to hold back output for "future calls." Though
@@ -93,23 +87,20 @@ namespace Internal.Cryptography
             return numBytesWritten;
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
 
-            byte[] output = new byte[count];
-            if (count != 0)
+            int numBytesWritten = 0;
+
+            if (input.Length != 0)
             {
-                int numBytesWritten = Transform(input, inputOffset, count, output, 0);
-                Debug.Assert(numBytesWritten == count);  // Our implementation of Transform() guarantees this. See comment above.
+                numBytesWritten = Transform(input, output);
+                Debug.Assert(numBytesWritten == input.Length);  // Our implementation of Transform() guarantees this. See comment above.
             }
 
             Reset();
-            return output;
+            return numBytesWritten;
         }
 
         private void Reset()

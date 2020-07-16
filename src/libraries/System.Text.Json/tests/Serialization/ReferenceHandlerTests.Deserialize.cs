@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -227,7 +226,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void TestJsonPathDoesNotFailOnMultiThreads()
+        public static async Task TestJsonPathDoesNotFailOnMultiThreads()
         {
             const int ThreadCount = 8;
             const int ConcurrentTestsCount = 4;
@@ -241,7 +240,7 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i] = Task.Run(() => TestRefTask());
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         private static void TestIdTask()
@@ -1199,7 +1198,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSuccessCases))]
         public static void ReadTestClassesWithExtensionOption(Type classType, byte[] data)
         {
-            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
+            var options = new JsonSerializerOptions { IncludeFields = true, ReferenceHandler = ReferenceHandler.Preserve };
             object obj = JsonSerializer.Deserialize(data, classType, options);
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();

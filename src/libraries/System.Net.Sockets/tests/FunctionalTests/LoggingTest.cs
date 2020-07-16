@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -57,7 +56,7 @@ namespace System.Net.Sockets.Tests
                         new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
                         new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096).GetAwaiter().GetResult();
+                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
                         new NetworkStreamTest().Timeout_ValidData_Roundtrips().GetAwaiter().GetResult();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself

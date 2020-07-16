@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Abstractions;
@@ -76,7 +75,7 @@ namespace System.Xml.Tests
         [InlineData("xslt_mutith_variable_global_forward_ref_deep.xsl", "xslt_mutith_variable_nodeset.xml")]
         //[Variation("Local and global variables", Params = new object[] { "xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl" })]
         [InlineData("xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Variations(object param0, object param1)
         {
             string xslFile = (string)param0;

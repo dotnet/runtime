@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1151,6 +1150,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // many of which appear to be regressions (because there is more spill on the infrequently path),
         // but are not really because the frequent path becomes smaller.  Validating these diffs will need
         // to be done before making this change.
+        // Also note that we avoid setting callee-save preferences for floating point. This may need
+        // revisiting, and note that it doesn't currently apply to SIMD types, only float or double.
         // if (!blockSequence[curBBSeqNum]->isRunRarely())
         if (enregisterLocalVars)
         {
@@ -1354,13 +1355,8 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regTy
 //
 RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
-    bool fixedReg = false;
     // The candidate set should contain only integer registers.
     assert((internalCands & ~allRegs(TYP_INT)) == RBM_NONE);
-    if (genMaxOneBit(internalCands))
-    {
-        fixedReg = true;
-    }
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, IntRegisterType, internalCands);
     return defRefPosition;
@@ -1378,13 +1374,8 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 //
 RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
-    bool fixedReg = false;
     // The candidate set should contain only float registers.
     assert((internalCands & ~allRegs(TYP_FLOAT)) == RBM_NONE);
-    if (genMaxOneBit(internalCands))
-    {
-        fixedReg = true;
-    }
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, FloatRegisterType, internalCands);
     return defRefPosition;
@@ -2544,7 +2535,7 @@ void LinearScan::buildIntervals()
                     // across a call in the non-EH code, we'll be extra conservative about this.
                     // Note that for writeThru intervals we don't update the preferences to be only callee-save.
                     unsigned calleeSaveCount =
-                        (varTypeIsFloating(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                        (varTypeUsesFloatReg(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
                     {
                         // If this is relatively low weight, don't prefer callee-save at all.
@@ -2721,7 +2712,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
-    if (varTypeIsFloating(type) || varTypeIsSIMD(type))
+    if (varTypeUsesFloatReg(type))
     {
         compiler->compFloatingPointUsed = true;
     }
@@ -3485,12 +3476,36 @@ int LinearScan::BuildReturn(GenTree* tree)
                            retTypeDesc.GetReturnRegCount());
                 }
                 srcCount = pRetTypeDesc->GetReturnRegCount();
+                // For any source that's coming from a different register file, we need to ensure that
+                // we reserve the specific ABI register we need.
+                bool hasMismatchedRegTypes = false;
+                if (op1->IsMultiRegLclVar())
+                {
+                    for (int i = 0; i < srcCount; i++)
+                    {
+                        RegisterType srcType = regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i));
+                        RegisterType dstType = regType(pRetTypeDesc->GetReturnRegType(i));
+                        if (srcType != dstType)
+                        {
+                            hasMismatchedRegTypes = true;
+                            regMaskTP dstRegMask  = genRegMask(pRetTypeDesc->GetABIReturnReg(i));
+                            if (varTypeUsesFloatReg(dstType))
+                            {
+                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
+                            }
+                            else
+                            {
+                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
+                            }
+                        }
+                    }
+                }
                 for (int i = 0; i < srcCount; i++)
                 {
                     // We will build uses of the type of the operand registers/fields, and the codegen
                     // for return will move as needed.
-                    if (!op1->OperIs(GT_LCL_VAR) || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
-                                                     regType(pRetTypeDesc->GetReturnRegType(i))))
+                    if (!hasMismatchedRegTypes || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
+                                                   regType(pRetTypeDesc->GetReturnRegType(i))))
                     {
                         BuildUse(op1, genRegMask(pRetTypeDesc->GetABIReturnReg(i)), i);
                     }
@@ -3498,6 +3513,10 @@ int LinearScan::BuildReturn(GenTree* tree)
                     {
                         BuildUse(op1, RBM_NONE, i);
                     }
+                }
+                if (hasMismatchedRegTypes)
+                {
+                    buildInternalRegisterUses();
                 }
                 return srcCount;
             }

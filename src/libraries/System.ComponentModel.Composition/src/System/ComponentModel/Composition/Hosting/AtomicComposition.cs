@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,12 +36,12 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly AtomicComposition? _outerAtomicComposition;
         private KeyValuePair<object, object?>[]? _values;
-        private int _valueCount = 0;
+        private int _valueCount;
         private List<Action>? _completeActionList;
         private List<Action>? _revertActionList;
-        private bool _isDisposed = false;
-        private bool _isCompleted = false;
-        private bool _containsInnerAtomicComposition = false;
+        private bool _isDisposed;
+        private bool _isCompleted;
+        private bool _containsInnerAtomicComposition;
 
         public AtomicComposition()
             : this(null)

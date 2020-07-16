@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -77,7 +76,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ArgumentException(SR.Format(SR.InvalidActivityTrackingOptions, _factoryOptions.ActivityTrackingOptions), nameof(options));
             }
 
-            foreach (var provider in providers)
+            foreach (ILoggerProvider provider in providers)
             {
                 AddProviderRegistration(provider, dispose: false);
             }
@@ -95,8 +94,8 @@ namespace Microsoft.Extensions.Logging
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(configure);
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            ServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
+            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>();
             return new DisposingLoggerFactory(loggerFactory, serviceProvider);
         }
 
@@ -105,9 +104,9 @@ namespace Microsoft.Extensions.Logging
             lock (_sync)
             {
                 _filterOptions = filterOptions;
-                foreach (var registeredLogger in _loggers)
+                foreach (KeyValuePair<string, Logger> registeredLogger in _loggers)
                 {
-                    var logger = registeredLogger.Value;
+                    Logger logger = registeredLogger.Value;
                     (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
                 }
             }
@@ -127,7 +126,7 @@ namespace Microsoft.Extensions.Logging
 
             lock (_sync)
             {
-                if (!_loggers.TryGetValue(categoryName, out var logger))
+                if (!_loggers.TryGetValue(categoryName, out Logger logger))
                 {
                     logger = new Logger
                     {
@@ -158,12 +157,12 @@ namespace Microsoft.Extensions.Logging
             {
                 AddProviderRegistration(provider, dispose: true);
 
-                foreach (var existingLogger in _loggers)
+                foreach (KeyValuePair<string, Logger> existingLogger in _loggers)
                 {
-                    var logger = existingLogger.Value;
-                    var loggerInformation = logger.Loggers;
+                    Logger logger = existingLogger.Value;
+                    LoggerInformation[] loggerInformation = logger.Loggers;
 
-                    var newLoggerIndex = loggerInformation.Length;
+                    int newLoggerIndex = loggerInformation.Length;
                     Array.Resize(ref loggerInformation, loggerInformation.Length + 1);
                     loggerInformation[newLoggerIndex] = new LoggerInformation(provider, existingLogger.Key);
 
@@ -195,7 +194,7 @@ namespace Microsoft.Extensions.Logging
         private LoggerInformation[] CreateLoggers(string categoryName)
         {
             var loggers = new LoggerInformation[_providerRegistrations.Count];
-            for (var i = 0; i < _providerRegistrations.Count; i++)
+            for (int i = 0; i < _providerRegistrations.Count; i++)
             {
                 loggers[i] = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
             }
@@ -205,15 +204,15 @@ namespace Microsoft.Extensions.Logging
         private (MessageLogger[] MessageLoggers, ScopeLogger[] ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
         {
             var messageLoggers = new List<MessageLogger>();
-            var scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
+            List<ScopeLogger> scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
 
-            foreach (var loggerInformation in loggers)
+            foreach (LoggerInformation loggerInformation in loggers)
             {
                 RuleSelector.Select(_filterOptions,
                     loggerInformation.ProviderType,
                     loggerInformation.Category,
-                    out var minLevel,
-                    out var filter);
+                    out LogLevel? minLevel,
+                    out Func<string, string, LogLevel, bool> filter);
 
                 if (minLevel != null && minLevel > LogLevel.Critical)
                 {
@@ -251,7 +250,7 @@ namespace Microsoft.Extensions.Logging
 
                 _changeTokenRegistration?.Dispose();
 
-                foreach (var registration in _providerRegistrations)
+                foreach (ProviderRegistration registration in _providerRegistrations)
                 {
                     try
                     {

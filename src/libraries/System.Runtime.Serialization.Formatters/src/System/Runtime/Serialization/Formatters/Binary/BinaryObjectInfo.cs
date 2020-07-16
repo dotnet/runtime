@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Collections.Generic;
@@ -18,17 +17,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal object? _obj;
         internal Type? _objectType;
 
-        internal bool _isSi = false;
-        internal bool _isNamed = false;
-        internal bool _isArray = false;
+        internal bool _isSi;
+        internal bool _isNamed;
+        internal bool _isArray;
 
-        internal SerializationInfo? _si = null;
+        internal SerializationInfo? _si;
         internal SerObjectInfoCache _cache = null!; // Initiated before use
 
-        internal object?[]? _memberData = null;
-        internal ISerializationSurrogate? _serializationSurrogate = null;
+        internal object?[]? _memberData;
+        internal ISerializationSurrogate? _serializationSurrogate;
         internal StreamingContext _context;
-        internal SerObjectInfoInit? _serObjectInfoInit = null;
+        internal SerObjectInfoInit? _serObjectInfoInit;
 
         // Writing and Parsing information
         internal long _objectId;
@@ -311,30 +310,30 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int _objectInfoId;
         internal static int _readObjectInfoCounter;
 
-        internal Type? _objectType = null;
+        internal Type? _objectType;
 
         internal ObjectManager? _objectManager;
 
         internal int _count;
 
-        internal bool _isSi = false;
-        internal bool _isTyped = false;
-        internal bool _isSimpleAssembly = false;
+        internal bool _isSi;
+        internal bool _isTyped;
+        internal bool _isSimpleAssembly;
 
         internal SerObjectInfoCache? _cache;
 
         internal string[]? _wireMemberNames;
         internal Type[]? _wireMemberTypes;
 
-        private int _lastPosition = 0;
+        private int _lastPosition;
 
-        internal ISerializationSurrogate? _serializationSurrogate = null;
+        internal ISerializationSurrogate? _serializationSurrogate;
         internal StreamingContext _context;
 
         // Si Read
         internal List<Type>? _memberTypesList;
-        internal SerObjectInfoInit? _serObjectInfoInit = null;
-        internal IFormatterConverter? _formatterConverter = null;
+        internal SerObjectInfoInit? _serObjectInfoInit;
+        internal IFormatterConverter? _formatterConverter;
 
         internal ReadObjectInfo() { }
 

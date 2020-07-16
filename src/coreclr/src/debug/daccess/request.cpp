@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: request.cpp
 //
@@ -500,27 +499,8 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
         unsigned int i = 0;
         while ((heapList != NULL) && (i < count))
         {
-            // What type of CodeHeap pointer do we have?
             CodeHeap *codeHeap = heapList->pHeap;
-            TADDR ourVTablePtr = VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)codeHeap);
-            if (ourVTablePtr == LoaderCodeHeap::VPtrTargetVTable())
-            {
-                LoaderCodeHeap *loaderCodeHeap = PTR_LoaderCodeHeap(PTR_HOST_TO_TADDR(codeHeap));
-                codeHeaps[i].codeHeapType = CODEHEAP_LOADER;
-                codeHeaps[i].LoaderHeap =
-                    TO_CDADDR(PTR_HOST_MEMBER_TADDR(LoaderCodeHeap, loaderCodeHeap, m_LoaderHeap));
-            }
-            else if (ourVTablePtr == HostCodeHeap::VPtrTargetVTable())
-            {
-                HostCodeHeap *hostCodeHeap = PTR_HostCodeHeap(PTR_HOST_TO_TADDR(codeHeap));
-                codeHeaps[i].codeHeapType = CODEHEAP_HOST;
-                codeHeaps[i].HostData.baseAddr = PTR_CDADDR(hostCodeHeap->m_pBaseAddr);
-                codeHeaps[i].HostData.currentAddr = PTR_CDADDR(hostCodeHeap->m_pLastAvailableCommittedAddr);
-            }
-            else
-            {
-                codeHeaps[i].codeHeapType = CODEHEAP_UNKNOWN;
-            }
+            codeHeaps[i] = DACGetHeapInfoForCodeHeap(codeHeap);
             heapList = heapList->hpNext;
             i++;
         }
@@ -546,6 +526,33 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
 
     SOSDacLeave();
     return hr;
+}
+
+DacpJitCodeHeapInfo ClrDataAccess::DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr)
+{
+    DacpJitCodeHeapInfo jitCodeHeapInfo;
+
+    TADDR targetVtblPtrForHeapType = VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)heapAddr);
+    if (targetVtblPtrForHeapType == LoaderCodeHeap::VPtrTargetVTable())
+    {
+        LoaderCodeHeap *loaderCodeHeap = PTR_LoaderCodeHeap(PTR_HOST_TO_TADDR(heapAddr));
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_LOADER;
+        jitCodeHeapInfo.LoaderHeap =
+            TO_CDADDR(PTR_HOST_MEMBER_TADDR(LoaderCodeHeap, loaderCodeHeap, m_LoaderHeap));
+    }
+    else if (targetVtblPtrForHeapType == HostCodeHeap::VPtrTargetVTable())
+    {
+        HostCodeHeap *hostCodeHeap = PTR_HostCodeHeap(PTR_HOST_TO_TADDR(heapAddr));
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_HOST;
+        jitCodeHeapInfo.HostData.baseAddr = PTR_CDADDR(hostCodeHeap->m_pBaseAddr);
+        jitCodeHeapInfo.HostData.currentAddr = PTR_CDADDR(hostCodeHeap->m_pLastAvailableCommittedAddr);
+    }
+    else
+    {
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_UNKNOWN;
+    }
+
+    return jitCodeHeapInfo;
 }
 
 HRESULT
@@ -4498,5 +4505,230 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     SOSDacLeave();
 
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)
+{
+    if (pGenerations == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    *pGenerations = (unsigned int)(g_gcDacGlobals->total_generation_count);
+
+    SOSDacLeave();
+    return S_OK;
+}
+
+HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (cGenerations > 0 && pGenerationData == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->generation_table.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; i++)
+            {
+                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (cFillPointers > 0 && pFinalizationFillPointers == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        if (g_gcDacGlobals->finalize_queue.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = Dereference(g_gcDacGlobals->finalize_queue);
+            DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; i++)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cGenerations > 0 && pGenerationData == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numGenerationTableEntries;
+    }
+
+    if (cGenerations < numGenerationTableEntries)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
+            {
+                DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
+                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded)
+{
+    if (heapAddr == NULL || (cFillPointers > 0 && pFinalizationFillPointers == NULL))
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    HRESULT hr = S_OK;
+#ifdef FEATURE_SVR_GC
+    unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
+    if (pNeeded != NULL)
+    {
+        *pNeeded = numFillPointers;
+    }
+
+    if (cFillPointers < numFillPointers)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+
+        if (pHeap.IsValid())
+        {
+            DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
+            DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+            for (unsigned int i = 0; i < numFillPointers; ++i)
+            {
+                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+            }
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+        hr = E_NOTIMPL;
+#endif
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext)
+{
+    if (methodTable == 0 || assemblyLoadContext == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+    PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
+    PTR_Module pModule = pMT->GetModule();
+
+    PTR_PEFile pPEFile = pModule->GetFile();
+    PTR_AssemblyLoadContext pAssemblyLoadContext = pPEFile->GetAssemblyLoadContext();
+
+    INT_PTR managedAssemblyLoadContextHandle = pAssemblyLoadContext->GetManagedAssemblyLoadContext();
+
+    TADDR managedAssemblyLoadContextAddr = 0;
+    if (managedAssemblyLoadContextHandle != 0)
+    {
+        DacReadAll(managedAssemblyLoadContextHandle,&managedAssemblyLoadContextAddr,sizeof(TADDR),true);
+    }
+
+    *assemblyLoadContext = TO_CDADDR(managedAssemblyLoadContextAddr);
+
+    SOSDacLeave();
     return hr;
 }

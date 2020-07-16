@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net;
 using System.ComponentModel;
@@ -42,20 +41,20 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private IntPtr _dsHandle = IntPtr.Zero;
         private IntPtr _authIdentity = IntPtr.Zero;
-        private readonly string[] _becomeRoleOwnerAttrs = null;
-        private bool _disposed = false;
+        private readonly string[] _becomeRoleOwnerAttrs;
+        private bool _disposed;
 
         // internal variables for the public properties
-        private string _cachedComputerObjectName = null;
-        private string _cachedOSVersion = null;
-        private double _cachedNumericOSVersion = 0;
-        private Forest _currentForest = null;
-        private Domain _cachedDomain = null;
-        private ActiveDirectoryRoleCollection _cachedRoles = null;
-        private bool _dcInfoInitialized = false;
+        private string _cachedComputerObjectName;
+        private string _cachedOSVersion;
+        private double _cachedNumericOSVersion;
+        private Forest _currentForest;
+        private Domain _cachedDomain;
+        private ActiveDirectoryRoleCollection _cachedRoles;
+        private bool _dcInfoInitialized;
 
-        internal SyncUpdateCallback userDelegate = null;
-        internal readonly SyncReplicaFromAllServersCallback syncAllFunctionPointer = null;
+        internal SyncUpdateCallback userDelegate;
+        internal readonly SyncReplicaFromAllServersCallback syncAllFunctionPointer;
 
         // this is twice the maximum allowed RIDPool size which is 15k
         internal const int UpdateRidPoolSeizureValue = 30000;

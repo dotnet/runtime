@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiplyRoundedDoublingAndAddSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndAddSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndAddSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndAddSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndSubtractSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndSubtractSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndSubtractSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingAndSubtractSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="Program.Rdm.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

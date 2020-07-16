@@ -1069,6 +1069,9 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 guint	       mono_metadata_generic_inst_hash (gconstpointer data);
 gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb);
 
+gboolean
+mono_metadata_signature_equal_no_ret (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
 MONO_API void
 mono_metadata_field_info_with_mempool (
 					  MonoImage *meta, 

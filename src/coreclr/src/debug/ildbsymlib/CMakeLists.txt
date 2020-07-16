@@ -10,5 +10,5 @@ set( ILDBSYMLIB_SOURCES
   symwrite.cpp
 )
 
-add_library_clr(ildbsymlib ${ILDBSYMLIB_SOURCES})
+add_library_clr(ildbsymlib OBJECT ${ILDBSYMLIB_SOURCES})
 

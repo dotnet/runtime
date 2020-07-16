@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -24,6 +26,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -57,6 +60,8 @@ namespace System.Reflection
         private IntPtr _mono_assembly;
         private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
 
         private ResolveEventHolder? resolve_event_holder;
 
@@ -151,6 +156,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetForwardedTypes()
         {
             Type[] topLevelTypes = GetTopLevelForwardedTypes();
@@ -170,6 +176,7 @@ namespace System.Reflection
             return forwardedTypes.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;

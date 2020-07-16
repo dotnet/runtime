@@ -85,6 +85,7 @@ set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __CrossArch=
 set __PgoOptDataPath=
+set __CMakeArgs=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -151,6 +152,7 @@ if [!__PassThroughArgs!]==[] (
 if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
+if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -423,18 +425,18 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project!
         goto ExitWithError
     )
     @if defined _echo @echo on
 
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project!
         goto ExitWithError
     )
 
@@ -506,7 +508,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%"
+    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -691,6 +693,7 @@ echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
+echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).

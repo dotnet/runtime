@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <GenerateRunScript>false</GenerateRunScript>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="FileA.cs" />
+  </ItemGroup>
+</Project>

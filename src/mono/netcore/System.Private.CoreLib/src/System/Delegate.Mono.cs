@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Authors:
 //   Miguel de Icaza (miguel@ximian.com)
@@ -29,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -150,6 +153,7 @@ namespace System
             return d;
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
@@ -176,6 +180,7 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
@@ -207,6 +212,7 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         private static MethodInfo? GetCandidateMethod(Type type, Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = type.GetMethod("Invoke");
@@ -244,6 +250,8 @@ namespace System
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Invoke method is never removed from delegates")]
         private static bool IsMatchingCandidate(Type type, object? target, MethodInfo method, bool allowClosed, out DelegateData? delegateData)
         {
             MethodInfo? invoke = type.GetMethod("Invoke");

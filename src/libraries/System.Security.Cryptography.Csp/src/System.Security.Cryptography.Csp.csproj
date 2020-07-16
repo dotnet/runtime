@@ -2,12 +2,14 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Cryptography.Csp</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CA5373</NoWarn>
-    <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CS0809</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
+    <NoWarn>$(NoWarn);CS0809</NoWarn>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
@@ -28,6 +30,8 @@
              Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -58,7 +57,7 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        noway_assert(!varTypeIsFloating(varDsc->TypeGet()));
+        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
 
         // Mark the register as holding the variable
         assert(varDsc->GetRegNum() != REG_STK);
@@ -1532,7 +1531,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
     }
     else if (tree->isContained())
     {
-        if (tree->isIndir())
+        if (tree->OperIsIndir())
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }

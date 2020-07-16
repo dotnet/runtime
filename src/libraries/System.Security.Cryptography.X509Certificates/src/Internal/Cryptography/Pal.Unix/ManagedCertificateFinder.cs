@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -52,7 +51,7 @@ namespace Internal.Cryptography.Pal
                 {
                     string formedSubject = X500NameEncoder.X500DistinguishedNameDecode(cert.SubjectName.RawData, false, X500DistinguishedNameFlags.None);
 
-                    return formedSubject.IndexOf(subjectName, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return formedSubject.Contains(subjectName, StringComparison.OrdinalIgnoreCase);
                 });
         }
 
@@ -68,7 +67,7 @@ namespace Internal.Cryptography.Pal
                 {
                     string formedIssuer = X500NameEncoder.X500DistinguishedNameDecode(cert.IssuerName.RawData, false, X500DistinguishedNameFlags.None);
 
-                    return formedIssuer.IndexOf(issuerName, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return formedIssuer.Contains(issuerName, StringComparison.OrdinalIgnoreCase);
                 });
         }
 

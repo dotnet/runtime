@@ -49,7 +49,7 @@ else(CLR_CMAKE_HOST_WIN32)
 
     set(CREATEDUMP_SOURCES
         main.cpp
-        createdump.cpp
+        createdumpunix.cpp
         crashinfo.cpp
         threadinfo.cpp
         datatarget.cpp

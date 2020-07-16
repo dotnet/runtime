@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Net.WebSockets;
@@ -15,15 +14,17 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerContext
     {
         private string _mutualAuthentication;
+        internal HttpListenerSession ListenerSession { get; private set; }
 
-        internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
+        internal HttpListenerContext(HttpListenerSession session, RequestContextBase memoryBlob)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpListener {httpListener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
-            _listener = httpListener;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"httpListener {session.Listener} requestBlob={((IntPtr)memoryBlob.RequestBlob)}");
+            _listener = session.Listener;
+            ListenerSession = session;
             Request = new HttpListenerRequest(this, memoryBlob);
-            AuthenticationSchemes = httpListener.AuthenticationSchemes;
-            ExtendedProtectionPolicy = httpListener.ExtendedProtectionPolicy;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {Request}");
+            AuthenticationSchemes = _listener.AuthenticationSchemes;
+            ExtendedProtectionPolicy = _listener.ExtendedProtectionPolicy;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpListener: {_listener} HttpListenerRequest: {Request}");
         }
 
         // Call this right after construction, and only once!  Not after it's been handed to a user.
@@ -31,7 +32,7 @@ namespace System.Net
         {
             _mutualAuthentication = mutualAuthentication;
             _user = principal;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
@@ -41,9 +42,9 @@ namespace System.Net
 
         internal HttpListener Listener => _listener;
 
-        internal SafeHandle RequestQueueHandle => _listener.RequestQueueHandle;
+        internal SafeHandle RequestQueueHandle => ListenerSession.RequestQueueHandle;
 
-        internal ThreadPoolBoundHandle RequestQueueBoundHandle => _listener.RequestQueueBoundHandle;
+        internal ThreadPoolBoundHandle RequestQueueBoundHandle => ListenerSession.RequestQueueBoundHandle;
 
         internal ulong RequestId => Request.RequestId;
 
@@ -75,8 +76,6 @@ namespace System.Net
 
         internal void Close()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             try
             {
                 _response?.Close();
@@ -100,12 +99,10 @@ namespace System.Net
                     }
                 }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal void Abort()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ForceCancelRequest(RequestQueueHandle, Request.RequestId);
             try
             {
@@ -115,12 +112,11 @@ namespace System.Net
             {
                 (_user?.Identity as IDisposable)?.Dispose();
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal Interop.HttpApi.HTTP_VERB GetKnownMethod()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Visited {nameof(GetKnownMethod)}()");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Visited {nameof(GetKnownMethod)}()");
             return Interop.HttpApi.GetKnownVerb(Request.RequestBuffer, Request.OriginalBlobAddress);
         }
 
