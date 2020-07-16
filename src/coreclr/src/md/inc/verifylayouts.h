@@ -131,10 +131,15 @@ class VerifyLayoutsMD
 
 #include "VerifyLayouts.inc"
 
+// Only declare using once
+#undef USING_ALIAS
+#define USING_ALIAS(a, ...)
+
 #undef BEGIN_TYPE
 #undef ALIGN_FIELD
 #undef END_TYPE
 #undef BITFIELD
+
 
 #define BEGIN_TYPE(typeName, initialFieldOffset) \
     static const int alignment_of_first_field_in_##typeName =
