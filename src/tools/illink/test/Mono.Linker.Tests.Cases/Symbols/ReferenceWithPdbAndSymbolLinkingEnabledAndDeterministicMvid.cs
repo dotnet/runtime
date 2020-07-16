@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 	[SetupLinkerLinkSymbols ("true")]
-	[SetupLinkerArgument ("--deterministic")]
+	[SetupLinkerArgument ("--deterministic", "true")]
 
 #if WIN32
 	[KeptSymbols ("LibraryWithPdb.dll")]

@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 	[SetupLinkerLinkSymbols ("true")]
-	[SetupLinkerArgument ("--deterministic")]
+	[SetupLinkerArgument ("--deterministic", "true")]
 
 	[KeptSymbols ("LibraryWithMdb.dll")]
 
