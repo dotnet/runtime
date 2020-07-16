@@ -281,7 +281,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 
             Assert.NotNull(rm.Headers);
             Assert.NotNull(rm.Options);
-            ((IDictionary<string, object?>)rm.Options)[nameof(content)] = "asdf";
 
             rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
             Assert.False(streamingEnabledValue);
