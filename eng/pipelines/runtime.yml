@@ -325,7 +325,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
+      timeoutInMinutes: 240
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
