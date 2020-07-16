@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include <stdlib.h>
@@ -12,26 +11,28 @@
 #include <unicode/localpointer.h>
 #include <unicode/utrace.h>
 
-static void log_icu_error(const char * name, UErrorCode status)
+static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
     fprintf(stderr, "ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
 }
 
-static void U_CALLCONV icu_trace_data (const void *context, int32_t fnNumber, int32_t level, const char *fmt, va_list args) {
-    char buf [1000];
-    utrace_vformat (buf, sizeof (buf), 0, fmt, args);
-    printf ("[ICUDT] %s: %s\n", utrace_functionName (fnNumber), buf);
+static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
+{
+    char buf[1000];
+    utrace_vformat(buf, sizeof(buf), 0, fmt, args);
+    printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data (void * pData);
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data (void * pData) {
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
+{
     UErrorCode status = 0;
-    udata_setCommonData (pData, &status);
+    udata_setCommonData(pData, &status);
 
     if (U_FAILURE(status)) {
         log_icu_error("udata_setCommonData", status);

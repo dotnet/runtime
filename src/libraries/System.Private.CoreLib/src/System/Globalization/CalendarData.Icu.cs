@@ -444,14 +444,14 @@ namespace System.Globalization
         {
             try
             {
-                var calendarString = new string(calendarStringPtr);
+                var calendarStringSpan = new ReadOnlySpan<char>(calendarStringPtr, string.wcslen(calendarStringPtr));
                 ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)
                 {
                     foreach (string existingResult in callbackContext.Results)
                     {
-                        if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
+                        if (string.CompareOrdinal(calendarStringSpan, existingResult) == 0)
                         {
                             // the value is already in the results, so don't add it again
                             return;
@@ -459,7 +459,7 @@ namespace System.Globalization
                     }
                 }
 
-                callbackContext.Results.Add(calendarString);
+                callbackContext.Results.Add(calendarStringSpan.ToString());
             }
             catch (Exception e)
             {
