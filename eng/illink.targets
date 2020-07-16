@@ -209,7 +209,7 @@
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
       <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
       <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
-      <ILLinkArgs Condition="'$(ILLinkLinkAttributesXml)' != ''">$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->

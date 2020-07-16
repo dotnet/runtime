@@ -1805,6 +1805,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39342", TestPlatforms.Browser)]
         public static void GetSystemTimeZones()
         {
             ReadOnlyCollection<TimeZoneInfo> timeZones = TimeZoneInfo.GetSystemTimeZones();
