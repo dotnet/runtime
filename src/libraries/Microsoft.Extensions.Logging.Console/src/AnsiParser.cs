@@ -59,11 +59,11 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     if (span[i + 3] == 'm')
                     {
-    #if (NETSTANDARD2_0 || NETFRAMEWORK)
-                        if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
-    #else
+#if NETCOREAPP
                         if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
-    #endif
+#else
+                        if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
+#endif
                         {
                             if (startIndex != -1)
                             {
@@ -79,11 +79,11 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                     else if (span.Length >= i + 5 && span[i + 4] == 'm')
                     {
-    #if (NETSTANDARD2_0 || NETFRAMEWORK)
-                        if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
-    #else
+#if NETCOREAPP
                         if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
-    #endif
+#else
+                        if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
+#endif
                         {
                             if (startIndex != -1)
                             {

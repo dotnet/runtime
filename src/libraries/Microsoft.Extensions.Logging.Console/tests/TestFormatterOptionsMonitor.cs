@@ -3,7 +3,6 @@
 
 using System;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {

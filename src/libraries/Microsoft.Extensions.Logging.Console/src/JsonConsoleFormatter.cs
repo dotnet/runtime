@@ -2,21 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -72,10 +63,10 @@ namespace Microsoft.Extensions.Logging.Console
                         string stackTrace = exception?.StackTrace;
                         if (stackTrace != null)
                         {
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#else
+#if NETCOREAPP
                             foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
+#else
+                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
 #endif
                             {
                                 writer.WriteStringValue(stackTraceLines);
@@ -97,10 +88,10 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
-#else
+#if NETCOREAPP
                 textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
+#else
+                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
 #endif
             }
             textWriter.Write(Environment.NewLine);

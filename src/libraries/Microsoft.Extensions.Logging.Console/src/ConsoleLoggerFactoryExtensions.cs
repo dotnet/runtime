@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
