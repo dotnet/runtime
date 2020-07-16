@@ -1071,11 +1071,8 @@
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.AnyOS.cs" Condition="'$(TargetsBrowser)' != 'true'">
-      <Link>Common\Interop\Interop.TimeZoneInfo.AnyOS.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'">
-      <Link>Common\Interop\Interop.TimeZoneInfo.Browser.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs">
+      <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
       <Link>Common\Interop\Interop.Utils.cs</Link>
@@ -1824,6 +1821,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.TimeZoneDisplayName.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.TimeZoneDisplayName.Invariant.cs" Condition="'$(TargetsBrowser)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
