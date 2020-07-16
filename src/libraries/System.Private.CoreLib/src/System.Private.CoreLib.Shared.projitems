@@ -819,6 +819,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SafeSerializationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.SerializationGuard.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
