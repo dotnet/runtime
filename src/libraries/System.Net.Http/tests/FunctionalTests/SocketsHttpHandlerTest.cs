@@ -2093,13 +2093,13 @@ namespace System.Net.Http.Functional.Tests
             using SocketsHttpHandler handler = CreateHandler(2);
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Console.WriteLine("Step 1");
+                _output.WriteLine("Step 1");
                 server.AllowMultipleConnections = true;
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams);
-                Console.WriteLine("Step 2");
+                _output.WriteLine("Step 2");
                 Http2LoopbackConnection connection1 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams);
-                Console.WriteLine("Step 3");
+                _output.WriteLine("Step 3");
                 int warmUpRequestCount = sendTasks.Count;
                 for (int i = 0; i < TotalRequestCount - warmUpRequestCount; i++)
                 {
@@ -2107,22 +2107,22 @@ namespace System.Net.Http.Functional.Tests
                     sendTasks.Add(client.GetAsync(server.Address));
                 }
 
-                Console.WriteLine("Step 4");
+                _output.WriteLine("Step 4");
                 // Block the first connection on infinite requests.
                 int[] blockedStreamIds = new int[MaxConcurrentStreams];
                 for (int i = 0; i < blockedStreamIds.Length; i++)
                 {
-                    Console.WriteLine($"Step 4-{i}");
+                    _output.WriteLine($"Step 4-{i}");
                     blockedStreamIds[i] = await connection0.ReadRequestHeaderAsync();
                 }
 
-                Console.WriteLine("Step 5");
+                _output.WriteLine("Step 5");
                 int handledRequestCount = (await HandleAllPendingRequests(connection1, sendTasks.Count)).Count;
 
                 // First connection is blocked by 'MaxConcurrentStreams' requests.
                 Assert.Equal(handledRequestCount, TotalRequestCount - MaxConcurrentStreams);
 
-                Console.WriteLine("Step 6");
+                _output.WriteLine("Step 6");
                 //Complete inifinite requests.
                 for (int i = 0; i < blockedStreamIds.Length; i++)
                 {
@@ -2130,13 +2130,13 @@ namespace System.Net.Http.Functional.Tests
                     await connection0.SendDefaultResponseAsync(blockedStreamIds[i]);
                     handledRequestCount++;
                 }
-                Console.WriteLine("Step 7");
+                _output.WriteLine("Step 7");
 
                 Assert.Equal(handledRequestCount, TotalRequestCount);
 
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
 
-                Console.WriteLine("Step 8");
+                _output.WriteLine("Step 8");
 
                 await VerifySendTasks(sendTasks);
             }
@@ -2228,7 +2228,7 @@ namespace System.Net.Http.Functional.Tests
             int count = 0;
             foreach (Task<HttpResponseMessage> sendTask in sendTasks)
             {
-                Console.WriteLine($"Step 8-{count++}");
+                _output.WriteLine($"Step 8-{count++}");
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
