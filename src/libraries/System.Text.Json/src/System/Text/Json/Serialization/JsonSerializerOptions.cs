@@ -220,7 +220,6 @@ namespace System.Text.Json
 
                 if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 

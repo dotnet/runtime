@@ -36,7 +36,11 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public void WriteNumberValue(ulong value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteNumberValueIndented(value);

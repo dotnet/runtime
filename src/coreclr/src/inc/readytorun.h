@@ -219,6 +219,7 @@ enum ReadyToRunHelper
     // Not a real helper - handle to current module passed to delay load helpers.
     READYTORUN_HELPER_Module                    = 0x01,
     READYTORUN_HELPER_GSCookie                  = 0x02,
+    READYTORUN_HELPER_IndirectTrapThreads       = 0x03,
 
     //
     // Delay load helpers

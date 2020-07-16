@@ -35,14 +35,14 @@ namespace System.Text.Json
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only paramaters which bind to properties are cached.
-        public volatile Dictionary<string, JsonParameterInfo>? ParameterCache;
+        public Dictionary<string, JsonParameterInfo>? ParameterCache;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        public volatile Dictionary<string, JsonPropertyInfo>? PropertyCache;
+        public Dictionary<string, JsonPropertyInfo>? PropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
-        public volatile JsonPropertyInfo[]? PropertyCacheArray;
+        public JsonPropertyInfo[]? PropertyCacheArray;
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.

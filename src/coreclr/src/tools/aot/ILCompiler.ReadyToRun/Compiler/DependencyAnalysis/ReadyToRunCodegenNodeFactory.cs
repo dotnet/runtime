@@ -305,6 +305,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
         public ProfileDataSectionNode ProfileDataSection;
+        public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
@@ -501,6 +502,9 @@ namespace ILCompiler.DependencyAnalysis
 
             ProfileDataSection = new ProfileDataSectionNode();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
+
+            DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);

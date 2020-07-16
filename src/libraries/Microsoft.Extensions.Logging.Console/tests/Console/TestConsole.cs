@@ -12,10 +12,12 @@ namespace Microsoft.Extensions.Logging.Test.Console
         public static readonly ConsoleColor? DefaultForegroundColor;
 
         private ConsoleSink _sink;
+        private AnsiParser _parser;
 
         public TestConsole(ConsoleSink sink)
         {
             _sink = sink;
+            _parser = new AnsiParser(OnParseWrite);
             BackgroundColor = DefaultBackgroundColor;
             ForegroundColor = DefaultForegroundColor;
         }
@@ -24,10 +26,15 @@ namespace Microsoft.Extensions.Logging.Test.Console
 
         public ConsoleColor? ForegroundColor { get; private set; }
 
-        public void Write(string message, ConsoleColor? background, ConsoleColor? foreground)
+        public void Write(string message)
+        {
+            _parser.Parse(message);
+        }
+
+        public void OnParseWrite(string message, int startIndex, int length, ConsoleColor? background, ConsoleColor? foreground)
         {
             var consoleContext = new ConsoleContext();
-            consoleContext.Message = message;
+            consoleContext.Message = message.AsSpan().Slice(startIndex, length).ToString();
 
             if (background.HasValue)
             {
@@ -42,15 +49,6 @@ namespace Microsoft.Extensions.Logging.Test.Console
             _sink.Write(consoleContext);
 
             ResetColor();
-        }
-
-        public void WriteLine(string message, ConsoleColor? background, ConsoleColor? foreground)
-        {
-            Write(message + Environment.NewLine, background, foreground);
-        }
-
-        public void Flush()
-        {
         }
 
         private void ResetColor()

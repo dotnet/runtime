@@ -77,7 +77,7 @@ namespace System.Net.Http
 
                     if (task.IsCanceled)
                     {
-                        sendState.TrySetCanceled();
+                        sendState.TrySetCanceled(token);
                         return;
                     }
 

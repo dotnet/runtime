@@ -19,14 +19,12 @@
     </ItemGroup>
   </Target>
 
-  <!-- This will need to change to AfterTargets=PrepareForILLink when we get a new SDK -->
   <Target Name="EnsureAllAssembliesAreLinked"
-          AfterTargets="_SetILLinkDefaults"> 
+          AfterTargets="PrepareForILLink"> 
     <ItemGroup>
-      <!-- This will need to change to ManagedAssemblyToLink and TrimMode=link when we get a new SDK -->
-      <_ManagedAssembliesToLink>
-        <action>link</action>
-      </_ManagedAssembliesToLink>
+      <ManagedAssemblyToLink>
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
 
