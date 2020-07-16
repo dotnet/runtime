@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Add and configure a console log formatter named 'json' to the factory.
+        /// Add and configure a console log formatter named 'simple' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>
