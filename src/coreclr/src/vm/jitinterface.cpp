@@ -13725,6 +13725,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     result = (size_t)GetProcessGSCookie();
                     break;
 
+                case READYTORUN_HELPER_IndirectTrapThreads:
+                    result = (size_t)&g_TrapReturningThreads;
+                    break;
+
                 case READYTORUN_HELPER_DelayLoad_MethodCall:
                     result = (size_t)GetEEFuncEntryPoint(DelayLoad_MethodCall);
                     break;
