@@ -3,7 +3,7 @@
 
 namespace System.Security
 {
-#if SYSTEM_PRIVATE_CORELIB // This file is compiled into both System.Private.CoreLib (NetCoreApp) and System.Security.Permission (netstandard2.0)
+#if SYSTEM_PRIVATE_CORELIB
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public partial interface IStackWalk
