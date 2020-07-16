@@ -1231,6 +1231,7 @@ namespace System.Net.Http
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
+                        ReleaseStreamSlot();
                         throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
                     }
                 }
