@@ -2805,11 +2805,12 @@ public:
                 if (bestVN == ValueNumStore::NoVN)
                 {
                     // first entry
-                    // set bestVN and bestConstValue
+                    // set bestVN
                     bestVN = currVN;
 
                     if (isSharedConst)
                     {
+                        // set bestConstValue and bestIsDef
                         bestConstValue = curConstValue;
                         bestIsDef      = isDef;
                     }
@@ -2830,7 +2831,7 @@ public:
                     //
                     if ((bestIsDef && (diff < -255)) || (!bestIsDef && (diff < 0)))
                     {
-                        // set new bestVN and bestConstValue
+                        // set new bestVN, bestConstValue and bestIsDef
                         bestVN         = currVN;
                         bestConstValue = curConstValue;
                         bestIsDef      = isDef;
