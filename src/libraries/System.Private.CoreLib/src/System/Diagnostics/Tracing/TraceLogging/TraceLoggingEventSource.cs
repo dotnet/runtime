@@ -686,7 +686,7 @@ namespace System.Diagnostics.Tracing
                                 // otherwise, check whether any of the listeners are subscribed to this event before writing to all listeners.
                                 else
                                 {
-                                    if (((EventKeywords)descriptor.Keywords != 0) ||
+                                    if (((EventKeywords)descriptor.Keywords == 0) ||
                                         ((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0))
                                     {
                                         var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
