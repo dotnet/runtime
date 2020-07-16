@@ -1900,7 +1900,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     blockRange.Remove(node);
 
-                    // Removing a call does not affect liveness unless it is a tail call in a nethod with P/Invokes or
+                    // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
                     if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
                         ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) ||
