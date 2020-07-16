@@ -89,7 +89,7 @@ namespace System.Text.Json
                     }
             }
 
-            GetPolicies(ignoreCondition, isReferenceType: default(T) == null);
+            GetPolicies(ignoreCondition, defaultValueIsNull: Converter.CanBeNull);
         }
 
         public override JsonConverter ConverterBase
