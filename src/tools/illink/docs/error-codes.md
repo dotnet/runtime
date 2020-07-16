@@ -55,6 +55,10 @@ error and warning codes.
 
 - Element in 'XML document location' contains a 'featuredefault' attribute with an invalid value. This attribute only supports the true value, to indicate that this is the default behavior for a feature when a value is not given.
 
+#### `IL1015`: Unrecognized command-line option: 'option'
+
+- The linker was passed a string that was not a linker option.
+
 ----
 ## Warning Codes
 

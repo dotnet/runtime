@@ -145,11 +145,6 @@ namespace Mono.Linker
 			}
 		}
 
-		static void ErrorUnrecognizedOption (string optionName)
-		{
-			Console.WriteLine ($"Unrecognized command-line option: '{optionName}'");
-		}
-
 		static void ErrorMissingArgument (string optionName)
 		{
 			Console.WriteLine ($"Missing argument for '{optionName}' option");
@@ -189,7 +184,7 @@ namespace Mono.Linker
 			while (arguments.Count > 0) {
 				string token = arguments.Dequeue ();
 				if (token.Length < 2) {
-					ErrorUnrecognizedOption (token);
+					context.LogError ($"Unrecognized command-line option: '{token}'", 1015);
 					return -1;
 				}
 
@@ -563,7 +558,7 @@ namespace Mono.Linker
 					}
 				}
 
-				ErrorUnrecognizedOption (token);
+				context.LogError ($"Unrecognized command-line option: '{token}'", 1015);
 				return -1;
 			}
 
