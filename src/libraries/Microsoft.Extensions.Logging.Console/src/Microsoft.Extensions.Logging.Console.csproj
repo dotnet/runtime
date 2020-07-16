@@ -5,6 +5,7 @@
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>annotations</Nullable>
+    <DefineConstants>$(DefineConstants);NO_SUPPRESS_GC_TRANSITION</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
@@ -35,11 +36,6 @@
              Link="Common\Interop\Windows\Interop.GetConsoleMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs"
              Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs"
-             Link="Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
