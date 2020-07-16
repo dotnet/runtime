@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly TextWriter _textWriter;
 
-        public AnsiSystemConsole(bool stdErr = false)
+        public AnsiSystemConsole(bool stdErr)
         {
             _textWriter = stdErr ? System.Console.Error : System.Console.Out;
         }

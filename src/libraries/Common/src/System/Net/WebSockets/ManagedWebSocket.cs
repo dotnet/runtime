@@ -368,7 +368,7 @@ namespace System.Net.WebSockets
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
-            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
+            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
                 SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }

@@ -3,7 +3,9 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -164,6 +166,16 @@ namespace System.Text.Json
 
             Debug.Assert(_rentedBuffer.Length - _index > 0);
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
+        }
+    }
+
+    internal static partial class ThrowHelper
+    {
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
         }
     }
 }

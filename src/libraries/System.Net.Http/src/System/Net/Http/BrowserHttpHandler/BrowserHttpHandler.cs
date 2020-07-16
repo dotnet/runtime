@@ -145,11 +145,11 @@ namespace System.Net.Http
                 {
                     if (request.Content is StringContent)
                     {
-                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
+                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true));
                     }
                     else
                     {
-                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
+                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true)))
                         {
                             requestObject.SetObjectProperty("body", uint8Buffer);
                         }

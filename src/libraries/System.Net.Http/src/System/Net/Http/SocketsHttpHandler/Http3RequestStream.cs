@@ -145,7 +145,7 @@ namespace System.Net.Http
                     {
                         // Flush to ensure we get a response.
                         // TODO: MsQuic may not need any flushing.
-                        await _stream.FlushAsync().ConfigureAwait(false);
+                        await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {

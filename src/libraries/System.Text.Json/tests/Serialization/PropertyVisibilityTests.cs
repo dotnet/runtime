@@ -2031,5 +2031,150 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; } = -1;
             public Point_2D_Struct MyPoint { get; set; } = new Point_2D_Struct(-1, -1);
         }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_ClassTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyPointClass"":null,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            ClassWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<ClassWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types.
+            Assert.Equal("Default", obj.MyString);
+            Assert.NotNull(obj.MyPointClass);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj.MyString = null;
+            obj.MyPointClass = null;
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_LargeStructTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyBool"":false,""MyPointClass"":null,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            LargeStructWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<LargeStructWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types.
+
+            Assert.Equal("Default", obj.MyString);
+            // No way to specify a non-constant default before construction with ctor, so this remains null.
+            Assert.Null(obj.MyPointClass);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.False(obj.MyBool);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj = new LargeStructWithValueAndReferenceTypes(null, new Point_2D_Struct(0, 0), null, 0, false);
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyBool"":false,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_SmallStructTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            SmallStructWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<SmallStructWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types.
+            Assert.Equal("Default", obj.MyString);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj = new SmallStructWithValueAndReferenceTypes(new Point_2D_Struct(0, 0), null, 0);
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        private class ClassWithValueAndReferenceTypes
+        {
+            public string MyString { get; set; } = "Default";
+            public int MyInt { get; set; } = -1;
+            public PointClass MyPointClass { get; set; } = new PointClass();
+            public Point_2D_Struct MyPointStruct { get; set; } = new Point_2D_Struct(1, 2);
+        }
+
+        private struct LargeStructWithValueAndReferenceTypes
+        {
+            public string MyString { get; }
+            public int MyInt { get; set; }
+            public bool MyBool { get; set; }
+            public PointClass MyPointClass { get; set; }
+            public Point_2D_Struct MyPointStruct { get; set; }
+
+            [JsonConstructor]
+            public LargeStructWithValueAndReferenceTypes(
+                PointClass myPointClass,
+                Point_2D_Struct myPointStruct,
+                string myString = "Default",
+                int myInt = -1,
+                bool myBool = true)
+            {
+                MyString = myString;
+                MyInt = myInt;
+                MyBool = myBool;
+                MyPointClass = myPointClass;
+                MyPointStruct = myPointStruct;
+            }
+        }
+
+        private struct SmallStructWithValueAndReferenceTypes
+        {
+            public string MyString { get; }
+            public int MyInt { get; set; }
+            public Point_2D_Struct MyPointStruct { get; set; }
+
+            [JsonConstructor]
+            public SmallStructWithValueAndReferenceTypes(
+                Point_2D_Struct myPointStruct,
+                string myString = "Default",
+                int myInt = -1)
+            {
+                MyString = myString;
+                MyInt = myInt;
+                MyPointStruct = myPointStruct;
+            }
+        }
+
+        private class PointClass { }
     }
 }

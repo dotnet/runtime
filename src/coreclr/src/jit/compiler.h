@@ -5622,6 +5622,8 @@ private:
     GenTree* fgMorphToEmulatedFP(GenTree* tree);
     GenTree* fgMorphConst(GenTree* tree);
 
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 

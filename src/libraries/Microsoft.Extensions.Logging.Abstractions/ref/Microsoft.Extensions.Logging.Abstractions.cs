@@ -125,6 +125,19 @@ namespace Microsoft.Extensions.Logging
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
+    public readonly partial struct LogEntry<TState>
+    {
+        private readonly TState _State_k__BackingField;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public LogEntry(Microsoft.Extensions.Logging.LogLevel logLevel, string category, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception exception, System.Func<TState, System.Exception, string> formatter) { throw null; }
+        public string Category { get { throw null; } }
+        public Microsoft.Extensions.Logging.EventId EventId { get { throw null; } }
+        public System.Exception Exception { get { throw null; } }
+        public System.Func<TState, System.Exception, string> Formatter { get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
+        public TState State { get { throw null; } }
+    }
     public partial class NullLogger : Microsoft.Extensions.Logging.ILogger
     {
         internal NullLogger() { }
