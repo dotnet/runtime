@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************\
 *                                                                             *
@@ -692,6 +691,9 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_PINVOKE_TARGET,                          /* For calling a pinvoke method ptr */
 
     ENCODE_CHECK_INSTRUCTION_SET_SUPPORT,           /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
+
+    ENCODE_VERIFY_FIELD_OFFSET,                     /* Used for the R2R compiler can generate a check against the real field offset used at runtime */
+    ENCODE_VERIFY_TYPE_LAYOUT,                      /* Used for the R2R compiler can generate a check against the real type layout used at runtime */
 
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
@@ -1387,13 +1389,6 @@ class ICorCompilationDomain
             CORCOMPILE_DEPENDENCY   **ppDependencies,
             DWORD                   *cDependencies
             ) = 0;
-
-
-#ifdef CROSSGEN_COMPILE
-    virtual HRESULT SetPlatformWinmdPaths(
-            LPCWSTR                 pwzPlatformWinmdPaths
-            ) = 0;
-#endif
 };
 
 /*********************************************************************************
@@ -1455,19 +1450,6 @@ class ICorCompileInfo
             BOOL                     fExplicitBindToNativeImage,
             CORINFO_ASSEMBLY_HANDLE *pHandle
             ) = 0;
-
-
-#ifdef FEATURE_COMINTEROP
-    // Loads a WinRT typeref into the EE and returns
-    // a handle to it.  We have to load all typerefs
-    // during dependency computation since assemblyrefs
-    // are meaningless to WinRT.
-    virtual HRESULT LoadTypeRefWinRT(
-            IMDInternalImport       *pAssemblyImport,
-            mdTypeRef               ref,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-#endif
 
     virtual BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule) = 0;
 
@@ -1775,8 +1757,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-extern bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;

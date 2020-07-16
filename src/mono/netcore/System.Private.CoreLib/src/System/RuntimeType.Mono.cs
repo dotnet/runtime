@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Globalization;
@@ -9,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
@@ -152,6 +152,7 @@ namespace System
 
         #region Internal
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
             ref StackCrawlMark stackMark)
         {
@@ -799,11 +800,13 @@ namespace System
 
         #endregion
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             return GetMethodImpl(name, -1, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, int genericParamCount,
             BindingFlags bindingAttr, Binder? binder, CallingConventions callConv,
             Type[]? types, ParameterModifier[]? modifiers)
@@ -873,7 +876,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -911,7 +914,7 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             bool ignoreCase;
             MemberListType listType;
@@ -978,7 +981,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname == null) throw new ArgumentNullException();
+            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -1031,7 +1034,7 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname == null) throw new ArgumentNullException();
+            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
 
             bool ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
@@ -1059,7 +1062,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -1268,6 +1271,7 @@ namespace System
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -1683,6 +1687,8 @@ namespace System
                 throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
@@ -1878,6 +1884,8 @@ namespace System
             return GetCorrespondingInflatedConstructor(fromNoninstanciated);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "We already have a FieldInfo so this will succeed")]
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
             /* create sensible flags from given FieldInfo */
@@ -2189,8 +2197,9 @@ namespace System
 
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1 || rank > 255)
+            if (rank < 1)
                 throw new IndexOutOfRangeException();
+
             return make_array_type(rank);
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -110,10 +109,6 @@ namespace System.IO
             // thus we need to explicitly call it here.
             StopRaisingEvents();
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Path to the procfs file that contains the maximum number of inotify instances an individual user may create.</summary>
         private const string MaxUserInstancesPath = "/proc/sys/fs/inotify/max_user_instances";
@@ -680,11 +675,11 @@ namespace System.IO
                                     // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
                                     // for the next event to arrive).
                                     const int MillisecondsTimeout = 2;
-                                    Interop.Sys.PollEvents events;
-                                    Interop.Sys.Poll(_inotifyHandle, Interop.Sys.PollEvents.POLLIN, MillisecondsTimeout, out events);
+                                    Interop.PollEvents events;
+                                    Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
 
                                     // If we error or don't have any signaled handles, send the deleted event
-                                    if (events == Interop.Sys.PollEvents.POLLNONE)
+                                    if (events == Interop.PollEvents.POLLNONE)
                                     {
                                         // There isn't any more data in the queue so this is a deleted event
                                         watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);

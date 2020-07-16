@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="smalloom.cs" />
+  </ItemGroup>
+</Project>

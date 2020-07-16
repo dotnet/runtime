@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -568,6 +567,17 @@ namespace CorUnix
         CThreadSynchronizationInfo * pSynchInfo = &pthrTarget->synchronizationInfo;
         CPalSynchronizationManager * pSynchManager = GetInstance();
 
+        // The shared memory manager's process lock is acquired before calling into some PAL synchronization primitives that may
+        // take the PAL synchronization manager's synch lock (acquired below). For example, when using a file lock
+        // implementation for a named mutex (see NamedMutexProcessData::NamedMutexProcessData()), under the shared memory
+        // manager's process lock, CreateMutex is called, which acquires the PAL synchronization manager's synch lock. The same
+        // lock order needs to be maintained here to avoid a deadlock.
+        bool abandonNamedMutexes = pSynchInfo->OwnsAnyNamedMutex();
+        if (abandonNamedMutexes)
+        {
+            SharedMemoryManager::AcquireCreationDeletionProcessLock();
+        }
+
         // Local lock
         AcquireLocalSynchLock(pthrCurrent);
 
@@ -610,15 +620,18 @@ namespace CorUnix
             pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, poolnItem);
         }
 
-        // Abandon owned named mutexes
-        while (true)
+        if (abandonNamedMutexes)
         {
-            NamedMutexProcessData *processData = pSynchInfo->RemoveFirstOwnedNamedMutex();
-            if (processData == nullptr)
+            // Abandon owned named mutexes
+            while (true)
             {
-                break;
+                NamedMutexProcessData *processData = pSynchInfo->RemoveFirstOwnedNamedMutex();
+                if (processData == nullptr)
+                {
+                    break;
+                }
+                processData->Abandon();
             }
-            processData->Abandon();
         }
 
         if (pthrTarget != pthrCurrent)
@@ -660,6 +673,12 @@ namespace CorUnix
         }
 
         ReleaseLocalSynchLock(pthrCurrent);
+
+        if (abandonNamedMutexes)
+        {
+            SharedMemoryManager::ReleaseCreationDeletionProcessLock();
+        }
+
         DiscardAllPendingAPCs(pthrCurrent, pthrTarget);
 
         return palErr;
@@ -4036,7 +4055,6 @@ namespace CorUnix
             m_ownedNamedMutexListHead(nullptr)
     {
         InitializeListHead(&m_leOwnedObjsList);
-        InitializeCriticalSection(&m_ownedNamedMutexListLock);
 
 #ifdef SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         m_lPendingSignalingCount = 0;
@@ -4046,7 +4064,6 @@ namespace CorUnix
 
     CThreadSynchronizationInfo::~CThreadSynchronizationInfo()
     {
-        DeleteCriticalSection(&m_ownedNamedMutexListLock);
         if (NULL != m_shridWaitAwakened)
         {
             free(m_shridWaitAwakened);
@@ -4283,20 +4300,21 @@ namespace CorUnix
 
     void CThreadSynchronizationInfo::AddOwnedNamedMutex(NamedMutexProcessData *processData)
     {
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
         _ASSERTE(processData != nullptr);
+        _ASSERTE(processData->IsLockOwnedByCurrentThread());
         _ASSERTE(processData->GetNextInThreadOwnedNamedMutexList() == nullptr);
 
-        EnterCriticalSection(&m_ownedNamedMutexListLock);
         processData->SetNextInThreadOwnedNamedMutexList(m_ownedNamedMutexListHead);
         m_ownedNamedMutexListHead = processData;
-        LeaveCriticalSection(&m_ownedNamedMutexListLock);
     }
 
     void CThreadSynchronizationInfo::RemoveOwnedNamedMutex(NamedMutexProcessData *processData)
     {
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
         _ASSERTE(processData != nullptr);
+        _ASSERTE(processData->IsLockOwnedByCurrentThread());
 
-        EnterCriticalSection(&m_ownedNamedMutexListLock);
         if (m_ownedNamedMutexListHead == processData)
         {
             m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
@@ -4321,38 +4339,44 @@ namespace CorUnix
             }
             _ASSERTE(found);
         }
-        LeaveCriticalSection(&m_ownedNamedMutexListLock);
     }
 
     NamedMutexProcessData *CThreadSynchronizationInfo::RemoveFirstOwnedNamedMutex()
     {
-        EnterCriticalSection(&m_ownedNamedMutexListLock);
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+
         NamedMutexProcessData *processData = m_ownedNamedMutexListHead;
         if (processData != nullptr)
         {
+            _ASSERTE(processData->IsLockOwnedByCurrentThread());
             m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
             processData->SetNextInThreadOwnedNamedMutexList(nullptr);
         }
-        LeaveCriticalSection(&m_ownedNamedMutexListLock);
         return processData;
     }
 
     bool CThreadSynchronizationInfo::OwnsNamedMutex(NamedMutexProcessData *processData)
     {
-        EnterCriticalSection(&m_ownedNamedMutexListLock);
-        bool found = false;
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+
         for (NamedMutexProcessData *current = m_ownedNamedMutexListHead;
             current != nullptr;
             current = current->GetNextInThreadOwnedNamedMutexList())
         {
+            _ASSERTE(current->IsLockOwnedByCurrentThread());
             if (current == processData)
             {
-                found = true;
-                break;
+                return true;
             }
         }
-        LeaveCriticalSection(&m_ownedNamedMutexListLock);
-        return found;
+
+        return false;
+    }
+
+    bool CThreadSynchronizationInfo::OwnsAnyNamedMutex() const
+    {
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+        return m_ownedNamedMutexListHead != nullptr;
     }
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING

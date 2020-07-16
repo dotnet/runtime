@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // Utils.cpp
@@ -80,7 +79,7 @@ namespace BINDER_SPACE
         SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
         combinedPath.Set(pathA);
 
-        if (!combinedPath.EndsWith(platformPathSeparator))
+        if (!combinedPath.IsEmpty() && !combinedPath.EndsWith(platformPathSeparator))
         {
             combinedPath.Append(platformPathSeparator);
         }

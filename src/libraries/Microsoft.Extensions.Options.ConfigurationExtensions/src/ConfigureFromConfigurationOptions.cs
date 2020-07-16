@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +19,7 @@ namespace Microsoft.Extensions.Options
         /// Constructor that takes the <see cref="IConfiguration"/> instance to bind against.
         /// </summary>
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
-        public ConfigureFromConfigurationOptions(IConfiguration config) 
+        public ConfigureFromConfigurationOptions(IConfiguration config)
             : base(options => ConfigurationBinder.Bind(config, options))
         {
             if (config == null)

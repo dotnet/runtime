@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: typehandle.h
 //
@@ -315,14 +314,6 @@ public:
     //Equivalent to (!HasInstantiation() || IsGenericTypeDefinition());
     inline BOOL IsTypicalTypeDefinition() const;
 
-    enum InteropKind
-    {
-        Interop_ManagedToNative, // use for RCW-related queries
-        Interop_NativeToManaged, // use for CCW-related queries
-    };
-
-    inline BOOL SupportsGenericInterop(InteropKind interopKind) const;
-
     BOOL IsSharedByGenericInstantiations() const;
 
     // Recursively search the type arguments and if
@@ -380,7 +371,7 @@ public:
 #endif
 
     bool IsHFA() const;
-    CorElementType GetHFAType() const;
+    CorInfoHFAElemType GetHFAType() const;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
@@ -399,9 +390,6 @@ public:
     CorIfaceAttr GetComInterfaceType() const;
     TypeHandle GetDefItfForComClassItf() const;
 
-    BOOL IsProjectedFromWinRT() const;
-    BOOL IsExportedToWinRT() const;
-
     ComCallWrapperTemplate *GetComCallWrapperTemplate() const;
     BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate);
 #endif // FEATURE_COMINTEROP
@@ -409,10 +397,10 @@ public:
 #endif
 
     // Unlike AsMethodTable, GetMethodTable will get the method table
-    // of the type, regardless of whether it is a TypeDesc. 
-    // Note, however this method table may be non-exact/shared for TypeDescs. 
+    // of the type, regardless of whether it is a TypeDesc.
+    // Note, however this method table may be non-exact/shared for TypeDescs.
     // for example all pointers and function pointers use ELEMENT_TYPE_U.
-    // And some types (like ByRef or generic type parameters) have no 
+    // And some types (like ByRef or generic type parameters) have no
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
 

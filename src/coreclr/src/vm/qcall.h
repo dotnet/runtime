@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // QCall.H
 
 
@@ -137,7 +136,13 @@
     GC_TRIGGERS;                \
     MODE_PREEMPTIVE;            \
 
+#define QCALL_CHECK_NO_GC_TRANSITION    \
+    THROWS;                             \
+    GC_TRIGGERS;                        \
+    MODE_COOPERATIVE;                   \
+
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
+#define QCALL_CONTRACT_NO_GC_TRANSITION CONTRACTL { QCALL_CHECK_NO_GC_TRANSITION; } CONTRACTL_END;
 
 //
 // Scope class for QCall helper methods and types

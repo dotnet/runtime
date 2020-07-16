@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -11,7 +10,7 @@ namespace System.Runtime.Serialization
     internal class XmlSerializableWriter : XmlWriter
     {
         private XmlWriter _xmlWriter;
-        private int _depth = 0;
+        private int _depth;
         private object _obj;
 
         internal void BeginWrite(XmlWriter xmlWriter, object obj)

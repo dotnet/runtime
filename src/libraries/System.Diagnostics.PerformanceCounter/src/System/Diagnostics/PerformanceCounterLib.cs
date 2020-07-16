@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Runtime.InteropServices;
@@ -455,7 +454,7 @@ namespace System.Diagnostics
                         iniWriter.Write(languageId);
                         iniWriter.Write(HelpSufix);
                         iniWriter.Write("=");
-                        if (categoryHelp == null || categoryHelp == string.Empty)
+                        if (string.IsNullOrEmpty(categoryHelp))
                             iniWriter.WriteLine(SR.HelpNotAvailable);
                         else
                             iniWriter.WriteLine(categoryHelp);
@@ -1268,7 +1267,7 @@ namespace System.Diagnostics
 
     internal class PerformanceMonitor
     {
-        private PerformanceDataRegistryKey perfDataKey = null;
+        private PerformanceDataRegistryKey perfDataKey;
         private readonly string machineName;
 
         internal PerformanceMonitor(string machineName)

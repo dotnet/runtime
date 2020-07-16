@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Threading;
@@ -41,7 +40,6 @@ namespace System.IO
 
         protected TextWriter()
         {
-            _internalFormatProvider = null;  // Ask for CurrentCulture all the time.
         }
 
         protected TextWriter(IFormatProvider? formatProvider)
@@ -89,7 +87,7 @@ namespace System.IO
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: Method.CPP
 //
@@ -1329,11 +1328,9 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
 ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
 {
-#ifdef HOST_64BIT
     // For simplicity, we don't hijack in funclets, but if you ever change that,
     // be sure to choose the OnHijack... callback type to match that of the FUNCLET
     // not the main method (it would probably be Scalar).
-#endif // HOST_64BIT
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
     // Mark that we are performing a stackwalker like operation on the current thread.
@@ -5307,6 +5304,23 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
     return pFunc;
 }
+
+FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix) const
+{
+    // Allocate space for a copy of the entry point name.
+    DWORD entryPointWithSuffixLen = (DWORD)(strlen(entryPointName) + 1); // +1 for charset decorations
+    int dstbufsize = (int)(sizeof(char) * (entryPointWithSuffixLen + 1)); // +1 for the null terminator
+    LPSTR entryPointWithSuffix = ((LPSTR)_alloca(dstbufsize));
+
+    // Copy the name so we can mangle it.
+    strcpy_s(entryPointWithSuffix, dstbufsize, entryPointName);
+    entryPointWithSuffix[entryPointWithSuffixLen] = '\0'; // Null terminator
+    entryPointWithSuffix[entryPointWithSuffixLen - 1] = suffix; // Charset suffix
+
+    // Look for entry point with the suffix based on charset
+    return FindEntryPointWithMangling(hMod, entryPointWithSuffix);
+}
+
 #endif
 
 //*******************************************************************************
@@ -5332,39 +5346,27 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
         return reinterpret_cast<LPVOID>(GetProcAddress(hMod, (LPCSTR)(size_t)((UINT16)ordinal)));
     }
 
-    // Just look for the user-provided name without charset suffixes.
-    // If  it is unicode fcn, we are going
-    // to need to check for the 'W' API because it takes precedence over the
-    // unmangled one (on NT some APIs have unmangled ANSI exports).
-    FARPROC pFunc = FindEntryPointWithMangling(hMod, funcName);
-    if ((pFunc != NULL && IsNativeAnsi()) || IsNativeNoMangled())
+    FARPROC pFunc = NULL;
+    if (IsNativeNoMangled())
     {
-        return reinterpret_cast<LPVOID>(pFunc);
+        // Look for the user-provided entry point name only
+        pFunc = FindEntryPointWithMangling(hMod, funcName);
     }
-
-    DWORD probedEntrypointNameLength = (DWORD)(strlen(funcName) + 1); // +1 for charset decorations
-
-    // Allocate space for a copy of the entry point name.
-    int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 1)); // +1 for the null terminator
-
-    LPSTR szProbedEntrypointName = ((LPSTR)_alloca(dstbufsize));
-
-    // Copy the name so we can mangle it.
-    strcpy_s(szProbedEntrypointName, dstbufsize, funcName);
-    szProbedEntrypointName[probedEntrypointNameLength] = '\0'; // Add an extra '\0'.
-
-    if(!IsNativeNoMangled())
+    else if (IsNativeAnsi())
     {
-        szProbedEntrypointName[probedEntrypointNameLength - 1] = IsNativeAnsi() ? 'A' : 'W';
-
-        FARPROC pProbedFunc = FindEntryPointWithMangling(hMod, szProbedEntrypointName);
-
-        if(pProbedFunc != NULL)
-        {
-            pFunc = pProbedFunc;
-        }
-
-        probedEntrypointNameLength++;
+        // For ANSI, look for the user-provided entry point name first.
+        // If that does not exist, try the charset suffix.
+        pFunc = FindEntryPointWithMangling(hMod, funcName);
+        if (pFunc == NULL)
+            pFunc = FindEntryPointWithSuffix(hMod, funcName, 'A');
+    }
+    else
+    {
+        // For Unicode, look for the entry point name with the charset suffix first.
+        // The 'W' API takes precedence over the undecorated one.
+        pFunc = FindEntryPointWithSuffix(hMod, funcName, 'W');
+        if (pFunc == NULL)
+            pFunc = FindEntryPointWithMangling(hMod, funcName);
     }
 
     return reinterpret_cast<LPVOID>(pFunc);
@@ -5424,6 +5426,15 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
         WellKnownAttribute::UnmanagedCallersOnly,
         nullptr,
         nullptr);
+    if (hr != S_OK)
+    {
+        // See https://github.com/dotnet/runtime/issues/37622
+        hr = GetCustomAttribute(
+            WellKnownAttribute::NativeCallableInternal,
+            nullptr,
+            nullptr);
+    }
+
     return (hr == S_OK) ? TRUE : FALSE;
 }
 
@@ -5583,7 +5594,15 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifdef FEATURE_CODE_VERSIONING
     // Make sure the active IL and native code version are in triage dumps.
-    GetCodeVersionManager()->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this)).GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    if (!ilVersion.IsNull())
+    {
+        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+        ilVersion.GetVersionId();
+        ilVersion.GetRejitState();
+        ilVersion.GetIL();
+    }
 #endif
 
     // Also, call DacValidateMD to dump the memory it needs. !clrstack calls

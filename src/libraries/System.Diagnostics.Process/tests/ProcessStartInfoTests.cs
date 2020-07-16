@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -197,7 +196,7 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {
             const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
@@ -217,7 +216,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
             const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -278,7 +277,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -310,7 +309,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
-        [Theory, InlineData(true), InlineData(false)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
             Process testProcess = CreateProcessLong();
@@ -329,7 +328,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyDefaultCase()
         {
             CreateDefaultProcess();
@@ -338,7 +337,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyInChildProcess()
         {
             string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
@@ -352,7 +351,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
-        [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
             string username = "test", password = "PassWord123!!";

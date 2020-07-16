@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -521,7 +520,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     bool             bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
     bool             bbIsReturn = block->bbJumpKind == BBJ_RETURN;
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
-    if (comp->fgVarNeedsExplicitZeroInit(lclDsc, bbInALoop, bbIsReturn))
+    if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)

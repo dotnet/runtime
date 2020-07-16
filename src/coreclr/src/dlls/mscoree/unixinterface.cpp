@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //*****************************************************************************
@@ -18,11 +17,15 @@
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
+#include "bundle.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -112,7 +115,8 @@ static void ConvertConfigPropertiesToUnicode(
     const char** propertyValues,
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
-    LPCWSTR** propertyValuesWRef)
+    LPCWSTR** propertyValuesWRef,
+    BundleProbe** bundleProbe)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -124,6 +128,13 @@ static void ConvertConfigPropertiesToUnicode(
     {
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
         propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
+
+        if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
+        {
+            // If this application is a single-file bundle, the bundle-probe callback 
+            // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
+            *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
     }
 
     *propertyKeysWRef = propertyKeysW;
@@ -162,8 +173,21 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
+
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    BundleProbe* bundleProbe = nullptr;
+
+    ConvertConfigPropertiesToUnicode(
+        propertyKeys,
+        propertyValues,
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW,
+        &bundleProbe);
+
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath);
+    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -181,14 +205,11 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    LPCWSTR* propertyKeysW;
-    LPCWSTR* propertyValuesW;
-    ConvertConfigPropertiesToUnicode(
-        propertyKeys,
-        propertyValues,
-        propertyCount,
-        &propertyKeysW,
-        &propertyValuesW);
+    if (bundleProbe != nullptr)
+    {
+        static Bundle bundle(StringToUnicode(exePath), bundleProbe);
+        Bundle::AppBundle = &bundle;
+    }
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);

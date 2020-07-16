@@ -42,23 +42,29 @@
       <File Remove="@(RuntimeFile)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <TargetOSComponent>unix</TargetOSComponent>
+      <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+      <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+    </PropertyGroup>
+
     <ItemGroup>
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
-      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native'" />
+      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native' and '%(RuntimeFile.Extension)' != '$(StaticLibraryFileExtension)'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
-      <!-- Include the native hosting layer  -->
+      <!-- Include the native hosting layer -->
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
     </ItemGroup>
 
-    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/aot/crossgen2/crossgen2.csproj"
             Targets="Restore"
             Properties="
             Configuration=$(RuntimeConfiguration);
@@ -67,7 +73,7 @@
     <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
     </MSBuild>
 
-    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/aot/crossgen2/crossgen2.csproj"
             Targets="GenerateDepsJsonFile"
             Properties="
             Configuration=$(RuntimeConfiguration);

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
+    <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileVersionInfoTest.Windows.cs" />
@@ -29,14 +30,10 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerLanguageName.cs"
              Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.VerLanguageName.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
   </ItemGroup>
-  <Target Name="MangleTestAssemblyExtension" AfterTargets="PrepareForRun">
-    <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
-    <Copy SourceFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
-  </Target>
 </Project>

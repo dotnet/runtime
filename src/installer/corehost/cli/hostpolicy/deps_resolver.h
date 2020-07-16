@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef DEPS_RESOLVER_H
 #define DEPS_RESOLVER_H
@@ -228,7 +227,8 @@ private:
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
         int fx_level,
-        pal::string_t* candidate);
+        pal::string_t* candidate,
+        bool &loaded_from_bundle);
 
     fx_definition_vector_t& m_fx_definitions;
 

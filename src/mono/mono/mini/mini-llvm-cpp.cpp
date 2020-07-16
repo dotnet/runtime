@@ -229,6 +229,13 @@ mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVM
 	return wrap (ins);
 }
 
+LLVMValueRef
+mono_llvm_build_exact_ashr (LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs) {
+	auto b = unwrap (builder);
+	auto ins = b->CreateAShr (unwrap (lhs), unwrap (rhs), "", true);
+	return wrap (ins);
+}
+
 void
 mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text)
 {
@@ -513,7 +520,9 @@ mono_llvm_di_create_function (void *di_builder, void *cu, LLVMValueRef func, con
 	di_file = builder->createFile (file, dir);
 	type = builder->createSubroutineType (builder->getOrCreateTypeArray (ArrayRef<Metadata*> ()));
 #if LLVM_API_VERSION >= 900
-	di_func = builder->createFunction (di_file, name, mangled_name, di_file, line, type, 0);
+	di_func = builder->createFunction (
+		di_file, name, mangled_name, di_file, line, type, 0,
+		DINode::FlagZero, DISubprogram::SPFlagDefinition | DISubprogram::SPFlagLocalToUnit);
 #else
 	di_func = builder->createFunction (di_file, name, mangled_name, di_file, line, type, true, true, 0);
 #endif

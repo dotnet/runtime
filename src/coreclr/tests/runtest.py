@@ -2,7 +2,6 @@
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
-## See the LICENSE file in the project root for more information.
 #
 ##
 # Title:               runtest.py
@@ -933,6 +932,9 @@ def run_tests(args,
     # Set CORE_ROOT
     print("Setting CORE_ROOT=%s" % args.core_root)
     os.environ["CORE_ROOT"] = args.core_root
+
+    # Set __TestDotNetCmd so tests which need to run dotnet can use the repo-local script on dev boxes
+    os.environ["__TestDotNetCmd"] = args.dotnetcli_script_path
 
     # Set test env script path if it is set.
     if test_env_script_path is not None:

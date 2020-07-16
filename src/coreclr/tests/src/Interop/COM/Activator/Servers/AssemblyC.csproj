@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
-  <PropertyGroup>
-    <OutputType>library</OutputType>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyC.cs" />
-  </ItemGroup>
-</Project>

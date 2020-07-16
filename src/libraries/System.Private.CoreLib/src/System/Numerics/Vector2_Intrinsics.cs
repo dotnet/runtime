@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -91,7 +90,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector2 other)
         {
-            return this.X == other.X && this.Y == other.Y;
+            return this == other;
         }
         #endregion Public Instance Methods
 
@@ -275,7 +274,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return left.Equals(right);
+            return left.X == right.X &&
+                   left.Y == right.Y;
         }
 
         /// <summary>

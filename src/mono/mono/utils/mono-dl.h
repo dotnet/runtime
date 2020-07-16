@@ -43,6 +43,8 @@ char*       mono_dl_build_path (const char *directory, const char *name, void **
 
 MonoDl*     mono_dl_open_runtime_lib (const char *lib_name, int flags, char **error_msg);
 
+MonoDl*     mono_dl_open_self (char **error_msg);
+
 
 //Platform API for mono_dl
 const char* mono_dl_get_so_prefix (void);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -154,22 +153,9 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_EmptyFile);
             }
 
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-            }
-
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
-            }
-
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle? handle = null;
@@ -224,11 +210,6 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-            }
-
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability));
@@ -240,12 +221,6 @@ namespace System.IO.MemoryMappedFiles
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
-            }
-
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,

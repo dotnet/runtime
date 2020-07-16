@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -18,26 +17,6 @@ class ComputeManagedAssemblies
             if (IsManaged(file))
             {
                 yield return file;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Returns a list of assemblies in "folder" whose simple name does not exist in "simpleNames". Each discovered
-    /// assembly is added to "simpleNames" to build a list without duplicates. When collecting multiple folders of assemblies
-    /// consider the call order for this function so duplicates are ignored as expected. For exmaple, CORE_ROOT's S.P.CoreLib
-    /// should normally win.
-    /// </summary>
-    /// <param name="simpleNames">Used to keep track of which simple names were used across multiple invocations of this method</param>
-    public static IEnumerable<string> GetManagedAssembliesInFolderNoSimpleNameDuplicates(HashSet<string> simpleNames, string folder, string fileNamePattern = "*.*")
-    {
-        foreach (var file in GetManagedAssembliesInFolder(folder, fileNamePattern))
-        {
-            var simpleName = Path.GetFileNameWithoutExtension(file);
-            if (!simpleNames.Contains(simpleName))
-            {
-                yield return file;
-                simpleNames.Add(simpleName);
             }
         }
     }

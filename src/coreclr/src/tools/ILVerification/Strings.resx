@@ -1,0 +1,447 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArrayByRef" xml:space="preserve">
+    <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
+  </data>
+  <data name="BackwardBranch" xml:space="preserve">
+    <value>Stack height at all points must be determinable in a single forward scan of IL.</value>
+  </data>
+  <data name="BadBranch" xml:space="preserve">
+    <value>Branch out of the method.</value>
+  </data>
+  <data name="BadJumpTarget" xml:space="preserve">
+    <value>Branch / Leave into the middle of an instruction.</value>
+  </data>
+  <data name="BoxByRef" xml:space="preserve">
+    <value>Cannot box byref.</value>
+  </data>
+  <data name="BranchIntoFilter" xml:space="preserve">
+    <value>Branch into exception filter block.</value>
+  </data>
+  <data name="BranchIntoHandler" xml:space="preserve">
+    <value>Branch into exception handler block.</value>
+  </data>
+  <data name="BranchIntoTry" xml:space="preserve">
+    <value>Branch into try block.</value>
+  </data>
+  <data name="BranchOutOfFilter" xml:space="preserve">
+    <value>Branch out of exception filter block.</value>
+  </data>
+  <data name="BranchOutOfFinally" xml:space="preserve">
+    <value>Branch out of finally block.</value>
+  </data>
+  <data name="BranchOutOfHandler" xml:space="preserve">
+    <value>Branch out of exception handler block.</value>
+  </data>
+  <data name="BranchOutOfTry" xml:space="preserve">
+    <value>Branch out of try block.</value>
+  </data>
+  <data name="ByrefOfByref" xml:space="preserve">
+    <value>ByRef of ByRef.</value>
+  </data>
+  <data name="CallAbstract" xml:space="preserve">
+    <value>Call not allowed on abstract methods.</value>
+  </data>
+  <data name="CallCtor" xml:space="preserve">
+    <value>call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.</value>
+  </data>
+  <data name="CallVirtOnStatic" xml:space="preserve">
+    <value>callvirt on static.</value>
+  </data>
+  <data name="CallVirtOnValueType" xml:space="preserve">
+    <value>Callvirt on a value type method.</value>
+  </data>
+  <data name="CatchByRef" xml:space="preserve">
+    <value>ByRef not allowed as catch type.</value>
+  </data>
+  <data name="CodeSizeZero" xml:space="preserve">
+    <value>Code size is zero.</value>
+  </data>
+  <data name="Constrained" xml:space="preserve">
+    <value>Missing callvirt following constrained prefix.</value>
+  </data>
+  <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
+    <value>The 'this' argument to a constrained call must have ByRef type.</value>
+  </data>
+  <data name="CtorExpected" xml:space="preserve">
+    <value>.ctor expected.</value>
+  </data>
+  <data name="CtorSig" xml:space="preserve">
+    <value>newobj on static or abstract method.</value>
+  </data>
+  <data name="DelegateCtor" xml:space="preserve">
+    <value>Unrecognized arguments for delegate .ctor.</value>
+  </data>
+  <data name="DelegateCtorSigI" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Native Int.</value>
+  </data>
+  <data name="DelegateCtorSigO" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Object.</value>
+  </data>
+  <data name="DelegatePattern" xml:space="preserve">
+    <value>Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).</value>
+  </data>
+  <data name="Endfilter" xml:space="preserve">
+    <value>Endfilter from outside an exception filter block.</value>
+  </data>
+  <data name="EndfilterStack" xml:space="preserve">
+    <value>Stack not empty when leaving an exception filter.</value>
+  </data>
+  <data name="Endfinally" xml:space="preserve">
+    <value>Endfinally from outside a finally handler.</value>
+  </data>
+  <data name="ExpectedArray" xml:space="preserve">
+    <value>Expected single-dimension zero-based array.</value>
+  </data>
+  <data name="ExpectedFieldToken" xml:space="preserve">
+    <value>Expected field token.</value>
+  </data>
+  <data name="ExpectedFloatType" xml:space="preserve">
+    <value>Expected R, R4, or R8 on the stack.</value>
+  </data>
+  <data name="ExpectedIntegerType" xml:space="preserve">
+    <value>Expected I, I4, or I8 on the stack.</value>
+  </data>
+  <data name="ExpectedMethodToken" xml:space="preserve">
+    <value>Expected memberRef, memberDef or methodSpec token.</value>
+  </data>
+  <data name="ExpectedNumericType" xml:space="preserve">
+    <value>Expected numeric type on the stack.</value>
+  </data>
+  <data name="ExpectedStaticField" xml:space="preserve">
+    <value>Expected static field.</value>
+  </data>
+  <data name="ExpectedTypeToken" xml:space="preserve">
+    <value>Expected type token.</value>
+  </data>
+  <data name="ExpectedValClassObjRefVariable" xml:space="preserve">
+    <value>Value type, ObjRef type or variable type expected.</value>
+  </data>
+  <data name="FallthroughException" xml:space="preserve">
+    <value>Fallthrough the end of an exception block.</value>
+  </data>
+  <data name="FallthroughIntoFilter" xml:space="preserve">
+    <value>Fallthrough into an exception filter.</value>
+  </data>
+  <data name="FallthroughIntoHandler" xml:space="preserve">
+    <value>Fallthrough into an exception handler.</value>
+  </data>
+  <data name="FieldAccess" xml:space="preserve">
+    <value>Field is not visible.</value>
+  </data>
+  <data name="FilterOrCatchUnexpectedStack" xml:space="preserve">
+    <value>Attempt to enter a filter or catch block with unexpected stack state.</value>
+  </data>
+  <data name="FinOrFaultNonEmptyStack" xml:space="preserve">
+    <value>Attempt to enter a finally or fault block with nonempty stack.</value>
+  </data>
+  <data name="InitLocals" xml:space="preserve">
+    <value>initlocals must be set for verifiable methods with one or more local variables.</value>
+  </data>
+  <data name="InitOnly" xml:space="preserve">
+    <value>Cannot change initonly field outside its .ctor.</value>
+  </data>
+  <data name="LdftnConstructor" xml:space="preserve">
+    <value>ldftn/ldvirtftn not allowed on .ctor.</value>
+  </data>
+  <data name="LdftnNonFinalVirtual" xml:space="preserve">
+    <value>Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.</value>
+  </data>
+  <data name="LdvirtftnOnStatic" xml:space="preserve">
+    <value>ldvirtftn on static.</value>
+  </data>
+  <data name="LeaveIntoFilter" xml:space="preserve">
+    <value>Leave into filter block.</value>
+  </data>
+  <data name="LeaveIntoHandler" xml:space="preserve">
+    <value>Leave into exception handler block.</value>
+  </data>
+  <data name="LeaveIntoTry" xml:space="preserve">
+    <value>Leave into try block.</value>
+  </data>
+  <data name="LeaveOutOfFault" xml:space="preserve">
+    <value>Leave out of fault block.</value>
+  </data>
+  <data name="LeaveOutOfFilter" xml:space="preserve">
+    <value>Leave out of filter block.</value>
+  </data>
+  <data name="LeaveOutOfFinally" xml:space="preserve">
+    <value>Leave out of finally block.</value>
+  </data>
+  <data name="MethodAccess" xml:space="preserve">
+    <value>Method is not visible.</value>
+  </data>
+  <data name="MethodEnd" xml:space="preserve">
+    <value>Method ends in the middle of an instruction.</value>
+  </data>
+  <data name="MethodFallthrough" xml:space="preserve">
+    <value>Fall through end of the method without returning.</value>
+  </data>
+  <data name="NewobjAbstractClass" xml:space="preserve">
+    <value>Cannot construct an instance of abstract class.</value>
+  </data>
+  <data name="PathStackDepth" xml:space="preserve">
+    <value>Stack depth differs depending on path.</value>
+  </data>
+  <data name="PathStackUnexpected" xml:space="preserve">
+    <value>Non-compatible types on stack depending on path.</value>
+  </data>
+  <data name="ReadOnly" xml:space="preserve">
+    <value>Missing ldelema or call following readonly prefix.</value>
+  </data>
+  <data name="ReadOnlyIllegalWrite" xml:space="preserve">
+    <value>Illegal write to readonly ByRef.</value>
+  </data>
+  <data name="ReadonlyUnexpectedCallee" xml:space="preserve">
+    <value>The readonly prefix may only be applied to calls to array methods returning ByRefs.</value>
+  </data>
+  <data name="Rethrow" xml:space="preserve">
+    <value>Rethrow from outside a catch handler.</value>
+  </data>
+  <data name="ReturnEmpty" xml:space="preserve">
+    <value>Stack must contain only the return value.</value>
+  </data>
+  <data name="ReturnFromFilter" xml:space="preserve">
+    <value>Return out of exception filter block.</value>
+  </data>
+  <data name="ReturnFromHandler" xml:space="preserve">
+    <value>Return out of exception handler block.</value>
+  </data>
+  <data name="ReturnFromTry" xml:space="preserve">
+    <value>Return out of try block.</value>
+  </data>
+  <data name="ReturnMissing" xml:space="preserve">
+    <value>Return value missing on the stack.</value>
+  </data>
+  <data name="ReturnPtrToStack" xml:space="preserve">
+    <value>Return type is ByRef, TypedReference, ArgHandle, or ArgIterator.</value>
+  </data>
+  <data name="ReturnVoid" xml:space="preserve">
+    <value>Stack must be empty on return from a void function.</value>
+  </data>
+  <data name="StackByRef" xml:space="preserve">
+    <value>Expected ByRef on the stack.</value>
+  </data>
+  <data name="StackMethod" xml:space="preserve">
+    <value>Expected pointer to function on the stack.</value>
+  </data>
+  <data name="StackNotEq" xml:space="preserve">
+    <value>Non-compatible types on the stack.</value>
+  </data>
+  <data name="StackObjRef" xml:space="preserve">
+    <value>Expected an ObjRef on the stack.</value>
+  </data>
+  <data name="StackOverflow" xml:space="preserve">
+    <value>Stack overflow.</value>
+  </data>
+  <data name="StackUnderflow" xml:space="preserve">
+    <value>Stack underflow.</value>
+  </data>
+  <data name="StackUnexpected" xml:space="preserve">
+    <value>Unexpected type on the stack.</value>
+  </data>
+  <data name="StackUnexpectedArrayType" xml:space="preserve">
+    <value>Unexpected array type on the stack.</value>
+  </data>
+  <data name="StringOperand" xml:space="preserve">
+    <value>Operand does not point to a valid string ref.</value>
+  </data>
+  <data name="TailByRef" xml:space="preserve">
+    <value>Cannot pass ByRef to a tail call.</value>
+  </data>
+  <data name="TailCall" xml:space="preserve">
+    <value>Missing call/callvirt/calli.</value>
+  </data>
+  <data name="TailCallInsideER" xml:space="preserve">
+    <value>The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.</value>
+  </data>
+  <data name="TailRet" xml:space="preserve">
+    <value>tail.call may only be followed by ret.</value>
+  </data>
+  <data name="TailRetType" xml:space="preserve">
+    <value>Tail call return type not compatible.</value>
+  </data>
+  <data name="TailRetVoid" xml:space="preserve">
+    <value>Void ret type expected for tail call.</value>
+  </data>
+  <data name="ThisMismatch" xml:space="preserve">
+    <value>The 'this' parameter to the call must be the calling method's 'this' parameter.</value>
+  </data>
+  <data name="ThisUninitReturn" xml:space="preserve">
+    <value>Return from .ctor when this is uninitialized.</value>
+  </data>
+  <data name="ThisUninitStore" xml:space="preserve">
+    <value>Store into this when it is uninitialized.</value>
+  </data>
+  <data name="TokenResolve" xml:space="preserve">
+    <value>Unable to resolve token.</value>
+  </data>
+  <data name="TryNonEmptyStack" xml:space="preserve">
+    <value>Attempt to enter a try block with nonempty stack.</value>
+  </data>
+  <data name="TypeAccess" xml:space="preserve">
+    <value>Type is not visible.</value>
+  </data>
+  <data name="Unaligned" xml:space="preserve">
+    <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
+  </data>
+  <data name="UninitStack" xml:space="preserve">
+    <value>Uninitialized item on stack.</value>
+  </data>
+  <data name="UnknownOpcode" xml:space="preserve">
+    <value>Unknown opcode.</value>
+  </data>
+  <data name="UnmanagedPointer" xml:space="preserve">
+    <value>Unmanaged pointers are not a verifiable type.</value>
+  </data>
+  <data name="UnrecognizedArgumentNumber" xml:space="preserve">
+    <value>Unrecognized argument number.</value>
+  </data>
+  <data name="UnrecognizedLocalNumber" xml:space="preserve">
+    <value>Unrecognized local variable number.</value>
+  </data>
+  <data name="UnsatisfiedBoxOperand" xml:space="preserve">
+    <value>Type operand of box instruction has unsatisfied class type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedFieldParentInst" xml:space="preserve">
+    <value>Field parent instantiation has unsatisfied class type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedMethodInst" xml:space="preserve">
+    <value>Method instantiation has unsatisfied method type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedMethodParentInst" xml:space="preserve">
+    <value>Method parent instantiation has unsatisfied class type parameter constraints.</value>
+  </data>
+  <data name="Unverifiable" xml:space="preserve">
+    <value>Instruction cannot be verified.</value>
+  </data>
+  <data name="ValueTypeExpected" xml:space="preserve">
+    <value>Value type expected.</value>
+  </data>
+  <data name="Volatile" xml:space="preserve">
+    <value>Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.</value>
+  </data>
+  <data name="InterfaceImplHasDuplicate" xml:space="preserve">
+    <value>Interface implementation has a duplicate. Class '{0}' Interface: '{1}'</value>
+  </data>
+  <data name="InterfaceMethodNotImplemented" xml:space="preserve">
+    <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Missing method: '{2}'.</value>
+  </data>
+</root>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*
  *    CallHelpers.CPP: helpers to call managed code
  *
@@ -21,14 +20,13 @@
 
 #if defined(FEATURE_MULTICOREJIT) && defined(_DEBUG)
 
-// Allow system module, and first party WinMD files for Appx
+// Allow system module for Appx
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
     MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
     Module * pModule = pMethod->GetModule_NoLogging();
-
 
     _ASSERTE(pModule->IsSystem());
 }

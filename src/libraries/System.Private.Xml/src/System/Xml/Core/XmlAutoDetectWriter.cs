@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml
 {
@@ -277,11 +276,11 @@ namespace System.Xml
         {
             get
             {
-                return this.resolver;
+                return this._resolver;
             }
             set
             {
-                this.resolver = value;
+                this._resolver = value;
 
                 if (_wrapped == null)
                     _eventCache.NamespaceResolver = value;

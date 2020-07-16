@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -2980,6 +2979,16 @@ namespace System.Text.Json.Tests
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -217,6 +216,7 @@ FCIMPLEND
 FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
 {
     FCALL_CONTRACT;
+    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
 
@@ -247,6 +247,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
 {
     FCALL_CONTRACT;
+    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
 
@@ -305,15 +306,14 @@ FCIMPLEND
 
 /*****************************************************************************************************/
 
-void QCALLTYPE ThreadPoolNative::InitializeVMTp(CLR_BOOL* pEnableWorkerTracking)
+FCIMPL0(FC_BOOL_RET, ThreadPoolNative::GetEnableWorkerTracking)
 {
-    QCALL_CONTRACT;
+    FCALL_CONTRACT;
 
-    BEGIN_QCALL;
-    ThreadpoolMgr::EnsureInitialized();
-    *pEnableWorkerTracking = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
-    END_QCALL;
+    BOOL result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
+    FC_RETURN_BOOL(result);
 }
+FCIMPLEND
 
 /*****************************************************************************************************/
 
@@ -473,6 +473,7 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
 
     BEGIN_QCALL;
 
+    ThreadpoolMgr::EnsureInitialized();
     ThreadpoolMgr::SetAppDomainRequestsActive();
 
     res = ThreadpoolMgr::QueueUserWorkItem(NULL,

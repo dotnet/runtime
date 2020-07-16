@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -74,7 +73,7 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public abstract void WriteDocType(string name, string? pubid, string? sysid, string subset);
+        public abstract void WriteDocType(string name, string? pubid, string? sysid, string? subset);
 
         // Writes out the specified start tag and associates it with the given namespace.
         public void WriteStartElement(string localName, string? ns)
@@ -117,7 +116,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public void WriteAttributeString(string? prefix, string localName, string? ns, string value)
+        public void WriteAttributeString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartAttribute(prefix, localName, ns);
             WriteString(value);
@@ -146,15 +145,15 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public abstract void WriteCData(string text);
+        public abstract void WriteCData(string? text);
 
         // Writes out a comment <!--...-->; containing the specified text.
 
-        public abstract void WriteComment(string text);
+        public abstract void WriteComment(string? text);
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public abstract void WriteProcessingInstruction(string name, string text);
+        public abstract void WriteProcessingInstruction(string name, string? text);
 
         // Writes out an entity reference as follows: "&"+name+";".
 
@@ -166,11 +165,11 @@ namespace System.Xml
 
         // Writes out the given whitespace.
 
-        public abstract void WriteWhitespace(string ws);
+        public abstract void WriteWhitespace(string? ws);
 
         // Writes out the specified text content.
 
-        public abstract void WriteString(string text);
+        public abstract void WriteString(string? text);
 
         // Write out the given surrogate pair as an entity reference.
 
@@ -221,7 +220,7 @@ namespace System.Xml
         }
 
         // Gets the current xml:lang scope.
-        public virtual string XmlLang
+        public virtual string? XmlLang
         {
             get
             {
@@ -282,6 +281,7 @@ namespace System.Xml
             {
                 return;
             }
+
             WriteString(value);
         }
 

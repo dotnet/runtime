@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -255,6 +254,11 @@ namespace System.Xml.Tests
             {
                 return Task.CompletedTask;
             }
+
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+            {
+                return Task.CompletedTask;
+            }
         }
 
         internal class AsyncOnlyStream : MemoryStream
@@ -277,6 +281,11 @@ namespace System.Xml.Tests
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 return Task.CompletedTask;
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                return default;
             }
         }
     }

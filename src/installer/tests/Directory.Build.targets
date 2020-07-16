@@ -1,0 +1,134 @@
+<Project>
+
+  <Target Name="RefreshProjectTestAssets"
+          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+          DependsOnTargets="DetermineTestOutputDirectory"
+          BeforeTargets="RunTests">
+    <!-- Build PrepareTestAssets once for all tests. -->
+    <MSBuild
+      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
+      Targets="PrepareTestAssets" />
+
+    <!--
+      Set up the shared framework copy this set of tests should use. There's no known reason to have
+      one per test project, but RepoDirectoriesProvider may need some tweaking to share.
+    -->
+    <ItemGroup>
+      <SharedFrameworkPublishFiles Include="$(SharedFrameworkPublishDir)**" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(SharedFrameworkPublishFiles)"
+      DestinationFiles="@(SharedFrameworkPublishFiles->'$(TestsOutputDir)sharedFrameworkPublish/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
+    <WriteLinesToFile
+      File="$(TestsOutputRootDir)$(TestsOutputName)-is-$(MSBuildProjectName).txt"
+      Overwrite="true"
+      Lines="$(MSBuildProjectName) intermediates are located in '$(TestsOutputName)'. Abbreviated to work around path limits on Windows."
+      Condition="'$(TestsOutputName)' != '$(MSBuildProjectName)'" />
+    <WriteLinesToFile
+      File="$(TestsOutputDir)$(MSBuildProjectName).txt"
+      Overwrite="true"
+      Lines="$(MSBuildProjectName) intermediates are located in '$(TestsOutputName)'. Abbreviated to work around path limits on Windows."
+      Condition="'$(TestsOutputName)' != '$(MSBuildProjectName)'" />
+  </Target>
+
+  <Target Name="SetupTestContextVariables"
+          DependsOnTargets="
+            GetProductVersions;
+            GetNETCoreAppRuntimePackVersion;
+            DetermineTestOutputDirectory"
+          BeforeTargets="Build">
+    <PropertyGroup>
+      <!--
+        The tests use the TEST_ARTIFACTS variable to determine the artifacts folder and then later
+        compare that path to its expected path. So, the TEST_ARTIFACTS variable has to have system
+        specific path separators or the string compoarison will fail.
+      -->
+      <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+
+      <!-- This is defined when building in Visual Studio, not DotNetRoot. -->
+      <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(NetCoreRoot)</DotNetRoot>
+    </PropertyGroup>
+
+    <!--
+      Fetch the package version of Microsoft.NETCore.App. Use the runtime nupkg project because it
+      always ships.
+
+      Some test projects end in ".Tests", which Arcade detects and applies IsShipping=false. This
+      makes ProductVersion non-stable, so we can't rely on the test project's ProductVersion to be
+      the same as the package's version. Fetch this directly from the project to avoid guesswork.
+    -->
+    <MSBuild
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Targets="ReturnProductVersion">
+      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
+    </MSBuild>
+
+    <!--
+      Set up properties used inside tests. Write them to a text file so that they can be found
+      inside the VS Test Explorer context the same way as the XUnit runner will find them.
+      See https://github.com/dotnet/arcade/issues/3077.
+    -->
+    <ItemGroup>
+      <TestContextVariable Include="NUGET_PACKAGES=$(TestRestorePackagesPath)" />
+      <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
+      <TestContextVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
+      <TestContextVariable Include="BUILDRID=$(OutputRid)" />
+      <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
+      <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
+      <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
+      <TestContextVariable Include="MNA_TFM=$(NetCoreAppCurrent)" />
+      <TestContextVariable Include="DOTNET_SDK_PATH=$(DotNetRoot)" />
+      <TestContextVariable Include="TEST_ASSETS=$(MSBuildThisFileDirectory)Assets" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(OutDir)TestContextVariables.txt"
+      Overwrite="true"
+      Lines="@(TestContextVariable)" />
+  </Target>
+
+  <!--
+    Fetch the package version of 'Microsoft.NETCore.App.Runtime.<rid>'. The runtime nupkg project
+    always ships, so it may or may not have a stable version depending on product lifecycle.
+
+    Some test projects end in ".Tests", which Arcade detects and applies IsShipping=false. This
+    makes ProductVersion non-stable, so we can't rely on the test project's ProductVersion to be the
+    same as the package's version. Fetch this directly from the project to avoid guesswork.
+  -->
+  <Target Name="GetNETCoreAppRuntimePackVersion">
+    <MSBuild
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Targets="ReturnProductVersion">
+      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
+    </MSBuild>
+  </Target>
+
+  <!--
+    Fetch the package version of Microsoft.NETCore.App.Internal. The legacy App nupkg project
+    doesn't ship, so it never has a stable version.
+  -->
+  <Target Name="GetNETCoreAppInternalPackageVersion">
+    <MSBuild
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj"
+      Targets="ReturnProductVersion">
+      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppInternalPackageVersion" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="DetermineTestOutputDirectory">
+    <PropertyGroup>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(HostRuntimeIdentifier)</TestTargetRid>
+      <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
+
+      <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>
+      <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(TestsOutputRootDir)$(TestsOutputName)/</TestsOutputDir>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

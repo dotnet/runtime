@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -21,10 +20,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
             object obj;
 
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables.
 
@@ -99,7 +97,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetValueAsObject(obj, propValue);
+                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
                         }
                         else
                         {
@@ -134,6 +132,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.Current.JsonClassInfo.UpdateSortedParameterCache(ref state.Current);
             }
+
+            EndRead(ref state);
 
             value = (T)obj;
 
@@ -187,10 +187,10 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out _,
                         createExtensionProperty: false);
@@ -272,10 +272,10 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty,
                             createExtensionProperty: false);
@@ -440,11 +440,12 @@ namespace System.Text.Json.Serialization.Converters
             InitializeConstructorArgumentCaches(ref state, options);
         }
 
+        protected virtual void EndRead(ref ReadStack state) { }
+
         /// <summary>
         /// Lookup the constructor parameter given its name in the reader.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryLookupConstructorParameter(
+        protected virtual bool TryLookupConstructorParameter(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,

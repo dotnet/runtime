@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************/
 #ifndef TARGET_H_
 #define TARGET_H_
 
-#if defined(TARGET_UNIX)
-#define FEATURE_VARARG 0
-#else
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
 #define FEATURE_VARARG 1
+#else
+#define FEATURE_VARARG 0
 #endif
 
 /*****************************************************************************/
@@ -232,10 +232,10 @@ typedef unsigned char   regNumberSmall;
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
-  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments (note this seems wrong as MAX_ARG_REG_COUNT is 2)
+  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments
   #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
 
-  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
+  #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass an argument.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
   #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
@@ -1103,7 +1103,9 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
+  // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
+  // consider it killed by the return.
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_RET_SCRATCH
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_NONE
 
   // Which register are int and long values returned in ?
@@ -1547,6 +1549,10 @@ typedef unsigned char   regNumberSmall;
   // For arm64, this is the maximum prolog establishment pre-indexed (that is SP pre-decrement) offset.
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 512
 
+  // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g. "MLA (by element)")
+  // have encoding that restricts what registers that can be used for the indexed element when the element size is H (i.e. 2 bytes).
+  #define RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
+
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -1584,7 +1590,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #define BITS_PER_BYTE              8
 #define REGNUM_MASK              ((1 << REGNUM_BITS) - 1)     // a n-bit mask use to encode multiple REGNUMs into a unsigned int
-#define RBM_ALL(type) (varTypeIsFloating(type) ? RBM_ALLFLOAT : RBM_ALLINT)
+#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -1890,7 +1896,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
 #else
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         regMask = genRegMaskFloat(regNum, type);
     }
@@ -1938,7 +1944,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         if (regReturn > REG_FP_LAST)
         {

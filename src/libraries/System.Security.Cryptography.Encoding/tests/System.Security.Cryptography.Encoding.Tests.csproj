@@ -1,51 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs" Link="Common\System\Security\Cryptography\CryptoPool.cs" />
-    <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
-    <Compile Include="Asn1\Reader\ComprehensiveReadTests.cs" />
-    <Compile Include="Asn1\Reader\ParseTag.cs" />
-    <Compile Include="Asn1\Reader\PeekTests.cs" />
-    <Compile Include="Asn1\Reader\ReadBitString.cs" />
-    <Compile Include="Asn1\Reader\ReadBMPString.cs" />
-    <Compile Include="Asn1\Reader\ReadBoolean.cs" />
-    <Compile Include="Asn1\Reader\ReadEnumerated.cs" />
-    <Compile Include="Asn1\Reader\ReadGeneralizedTime.cs" />
-    <Compile Include="Asn1\Reader\ReadIA5String.cs" />
-    <Compile Include="Asn1\Reader\ReadInteger.cs" />
-    <Compile Include="Asn1\Reader\ReadLength.cs" />
-    <Compile Include="Asn1\Reader\ReadNull.cs" />
-    <Compile Include="Asn1\Reader\ReadNamedBitList.cs" />
-    <Compile Include="Asn1\Reader\ReadObjectIdentifier.cs" />
-    <Compile Include="Asn1\Reader\ReadOctetString.cs" />
-    <Compile Include="Asn1\Reader\ReadSequence.cs" />
-    <Compile Include="Asn1\Reader\ReadSetOf.cs" />
-    <Compile Include="Asn1\Reader\ReadT61String.cs" />
-    <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
-    <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
-    <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
-    <Compile Include="Asn1\Writer\Asn1WriterTests.cs" />
-    <Compile Include="Asn1\Writer\ComprehensiveWriteTest.cs" />
-    <Compile Include="Asn1\Writer\PushPopSequence.cs" />
-    <Compile Include="Asn1\Writer\PushPopSetOf.cs" />
-    <Compile Include="Asn1\Writer\WriteBitString.cs" />
-    <Compile Include="Asn1\Writer\WriteBMPString.cs" />
-    <Compile Include="Asn1\Writer\WriteBoolean.cs" />
-    <Compile Include="Asn1\Writer\WriteCharacterString.cs" />
-    <Compile Include="Asn1\Writer\WriteEnumerated.cs" />
-    <Compile Include="Asn1\Writer\WriteGeneralizedTime.cs" />
-    <Compile Include="Asn1\Writer\WriteIA5String.cs" />
-    <Compile Include="Asn1\Writer\WriteInteger.cs" />
-    <Compile Include="Asn1\Writer\WriteNamedBitList.cs" />
-    <Compile Include="Asn1\Writer\WriteNull.cs" />
-    <Compile Include="Asn1\Writer\WriteOctetString.cs" />
-    <Compile Include="Asn1\Writer\WriteObjectIdentifier.cs" />
-    <Compile Include="Asn1\Writer\WriteUtcTime.cs" />
-    <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AsnEncodedData.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
@@ -55,26 +14,5 @@
     <Compile Include="PemEncodingTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
-  </ItemGroup>
-  <Import Project="Cbor\System.Formats.Cbor.Shared.projitems" />
-  <ItemGroup>
-    <Compile Include="Cbor.Tests\CborReaderTests.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.String.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Integer.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Helpers.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Map.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.SkipValue.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Simple.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Tag.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Helpers.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Array.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Map.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Simple.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Tag.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
-    <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
   </ItemGroup>
 </Project>

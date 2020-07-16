@@ -63,7 +63,7 @@ tdep_access_reg (struct cursor *c, unw_regnum_t reg, unw_word_t *valp,
     case UNW_MIPS_R26:
     case UNW_MIPS_R27:
     case UNW_MIPS_R28:
-    case UNW_MIPS_R29:
+
     case UNW_MIPS_R30:
     case UNW_MIPS_R31:
       loc = c->dwarf.loc[reg - UNW_MIPS_R0];
@@ -75,6 +75,7 @@ tdep_access_reg (struct cursor *c, unw_regnum_t reg, unw_word_t *valp,
       loc = c->dwarf.loc[reg];
       break;
 
+    case UNW_MIPS_R29:
     case UNW_MIPS_CFA:
       if (write)
         return -UNW_EREADONLYREG;

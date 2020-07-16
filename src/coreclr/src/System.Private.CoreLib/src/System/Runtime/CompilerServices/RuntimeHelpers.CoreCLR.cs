@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -11,9 +10,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        // The special dll name to be used for DllImport of QCalls
-        internal const string QCall = "QCall";
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
@@ -140,7 +136,14 @@ namespace System.Runtime.CompilerServices
         public static extern bool TryEnsureSufficientExecutionStack();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUninitializedObjectInternal(Type type);
+        private static extern object GetUninitializedObjectInternal(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
@@ -288,6 +291,46 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+
+        private static unsafe void DispatchTailCalls(
+            IntPtr callersRetAddrSlot,
+            delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
+            IntPtr retVal)
+        {
+            IntPtr callersRetAddr;
+            TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
+            PortableTailCallFrame* prevFrame = tls->Frame;
+            if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
+            {
+                prevFrame->NextCall = callTarget;
+                return;
+            }
+
+            PortableTailCallFrame newFrame;
+            newFrame.Prev = prevFrame;
+
+            try
+            {
+                tls->Frame = &newFrame;
+
+                do
+                {
+                    newFrame.NextCall = null;
+                    callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
+                    callTarget = newFrame.NextCall;
+                } while (callTarget != null);
+            }
+            finally
+            {
+                tls->Frame = prevFrame;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetILBytesJitted();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -339,7 +382,8 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000;// enum_flag_ICastable;
+                                                             | 0x00400000 // enum_flag_ICastable;
+                                                             | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
@@ -429,7 +473,7 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
-        public IntPtr NextCall;
+        public delegate*<IntPtr, IntPtr, IntPtr*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

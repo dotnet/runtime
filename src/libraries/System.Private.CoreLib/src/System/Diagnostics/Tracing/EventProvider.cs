@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using Microsoft.Win32;
@@ -610,7 +609,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN && TARGET_WINDOWS)
+#if (!ES_BUILD_PCL && TARGET_WINDOWS)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;
@@ -1325,7 +1324,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+            uint level, byte* pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
         }
@@ -1366,7 +1366,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+            uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }

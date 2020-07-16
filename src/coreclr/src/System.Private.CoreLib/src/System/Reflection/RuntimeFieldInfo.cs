@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
@@ -11,15 +10,11 @@ namespace System.Reflection
     {
         #region Private Data Members
         private BindingFlags m_bindingFlags;
-        protected RuntimeTypeCache m_reflectedTypeCache = null!;
-        protected RuntimeType m_declaringType = null!;
+        protected RuntimeTypeCache m_reflectedTypeCache;
+        protected RuntimeType m_declaringType;
         #endregion
 
         #region Constructor
-        protected RuntimeFieldInfo()
-        {
-            // Used for dummy head node during population
-        }
         protected RuntimeFieldInfo(RuntimeTypeCache reflectedTypeCache, RuntimeType declaringType, BindingFlags bindingFlags)
         {
             m_bindingFlags = bindingFlags;

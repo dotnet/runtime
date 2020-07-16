@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -945,9 +944,7 @@ namespace System.Management
              */
             if (!IsConnected)
             {
-#pragma warning disable CA2002
                 lock (this)
-#pragma warning restore CA2002
                 {
                     if (!IsConnected)
                     {
@@ -1389,7 +1386,7 @@ namespace System.Management
 
     internal class SecurityHandler
     {
-        private bool needToReset = false;
+        private bool needToReset;
         private readonly IntPtr handle;
         private readonly ManagementScope scope;
 

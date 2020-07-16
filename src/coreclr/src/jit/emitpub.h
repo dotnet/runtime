@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /************************************************************************/
 /*       Overall emitter control (including startup and shutdown)       */
@@ -83,17 +82,17 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 
-UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, bool align);
+UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
-void emitDataGenData(unsigned offs, const void* data, size_t size);
+void emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET size);
 
 void emitDataGenData(unsigned offs, BasicBlock* label);
 
 void emitDataGenEnd();
 
-UNATIVE_OFFSET emitDataConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign);
+UNATIVE_OFFSET emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
 
 UNATIVE_OFFSET emitDataSize();
 

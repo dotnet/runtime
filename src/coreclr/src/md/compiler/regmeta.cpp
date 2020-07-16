@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RegMeta.cpp
 //
@@ -277,6 +276,53 @@ ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//*****************************************************************************
+// Create new stgdb for portable pdb
+//*****************************************************************************
+__checkReturn
+HRESULT
+RegMeta::CreateNewPortablePdbMD()
+{
+    HRESULT hr = NOERROR;
+    // TODO: move the constant to a better location
+    static const char* PDB_VERSION = "PDB v1.0";
+    size_t len = strlen(PDB_VERSION) + 1;
+
+    m_OpenFlags = ofWrite;
+
+    // Allocate our m_pStgdb.
+    _ASSERTE(m_pStgdb == NULL);
+    IfNullGo(m_pStgdb = new (nothrow) CLiteWeightStgdbRW);
+
+    // Initialize the new, empty database.
+
+    // First tell the new database what sort of metadata to create
+    m_pStgdb->m_MiniMd.m_OptionValue.m_MetadataVersion = m_OptionValue.m_MetadataVersion;
+    m_pStgdb->m_MiniMd.m_OptionValue.m_InitialSize = m_OptionValue.m_InitialSize;
+    IfFailGo(m_pStgdb->InitNew());
+
+    // Set up the pdb version
+    m_OptionValue.m_RuntimeVersion = new char[len];
+    strcpy_s(m_OptionValue.m_RuntimeVersion, len, PDB_VERSION);
+
+    IfFailGo(m_pStgdb->m_MiniMd.SetOption(&m_OptionValue));
+
+    if (IsThreadSafetyOn())
+    {
+        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
+        IfNullGo(m_pSemReadWrite);
+        IfFailGo(m_pSemReadWrite->Init());
+        m_fOwnSem = true;
+
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    }
+
+ErrExit:
+    return hr;
+} // RegMeta::CreateNewPortablePdbMD
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 #endif //FEATURE_METADATA_EMIT
 
 //*****************************************************************************
@@ -546,6 +592,13 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataEmit2 *)this;
         fIsInterfaceRW = true;
     }
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    else if (riid == IID_IMetaDataEmit3)
+    {
+        *ppUnk = (IMetaDataEmit3 *)this;
+        fIsInterfaceRW = true;
+    }
+#endif
     else if (riid == IID_IMetaDataAssemblyEmit)
     {
         *ppUnk = (IMetaDataAssemblyEmit *)this;
@@ -1473,9 +1526,6 @@ HRESULT RegMeta::GetVersionString(      // S_OK or error.
     else
     {
         //This emptry string matches the fallback behavior we have in other places that query the version string.
-        //From what I can tell the only caller to this method is the code that tests if we need to apply the WinMD adapter
-        //and it checks if pVer == "WindowsRuntime". We don't support the debugger custom metadata source scenario with WinMDs (yet?)
-        //so we intend for that check to return FALSE.
         *pVer = "";
     }
 #endif

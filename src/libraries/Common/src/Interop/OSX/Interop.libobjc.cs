@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
 using System;
 using System.Runtime.InteropServices;
-using nint = System.IntPtr;
 
 internal static partial class Interop
 {
@@ -45,9 +43,12 @@ internal static partial class Interop
             {
                 NSOperatingSystemVersion osVersion = get_operatingSystemVersion(processInfo, sel_getUid("operatingSystemVersion"));
 
-                major = osVersion.majorVersion.ToInt32();
-                minor = osVersion.minorVersion.ToInt32();
-                patch = osVersion.patchVersion.ToInt32();
+                checked
+                {
+                    major = (int)osVersion.majorVersion;
+                    minor = (int)osVersion.minorVersion;
+                    patch = (int)osVersion.patchVersion;
+                }
             }
 
             return new Version(major, minor, patch);

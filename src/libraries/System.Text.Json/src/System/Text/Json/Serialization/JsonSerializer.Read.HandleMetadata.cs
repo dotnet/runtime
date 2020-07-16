@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -10,6 +9,12 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        internal static readonly byte[] s_idPropertyName
+            = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
+
+        internal static ReadOnlySpan<byte> s_refPropertyName
+            => new byte[] { (byte)'$', (byte)'r', (byte)'e', (byte)'f' };
+
         /// <summary>
         /// Returns true if successful, false is the reader ran out of buffer.
         /// Sets state.Current.ReturnValue to the $ref target for MetadataRefProperty cases.
@@ -123,7 +128,7 @@ namespace System.Text.Json
                 string key = reader.GetString()!;
 
                 // todo: https://github.com/dotnet/runtime/issues/32354
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
+                state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(key);
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadIdValue)
@@ -134,9 +139,6 @@ namespace System.Text.Json
                 }
 
                 state.Current.MetadataId = reader.GetString();
-
-                // Clear the MetadataPropertyName since we are done processing Id.
-                state.Current.JsonPropertyName = default;
 
                 if (converter.ClassType == ClassType.Enumerable)
                 {
@@ -184,6 +186,8 @@ namespace System.Text.Json
             {
                 if (reader.TokenType != JsonTokenType.PropertyName)
                 {
+                    // Missing $values, JSON path should point to the property's object.
+                    state.Current.JsonPropertyName = null;
                     ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
                 }
 
@@ -268,6 +272,47 @@ namespace System.Text.Json
             }
 
             return MetadataPropertyName.NoMetadata;
+        }
+
+        internal static bool TryGetReferenceFromJsonElement(
+            ref ReadStack state,
+            JsonElement element,
+            out object? referenceValue)
+        {
+            bool refMetadataFound = false;
+            referenceValue = default;
+
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                int propertyCount = 0;
+                foreach (JsonProperty property in element.EnumerateObject())
+                {
+                    propertyCount++;
+                    if (refMetadataFound)
+                    {
+                        // There are more properties in an object with $ref.
+                        ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                    }
+                    else if (property.EscapedNameEquals(s_refPropertyName))
+                    {
+                        if (propertyCount > 1)
+                        {
+                            // $ref was found but there were other properties before.
+                            ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                        }
+
+                        if (property.Value.ValueKind != JsonValueKind.String)
+                        {
+                            ThrowHelper.ThrowJsonException_MetadataValueWasNotString(property.Value.ValueKind);
+                        }
+
+                        referenceValue = state.ReferenceResolver.ResolveReference(property.Value.GetString()!);
+                        refMetadataFound = true;
+                    }
+                }
+            }
+
+            return refMetadataFound;
         }
     }
 }

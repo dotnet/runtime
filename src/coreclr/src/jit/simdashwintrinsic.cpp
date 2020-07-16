@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #include "simdashwintrinsic.h"
@@ -10,12 +9,12 @@
 static const SimdAsHWIntrinsicInfo simdAsHWIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
+    {NI_##classId##_##id, name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
+    {NI_##classId##_##id, name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -65,6 +64,15 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
         return NI_Illegal;
     }
 
+    unsigned numArgs          = sig->numArgs;
+    bool     isInstanceMethod = false;
+
+    if (sig->hasThis())
+    {
+        numArgs++;
+        isInstanceMethod = true;
+    }
+
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
     {
         const SimdAsHWIntrinsicInfo& intrinsicInfo = simdAsHWIntrinsicInfoArray[i];
@@ -74,12 +82,12 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
             continue;
         }
 
-        if (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs))
+        if (numArgs != static_cast<unsigned>(intrinsicInfo.numArgs))
         {
             continue;
         }
 
-        if (sig->hasThis() != SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsicInfo.id))
+        if (isInstanceMethod != SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsicInfo.id))
         {
             continue;
         }
@@ -160,40 +168,69 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig,
-                                        bool                  mustExpand)
+                                        GenTree*              newobjThis)
 {
-    assert(!mustExpand);
-
     if (!featureSIMD)
     {
         // We can't support SIMD intrinsics if the JIT doesn't support the feature
         return nullptr;
     }
 
-    var_types retType  = JITtype2varType(sig->retType);
-    var_types baseType = TYP_UNKNOWN;
-    var_types simdType = TYP_UNKNOWN;
-    unsigned  simdSize = 0;
+#if defined(TARGET_XARCH)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (!compOpportunisticallyDependsOn(minimumIsa) || !JitConfig.EnableHWIntrinsic())
+    {
+        // The user disabled support for the baseline ISA so
+        // don't emit any SIMD intrinsics as they all require
+        // this at a minimum
+        return nullptr;
+    }
+
+    CORINFO_CLASS_HANDLE argClass         = NO_CLASS_HANDLE;
+    var_types            retType          = JITtype2varType(sig->retType);
+    var_types            baseType         = TYP_UNKNOWN;
+    var_types            simdType         = TYP_UNKNOWN;
+    unsigned             simdSize         = 0;
+    unsigned             numArgs          = sig->numArgs;
+    bool                 isInstanceMethod = false;
 
     // We want to resolve and populate the handle cache for this type even
     // if it isn't the basis for anything carried on the node.
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
-    assert(simdSize != 0);
 
-    CORINFO_CLASS_HANDLE argClass;
+    if ((clsHnd != m_simdHandleCache->SIMDVectorHandle) && !varTypeIsArithmetic(baseType))
+    {
+        // We want to exit early if the clsHnd should have a base type and it isn't one
+        // of the supported types. This handles cases like op_Explicit which take a Vector<T>
+        return nullptr;
+    }
 
     if (retType == TYP_STRUCT)
     {
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
         retType  = getSIMDTypeForSize(simdSize);
     }
-    else
+    else if (numArgs != 0)
     {
         argClass = info.compCompHnd->getArgClass(sig, sig->args);
         baseType = getBaseTypeAndSizeOfSIMDType(argClass, &simdSize);
     }
 
-    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
+    if (sig->hasThis())
+    {
+        assert(SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic));
+        numArgs++;
+
+        isInstanceMethod = true;
+        argClass         = clsHnd;
+    }
+    else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
     {
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
@@ -206,14 +243,15 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
-    simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
-
-    if (!varTypeIsArithmetic(baseType))
+    if (!varTypeIsArithmetic(baseType) || (simdSize == 0))
     {
-        // We only support intrinsics on the 10 primitive arithmetic types
+        // We get here for a devirtualization of IEquatable`1.Equals
+        // or if the user tries to use Vector<T> with an unsupported type
         return nullptr;
     }
+
+    simdType = getSIMDTypeForSize(simdSize);
+    assert(varTypeIsSIMD(simdType));
 
     NamedIntrinsic hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
 
@@ -233,7 +271,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     if (hwIntrinsic == intrinsic)
     {
         // The SIMD intrinsic requires special handling outside the normal code path
-        return impSimdAsHWIntrinsicSpecial(intrinsic, clsHnd, sig, retType, baseType, simdSize);
+        return impSimdAsHWIntrinsicSpecial(intrinsic, clsHnd, sig, retType, baseType, simdSize, newobjThis);
     }
 
     CORINFO_InstructionSet hwIntrinsicIsa = HWIntrinsicInfo::lookupIsa(hwIntrinsic);
@@ -250,14 +288,19 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
 
-    bool isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
-
-    switch (sig->numArgs)
+    switch (numArgs)
     {
+        case 0:
+        {
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+            return gtNewSimdAsHWIntrinsicNode(retType, hwIntrinsic, baseType, simdSize);
+        }
+
         case 1:
         {
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
             return gtNewSimdAsHWIntrinsicNode(retType, op1, hwIntrinsic, baseType, simdSize);
@@ -265,12 +308,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         case 2:
         {
-            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             if (SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic))
             {
@@ -305,49 +349,241 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                CORINFO_SIG_INFO*    sig,
                                                var_types            retType,
                                                var_types            baseType,
-                                               unsigned             simdSize)
+                                               unsigned             simdSize,
+                                               GenTree*             newobjThis)
 {
     assert(featureSIMD);
     assert(retType != TYP_UNKNOWN);
     assert(varTypeIsArithmetic(baseType));
     assert(simdSize != 0);
-    assert(varTypeIsSIMD(getSIMDTypeForSize(simdSize)));
     assert(SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType) == intrinsic);
 
-    CORINFO_ARG_LIST_HANDLE argList = sig->args;
-    var_types               argType = TYP_UNKNOWN;
-    CORINFO_CLASS_HANDLE    argClass;
+    var_types simdType = getSIMDTypeForSize(simdSize);
+    assert(varTypeIsSIMD(simdType));
+
+    CORINFO_ARG_LIST_HANDLE argList  = sig->args;
+    var_types               argType  = TYP_UNKNOWN;
+    CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
+    GenTree* op3 = nullptr;
 
     SimdAsHWIntrinsicClassId classId          = SimdAsHWIntrinsicInfo::lookupClassId(intrinsic);
-    bool                     isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
+    unsigned                 numArgs          = sig->numArgs;
+    bool                     isInstanceMethod = false;
+
+    if (sig->hasThis())
+    {
+        assert(SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic));
+        numArgs++;
+
+        isInstanceMethod = true;
+        argClass         = clsHnd;
+    }
 
 #if defined(TARGET_XARCH)
     bool isVectorT256 = (SimdAsHWIntrinsicInfo::lookupClassId(intrinsic) == SimdAsHWIntrinsicClassId::VectorT256);
 
-    if ((baseType != TYP_FLOAT) && !compOpportunisticallyDependsOn(InstructionSet_SSE2))
+    // We should have alredy exited early if SSE2 isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+
+    switch (intrinsic)
     {
-        // Vector<T>, for everything but float, requires at least SSE2
-        return nullptr;
-    }
-    else if (!compOpportunisticallyDependsOn(InstructionSet_SSE))
-    {
-        // Vector<float> requires at least SSE
-        return nullptr;
+#if defined(TARGET_X86)
+        case NI_VectorT128_CreateBroadcast:
+        case NI_VectorT256_CreateBroadcast:
+        {
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                return nullptr;
+            }
+            break;
+        }
+#endif // TARGET_X86
+
+        case NI_VectorT128_Dot:
+        {
+            if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // We need to exit early if this is Vector<T>.Dot for int or uint and SSE41 is not supported
+                // The other types should be handled via the table driven paths
+
+                assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+                return nullptr;
+            }
+            break;
+        }
+
+        default:
+        {
+            // Most intrinsics have some path that works even if only SSE2 is available
+            break;
+        }
     }
 
     // Vector<T>, when 32-bytes, requires at least AVX2
     assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-#endif
+#elif defined(TARGET_ARM64)
+    // We should have alredy exited early if AdvSimd isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
-    switch (sig->numArgs)
+    GenTree* copyBlkDst = nullptr;
+    GenTree* copyBlkSrc = nullptr;
+
+    switch (numArgs)
     {
+        case 0:
+        {
+            assert(newobjThis == nullptr);
+
+            switch (intrinsic)
+            {
+#if defined(TARGET_XARCH)
+                case NI_Vector2_get_One:
+                case NI_Vector3_get_One:
+                case NI_Vector4_get_One:
+                case NI_VectorT128_get_One:
+                case NI_VectorT256_get_One:
+                {
+                    switch (baseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            op1 = gtNewIconNode(1, TYP_INT);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            op1 = gtNewLconNode(1);
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            op1 = gtNewDconNode(1.0, baseType);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    return gtNewSimdCreateBroadcastNode(retType, op1, baseType, simdSize,
+                                                        /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_get_Count:
+                case NI_VectorT256_get_Count:
+                {
+                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                    return countNode;
+                }
+#elif defined(TARGET_ARM64)
+                case NI_Vector2_get_One:
+                case NI_Vector3_get_One:
+                case NI_Vector4_get_One:
+                case NI_VectorT128_get_One:
+                {
+                    switch (baseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            op1 = gtNewIconNode(1, TYP_INT);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            op1 = gtNewLconNode(1);
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            op1 = gtNewDconNode(1.0, baseType);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    return gtNewSimdCreateBroadcastNode(retType, op1, baseType, simdSize,
+                                                        /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_get_Count:
+                {
+                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                    return countNode;
+                }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+        }
+
         case 1:
         {
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            assert(newobjThis == nullptr);
+
+            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
+
+#if defined(TARGET_XARCH)
+            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit);
+#endif
+
+            if (isOpExplicit)
+            {
+                // We fold away the cast here, as it only exists to satisfy the
+                // type system. It is safe to do this here since the op1 type
+                // and the signature return type are both the same TYP_SIMD.
+
+                op1 = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                SetOpLclRelatedToSIMDIntrinsic(op1);
+                assert(op1->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+                return op1;
+            }
+
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
@@ -382,7 +618,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         }
                         assert(bitMask != nullptr);
 
-                        bitMask = gtNewSIMDNode(retType, bitMask, SIMDIntrinsicInit, baseType, simdSize);
+                        bitMask = gtNewSimdCreateBroadcastNode(retType, bitMask, baseType, simdSize,
+                                                               /* isSimdAsHWIntrinsic */ true);
 
                         intrinsic = isVectorT256 ? NI_VectorT256_op_BitwiseAnd : NI_VectorT128_op_BitwiseAnd;
                         intrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
@@ -447,18 +684,33 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
-            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
             switch (intrinsic)
             {
 #if defined(TARGET_XARCH)
+                case NI_Vector2_CreateBroadcast:
+                case NI_Vector3_CreateBroadcast:
+                case NI_Vector4_CreateBroadcast:
+                case NI_VectorT128_CreateBroadcast:
+                case NI_VectorT256_CreateBroadcast:
+                {
+                    assert(retType == TYP_VOID);
+
+                    copyBlkDst = op1;
+                    copyBlkSrc =
+                        gtNewSimdCreateBroadcastNode(simdType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    break;
+                }
+
                 case NI_Vector2_op_Division:
                 case NI_Vector3_op_Division:
                 {
@@ -483,6 +735,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                          NI_SSE2_ShiftRightLogical128BitLane, TYP_INT, simdSize);
 
                     return retNode;
+                }
+
+                case NI_VectorT128_Dot:
+                {
+                    assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, NI_Vector128_Dot, baseType, simdSize);
                 }
 
                 case NI_VectorT128_Equals:
@@ -535,8 +794,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                             }
                         }
 
-                        GenTree* constVector =
-                            gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, TYP_INT, simdSize);
+                        GenTree* constVector = gtNewSimdCreateBroadcastNode(retType, constVal, TYP_INT, simdSize,
+                                                                            /* isSimdAsHWIntrinsic */ true);
 
                         GenTree* constVectorDup1;
                         constVector = impCloneExpr(constVector, &constVectorDup1, clsHnd, (unsigned)CHECK_SPILL_ALL,
@@ -653,6 +912,19 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
                 }
 #elif defined(TARGET_ARM64)
+                case NI_Vector2_CreateBroadcast:
+                case NI_Vector3_CreateBroadcast:
+                case NI_Vector4_CreateBroadcast:
+                case NI_VectorT128_CreateBroadcast:
+                {
+                    assert(retType == TYP_VOID);
+
+                    copyBlkDst = op1;
+                    copyBlkSrc =
+                        gtNewSimdCreateBroadcastNode(simdType, op2, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    break;
+                }
+
                 case NI_VectorT128_Max:
                 case NI_VectorT128_Min:
                 {
@@ -681,7 +953,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 #else
 #error Unsupported platform
-#endif // TARGET_XARCH
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
                 default:
                 {
@@ -692,7 +964,73 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+
+        case 3:
+        {
+            assert(newobjThis == nullptr);
+
+            CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = isInstanceMethod ? simdType
+                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
+
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+
+            switch (intrinsic)
+            {
+#if defined(TARGET_XARCH)
+                case NI_VectorT128_ConditionalSelect:
+                case NI_VectorT256_ConditionalSelect:
+                {
+                    return impSimdAsHWIntrinsicCndSel(clsHnd, retType, baseType, simdSize, op1, op2, op3);
+                }
+#elif defined(TARGET_ARM64)
+                case NI_VectorT128_ConditionalSelect:
+                {
+                    return impSimdAsHWIntrinsicCndSel(clsHnd, retType, baseType, simdSize, op1, op2, op3);
+                }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+        }
     }
+
+    if (copyBlkDst != nullptr)
+    {
+        assert(copyBlkSrc != nullptr);
+
+        // At this point, we have a tree that we are going to store into a destination.
+        // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
+        // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
+        // block ops.
+
+        GenTree* dest = gtNewBlockVal(copyBlkDst, simdSize);
+
+        dest->gtType = simdType;
+        dest->gtFlags |= GTF_GLOB_REF;
+
+        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
+        retNode->gtFlags |= ((copyBlkDst->gtFlags | copyBlkSrc->gtFlags) & GTF_ALL_EFFECT);
+
+        return retNode;
+    }
+    assert(copyBlkSrc == nullptr);
 
     assert(!"Unexpected SimdAsHWIntrinsic");
     return nullptr;
@@ -723,7 +1061,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
 {
     assert(featureSIMD);
     assert(retType != TYP_UNKNOWN);
-    assert(varTypeIsIntegral(baseType));
+    assert(varTypeIsArithmetic(baseType));
     assert(simdSize != 0);
     assert(varTypeIsSIMD(getSIMDTypeForSize(simdSize)));
     assert(op1 != nullptr);
@@ -999,8 +1337,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                     }
                 }
 
-                GenTree* constVector =
-                    gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, constVal->TypeGet(), simdSize);
+                GenTree* constVector = gtNewSimdCreateBroadcastNode(retType, constVal, constVal->TypeGet(), simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
 
                 GenTree* constVectorDup;
                 constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL,

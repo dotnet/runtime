@@ -6,5 +6,6 @@
   <ItemGroup>
     <Compile Include="EncoderFallbackBufferHelper.cs" />
     <Compile Include="EncodingCodePages.cs" />
+    <Compile Include="EncodingCodePages.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
   </ItemGroup>
 </Project>

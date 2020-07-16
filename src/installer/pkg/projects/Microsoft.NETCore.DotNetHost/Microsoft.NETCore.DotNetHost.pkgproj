@@ -48,8 +48,12 @@
     </ItemGroup>
   </Target>
 
-  <Import 
-    Condition="'$(PackageTargetRuntime)' != '' and Exists('$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props')"
-    Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props" />
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <File Include="@(NativeBinary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
 
 </Project>

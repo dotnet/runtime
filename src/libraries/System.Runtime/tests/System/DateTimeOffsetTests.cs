@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -357,8 +356,8 @@ namespace System.Tests
         [Fact]
         public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(10001));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTimeOffset.Now.AddYears(-10001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(10001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(-10001));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MaxValue.AddYears(1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MinValue.AddYears(-1));

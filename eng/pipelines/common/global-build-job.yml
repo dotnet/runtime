@@ -6,9 +6,16 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
-  variables: {}
+  crossrootfsDir: ''
+  variables: []
   timeoutInMinutes: ''
   pool: ''
+  condition: true
+  isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  helixQueues: ''
+  extraStepsTemplate: ''
+  extraStepsParameters: {}
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -19,16 +26,45 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    condition: and(succeeded(), ${{ parameters.condition }})
     workspace:
       clean: all
 
-    variables: ${{ parameters.variables }}
+    variables:
+      - name: _osParameter
+        value: -os ${{ parameters.osGroup }}
+      
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
+        - name: _osParameter
+          value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
+
+      # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
+      - name: _crossBuildPropertyArg
+        value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+
+      - name: _cxx11Parameter
+        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
+          value: /p:MonoLLVMUseCxx11Abi=true
+        ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'arm64'))) }}:
+          value: /p:MonoLLVMUseCxx11Abi=false
+
+      - name: _officialBuildParameter
+        ${{ if eq(parameters.isOfficialBuild, true) }}:
+          value: /p:OfficialBuildId=$(Build.BuildNumber)
+        ${{ if ne(parameters.isOfficialBuild, true) }}:
+          value: ''
+
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
+
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
       - script: |
@@ -37,7 +73,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -46,11 +82,23 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
+      # If intended to send extra steps after regular build add them here.
+    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
+      - template: ${{ parameters.extraStepsTemplate }}
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          helixQueues: ${{ parameters.helixQueues }}
+          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
-        ArtifactName: $(Agent.Os)_PublishBuildAssets
+        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()

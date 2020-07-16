@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -27,9 +26,10 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="timeout">The timeout for stopping gracefully. Once expired the
         /// server may terminate any remaining active connections.</param>
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        public static Task StopAsync(this IHost host, TimeSpan timeout)
+        public static async Task StopAsync(this IHost host, TimeSpan timeout)
         {
-            return host.StopAsync(new CancellationTokenSource(timeout).Token);
+            using CancellationTokenSource cts = new CancellationTokenSource(timeout);
+            await host.StopAsync(cts.Token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -60,15 +60,15 @@ namespace Microsoft.Extensions.Hosting
         {
             try
             {
-                await host.StartAsync(token);
+                await host.StartAsync(token).ConfigureAwait(false);
 
-                await host.WaitForShutdownAsync(token);
+                await host.WaitForShutdownAsync(token).ConfigureAwait(false);
             }
             finally
             {
                 if (host is IAsyncDisposable asyncDisposable)
                 {
-                    await asyncDisposable.DisposeAsync();
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
-            var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
+            IHostApplicationLifetime applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
 
             token.Register(state =>
             {
@@ -101,10 +101,11 @@ namespace Microsoft.Extensions.Hosting
                 tcs.TrySetResult(null);
             }, waitForStop);
 
-            await waitForStop.Task;
+            await waitForStop.Task.ConfigureAwait(false);
 
             // Host will use its default ShutdownTimeout if none is specified.
-            await host.StopAsync();
+            // The cancellation token may have been triggered to unblock waitForStop. Don't pass it here because that would trigger an abortive shutdown.
+            await host.StopAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

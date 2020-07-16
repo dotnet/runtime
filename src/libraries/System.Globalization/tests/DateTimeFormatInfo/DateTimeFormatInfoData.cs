@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -29,19 +28,11 @@ namespace System.Globalization.Tests
 
         public static string[] FrFRDayNames()
         {
-            if (PlatformDetection.IsOSX && PlatformDetection.OSXVersion < new Version(10, 12))
-            {
-                return new string[] { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
-            }
             return new string[] { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" };
         }
 
         public static string[] FrFRAbbreviatedDayNames()
         {
-            if (PlatformDetection.IsOSX  && PlatformDetection.OSXVersion < new Version(10, 12))
-            {
-                return new string[] { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
-            }
             return new string[] { "dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam." };
         }
 

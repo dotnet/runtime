@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: memberload.cpp
 //
@@ -243,7 +242,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
 
             pMethodDef->GetSig(&pMethodSig, &cMethodSig);
             if (!MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL, pMethodSig,
-                                            cMethodSig, pModule, NULL))
+                                            cMethodSig, pModule, NULL, FALSE))
             {
                 // If the signatures do not match, then the correct MethodDesc has not been found.
                 fMissingMethod = TRUE;
@@ -1043,7 +1042,7 @@ BOOL CompareMethodSigWithCorrectSubstitution(
 
         pCurDeclMD->GetSig(&pCurMethodSig, &cCurMethodSig);
         return MetaSig::CompareMethodSigs(pSignature, cSignature, pModule, NULL, pCurMethodSig,
-                                       cCurMethodSig, pCurDeclMD->GetModule(), pDefSubst);
+                                       cCurMethodSig, pCurDeclMD->GetModule(), pDefSubst, FALSE);
     }
     else
     {
@@ -1443,7 +1442,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
         DWORD cCurMethodSig;
         pCurMethod->GetSig(&pCurMethodSig, &cCurMethodSig);
 
-        if (MetaSig::CompareMethodSigs(pSignature, cSignature, pModule, NULL, pCurMethodSig, cCurMethodSig, pCurMethod->GetModule(), NULL))
+        if (MetaSig::CompareMethodSigs(pSignature, cSignature, pModule, NULL, pCurMethodSig, cCurMethodSig, pCurMethod->GetModule(), NULL, FALSE))
         {
             return pCurMethod;
         }

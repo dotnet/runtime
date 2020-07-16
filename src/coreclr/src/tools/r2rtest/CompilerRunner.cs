@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +31,6 @@ namespace R2RTest
         {
             new FrameworkExclusion(ExclusionType.Ignore, "CommandLine", "Not a framework assembly"),
             new FrameworkExclusion(ExclusionType.Ignore, "R2RDump", "Not a framework assembly"),
-            new FrameworkExclusion(ExclusionType.Ignore, "System.Runtime.WindowsRuntime", "WinRT is currently not supported"),
             new FrameworkExclusion(ExclusionType.Ignore, "xunit.performance.api", "Not a framework assembly"),
 
             // TODO (DavidWr): IBC-related failures

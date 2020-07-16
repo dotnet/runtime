@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubResolver.cpp
 //
@@ -73,10 +72,8 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
     {
         case CLRToNativeInteropStub: return "IL_STUB_PInvoke";
         case CLRToCOMInteropStub:    return "IL_STUB_CLRtoCOM";
-        case CLRToWinRTInteropStub:  return "IL_STUB_CLRtoWinRT";
         case NativeToCLRInteropStub: return "IL_STUB_ReversePInvoke";
         case COMToCLRInteropStub:    return "IL_STUB_COMtoCLR";
-        case WinRTToCLRInteropStub:  return "IL_STUB_WinRTtoCLR";
         case StructMarshalInteropStub: return "IL_STUB_StructMarshal";
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         case ArrayOpStub:            return "IL_STUB_Array";
@@ -91,7 +88,6 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case WrapperDelegateStub:    return "IL_STUB_WrapperDelegate_Invoke";
         case TailCallStoreArgsStub:  return "IL_STUB_StoreTailCallArgs";
         case TailCallCallTargetStub: return "IL_STUB_CallTailCallTarget";
-        case TailCallDispatcherStub: return "IL_STUB_DispatchTailCalls";
         default:
             UNREACHABLE_MSG("Unknown stub type");
     }

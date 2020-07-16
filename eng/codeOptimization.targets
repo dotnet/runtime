@@ -9,7 +9,7 @@
            IBCMerge optimizations on Mac for now to unblock the offical build.
            See issue https://github.com/dotnet/runtime/issues/33303
       -->
-      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">false</IsEligibleForNgenOptimization>
+      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <Target Name="SetApplyNgenOptimization"

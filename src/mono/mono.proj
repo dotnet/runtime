@@ -1,8 +1,8 @@
-<Project DefaultTargets="Build">
-  <Import Project="Directory.Build.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Build">
 
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
+    <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
     <LocalDotnetDir>$(RepoRoot).dotnet</LocalDotnetDir>
@@ -14,32 +14,40 @@
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(CoreClrFileName)' == ''">libcoreclr.so</CoreClrFileName>
-    <MonoFileName Condition="'$(TargetsiOS)' == 'true'">libmono.dylib</MonoFileName>
-    <MonoFileName Condition="'$(TargetstvOS)' == 'true'">libmono.dylib</MonoFileName>
+    <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">libmonosgen-2.0.dylib</MonoFileName>
     <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.so</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true'">libmono.a</MonoStaticFileName>
-    <MonoStaticFileName Condition="'$(TargetstvOS)' == 'true'">libmono.a</MonoStaticFileName>
-    <MonoStaticFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
-    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmono.a</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsBrowser)' == 'true'">libmono.a</MonoStaticFileName>
+    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmonosgen-2.0.a</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
+    <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
     <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
     <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
+    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
+    <MonoCCompiler>$(Compiler)</MonoCCompiler>
+    <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
+    <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
+    <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
+    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
-  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
+    <Error Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == ''" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
@@ -69,16 +77,24 @@
 
     <!-- Release specific options -->
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
-      <_MonoCFLAGS Include="-O2" />
+      <_MonoCFLAGS Include="-O2" Condition="'$(TargetsMobile)' != 'true'" />
+      <_MonoCFLAGS Include="-Os" Condition="'$(TargetsMobile)' == 'true'" />
       <_MonoCFLAGS Include="-g" />
+      <_MonoCFLAGS Include="-Wl,-s" Condition="'$(TargetsAndroid)' == 'true'" />
 
-      <_MonoCXXFLAGS Include="-O2" />
+      <_MonoCXXFLAGS Include="-O2" Condition="'$(TargetsMobile)' != 'true'" />
+      <_MonoCXXFLAGS Include="-Os" Condition="'$(TargetsMobile)' == 'true'" />
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 
-    <!-- We build LLVM bits for x64 without C++11 ABI -->
-    <ItemGroup Condition="'$(HostArch)' == 'x64' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
+    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    </ItemGroup>
+
+    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
+      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
 
     <!-- tvOS device specific options -->
@@ -133,6 +149,7 @@
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk" />
       <_MonoCFLAGS Include="-mtvos-version-min=$(tvOSVersionMin)" />
+      <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCFLAGS Include="-fembed-bitcode" />
@@ -157,69 +174,11 @@
       <_MonoCPPFLAGS Include="-DHAVE_LARGE_FILE_SUPPORT=1" />
 
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Include="-Wl,-no_weak_imports" />
+      <!--<_MonoLDFLAGS Include="-Wl,-no_weak_imports" />--> <!-- TODO: reenable once Xcode bug is fixed: https://github.com/mono/mono/issues/19393 -->
       <_MonoLDFLAGS Include="-Wl,-bitcode_bundle" />
       <_MonoLDFLAGS Include="-framework CoreFoundation" />
       <_MonoLDFLAGS Include="-lobjc" />
       <_MonoLDFLAGS Include="-lc++" />
-
-
-      <!-- AOT cross-compiler configuration -->
-      <_MonoAotCrossConfigureParams Include="--host=x86_64-apple-darwin10" />
-      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm64'" Include="--target=aarch64-darwin" />
-      <_MonoAotCrossConfigureParams Include="--with-cross-offsets=$(MonoObjDir)cross/offsets-$(Platform)-darwin.h" />
-      <_MonoAotCrossConfigureParams Include="--with-core=only" />  <!-- TODO: remove duplication with main configure params -->
-      <_MonoAotCrossConfigureParams Include="--enable-maintainer-mode" />
-      <_MonoAotCrossConfigureParams Include="--enable-compile-warnings" />
-      <_MonoAotCrossConfigureParams Include="--prefix=$(MonoObjDir)cross/out" />
-      <_MonoAotCrossConfigureParams Include="--disable-boehm" />
-      <_MonoAotCrossConfigureParams Include="--disable-btls" />
-      <_MonoAotCrossConfigureParams Include="--disable-iconv" />
-      <_MonoAotCrossConfigureParams Include="--disable-libraries" />
-      <_MonoAotCrossConfigureParams Include="--disable-mcs-build" />
-      <_MonoAotCrossConfigureParams Include="--disable-nls" />
-      <_MonoAotCrossConfigureParams Include="--enable-dtrace=no" />
-      <_MonoAotCrossConfigureParams Include="--enable-icall-symbol-map" />
-      <_MonoAotCrossConfigureParams Include="--enable-minimal=com,remoting" />
-      <_MonoAotCrossConfigureParams Include="--enable-monotouch" />
-      <_MonoAotCrossConfigureParams Include="--disable-crash-reporting" />
-      <_MonoAotCrossConfigureParams Include="--with-llvm=$(MonoLLVMDir)" />
-
-      <_MonoAotCrossAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
-
-      <_MonoAotCrossCFLAGS Include="-O2" />
-      <_MonoAotCrossCFLAGS Include="-g" />
-      <_MonoAotCrossCFLAGS Include="-isysroot $(XcodeDir)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX$(macOSVersion).sdk" />
-      <_MonoAotCrossCFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
-      <_MonoAotCrossCFLAGS Include="-Qunused-arguments" />
-      <_MonoAotCrossCFLAGS Include="-m64" />
-
-      <_MonoAotCrossCXXFLAGS Include="-O2" />
-      <_MonoAotCrossCXXFLAGS Include="-g" />
-      <_MonoAotCrossCXXFLAGS Include="-isysroot $(XcodeDir)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX$(macOSVersion).sdk" />
-      <_MonoAotCrossCXXFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
-      <_MonoAotCrossCXXFLAGS Include="-Qunused-arguments" />
-      <_MonoAotCrossCXXFLAGS Include="-stdlib=libc++" />
-      <_MonoAotCrossCXXFLAGS Include="-m64" />
-
-      <_MonoAotCrossCPPFLAGS Include="-O2" />
-      <_MonoAotCrossCPPFLAGS Include="-g" />
-      <_MonoAotCrossCPPFLAGS Include="-DMONOTOUCH=1" />
-      <_MonoAotCrossCPPFLAGS Include="-m64" />
-
-      <_MonoAotCrossCXXPPFLAGS Include="-O2" />
-      <_MonoAotCrossCXXPPFLAGS Include="-g" />
-      <_MonoAotCrossCXXPPFLAGS Include="-m64" />
-
-      <_MonoAotCrossLDFLAGS Include="-stdlib=libc++" />
-
-      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' == 'arm64'" Include="--abi=aarch64-apple-darwin10" />
-      <_MonoAotCrossOffsetsToolParams Include="--netcore" />
-      <_MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoObjDir)cross/offsets-$(Platform)-darwin.h&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--sysroot=&quot;$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk&quot;" />
     </ItemGroup>
 
     <!-- tvOS simulator specific options -->
@@ -326,6 +285,7 @@
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7s" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk" />
       <_MonoCFLAGS Include="-miphoneos-version-min=$(iOSVersionMin)" />
+      <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCFLAGS Include="-fexceptions" />
 
@@ -351,17 +311,78 @@
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7" />
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7s" />
-      <_MonoLDFLAGS Include="-Wl,-no_weak_imports" />
+      <!--<_MonoLDFLAGS Include="-Wl,-no_weak_imports" />--> <!-- TODO: reenable once Xcode bug is fixed: https://github.com/mono/mono/issues/19393 -->
       <_MonoLDFLAGS Include="-framework CoreFoundation" />
       <_MonoLDFLAGS Include="-lobjc" />
       <_MonoLDFLAGS Include="-lc++" />
+    </ItemGroup>
 
+    <!-- iOS simulator specific options -->
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">
+      <_MonoConfigureParams Condition="'$(Platform)' == 'x64'" Include="--host=x86_64-apple-darwin10" />
+      <_MonoConfigureParams Condition="'$(Platform)' == 'x86'" Include="--host=i386-apple-darwin10" />
+      <_MonoConfigureParams Include="--disable-boehm" />
+      <_MonoConfigureParams Include="--disable-btls" />
+      <_MonoConfigureParams Include="--disable-executables" />
+      <_MonoConfigureParams Include="--disable-iconv" />
+      <_MonoConfigureParams Include="--disable-mcs-build" />
+      <_MonoConfigureParams Include="--disable-nls" />
+      <_MonoConfigureParams Include="--disable-visibility-hidden" />
+      <_MonoConfigureParams Include="--enable-maintainer-mode" />
+      <_MonoConfigureParams Include="--enable-minimal=com,remoting,shared_perfcounters,gac" />
+      <_MonoConfigureParams Include="--enable-monotouch" />
+      <_MonoConfigureParams Include="--with-tls=pthread" />
+      <_MonoConfigureParams Include="--without-ikvm-native" />
+      <_MonoConfigureParams Include="--disable-cooperative-suspend" />
+      <_MonoConfigureParams Include="--disable-hybrid-suspend" />
+      <_MonoConfigureParams Include="--disable-crash-reporting" />
+
+      <_MonoAC_VARS Include="ac_cv_func_clock_nanosleep=no" />
+      <_MonoAC_VARS Include="ac_cv_func_fstatat=no" />
+      <_MonoAC_VARS Include="ac_cv_func_readlinkat=no" />
+      <_MonoAC_VARS Include="ac_cv_func_system=no" />
+      <_MonoAC_VARS Include="ac_cv_func_getentropy=no" />
+      <_MonoAC_VARS Include="ac_cv_func_futimens=no" />
+      <_MonoAC_VARS Include="ac_cv_func_utimensat=no" />
+      <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
+      <_MonoAC_VARS Include="mono_cv_uscore=yes" />
+
+      <_MonoCFLAGS Condition="'$(Platform)' == 'x64'" Include="-arch x86_64" />
+      <_MonoCFLAGS Condition="'$(Platform)' == 'x64'" Include="-m64" />
+      <_MonoCFLAGS Condition="'$(Platform)' == 'x86'" Include="-arch i386" />
+      <_MonoCFLAGS Condition="'$(Platform)' == 'x86'" Include="-m32" />
+      <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
+      <_MonoCFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
+      <_MonoCFLAGS Include="-Wl,-application_extension" />
+
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'x64'" Include="-arch x86_64" />
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'x64'" Include="-m64" />
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'x86'" Include="-arch i386" />
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'x86'" Include="-m32" />
+      <_MonoCXXFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
+      <_MonoCXXFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
+      <_MonoCXXFLAGS Include="-Wl,-application_extension" />
+
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-arch x86_64" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-m64" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-arch i386" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-m32" />
+      <_MonoCPPFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
+      <_MonoCPPFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
+      <_MonoCPPFLAGS Include="-Wl,-application_extension" />
+      <_MonoCPPFLAGS Include="-DMONOTOUCH=1" />
+      <_MonoCPPFLAGS Include="-DHOST_IOS" />
+    </ItemGroup>
+
+    <!-- tvOS/iOS AOT cross compiler specific options -->
+    <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
 
       <!-- AOT cross-compiler configuration -->
       <_MonoAotCrossConfigureParams Include="--host=x86_64-apple-darwin10" />
-      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm64'" Include="--target=aarch64-darwin" />
-      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm'" Include="--target=arm-darwin" />
-      <_MonoAotCrossConfigureParams Include="--with-cross-offsets=$(MonoObjDir)cross/offsets-$(Platform)-darwin.h" />
+      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm64'" Include="--target=aarch64-apple-darwin10" />
+      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm'" Include="--target=arm-apple-darwin10" />
+      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'x86'" Include="--target=i386-apple-darwin10" />
+      <_MonoAotCrossConfigureParams Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm' or '$(Platform)' == 'x86'" Include="--with-cross-offsets=$(MonoObjDir)cross/offsets-$(Platform)-darwin.h" />
       <_MonoAotCrossConfigureParams Include="--with-core=only" />  <!-- TODO: remove duplication with main configure params -->
       <_MonoAotCrossConfigureParams Include="--enable-maintainer-mode" />
       <_MonoAotCrossConfigureParams Include="--enable-compile-warnings" />
@@ -407,64 +428,18 @@
 
       <_MonoAotCrossLDFLAGS Include="-stdlib=libc++" />
 
+      <!-- AOT cross-compiler configuration (not needed on x64) -->
       <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' == 'arm64'" Include="--abi=aarch64-apple-darwin10" />
       <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' == 'arm'" Include="--abi=arm-apple-darwin10" />
-      <_MonoAotCrossOffsetsToolParams Include="--netcore" />
-      <_MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoObjDir)cross/offsets-$(Platform)-darwin.h&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--sysroot=&quot;$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk&quot;" />
-    </ItemGroup>
-
-    <!-- iOS simulator specific options -->
-    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">
-      <_MonoConfigureParams Include="--host=x86_64-apple-darwin10" />
-      <_MonoConfigureParams Include="--disable-boehm" />
-      <_MonoConfigureParams Include="--disable-btls" />
-      <_MonoConfigureParams Include="--disable-executables" />
-      <_MonoConfigureParams Include="--disable-iconv" />
-      <_MonoConfigureParams Include="--disable-mcs-build" />
-      <_MonoConfigureParams Include="--disable-nls" />
-      <_MonoConfigureParams Include="--disable-visibility-hidden" />
-      <_MonoConfigureParams Include="--enable-maintainer-mode" />
-      <_MonoConfigureParams Include="--enable-minimal=com,remoting,shared_perfcounters,gac" />
-      <_MonoConfigureParams Include="--enable-monotouch" />
-      <_MonoConfigureParams Include="--with-tls=pthread" />
-      <_MonoConfigureParams Include="--without-ikvm-native" />
-      <_MonoConfigureParams Include="--disable-cooperative-suspend" />
-      <_MonoConfigureParams Include="--disable-hybrid-suspend" />
-      <_MonoConfigureParams Include="--disable-crash-reporting" />
-
-      <_MonoAC_VARS Include="ac_cv_func_clock_nanosleep=no" />
-      <_MonoAC_VARS Include="ac_cv_func_fstatat=no" />
-      <_MonoAC_VARS Include="ac_cv_func_readlinkat=no" />
-      <_MonoAC_VARS Include="ac_cv_func_system=no" />
-      <_MonoAC_VARS Include="ac_cv_func_getentropy=no" />
-      <_MonoAC_VARS Include="ac_cv_func_futimens=no" />
-      <_MonoAC_VARS Include="ac_cv_func_utimensat=no" />
-      <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
-      <_MonoAC_VARS Include="mono_cv_uscore=yes" />
-
-      <_MonoCFLAGS Include="-arch x86_64" />
-      <_MonoCFLAGS Include="-m64" />
-      <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
-      <_MonoCFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
-      <_MonoCFLAGS Include="-Wl,-application_extension" />
-
-      <_MonoCXXFLAGS Include="-arch x86_64" />
-      <_MonoCXXFLAGS Include="-m64" />
-      <_MonoCXXFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
-      <_MonoCXXFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
-      <_MonoCXXFLAGS Include="-Wl,-application_extension" />
-
-      <_MonoCPPFLAGS Include="-arch x86_64" />
-      <_MonoCPPFLAGS Include="-m64" />
-      <_MonoCPPFLAGS Include="-isysroot $(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk" />
-      <_MonoCPPFLAGS Include="-mios-simulator-version-min=$(iOSVersionMin)" />
-      <_MonoCPPFLAGS Include="-Wl,-application_extension" />
-      <_MonoCPPFLAGS Include="-DMONOTOUCH=1" />
-      <_MonoCPPFLAGS Include="-DHOST_IOS" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' == 'x86'" Include="--abi=i386-apple-darwin10" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64'" Include="--netcore" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64'" Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64'" Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64'" Include="--outfile=&quot;$(MonoObjDir)cross/offsets-$(Platform)-darwin.h&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64'" Include="--libclang=&quot;$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64' and '$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Include="--sysroot=&quot;$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64' and '$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'" Include="--sysroot=&quot;$(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk&quot;" />
+      <_MonoAotCrossOffsetsToolParams Condition="'$(Platform)' != 'x64' and '$(TargetstvOS)' == 'true'" Include="--sysroot=&quot;$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk&quot;" />
     </ItemGroup>
 
     <!-- Android specific options -->
@@ -619,9 +594,39 @@
       <_MonoSTRIPOption>STRIP="$(_MonoTuple)-strip"</_MonoSTRIPOption>
     </PropertyGroup>
 
+    <!-- x64 illumos cross build options -->
+    <PropertyGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoTuple>x86_64-sun-solaris2.10</_MonoTuple>
+      <_ToolPrefix>$(MonoCrossDir)/bin/x86_64-illumos</_ToolPrefix>
+
+      <_MonoRANLIBOption>RANLIB="$(_ToolPrefix)-ranlib"</_MonoRANLIBOption>
+      <_MonoAROption>AR="$(_ToolPrefix)-ar"</_MonoAROption>
+      <_MonoASOption>AS="$(_ToolPrefix)-as"</_MonoASOption>
+      <_MonoLDOption>LD="$(_ToolPrefix)-ld"</_MonoLDOption>
+      <_MonoSTRIPOption>STRIP="$(_ToolPrefix)-strip"</_MonoSTRIPOption>
+
+      <_MonoCCOption>CC="$(_ToolPrefix)-$(MonoCCompiler)"</_MonoCCOption>
+      <_MonoCXXOption>CXX="$(_ToolPrefix)-$(MonoCxxCompiler)"</_MonoCXXOption>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoConfigureParams Include="--host=$(_MonoTuple)" />
+      <_MonoConfigureParams Include="--target=$(_MonoTuple)" />
+
+      <_MonoCFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCFLAGS Include="-I$(MonoCrossDir)/include" />
+      <_MonoCXXFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoLDFLAGS Include="--sysroot=$(MonoCrossDir)" />
+      <_MonoCCLDFLAGS Include="-XCClinker" />
+      <_MonoConfigureParams Include="--with-tls=pthread" />
+    </ItemGroup>
+
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
 
     <!-- WASM specific options -->
+    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_MonoEnableMinimal Condition="'$(MonoWasmEnableAOT)' != 'true'">aot</_MonoEnableMinimal>
+    </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoConfigureParams Include="--host=wasm32"/>
       <_MonoConfigureParams Include="--disable-boehm" />
@@ -638,10 +643,12 @@
       <_MonoConfigureParams Include="--disable-icall-tables"/>
       <_MonoConfigureParams Include="--disable-crash-reporting"/>
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
-      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac"/>
-      <!-- FIXME: -Os -->
+      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,$(_MonoEnableMinimal)"/>
       <_MonoCFLAGS Include="-fexceptions" />
-      <_MonoCXXFLAGS Include="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0" />
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-fexceptions" />
+      <_MonoCXXFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
+      <_MonoCXXFLAGS Include="-s DISABLE_EXCEPTION_CATCHING=0" />
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
 
       <!-- AOT cross-compiler configuration -->
@@ -712,7 +719,7 @@
       <_MonoCCLDFLAGSOption Condition="@(_MonoCCLDFLAGS->Count()) &gt; 0">CCLDFLAGS="@(_MonoCCLDFLAGS, ' ')"</_MonoCCLDFLAGSOption>
 
       <_MonoConfigureOptions>@(_MonoConfigureParams, ' ') @(_MonoAC_VARS, ' ') $(_MonoCFLAGSOption) $(_MonoCXXFLAGSOption) $(_MonoCPPFLAGSOption) $(_MonoCXXCPPFLAGSOption) $(_MonoLDFLAGSOption) $(_MonoCCLDFLAGSOption) $(_MonoCCOption) $(_MonoCXXOption) $(_MonoAROption) $(_MonoASOption) $(_MonoCPPOption) $(_MonoCXXCPPOption) $(_MonoDLLTOOLOption) $(_MonoLDOption) $(_MonoOBJDUMPOption) $(_MonoRANLIBOption) $(_MonoCMAKEOption) $(_MonoSTRIPOption)</_MonoConfigureOptions>
-      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
+      <_MonoConfigureCommand Condition="'$(_MonoCCOption)' == '' and '$(_MonoCXXOption)' == ''">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(_MonoCCOption)' != '' and '$(_MonoCXXOption)' != ''">$(MonoProjectRoot)configure $(_MonoConfigureOptions)</_MonoConfigureCommand>
       <_MonoConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emconfigure $(MonoProjectRoot)configure $(_MonoConfigureOptions)'</_MonoConfigureCommand>
     </PropertyGroup>
@@ -727,7 +734,7 @@
       <_MonoAotCrossCCLDFLAGSOption Condition="@(_MonoAotCrossCCLDFLAGS->Count()) &gt; 0">CCLDFLAGS="@(_MonoAotCrossCCLDFLAGS, ' ')"</_MonoAotCrossCCLDFLAGSOption>
 
       <_MonoAotCrossConfigureCommand>$(MonoProjectRoot)configure @(_MonoAotCrossConfigureParams, ' ') @(_MonoAotCrossAC_VARS, ' ') $(_MonoAotCrossCFLAGSOption) $(_MonoAotCrossCXXFLAGSOption) $(_MonoAotCrossCPPFLAGSOption) $(_MonoAotCrossCXXCPPFLAGSOption) $(_MonoAotCrossLDFLAGSOption) $(_MonoAotCrossCCLDFLAGSOption) $(_MonoCCOption) $(_MonoCXXOption) $(_MonoAROption) $(_MonoASOption) $(_MonoCPPOption) $(_MonoCXXCPPOption) $(_MonoDLLTOOLOption) $(_MonoLDOption) $(_MonoOBJDUMPOption) $(_MonoRANLIBOption) $(_MonoCMAKEOption) $(_MonoSTRIPOption)</_MonoAotCrossConfigureCommand>
-      <_MonoAotCrossOffsetsCommand>python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(_MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
+      <_MonoAotCrossOffsetsCommand Condition="@(_MonoAotCrossOffsetsToolParams->Count()) &gt; 0">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(_MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
     </PropertyGroup>
 
     <!-- Configure target runtime -->
@@ -768,6 +775,7 @@
     <ItemGroup>
       <_MonoBuildParams Include="/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot;" />
       <_MonoBuildParams Include="/p:MONO_ENABLE_NETCORE=true" />
+      <_MonoBuildParams Include="/p:MONO_ENABLE_PERFTRACING=true" />
       <_MonoBuildParams Include="/p:MONO_USE_STATIC_C_RUNTIME=true" />
       <_MonoBuildParams Include="/p:CL_MPCount=$([System.Environment]::ProcessorCount)" />
       <_MonoBuildParams Include="/v:minimal" />
@@ -924,29 +932,8 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
-  <Import Project="Directory.Build.targets" />
-
-  <Target Name="BuildAppleAppBuilder">
-    <MSBuild Projects="$(AppleAppBuilderProjDirectory)AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-    <MSBuild Projects="$(AppleTestRunnerProjDirectory)AppleTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build" />
-  </Target>
-
-  <Target Name="BuildAndroidAppBuilder">
-    <MSBuild Projects="$(AndroidAppBuilderProjDirectory)AndroidAppBuilder.csproj"
-             Properties="Configuration=$(Configuration);Platform=$(HostArch)"
-             Targets="Restore;Build" />
-    <MSBuild Projects="$(AndroidTestRunnerProjDirectory)AndroidTestRunner.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Restore;Build" />
-  </Target>
-
-  <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildAppleAppBuilder;BuildAndroidAppBuilder">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
@@ -957,9 +944,12 @@
       <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.a</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-darwin-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-darwin-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-darwin-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)cross\out\bin\i386-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)cross\out\bin\wasm32-unknown-none-mono-sgen</_MonoAotCrossFilePath>
     </PropertyGroup>
 
@@ -974,6 +964,12 @@
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(BinDir)cross\mono-aot-cross</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc">
+        <Destination>$(BinDir)\llc</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\opt">
+        <Destination>$(BinDir)\opt</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\llc">
         <Destination>$(BinDir)cross\llc</Destination>
       </_MonoRuntimeArtifacts>
@@ -981,6 +977,18 @@
         <Destination>$(BinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
+        <Destination>$(BinDir)libmono-ee-interp.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
+        <Destination>$(BinDir)libmono-icall-table.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
+        <Destination>$(BinDir)libmono-ilgen.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
+        <Destination>$(BinDir)libmono-profiler-aot.a</Destination>
+      </_MonoRuntimeArtifacts>
     </ItemGroup>
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"

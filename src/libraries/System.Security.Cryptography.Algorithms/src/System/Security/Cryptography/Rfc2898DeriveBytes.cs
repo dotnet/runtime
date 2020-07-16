@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Text;
+using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 using Internal.Cryptography;
 
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography
         private HMAC _hmac;
         private readonly int _blockSize;
 
-        private byte[] _buffer = null!; // Initialized in helper
+        private byte[] _buffer;
         private uint _block;
         private int _startIndex;
         private int _endIndex;
@@ -244,6 +245,7 @@ namespace System.Security.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void Initialize()
         {
             if (_buffer != null)
@@ -258,7 +260,7 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            Helpers.WriteInt(_block, _salt, _salt.Length - sizeof(uint));
+            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.

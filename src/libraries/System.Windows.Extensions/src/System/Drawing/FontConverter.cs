@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -173,7 +172,7 @@ namespace System.Drawing
                     catch
                     {
                         // Exception from converter is too generic.
-                        throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, font, $"name{separator} size[units[{separator} style=style1[{separator} style2{separator} ...]]]"), nameof(sizeStr));
+                        throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, font, $"name{separator} size[units[{separator} style=style1[{separator} style2{separator} ...]]]"), nameof(value));
                     }
                 }
 

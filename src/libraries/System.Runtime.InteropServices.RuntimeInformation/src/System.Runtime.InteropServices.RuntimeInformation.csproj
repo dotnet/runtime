@@ -3,12 +3,16 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.PlatformVersion.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
@@ -42,5 +46,6 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>

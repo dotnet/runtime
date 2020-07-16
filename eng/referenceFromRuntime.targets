@@ -111,7 +111,7 @@
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
            Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
   </Target>
-  
+
   <Target Name="RemoveAliasedReferenceFromRuntime"
           AfterTargets="CoreCompile"
           Condition="'@(_aliasedReferencePathFromRuntime)' != ''">

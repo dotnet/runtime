@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +24,7 @@ namespace System.Tests
 
             if (s_is32Bits)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("pressure", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
             }
         }
 
@@ -111,6 +110,26 @@ namespace System.Tests
                 {
                     Finalized = true;
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ExpensiveFinalizerDoesNotBlockShutdown()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 100000; i++)
+                    GC.KeepAlive(new ObjectWithExpensiveFinalizer());
+                GC.Collect();
+                Thread.Sleep(100); // Give the finalizer thread a chance to start running
+            }).Dispose();
+        }
+
+        private class ObjectWithExpensiveFinalizer
+        {
+            ~ObjectWithExpensiveFinalizer()
+            {
+                Thread.Sleep(100);
             }
         }
 
@@ -442,7 +461,7 @@ namespace System.Tests
         /// </summary>
         private const int NoGCRequestedBudget = 8192;
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void GetGeneration_WeakReference()
         {
@@ -492,7 +511,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.WaitForFullGCComplete(-2));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true, -1)]
         [InlineData(false, -1)]
         [InlineData(true, 0)]
@@ -512,7 +531,7 @@ namespace System.Tests
                 }, approach.ToString(), timeout.ToString(), options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_EndNoGCRegion_ThrowsInvalidOperationException()
         {
@@ -534,7 +553,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_ExitThroughAllocation()
         {
@@ -552,7 +571,7 @@ namespace System.Tests
                 }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion()
         {
@@ -567,7 +586,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollection()
         {
@@ -582,7 +601,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_LargeObjectHeapSize()
         {
@@ -597,7 +616,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollectionAndLOH()
         {
@@ -612,7 +631,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SettingLatencyMode_ThrowsInvalidOperationException()
         {
@@ -633,7 +652,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize()
         {
@@ -647,7 +666,7 @@ namespace System.Tests
                 }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_BlockingCollection()
         {
@@ -661,7 +680,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize()
         {
@@ -675,7 +694,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize_BlockingCollection()
         {
@@ -689,7 +708,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         [InlineData(0)]
         [InlineData(-1)]
@@ -703,7 +722,7 @@ namespace System.Tests
             }, size.ToString(), options).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         [InlineData(0)]                   // invalid because lohSize ==
         [InlineData(-1)]                  // invalid because lohSize < 0
@@ -784,8 +803,10 @@ namespace System.Tests
             Assert.True((end - start) < 5 * size, $"Allocated too much: start: {start} end: {end} size: {size}");
         }
 
+        private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
+
         [ActiveIssue("https://github.com/mono/mono/issues/15236", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
+        [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>

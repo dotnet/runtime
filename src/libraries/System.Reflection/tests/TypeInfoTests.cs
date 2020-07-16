@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -471,10 +470,10 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15028", TestRuntimes.Mono)]
         public void IsEnumDefined_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined("10"));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(null));
             Assert.Throws<InvalidOperationException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(new NonGenericClassWithNoInterfaces()));
         }

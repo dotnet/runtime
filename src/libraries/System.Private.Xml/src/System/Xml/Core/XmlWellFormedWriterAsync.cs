@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading.Tasks;
 
 using System;
@@ -58,7 +58,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             try
             {
@@ -66,6 +66,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_EmptyName);
                 }
+
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
 
                 if (_conformanceLevel == ConformanceLevel.Fragment)
@@ -178,7 +179,7 @@ namespace System.Xml
             }
         }
 
-        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             try
             {
@@ -206,7 +207,7 @@ namespace System.Xml
             }
         }
 
-        private Task WriteStartElementAsync_NoAdvanceState(string prefix, string localName, string ns)
+        private Task WriteStartElementAsync_NoAdvanceState(string? prefix, string localName, string? ns)
         {
             try
             {
@@ -269,7 +270,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteStartElementAsync_NoAdvanceState(Task task, string prefix, string localName, string ns)
+        private async Task WriteStartElementAsync_NoAdvanceState(Task task, string? prefix, string localName, string? ns)
         {
             try
             {
@@ -301,7 +302,7 @@ namespace System.Xml
 
                 if (_attrCount >= MaxAttrDuplWalkCount)
                 {
-                    _attrHashTable.Clear();
+                    _attrHashTable!.Clear();
                 }
                 _attrCount = 0;
             }
@@ -449,7 +450,7 @@ namespace System.Xml
             }
         }
 
-        protected internal override Task WriteStartAttributeAsync(string prefix, string localName, string namespaceName)
+        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? namespaceName)
         {
             try
             {
@@ -485,7 +486,7 @@ namespace System.Xml
             }
         }
 
-        private Task WriteStartAttributeAsync_NoAdvanceState(string prefix, string localName, string namespaceName)
+        private Task WriteStartAttributeAsync_NoAdvanceState(string? prefix, string localName, string? namespaceName)
         {
             try
             {
@@ -503,9 +504,10 @@ namespace System.Xml
                         prefix = string.Empty;
                     }
                 }
+
                 if (namespaceName == null)
                 {
-                    if (prefix != null && prefix.Length > 0)
+                    if (prefix.Length > 0)
                     {
                         namespaceName = LookupNamespace(prefix);
                     }
@@ -577,7 +579,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        string definedNs = LookupLocalNamespace(prefix);
+                        string? definedNs = LookupLocalNamespace(prefix);
                         if (definedNs != null && definedNs != namespaceName)
                         {
                             prefix = GeneratePrefix();
@@ -609,7 +611,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteStartAttributeAsync_NoAdvanceState(Task task, string prefix, string localName, string namespaceName)
+        private async Task WriteStartAttributeAsync_NoAdvanceState(Task task, string? prefix, string localName, string? namespaceName)
         {
             try
             {
@@ -660,6 +662,7 @@ namespace System.Xml
 
         private async Task WriteEndAttributeAsync_SepcialAtt()
         {
+            Debug.Assert(_attrValueCache != null);
             try
             {
                 string value;
@@ -690,6 +693,7 @@ namespace System.Xml
                                 await _writer.WriteEndAttributeAsync().ConfigureAwait(false);
                             }
                         }
+
                         _curDeclPrefix = null;
                         break;
                     case SpecialAttribute.PrefixedXmlns:
@@ -702,6 +706,8 @@ namespace System.Xml
                         {
                             throw new ArgumentException(SR.Xml_CanNotBindToReservedNamespace);
                         }
+
+                        Debug.Assert(_curDeclPrefix != null);
                         if (PushNamespaceExplicit(_curDeclPrefix, value))
                         { // returns true if the namespace declaration should be written out
                             if (_rawWriter != null)
@@ -860,12 +866,13 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_EmptyName);
                 }
+
                 CheckNCName(name);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteEntityRef(name);
+                    _attrValueCache!.WriteEntityRef(name);
                 }
                 else
                 {
@@ -891,7 +898,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteCharEntity(ch);
+                    _attrValueCache!.WriteCharEntity(ch);
                 }
                 else
                 {
@@ -917,7 +924,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteSurrogateCharEntity(lowChar, highChar);
+                    _attrValueCache!.WriteSurrogateCharEntity(lowChar, highChar);
                 }
                 else
                 {
@@ -947,7 +954,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.Whitespace).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteWhitespace(ws);
+                    _attrValueCache!.WriteWhitespace(ws);
                 }
                 else
                 {
@@ -994,7 +1001,7 @@ namespace System.Xml
             {
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteString(text);
+                    _attrValueCache!.WriteString(text);
                     return Task.CompletedTask;
                 }
                 else
@@ -1047,7 +1054,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteChars(buffer, index, count);
+                    _attrValueCache!.WriteChars(buffer, index, count);
                 }
                 else
                 {
@@ -1085,7 +1092,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.RawData).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteRaw(buffer, index, count);
+                    _attrValueCache!.WriteRaw(buffer, index, count);
                 }
                 else
                 {
@@ -1111,7 +1118,7 @@ namespace System.Xml
                 await AdvanceStateAsync(Token.RawData).ConfigureAwait(false);
                 if (SaveAttrValue)
                 {
-                    _attrValueCache.WriteRaw(data);
+                    _attrValueCache!.WriteRaw(data);
                 }
                 else
                 {
@@ -1191,7 +1198,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteQualifiedNameAsync(string localName, string ns)
+        public override async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             try
             {
@@ -1202,7 +1209,7 @@ namespace System.Xml
                 CheckNCName(localName);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
-                string prefix = string.Empty;
+                string? prefix = string.Empty;
                 if (ns != null && ns.Length != 0)
                 {
                     prefix = LookupPrefix(ns);

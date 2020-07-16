@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+
+     <!-- Test stack overflows on OSX -->
+     <!-- https://github.com/dotnet/roslyn/issues/44758 -->
+    <DisableProjectBuild>true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NestedGenericStructs.cs" />
+  </ItemGroup>
+</Project>

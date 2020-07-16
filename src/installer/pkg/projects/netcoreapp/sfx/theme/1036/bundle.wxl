@@ -22,7 +22,7 @@
   <String Id="InstallInstallButton">&amp;Installer</String>
   <String Id="InstallCloseButton">&amp;Fermer</String>
   <String Id="OptionsHeader">Options d'installation</String>
-  <String Id="OptionsLocationLabel">Emplacement de l'installation :</String>
+  <String Id="OptionsLocationLabel">Emplacement d'installation :</String>
   <String Id="OptionsBrowseButton">&amp;Parcourir</String>
   <String Id="OptionsOkButton">&amp;OK</String>
   <String Id="OptionsCancelButton">&amp;Annuler</String>
@@ -54,12 +54,12 @@
   <String Id="FailureNotSupportedX86OperatingSystem">[PRODUCT_NAME] n'est pas pris en charge sur les systèmes d'exploitation x86. Effectuez l'installation à l'aide du programme d'installation x86 correspondant.</String>
   <String Id="FilesInUseHeader">Fichiers en cours d'utilisation</String>
   <String Id="FilesInUseLabel">Les applications suivantes utilisent des fichiers nécessitant une mise à jour :</String>
-  <String Id="FilesInUseCloseRadioButton">&amp;Fermez les applications, puis essayez de les redémarrer.</String>
+  <String Id="FilesInUseCloseRadioButton">&amp;Fermer les applications essayez de les ouvrir de nouveau.</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Ne pas fermer les applications. Un redémarrage sera nécessaire.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Annuler</String>
   <String Id="WelcomeHeaderMessage">Runtime .NET</String>
-  <String Id="WelcomeDescription">.NET est une plateforme de développement qui vous permet de générer des applications en ligne de commande, des microservices et des sites web modernes. Il s'agit d'un framework open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !</String>
+  <String Id="WelcomeDescription">Le runtime .NET vous permet d'exécuter les applications .NET sur votre ordinateur Windows. .NET est open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !</String>
   <String Id="LearnMoreTitle">En savoir plus sur .NET</String>
   <String Id="SuccessInstallLocation">L'élément suivant a été installé sur [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriels&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Télémétrie .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Déclaration de confidentialité&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;CLUF de la bibliothèque .NET&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;Informations de licence pour .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">En cliquant sur Installer, vous acceptez les conditions suivantes.</String>
 </WixLocalization>

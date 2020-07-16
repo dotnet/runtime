@@ -109,6 +109,10 @@ elif [[ "$__TargetOS" == iOS ]]; then
         # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
         # keep in sync with src/mono/Directory.Build.props
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == x86 ]]; then
+        # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
+        # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
         # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
         # keep in sync with src/mono/Directory.Build.props

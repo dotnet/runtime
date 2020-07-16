@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.14.5)
 
 cmake_policy(SET CMP0042 NEW)
 
@@ -75,6 +75,10 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(src/pal)
     add_subdirectory(src/hosts)
+else(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX)
+        add_subdirectory(src/pal/src/libunwind)
+    endif(CLR_CMAKE_TARGET_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
@@ -86,7 +90,7 @@ if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
-add_subdirectory(src/tools/crossgen2/jitinterface)
+add_subdirectory(src/tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -93,7 +92,7 @@ namespace System.IO.Packaging
             return PackageXmlEnum.NotDefined;
         }
 
-        internal static string GetValueType(PackageXmlEnum id)
+        internal static string? GetValueType(PackageXmlEnum id)
         {
             CheckIdRange(id);
             return s_xmlstringtable[(int)id].ValueType;
@@ -132,8 +131,8 @@ namespace System.IO.Packaging
         {
             private readonly object _nameString;
             private readonly PackageXmlEnum _namespace;
-            private readonly string _valueType;
-            internal XmlStringTableStruct(object nameString, PackageXmlEnum ns, string valueType)
+            private readonly string? _valueType;
+            internal XmlStringTableStruct(object nameString, PackageXmlEnum ns, string? valueType)
             {
                 _nameString = nameString;
                 _namespace = ns;
@@ -154,7 +153,7 @@ namespace System.IO.Packaging
                     return _namespace;
                 }
             }
-            internal string ValueType
+            internal string? ValueType
             {
                 get
                 {

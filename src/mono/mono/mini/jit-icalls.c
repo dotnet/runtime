@@ -54,7 +54,12 @@ mono_ldftn (MonoMethod *method)
 		return addr;
 	}
 
-	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
+	 * variables that won't be there if we run on a thread that's not attached yet. */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		addr = mono_compile_method_checked (method, error);
+	else
+		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -67,6 +72,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 {
 	ERROR_DECL (error);
 	MonoMethod *res;
+	gpointer addr;
 
 	if (obj == NULL) {
 		mono_error_set_null_reference (error);
@@ -93,8 +99,28 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 	}
 
 	/* An rgctx wrapper is added by the trampolines no need to do it here */
+	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass);
+	if (need_unbox) {
+		/*
+		 * We can't return a jump trampoline here, because the trampoline code
+		 * can't determine whenever to add an unbox trampoline (ldvirtftn) or
+		 * not (ldftn). So compile the method here.
+		 */
+		addr = mono_compile_method_checked (res, error);
+		if (!is_ok (error)) {
+			mono_error_set_pending_exception (error);
+			return NULL;
+		}
 
-	return mono_ldftn (res);
+		if (mono_llvm_only && mono_method_needs_static_rgctx_invoke (res, FALSE))
+			// FIXME:
+			g_assert_not_reached ();
+
+		addr = mini_add_method_trampoline (res, addr, mono_method_needs_static_rgctx_invoke (res, FALSE), TRUE);
+	} else {
+		addr = mono_ldftn (res);
+	}
+	return addr;
 }
 
 void*
@@ -1463,7 +1489,7 @@ ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, 
 		mono_error_set_pending_exception (error);
 		goto leave;
 	}
-	mono_delegate_ctor (this_obj, target, addr, error);
+	mono_delegate_ctor (this_obj, target, addr, NULL, error);
 	mono_error_set_pending_exception (error);
 
 leave:
@@ -1496,6 +1522,10 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	/*
+	 * This is perf critical.
+	 * fill_runtime_generic_context () contains a fallpath.
+	 */
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1562,6 +1592,22 @@ mono_throw_bad_image ()
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_invalid_program (const char *msg)
+{
+	ERROR_DECL (error);
+	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
 	mono_error_set_pending_exception (error);
 }
 

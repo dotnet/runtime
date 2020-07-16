@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
@@ -38,7 +38,7 @@ namespace System.Net.Http
             }
         }
 
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
+        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken);
         public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
@@ -68,7 +68,7 @@ namespace System.Net.Http
                 lifetime != Timeout.InfiniteTimeSpan &&
                 (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
 
-            if (expired && NetEventSource.IsEnabled) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
+            if (expired && NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
             return expired;
         }
 
@@ -117,11 +117,27 @@ namespace System.Net.Http
         }
 
         /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>
-        internal void LogExceptions(Task task) =>
-            task.ContinueWith(t =>
+        internal void LogExceptions(Task task)
+        {
+            if (task.IsCompleted)
             {
-                Exception? e = t.Exception?.InnerException; // Access Exception even if not tracing, to avoid TaskScheduler.UnobservedTaskException firing
-                if (NetEventSource.IsEnabled) Trace($"Exception from asynchronous processing: {e}");
-            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                if (task.IsFaulted)
+                {
+                    LogFaulted(this, task);
+                }
+            }
+            else
+            {
+                task.ContinueWith((t, state) => LogFaulted((HttpConnectionBase)state!, t), this,
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+            }
+
+            static void LogFaulted(HttpConnectionBase connection, Task task)
+            {
+                Debug.Assert(task.IsFaulted);
+                Exception? e = task.Exception!.InnerException; // Access Exception even if not tracing, to avoid TaskScheduler.UnobservedTaskException firing
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Exception from asynchronous processing: {e}");
+            }
+        }
     }
 }

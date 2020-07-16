@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -146,7 +145,6 @@ private:
 
 private:
     SharedMemoryProcessDataHeader *m_processDataHeader;
-    NamedMutexSharedData *m_sharedData;
     SIZE_T m_lockCount;
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
     HANDLE m_processLockHandle;
@@ -154,6 +152,7 @@ private:
 #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     CorUnix::CPalThread *m_lockOwnerThread;
     NamedMutexProcessData *m_nextInThreadOwnedNamedMutexList;
+    bool m_hasRefFromLockOwnerThread;
 
 public:
     static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool acquireLockIfCreated, bool *createdRef);
@@ -169,7 +168,18 @@ public:
         int sharedLockFileDescriptor
     #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     );
+
+public:
+    virtual bool CanClose() const override;
+    virtual bool HasImplicitRef() const override;
+    virtual void SetHasImplicitRef(bool value) override;
     virtual void Close(bool isAbruptShutdown, bool releaseSharedData) override;
+
+public:
+    bool IsLockOwnedByCurrentThread() const
+    {
+        return GetSharedData()->IsLockOwnedByCurrentThread();
+    }
 
 private:
     NamedMutexSharedData *GetSharedData() const;

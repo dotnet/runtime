@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new ArgumentException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, validateMessage: false);
             Assert.Null(exception.ParamName);
         }
 
@@ -23,7 +22,7 @@ namespace System.Tests
         {
             string message = "the argument is wrong";
             var exception = new ArgumentException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, message: message);
             Assert.Null(exception.ParamName);
         }
 
@@ -33,7 +32,7 @@ namespace System.Tests
             string message = "the argument is wrong";
             var innerException = new Exception("Inner exception");
             var exception = new ArgumentException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, innerException: innerException, message: message);
             Assert.Null(exception.ParamName);
         }
 
@@ -43,7 +42,7 @@ namespace System.Tests
             string message = "the argument is wrong";
             string argumentName = "theArgument";
             var exception = new ArgumentException(message, argumentName);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, validateMessage: false);
             Assert.Equal(argumentName, exception.ParamName);
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);
@@ -56,7 +55,7 @@ namespace System.Tests
             string argumentName = "theArgument";
             var innerException = new Exception("Inner exception");
             var exception = new ArgumentException(message, argumentName, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, innerException: innerException, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_ARGUMENT, innerException: innerException, validateMessage: false);
             Assert.Equal(argumentName, exception.ParamName);
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);

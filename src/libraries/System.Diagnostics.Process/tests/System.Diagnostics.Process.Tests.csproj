@@ -3,7 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs"
@@ -14,6 +15,7 @@
              Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)Microsoft\Win32\TempRegistryKey.cs"
              Link="Common\Microsoft\Win32\TempRegistryKey.cs" />
+    <Compile Include="DelegateSynchronizeInvoke.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="Interop.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
@@ -28,7 +30,7 @@
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
-    <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ProcessTests.Windows.cs" />
@@ -36,7 +38,7 @@
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs"
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"

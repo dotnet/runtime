@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.IO;
@@ -142,8 +141,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
             //   error code mapping when creating exceptions.
 
-            OperatingSystem ver = Environment.OSVersion;
-
             // TODO: try to initialize TLS 1.3 in SslStream.
 
             try
@@ -225,7 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public async ValueTask<MsQuicSecurityConfig?> CreateSecurityConfig(X509Certificate certificate, string? certFilePath, string? privateKeyFilePath)
         {
             MsQuicSecurityConfig? secConfig = null;
-            var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
             IntPtr unmanagedAddr = IntPtr.Zero;
@@ -285,7 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     secConfig = new MsQuicSecurityConfig(this, securityConfig);
                     secConfigCreateStatus = status;
-                    tcs.SetResult(null);
+                    tcs.SetResult();
                 }
 
                 await tcs.Task.ConfigureAwait(false);

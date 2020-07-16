@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -195,7 +194,7 @@ namespace System.Diagnostics.PerformanceData
                     {
                         if (_provider == null)
                         {
-                            throw new ArgumentException(SR.Format(SR.Perflib_Argument_ProviderNotFound, _providerGuid), "ProviderGuid");
+                            throw new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_NoActiveProvider, _providerGuid));
                         }
                         if (_provider._hProvider.IsInvalid)
                         {
@@ -256,7 +255,7 @@ namespace System.Diagnostics.PerformanceData
                             {
                                 throw Status switch
                                 {
-                                    (uint)Interop.Errors.ERROR_ALREADY_EXISTS => new ArgumentException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet), "CounterSetGuid"),
+                                    (uint)Interop.Errors.ERROR_ALREADY_EXISTS => new InvalidOperationException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet)),
 
                                     _ => new Win32Exception((int)Status),
                                 };

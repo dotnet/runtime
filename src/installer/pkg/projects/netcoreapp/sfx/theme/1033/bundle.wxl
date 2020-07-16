@@ -59,7 +59,7 @@ Ready? Set? Let's go!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancel</String>
   <String Id="WelcomeHeaderMessage">.NET Runtime</String>
-  <String Id="WelcomeDescription">.NET is a development platform that you can use to build command-line applications, microservices and modern websites. It is open source, cross-platform, and supported by Microsoft. We hope you enjoy it!</String>
+  <String Id="WelcomeDescription">The .NET Runtime is used to run .NET applications, on your Windows computer. .NET is open source, cross platform, and supported by Microsoft. We hope you enjoy it!</String>
   <String Id="LearnMoreTitle">Learn more about .NET</String>
   <String Id="SuccessInstallLocation">The following was installed at [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@ Ready? Set? Let's go!</String>
   <String Id="TutorialLink">&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Telemetry&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Privacy Statement&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF=&quot;https://go.microsoft.com/fwlink/?LinkId=329770&quot;&gt;.NET Library EULA&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Licensing Information for .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">By clicking Install, you agree to the following terms.</String>
 </WixLocalization>

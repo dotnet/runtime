@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Helper methods for using Tasks to implement the APM pattern.
 //
@@ -14,6 +13,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks
 {
@@ -43,7 +43,7 @@ namespace System.Threading.Tasks
                 return;
             }
 
-            throw new ArgumentNullException();
+            ThrowArgumentException(asyncResult);
         }
 
         /// <summary>Processes an IAsyncResult returned by Begin.</summary>
@@ -55,8 +55,16 @@ namespace System.Threading.Tasks
                 return task.GetAwaiter().GetResult();
             }
 
-            throw new ArgumentNullException();
+            ThrowArgumentException(asyncResult);
+            return default!; // unreachable
         }
+
+        /// <summary>Throws an argument exception for the invalid <paramref name="asyncResult"/>.</summary>
+        [DoesNotReturn]
+        private static void ThrowArgumentException(IAsyncResult asyncResult) =>
+            throw (asyncResult is null ?
+                new ArgumentNullException(nameof(asyncResult)) :
+                new ArgumentException(null, nameof(asyncResult)));
 
         /// <summary>Provides a simple IAsyncResult that wraps a Task.</summary>
         /// <remarks>

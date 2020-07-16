@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -502,8 +501,8 @@ namespace System.Runtime.Serialization
             {
                 Type keyType = collectionContract.ItemType.GenericTypeArguments[0];
                 Type valueType = collectionContract.ItemType.GenericTypeArguments[1];
-                Func<object, object> objectToKeyValuePairGetKey = (Func<object, object>)s_objectToKeyValuePairGetKey.MakeGenericMethod(keyType, valueType).CreateDelegate(typeof(Func<object, object>));
-                Func<object, object> objectToKeyValuePairGetValue = (Func<object, object>)s_objectToKeyValuePairGetValue.MakeGenericMethod(keyType, valueType).CreateDelegate(typeof(Func<object, object>));
+                Func<object, object> objectToKeyValuePairGetKey = s_objectToKeyValuePairGetKey.MakeGenericMethod(keyType, valueType).CreateDelegate<Func<object, object>>();
+                Func<object, object> objectToKeyValuePairGetValue = s_objectToKeyValuePairGetValue.MakeGenericMethod(keyType, valueType).CreateDelegate<Func<object, object>>();
 
                 if (collectionContract.Kind == CollectionKind.GenericDictionary)
                 {

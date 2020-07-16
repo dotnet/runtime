@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -550,7 +549,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 typeCls1 = (AggregateType)typeSrc;
                 typeIface = null;
-                ifaces = typeCls1.IsWindowsRuntimeType ? typeCls1.WinRTCollectionIfacesAll : TypeArray.Empty;
+                ifaces = TypeArray.Empty;
             }
 
             AggregateType typeCls2 = typeIface != null || ifaces.Count > 0

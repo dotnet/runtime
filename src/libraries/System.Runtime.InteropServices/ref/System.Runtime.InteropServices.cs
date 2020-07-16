@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -181,9 +180,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8765
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
@@ -192,9 +189,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8765
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ComCompatibleVersionAttribute : System.Attribute
@@ -246,12 +241,8 @@ namespace System.Runtime.InteropServices
     }
     public enum ComInterfaceType
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         InterfaceIsDual = 0,
         InterfaceIsIUnknown = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         InterfaceIsIDispatch = 2,
         InterfaceIsIInspectable = 3,
     }
@@ -359,6 +350,11 @@ namespace System.Runtime.InteropServices
         System32 = 2048,
         SafeDirectories = 4096,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
+    public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute
+    {
+        public DynamicInterfaceCastableImplementationAttribute() { }
+    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ErrorWrapper
     {
@@ -415,6 +411,11 @@ namespace System.Runtime.InteropServices
     public partial interface ICustomQueryInterface
     {
         System.Runtime.InteropServices.CustomQueryInterfaceResult GetInterface(ref System.Guid iid, out System.IntPtr ppv);
+    }
+    public partial interface IDynamicInterfaceCastable
+    {
+        bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
+        System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ImportedFromTypeLibAttribute : System.Attribute
@@ -1010,11 +1011,11 @@ namespace System.Runtime.InteropServices
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
-        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
 }

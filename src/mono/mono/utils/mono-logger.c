@@ -315,6 +315,7 @@ mono_trace_set_mask_string (const char *value)
 		{ "tailcall", MONO_TRACE_TAILCALL },
 		{ "profiler", MONO_TRACE_PROFILER },
 		{ "tiered", MONO_TRACE_TIERED },
+		{ "qcall", MONO_TRACE_QCALL },
 		{ "all", (MonoTraceMask)~0 }, // FIXMEcxx there is a better way -- operator overloads of enums
 		{ NULL, (MonoTraceMask)0 },
 	};

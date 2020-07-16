@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <DisableImplicitAssetTargetFallback>true</DisableImplicitAssetTargetFallback>
+    <NoWarn>NU1603;NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="xunit.netcore.extensions" Version="1.0.0-prerelease-00206" />
+    <PackageReference Include="dotnet-test-xunit" Version="1.0.0-rc2-192208-24" />
+  </ItemGroup>
+
+</Project>

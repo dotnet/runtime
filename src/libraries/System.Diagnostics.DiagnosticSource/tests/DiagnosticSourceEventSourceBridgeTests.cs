@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
@@ -35,7 +34,7 @@ namespace System.Diagnostics.Tests
         /// Tests the basic functionality of turning on specific EventSources and specifying
         /// the events you want.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSpecificEvents()
         {
             RemoteExecutor.Invoke(() =>
@@ -119,7 +118,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test that things work properly for Linux newline conventions.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void LinuxNewLineConventions()
         {
             RemoteExecutor.Invoke(() =>
@@ -178,7 +177,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests what happens when you wildcard the source name (empty string)
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWildCardSourceName()
         {
             RemoteExecutor.Invoke(() =>
@@ -242,7 +241,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests what happens when you wildcard event name (but not the source name)
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWildCardEventName()
         {
             RemoteExecutor.Invoke(() =>
@@ -329,7 +328,7 @@ namespace System.Diagnostics.Tests
         /// Basically strings get turned into empty strings and other nulls are typically
         /// ignored.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestNulls()
         {
             RemoteExecutor.Invoke(() =>
@@ -410,7 +409,7 @@ namespace System.Diagnostics.Tests
         /// Tests the feature that suppresses the implicit inclusion of serialable properties
         /// of the payload object.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestNoImplicitTransforms()
         {
             RemoteExecutor.Invoke(() =>
@@ -443,7 +442,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests what happens when wacky characters are used in property specs.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBadProperties()
         {
             RemoteExecutor.Invoke(() =>
@@ -475,7 +474,7 @@ namespace System.Diagnostics.Tests
         }
 
         // Tests that messages about DiagnosticSourceEventSource make it out.
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMessages()
         {
             RemoteExecutor.Invoke(() =>
@@ -508,7 +507,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests the feature to send the messages as EventSource Activities.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivities()
         {
             RemoteExecutor.Invoke(() =>
@@ -581,7 +580,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that keywords that define shortcuts work.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestShortcutKeywords()
         {
             RemoteExecutor.Invoke(() =>
@@ -703,7 +702,7 @@ namespace System.Diagnostics.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Stress_WriteConcurrently_DoesntCrash()
         {
             const int StressTimeSeconds = 4;
@@ -735,7 +734,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IndexGetters_DontThrow()
         {
             RemoteExecutor.Invoke(() =>
@@ -772,7 +771,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ActivityObjectsAreInspectable()
         {
             RemoteExecutor.Invoke(() =>

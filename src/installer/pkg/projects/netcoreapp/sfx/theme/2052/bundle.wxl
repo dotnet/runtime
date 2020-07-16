@@ -2,7 +2,7 @@
 <WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="Caption">[WixBundleName] 安装程序</String>
   <String Id="Title">[BUNDLEMONIKER]</String>
-  <String Id="Motto">你只需要一个 shell、一个文本编辑器，还需花 10 分钟即可。.
+  <String Id="Motto">你只需要一个 shell、一个文本编辑器，还需花 10 分钟即可。
 
 准备好了吗? 要设置? 让我们开始吧!</String>
   <String Id="ConfirmCancelMessage">是否确实要取消?</String>
@@ -58,8 +58,8 @@
   <String Id="FilesInUseDontCloseRadioButton">不关闭应用程序(&amp;D)。需要重启。</String>
   <String Id="FilesInUseOkButton">确定(&amp;O)</String>
   <String Id="FilesInUseCancelButton">取消(&amp;C)</String>
-  <String Id="WelcomeHeaderMessage">.NET Runtime</String>
-  <String Id="WelcomeDescription">.NET 是一种开发平台，可用于生成命令行应用程序、微服务和新式网站。它是开源、跨平台的，且受 Microsoft 支持。希望你喜欢!</String>
+  <String Id="WelcomeHeaderMessage">.NET 运行时</String>
+  <String Id="WelcomeDescription">.NET 运行时用于在 Windows 计算机上运行 .NET 应用程序。.NET 是开源、跨平台的，且由 Microsoft 提供支持。希望你喜欢它!</String>
   <String Id="LearnMoreTitle">了解有关 .NET 的详细信息</String>
   <String Id="SuccessInstallLocation">以下项已安装到 [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;教程&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET 遥测&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;隐私声明&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET 库 EULA&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET 的许可信息&lt;/A&gt;</String>
+  <String Id="LicenseAssent">单击“安装”即表示你同意以下条款。</String>
 </WixLocalization>

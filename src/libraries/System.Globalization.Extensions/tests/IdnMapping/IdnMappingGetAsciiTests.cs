@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -21,19 +20,9 @@ namespace System.Globalization.Tests
                 {
                     continue;
                 }
+
                 string ascii = c.ToString();
-                if (PlatformDetection.IsIcuGlobalization) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
-                {
-                    if (c >= 'A' && c <= 'Z')
-                    {
-                        yield return new object[] { ascii, 0, 1, ascii.ToLower() };
-                    }
-                    else if (c != '-')
-                    {
-                        yield return new object[] { ascii, 0, 1, ascii };
-                    }
-                }
-                else
+                if (!PlatformDetection.IsIcuGlobalization || c != '-') // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
                 {
                     yield return new object[] { ascii, 0, 1, ascii };
                 }

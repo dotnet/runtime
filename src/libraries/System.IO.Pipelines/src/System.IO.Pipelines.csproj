@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -37,13 +38,17 @@
     <Compile Include="System\IO\Pipelines\StreamPipeWriterOptions.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' And !$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

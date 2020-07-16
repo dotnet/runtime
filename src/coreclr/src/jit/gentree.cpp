@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -22,7 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ok + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
@@ -616,21 +615,14 @@ void GenTree::CopyReg(GenTree* from)
 //    GT_COPY/GT_RELOAD is considered having a reg if it
 //    has a reg assigned to any of its positions.
 //
-// Assumption:
-//    In order for this to work properly, gtClearReg must be called
-//    prior to setting the register value.
-//
 bool GenTree::gtHasReg() const
 {
-    bool hasReg;
+    bool hasReg = false;
 
     if (IsMultiRegCall())
     {
-        // Have to cast away const-ness because GetReturnTypeDesc() is a non-const method
-        GenTree*     tree     = const_cast<GenTree*>(this);
-        GenTreeCall* call     = tree->AsCall();
-        unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
-        hasReg                = false;
+        const GenTreeCall* call     = AsCall();
+        const unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         // A Multi-reg call node is said to have regs, if it has
         // reg assigned to each of its result registers.
@@ -645,11 +637,9 @@ bool GenTree::gtHasReg() const
     }
     else if (IsCopyOrReloadOfMultiRegCall())
     {
-        GenTree*             tree         = const_cast<GenTree*>(this);
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
-        hasReg                            = false;
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         // A Multi-reg copy or reload node is said to have regs,
         // if it has valid regs in any of the positions.
@@ -684,7 +674,7 @@ bool GenTree::gtHasReg() const
 //    This does not look at the actual register assignments, if any, and so
 //    is valid after Lowering.
 //
-int GenTree::GetRegisterDstCount() const
+int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
     if (!IsMultiRegNode())
@@ -693,13 +683,11 @@ int GenTree::GetRegisterDstCount() const
     }
     else if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
-        GenTree* temp = const_cast<GenTree*>(this);
-        return temp->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
     else if (IsCopyOrReload())
     {
-        return gtGetOp1()->GetRegisterDstCount();
+        return gtGetOp1()->GetRegisterDstCount(compiler);
     }
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
@@ -730,6 +718,10 @@ int GenTree::GetRegisterDstCount() const
         return 2;
     }
 #endif
+    if (OperIsScalarLocal())
+    {
+        return AsLclVar()->GetFieldCount(compiler);
+    }
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -749,10 +741,8 @@ regMaskTP GenTree::gtGetRegMask() const
 
     if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
-        resultMask    = genRegMask(GetRegNum());
-        GenTree* temp = const_cast<GenTree*>(this);
-        resultMask |= temp->AsCall()->GetOtherRegMask();
+        resultMask = genRegMask(GetRegNum());
+        resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
     {
@@ -760,10 +750,9 @@ regMaskTP GenTree::gtGetRegMask() const
         // positions that need to be copied or reloaded.  Hence we need
         // to consider only those registers for computing reg mask.
 
-        GenTree*             tree         = const_cast<GenTree*>(this);
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
         resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
@@ -778,9 +767,8 @@ regMaskTP GenTree::gtGetRegMask() const
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
-        GenTree*            tree     = const_cast<GenTree*>(this);
-        GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
-        unsigned            regCount = splitArg->gtNumRegs;
+        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
+        const unsigned            regCount = splitArg->gtNumRegs;
 
         resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
@@ -1467,7 +1455,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
+                        (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()))
                     {
                         return false;
                     }
@@ -2137,7 +2125,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
+                    hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2794,7 +2782,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
@@ -5579,7 +5567,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
 // Notes:
 //     This must be a multireg lclVar.
 //
-unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler)
+unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler) const
 {
     assert(IsMultiReg());
     LclVarDsc* varDsc = compiler->lvaGetDesc(GetLclNum());
@@ -5928,17 +5916,26 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
         case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
-            tree         = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
+#ifdef DEBUG
+            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
+            tree = gtNewOperNode(GT_NOP, TYP_REF, tree); // prevents constant folding
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+#ifdef DEBUG
+            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
+#endif
 
             // Create the second indirection
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
@@ -6065,40 +6062,6 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
     initVal->gtType  = baseType;
     return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
 }
-
-//---------------------------------------------------------------------
-// gtNewSIMDVectorOne: create a GT_SIMD node for Vector<T>.One
-//
-// Arguments:
-//    simdType  -  simd vector type
-//    baseType  -  element type of vector
-//    size      -  size of vector in bytes
-GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
-{
-    GenTree* initVal;
-    if (varTypeIsSmallInt(baseType))
-    {
-        unsigned baseSize = genTypeSize(baseType);
-        int      val;
-        if (baseSize == 1)
-        {
-            val = 0x01010101;
-        }
-        else
-        {
-            val = 0x00010001;
-        }
-        initVal = gtNewIconNode(val);
-    }
-    else
-    {
-        initVal = gtNewOneConNode(baseType);
-    }
-
-    baseType        = genActualType(baseType);
-    initVal->gtType = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-}
 #endif // FEATURE_SIMD
 
 GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeCall::Use* args, IL_OFFSETX ilOffset)
@@ -6182,21 +6145,14 @@ GenTreeCall* Compiler::gtNewCallNode(
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    // Initialize the multi-reg long return info if necessary
+#if !defined(TARGET_64BIT)
     if (varTypeIsLong(node))
     {
-        // The return type will remain as the incoming long type
-        node->gtReturnType = node->gtType;
-
+        assert(node->gtReturnType == node->gtType);
         // Initialize Return type descriptor of call node
-        ReturnTypeDesc* retTypeDesc = node->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(this);
-
-        // must be a long returned in two registers
-        assert(retTypeDesc->GetReturnRegCount() == 2);
+        node->InitializeLongReturnType();
     }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+#endif // !defined(TARGET_64BIT)
 
     return node;
 }
@@ -6276,13 +6232,15 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type)
+GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
-    GenTree* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
+    GenTreeRetExpr* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
 
-    node->AsRetExpr()->gtInlineCandidate = inlineCandidate;
+    node->gtInlineCandidate = inlineCandidate;
+
+    node->bbFlags = bbFlags;
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
@@ -6709,6 +6667,173 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
         }
 
         gtIconVal = cns;
+    }
+}
+
+//----------------------------------------------------------------------------
+// UsesDivideByConstOptimized:
+//    returns true if rationalize will use the division by constant
+//    optimization for this node.
+//
+// Arguments:
+//    this - a GenTreeOp node
+//    comp - the compiler instance
+//
+// Return Value:
+//    Return true iff the node is a GT_DIV,GT_UDIV, GT_MOD or GT_UMOD with
+//    an integer constant and we can perform the division operation using
+//    a reciprocal multiply or a shift operation.
+//
+bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    if (!OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD))
+    {
+        return false;
+    }
+#if defined(TARGET_ARM64)
+    if (OperIs(GT_MOD, GT_UMOD))
+    {
+        // MOD, UMOD not supported for ARM64
+        return false;
+    }
+#endif // TARGET_ARM64
+
+    bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+
+#if !defined(TARGET_64BIT)
+    if (dividend->OperIs(GT_LONG))
+    {
+        return false;
+    }
+#endif
+
+    if (dividend->IsCnsIntOrI())
+    {
+        // We shouldn't see a divmod with constant operands here but if we do then it's likely
+        // because optimizations are disabled or it's a case that's supposed to throw an exception.
+        // Don't optimize this.
+        return false;
+    }
+
+    ssize_t divisorValue;
+    if (divisor->IsCnsIntOrI())
+    {
+        divisorValue = static_cast<ssize_t>(divisor->AsIntCon()->IconValue());
+    }
+    else
+    {
+        ValueNum vn = divisor->gtVNPair.GetLiberal();
+        if (comp->vnStore->IsVNConstant(vn))
+        {
+            divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    const var_types divType = TypeGet();
+
+    if (divisorValue == 0)
+    {
+        // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
+        return false;
+    }
+    else if (isSignedDivide)
+    {
+        if (divisorValue == -1)
+        {
+            // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+            return false;
+        }
+        else if (isPow2(divisorValue))
+        {
+            return true;
+        }
+    }
+    else // unsigned divide
+    {
+        if (divType == TYP_INT)
+        {
+            // Clear up the upper 32 bits of the value, they may be set to 1 because constants
+            // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
+            divisorValue &= UINT32_MAX;
+        }
+
+        size_t unsignedDivisorValue = (size_t)divisorValue;
+        if (isPow2(unsignedDivisorValue))
+        {
+            return true;
+        }
+    }
+
+    const bool isDiv = OperIs(GT_DIV, GT_UDIV);
+
+    if (isDiv)
+    {
+        if (isSignedDivide)
+        {
+            // If the divisor is the minimum representable integer value then the result is either 0 or 1
+            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // If the divisor is greater or equal than 2^(N - 1) then the result is either 0 or 1
+            if (((divType == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
+                ((divType == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+            {
+                return true;
+            }
+        }
+    }
+
+// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    {
+        // All checks pass we can perform the division operation using a reciprocal multiply.
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// CheckDivideByConstOptimized:
+//      Checks if we can use the division by constant optimization
+//      on this node
+//      and if so sets the flag GTF_DIV_BY_CNS_OPT and
+//      set GTF_DONT_CSE on the constant node
+//
+// Arguments:
+//    this       - a GenTreeOp node
+//    comp       - the compiler instance
+//
+void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
+{
+    if (UsesDivideByConstOptimized(comp))
+    {
+        gtFlags |= GTF_DIV_BY_CNS_OPT;
+
+        // Now set DONT_CSE on the GT_CNS_INT divisor, note that
+        // with ValueNumbering we can have a non GT_CNS_INT divisior
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+        if (divisor->OperIs(GT_CNS_INT))
+        {
+            divisor->gtFlags |= GTF_DONT_CSE;
+        }
     }
 }
 
@@ -7199,7 +7324,10 @@ GenTree* Compiler::gtCloneExpr(
                 else
 #endif
                 {
-                    copy                                  = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+                    copy = gtNewIconNode(tree->AsIntCon()->gtIconVal, tree->gtType);
+#ifdef DEBUG
+                    copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
+#endif
                     copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
                 }
@@ -7489,7 +7617,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
+                copy->AsHWIntrinsic()->SetAuxiliaryType(hwintrinsicOp->GetAuxiliaryType());
             }
             break;
 #endif
@@ -7860,6 +7988,15 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
 #endif
 
     copy->CopyOtherRegFlags(tree);
+
+    // We keep track of the number of no return calls, so if we've cloned
+    // one of these, update the tracking.
+    //
+    if (tree->IsNoReturn())
+    {
+        assert(copy->IsNoReturn());
+        setMethodHasNoReturnCalls();
+    }
 
     return copy;
 }
@@ -9925,6 +10062,18 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 }
                 goto DASH;
 
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
+                {
+                    printf("M"); // We will use a Multiply by reciprical
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
+
             case GT_LCL_FLD:
             case GT_LCL_VAR:
             case GT_LCL_VAR_ADDR:
@@ -10213,39 +10362,48 @@ void Compiler::gtDispRegVal(GenTree* tree)
             break;
     }
 
-    if (tree->IsMultiRegCall())
+#if FEATURE_MULTIREG_RET
+    if (tree->OperIs(GT_CALL))
     {
-        // 0th reg is GettRegNum(), which is already printed above.
+        // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
-        GenTreeCall* call     = tree->AsCall();
-        unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        // Note that, prior to the initialization of the ReturnTypeDesc we won't print
+        // any additional registers.
+        const GenTreeCall* call     = tree->AsCall();
+        const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
         }
     }
-    else if (tree->IsCopyOrReloadOfMultiRegCall())
+    else if (tree->IsCopyOrReload())
     {
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
-        for (unsigned i = 1; i < regCount; ++i)
+        GenTree*                   op1          = tree->gtGetOp1();
+        const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
+        unsigned                   regCount     = 0;
+        if (op1->OperIs(GT_CALL))
         {
-            printf(",%s", compRegVarName(copyOrReload->GetRegNumByIdx(i)));
-        }
-    }
-
-#if FEATURE_MULTIREG_RET
-    if (tree->IsCopyOrReload())
-    {
-        for (int i = 1; i < MAX_RET_REG_COUNT; i++)
-        {
-            regNumber reg = (regNumber)tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            if (reg == REG_NA)
+            regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+            // If it hasn't yet been initialized, we'd still like to see the registers printed.
+            if (regCount == 0)
             {
-                break;
+                regCount = MAX_RET_REG_COUNT;
             }
-            printf(",%s", compRegVarName(reg));
+        }
+        else if (op1->IsMultiRegLclVar())
+        {
+            regCount = op1->AsLclVar()->GetFieldCount(this);
+        }
+        else if (op1->IsMultiRegNode())
+        {
+            regCount = op1->GetMultiRegCount();
+        }
+        // We will only have valid regs for positions that require copy or reload.
+        // But we'd like to keep track of where they are so we print all positions.
+        for (unsigned i = 1; i < regCount; i++)
+        {
+            regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
+            printf(",%s", (reg == REG_NA) ? "NA" : compRegVarName(reg));
         }
     }
 #endif
@@ -10479,7 +10637,7 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 
     printf("%s", buf);
 
-    if (padForBiggestDisp && (charsPrinted < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
+    if (padForBiggestDisp && (charsPrinted < (int)LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
         printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
     }
@@ -10583,16 +10741,30 @@ void Compiler::gtDispConst(GenTree* tree)
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
-#ifdef TARGET_64BIT
                 }
+#ifdef TARGET_64BIT
                 else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
-                    printf(" 0x%llx", dspIconVal);
-#endif
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%llx", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%llx", -dspIconVal);
+                    }
                 }
+#endif
                 else
                 {
-                    printf(" 0x%X", dspIconVal);
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%X", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%X", -dspIconVal);
+                    }
                 }
 
                 if (tree->IsIconHandle())
@@ -10842,8 +11014,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && // Includes local variable liveness
-                            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
+                            tree->AsLclVar()->IsLastUse(i - varDsc->lvFieldLclStart))
                         {
                             printf(" (last use)");
                         }
@@ -10917,7 +11089,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeIsFloating(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
             break;
 
         case GT_IL_OFFSET:
@@ -12450,6 +12622,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 //    Checks for
 //        typeof(...) == obj.GetType()
 //        typeof(...) == typeof(...)
+//        obj1.GetType() == obj2.GetType()
 //
 //    And potentially optimizes away the need to obtain actual
 //    RuntimeType objects to do the comparison.
@@ -12479,32 +12652,19 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // We must have a handle on one side or the other here to optimize,
-    // otherwise we can't be sure that optimizing is sound.
-    const bool op1IsFromHandle = (op1Kind == TPK_Handle);
-    const bool op2IsFromHandle = (op2Kind == TPK_Handle);
-
-    if (!(op1IsFromHandle || op2IsFromHandle))
-    {
-        return tree;
-    }
-
     // If both types are created via handles, we can simply compare
-    // handles (or the indirection cells for handles) instead of the
-    // types that they'd create.
-    if (op1IsFromHandle && op2IsFromHandle)
+    // handles instead of the types that they'd create.
+    if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
         GenTree*             op1ClassFromHandle = tree->AsOp()->gtOp1->AsCall()->gtCallArgs->GetNode();
         GenTree*             op2ClassFromHandle = tree->AsOp()->gtOp2->AsCall()->gtCallArgs->GetNode();
-        GenTree*             op1TunneledHandle  = nullptr;
-        GenTree*             op2TunneledHandle  = nullptr;
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
 
         // Try and find class handles from op1 and op2
-        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &op1TunneledHandle);
-        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &op2TunneledHandle);
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle);
 
         // If we have both class handles, try and resolve the type equality test completely.
         bool resolveFailed = false;
@@ -12557,17 +12717,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
 
-        // If we successfully tunneled through both operands, compare
-        // the tunneled values, otherwise compare the original values.
-        GenTree* compare;
-        if ((op1TunneledHandle != nullptr) && (op2TunneledHandle != nullptr))
-        {
-            compare = gtCreateHandleCompare(oper, op1TunneledHandle, op2TunneledHandle, inliningKind);
-        }
-        else
-        {
-            compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
-        }
+        GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
 
         // Drop any now-irrelvant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
@@ -12575,20 +12725,61 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return compare;
     }
 
-    // Just one operand creates a type from a handle.
-    //
-    // If the other operand is fetching the type from an object,
+    if ((op1Kind == TPK_GetType) && (op2Kind == TPK_GetType))
+    {
+        GenTree* arg1;
+
+        if (op1->OperGet() == GT_INTRINSIC)
+        {
+            arg1 = op1->AsUnOp()->gtOp1;
+        }
+        else
+        {
+            arg1 = op1->AsCall()->gtCallThisArg->GetNode();
+        }
+
+        arg1 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg1);
+        arg1->gtFlags |= GTF_EXCEPT;
+
+        GenTree* arg2;
+
+        if (op2->OperGet() == GT_INTRINSIC)
+        {
+            arg2 = op2->AsUnOp()->gtOp1;
+        }
+        else
+        {
+            arg2 = op2->AsCall()->gtCallThisArg->GetNode();
+        }
+
+        arg2 = gtNewOperNode(GT_IND, TYP_I_IMPL, arg2);
+        arg2->gtFlags |= GTF_EXCEPT;
+
+        CorInfoInlineTypeCheck inliningKind =
+            info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
+        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
+
+        GenTree* compare = gtCreateHandleCompare(oper, arg1, arg2, inliningKind);
+
+        // Drop any now-irrelvant flags
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+        return compare;
+    }
+
+    // If one operand creates a type from a handle and the other operand is fetching the type from an object,
     // we can sometimes optimize the type compare into a simpler
     // method table comparison.
     //
     // TODO: if other operand is null...
-    if ((op1Kind != TPK_GetType) && (op2Kind != TPK_GetType))
+    if (!(((op1Kind == TPK_GetType) && (op2Kind == TPK_Handle)) ||
+          ((op1Kind == TPK_Handle) && (op2Kind == TPK_GetType))))
     {
         return tree;
     }
 
-    GenTree* const opHandle = op1IsFromHandle ? op1 : op2;
-    GenTree* const opOther  = op1IsFromHandle ? op2 : op1;
+    GenTree* const opHandle = (op1Kind == TPK_Handle) ? op1 : op2;
+    GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
     GenTree* const       opHandleArgument = opHandle->AsCall()->gtCallArgs->GetNode();
@@ -12685,12 +12876,11 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 //
 // Arguments:
 //    tree - tree that passes the handle to the helper
-//    handleTree [optional, out] - set to the literal operand tree for indirect handles
 //
 // Returns:
 //    The compile time class handle if known.
 //
-CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree** handleTree)
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -12725,11 +12915,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree*
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
                 result = (CORINFO_CLASS_HANDLE)handleTreeInternal->AsIntCon()->gtCompileTimeHandle;
-
-                if (handleTree != nullptr)
-                {
-                    *handleTree = handleTreeInternal;
-                }
             }
         }
     }
@@ -15145,6 +15330,11 @@ GenTree* Compiler::gtNewTempAssign(
             assert(tmp == genReturnLocal);
             ok = true;
         }
+        else if (varTypeIsSIMD(dstTyp) && (valTyp == TYP_STRUCT))
+        {
+            assert(val->IsCall());
+            ok = true;
+        }
 
         if (!ok)
         {
@@ -15158,7 +15348,7 @@ GenTree* Compiler::gtNewTempAssign(
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
-    if (varTypeIsFloating(dstTyp) && (compFloatingPointUsed == false))
+    if (varTypeUsesFloatReg(dstTyp) && (compFloatingPointUsed == false))
     {
         compFloatingPointUsed = true;
     }
@@ -15315,9 +15505,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        // Initialize Return type descriptor of call node.
-        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        retTypeDesc->InitializeStructReturnType(this, structType);
+        call->InitializeStructReturnType(this, structType);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -16529,14 +16717,8 @@ bool GenTree::isContained() const
     else if (OperKind() & GTK_RELOP)
     {
         // We have to cast away const-ness since AsOp() method is non-const.
-        GenTree* childNode = const_cast<GenTree*>(this)->AsOp()->gtOp1;
-        assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
-    }
-
-    // these either produce a result in register or set flags reg.
-    else if (IsSIMDEqualityOrInequality())
-    {
-        assert(!isMarkedContained);
+        const GenTree* childNode = AsOp()->gtGetOp1();
+        assert(isMarkedContained == false);
     }
 
     // if it's contained it can't be unused.
@@ -16551,12 +16733,12 @@ bool GenTree::isContained() const
 // return true if node is contained and an indir
 bool GenTree::isContainedIndir() const
 {
-    return isIndir() && isContained();
+    return OperIsIndir() && isContained();
 }
 
 bool GenTree::isIndirAddrMode()
 {
-    return isIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
+    return OperIsIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained();
 }
 
 bool GenTree::isIndir() const
@@ -17446,18 +17628,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                     if (context != nullptr)
                     {
-                        CORINFO_CLASS_HANDLE exactClass = nullptr;
-
-                        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-                        {
-                            exactClass = (CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                        }
-                        else
-                        {
-                            CORINFO_METHOD_HANDLE exactMethod =
-                                (CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
-                            exactClass = info.compCompHnd->getMethodClass(exactMethod);
-                        }
+                        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(context);
 
                         // Grab the signature in this context.
                         CORINFO_SIG_INFO sig;
@@ -18458,16 +18629,9 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     assert(gtOper == GT_SIMD);
     switch (AsSIMD()->gtSIMDIntrinsicID)
     {
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMax:
-        case SIMDIntrinsicMin:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
             return true;
         default:
             return false;
@@ -18630,6 +18794,43 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
 }
 
+GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(
+    var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic)
+{
+    NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
+
+#if defined(TARGET_XARCH)
+#if defined(TARGET_X86)
+    if (varTypeIsLong(baseType) && !op1->IsIntegralConst())
+    {
+        // TODO-XARCH-CQ: It may be beneficial to emit the movq
+        // instruction, which takes a 64-bit memory address and
+        // works on 32-bit x86 systems.
+        unreached();
+    }
+#endif // TARGET_X86
+
+    if (size == 32)
+    {
+        hwIntrinsicID = NI_Vector256_Create;
+    }
+#elif defined(TARGET_ARM64)
+    if (size == 8)
+    {
+        hwIntrinsicID = NI_Vector64_Create;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+}
+
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
@@ -18658,6 +18859,97 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, TYP_UNKNOWN, 0);
 }
+
+// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
+    if (category == HW_Category_MemoryLoad)
+    {
+        return true;
+    }
+#ifdef TARGET_XARCH
+    else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
+    {
+        // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
+
+        if (category == HW_Category_SIMDScalar)
+        {
+            // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
+            // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
+            // Vector128<byte> BroadcastScalarToVector128(byte* source)
+            // So, we need to check the argument's type is memory-reference or Vector128
+            assert(HWIntrinsicInfo::lookupNumArgs(this) == 1);
+            return (gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector128 ||
+                    gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector256) &&
+                   AsOp()->gtOp1->TypeGet() != TYP_SIMD16;
+        }
+        else if (category == HW_Category_IMM)
+        {
+            // Do we have less than 3 operands?
+            if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
+            {
+                return false;
+            }
+            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
+            {
+                return true;
+            }
+        }
+    }
+#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
+    return false;
+}
+
+// Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
+bool GenTreeHWIntrinsic::OperIsMemoryStore() const
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
+    if (category == HW_Category_MemoryStore)
+    {
+        return true;
+    }
+#ifdef TARGET_XARCH
+    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
+             (category == HW_Category_IMM || category == HW_Category_Scalar))
+    {
+        // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
+
+        // Bmi2/Bmi2.X64.MultiplyNoFlags may return the lower half result by a out argument
+        // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
+        //
+        // So, the 3-argument form is MemoryStore
+        if (HWIntrinsicInfo::lookupNumArgs(this) == 3)
+        {
+            switch (gtHWIntrinsicId)
+            {
+                case NI_BMI2_MultiplyNoFlags:
+                case NI_BMI2_X64_MultiplyNoFlags:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
+    return false;
+}
+
+// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    return OperIsMemoryLoad() || OperIsMemoryStore();
+#else
+    return false;
+#endif
+}
+
+#endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------
 // gtNewMustThrowException:
@@ -18692,95 +18984,6 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
     }
     return node;
 }
-
-// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
-{
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryLoad sematics
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
-    if (category == HW_Category_MemoryLoad)
-    {
-        return true;
-    }
-    else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
-    {
-        // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
-
-        if (category == HW_Category_SIMDScalar)
-        {
-            // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
-            // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
-            // Vector128<byte> BroadcastScalarToVector128(byte* source)
-            // So, we need to check the argument's type is memory-reference or Vector128
-            assert(HWIntrinsicInfo::lookupNumArgs(this) == 1);
-            return (gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector128 ||
-                    gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector256) &&
-                   AsOp()->gtOp1->TypeGet() != TYP_SIMD16;
-        }
-        else if (category == HW_Category_IMM)
-        {
-            // Do we have less than 3 operands?
-            if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
-            {
-                return false;
-            }
-            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
-            {
-                return true;
-            }
-        }
-    }
-#endif // TARGET_XARCH
-    return false;
-}
-
-// Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryStore() const
-{
-#ifdef TARGET_XARCH
-    // Some xarch instructions have MemoryStore sematics
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
-    if (category == HW_Category_MemoryStore)
-    {
-        return true;
-    }
-    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
-             (category == HW_Category_IMM || category == HW_Category_Scalar))
-    {
-        // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
-
-        // Bmi2/Bmi2.X64.MultiplyNoFlags may return the lower half result by a out argument
-        // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
-        //
-        // So, the 3-argument form is MemoryStore
-        if (HWIntrinsicInfo::lookupNumArgs(this) == 3)
-        {
-            switch (gtHWIntrinsicId)
-            {
-                case NI_BMI2_MultiplyNoFlags:
-                case NI_BMI2_X64_MultiplyNoFlags:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-    }
-#endif // TARGET_XARCH
-    return false;
-}
-
-// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
-{
-#ifdef TARGET_XARCH
-    return OperIsMemoryLoad() || OperIsMemoryStore();
-#else
-    return false;
-#endif
-}
-
-#endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------
 // InitializeStructReturnType:
@@ -18909,16 +19112,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 // InitializeLongReturnType:
 //    Initialize the Return Type Descriptor for a method that returns a TYP_LONG
 //
-// Arguments
-//    comp        -  Compiler Instance
-//
-// Return Value
-//    None
-//
-void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
+void ReturnTypeDesc::InitializeLongReturnType()
 {
+    assert(!m_inited);
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-
     // Setups up a ReturnTypeDesc for returning a long using two registers
     //
     assert(MAX_RET_REG_COUNT >= 2);
@@ -18950,7 +19147,7 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 //     x86 and ARM return long in multiple registers.
 //     ARM and ARM64 return HFA struct in multiple registers.
 //
-regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
+regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 {
     unsigned count = GetReturnRegCount();
     assert(idx < count);
@@ -18968,7 +19165,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType0));
+            noway_assert(varTypeUsesFloatReg(regType0));
             resultReg = REG_FLOATRET;
         }
     }
@@ -18989,9 +19186,9 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType1));
+            noway_assert(varTypeUsesFloatReg(regType1));
 
-            if (varTypeIsFloating(regType0))
+            if (varTypeUsesFloatReg(regType0))
             {
                 resultReg = REG_FLOATRET_1;
             }
@@ -19079,7 +19276,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskTP ReturnTypeDesc::GetABIReturnRegs()
+regMaskTP ReturnTypeDesc::GetABIReturnRegs() const
 {
     regMaskTP resultMask = RBM_NONE;
 

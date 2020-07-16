@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -115,7 +114,7 @@ namespace System.Xml.Xsl.XPath
         */
         //Max depth to avoid StackOverflow
         private const int MaxParseRelativePathDepth = 1024;
-        private int _parseRelativePath = 0;
+        private int _parseRelativePath;
         private Node ParseRelativeLocationPath()
         {
             if (++_parseRelativePath > MaxParseRelativePathDepth)
@@ -343,7 +342,7 @@ namespace System.Xml.Xsl.XPath
         //limit the recursive call from ParseSubExpr -> ParseSubExpr
         //and also ParseSubExpr->ParseUnionExpr->ParsePathExpr->...->ParseExpr->ParseSubExpr
         private const int MaxParseSubExprDepth = 1024;
-        private int _parseSubExprDepth = 0;
+        private int _parseSubExprDepth;
         private Node ParseSubExpr(int callerPrec)
         {
             if (++_parseSubExprDepth > MaxParseSubExprDepth)

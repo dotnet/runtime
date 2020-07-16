@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Extensions.Forwards.cs" />

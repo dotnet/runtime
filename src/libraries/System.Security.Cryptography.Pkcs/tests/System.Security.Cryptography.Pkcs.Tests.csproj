@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Certificates.cs" />
     <Compile Include="CertLoader.cs" />
     <Compile Include="CertLoader.Settings.cs" />

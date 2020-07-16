@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -57,13 +56,13 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_ARM64)
-        #define INST1(id, nm, fp, ldst, fmt, e1                                 ) nm,
-        #define INST2(id, nm, fp, ldst, fmt, e1, e2                             ) nm,
-        #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                         ) nm,
-        #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                     ) nm,
-        #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                 ) nm,
-        #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6             ) nm,
-        #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
+        #define INST1(id, nm, ldst, fmt, e1                                 ) nm,
+        #define INST2(id, nm, ldst, fmt, e1, e2                             ) nm,
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                         ) nm,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                     ) nm,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                 ) nm,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6             ) nm,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
 #else
@@ -1306,40 +1305,6 @@ void CodeGen::inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree*
     assert(size == EA_1BYTE || size == EA_2BYTE);
 
     inst_RV_TT(ins, reg, tree, 0, size);
-}
-
-void CodeGen::inst_RV_ST(instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size)
-{
-    if (size == EA_UNKNOWN)
-    {
-        size = emitActualTypeSize(type);
-    }
-
-#ifdef TARGET_ARM
-    switch (ins)
-    {
-        case INS_mov:
-            assert(!"Please call ins_Load(type) to get the load instruction");
-            break;
-
-        case INS_add:
-        case INS_ldr:
-        case INS_ldrh:
-        case INS_ldrb:
-        case INS_ldrsh:
-        case INS_ldrsb:
-        case INS_lea:
-        case INS_vldr:
-            GetEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
-            break;
-
-        default:
-            assert(!"Default inst_RV_ST case not supported for Arm");
-            break;
-    }
-#else  // !TARGET_ARM
-    GetEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
-#endif // !TARGET_ARM
 }
 
 void CodeGen::inst_mov_RV_ST(regNumber reg, GenTree* tree)

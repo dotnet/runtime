@@ -1,10 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.NET.HostModel.AppHost;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -51,6 +51,13 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool IsNativeBinary(string filePath)
         {
             return IsLinux ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
+        }
+
+        public string GetAssemblyName(string hostName)
+        {
+            // This logic to calculate assembly name from hostName should be removed (and probably moved to test helpers)
+            // once the SDK in the correct assembly name.
+            return (IsWindows ? Path.GetFileNameWithoutExtension(hostName) : hostName);
         }
 
         public override string ToString()

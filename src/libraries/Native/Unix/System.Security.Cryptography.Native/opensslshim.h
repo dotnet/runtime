@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 // Enable calling OpenSSL functions through shims to enable support for
@@ -340,6 +339,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     REQUIRED_FUNCTION(EVP_md5) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
@@ -366,6 +366,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
+    REQUIRED_FUNCTION(HMAC_CTX_copy) \
     FALLBACK_FUNCTION(HMAC_CTX_free) \
     LEGACY_FUNCTION(HMAC_CTX_init) \
     FALLBACK_FUNCTION(HMAC_CTX_new) \
@@ -730,6 +731,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
@@ -756,6 +758,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
+#define HMAC_CTX_copy HMAC_CTX_copy_ptr
 #define HMAC_CTX_free HMAC_CTX_free_ptr
 #define HMAC_CTX_init HMAC_CTX_init_ptr
 #define HMAC_CTX_new HMAC_CTX_new_ptr

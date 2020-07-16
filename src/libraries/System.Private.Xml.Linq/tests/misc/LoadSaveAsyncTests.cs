@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -414,6 +413,12 @@ namespace CoreXml.Test.XLinq
         {
             Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
             return Task.CompletedTask;
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
+            return default;
         }
     }
 

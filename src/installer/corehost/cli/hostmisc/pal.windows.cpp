@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal.h"
 #include "trace.h"
@@ -552,6 +551,16 @@ bool pal::get_own_module_path(string_t* recv)
 
     return GetModuleFileNameWrapper(hmod, recv);
 }
+
+bool pal::get_method_module_path(string_t* recv, void* method)
+{
+    HMODULE hmod;
+    if (!GetModuleHandleFromAddress(method, &hmod))
+        return false;
+
+    return GetModuleFileNameWrapper(hmod, recv);
+}
+
 
 bool pal::get_module_path(dll_t mod, string_t* recv)
 {

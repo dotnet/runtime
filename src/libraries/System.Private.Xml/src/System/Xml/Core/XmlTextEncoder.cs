@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -29,7 +29,7 @@ namespace System.Xml
         private char _quoteChar;
 
         // caching of attribute value
-        private StringBuilder _attrValue;
+        private StringBuilder? _attrValue;
         private bool _cacheAttrValue;
 
         // XmlCharType
@@ -77,8 +77,10 @@ namespace System.Xml
         {
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Length = 0;
             }
+
             _inAttribute = false;
             _cacheAttrValue = false;
         }
@@ -89,6 +91,7 @@ namespace System.Xml
             {
                 if (_cacheAttrValue)
                 {
+                    Debug.Assert(_attrValue != null);
                     return _attrValue.ToString();
                 }
                 else
@@ -134,6 +137,7 @@ namespace System.Xml
 
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append(array, offset, count);
             }
 
@@ -241,6 +245,7 @@ namespace System.Xml
 
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append(highChar);
                 _attrValue.Append(lowChar);
             }
@@ -259,6 +264,7 @@ namespace System.Xml
 
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append(text);
             }
 
@@ -395,8 +401,10 @@ namespace System.Xml
             {
                 return;
             }
+
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append(text);
             }
 
@@ -469,8 +477,10 @@ namespace System.Xml
 
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append(array, offset, count);
             }
+
             _textWriter.Write(array, offset, count);
         }
 
@@ -486,10 +496,12 @@ namespace System.Xml
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append("&#x");
                 _attrValue.Append(strVal);
                 _attrValue.Append(';');
             }
+
             WriteCharEntityImpl(strVal);
         }
 
@@ -497,10 +509,12 @@ namespace System.Xml
         {
             if (_cacheAttrValue)
             {
+                Debug.Assert(_attrValue != null);
                 _attrValue.Append('&');
                 _attrValue.Append(name);
                 _attrValue.Append(';');
             }
+
             WriteEntityRefImpl(name);
         }
 

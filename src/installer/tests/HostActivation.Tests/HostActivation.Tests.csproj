@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <AssemblyName>HostActivation.Tests</AssemblyName>
+    <PackageId>HostActivation.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <DefineConstants Condition="'$(TargetOS)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
+    <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
+    <TestsOutputName>ha</TestsOutputName>
+    <UsesTestAssets>true</UsesTestAssets>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>

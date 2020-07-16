@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Internal.IL;
@@ -156,6 +155,9 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.LayoutClassPtr:
                 case MarshallerKind.AsAnyA:
                 case MarshallerKind.AsAnyW:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
+
+                case MarshallerKind.ComInterface:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.Unknown:
@@ -562,6 +564,10 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.LayoutClass;
                 else
                     return MarshallerKind.Invalid;
+            }
+            else if (type.IsInterface)
+            {
+                return MarshallerKind.ComInterface;
             }
             else
                 return MarshallerKind.Invalid;

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
+    <DefineConstants>$(DefineConstants);NOSPAN;SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
@@ -109,7 +109,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="System\IO\Ports\SerialPort.Linux.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
@@ -118,7 +118,7 @@
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
     <Compile Include="System\IO\Ports\SerialPort.FreeBSD.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
     <Compile Include="Interop\Unix\Interop.Termios.cs" />
@@ -129,14 +129,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Shutdown.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>

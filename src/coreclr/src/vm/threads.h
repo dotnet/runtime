@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // THREADS.H -
 //
 
@@ -2954,9 +2953,7 @@ public:
     // achieved is returned and may differ from the input state if someone managed to
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
-    // The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-    // on an apartment state mismatch.
-    ApartmentState SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch);
+    ApartmentState SetApartment(ApartmentState state);
 
     // when we get apartment tear-down notification,
     // we want reset the apartment state we cache on the thread
@@ -3448,7 +3445,7 @@ private:
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
 #ifndef TARGET_UNIX
-    BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
+    BOOL    HandledJITCase();
 
 #ifdef TARGET_X86
     PCODE       m_LastRedirectIP;

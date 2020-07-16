@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -37,8 +36,6 @@ namespace System.Security.Cryptography
         private static volatile Dictionary<string, object>? s_defaultNameHT;
         private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        private static readonly char[] SepArray = { '.' }; // valid ASN.1 separators
 
         // .NET Core does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
@@ -503,7 +500,7 @@ namespace System.Security.Cryptography
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
 
-            string[] oidString = str.Split(SepArray);
+            string[] oidString = str.Split('.'); // valid ASN.1 separator
             uint[] oidNums = new uint[oidString.Length];
             for (int i = 0; i < oidString.Length; i++)
             {

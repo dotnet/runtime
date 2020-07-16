@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*
@@ -813,8 +812,7 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
         if (numGenericClassArgs > 0)
         {
             thOwner = ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(pGenericClassArgs, numGenericClassArgs));
-            // for classes supporting generic interop force remotable method descs
-            forceRemotable = thOwner.GetMethodTable()->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative);
+            forceRemotable = false;
         }
 #endif // FEATURE_COMINTEROP
     }

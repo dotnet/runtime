@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDInternalRO.h
 //
@@ -12,7 +11,7 @@
 #ifndef __MDInternalRO__h__
 #define __MDInternalRO__h__
 
-#include "winmdinterfaces.h"
+#include "metamodel.h"
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 

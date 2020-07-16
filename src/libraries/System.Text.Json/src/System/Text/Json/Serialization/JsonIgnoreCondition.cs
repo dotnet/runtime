@@ -1,25 +1,27 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// Controls how the <see cref="JsonIgnoreAttribute"/> ignores properties on serialization and deserialization.
+    /// When specified on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>,
+    /// <see cref="WhenWritingDefault"/> specifies that properties with default values are ignored during serialization.
+    /// When specified on <see cref="JsonIgnoreAttribute.Condition"/>, controls whether
+    /// a property is ignored during serialization and deserialization.
     /// </summary>
     public enum JsonIgnoreCondition
     {
         /// <summary>
-        /// Property will always be ignored.
+        /// Property is never ignored during serialization or deserialization.
         /// </summary>
-        Always = 0,
+        Never = 0,
         /// <summary>
-        /// Property will only be ignored if it is null.
+        /// Property is always ignored during serialization and deserialization.
         /// </summary>
-        WhenNull = 1,
+        Always = 1,
         /// <summary>
-        /// Property will always be serialized and deserialized, regardless of <see cref="JsonSerializerOptions.IgnoreNullValues"/> configuration.
+        /// If the value is the default, the property is ignored during serialization.
         /// </summary>
-        Never = 2
+        WhenWritingDefault = 2,
     }
 }

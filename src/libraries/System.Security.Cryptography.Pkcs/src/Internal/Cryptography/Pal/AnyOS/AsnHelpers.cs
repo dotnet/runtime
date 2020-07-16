@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -56,7 +56,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             int keyLength;
             byte[] parameters = Array.Empty<byte>();
 
-            switch (asn.Algorithm.Value)
+            switch (asn.Algorithm)
             {
                 case Oids.Rc2Cbc:
                     {
@@ -97,26 +97,34 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
 
                         int saltLen = 0;
-                        AsnReader reader = new AsnReader(asn.Parameters.Value, AsnEncodingRules.BER);
 
-                        // DER NULL is considered the same as not present.
-                        // No call to ReadNull() is necessary because the serializer already verified that
-                        // there's no data after the [AnyValue] value.
-                        if (reader.PeekTag() != Asn1Tag.Null)
+                        try
                         {
-                            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
-                            {
-                                saltLen = contents.Length;
-                            }
-                            else
-                            {
-                                Span<byte> salt = stackalloc byte[KeyLengths.Rc4Max_128Bit / 8];
+                            AsnReader reader = new AsnReader(asn.Parameters.Value, AsnEncodingRules.BER);
 
-                                if (!reader.TryCopyOctetStringBytes(salt, out saltLen))
+                            // DER NULL is considered the same as not present.
+                            // No call to ReadNull() is necessary because the serializer already verified that
+                            // there's no data after the [AnyValue] value.
+                            if (reader.PeekTag() != Asn1Tag.Null)
+                            {
+                                if (reader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> contents))
                                 {
-                                    throw new CryptographicException();
+                                    saltLen = contents.Length;
+                                }
+                                else
+                                {
+                                    Span<byte> salt = stackalloc byte[KeyLengths.Rc4Max_128Bit / 8];
+
+                                    if (!reader.TryReadOctetString(salt, out saltLen))
+                                    {
+                                        throw new CryptographicException();
+                                    }
                                 }
                             }
+                        }
+                        catch (AsnContentException e)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                         }
 
                         keyLength = KeyLengths.Rc4Max_128Bit - 8 * saltLen;

@@ -21,6 +21,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
+#include <dlfcn.h>
+#endif
 
 // Contains LIBC_SO definition
 #ifdef HAVE_GNU_LIB_NAMES_H
@@ -167,6 +170,37 @@ fix_libc_name (const char *name)
 	return name;
 }
 #endif
+
+/**
+ * mono_dl_open_self:
+ * \param error_msg pointer for error message on failure
+ *
+ * Returns a handle to the main program, on android x86 it's not possible to 
+ * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
+ * handle in this platform.
+ */
+MonoDl*
+mono_dl_open_self (char **error_msg)
+{
+#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
+	MonoDl *module;
+	if (error_msg)
+		*error_msg = NULL;
+	module = (MonoDl *) g_malloc (sizeof (MonoDl));
+	if (!module) {
+		if (error_msg)
+			*error_msg = g_strdup ("Out of memory");
+		return NULL;
+	}
+	mono_refcount_init (module, NULL);
+	module->handle = RTLD_DEFAULT;
+	module->dl_fallback = NULL;
+	module->full_name = NULL;
+	return module;
+#else 
+	return mono_dl_open (NULL, MONO_DL_LAZY, error_msg);
+#endif	
+}
 
 /**
  * mono_dl_open:

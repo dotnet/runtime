@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: zapsig.cpp
 //
@@ -650,7 +649,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         {
             if (nativeImage != NULL)
             {
-                pAssembly = nativeImage->LoadComponentAssembly(index);
+                pAssembly = nativeImage->LoadManifestAssembly(index);
             }
             else
             {
@@ -704,10 +703,6 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
             ? nativeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
         if (pMDImportOverride != NULL)
         {
-            CHAR   szFullName[MAX_CLASS_NAME + 1];
-            LPCSTR szWinRtNamespace = NULL;
-            LPCSTR szWinRtClassName = NULL;
-
             BOOL fValidAssemblyRef = TRUE;
             LPCSTR pAssemblyName;
             DWORD  dwFlags;
@@ -723,49 +718,10 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                 fValidAssemblyRef = FALSE;
             }
 
-            if (fValidAssemblyRef && IsAfContentType_WindowsRuntime(dwFlags))
-            {
-                // Find the encoded type name
-                LPCSTR pTypeName = NULL;
-                if (pAssemblyName != NULL)
-                    pTypeName = strchr(pAssemblyName, '!');
-
-                if (pTypeName != NULL)
-                {
-                    pTypeName++;
-                    // pTypeName now contains the full type name (namespace + name)
-
-                    strcpy_s(szFullName, _countof(szFullName), pTypeName);
-                    LPSTR pszName = strrchr(szFullName, '.');
-
-                    // WinRT types must have a namespace
-                    if (pszName != NULL)
-                    {
-                        // Replace . between namespace and name with null terminator.
-                        // This breaks the string into a namespace and name pair.
-                        *pszName = '\0';
-                        pszName++;
-
-                        szWinRtNamespace = szFullName;
-                        szWinRtClassName = pszName;
-                    }
-                    else
-                    {   // Namespace '.' separator not found - invalid type name (namespace has to be always present)
-                        fValidAssemblyRef = FALSE;
-                    }
-                }
-                else
-                {   // Type name separator in assembly name '!' not found
-                    fValidAssemblyRef = FALSE;
-                }
-            }
-
             if (fValidAssemblyRef)
             {
                 pAssembly = fromModule->GetAssemblyIfLoaded(
                         tkAssemblyRef,
-                        szWinRtNamespace,
-                        szWinRtClassName,
                         pMDImportOverride);
             }
         }

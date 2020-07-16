@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Authors:
 //   Miguel de Icaza (miguel@ximian.com)
@@ -254,7 +256,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool is_subclass_of(IntPtr childType, IntPtr baseType);
 
-        [PreserveDependency(".ctor()", "System.Runtime.CompilerServices.IsByRefLikeAttribute")]
+        [DynamicDependency("#ctor()", typeof(IsByRefLikeAttribute))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsByRefLike(RuntimeType type);
 
@@ -283,13 +285,14 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
                                                   bool loadTypeFromPartialName)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            if (typeName == string.Empty)
+            if (typeName.Length == 0)
                 if (throwOnError)
                     throw new TypeLoadException("A null or zero length string does not represent a valid Type.");
                 else

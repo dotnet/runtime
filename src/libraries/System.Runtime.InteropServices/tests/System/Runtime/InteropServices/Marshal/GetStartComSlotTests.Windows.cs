@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices.Tests.Common;
@@ -21,11 +20,9 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(DualInterface), 7};
             yield return new object[] { typeof(IUnknownInterface), 3};
             yield return new object[] { typeof(IDispatchInterface), 7};
-            yield return new object[] { typeof(IInspectableInterface), 6};
             yield return new object[] { typeof(DualComObject), 7};
             yield return new object[] { typeof(IUnknownComObject), 3};
             yield return new object[] { typeof(IDispatchComObject), 7};
-            yield return new object[] { typeof(IInspectableComObject), 6};
             yield return new object[] { typeof(NonDualComObject), 7};
             yield return new object[] { typeof(AutoDispatchComObject), 7};
             yield return new object[] { typeof(AutoDualComObject), 7};
@@ -47,6 +44,13 @@ namespace System.Runtime.InteropServices.Tests
         public void GetStartComSlot_Windows_ReturnsExpected(Type type, int expected)
         {
             Assert.Equal(expected, Marshal.GetStartComSlot(type));
+        }
+
+
+        [ConditionalFact(typeof(PlatformDetection), nameof (PlatformDetection.IsNotWindowsNanoServer))]
+        public void GetStartComSlot_ManagedIInspectableObject_Fail()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetStartComSlot(typeof(IInspectableInterface)));
         }
     }
 }

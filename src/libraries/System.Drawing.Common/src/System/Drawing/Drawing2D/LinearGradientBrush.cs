@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -232,14 +231,14 @@ namespace System.Drawing.Drawing2D
                     throw new NullReferenceException();
 
                 if (value.Positions == null)
-                    throw new ArgumentNullException("source");
+                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "value.Positions", value.Positions), nameof(value));
 
                 int count = value.Factors.Length;
 
                 if (count == 0 || value.Positions.Length == 0)
                     throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
                 if (count >= 2 && count != value.Positions.Length)
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 if (count >= 2 && value.Positions[0] != 0.0F)
                     throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)

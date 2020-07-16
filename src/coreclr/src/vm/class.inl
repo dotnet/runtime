@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: CLASS.INL
 //
@@ -28,7 +27,6 @@ inline void EEClassOptionalFields::Init()
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     m_pClassFactory = NULL;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    m_WinRTRedirectedTypeIndex = WinMDAdapter::RedirectedTypeIndex_Invalid;
 #endif // FEATURE_COMINTEROP
     m_cbModuleDynamicID = MODULE_NON_DYNAMIC_STATICS;
 #if defined(UNIX_AMD64_ABI)

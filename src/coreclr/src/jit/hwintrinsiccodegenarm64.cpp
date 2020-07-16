@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -40,22 +39,35 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
-    assert(HWIntrinsicInfo::isImmOp(intrin->gtHWIntrinsicId, immOp));
+    assert(varTypeIsIntegral(immOp));
 
     if (immOp->isContainedIntOrIImmed())
     {
         nonConstImmReg = REG_NA;
 
         immValue      = (int)immOp->AsIntCon()->IconValue();
-        immUpperBound = immValue + 1;
+        immLowerBound = immValue;
+        immUpperBound = immValue;
     }
     else
     {
-        nonConstImmReg = immOp->GetRegNum();
+        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->gtHWIntrinsicId);
 
-        immValue = 0;
-        immUpperBound =
-            HWIntrinsicInfo::lookupImmUpperBound(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType);
+        if (category == HW_Category_SIMDByIndexedElement)
+        {
+            assert(varTypeIsSIMD(intrin->GetAuxiliaryType()));
+            const unsigned int indexedElementSimdSize = genTypeSize(intrin->GetAuxiliaryType());
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->gtSIMDBaseType,
+                                             &immLowerBound, &immUpperBound);
+        }
+        else
+        {
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
+                                             &immLowerBound, &immUpperBound);
+        }
+
+        nonConstImmReg = immOp->GetRegNum();
+        immValue       = immLowerBound;
 
         if (TestImmOpZeroOrOne())
         {
@@ -110,6 +122,15 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
             GetEmitter()->emitIns_R_L(INS_adr, EA_8BYTE, beginLabel, branchTargetReg);
             GetEmitter()->emitIns_R_R_R_I(INS_add, EA_8BYTE, branchTargetReg, branchTargetReg, nonConstImmReg, 3,
                                           INS_OPTS_LSL);
+
+            // If the lower bound is non zero we need to adjust the branch target value by subtracting
+            // (immLowerBound << 3).
+            if (immLowerBound != 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_8BYTE, branchTargetReg, branchTargetReg,
+                                            ((ssize_t)immLowerBound << 3));
+            }
+
             GetEmitter()->emitIns_R(INS_br, EA_8BYTE, branchTargetReg);
         }
 
@@ -136,7 +157,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 
     if (NonConstImmOp())
     {
-        const bool isLastCase = (immValue + 1 == immUpperBound);
+        const bool isLastCase = (immValue == immUpperBound);
 
         if (isLastCase)
         {
@@ -176,9 +197,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     regNumber op1Reg = REG_NA;
     regNumber op2Reg = REG_NA;
     regNumber op3Reg = REG_NA;
+    regNumber op4Reg = REG_NA;
 
     switch (intrin.numOperands)
     {
+        case 4:
+            assert(intrin.op4 != nullptr);
+            op4Reg = intrin.op4->GetRegNum();
+            __fallthrough;
+
         case 3:
             assert(intrin.op3 != nullptr);
             op3Reg = intrin.op3->GetRegNum();
@@ -195,7 +222,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
         case 0:
-            assert(HWIntrinsicInfo::lookupNumArgs(intrin.id) == 0);
             break;
 
         default:
@@ -203,74 +229,165 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     emitAttr emitSize;
-    insOpts  opt = INS_OPTS_NONE;
+    insOpts  opt;
 
-    if (intrin.category == HW_Category_SIMDScalar)
+    if (HWIntrinsicInfo::SIMDScalar(intrin.id))
     {
         emitSize = emitTypeSize(intrin.baseType);
+        opt      = INS_OPTS_NONE;
     }
     else if (intrin.category == HW_Category_Scalar)
     {
         emitSize = emitActualTypeSize(intrin.baseType);
+        opt      = INS_OPTS_NONE;
     }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->gtSIMDSize));
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
-
-        if ((opt == INS_OPTS_1D) && (intrin.category == HW_Category_SimpleSIMD))
-        {
-            opt = INS_OPTS_NONE;
-        }
     }
 
-    const bool isRMW = node->isRMWHWIntrinsic(compiler);
+    const bool isRMW               = node->isRMWHWIntrinsic(compiler);
+    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
     genConsumeHWIntrinsicOperands(node);
 
     if (intrin.IsTableDriven())
     {
-        instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
+        const instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
         assert(ins != INS_invalid);
 
-        switch (intrin.numOperands)
+        if (intrin.category == HW_Category_SIMDByIndexedElement)
         {
-            case 1:
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                break;
-
-            case 2:
+            if (hasImmediateOperand)
+            {
                 if (isRMW)
                 {
                     assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
 
                     if (targetReg != op1Reg)
                     {
                         GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
                     }
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+
+                    HWIntrinsicImmOpHelper helper(this, intrin.op4, node);
+
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int elementIndex = helper.ImmValue();
+
+                        GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op2Reg, op3Reg, elementIndex, opt);
+                    }
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                    HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int elementIndex = helper.ImmValue();
+
+                        GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, elementIndex, opt);
+                    }
                 }
-                break;
+            }
+            else
+            {
+                if (isRMW)
+                {
+                    assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
 
-            case 3:
-                assert(isRMW);
-                assert(targetReg != op2Reg);
-                assert(targetReg != op3Reg);
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                    }
 
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op2Reg, op3Reg, 0, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                }
+            }
+        }
+        else if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
+                 (intrin.category == HW_Category_ShiftRightByImmediate))
+        {
+            assert(hasImmediateOperand);
+
+            if (isRMW)
+            {
                 if (targetReg != op1Reg)
                 {
                     GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
                 }
 
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
-                break;
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
-            default:
-                unreached();
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int shiftAmount = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op2Reg, shiftAmount, opt);
+                }
+            }
+            else
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int shiftAmount = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, shiftAmount, opt);
+                }
+            }
+        }
+        else
+        {
+            assert(!hasImmediateOperand);
+
+            switch (intrin.numOperands)
+            {
+                case 1:
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    break;
+
+                case 2:
+                    if (isRMW)
+                    {
+                        assert(targetReg != op2Reg);
+
+                        if (targetReg != op1Reg)
+                        {
+                            GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                        }
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                    }
+                    break;
+
+                case 3:
+                    assert(isRMW);
+                    assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
+
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                    }
+
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                    break;
+
+                default:
+                    unreached();
+            }
         }
     }
     else
@@ -338,7 +455,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_AddWideningUpper:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (node->GetOtherBaseType() == intrin.baseType)
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddl2 : INS_saddl2;
                 }
@@ -350,7 +467,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_SubtractWideningUpper:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (node->GetOtherBaseType() == intrin.baseType)
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubl2 : INS_ssubl2;
                 }
@@ -400,21 +517,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
-            case NI_AdvSimd_CompareLessThan:
-            case NI_AdvSimd_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareLessThan:
-            case NI_AdvSimd_Arm64_CompareLessThanScalar:
-            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
-                break;
-
             case NI_AdvSimd_AbsoluteCompareLessThan:
             case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanScalar:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
@@ -426,9 +540,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, op1Reg);
                 break;
 
-            case NI_AdvSimd_Store:
-                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
+            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+            case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                // Prior to codegen, the emitSize is based on node->gtSIMDSize which
+                // tracks the size of the first operand and is used to tell if the index
+                // is in range. However, when actually emitting it needs to be the size
+                // of the return and the size of the operand is interpreted based on the
+                // index value.
+
+                assert(
+                    GetEmitter()->isValidVectorIndex(emitSize, GetEmitter()->optGetElemsize(opt), helper.ImmValue()));
+
+                emitSize = emitActualTypeSize(node->gtType);
+                opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    assert(opt != INS_OPTS_NONE);
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, elementIndex, opt);
+                }
+
                 break;
+            }
 
             case NI_AdvSimd_Extract:
             {
@@ -463,11 +602,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_Insert:
                 assert(isRMW);
-                assert(targetReg != op3Reg);
 
                 if (targetReg != op1Reg)
                 {
-                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
                 }
 
                 if (intrin.op3->isContainedFltOrDblImmed())
@@ -476,11 +614,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.op2->AsIntCon()->gtIconVal == 0);
 
                     const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitTypeSize(intrin.baseType), targetReg, dataValue,
-                                              INS_OPTS_NONE);
+                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                 }
                 else
                 {
+                    assert(targetReg != op3Reg);
+
                     HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
                     if (varTypeIsFloating(intrin.baseType))
@@ -489,8 +628,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             const int elementIndex = helper.ImmValue();
 
-                            GetEmitter()->emitIns_R_R_I_I(ins, emitTypeSize(intrin.baseType), targetReg, op3Reg,
-                                                          elementIndex, 0, INS_OPTS_NONE);
+                            GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
                         }
                     }
                     else
@@ -499,11 +637,95 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             const int elementIndex = helper.ImmValue();
 
-                            GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op3Reg,
-                                                        elementIndex, INS_OPTS_NONE);
+                            GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
                         }
                     }
                 }
+                break;
+
+            case NI_AdvSimd_InsertScalar:
+            {
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
+                }
+            }
+            break;
+
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            {
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
+                const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
+                GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
+            }
+            break;
+
+            case NI_AdvSimd_LoadAndInsertScalar:
+            {
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex);
+                }
+            }
+            break;
+
+            case NI_AdvSimd_Store:
+                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
+                break;
+
+            case NI_AdvSimd_StoreSelectedScalar:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, op2Reg, op1Reg, elementIndex, opt);
+                }
+            }
+            break;
+
+            case NI_AdvSimd_Arm64_StorePair:
+            case NI_AdvSimd_Arm64_StorePairNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, op2Reg, op3Reg, op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_StorePairScalar:
+            case NI_AdvSimd_Arm64_StorePairScalarNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
                 break;
 
             case NI_Vector64_CreateScalarUnsafe:
@@ -543,6 +765,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
+            case NI_AdvSimd_Arm64_AddSaturateScalar:
+                if (varTypeIsUnsigned(node->GetAuxiliaryType()) != varTypeIsUnsigned(intrin.baseType))
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_usqadd : INS_suqadd;
+
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                    }
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
+                break;
+
             // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:
             case NI_Vector64_get_AllBitsSet:
@@ -554,29 +794,88 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
                 break;
 
-            case NI_Vector64_Create:
-            case NI_Vector128_Create:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            case NI_AdvSimd_DuplicateToVector64:
+            case NI_AdvSimd_DuplicateToVector128:
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            case NI_AdvSimd_Arm64_DuplicateToVector128:
+            {
+                if (varTypeIsFloating(intrin.baseType))
                 {
-                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
-                }
-                else if (varTypeIsFloating(intrin.baseType))
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
-                }
-                else
-                {
-                    if (intrin.op1->isContainedIntOrIImmed())
+                    if (intrin.op1->isContainedFltOrDblImmed())
                     {
-                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
-                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                    }
+                    else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+                    {
+                        assert(intrin.baseType == TYP_DOUBLE);
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
                     else
                     {
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 0, opt);
                     }
                 }
+                else if (intrin.op1->isContainedIntOrIImmed())
+                {
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+            }
+            break;
+
+            case NI_Vector64_ToVector128:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+                break;
+
+            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_GetLower:
+                if (op1Reg != targetReg)
+                {
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+                }
+                break;
+
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                ssize_t indexValue = 0;
+                if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+                {
+                    assert(intrin.op2->IsCnsIntOrI());
+                    indexValue = intrin.op2->AsIntCon()->gtIconVal;
+                }
+
+                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                {
+                    break;
+                }
+
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                                            INS_OPTS_NONE);
+            }
+            break;
+
+            case NI_AdvSimd_ReverseElement16:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_4H : INS_OPTS_8H);
+                break;
+
+            case NI_AdvSimd_ReverseElement32:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_2S : INS_OPTS_4S);
+                break;
+
+            case NI_AdvSimd_ReverseElement8:
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
+                                          (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
                 break;
 
             default:

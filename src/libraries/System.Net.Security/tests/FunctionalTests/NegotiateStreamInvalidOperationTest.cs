@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -95,56 +94,6 @@ namespace System.Net.Security.Tests
                             AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndRead(result));
                         },
                         recvBuf, 0, s_sampleMsg.Length, server));
-            }
-        }
-
-        [Fact]
-        public async Task NegotiateStream_ConcurrentAsyncReadOrWrite_ThrowsNotSupportedException()
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    server.AuthenticateAsServerAsync());
-
-                // Custom EndWrite/Read will not reset the variable which monitors concurrent write/read.
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    Task.Factory.FromAsync(client.BeginWrite, (ar) => { Assert.NotNull(ar); }, s_sampleMsg, 0, s_sampleMsg.Length, client),
-                    Task.Factory.FromAsync(server.BeginRead, (ar) => { Assert.NotNull(ar); }, recvBuf, 0, s_sampleMsg.Length, server));
-
-                Assert.Throws<NotSupportedException>(() => client.BeginWrite(s_sampleMsg, 0, s_sampleMsg.Length, (ar) => { Assert.Null(ar); }, null));
-                Assert.Throws<NotSupportedException>(() => server.BeginRead(recvBuf, 0, s_sampleMsg.Length, (ar) => { Assert.Null(ar); }, null));
-            }
-        }
-
-        [Fact]
-        public async Task NegotiateStream_ConcurrentSyncReadOrWrite_ThrowsNotSupportedException()
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    server.AuthenticateAsServerAsync());
-
-                // Custom EndWrite/Read will not reset the variable which monitors concurrent write/read.
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    Task.Factory.FromAsync(client.BeginWrite, (ar) => { Assert.NotNull(ar); }, s_sampleMsg, 0, s_sampleMsg.Length, client),
-                    Task.Factory.FromAsync(server.BeginRead, (ar) => { Assert.NotNull(ar); }, recvBuf, 0, s_sampleMsg.Length, server));
-
-                Assert.Throws<NotSupportedException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
-                Assert.Throws<NotSupportedException>(() => server.Read(recvBuf, 0, s_sampleMsg.Length));
             }
         }
 
@@ -336,7 +285,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsClient(result));
 
                         authStream.EndAuthenticateAsClient(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsClient(asyncResult));
                     }, CredentialCache.DefaultNetworkCredentials, string.Empty, client),
 
                     Task.Factory.FromAsync(server.BeginAuthenticateAsServer, (asyncResult) =>
@@ -348,7 +296,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsServer(result));
 
                         authStream.EndAuthenticateAsServer(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsServer(asyncResult));
                     }, server));
             }
         }

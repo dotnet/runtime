@@ -1,7 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -25,7 +25,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
@@ -35,37 +35,61 @@ namespace System.Text.Json
                 declaredPropertyType,
                 runtimePropertyType,
                 runtimeClassType,
-                propertyInfo,
+                memberInfo,
                 converter,
                 ignoreCondition,
                 options);
 
-            if (propertyInfo != null)
+            switch (memberInfo)
             {
-                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                case PropertyInfo propertyInfo:
+                    {
+                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
 
-                MethodInfo? getMethod = propertyInfo.GetMethod;
-                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                }
+                        MethodInfo? getMethod = propertyInfo.GetMethod;
+                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        }
 
-                MethodInfo? setMethod = propertyInfo.SetMethod;
-                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                }
+                        MethodInfo? setMethod = propertyInfo.SetMethod;
+                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        }
+
+                        break;
+                    }
+
+                case FieldInfo fieldInfo:
+                    {
+                        Debug.Assert(fieldInfo.IsPublic);
+
+                        HasGetter = true;
+                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                        if (!fieldInfo.IsInitOnly)
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        IsForClassInfo = true;
+                        HasGetter = true;
+                        HasSetter = true;
+
+                        break;
+                    }
             }
-            else
-            {
-                IsPropertyPolicy = true;
-                HasGetter = true;
-                HasSetter = true;
-            }
 
-            GetPolicies(ignoreCondition);
+            GetPolicies(ignoreCondition, isReferenceType: default(T) == null);
         }
 
         public override JsonConverter ConverterBase
@@ -83,7 +107,7 @@ namespace System.Text.Json
 
         public override object? GetValueAsObject(object obj)
         {
-            if (IsPropertyPolicy)
+            if (IsForClassInfo)
             {
                 return obj;
             }
@@ -94,49 +118,56 @@ namespace System.Text.Json
 
         public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
-            Debug.Assert(EscapedName.HasValue);
-
-            bool success;
             T value = Get!(obj);
+
+            // Since devirtualization only works in non-shared generics,
+            // the default comparer is used only for value types for now.
+            // For reference types there is a quick check for null.
+            if (IgnoreDefaultValuesOnWrite && (
+                default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
+            {
+                return true;
+            }
+
             if (value == null)
             {
-                if (!IgnoreNullValues)
-                {
-                    if (!Converter.HandleNull)
-                    {
-                        writer.WriteNull(EscapedName.Value);
-                    }
-                    else
-                    {
-                        if (state.Current.PropertyState < StackFramePropertyState.Name)
-                        {
-                            state.Current.PropertyState = StackFramePropertyState.Name;
-                            writer.WritePropertyName(EscapedName.Value);
-                        }
+                Debug.Assert(Converter.CanBeNull);
 
-                        int originalDepth = writer.CurrentDepth;
-                        Converter.Write(writer, value, Options);
-                        if (originalDepth != writer.CurrentDepth)
-                        {
-                            ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
-                        }
+                if (Converter.HandleNull)
+                {
+                    // No object, collection, or re-entrancy converter handles null.
+                    Debug.Assert(Converter.ClassType == ClassType.Value);
+
+                    if (state.Current.PropertyState < StackFramePropertyState.Name)
+                    {
+                        state.Current.PropertyState = StackFramePropertyState.Name;
+                        writer.WritePropertyNameSection(EscapedNameSection);
+                    }
+
+                    int originalDepth = writer.CurrentDepth;
+                    Converter.Write(writer, value, Options);
+                    if (originalDepth != writer.CurrentDepth)
+                    {
+                        ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
                     }
                 }
+                else
+                {
+                    writer.WriteNullSection(EscapedNameSection);
+                }
 
-                success = true;
+                return true;
             }
             else
             {
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
-                    writer.WritePropertyName(EscapedName.Value);
+                    writer.WritePropertyNameSection(EscapedNameSection);
                 }
 
-                success = Converter.TryWrite(writer, value, Options, ref state);
+                return Converter.TryWrite(writer, value, Options, ref state);
             }
-
-            return success;
         }
 
         public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
@@ -159,45 +190,45 @@ namespace System.Text.Json
         public override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
+
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
-                if (!IgnoreNullValues)
+                if (!Converter.CanBeNull)
                 {
-                    if (!Converter.CanBeNull)
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
-                    }
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                }
 
+                Debug.Assert(default(T) == null);
+
+                if (!IgnoreDefaultValuesOnRead)
+                {
                     T value = default;
                     Set!(obj, value!);
                 }
 
                 success = true;
             }
-            else
+            else if (Converter.CanUseDirectReadOrWrite)
             {
-                // Get the value from the converter and set the property.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
-                    {
-                        Set!(obj, fastvalue!);
-                    }
-
-                    return true;
+                    Set!(obj, fastvalue!);
                 }
-                else
+
+                success = true;
+            }
+            else
+            {
+                success = true;
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
-                        if (!IgnoreNullValues || (!isNullToken && value != null))
-                        {
-                            Set!(obj, value!);
-                        }
+                        Set!(obj, value!);
                     }
                 }
             }
@@ -225,7 +256,7 @@ namespace System.Text.Json
                 if (Converter.CanUseDirectReadOrWrite)
                 {
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    return true;
+                    success = true;
                 }
                 else
                 {
@@ -237,15 +268,11 @@ namespace System.Text.Json
             return success;
         }
 
-        public override void SetValueAsObject(object obj, object? value)
+        public override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
         {
             Debug.Assert(HasSetter);
-            T typedValue = (T)value!;
-
-            if (typedValue != null || !IgnoreNullValues)
-            {
-                Set!(obj, typedValue);
-            }
+            T typedValue = (T)extensionDict!;
+            Set!(obj, typedValue);
         }
     }
 }

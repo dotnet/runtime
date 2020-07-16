@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Drawing;
 using System.Drawing.Text;
@@ -131,7 +130,7 @@ namespace System.ComponentModel.TypeConverterTests
         public static TheoryData<string, string, string> ArgumentExceptionFontConverterData() => new TheoryData<string, string, string>()
         {
             { $"Courier New{s_Separator} 11 px{s_Separator} type=Bold{s_Separator} Italic", "units", null },
-            { $"Courier New{s_Separator} {s_Separator} Style=Bold", "sizeStr", null },
+            { $"Courier New{s_Separator} {s_Separator} Style=Bold", "value", null },
             { $"Courier New{s_Separator} 11{s_Separator} Style=", "value", null },
             { $"Courier New{s_Separator} 11{s_Separator} Style=RandomEnum", null, null },
             { $"Arial{s_Separator} 10{s_Separator} style=bold{s_Separator}", "value", null },

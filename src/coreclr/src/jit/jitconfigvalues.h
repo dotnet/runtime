@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if !defined(CONFIG_INTEGER) || !defined(CONFIG_STRING) || !defined(CONFIG_METHODSET)
 #error CONFIG_INTEGER, CONFIG_STRING, and CONFIG_METHODSET must be defined before including this file.
@@ -246,6 +245,8 @@ CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
 
 // clang-format off
 
@@ -437,13 +438,8 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-#if !FEATURE_MULTIREG_RET
-CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 0) // Allow Jit to retype structs as primitive types
                                                                        // when possible.
-#else                                                                  // FEATURE_MULTIREG_RET
-CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
-                                                                       // when possible.
-#endif                                                                 // FEATURE_MULTIREG_RET
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

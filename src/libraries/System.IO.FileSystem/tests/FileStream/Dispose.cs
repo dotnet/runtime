@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -66,7 +65,7 @@ namespace System.IO.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Dispose_CallsVirtualDisposeTrueArg_ThrowsDuringFlushWriteBuffer_DisposeThrows()
         {
             RemoteExecutor.Invoke(() =>
@@ -111,7 +110,9 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>

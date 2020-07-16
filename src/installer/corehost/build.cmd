@@ -38,6 +38,8 @@ if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
+
 
 shift
 goto :Arg_Loop
@@ -64,9 +66,9 @@ if "%VisualStudioVersion%"=="16.0" (
 )
 
 :MissingVersion
-:: Can't find VS 2017, 2019
-echo Error: Visual Studio 2017 or 2019 required
-echo        Please see https://github.com/dotnet/runtime/tree/master/docs/installer/building/windows-instructions.md for build instructions.
+:: Can't find required VS install
+echo Error: Visual Studio 2019 required
+echo        Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md for build requirements.
 exit /b 1
 
 :VS2019

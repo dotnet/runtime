@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -25,17 +25,17 @@ namespace System.ServiceProcess
     {
         private SERVICE_STATUS _status;
         private IntPtr _statusHandle;
-        private ServiceControlCallbackEx _commandCallbackEx;
-        private ServiceMainCallback _mainCallback;
-        private ManualResetEvent _startCompletedSignal;
-        private ExceptionDispatchInfo _startFailedException;
+        private ServiceControlCallbackEx? _commandCallbackEx;
+        private ServiceMainCallback? _mainCallback;
+        private ManualResetEvent? _startCompletedSignal;
+        private ExceptionDispatchInfo? _startFailedException;
         private int _acceptedCommands;
         private string _serviceName;
         private bool _nameFrozen;          // set to true once we've started running and ServiceName can't be changed any more.
         private bool _commandPropsFrozen;  // set to true once we've use the Can... properties.
         private bool _disposed;
         private bool _initialized;
-        private EventLog _eventLog;
+        private EventLog? _eventLog;
 
         /// <devdoc>
         ///    <para>
@@ -269,6 +269,7 @@ namespace System.ServiceProcess
             {
                 return _serviceName;
             }
+            [MemberNotNull(nameof(_serviceName))]
             set
             {
                 if (_nameFrozen)
@@ -304,6 +305,8 @@ namespace System.ServiceProcess
         /// <devdoc>
         ///    <para>Disposes of the resources (other than memory ) used by
         ///       the <see cref='System.ServiceProcess.ServiceBase'/>.</para>
+        ///    This is called from <see cref="Run(ServiceBase[])"/> when all
+        ///    services in the process have entered the SERVICE_STOPPED state.
         /// </devdoc>
         protected override void Dispose(bool disposing)
         {
@@ -712,7 +715,7 @@ namespace System.ServiceProcess
             _nameFrozen = true;
             return new SERVICE_TABLE_ENTRY()
             {
-                callback = Marshal.GetFunctionPointerForDelegate(_mainCallback),
+                callback = Marshal.GetFunctionPointerForDelegate(_mainCallback!),
                 name = Marshal.StringToHGlobalUni(_serviceName)
             };
         }
@@ -853,7 +856,7 @@ namespace System.ServiceProcess
                 // that the service failed to start successfully.
                 _startFailedException = ExceptionDispatchInfo.Capture(e);
             }
-            _startCompletedSignal.Set();
+            _startCompletedSignal!.Set();
         }
 
         /// <devdoc>
@@ -867,7 +870,7 @@ namespace System.ServiceProcess
         {
             fixed (SERVICE_STATUS* pStatus = &_status)
             {
-                string[] args = null;
+                string[]? args = null;
 
                 if (argCount > 0)
                 {
@@ -881,7 +884,7 @@ namespace System.ServiceProcess
                     {
                         // we increment the pointer first so we skip over the first argument.
                         argsAsPtr++;
-                        args[index] = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr));
+                        args[index] = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr))!;
                     }
                 }
 
@@ -924,7 +927,7 @@ namespace System.ServiceProcess
                 // finishes.
                 _startCompletedSignal = new ManualResetEvent(false);
                 _startFailedException = null;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.ServiceQueuedMainCallback), args);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.ServiceQueuedMainCallback!), args);
                 _startCompletedSignal.WaitOne();
 
                 if (_startFailedException != null)

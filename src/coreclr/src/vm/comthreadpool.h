@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -35,7 +34,7 @@ public:
     static FCDECL0(VOID, NotifyRequestProgress);
     static FCDECL0(FC_BOOL_RET, NotifyRequestComplete);
 
-    static void QCALLTYPE InitializeVMTp(CLR_BOOL* pEnableWorkerTracking);
+    static FCDECL0(FC_BOOL_RET, GetEnableWorkerTracking);
 
     static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
 

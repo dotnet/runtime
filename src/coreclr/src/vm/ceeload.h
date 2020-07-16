@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEELOAD.H
 //
@@ -41,10 +40,6 @@
 #ifdef FEATURE_PREJIT
 #include "dataimage.h"
 #endif // FEATURE_PREJIT
-
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
@@ -1615,6 +1610,7 @@ public:
 #ifdef FEATURE_READYTORUN
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
+    PTR_NativeImage         m_pNativeImage;
 #endif
 
 private:
@@ -1633,23 +1629,6 @@ private:
 
 #ifdef FEATURE_PREJIT
     PTR_NGenLayoutInfo      m_pNGenLayoutInfo;
-
-#if defined(FEATURE_COMINTEROP)
-        public:
-
-        #ifndef DACCESS_COMPILE
-            BOOL CanCacheWinRTTypeByGuid(MethodTable *pMT);
-            void CacheWinRTTypeByGuid(PTR_MethodTable pMT, PTR_GuidInfo pgi = NULL);
-        #endif // !DACCESS_COMPILE
-
-            PTR_MethodTable LookupTypeByGuid(const GUID & guid);
-            void GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids);
-
-        private:
-            PTR_GuidToMethodTableHashTable m_pGuidToTypeHash;   // A map from GUID to Type, for the "WinRT-interesting" types
-
-#endif // defined(FEATURE_COMINTEROP)
-
     // Module wide static fields information
     ModuleCtorInfo          m_ModuleCtorInfo;
 
@@ -1948,8 +1927,6 @@ protected:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // !DACCESS_COMPILE
 
-    BOOL IsWindowsRuntimeModule();
-
     BOOL IsInCurrentVersionBubble();
 
 #if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
@@ -2170,8 +2147,6 @@ protected:
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
-            LPCSTR              szWinRtNamespace = NULL,
-            LPCSTR              szWinRtClassName = NULL,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
             ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL
@@ -2182,20 +2157,11 @@ private:
     Assembly *GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(mdAssemblyRef kAssemblyRef, BOOL *pfDiscoveredAssemblyRefMatchesTargetDefExactly);
 public:
 
-    DomainAssembly * LoadAssembly(
-            mdAssemblyRef kAssemblyRef,
-            LPCUTF8       szWinRtTypeNamespace = NULL,
-            LPCUTF8       szWinRtTypeClassName = NULL);
+    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL loadAllowed);
     DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL loadResources = TRUE, BOOL bindOnly = FALSE);
     PTR_Module LookupModule(mdToken kFile, BOOL loadResources = TRUE); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
-
-    bool HasBindableIdentity(mdAssemblyRef tkAssemblyRef)
-    {
-        WRAPPER_NO_CONTRACT;
-        return !IsAfContentType_WindowsRuntime(GetAssemblyRefFlags(tkAssemblyRef));
-    }
 
     // RID maps
     TypeHandle LookupTypeDef(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
@@ -2924,17 +2890,17 @@ public:
 #endif
     }
 
-    NativeImage *GetCompositeNativeImage() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
-    }
-
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pReadyToRunInfo;
+    }
+
+    PTR_NativeImage GetCompositeNativeImage() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pNativeImage;
     }
 #endif
 

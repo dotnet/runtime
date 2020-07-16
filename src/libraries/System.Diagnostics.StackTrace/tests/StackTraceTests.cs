@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,6 +29,7 @@ namespace System.Diagnostics
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
     public class StackTraceTests
     {
         [Fact]
@@ -313,7 +313,9 @@ namespace System.Diagnostics.Tests
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T, U>() => new StackTrace();
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace InvokeIgnoredMethod() => Ignored.Method();
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace InvokeIgnoredMethodWithException() => Ignored.MethodWithException();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
@@ -335,6 +337,8 @@ namespace System.Diagnostics.Tests
         private class ClassWithConstructor
         {
             public StackTrace StackTrace { get; }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public ClassWithConstructor() => StackTrace = new StackTrace();
         }
 

@@ -1,0 +1,156 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
+  <data name="Argument_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
+    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
+  </data>
+  <data name="Argument_EnumeratedValueBackingTypeNotSupported" xml:space="preserve">
+    <value>Enumerations with a backing type of '{0}' are not supported for ReadEnumeratedValue.</value>
+  </data>
+  <data name="Argument_InvalidOidValue" xml:space="preserve">
+    <value>The OID value is invalid.</value>
+  </data>
+  <data name="Argument_NamedBitListRequiresFlagsEnum" xml:space="preserve">
+    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
+  </data>
+  <data name="Argument_SourceOverlapsDestination" xml:space="preserve">
+    <value>The destination buffer overlaps the source buffer.</value>
+  </data>
+  <data name="Argument_Tag_NotCharacterString" xml:space="preserve">
+    <value>The specified tag has the Universal TagClass, but the TagValue does not correspond with a known character string type.</value>
+  </data>
+  <data name="Argument_IntegerCannotBeEmpty" xml:space="preserve">
+    <value>An integer value cannot be empty.</value>
+  </data>
+  <data name="Argument_IntegerRedundantByte" xml:space="preserve">
+    <value>The first 9 bits of the integer value all have the same value. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
+  </data>
+  <data name="Argument_UniversalValueIsFixed" xml:space="preserve">
+    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
+  </data>
+  <data name="Argument_UnusedBitCountMustBeZero" xml:space="preserve">
+    <value>Unused bit count must be 0 when the bit string is empty.</value>
+  </data>
+  <data name="Argument_UnusedBitCountRange" xml:space="preserve">
+    <value>Unused bit count must be between 0 and 7, inclusive.</value>
+  </data>
+  <data name="Argument_UnusedBitWasSet" xml:space="preserve">
+    <value>One or more of the bits covered by the provided unusedBitCount value is set. All unused bits must be cleared.</value>
+  </data>
+  <data name="Argument_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
+    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
+  </data>
+  <data name="AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
+    <value>Encode cannot be called while a Sequence, Set-Of, or Octet String is still open.</value>
+  </data>
+  <data name="AsnWriter_PopWrongTag" xml:space="preserve">
+    <value>Cannot pop the requested tag as it is not currently in progress.</value>
+  </data>
+  <data name="ContentException_CerRequiresIndefiniteLength" xml:space="preserve">
+    <value>A constructed tag used a definite length encoding, which is invalid for CER data. The input may be encoded with BER or DER.</value>
+  </data>
+  <data name="ContentException_ConstructedEncodingRequired" xml:space="preserve">
+    <value>The encoded value uses a primitive encoding, which is invalid for '{0}' values.</value>
+  </data>
+  <data name="ContentException_DefaultMessage" xml:space="preserve">
+    <value>The ASN.1 value is invalid.</value>
+  </data>
+  <data name="ContentException_EnumeratedValueTooBig" xml:space="preserve">
+    <value>The encoded enumerated value is larger than the value size of the '{0}' enum.</value>
+  </data>
+  <data name="ContentException_InvalidUnderCer_TryBerOrDer" xml:space="preserve">
+    <value>The encoded value is not valid under the selected encoding, but it may be valid under the BER or DER encoding.</value>
+  </data>
+  <data name="ContentException_InvalidUnderCerOrDer_TryBer" xml:space="preserve">
+    <value>The encoded value is not valid under the selected encoding, but it may be valid under the BER encoding.</value>
+  </data>
+  <data name="ContentException_InvalidUnderDer_TryBerOrCer" xml:space="preserve">
+    <value>The encoded value is not valid under the selected encoding, but it may be valid under the BER or CER encoding.</value>
+  </data>
+  <data name="ContentException_InvalidTag" xml:space="preserve">
+    <value>The provided data does not represent a valid tag.</value>
+  </data>
+  <data name="ContentException_LengthExceedsPayload" xml:space="preserve">
+    <value>The encoded length exceeds the number of bytes remaining in the input buffer.</value>
+  </data>
+  <data name="ContentException_LengthRuleSetConstraint" xml:space="preserve">
+    <value>The encoded length is not valid under the requested encoding rules, the value may be valid under the BER encoding.</value>
+  </data>
+  <data name="ContentException_LengthTooBig" xml:space="preserve">
+    <value>The encoded length exceeds the maximum supported by this library (Int32.MaxValue).</value>
+  </data>
+  <data name="ContentException_NamedBitListValueTooBig" xml:space="preserve">
+    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
+  </data>
+  <data name="ContentException_PrimitiveEncodingRequired" xml:space="preserve">
+    <value>The encoded value uses a constructed encoding, which is invalid for '{0}' values.</value>
+  </data>
+  <data name="ContentException_SetOfNotSorted" xml:space="preserve">
+    <value>The encoded set is not sorted as required by the current encoding rules. The value may be valid under the BER encoding, or you can ignore the sort validation by specifying skipSortValidation=true.</value>
+  </data>
+  <data name="ContentException_TooMuchData" xml:space="preserve">
+    <value>The last expected value has been read, but the reader still has pending data. This value may be from a newer schema, or is corrupt.</value>
+  </data>
+  <data name="ContentException_WrongTag" xml:space="preserve">
+    <value>The provided data is tagged with '{0}' class value '{1}', but it should have been '{2}' class value '{3}'.</value>
+  </data>
+</root>

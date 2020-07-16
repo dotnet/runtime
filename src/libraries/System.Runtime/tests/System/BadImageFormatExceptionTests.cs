@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new BadImageFormatException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, validateMessage: false);
             Assert.Null(exception.FileName);
         }
 
@@ -23,7 +22,7 @@ namespace System.Tests
         {
             string message = "this is not the file you're looking for";
             var exception = new BadImageFormatException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, message: message);
             Assert.Null(exception.FileName);
         }
 
@@ -33,7 +32,7 @@ namespace System.Tests
             string message = "this is not the file you're looking for";
             var innerException = new Exception("Inner exception");
             var exception = new BadImageFormatException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, innerException: innerException, message: message);
             Assert.Null(exception.FileName);
         }
 
@@ -43,7 +42,7 @@ namespace System.Tests
             string message = "this is not the file you're looking for";
             string fileName = "file.txt";
             var exception = new BadImageFormatException(message, fileName);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, message: message);
             Assert.Equal(fileName, exception.FileName);
         }
 
@@ -54,7 +53,7 @@ namespace System.Tests
             string fileName = "file.txt";
             var innerException = new Exception("Inner exception");
             var exception = new BadImageFormatException(message, fileName, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_BADIMAGEFORMAT, innerException: innerException, message: message);
             Assert.Equal(fileName, exception.FileName);
         }
 

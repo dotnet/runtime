@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Buffers.Text;
@@ -51,7 +50,7 @@ namespace System.Diagnostics
         private static ActivityIdFormat s_defaultIdFormat;
         /// <summary>
         /// Normally if the ParentID is defined, the format of that is used to determine the
-        /// format used by the Activity.   However if ForceDefaultFormat is set to true, the
+        /// format used by the Activity. However if ForceDefaultFormat is set to true, the
         /// ID format will always be the DefaultIdFormat even if the ParentID is define and is
         /// a different format.
         /// </summary>
@@ -74,7 +73,7 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
-        private LinkedList<KeyValuePair<string, string?>>? _tags;
+        private TagsLinkedList? _tags;
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
@@ -92,7 +91,7 @@ namespace System.Diagnostics
         /// reasonable, but arguments (e.g. specific accounts etc), should not be in
         /// the name but rather in the tags.
         /// </summary>
-        public string OperationName { get; } = null!;
+        public string OperationName { get; }
 
         /// <summary>Gets or sets the display name of the Activity</summary>
         /// <remarks>
@@ -244,7 +243,19 @@ namespace System.Diagnostics
         /// <seealso cref="Baggage"/>
         public IEnumerable<KeyValuePair<string, string?>> Tags
         {
-            get => _tags != null ? _tags.Enumerate() : s_emptyBaggageTags;
+            get => _tags?.EnumerateStringValues() ?? s_emptyBaggageTags;
+        }
+
+        /// <summary>
+        /// List of the tags which represent information that will be logged along with the Activity to the logging system.
+        /// This information however is NOT passed on to the children of this activity.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, object?>> TagObjects
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get => _tags?.Enumerate() ?? Unsafe.As<IEnumerable<KeyValuePair<string, object?>>>(s_emptyBaggageTags);
         }
 
         /// <summary>
@@ -334,7 +345,6 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(operationName))
             {
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
-                return;
             }
 
             OperationName = operationName;
@@ -342,17 +352,53 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have a tag with an additional 'key' and value 'value'.
-        /// This shows up in the <see cref="Tags"/>  enumeration.   It is meant for information that
+        /// This shows up in the <see cref="Tags"/>  enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity AddTag(string key, string? value)
-        {
-            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
 
-            if (_tags != null || Interlocked.CompareExchange(ref _tags, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+        /// <summary>
+        /// Update the Activity to have a tag with an additional 'key' and value 'value'.
+        /// This shows up in the <see cref="TagObjects"/> enumeration. It is meant for information that
+        /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
+        /// </summary>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        public Activity AddTag(string key, object? value)
+        {
+            KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
+
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) != null)
             {
                 _tags.Add(kvp);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add or update the Activity tag with the input key and value.
+        /// If the input value is null
+        ///     - if the collection has any tag with the same key, then this tag will get removed from the collection.
+        ///     - otherwise, nothing will happen and the collection will not change.
+        /// If the input value is not null
+        ///     - if the collection has any tag with the same key, then the value mapped to this key will get updated with the new input value.
+        ///     - otherwise, the key and value will get added as a new tag to the collection.
+        /// </summary>
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        /// <returns>'this' for convenient chaining</returns>
+        public Activity SetTag(string key, object value)
+        {
+            KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
+
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) != null)
+            {
+                _tags.Set(kvp);
             }
 
             return this;
@@ -736,7 +782,13 @@ namespace System.Diagnostics
             get
             {
                 if (s_defaultIdFormat == ActivityIdFormat.Unknown)
+                {
+#if W3C_DEFAULT_ID_FORMAT
+                    s_defaultIdFormat = LocalAppContextSwitches.DefaultActivityIdFormatIsHierarchial ? ActivityIdFormat.Hierarchical : ActivityIdFormat.W3C;
+#else
                     s_defaultIdFormat = ActivityIdFormat.Hierarchical;
+#endif // W3C_DEFAULT_ID_FORMAT
+                }
                 return s_defaultIdFormat;
             }
             set
@@ -782,6 +834,30 @@ namespace System.Diagnostics
             return id.Length == 55 &&
                    ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
                    ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+        }
+
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        internal static bool TryConvertIdToContext(string id, out ActivityContext context)
+        {
+            context = default;
+            if (!IsW3CId(id))
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> traceIdSpan = id.AsSpan(3,  32);
+            ReadOnlySpan<char> spanIdSpan  = id.AsSpan(36, 16);
+
+            if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
+                !ActivityTraceId.IsHexadecimalLowercaseChar(id[53]) || !ActivityTraceId.IsHexadecimalLowercaseChar(id[54]))
+            {
+                return false;
+            }
+
+            context = new ActivityContext(new ActivityTraceId(traceIdSpan.ToString()), new ActivitySpanId(spanIdSpan.ToString()), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
+            return true;
         }
 
         /// <summary>
@@ -844,7 +920,7 @@ namespace System.Diagnostics
         }
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, string?>>? tags, IEnumerable<ActivityLink>? links,
+                                                IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
                                                 DateTimeOffset startTime, ActivityDataRequest request)
         {
             Activity activity = new Activity(name);
@@ -901,11 +977,11 @@ namespace System.Diagnostics
 
             if (tags != null)
             {
-                using (IEnumerator<KeyValuePair<string, string?>> enumerator = tags.GetEnumerator())
+                using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._tags = new LinkedList<KeyValuePair<string, string?>>(enumerator);
+                        activity._tags = new TagsLinkedList(enumerator);
                     }
                 }
             }
@@ -1199,6 +1275,135 @@ namespace System.Diagnostics
             }
         }
 
+        private class TagsLinkedList
+        {
+            private LinkedListNode<KeyValuePair<string, object?>>? _first;
+            private LinkedListNode<KeyValuePair<string, object?>>? _last;
+
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+
+            public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
+            {
+                _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public void Add(KeyValuePair<string, object?> value)
+            {
+                LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        _first = _last = newNode;
+                        return;
+                    }
+
+                    Debug.Assert(_last != null);
+
+                    _last!.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public void Remove(string key)
+            {
+                if (_first == null)
+                {
+                    return;
+                }
+
+                lock (this)
+                {
+                    if (_first.Value.Key == key)
+                    {
+                        _first = _first.Next;
+                        return;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, object?>> previous = _first;
+
+                    while (previous.Next != null)
+                    {
+                        if (previous.Next.Value.Key == key)
+                        {
+                            previous.Next = previous.Next.Next;
+                            return;
+                        }
+                        previous = previous.Next;
+                    }
+                }
+            }
+
+            public void Set(KeyValuePair<string, object?> value)
+            {
+                if (value.Value == null)
+                {
+                    Remove(value.Key);
+                    return;
+                }
+
+                lock (this)
+                {
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                    while (current != null)
+                    {
+                        if (current.Value.Key == value.Key)
+                        {
+                            current.Value = value;
+                            return;
+                        }
+
+                        current = current.Next;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                    if (_first == null)
+                    {
+                        _first = _last = newNode;
+                        return;
+                    }
+
+                    Debug.Assert(_last != null);
+
+                    _last!.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
+            {
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+
+                while (current != null)
+                {
+                    if (current.Value.Value is string || current.Value.Value == null)
+                    {
+                        yield return new KeyValuePair<string, string?>(current.Value.Key, (string?) current.Value.Value);
+                    }
+
+                    current = current.Next;
+                };
+            }
+
+            public IEnumerable<KeyValuePair<string, object?>> Enumerate()
+            {
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+
+                while (current != null)
+                {
+                    yield return current.Value;
+                    current = current.Next;
+                };
+            }
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -1220,7 +1425,7 @@ namespace System.Diagnostics
     public enum ActivityTraceFlags
     {
         None = 0b_0_0000000,
-        Recorded = 0b_0_0000001, // The Activity (or more likley its parents) has been marked as useful to record
+        Recorded = 0b_0_0000001, // The Activity (or more likely its parents) has been marked as useful to record
     }
 
     /// <summary>

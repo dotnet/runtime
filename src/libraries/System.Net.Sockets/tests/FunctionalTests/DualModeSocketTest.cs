@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Net.Test.Common;
@@ -1649,7 +1648,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveFromAsync(args);
                 });
@@ -2188,7 +2187,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveMessageFromAsync(args);
                 });

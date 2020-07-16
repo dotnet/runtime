@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -481,6 +480,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo signer = cms.SignerInfos[0];
 
             ArgumentOutOfRangeException ex = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "index",
                 "childIndex",
                 () => signer.RemoveCounterSignature(-1));
 

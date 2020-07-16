@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.h
 //
@@ -628,6 +627,9 @@ typedef struct _DacGlobals
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
     ULONG fn__Unknown_AddRefInner;
+#endif
+#ifdef FEATURE_COMWRAPPERS
+    ULONG fn__ManagedObjectWrapper_QueryInterface;
 #endif
 
     // Vtable pointer values for all classes that must

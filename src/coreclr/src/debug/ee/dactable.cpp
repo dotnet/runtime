@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacglobals.cpp
 //
@@ -21,7 +20,6 @@
 #include "../../vm/common.h"
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
-#include "../../vm/rcwwalker.h"
 // This header include will need to be rmeoved as part of GitHub#12170.
 // The only reason it's here now is that this file references the GC-private
 // variable g_HandleTableMap.
@@ -36,11 +34,7 @@ extern PCODE g_FCDynamicallyAssignedImplementations;
 extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
 
-#ifdef FEATURE_APPX
-extern BOOL g_fAppX;
-#endif // FEATURE_APPX
-
-DLLEXPORT 
+DLLEXPORT
 DacGlobals g_dacTable;
 
 // DAC global pointer table initialization

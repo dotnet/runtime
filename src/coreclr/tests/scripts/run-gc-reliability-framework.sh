@@ -18,6 +18,9 @@ case $OSName in
         OS=NetBSD
         ;;
 
+    SunOS)
+        OS=SunOS
+        ;;
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         OS=Linux

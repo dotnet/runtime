@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -53,6 +52,20 @@ namespace System.Text.Tests
                 // If count == 0, GetBytes should not throw even though byteIndex is invalid
                 VerifyGetBytes(encoding, source, index, count, new byte[10], 10, expectedBytes);
             }
+        }
+
+        public static bool IsLatin1(this Encoding encoding)
+        {
+            return encoding != null
+                && encoding.CodePage == 28591; // hardcoded Latin-1 code page
+        }
+
+        public static bool IsLatin1BestFitFallback(this EncoderFallback fallback)
+        {
+            // We rely on the type name because the type itself isn't public.
+
+            return fallback != null
+                && fallback.GetType().Name == "EncoderLatin1BestFitFallback";
         }
 
         private static unsafe void VerifyGetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)

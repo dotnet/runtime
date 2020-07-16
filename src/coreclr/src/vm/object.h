@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // OBJECT.H
 //
@@ -1755,21 +1754,6 @@ public:
     //-----------------------------------------------------------
     // Release all the data associated with the __ComObject.
     static void ReleaseAllData(OBJECTREF oref);
-
-    //-----------------------------------------------------------
-    // Redirection for ToString
-    static FCDECL1(MethodDesc *, GetRedirectedToStringMD, Object *pThisUNSAFE);
-    static FCDECL2(StringObject *, RedirectToString, Object *pThisUNSAFE, MethodDesc *pToStringMD);
-
-    //-----------------------------------------------------------
-    // Redirection for GetHashCode
-    static FCDECL1(MethodDesc *, GetRedirectedGetHashCodeMD, Object *pThisUNSAFE);
-    static FCDECL2(int, RedirectGetHashCode, Object *pThisUNSAFE, MethodDesc *pGetHashCodeMD);
-
-    //-----------------------------------------------------------
-    // Redirection for Equals
-    static FCDECL1(MethodDesc *, GetRedirectedEqualsMD, Object *pThisUNSAFE);
-    static FCDECL3(FC_BOOL_RET, RedirectEquals, Object *pThisUNSAFE, Object *pOtherUNSAFE, MethodDesc *pEqualsMD);
 };
 
 #ifdef USE_CHECKED_OBJECTREFS

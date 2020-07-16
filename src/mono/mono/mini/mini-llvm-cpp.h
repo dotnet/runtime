@@ -104,6 +104,9 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef addr, LLVMValueRef
 LLVMValueRef
 mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVMBasicBlockRef t, LLVMBasicBlockRef f, uint32_t t_weight, uint32_t f_weight);
 
+LLVMValueRef
+mono_llvm_build_exact_ashr (LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs);
+
 void
 mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text);
 

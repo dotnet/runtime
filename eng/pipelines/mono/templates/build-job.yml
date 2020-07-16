@@ -9,7 +9,7 @@ parameters:
   variables: {}
   pool: ''
   condition: true
-  llvm: false
+  runtimeVariant: ''
   isOfficialBuild: false
   crossrootfsDir: ''
 
@@ -24,20 +24,13 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
-    llvm: ${{ parameters.llvm }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    ${{ if ne(parameters.llvm, true) }}:
-      name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
-    # if LLVM enabled, set a variable we can consume
-    ${{ if eq(parameters.llvm, true) }}:
-      name: ${{ format('mono_llvm_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Mono LLVM Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
+    name: ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Mono {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -81,6 +74,12 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os Browser'
+    - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
+      - name: llvmParameter
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+    - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+      - name: llvmParameter
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
     - ${{ parameters.variables }}
 
     steps:
@@ -90,7 +89,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
@@ -105,10 +104,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter)
         displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -129,15 +128,15 @@ jobs:
         displayName: 'product build'
 
     # Build packages
-    - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
-    - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build
-    - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
+    - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:Configuration=$(_BuildConfig) /p:TargetArchitecture=$(archType) /p:TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
           displayName: Publish packages to blob feed
@@ -160,9 +159,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        ${{ if ne(parameters.llvm, true) }}:
-          artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-        ${{ if eq(parameters.llvm, true) }}:
-          artifactName: 'BuildLogs_Mono_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_Mono_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
