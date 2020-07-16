@@ -83,9 +83,9 @@ jobs:
           - Interpreter: ' --monointerpreter'
 
     - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(HelixPreCommand);$(ExtraMSBuildLogsWindows)
+        - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(HelixPreCommand);$(ExtraMSBuildLogsLinux)
+        - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
 
     workspace:
       clean: all
