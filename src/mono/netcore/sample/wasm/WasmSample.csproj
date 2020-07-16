@@ -25,7 +25,7 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder"
+  <UsingTask TaskName="WasmAppBuilder" 
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
@@ -34,17 +34,12 @@
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
-    <ItemGroup>
-      <RemoteSources Include="./" />
-      <RemoteSources Include="http://localhost/wasm-assets/" />
-    </ItemGroup>
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      RemoteSources="@(RemoteSources)"/>
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
