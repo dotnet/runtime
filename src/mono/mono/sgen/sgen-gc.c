@@ -378,7 +378,9 @@ static volatile mword highest_heap_address = 0;
 MonoCoopMutex sgen_interruption_mutex;
 
 int sgen_current_collection_generation = -1;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 volatile gboolean sgen_concurrent_collection_in_progress = FALSE;
+#endif
 
 /* objects that are ready to be finalized */
 static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
@@ -1359,6 +1361,7 @@ sgen_set_pinned_from_failed_allocation (mword objsize)
 	bytes_pinned_from_failed_allocation += objsize;
 }
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 gboolean
 sgen_collection_is_concurrent (void)
 {
@@ -1378,6 +1381,7 @@ sgen_get_concurrent_collection_in_progress (void)
 {
 	return sgen_concurrent_collection_in_progress;
 }
+#endif
 
 typedef struct {
 	SgenThreadPoolJob job;
@@ -2176,10 +2180,12 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 {
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (concurrent) {
 		g_assert (sgen_major_collector.is_concurrent);
 		sgen_concurrent_collection_in_progress = TRUE;
 	}
+#endif
 
 	sgen_binary_protocol_collection_begin (mono_atomic_load_i32 (&mono_gc_stats.major_gc_count), GENERATION_OLD);
 
@@ -2366,8 +2372,10 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 
 	sgen_binary_protocol_collection_end (mono_atomic_load_i32 (&mono_gc_stats.major_gc_count) - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (sgen_concurrent_collection_in_progress)
 		sgen_concurrent_collection_in_progress = FALSE;
+#endif
 }
 
 static gboolean

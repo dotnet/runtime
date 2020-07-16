@@ -488,8 +488,13 @@ void sgen_sort_addresses (void **array, size_t size);
 void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
 
 int sgen_get_current_collection_generation (void);
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 gboolean sgen_collection_is_concurrent (void);
 gboolean sgen_get_concurrent_collection_in_progress (void);
+#else
+#define sgen_collection_is_concurrent() FALSE
+#define sgen_get_concurrent_collection_in_progress() FALSE
+#endif
 
 void sgen_set_bytes_allocated_attached (guint64 bytes);
 void sgen_increment_bytes_allocated_detached (guint64 bytes);
@@ -1074,7 +1079,11 @@ extern mword sgen_total_promoted_size;
 extern mword sgen_total_allocated_major;
 extern volatile gboolean sgen_suspend_finalizers;
 extern MonoCoopMutex sgen_gc_mutex;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 extern volatile gboolean sgen_concurrent_collection_in_progress;
+#else
+static const gboolean sgen_concurrent_collection_in_progress = FALSE;
+#endif
 
 /* Nursery helpers. */
 
