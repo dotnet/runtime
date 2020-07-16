@@ -3291,10 +3291,19 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             switch (memBase->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
                     assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    if (memBase->OperIs(GT_LCL_FLD_ADDR))
+                    {
+                        assert(!"don't expect GT_LCL_FLD_ADDR");
+                        offset = memBase->AsLclFld()->GetLclOffs();
+                    }
+                    else
+                    {
+                        offset = 0;
+                    }
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());

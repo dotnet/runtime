@@ -1019,10 +1019,19 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    if (addr->OperIs(GT_LCL_FLD_ADDR))
+                    {
+                        assert(!"don't expect GT_LCL_FLD_ADDR");
+                        offset = addr->AsLclFld()->GetLclOffs();
+                    }
+                    else
+                    {
+                        offset = 0;
+                    }
                     break;
                 }
 
@@ -1147,10 +1156,19 @@ void CodeGen::inst_RV_RV_TT(
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    if (addr->OperIs(GT_LCL_FLD_ADDR))
+                    {
+                        assert(!"don't expect GT_LCL_FLD_ADDR");
+                        offset = addr->AsLclFld()->GetLclOffs();
+                    }
+                    else
+                    {
+                        offset = 0;
+                    }
                     break;
                 }
 
