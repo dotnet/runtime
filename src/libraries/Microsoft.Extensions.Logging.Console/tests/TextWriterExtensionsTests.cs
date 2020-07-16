@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.IO;
-using System.Reflection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test

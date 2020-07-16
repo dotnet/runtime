@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging.Test.Console;
-using Microsoft.Extensions.Logging.Console;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
