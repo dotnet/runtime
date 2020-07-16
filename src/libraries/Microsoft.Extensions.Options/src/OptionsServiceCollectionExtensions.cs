@@ -133,7 +133,9 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.PostConfigure(name: null, configureOptions: configureOptions);
 
         /// <summary>
-        /// Registers a type that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <typeparam name="TConfigureOptions">The type that will configure options.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -144,24 +146,30 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool IsAction(Type type)
             => (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
 
-        private static IEnumerable<Type> FindIConfigureOptions(Type type)
+        private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
-            IEnumerable<Type> serviceTypes = type.GetTypeInfo().ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType &&
-                (t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>)
-                || t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>)));
+            IEnumerable<Type> serviceTypes = type
+                .GetTypeInfo()
+                .ImplementedInterfaces
+                .Where(t => t.GetTypeInfo().IsGenericType)
+                .Where(t =>
+                    t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>) ||
+                    t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>) ||
+                    t.GetGenericTypeDefinition() == typeof(IValidateOptions<>));
             if (!serviceTypes.Any())
             {
                 throw new InvalidOperationException(
                     IsAction(type)
-                    ? SR.Error_NoIConfigureOptionsAndAction
-                    : SR.Error_NoIConfigureOptions);
+                    ? SR.Error_NoConfigurationServicesAndAction
+                    : SR.Error_NoConfigurationServices);
             }
             return serviceTypes;
         }
 
         /// <summary>
-        /// Registers a type that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureType">The type that will configure options.</param>
@@ -169,7 +177,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, Type configureType)
         {
             services.AddOptions();
-            IEnumerable<Type> serviceTypes = FindIConfigureOptions(configureType);
+            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureType);
             foreach (Type serviceType in serviceTypes)
             {
                 services.AddTransient(serviceType, configureType);
@@ -178,7 +186,9 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Registers an object that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers an object that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureInstance">The instance that will configure options.</param>
@@ -186,7 +196,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, object configureInstance)
         {
             services.AddOptions();
-            IEnumerable<Type> serviceTypes = FindIConfigureOptions(configureInstance.GetType());
+            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureInstance.GetType());
             foreach (Type serviceType in serviceTypes)
             {
                 services.AddSingleton(serviceType, configureInstance);
