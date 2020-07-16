@@ -11,7 +11,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -101,7 +100,7 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                if (value != SerializationFormat.Xml)
                 {
                     throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }
@@ -148,7 +147,9 @@ namespace System.Data
                 }
             }
 
-            return (remotingFormat == SerializationFormat.Binary);
+#pragma warning disable CS0612 // Type or member is obsolete
+            return remotingFormat == SerializationFormat.Binary;
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         // Should Schema be included during Serialization
@@ -274,13 +275,13 @@ namespace System.Data
         private void SerializeDataSet(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat)
         {
             Debug.Assert(info != null);
-            info.AddValue("DataSet.RemotingVersion", new Version(2, 0));
 
-            // SqlHotFix 299, SerializationFormat enumeration types don't exist in V1.1 SP1
-            if (SerializationFormat.Xml != remotingFormat)
+            if (remotingFormat != SerializationFormat.Xml)
             {
-                info.AddValue("DataSet.RemotingFormat", remotingFormat);
+                throw ExceptionBuilder.InvalidRemotingFormat(remotingFormat);
             }
+
+            info.AddValue("DataSet.RemotingVersion", new Version(2, 0));
 
             // SqlHotFix 299, SchemaSerializationMode enumeration types don't exist in V1.1 SP1
             if (SchemaSerializationMode.IncludeSchema != SchemaSerializationMode)
@@ -289,68 +290,17 @@ namespace System.Data
                 info.AddValue("SchemaSerializationMode.DataSet", SchemaSerializationMode);
             }
 
-            if (remotingFormat != SerializationFormat.Xml)
-            {
-                if (SchemaSerializationMode == SchemaSerializationMode.IncludeSchema)
-                {
-                    //DataSet public state properties
-                    SerializeDataSetProperties(info, context);
+            string strSchema = GetXmlSchemaForRemoting(null);
 
-                    //Tables Count
-                    info.AddValue("DataSet.Tables.Count", Tables.Count);
+            string? strData = null;
+            info.AddValue(KEY_XMLSCHEMA, strSchema);
 
-                    //Tables, Columns, Rows
-                    for (int i = 0; i < Tables.Count; i++)
-                    {
-                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
-                        MemoryStream memStream = new MemoryStream();
-                        bf.Serialize(memStream, Tables[i]);
-                        memStream.Position = 0;
-                        info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
-                    }
-
-                    //Constraints
-                    for (int i = 0; i < Tables.Count; i++)
-                    {
-                        Tables[i].SerializeConstraints(info, context, i, true);
-                    }
-
-                    //Relations
-                    SerializeRelations(info, context);
-
-                    //Expression Columns
-                    for (int i = 0; i < Tables.Count; i++)
-                    {
-                        Tables[i].SerializeExpressionColumns(info, context, i);
-                    }
-                }
-                else
-                {
-                    //Serialize  DataSet public properties.
-                    SerializeDataSetProperties(info, context);
-                }
-
-                //Rows
-                for (int i = 0; i < Tables.Count; i++)
-                {
-                    Tables[i].SerializeTableData(info, context, i);
-                }
-            }
-            else
-            {
-                // old behaviour
-                string strSchema = GetXmlSchemaForRemoting(null);
-
-                string? strData = null;
-                info.AddValue(KEY_XMLSCHEMA, strSchema);
-
-                StringBuilder strBuilder = new StringBuilder(EstimatedXmlStringSize() * 2);
-                StringWriter strWriter = new StringWriter(strBuilder, CultureInfo.InvariantCulture);
-                XmlTextWriter w = new XmlTextWriter(strWriter);
-                WriteXml(w, XmlWriteMode.DiffGram);
-                strData = strWriter.ToString();
-                info.AddValue(KEY_XMLDIFFGRAM, strData);
-            }
+            StringBuilder strBuilder = new StringBuilder(EstimatedXmlStringSize() * 2);
+            StringWriter strWriter = new StringWriter(strBuilder, CultureInfo.InvariantCulture);
+            XmlTextWriter w = new XmlTextWriter(strWriter);
+            WriteXml(w, XmlWriteMode.DiffGram);
+            strData = strWriter.ToString();
+            info.AddValue(KEY_XMLDIFFGRAM, strData);
         }
 
         // Deserialize all the tables - marked internal so that DataTable can call into this
@@ -367,54 +317,14 @@ namespace System.Data
         {
             if (remotingFormat != SerializationFormat.Xml)
             {
-                if (schemaSerializationMode == SchemaSerializationMode.IncludeSchema)
-                {
-                    //DataSet public state properties
-                    DeserializeDataSetProperties(info, context);
-
-                    //Tables Count
-                    int tableCount = info.GetInt32("DataSet.Tables.Count");
-
-                    //Tables, Columns, Rows
-                    for (int i = 0; i < tableCount; i++)
-                    {
-                        byte[] buffer = (byte[])info.GetValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), typeof(byte[]))!;
-                        MemoryStream memStream = new MemoryStream(buffer);
-                        memStream.Position = 0;
-                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
-                        DataTable dt = (DataTable)bf.Deserialize(memStream);
-                        Tables.Add(dt);
-                    }
-
-                    //Constraints
-                    for (int i = 0; i < tableCount; i++)
-                    {
-                        Tables[i].DeserializeConstraints(info, context,  /* table index */i,  /* serialize all constraints */ true); //
-                    }
-
-                    //Relations
-                    DeserializeRelations(info, context);
-
-                    //Expression Columns
-                    for (int i = 0; i < tableCount; i++)
-                    {
-                        Tables[i].DeserializeExpressionColumns(info, context, i);
-                    }
-                }
-                else
-                {
-                    //DeSerialize DataSet public properties.[Locale, CaseSensitive and EnforceConstraints]
-                    DeserializeDataSetProperties(info, context);
-                }
+                throw ExceptionBuilder.InvalidRemotingFormat(remotingFormat);
             }
-            else
-            {
-                string? strSchema = (string?)info.GetValue(KEY_XMLSCHEMA, typeof(string));
 
-                if (strSchema != null)
-                {
-                    ReadXmlSchema(new XmlTextReader(new StringReader(strSchema)), true);
-                }
+            string? strSchema = (string?)info.GetValue(KEY_XMLSCHEMA, typeof(string));
+
+            if (strSchema != null)
+            {
+                ReadXmlSchema(new XmlTextReader(new StringReader(strSchema)), true);
             }
         }
 
@@ -423,19 +333,13 @@ namespace System.Data
         {
             if (remotingFormat != SerializationFormat.Xml)
             {
-                for (int i = 0; i < Tables.Count; i++)
-                {
-                    Tables[i].DeserializeTableData(info, context, i);
-                }
+                throw ExceptionBuilder.InvalidRemotingFormat(remotingFormat);
             }
-            else
-            {
-                string? strData = (string?)info.GetValue(KEY_XMLDIFFGRAM, typeof(string));
 
-                if (strData != null)
-                {
-                    ReadXml(new XmlTextReader(new StringReader(strData)), XmlReadMode.DiffGram);
-                }
+            string? strData = (string?)info.GetValue(KEY_XMLDIFFGRAM, typeof(string));
+            if (strData != null)
+            {
+                ReadXml(new XmlTextReader(new StringReader(strData)), XmlReadMode.DiffGram);
             }
         }
 

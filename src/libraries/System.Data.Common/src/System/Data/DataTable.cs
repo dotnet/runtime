@@ -217,63 +217,50 @@ namespace System.Data
         // Serialize the table schema and data.
         private void SerializeDataTable(SerializationInfo info, StreamingContext context, bool isSingleTable, SerializationFormat remotingFormat)
         {
-            info.AddValue("DataTable.RemotingVersion", new Version(2, 0));
-
-            // SqlHotFix 299, SerializationFormat enumeration types don't exist in V1.1 SP1
-            if (SerializationFormat.Xml != remotingFormat)
-            {
-                info.AddValue("DataTable.RemotingFormat", remotingFormat);
-            }
-
             if (remotingFormat != SerializationFormat.Xml)
             {
-                //Binary
-                SerializeTableSchema(info, context, isSingleTable);
-                if (isSingleTable)
-                {
-                    SerializeTableData(info, context, 0);
-                }
+                throw ExceptionBuilder.InvalidRemotingFormat(remotingFormat);
+            }
+
+            info.AddValue("DataTable.RemotingVersion", new Version(2, 0));
+
+            //XML/V1.0/V1.1
+            string tempDSNamespace = string.Empty;
+            bool fCreatedDataSet = false;
+
+            if (_dataSet == null)
+            {
+                DataSet ds = new DataSet("tmpDataSet");
+                // if user set values on DataTable, it isn't necessary
+                // to set them on the DataSet because they won't be inherited
+                // but it is simpler to set them in both places
+
+                // if user did not set values on DataTable, it is required
+                // to set them on the DataSet so the table will inherit
+                // the value already on the Datatable
+                ds.SetLocaleValue(_culture, _cultureUserSet);
+                ds.CaseSensitive = CaseSensitive;
+                ds._namespaceURI = Namespace;
+                Debug.Assert(ds.RemotingFormat == SerializationFormat.Xml, "RemotingFormat must be SerializationFormat.Xml");
+                ds.Tables.Add(this);
+                fCreatedDataSet = true;
             }
             else
             {
-                //XML/V1.0/V1.1
-                string tempDSNamespace = string.Empty;
-                bool fCreatedDataSet = false;
+                tempDSNamespace = _dataSet.Namespace;
+                _dataSet._namespaceURI = Namespace;
+            }
 
-                if (_dataSet == null)
-                {
-                    DataSet ds = new DataSet("tmpDataSet");
-                    // if user set values on DataTable, it isn't necessary
-                    // to set them on the DataSet because they won't be inherited
-                    // but it is simpler to set them in both places
+            info.AddValue(KEY_XMLSCHEMA, _dataSet!.GetXmlSchemaForRemoting(this));
+            info.AddValue(KEY_XMLDIFFGRAM, _dataSet.GetRemotingDiffGram(this));
 
-                    // if user did not set values on DataTable, it is required
-                    // to set them on the DataSet so the table will inherit
-                    // the value already on the Datatable
-                    ds.SetLocaleValue(_culture, _cultureUserSet);
-                    ds.CaseSensitive = CaseSensitive;
-                    ds._namespaceURI = Namespace;
-                    Debug.Assert(ds.RemotingFormat == SerializationFormat.Xml, "RemotingFormat must be SerializationFormat.Xml");
-                    ds.Tables.Add(this);
-                    fCreatedDataSet = true;
-                }
-                else
-                {
-                    tempDSNamespace = _dataSet.Namespace;
-                    _dataSet._namespaceURI = Namespace;
-                }
-
-                info.AddValue(KEY_XMLSCHEMA, _dataSet!.GetXmlSchemaForRemoting(this));
-                info.AddValue(KEY_XMLDIFFGRAM, _dataSet.GetRemotingDiffGram(this));
-
-                if (fCreatedDataSet)
-                {
-                    _dataSet.Tables.Remove(this);
-                }
-                else
-                {
-                    _dataSet._namespaceURI = tempDSNamespace;
-                }
+            if (fCreatedDataSet)
+            {
+                _dataSet.Tables.Remove(this);
+            }
+            else
+            {
+                _dataSet._namespaceURI = tempDSNamespace;
             }
         }
 
@@ -282,38 +269,30 @@ namespace System.Data
         {
             if (remotingFormat != SerializationFormat.Xml)
             {
-                //Binary
-                DeserializeTableSchema(info, context, isSingleTable);
-                if (isSingleTable)
-                {
-                    DeserializeTableData(info, context, 0);
-                    ResetIndexes();
-                }
+                throw ExceptionBuilder.InvalidRemotingFormat(remotingFormat);
             }
-            else
+
+            //XML/V1.0/V1.1
+            string? strSchema = (string?)info.GetValue(KEY_XMLSCHEMA, typeof(string));
+            string? strData = (string?)info.GetValue(KEY_XMLDIFFGRAM, typeof(string));
+
+            if (strSchema != null)
             {
-                //XML/V1.0/V1.1
-                string? strSchema = (string?)info.GetValue(KEY_XMLSCHEMA, typeof(string));
-                string? strData = (string?)info.GetValue(KEY_XMLDIFFGRAM, typeof(string));
+                DataSet ds = new DataSet();
+                ds.ReadXmlSchema(new XmlTextReader(new StringReader(strSchema)));
 
-                if (strSchema != null)
+                Debug.Assert(ds.Tables.Count == 1, "There should be exactly 1 table here");
+                DataTable table = ds.Tables[0];
+                table.CloneTo(this, null, false);
+                //this is to avoid the cascading rules in the namespace
+                Namespace = table.Namespace;
+
+                if (strData != null)
                 {
-                    DataSet ds = new DataSet();
-                    ds.ReadXmlSchema(new XmlTextReader(new StringReader(strSchema)));
-
-                    Debug.Assert(ds.Tables.Count == 1, "There should be exactly 1 table here");
-                    DataTable table = ds.Tables[0];
-                    table.CloneTo(this, null, false);
-                    //this is to avoid the cascading rules in the namespace
-                    Namespace = table.Namespace;
-
-                    if (strData != null)
-                    {
-                        ds.Tables.Remove(ds.Tables[0]);
-                        ds.Tables.Add(this);
-                        ds.ReadXml(new XmlTextReader(new StringReader(strData)), XmlReadMode.DiffGram);
-                        ds.Tables.Remove(this);
-                    }
+                    ds.Tables.Remove(ds.Tables[0]);
+                    ds.Tables.Add(this);
+                    ds.ReadXml(new XmlTextReader(new StringReader(strData)), XmlReadMode.DiffGram);
+                    ds.Tables.Remove(this);
                 }
             }
         }
@@ -1111,7 +1090,7 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                if (value != SerializationFormat.Xml)
                 {
                     throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }

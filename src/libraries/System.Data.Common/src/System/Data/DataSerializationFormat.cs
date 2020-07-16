@@ -6,6 +6,7 @@ namespace System.Data
     public enum SerializationFormat
     {
         Xml = 0,
+        [Obsolete]
         Binary = 1
     }
 }

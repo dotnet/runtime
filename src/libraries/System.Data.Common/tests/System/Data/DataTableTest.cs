@@ -28,16 +28,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.SqlTypes;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Tests;
-using System.Text.RegularExpressions;
 using System.Xml;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests
@@ -376,22 +373,19 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void DataColumnTypeSerialization()
+        public void DataSetBinarySerializationIsInvalid()
         {
             DataTable dt = new DataTable("MyTable");
             DataColumn dc = new DataColumn("dc", typeof(int));
             dt.Columns.Add(dc);
-            dt.RemotingFormat = SerializationFormat.Binary;
 
-            DataTable dtDeserialized;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, dt);
-                ms.Seek(0, SeekOrigin.Begin);
-                dtDeserialized = (DataTable)bf.Deserialize(ms);
-            }
-            Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
+            Assert.Throws<InvalidEnumArgumentException>(() =>
+                {
+#pragma warning disable CS0612 // Type or member is obsolete
+                    dt.RemotingFormat = SerializationFormat.Binary;
+#pragma warning restore CS0612 // Type or member is obsolete
+                }
+            );
         }
 
         [Fact]
