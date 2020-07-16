@@ -8,8 +8,8 @@
     <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <EnableCoverageSupport>true</EnableCoverageSupport>
-
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
+    <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
   
@@ -54,23 +54,21 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple\tests\System.ValueTuple.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestAssemblies)' == 'true'">
-    <!-- We currently only test with C# projects. -->
+  <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true'" />
+                      Condition="'$(TestAssemblies)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
-                      Condition="'$(BuildAllConfigurations)' == 'true'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TestTrimming)' == 'true'">
+                      Condition="'$(TestPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
-                      Exclude="@(ProjectExclusions)" />
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
-          Condition="'$(Coverage)' == 'true'"
           AfterTargets="Test"
-          DependsOnTargets="GenerateCoverageReport" />
+          DependsOnTargets="GenerateCoverageReport"
+          Condition="'$(TestAssemblies)' == 'true' and
+                     '$(Coverage)' == 'true'" />
 
 </Project>
