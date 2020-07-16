@@ -136,6 +136,7 @@ namespace System.Runtime.Tests
             Assembly assembly = Assembly.Load(assemblyName);
 
             Assert.Empty(assembly.GetTypes());
+            Assert.Empty(assembly.GetManifestResourceNames());
             Assert.NotEmpty(assembly.GetForwardedTypes());
         }
 
