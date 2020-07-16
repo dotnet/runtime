@@ -91,7 +91,6 @@ jobs:
           - HelixPreCommand: 'export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
           - Interpreter: ' --monointerpreter'
 
-
     workspace:
       clean: all
     pool:
