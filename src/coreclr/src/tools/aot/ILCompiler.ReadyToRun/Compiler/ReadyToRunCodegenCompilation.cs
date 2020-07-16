@@ -311,7 +311,7 @@ namespace ILCompiler
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
-                        if (relativeMsilPath == inputFile || relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        if (relativeMsilPath == inputFile || relativeMsilPath.StartsWith(s_folderUpPrefix, StringComparison.Ordinal))
                         {
                             // Input file not under the composite root, emit to root output folder
                             relativeMsilPath = Path.GetFileName(inputFile);
