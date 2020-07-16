@@ -13,6 +13,7 @@ namespace System.Reflection.Tests
     public static class AssemblyNameProxyTests
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public static void GetAssemblyName_AssemblyNameProxy()
         {
             AssemblyNameProxy anp = new AssemblyNameProxy();
