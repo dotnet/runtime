@@ -64,7 +64,6 @@ jobs:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
         - IsInternal: --internal
-
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
 
