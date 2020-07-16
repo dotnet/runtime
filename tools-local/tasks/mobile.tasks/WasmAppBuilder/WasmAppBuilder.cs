@@ -121,7 +121,7 @@ public class WasmAppBuilder : Task
             var sEnableRemote = enableRemote ? "true" : "false";
 
             sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"icudt.dat\", load_remote: {sEnableRemote} }},");
-
+            sw.WriteLine($"\t\t{{ behavior: \"vfs\", name: \"dotnet.timezones.blat\", virtual_path: \"/usr/share/zoneinfo/\" }}");
             sw.WriteLine ("\t],");
 
             if (enableRemote) {
