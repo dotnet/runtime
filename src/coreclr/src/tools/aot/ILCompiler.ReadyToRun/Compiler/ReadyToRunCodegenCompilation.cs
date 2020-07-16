@@ -484,15 +484,18 @@ namespace ILCompiler
                     catch (TypeSystemException ex)
                     {
                         // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                     }
                     catch (RequiresRuntimeJitException ex)
                     {
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                     catch (CodeGenerationFailedException ex) when (_resilient)
                     {
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                 });
             }

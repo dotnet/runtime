@@ -125,26 +125,44 @@ namespace System.Text.Json
             }
         }
 
-        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition, bool isReferenceType)
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition, bool defaultValueIsNull)
         {
             if (ignoreCondition != null)
             {
                 Debug.Assert(MemberInfo != null);
                 Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
 
-                if (ignoreCondition != JsonIgnoreCondition.Never)
+                if (ignoreCondition == JsonIgnoreCondition.WhenWritingDefault)
                 {
-                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     IgnoreDefaultValuesOnWrite = true;
+                }
+                else if (ignoreCondition == JsonIgnoreCondition.WhenWritingNull)
+                {
+                    if (defaultValueIsNull)
+                    {
+                        IgnoreDefaultValuesOnWrite = true;
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(this);
+                    }
                 }
             }
 #pragma warning disable CS0618 // IgnoreNullValues is obsolete
             else if (Options.IgnoreNullValues)
             {
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
-                if (isReferenceType)
+                if (defaultValueIsNull)
                 {
                     IgnoreDefaultValuesOnRead = true;
+                    IgnoreDefaultValuesOnWrite = true;
+                }
+            }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull)
+            {
+                Debug.Assert(!Options.IgnoreNullValues);
+                if (defaultValueIsNull)
+                {
                     IgnoreDefaultValuesOnWrite = true;
                 }
             }
@@ -164,11 +182,11 @@ namespace System.Text.Json
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, bool isReferenceType)
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, bool defaultValueIsNull)
         {
             DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            DetermineIgnoreCondition(ignoreCondition, isReferenceType);
+            DetermineIgnoreCondition(ignoreCondition, defaultValueIsNull);
         }
 
         public abstract object? GetValueAsObject(object obj);

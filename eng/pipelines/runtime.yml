@@ -129,11 +129,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-    
-    # Temporary workaround to: https://github.com/dotnet/runtime/issues/39238
-    - subset: testsproj
-      include:
-      - src/libraries/tests.proj
 
 #
 # Build CoreCLR checked
@@ -318,8 +313,8 @@ jobs:
     - Browser_wasm
     variables:
       # map dependencies variables to local variables
-      - name: testsProjContainsChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
+      - name: librariesContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
@@ -338,10 +333,9 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        # update once: https://github.com/dotnet/runtime/issues/39238 is fixed
         condition: >-
           or(
-          eq(variables['testsProjContainsChange'], true),
+          eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
