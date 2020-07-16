@@ -1014,7 +1014,15 @@ namespace System.Text.Unicode
                     LoopTerminatedDueToNonAsciiDataInVectorLocal:
 
                         outputBytesRemaining -= 8 * i;
-                        possibleNonAsciiQWord = Sse2.X64.ConvertToUInt64(utf16Data.AsUInt64());
+
+                        if (Sse2.X64.IsSupported)
+                        {
+                            possibleNonAsciiQWord = Sse2.X64.ConvertToUInt64(utf16Data.AsUInt64());
+                        }
+                        else
+                        {
+                            possibleNonAsciiQWord = utf16Data.AsUInt64().ToScalar();
+                        }
 
                         // Temporarily set 'possibleNonAsciiQWord' to be the low 64 bits of the vector,
                         // then check whether it's all-ASCII. If so, narrow and write to the destination
