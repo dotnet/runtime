@@ -66,8 +66,8 @@ jobs:
         - IsInternal: --internal
 
     - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-        - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-          - HelixPreCommand: $(ExtraMSBuildLogsWindows)
+      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+        - HelixPreCommand: $(ExtraMSBuildLogsWindows)
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - HelixPreCommand: $(ExtraMSBuildLogsLinux)
     
