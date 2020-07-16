@@ -76,14 +76,15 @@ namespace Tracing.Tests.ProcessInfoValidation
             // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
             // /path/to/corerun /path/to/processinfo.dll
             // or
-            // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
+            // "C:\path\to\CoreRun.exe" processinfo.dll
             //
             // more generally, the cmdline the runtime sends is the following:
             // Windows     - return value of GetCommandLineW win32 API
             // non-Windows - /full/path/to/argv[0] arg[1] argv[2] ...
+            var currentAssemblyFileInfo = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string expectedCommandLine = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                 $"\"{currentProcess.MainModule.FileName}\" {System.Reflection.Assembly.GetExecutingAssembly().Location}" :
-                 $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+                 $"\"{currentProcess.MainModule.FileName}\" {currentAssemblyFileInfo.Name}" :
+                 $"{currentProcess.MainModule.FileName} {currentAssemblyFileInfo.FullName}";
 
             // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
             // This isn't represented in the output from the Runtime unfortunately, so we'll force that completion in that case.
