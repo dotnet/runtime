@@ -22,10 +22,8 @@ namespace System.Net.Sockets
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
-        private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
-        {
-            return Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo();
-        }
+        private static bool GetPlatformSupportsDualModeIPv4PacketInfo() =>
+            Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo() != 0;
 
         public static void Initialize()
         {
@@ -422,8 +420,8 @@ namespace System.Net.Sockets
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
-            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-            var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+            byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
             int sockAddrLen = socketAddressLen;
 
@@ -498,8 +496,8 @@ namespace System.Net.Sockets
                 fixed (byte* sockAddr = socketAddress)
                 fixed (Interop.Sys.IOVector* iov = iovecs)
                 {
-                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-                    var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+                    byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
                     var messageHeader = new Interop.Sys.MessageHeader
                     {
