@@ -94,21 +94,6 @@ jobs:
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
 
 #
-# Build Mono + Libraries. This excercises the code path where we build libraries tests
-# for all configurations.
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Mono_LibrariesTests_AllConfigurations
-      buildArgs: -subset mono+libs+libs.tests -allconfigurations
-
-#
 # SourceBuild Build
 #
 - template: /eng/pipelines/common/platform-matrix.yml
