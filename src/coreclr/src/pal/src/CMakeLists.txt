@@ -41,6 +41,10 @@ include_directories(include)
 
 # Compile options
 
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+  add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
+endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
