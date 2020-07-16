@@ -1967,7 +1967,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitReached_ConcurrentRequestsQueuedAndEvenlyDistributed()
         {
             const int MaxConcurrentStreams = 2;
-            const int TotalRequestCount = 1000;
+            const int TotalRequestCount = 400;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler(2);
             using (HttpClient client = CreateHttpClient(handler))
@@ -2017,7 +2017,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MultipleConnectionsEnabled_MaxConcurrentStreamsIncreasedAfterLimitIsReached_WaitingRequestsUnblocked()
         {
             const int MaxConcurrentStreams = 2;
-            const int TotalRequestCount = 10;
+            const int TotalRequestCount = 400;
             CancellationTokenSource cts = new CancellationTokenSource();
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler(2);
@@ -2088,7 +2088,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_AllRemaningRequestsHandledBySecondConnection()
         {
             const int MaxConcurrentStreams = 2;
-            const int TotalRequestCount = 1000;
+            const int TotalRequestCount = 400;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler(2);
             using (HttpClient client = CreateHttpClient(handler))
@@ -2229,11 +2229,11 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, List<Task<HttpResponseMessage>> sendTasks, uint MaxConcurrentStreams)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, List<Task<HttpResponseMessage>> sendTasks, uint maxConcurrentStreams)
         {
             sendTasks.Add(client.GetAsync(server.Address));
             sendTasks.Add(client.GetAsync(server.Address));
-            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(1), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams });
+            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(3), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams });
             return connection;
         }
 
