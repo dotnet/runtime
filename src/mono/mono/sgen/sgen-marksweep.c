@@ -197,7 +197,11 @@ typedef enum {
 static volatile int sweep_state = SWEEP_STATE_SWEPT;
 
 static gboolean concurrent_mark;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 static gboolean concurrent_sweep = DEFAULT_SWEEP_MODE;
+#else
+static const gboolean concurrent_sweep = SGEN_SWEEP_SERIAL;
+#endif
 
 static int sweep_pool_context = -1;
 
@@ -2399,10 +2403,16 @@ major_handle_gc_param (const char *opt)
 		lazy_sweep = FALSE;
 		return TRUE;
 	} else if (!strcmp (opt, "concurrent-sweep")) {
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 		concurrent_sweep = TRUE;
+#else
+		g_error ("Sgen was built with concurrent collector disabled");
+#endif
 		return TRUE;
 	} else if (!strcmp (opt, "no-concurrent-sweep")) {
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 		concurrent_sweep = FALSE;
+#endif
 		return TRUE;
 	}
 
