@@ -579,18 +579,6 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
     return shortAsciiName;
 }
 
-static bool ShouldRedirectToCurrentLibrary(const void* libraryNameOrPath)
-{
-    // Getting nullptr as name indicates redirection to current library
-    if (libraryNameOrPath == nullptr)
-    {
-        _ASSERTE(g_running_in_exe);
-        return true;
-    }
-
-    return false;
-}
-
 /*
 Function:
   PAL_LoadLibraryDirect
@@ -615,7 +603,8 @@ PAL_LoadLibraryDirect(
           lpLibFileName ? lpLibFileName : W16_NULLSTRING,
           lpLibFileName ? lpLibFileName : W16_NULLSTRING);
 
-    if (ShouldRedirectToCurrentLibrary(lpLibFileName))
+    // Getting nullptr as name indicates redirection to current library
+    if (lpLibFileName == nullptr)
     {
         dl_handle = dlopen(NULL, RTLD_LAZY);
         goto done;
@@ -1470,7 +1459,8 @@ static NATIVE_LIBRARY_HANDLE LOADLoadLibraryDirect(LPCSTR libraryNameOrPath)
 {
     NATIVE_LIBRARY_HANDLE dl_handle;
 
-    if (ShouldRedirectToCurrentLibrary(libraryNameOrPath))
+    // Getting nullptr as name indicates redirection to current library
+    if (libraryNameOrPath == nullptr)
     {
         dl_handle = dlopen(NULL, RTLD_LAZY);
     }
