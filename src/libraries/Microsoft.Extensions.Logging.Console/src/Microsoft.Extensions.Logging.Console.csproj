@@ -5,7 +5,7 @@
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>annotations</Nullable>
-    <DefineConstants>$(DefineConstants),NO_SUPRESS_GC_TRANSITION</DefineConstants>
+    <DefineConstants>$(DefineConstants);NO_SUPPRESS_GC_TRANSITION</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
