@@ -2956,24 +2956,27 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     }
     else
     {
+        regNumber amBaseReg = REG_NA;
         if (memBase != nullptr)
         {
-            id->idAddr()->iiaAddrMode.amBaseReg = memBase->GetRegNum();
-        }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
+            assert(!memBase->isContained());
+            amBaseReg = memBase->GetRegNum();
+            assert(amBaseReg != REG_NA);
         }
 
+        regNumber amIndxReg = REG_NA;
         if (indir->HasIndex())
         {
-            id->idAddr()->iiaAddrMode.amIndxReg = indir->Index()->GetRegNum();
+            GenTree* index = indir->Index();
+            assert(!index->isContained());
+            amIndxReg = index->GetRegNum();
+            assert(amIndxReg != REG_NA);
         }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-        }
-        id->idAddr()->iiaAddrMode.amScale = emitEncodeScale(indir->Scale());
+
+        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA)); // At least one should be set.
+        id->idAddr()->iiaAddrMode.amBaseReg = amBaseReg;
+        id->idAddr()->iiaAddrMode.amIndxReg = amIndxReg;
+        id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
 
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
