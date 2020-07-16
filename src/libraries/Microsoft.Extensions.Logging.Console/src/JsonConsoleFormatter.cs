@@ -63,10 +63,10 @@ namespace Microsoft.Extensions.Logging.Console
                         string stackTrace = exception?.StackTrace;
                         if (stackTrace != null)
                         {
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#else
+#if NETCOREAPP
                             foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
+#else
+                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
 #endif
                             {
                                 writer.WriteStringValue(stackTraceLines);
@@ -88,10 +88,10 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if (NETSTANDARD2_0 || NETFRAMEWORK)
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
-#else
+#if NETCOREAPP
                 textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
+#else
+                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
 #endif
             }
             textWriter.Write(Environment.NewLine);
