@@ -119,7 +119,7 @@ namespace System.Text.Unicode
                         // the alignment check consumes at most a single DWORD.)
 
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
-                        uint mask;
+                        int trailingZeroCount;
 
                         do
                         {
@@ -130,17 +130,19 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer));
+                                ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
+                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask);
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
                             else if (Sse2.IsSupported)
                             {
-                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
+                                int mask = Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
+                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask);
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
@@ -165,17 +167,14 @@ namespace System.Text.Unicode
                     LoopTerminatedEarlyDueToNonAsciiData:
                         // x86 can only be little endian, while ARM can be big or little endian
                         // so if we reached this label we need to check both combinations are supported
-                        Debug.Assert(BitConverter.IsLittleEndian);
-                        Debug.Assert(AdvSimd.Arm64.IsSupported || Sse2.IsSupported);
+                        Debug.Assert((AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || Sse2.IsSupported);
 
                         // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
                         // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
                         // bump our input counter by that amount, and resume processing from the
                         // "the first byte is no longer ASCII" portion of the main loop.
 
-                        Debug.Assert(mask != 0);
-
-                        pInputBuffer += BitOperations.TrailingZeroCount(mask);
+                        pInputBuffer += trailingZeroCount;
                         if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
                         {
                             goto ProcessRemainingBytesSlow;
@@ -735,7 +734,7 @@ namespace System.Text.Unicode
             Vector128.Create((ushort)0x0110).AsByte();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ushort GetNonAsciiBytes(Vector128<byte> value)
+        private static ulong GetNonAsciiBytes(Vector128<byte> value)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
             {
@@ -745,7 +744,7 @@ namespace System.Text.Unicode
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
             Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
-            return extractedBits.AsUInt16().ToScalar();
+            return extractedBits.AsUInt64().ToScalar();
         }
     }
 }
