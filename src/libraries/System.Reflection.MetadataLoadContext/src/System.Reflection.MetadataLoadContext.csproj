@@ -8,9 +8,6 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp3.0')) or $(TargetFramework.StartsWith('netstandard2.0'))">$(DefineConstants);FEATURE_GAC</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />
     <Compile Include="System\Reflection\DefaultBinder.cs" />

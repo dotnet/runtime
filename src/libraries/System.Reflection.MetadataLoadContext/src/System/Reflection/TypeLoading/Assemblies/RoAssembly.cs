@@ -145,9 +145,7 @@ namespace System.Reflection.TypeLoading
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
-#if !FEATURE_GAC
         [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif
         public sealed override bool GlobalAssemblyCache => false;
         public sealed override long HostContext => 0;
         public abstract override string ImageRuntimeVersion { get; }
