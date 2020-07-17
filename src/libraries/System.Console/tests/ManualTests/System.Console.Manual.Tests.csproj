@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="ManualTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Readme.md" />
+  </ItemGroup>
 </Project>

@@ -358,7 +358,7 @@ namespace System.IO
         private bool IsPotentialKeyCharacter(char keyChar)
         {
             // symbol or punctuation ascii characters
-            return keyChar < '\x00ff' && (char.IsSymbol(keyChar) || char.IsPunctuation(keyChar));
+            return keyChar < '\x0080' && (char.IsSymbol(keyChar) || char.IsPunctuation(keyChar));
         }
 
         internal bool MapBufferToConsoleKey(out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl)
