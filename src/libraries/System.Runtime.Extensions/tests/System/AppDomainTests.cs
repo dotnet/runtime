@@ -358,6 +358,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;

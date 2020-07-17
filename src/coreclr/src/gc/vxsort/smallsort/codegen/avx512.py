@@ -48,13 +48,13 @@ class AVX512BitonicISA(BitonicISA):
         if t == "double":
             return v
         elif t == "float":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         return f"i2d({v})"
 
     def i2s(self, v):
         t = self.type
         if t == "double":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         elif t == "float":
             return f"i2s({v})"
         return v
@@ -64,13 +64,13 @@ class AVX512BitonicISA(BitonicISA):
         if t == "double":
             return v
         elif t == "float":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         return f"d2i({v})"
 
     def s2i(self, v):
         t = self.type
         if t == "double":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         elif t == "float":
             return f"s2i({v})"
         return v

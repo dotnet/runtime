@@ -428,7 +428,7 @@ namespace System.Tests
             tupleDriverB = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "This");
             tupleDriverC = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "this");
             tupleDriverA.CompareTo(tupleDriverB, 0, 5);
-            tupleDriverA.CompareTo(tupleDriverC, 1, 5);
+            tupleDriverA.CompareTo(tupleDriverC, PlatformDetection.IsInvariantGlobalization ? /* 'T'-'t' */ -32 : 1, 5);
             //Tuple-5
             tupleDriverA = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');
             tupleDriverB = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');
