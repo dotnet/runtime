@@ -1757,7 +1757,7 @@ namespace System
             if (array.Length > 1)
             {
                 var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                ArraySortHelper<T>.Default.Sort<IComparer<T>>(span, null);
+                ArraySortHelper<T>.Default.Sort(span, (IComparer<T>?)null);
             }
         }
 
