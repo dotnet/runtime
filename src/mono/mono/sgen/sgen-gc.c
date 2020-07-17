@@ -235,7 +235,12 @@ static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
 static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
+
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 static gboolean enable_nursery_canaries = FALSE;
+#else
+static const gboolean enable_nursery_canaries = FALSE;
+#endif
 
 static gboolean precleaning_enabled = TRUE;
 static gboolean dynamic_nursery = FALSE;
@@ -3737,7 +3742,11 @@ sgen_gc_init (void)
 				sgen_binary_protocol_init (filename, (gint64)limit);
 			} else if (!strcmp (opt, "nursery-canaries")) {
 				do_verify_nursery = TRUE;
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 				enable_nursery_canaries = TRUE;
+#else
+				g_error ("Sgen was built with canaries disabled");
+#endif
 				/* If aot code is used, allocation from there won't expect the layout with canaries enabled */
 				sgen_set_use_managed_allocator (FALSE);
 			} else if (!sgen_client_handle_gc_debug (opt)) {
