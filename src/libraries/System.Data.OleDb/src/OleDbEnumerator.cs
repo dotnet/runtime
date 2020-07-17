@@ -28,17 +28,17 @@ namespace System.Data.OleDb
 
         internal static OleDbDataReader GetEnumeratorFromType(Type type)
         {
-            object value = Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
+            object? value = Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
             return GetEnumeratorReader(value);
         }
 
-        private static OleDbDataReader GetEnumeratorReader(object value)
+        private static OleDbDataReader GetEnumeratorReader(object? value)
         {
-            NativeMethods.ISourcesRowset srcrowset = null;
+            NativeMethods.ISourcesRowset? srcrowset = null;
 
             try
             {
-                srcrowset = (NativeMethods.ISourcesRowset)value;
+                srcrowset = (NativeMethods.ISourcesRowset?)value;
             }
             catch (InvalidCastException)
             {
@@ -54,7 +54,7 @@ namespace System.Data.OleDb
             IntPtr propSets = ADP.PtrZero;
             OleDbHResult hr = srcrowset.GetSourcesRowset(ADP.PtrZero, ODB.IID_IRowset, propCount, propSets, out value);
 
-            Exception f = OleDbConnection.ProcessResults(hr, null, null);
+            Exception? f = OleDbConnection.ProcessResults(hr, null, null);
             if (null != f)
             {
                 throw f;
@@ -72,7 +72,7 @@ namespace System.Data.OleDb
             //readonly Guid CLSID_MSDAENUM = new Guid(0xc8b522d0,0x5cf3,0x11ce,0xad,0xe5,0x00,0xaa,0x00,0x44,0x77,0x3d);
             //Type msdaenum = Type.GetTypeFromCLSID(CLSID_MSDAENUM, true);
             const string PROGID_MSDAENUM = "MSDAENUM";
-            Type msdaenum = Type.GetTypeFromProgID(PROGID_MSDAENUM, true);
+            Type msdaenum = Type.GetTypeFromProgID(PROGID_MSDAENUM, true)!;
             return GetEnumeratorFromType(msdaenum);
         }
     }
