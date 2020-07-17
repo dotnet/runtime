@@ -654,15 +654,24 @@ namespace System.Collections.Generic
 
     #region ArraySortHelper for paired key and value arrays
 
-    internal partial class ArraySortHelper<TKey, TValue>
+    internal partial class ComparerArraySortHelper<TKey, TValue, TComparer>
+        where TComparer : IComparer<TKey>
     {
-        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
             try
             {
-                IntrospectiveSort(keys, values, comparer ?? Comparer<TKey>.Default);
+                if (comparer is null)
+                {
+                    ComparerArraySortHelper<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(
+                        keys, values, Comparer<TKey>.Default);
+                }
+                else
+                {
+                    IntrospectiveSort(keys, values, comparer);
+                }
             }
             catch (IndexOutOfRangeException)
             {
@@ -674,7 +683,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer, int i, int j)
+        private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
         {
             Debug.Assert(comparer != null);
             Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
@@ -707,7 +716,7 @@ namespace System.Collections.Generic
             values[j] = v;
         }
 
-        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
             Debug.Assert(keys.Length == values.Length);
@@ -718,7 +727,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, IComparer<TKey> comparer)
+        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, TComparer comparer)
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(values.Length == keys.Length);
@@ -764,7 +773,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
             Debug.Assert(comparer != null);
@@ -802,7 +811,7 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void HeapSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        private static void HeapSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
             Debug.Assert(!keys.IsEmpty);
@@ -820,7 +829,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, int lo, IComparer<TKey> comparer)
+        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, int lo, TComparer comparer)
         {
             Debug.Assert(comparer != null);
             Debug.Assert(lo >= 0);
@@ -849,7 +858,7 @@ namespace System.Collections.Generic
             values[lo + i - 1] = dValue;
         }
 
-        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
@@ -906,7 +915,8 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    ArraySortHelper<TKey, TValue>.IntrospectiveSort(keys, values, comparer);
+                    // TODO: Change/move this Sort method out of the specific code path
+                    ComparerArraySortHelper<TKey, TValue, IComparer<TKey>>.IntrospectiveSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
