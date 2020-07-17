@@ -11,7 +11,7 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
-    <RunDisabledWasmTests>true</RunDisabledWasmTests>
+<!--    <RunDisabledWasmTests>true</RunDisabledWasmTests>-->
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
