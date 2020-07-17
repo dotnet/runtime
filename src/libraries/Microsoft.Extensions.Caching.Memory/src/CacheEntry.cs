@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 catch (Exception e)
                 {
                     // This will be invoked on a background thread, don't let it throw.
-                    entry._logger.LogInformation(e, "EvictionCallback invoked failed");
+                    entry._logger.LogError(new EventId(), e, "EvictionCallback invoked failed");
                 }
             }
         }
