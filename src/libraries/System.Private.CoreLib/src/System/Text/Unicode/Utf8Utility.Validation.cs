@@ -133,9 +133,7 @@ namespace System.Text.Unicode
                                 ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
-                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask);
-                                    Debug.Assert(trailingZeroCount < 16);
-
+                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask) >> 2;
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
@@ -171,10 +169,13 @@ namespace System.Text.Unicode
                         // so if we reached this label we need to check both combinations are supported
                         Debug.Assert((AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || Sse2.IsSupported);
 
+
                         // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
-                        // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
+                        // for each non-ASCII byte we saw. trailingZeroCount will count the number of ASCII bytes,
                         // bump our input counter by that amount, and resume processing from the
                         // "the first byte is no longer ASCII" portion of the main loop.
+                        // We should not expect a total number of zeroes equal or larger than 16.
+                        Debug.Assert(trailingZeroCount < 16);
 
                         pInputBuffer += trailingZeroCount;
                         if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
