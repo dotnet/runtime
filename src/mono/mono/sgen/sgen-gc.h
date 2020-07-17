@@ -476,10 +476,17 @@ void sgen_free_internal (void *addr, int type);
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure);
 void sgen_free_internal_dynamic (void *addr, size_t size, int type);
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void sgen_pin_stats_enable (void);
 void sgen_pin_stats_register_object (GCObject *obj, int generation);
 void sgen_pin_stats_register_global_remset (GCObject *obj);
 void sgen_pin_stats_report (void);
+#else
+static inline void sgen_pin_stats_enable (void) { }
+static inline void sgen_pin_stats_register_object (GCObject *obj, int generation) { }
+static inline void sgen_pin_stats_register_global_remset (GCObject *obj) { }
+static inline void sgen_pin_stats_report (void) { }
+#endif
 
 void sgen_gchandle_stats_enable (void);
 void sgen_gchandle_stats_report (void);
