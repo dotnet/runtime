@@ -96,14 +96,14 @@ namespace System.Net.Http
                 {
                     socket.Connect(new DnsEndPoint(host, port));
                 }
+
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch (Exception e)
             {
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
-
-            return new NetworkStream(socket, ownsSocket: true);
         }
 
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
