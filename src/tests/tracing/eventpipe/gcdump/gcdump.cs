@@ -82,7 +82,7 @@ namespace Tracing.Tests.EventSourceError
 
             return () => 
             {
-                // Hopefully it is low enough to be resillient to changes in the runtime
+                // Hopefully it is low enough to be resilient to changes in the runtime
                 // and high enough to catch issues. There should be between hundreds and thousands
                 // for each, but the number is variable and the point of the test is to verify
                 // that we get any events at all.
