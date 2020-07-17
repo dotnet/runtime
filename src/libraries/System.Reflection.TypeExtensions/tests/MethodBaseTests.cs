@@ -25,10 +25,10 @@ namespace System.Reflection.Tests
             yield return new object[] { Helpers.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestVoidMethod)), false };
 
             // Constructors
-            yield return new object[] { typeof(NonGenericClass).GetConstructor(new Type[0]), false };
-            yield return new object[] { typeof(NonGenericClass).GetConstructor(new Type[] { typeof(int) }), false };
+            yield return new object[] { TypeExtensions.GetConstructor(typeof(NonGenericClass), new Type[0]), false };
+            yield return new object[] { TypeExtensions.GetConstructor(typeof(NonGenericClass), new Type[] { typeof(int) }), false };
 
-            foreach (MethodBase constructor in typeof(GenericClass<>).GetConstructors())
+            foreach (MethodBase constructor in TypeExtensions.GetConstructors(typeof(GenericClass<>)))
             {
                 // ContainsGenericParameters should behave same for both methods and constructors.
                 // If method/ctor or the declaring type contains uninstantiated open generic parameter,
@@ -36,7 +36,7 @@ namespace System.Reflection.Tests
                 yield return new object[] { constructor, true };
             }
 
-            foreach (MethodBase constructor in typeof(GenericClass<int>).GetConstructors())
+            foreach (MethodBase constructor in TypeExtensions.GetConstructors(typeof(GenericClass<int>)))
             {
                 yield return new object[] { constructor, false };
             }
@@ -53,7 +53,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(NonGenericClass), "TestMethod2", new Type[] { typeof(int), typeof(float), typeof(string) })]
         public void GetMethod_String_Type(Type type, string name, Type[] typeArguments)
         {
-            MethodInfo method = type.GetMethod(name, typeArguments);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, typeArguments);
             Assert.Equal(name, method.Name);
         }
 

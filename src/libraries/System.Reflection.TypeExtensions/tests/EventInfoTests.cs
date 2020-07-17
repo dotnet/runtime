@@ -16,9 +16,9 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> AddEventHandler_TestData()
         {
             EI_Class tc1 = new EI_Class();
-            yield return new object[] { typeof(EI_Class).GetEvent("PublicEvent"), tc1, new VoidDelegate(tc1.PublicVoidMethod1), 1 };
-            yield return new object[] { typeof(EI_Class).GetEvent("PublicStaticEvent"), null, new VoidDelegate(tc1.ProtectedInternalVoidMethod), 2 };
-            yield return new object[] { typeof(EI_Class).GetEvent("PublicStaticEvent"), tc1, new VoidDelegate(tc1.PublicVoidMethod2), 3 };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PublicEvent"), tc1, new VoidDelegate(tc1.PublicVoidMethod1), 1 };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PublicStaticEvent"), null, new VoidDelegate(tc1.ProtectedInternalVoidMethod), 2 };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PublicStaticEvent"), tc1, new VoidDelegate(tc1.PublicVoidMethod2), 3 };
         }
 
         [Theory]
@@ -43,13 +43,13 @@ namespace System.Reflection.Tests
         {
             // Null target for instance method
             EI_Class tc1 = new EI_Class();
-            yield return new object[] { typeof(EI_Class).GetEvent("PublicEvent"), null, new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(TargetException) };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PublicEvent"), null, new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(TargetException) };
 
             // Event not declared on target
-            yield return new object[] { typeof(EI_Class).GetEvent("PublicEvent"), new DummyClass(), new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(TargetException) };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PublicEvent"), new DummyClass(), new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(TargetException) };
 
             // Event does not have a public add accessor
-            yield return new object[] { typeof(EI_Class).GetEvent("PrivateEvent", BindingFlags.NonPublic | BindingFlags.Instance), new DummyClass(), new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(InvalidOperationException) };
+            yield return new object[] { TypeExtensions.GetEvent(typeof(EI_Class), "PrivateEvent", BindingFlags.NonPublic | BindingFlags.Instance), new DummyClass(), new VoidDelegate(tc1.ProtectedInternalVoidMethod), typeof(InvalidOperationException) };
         }
 
         [Theory]
