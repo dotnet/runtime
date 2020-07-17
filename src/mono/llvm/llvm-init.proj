@@ -16,15 +16,21 @@
 	<MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx.10.12'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
   </PropertyGroup>
 
+  <!-- On Linux, we need to treat the target arch as the host arch, i.e. treat arm64 Linux as a desktop platform -->
+  <PropertyGroup>
+      <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' == 'linux' and '$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</MonoLLVMTargetArchitecture>
+      <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' != 'linux' or '$(TargetArchitecture)' == 'wasm'">$(HostArch)</MonoLLVMTargetArchitecture>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(HostArch).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(MonoLLVMSDKVersion)"/>
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(HostArch).Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(MonoLLVMToolsVersion)"/>
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(MonoLLVMSDKVersion)"/>
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(MonoLLVMToolsVersion)"/>
   </ItemGroup>
 
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
     <ItemGroup>
-      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(HostArch).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(HostArch)\**" />
-      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(HostArch).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(HostArch)\**" />
+      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
+      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
     </ItemGroup>
 
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)">

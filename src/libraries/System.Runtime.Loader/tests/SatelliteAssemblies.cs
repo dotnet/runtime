@@ -18,19 +18,22 @@ namespace System.Runtime.Loader.Tests
         public SatelliteAssembliesTestsFixture()
         {
             AssemblyLoadContext satelliteAssembliesTests = new AssemblyLoadContext("SatelliteAssembliesTests");
-            satelliteAssembliesTests.LoadFromAssemblyPath(typeof(SatelliteAssembliesTests).Assembly.Location);
+            var satelliteAssembliesTestsPath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(SatelliteAssembliesTests).Assembly.Location;
+            satelliteAssembliesTests.LoadFromAssemblyPath(satelliteAssembliesTestsPath);
 
             AssemblyLoadContext referencedClassLib = new AssemblyLoadContext("ReferencedClassLib");
-            referencedClassLib.LoadFromAssemblyPath(typeof(ReferencedClassLib.Program).Assembly.Location);
+            var referencedClassLibPath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(ReferencedClassLib.Program).Assembly.Location;
+            referencedClassLib.LoadFromAssemblyPath(referencedClassLibPath);
 
             AssemblyLoadContext referencedClassLibNeutralIsSatellite = new AssemblyLoadContext("ReferencedClassLibNeutralIsSatellite");
-            referencedClassLibNeutralIsSatellite.LoadFromAssemblyPath(typeof(ReferencedClassLibNeutralIsSatellite.Program).Assembly.Location);
+            var referencedClassLibNeutralIsSatellitePath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(ReferencedClassLibNeutralIsSatellite.Program).Assembly.Location;
+            referencedClassLibNeutralIsSatellite.LoadFromAssemblyPath(referencedClassLibNeutralIsSatellitePath);
 
             new AssemblyLoadContext("Empty");
 
             try
             {
-                Assembly assembly = Assembly.LoadFile(typeof(SatelliteAssembliesTests).Assembly.Location);
+                Assembly assembly = Assembly.LoadFile(satelliteAssembliesTestsPath);
                 contexts["LoadFile"] = AssemblyLoadContext.GetLoadContext(assembly);
             }
             catch (Exception e)
@@ -55,14 +58,24 @@ namespace System.Runtime.Loader.Tests
         }
 
 #region DescribeTests
+
+        public static IEnumerable<object[]> MainResources_TestData()
+        {
+            yield return new object[] { "", "Neutral language Main description 1.0.0" };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { "en", "English language Main description 1.0.0" };
+                yield return new object[] { "en-US", "English language Main description 1.0.0" };
+                yield return new object[] { "es", "Neutral language Main description 1.0.0" };
+                yield return new object[] { "es-MX", "Spanish (Mexico) language Main description 1.0.0" };
+                yield return new object[] { "fr", "Neutral language Main description 1.0.0" };
+                yield return new object[] { "fr-FR", "Neutral language Main description 1.0.0" };
+            }
+        }
+
         [Theory]
-        [InlineData("", "Neutral language Main description 1.0.0")]
-        [InlineData("en", "English language Main description 1.0.0")]
-        [InlineData("en-US", "English language Main description 1.0.0")]
-        [InlineData("es", "Neutral language Main description 1.0.0")]
-        [InlineData("es-MX", "Spanish (Mexico) language Main description 1.0.0")]
-        [InlineData("fr", "Neutral language Main description 1.0.0")]
-        [InlineData("fr-FR", "Neutral language Main description 1.0.0")]
+        [MemberData(nameof(MainResources_TestData))]
         public static void mainResources(string lang, string expected)
         {
             Assert.Equal(expected, Describe(lang));
@@ -77,44 +90,49 @@ namespace System.Runtime.Loader.Tests
             return rm.GetString("Describe", ci);
         }
 
-        [Theory]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0")]
-        [InlineData("Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "en",      "English language ReferencedClassLib description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "en-US",   "English language ReferencedClassLib description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "es",      "Neutral language ReferencedClassLib description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "",        "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "en",      "English language ReferencedClassLib description 1.0.0")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "en-US",   "English language ReferencedClassLib description 1.0.0")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "es",      "Neutral language ReferencedClassLib description 1.0.0")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "",        "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
+        public static IEnumerable<object[]> DescribeLib_TestData()
+        {
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "",      "Neutral language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en",    "English language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "en-US", "English language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "es-MX", "Spanish (Mexico) language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr",    "Neutral language Main description 1.0.0" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests.SatelliteAssembliesTests", "fr-FR", "Neutral language Main description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLib.Program, ReferencedClassLib", "en",      "English language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLib.Program, ReferencedClassLib", "en-US",   "English language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLib.Program, ReferencedClassLib", "es",      "Neutral language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "",        "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "en",      "English language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "en-US",   "English language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "es",      "Neutral language ReferencedClassLib description 1.0.0" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "",        "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [MemberData(nameof(DescribeLib_TestData))]
         public void describeLib(string alc, string type, string culture, string expected)
         {
             string result = "Oops";
@@ -138,34 +156,40 @@ namespace System.Runtime.Loader.Tests
         }
 #endregion
 
-        [Theory]
-        [InlineData("Default", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("Default", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("Empty", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("Empty", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("ReferencedClassLib", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("ReferencedClassLib", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("SatelliteAssembliesTests", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests", "en")]
-        [InlineData("LoadFile", "System.Runtime.Loader.Tests", "es-MX")]
-        [InlineData("Default", "ReferencedClassLib", "en")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite", "en")]
-        [InlineData("Default", "ReferencedClassLibNeutralIsSatellite", "es")]
-        [InlineData("Empty", "ReferencedClassLib", "en")]
-        [InlineData("Empty", "ReferencedClassLibNeutralIsSatellite", "en")]
-        [InlineData("Empty", "ReferencedClassLibNeutralIsSatellite", "es")]
-        [InlineData("LoadFile", "ReferencedClassLib", "en")]
-        [InlineData("LoadFile", "ReferencedClassLibNeutralIsSatellite", "en")]
-        [InlineData("LoadFile", "ReferencedClassLibNeutralIsSatellite", "es")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLib", "en")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "en")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "es")]
-        [InlineData("ReferencedClassLib", "ReferencedClassLib", "en")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "en")]
-        [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "es")]
+        public static IEnumerable<object[]> SatelliteLoadsCorrectly_TestData()
+        {
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "Default", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "Empty", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "Empty", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "ReferencedClassLib", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "ReferencedClassLib", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "SatelliteAssembliesTests", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests", "en" };
+            yield return new object[] { "LoadFile", "System.Runtime.Loader.Tests", "es-MX" };
+            yield return new object[] { "Default", "ReferencedClassLib", "en" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite", "en" };
+            yield return new object[] { "Default", "ReferencedClassLibNeutralIsSatellite", "es" };
+            yield return new object[] { "Empty", "ReferencedClassLib", "en" };
+            yield return new object[] { "Empty", "ReferencedClassLibNeutralIsSatellite", "en" };
+            yield return new object[] { "Empty", "ReferencedClassLibNeutralIsSatellite", "es" };
+            yield return new object[] { "LoadFile", "ReferencedClassLib", "en" };
+            yield return new object[] { "LoadFile", "ReferencedClassLibNeutralIsSatellite", "en" };
+            yield return new object[] { "LoadFile", "ReferencedClassLibNeutralIsSatellite", "es" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLib", "en" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "en" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "es" };
+            yield return new object[] { "ReferencedClassLib", "ReferencedClassLib", "en" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "en" };
+            yield return new object[] { "ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "es" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39379", TestPlatforms.Browser)]
         public void SatelliteLoadsCorrectly(string alc, string assemblyName, string culture)
         {
             AssemblyName satelliteAssemblyName = new AssemblyName(assemblyName + ".resources");

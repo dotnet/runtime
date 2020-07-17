@@ -64,9 +64,15 @@ jobs:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
         - IsInternal: --internal
-        
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
+
+    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+        - HelixPreCommand: $(ExtraMSBuildLogsWindows)
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - HelixPreCommand: $(ExtraMSBuildLogsLinux)
+    
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:

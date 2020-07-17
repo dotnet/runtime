@@ -25,7 +25,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
@@ -35,37 +35,61 @@ namespace System.Text.Json
                 declaredPropertyType,
                 runtimePropertyType,
                 runtimeClassType,
-                propertyInfo,
+                memberInfo,
                 converter,
                 ignoreCondition,
                 options);
 
-            if (propertyInfo != null)
+            switch (memberInfo)
             {
-                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                case PropertyInfo propertyInfo:
+                    {
+                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
 
-                MethodInfo? getMethod = propertyInfo.GetMethod;
-                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                }
+                        MethodInfo? getMethod = propertyInfo.GetMethod;
+                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        }
 
-                MethodInfo? setMethod = propertyInfo.SetMethod;
-                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                }
+                        MethodInfo? setMethod = propertyInfo.SetMethod;
+                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        }
+
+                        break;
+                    }
+
+                case FieldInfo fieldInfo:
+                    {
+                        Debug.Assert(fieldInfo.IsPublic);
+
+                        HasGetter = true;
+                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                        if (!fieldInfo.IsInitOnly)
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        IsForClassInfo = true;
+                        HasGetter = true;
+                        HasSetter = true;
+
+                        break;
+                    }
             }
-            else
-            {
-                IsForClassInfo = true;
-                HasGetter = true;
-                HasSetter = true;
-            }
 
-            GetPolicies(ignoreCondition);
+            GetPolicies(ignoreCondition, defaultValueIsNull: Converter.CanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -97,7 +121,7 @@ namespace System.Text.Json
             T value = Get!(obj);
 
             // Since devirtualization only works in non-shared generics,
-            // the default comparer is uded only for value types for now.
+            // the default comparer is used only for value types for now.
             // For reference types there is a quick check for null.
             if (IgnoreDefaultValuesOnWrite && (
                 default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))

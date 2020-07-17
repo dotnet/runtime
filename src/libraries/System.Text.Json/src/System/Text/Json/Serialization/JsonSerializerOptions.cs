@@ -40,6 +40,8 @@ namespace System.Text.Json
         private bool _haveTypesBeenCreated;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
+        private bool _ignoreReadonlyFields;
+        private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
@@ -78,6 +80,8 @@ namespace System.Text.Json
             _allowTrailingCommas = options._allowTrailingCommas;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
+            _ignoreReadonlyFields = options._ignoreReadonlyFields;
+            _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
@@ -216,7 +220,6 @@ namespace System.Text.Json
 
                 if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 
@@ -280,6 +283,50 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _ignoreReadOnlyProperties = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether read-only fields are ignored during serialization.
+        /// A property is read-only if it isn't marked with the <c>readonly</c> keyword.
+        /// The default value is false.
+        /// </summary>
+        /// <remarks>
+        /// Read-only fields are not deserialized regardless of this setting.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IgnoreReadOnlyFields
+        {
+            get
+            {
+                return _ignoreReadonlyFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _ignoreReadonlyFields = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether fields are handled serialization and deserialization.
+        /// The default value is false.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IncludeFields
+        {
+            get
+            {
+                return _includeFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _includeFields = value;
             }
         }
 

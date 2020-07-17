@@ -361,6 +361,8 @@ public:
         OUT VMPTR_Object *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain);
 
+    HRESULT GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> * pRanges);
+
     // retrieves the list of COM interfaces implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)
@@ -394,6 +396,14 @@ public:
                         OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes);
 
 private:
+    // Helper to enumerate all possible memory ranges help by a loader allocator.
+    void EnumerateMemRangesForLoaderAllocator(
+        PTR_LoaderAllocator pLoaderAllocator,
+        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
+
+    void EnumerateMemRangesForJitCodeHeaps(
+        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
+
     // Given a pointer to a managed function, obtain the method desc for it.
     // Equivalent to GetMethodDescPtrFromIp, except if the method isn't jitted
     // it will look for it in code stubs.

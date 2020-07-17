@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <DefineConstants>$(DefineConstants);ActivatorUtilities_In_DependencyInjection</DefineConstants>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>enable</Nullable>
@@ -16,6 +17,12 @@
              Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs" />
     <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs"
              Link="Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
+    <Reference Include="System" />
   </ItemGroup>
 
 </Project>

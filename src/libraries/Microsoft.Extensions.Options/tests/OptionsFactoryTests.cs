@@ -191,7 +191,34 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("", factory.Create("anything").Message);
         }
 
-        public class UberBothSetup : IConfigureNamedOptions<FakeOptions>, IConfigureNamedOptions<FakeOptions2>, IPostConfigureOptions<FakeOptions>, IPostConfigureOptions<FakeOptions2>
+        public class FakeOptionsValidation : IValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string name, FakeOptions options)
+            {
+                return ValidateOptionsResult.Fail("Hello world");
+            }
+        }
+
+        [Fact]
+        public void CanValidateOptionsWithConfigureOptions()
+        {
+            var factory = new ServiceCollection()
+                .ConfigureOptions<FakeOptionsValidation>()
+                .BuildServiceProvider()
+                .GetRequiredService<IOptionsFactory<FakeOptions>>();
+
+            var ex = Assert.Throws<OptionsValidationException>(() => factory.Create(Options.DefaultName));
+            var message = Assert.Single(ex.Failures);
+            Assert.Equal("Hello world", message);
+        }
+
+        public class UberSetup
+            : IConfigureNamedOptions<FakeOptions>
+            , IConfigureNamedOptions<FakeOptions2>
+            , IPostConfigureOptions<FakeOptions>
+            , IPostConfigureOptions<FakeOptions2>
+            , IValidateOptions<FakeOptions>
+            , IValidateOptions<FakeOptions2>
         {
             public void Configure(string name, FakeOptions options)
                 => options.Message += "["+name;
@@ -203,18 +230,38 @@ namespace Microsoft.Extensions.Options.Tests
 
             public void Configure(FakeOptions2 options) => Configure(Options.DefaultName, options);
 
+            public void PostConfigure(string name, FakeOptions options)
+                => options.Message += "]";
+
             public void PostConfigure(string name, FakeOptions2 options)
                 => options.Message += "]]";
 
-            public void PostConfigure(string name, FakeOptions options)
-                => options.Message += "]";
+            public ValidateOptionsResult Validate(string name, FakeOptions options)
+            {
+                if (options.Message == "[foo]")
+                {
+                    return ValidateOptionsResult.Fail("Invalid message '[foo]'");
+                }
+
+                return ValidateOptionsResult.Success;
+            }
+
+            public ValidateOptionsResult Validate(string name, FakeOptions2 options)
+            {
+                if (options.Message.Contains("[[bar]]"))
+                {
+                    return ValidateOptionsResult.Fail($"Invalid message '{options.Message}'");
+                }
+
+                return ValidateOptionsResult.Success;
+            }
         }
 
         [Fact]
         public void CanConfigureTwoOptionsWithConfigureOptions()
         {
             var services = new ServiceCollection();
-            services.ConfigureOptions<UberBothSetup>();
+            services.ConfigureOptions<UberSetup>();
 
             var sp = services.BuildServiceProvider();
             var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
@@ -222,8 +269,17 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.Equal("[]", factory.Create(Options.DefaultName).Message);
             Assert.Equal("[hao]", factory.Create("hao").Message);
+
+            var ex1 = Assert.Throws<OptionsValidationException>(() => factory.Create("foo"));
+            var failure1 = Assert.Single(ex1.Failures);
+            Assert.Equal("Invalid message '[foo]'", failure1);
+
             Assert.Equal("[[]]", factory2.Create(Options.DefaultName).Message);
             Assert.Equal("[[hao]]", factory2.Create("hao").Message);
+
+            var ex2 = Assert.Throws<OptionsValidationException>(() => factory2.Create("bar"));
+            var failure2 = Assert.Single(ex2.Failures);
+            Assert.Equal("Invalid message '[[bar]]'", failure2);
         }
 
         [Fact]
@@ -231,11 +287,12 @@ namespace Microsoft.Extensions.Options.Tests
         {
             var services = new ServiceCollection();
             services.ConfigureAll<FakeOptions2>(o => o.Message = "!");
-            services.ConfigureOptions<UberBothSetup>();
+            services.ConfigureOptions<UberSetup>();
             services.Configure<FakeOptions>("#1", o => o.Message += "#");
             services.PostConfigureAll<FakeOptions2>(o => o.Message += "|");
             services.ConfigureOptions(new PostConfigureOptions<FakeOptions>("override", o => o.Message = "override"));
             services.PostConfigure<FakeOptions>("end", o => o.Message += "_");
+            services.ConfigureOptions(new ValidateOptions<FakeOptions>("fail", o => false, "fail"));
 
             var sp = services.BuildServiceProvider();
             var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
@@ -251,6 +308,18 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("![[override]]|", factory2.Create("override").Message);
             Assert.Equal("[end]_", factory.Create("end").Message);
             Assert.Equal("![[end]]|", factory2.Create("end").Message);
+
+            var ex1 = Assert.Throws<OptionsValidationException>(() => factory.Create("foo"));
+            var failure1 = Assert.Single(ex1.Failures);
+            Assert.Equal("Invalid message '[foo]'", failure1);
+
+            var ex2 = Assert.Throws<OptionsValidationException>(() => factory2.Create("bar"));
+            var failure2 = Assert.Single(ex2.Failures);
+            Assert.Equal("Invalid message '![[bar]]|'", failure2);
+
+            var ex3 = Assert.Throws<OptionsValidationException>(() => factory.Create("fail"));
+            var failure3 = Assert.Single(ex3.Failures);
+            Assert.Equal("fail", failure3);
         }
 
         [Fact]
@@ -259,7 +328,7 @@ namespace Microsoft.Extensions.Options.Tests
             var services = new ServiceCollection();
             Action<FakeOptions> act = o => o.Message = "whatev";
             var error = Assert.Throws<InvalidOperationException>(() => services.ConfigureOptions(act));
-            Assert.Equal("No IConfigureOptions<> or IPostConfigureOptions<> implementations were found, did you mean to call Configure<> or PostConfigure<>?", error.Message);
+            Assert.Equal("No IConfigureOptions<>, IPostConfigureOptions<>, or IValidateOptions<> implementations were found, did you mean to call Configure<> or PostConfigure<>?", error.Message);
         }
 
         [Fact]
@@ -267,7 +336,7 @@ namespace Microsoft.Extensions.Options.Tests
         {
             var services = new ServiceCollection();
             var error = Assert.Throws<InvalidOperationException>(() => services.ConfigureOptions(new object()));
-            Assert.Equal("No IConfigureOptions<> or IPostConfigureOptions<> implementations were found.", error.Message);
+            Assert.Equal("No IConfigureOptions<>, IPostConfigureOptions<>, or IValidateOptions<> implementations were found.", error.Message);
         }
     }
 }

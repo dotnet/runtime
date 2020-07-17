@@ -108,8 +108,17 @@ namespace Internal.Cryptography
             }
         }
 
-        protected abstract int UncheckedTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
+        protected int UncheckedTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        {
+            return UncheckedTransformBlock(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset));
+        }
+
+        protected abstract int UncheckedTransformBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer);
+
+        // For final block, encryption and decryption can give better context for the returning byte size, so we
+        // don't provide an implementation here.
         protected abstract byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
+        protected abstract int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer);
 
         protected PaddingMode PaddingMode { get; private set; }
         protected BasicSymmetricCipher BasicSymmetricCipher { get; private set; }

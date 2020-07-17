@@ -13,23 +13,35 @@ namespace System.Net.Http.Json.Functional.Tests
         public int Age { get; set; }
         public string Name { get; set; }
         public Person Parent { get; set; }
+        public string PlaceOfBirth { get; set; }
 
         public void Validate()
         {
-            Assert.Equal("David", Name);
-            Assert.Equal(24, Age);
+            Assert.Equal("R. Daneel Olivaw", Name);
+            Assert.Equal(19_230, Age);
+            Assert.Equal("Horní Dolní", PlaceOfBirth);
             Assert.Null(Parent);
         }
 
         public static Person Create()
         {
-            return new Person { Name = "David", Age = 24 };
+            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horní Dolní"};
         }
 
-        public string Serialize()
+        public string Serialize(JsonSerializerOptions options = null)
         {
-            return JsonSerializer.Serialize(this);
+            return JsonSerializer.Serialize(this, options);
         }
+    }
+
+    internal static class JsonOptions
+    {
+        public static readonly JsonSerializerOptions DefaultSerializerOptions
+            = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
     }
 
     internal class EnsureDefaultOptionsConverter : JsonConverter<EnsureDefaultOptions>

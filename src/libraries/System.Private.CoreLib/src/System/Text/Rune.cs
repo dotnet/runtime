@@ -1169,7 +1169,7 @@ namespace System.Text
         private static UnicodeCategory GetUnicodeCategoryNonAscii(Rune value)
         {
             Debug.Assert(!value.IsAscii, "Shouldn't use this non-optimized code path for ASCII characters.");
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return CharUnicodeInfo.GetUnicodeCategory(value.Value);
 #else
             if (value.IsBmp)

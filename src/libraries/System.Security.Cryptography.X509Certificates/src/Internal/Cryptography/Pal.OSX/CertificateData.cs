@@ -49,6 +49,8 @@ namespace Internal.Cryptography.Pal
         internal X500DistinguishedName Issuer;
         internal X500DistinguishedName Subject;
         internal List<X509Extension> Extensions;
+        internal string IssuerName;
+        internal string SubjectName;
 
         internal int Version => certificate.TbsCertificate.Version;
 
@@ -81,6 +83,8 @@ namespace Internal.Cryptography.Pal
             certificate.TbsCertificate.ValidateVersion();
             Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
             Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
+            IssuerName = Issuer.Name;
+            SubjectName = Subject.Name;
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);

@@ -368,7 +368,7 @@ namespace System.Net.WebSockets
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
-            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
+            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
                 SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
@@ -384,7 +384,7 @@ namespace System.Net.WebSockets
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
             ValueTask writeTask = default;
-            bool releaseSemaphoreAndSendBuffer = true;
+            bool releaseSendBufferAndSemaphore = true;
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
@@ -402,7 +402,7 @@ namespace System.Net.WebSockets
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
                 // calling GetResult), we want to release the semaphore and the send buffer. After this point,
                 // both need to be held until writeTask completes.
-                releaseSemaphoreAndSendBuffer = false;
+                releaseSendBufferAndSemaphore = false;
             }
             catch (Exception exc)
             {
@@ -413,10 +413,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (releaseSemaphoreAndSendBuffer)
+                if (releaseSendBufferAndSemaphore)
                 {
-                    _sendFrameAsyncLock.Release();
                     ReleaseSendBuffer();
+                    _sendFrameAsyncLock.Release();
                 }
             }
 
@@ -437,8 +437,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                _sendFrameAsyncLock.Release();
                 ReleaseSendBuffer();
+                _sendFrameAsyncLock.Release();
             }
         }
 
@@ -461,8 +461,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                _sendFrameAsyncLock.Release();
                 ReleaseSendBuffer();
+                _sendFrameAsyncLock.Release();
             }
         }
 
@@ -1277,6 +1277,8 @@ namespace System.Net.WebSockets
         /// <summary>Releases the send buffer to the pool.</summary>
         private void ReleaseSendBuffer()
         {
+            Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
+
             byte[]? old = _sendBuffer;
             if (old != null)
             {

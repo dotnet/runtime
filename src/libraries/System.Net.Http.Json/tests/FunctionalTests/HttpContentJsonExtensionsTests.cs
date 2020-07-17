@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -154,7 +154,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
-            const string json = @"{""Name"":""David"",""Age"":24}";
+            string json = Person.Create().Serialize();
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
                 async (handler, uri) =>
                 {

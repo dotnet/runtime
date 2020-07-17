@@ -66,7 +66,7 @@ namespace System.Net.Http
                 {
                     bool drained = await DrainAsync(connection._pool.Settings._maxResponseDrainSize).ConfigureAwait(false);
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         connection.Trace(drained ?
                             "Connection drain succeeded" :
@@ -75,7 +75,7 @@ namespace System.Net.Http
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         connection.Trace($"Connection drain failed due to exception: {e}");
                     }

@@ -185,10 +185,23 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public string Issuer
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.IssuerName;
+            }
+        }
 
-        public string Issuer => IssuerName.Name;
-
-        public string Subject => SubjectName.Name;
+        public string Subject
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.SubjectName;
+            }
+        }
 
         public string LegacyIssuer => IssuerName.Decode(X500DistinguishedNameFlags.None);
 
@@ -322,7 +335,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-                return _certData.RawData;
+                return _certData.RawData.CloneByteArray();
             }
         }
 
@@ -350,11 +363,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-
-                using (SHA1 hash = SHA1.Create())
-                {
-                    return hash.ComputeHash(_certData.RawData);
-                }
+                return SHA1.HashData(_certData.RawData);
             }
         }
 
