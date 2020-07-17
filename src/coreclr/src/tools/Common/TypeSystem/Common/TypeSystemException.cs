@@ -3,21 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Resources;
-using System.Reflection;
 
 namespace Internal.TypeSystem
 {
     /// <summary>
     /// Base type for all type system exceptions.
     /// </summary>
-    public abstract class TypeSystemException : Exception
+    public abstract partial class TypeSystemException : Exception
     {
         private string[] _arguments;
-
-        private static Lazy<ResourceManager> s_stringResourceManager =
-            new Lazy<ResourceManager>(() => new ResourceManager("Internal.TypeSystem.Strings", typeof(TypeSystemException).GetTypeInfo().Assembly));
 
         /// <summary>
         /// Gets the resource string identifier.
@@ -49,22 +43,19 @@ namespace Internal.TypeSystem
             _arguments = args;
         }
 
-        public static string GetFormatString(ExceptionStringID id)
-        {
-            return s_stringResourceManager.Value.GetString(id.ToString(), CultureInfo.InvariantCulture);
-        }
-
         private static string GetExceptionString(ExceptionStringID id, string[] args)
         {
             string formatString = GetFormatString(id);
             try
             {
-                return String.Format(formatString, (object[])args);
+                if (formatString != null)
+                {
+                    return String.Format(formatString, (object[])args);
+                }
             }
-            catch
-            {
-                return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
-            }
+            catch {}
+            
+            return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
         }
 
         /// <summary>
