@@ -15521,10 +15521,14 @@ bool emitter::IsRedundantLdStr(
     regNumber prevReg1   = emitLastIns->idReg1();
     regNumber prevReg2   = emitLastIns->idReg2();
     insFormat lastInsfmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
 
-    // Only optimize for "base" or "base plus immediate offset" addressing modes.
-    if (((fmt != IF_LS_2A) && (fmt != IF_LS_2B)) || fmt != lastInsfmt)
+    // Only optimize if:
+    // 1. "base" or "base plus immediate offset" addressing modes.
+    // 2. Addressing mode matches with previous instruction.
+    // 3. The operand size matches with previous instruction
+    if (((fmt != IF_LS_2A) && (fmt != IF_LS_2B)) || (fmt != lastInsfmt) || (prevSize != size))
     {
         return false;
     }
