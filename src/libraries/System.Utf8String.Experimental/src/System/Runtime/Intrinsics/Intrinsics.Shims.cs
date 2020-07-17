@@ -9,7 +9,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<uint> CreateScalar(uint value) => throw new PlatformNotSupportedException();
         public static Vector64<byte> AsByte<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector64<T> GetLower<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
-
+        public static Vector64<ulong> AsUInt64<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector64<T>
         where T : struct
@@ -21,6 +21,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<short> Create(short value) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> Create(ushort value) => throw new PlatformNotSupportedException();
         public static Vector128<byte> Create(byte value) => throw new PlatformNotSupportedException();
+        public static Vector128<uint> Create(uint value) => throw new PlatformNotSupportedException();
         public static Vector128<ulong> CreateScalarUnsafe(ulong value) => throw new PlatformNotSupportedException();
         public static Vector128<sbyte> AsSByte<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<byte> AsByte<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
