@@ -358,13 +358,13 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 
-	const char* appctx_keys[1];
-	appctx_keys[0] = "APP_CONTEXT_BASE_DIRECTORY";
+	const char *appctx_keys[1];
+	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 
-	const char* appctx_values[1];
-	appctx_values[0] = "/";
+	const char *appctx_values[1];
+	appctx_values [0] = "/";
 
-	monovm_initialize(1, appctx_keys, appctx_values);
+	monovm_initialize (1, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
