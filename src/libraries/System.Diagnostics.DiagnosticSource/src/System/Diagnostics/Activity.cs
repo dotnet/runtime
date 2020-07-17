@@ -624,9 +624,9 @@ namespace System.Diagnostics
                     SetEndTime(GetUtcNow());
                 }
 
-                SetCurrent(Parent);
-
                 Source.NotifyActivityStop(this);
+
+                SetCurrent(Parent);
             }
         }
 

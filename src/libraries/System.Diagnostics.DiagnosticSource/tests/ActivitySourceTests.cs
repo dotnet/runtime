@@ -532,6 +532,35 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestEventNotificationOrder()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                Activity parent = Activity.Current;
+                Activity child = null;
+
+                using ActivitySource aSource = new ActivitySource("EventNotificationOrder");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "EventNotificationOrder";
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.ActivityStopped = a => Assert.Equal(child, Activity.Current);
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (child = aSource.StartActivity("a1"))
+                {
+                    Assert.NotNull(child);
+                    // by the end of this block, the stop event notification will fire and ActivityListener.ActivityStopped will get called.
+                    // assert there that the created activity is still set as Current activity.
+                }
+
+                // Now the Current should be restored back.
+                Assert.Equal(parent, Activity.Current);
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }
