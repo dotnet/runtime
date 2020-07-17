@@ -488,8 +488,13 @@ static inline void sgen_pin_stats_register_global_remset (GCObject *obj) { }
 static inline void sgen_pin_stats_report (void) { }
 #endif
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void sgen_gchandle_stats_enable (void);
 void sgen_gchandle_stats_report (void);
+#else
+static inline void sgen_gchandle_stats_enable (void) { }
+static inline void sgen_gchandle_stats_report (void) { }
+#endif
 
 void sgen_sort_addresses (void **array, size_t size);
 void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
