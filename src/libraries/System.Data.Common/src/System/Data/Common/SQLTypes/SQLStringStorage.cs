@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Data.SqlTypes;
@@ -13,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlStringStorage : DataStorage
     {
-        private SqlString[] _values;
+        private SqlString[] _values = default!; // Late-initialized
 
         public SqlStringStorage(DataColumn column)
         : base(column, typeof(SqlString), SqlString.Null, SqlString.Null, StorageType.SqlString)
@@ -110,12 +109,13 @@ namespace System.Data.Common
             return _table.Compare(valueNo1.Value, valueNo2.Value);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
+            Debug.Assert(null != value, "null value");
             return Compare(_values[recordNo], (SqlString)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (null != value)
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILMarshalers.h
 //
@@ -2943,9 +2942,8 @@ public:
 protected:
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
-    void EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit) override;
-private:
-    bool CanUsePinnedLayoutClass();
+    bool CanMarshalViaPinning() override;
+    void EmitMarshalViaPinning(ILCodeStream* pslILEmit) override;
 };
 
 class ILLayoutClassMarshaler : public ILMarshaler

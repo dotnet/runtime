@@ -297,11 +297,41 @@ wasm_invoke_iiliiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_iiiliiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, int arg_3, int arg_4, int arg_5, int arg_6);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6], (int)(gssize)margs->iargs [7]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_iiil (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2);
 	T func = (T)target_func;
 	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiilli (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, gint64 arg_3, int arg_4);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), get_long_arg (margs, 4), (int)(gssize)margs->iargs [6]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_il (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(gint64 arg_0);
+	T func = (T)target_func;
+	int res = func (get_long_arg (margs, 0));
 	*(int*)margs->retval = res;
 
 }
@@ -1163,6 +1193,15 @@ wasm_invoke_viil (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_vlii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(gint64 arg_0, int arg_1, int arg_2);
+	T func = (T)target_func;
+	func (get_long_arg (margs, 0), (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3]);
+
+}
+
+static void
 wasm_invoke_fifff (void *target_func, InterpMethodArguments *margs)
 {
 	typedef float (*T)(int arg_0, float arg_1, float arg_2, float arg_3);
@@ -1616,12 +1655,15 @@ static const char* interp_to_native_signatures [] = {
 "IIIIIIIIIIIII",
 "IIIIIIIIIIIIII",
 "IIIL",
+"IIILIIII",
+"IIILLI",
 "IIL",
 "IILI",
 "IILIIII",
 "IILIIIL",
 "IILLI",
 "IILLLI",
+"IL",
 "ILI",
 "L",
 "LI",
@@ -1686,6 +1728,7 @@ static const char* interp_to_native_signatures [] = {
 "VIL",
 "VILLI",
 "VL",
+"VLII",
 };
 static void* interp_to_native_invokes [] = {
 wasm_invoke_dd,
@@ -1776,12 +1819,15 @@ wasm_invoke_iiiiiiiiiiii,
 wasm_invoke_iiiiiiiiiiiii,
 wasm_invoke_iiiiiiiiiiiiii,
 wasm_invoke_iiil,
+wasm_invoke_iiiliiii,
+wasm_invoke_iiilli,
 wasm_invoke_iil,
 wasm_invoke_iili,
 wasm_invoke_iiliiii,
 wasm_invoke_iiliiil,
 wasm_invoke_iilli,
 wasm_invoke_iillli,
+wasm_invoke_il,
 wasm_invoke_ili,
 wasm_invoke_l,
 wasm_invoke_li,
@@ -1846,4 +1892,5 @@ wasm_invoke_viil,
 wasm_invoke_vil,
 wasm_invoke_villi,
 wasm_invoke_vl,
+wasm_invoke_vlii,
 };

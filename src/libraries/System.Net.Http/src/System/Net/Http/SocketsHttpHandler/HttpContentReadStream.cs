@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -67,7 +66,7 @@ namespace System.Net.Http
                 {
                     bool drained = await DrainAsync(connection._pool.Settings._maxResponseDrainSize).ConfigureAwait(false);
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         connection.Trace(drained ?
                             "Connection drain succeeded" :
@@ -76,7 +75,7 @@ namespace System.Net.Http
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         connection.Trace($"Connection drain failed due to exception: {e}");
                     }

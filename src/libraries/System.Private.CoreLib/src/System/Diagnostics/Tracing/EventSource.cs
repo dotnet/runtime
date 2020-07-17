@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
@@ -4866,7 +4865,12 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>Construct an EventAttribute with specified eventId</summary>
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
-        public EventAttribute(int eventId) { this.EventId = eventId; Level = EventLevel.Informational; this.m_opcodeSet = false; }
+        public EventAttribute(int eventId)
+        {
+            this.EventId = eventId;
+            Level = EventLevel.Informational;
+        }
+
         /// <summary>Event's ID</summary>
         public int EventId { get; private set; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>

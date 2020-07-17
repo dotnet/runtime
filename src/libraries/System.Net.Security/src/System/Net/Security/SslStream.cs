@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -34,6 +33,8 @@ namespace System.Net.Security
     public delegate X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
+
+    public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
 
     // Internal versions of the above delegates.
     internal delegate bool RemoteCertValidationCallback(string? host, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
@@ -110,7 +111,7 @@ namespace System.Net.Security
 
             _innerStream = innerStream;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -452,6 +453,12 @@ namespace System.Net.Security
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
             return ProcessAuthentication(true, true, cancellationToken)!;
+        }
+
+        public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
+        {
+            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state));
+            return ProcessAuthentication(isAsync: true, isApm: false, cancellationToken)!;
         }
 
         public virtual Task ShutdownAsync()

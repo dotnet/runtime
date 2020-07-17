@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -69,7 +68,7 @@ namespace System.Net.Http
                 lifetime != Timeout.InfiniteTimeSpan &&
                 (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
 
-            if (expired && NetEventSource.IsEnabled) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
+            if (expired && NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
             return expired;
         }
 
@@ -137,7 +136,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(task.IsFaulted);
                 Exception? e = task.Exception!.InnerException; // Access Exception even if not tracing, to avoid TaskScheduler.UnobservedTaskException firing
-                if (NetEventSource.IsEnabled) connection.Trace($"Exception from asynchronous processing: {e}");
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Exception from asynchronous processing: {e}");
             }
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -29,14 +28,11 @@ namespace System
     {
         public ObsoleteAttribute()
         {
-            Message = null;
-            IsError = false;
         }
 
         public ObsoleteAttribute(string? message)
         {
             Message = message;
-            IsError = false;
         }
 
         public ObsoleteAttribute(string? message, bool error)

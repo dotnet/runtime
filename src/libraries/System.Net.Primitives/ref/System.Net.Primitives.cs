@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -258,8 +257,8 @@ namespace System.Net
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
         public override string ToString() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class IPEndPoint : System.Net.EndPoint
@@ -278,8 +277,8 @@ namespace System.Net
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint result) { throw null; }
-        public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint? result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint result) { throw null; }
+        public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
     public partial interface IWebProxy
     {

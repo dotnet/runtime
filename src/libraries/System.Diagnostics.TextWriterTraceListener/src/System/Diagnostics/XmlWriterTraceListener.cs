@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -16,6 +15,7 @@ namespace System.Diagnostics
     {
         private const string FixedHeader = "<E2ETraceEvent xmlns=\"http://schemas.microsoft.com/2004/06/E2ETraceEvent\"><System xmlns=\"http://schemas.microsoft.com/2004/06/windows/eventlog/system\">";
 
+        private static volatile string? s_processName;
         private readonly string _machineName = Environment.MachineName;
         private StringBuilder? _strBldr;
         private XmlTextWriter? _xmlBlobWriter;
@@ -255,14 +255,28 @@ namespace System.Diagnostics
         [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         private void WriteEndHeader()
         {
+            string? processName = s_processName;
+            if (processName is null)
+            {
+                try
+                {
+                    using Process process = Process.GetCurrentProcess();
+                    s_processName = processName = process.ProcessName;
+                }
+                catch (PlatformNotSupportedException) // Process isn't supported on Browser
+                {
+                    s_processName = processName = string.Empty;
+                }
+            }
+
             InternalWrite("\" />");
 
             InternalWrite("<Execution ProcessName=\"");
-            InternalWrite(TraceListenerHelpers.GetProcessName());
+            InternalWrite(processName);
             InternalWrite("\" ProcessID=\"");
-            InternalWrite(((uint)TraceListenerHelpers.GetProcessId()).ToString(CultureInfo.InvariantCulture));
+            InternalWrite(((uint)Environment.ProcessId).ToString(CultureInfo.InvariantCulture));
             InternalWrite("\" ThreadID=\"");
-            WriteEscaped(TraceListenerHelpers.GetThreadId().ToString(CultureInfo.InvariantCulture));
+            WriteEscaped(Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture));
             InternalWrite("\" />");
 
             InternalWrite("<Channel/>");

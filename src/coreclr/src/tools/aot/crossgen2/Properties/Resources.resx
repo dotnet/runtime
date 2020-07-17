@@ -177,6 +177,9 @@
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (/out &lt;file&gt;)</value>
   </data>
+  <data name="InputWasNotLoadable" xml:space="preserve">
+    <value>No input files are loadable</value>
+  </data>
   <data name="NoInputFiles" xml:space="preserve">
     <value>No input files specified</value>
   </data>

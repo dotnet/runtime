@@ -4,6 +4,10 @@
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
+    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
@@ -18,7 +22,8 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime" />
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

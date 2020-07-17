@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.Common
@@ -24,7 +24,7 @@ namespace System.Data.Common
 
         private MissingMappingAction _missingMappingAction = System.Data.MissingMappingAction.Passthrough;
         private MissingSchemaAction _missingSchemaAction = System.Data.MissingSchemaAction.Add;
-        private DataTableMappingCollection _tableMappings;
+        private DataTableMappingCollection? _tableMappings;
 
         private static int s_objectTypeCount; // Bid counter
         internal readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
@@ -166,7 +166,7 @@ namespace System.Data.Common
         {
             get
             {
-                DataTableMappingCollection mappings = _tableMappings;
+                DataTableMappingCollection? mappings = _tableMappings;
                 if (null == mappings)
                 {
                     mappings = CreateTableMappings();
@@ -186,7 +186,7 @@ namespace System.Data.Common
 
         protected bool HasTableMappings() => ((null != _tableMappings) && (0 < TableMappings.Count));
 
-        public event FillErrorEventHandler FillError
+        public event FillErrorEventHandler? FillError
         {
             add
             {
@@ -202,7 +202,7 @@ namespace System.Data.Common
         [Obsolete("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual DataAdapter CloneInternals()
         {
-            DataAdapter clone = (DataAdapter)Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
+            DataAdapter clone = (DataAdapter)Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null)!;
             clone.CloneFrom(this);
             return clone;
         }
@@ -273,7 +273,8 @@ namespace System.Data.Common
                     throw ADP.FillRequires(nameof(dataReader));
                 }
                 // user must Close/Dispose of the dataReader
-                object value = FillSchemaFromReader(dataSet, null, schemaType, srcTable, dataReader);
+                // Never returns null if dataSet is non-null
+                object value = FillSchemaFromReader(dataSet, null, schemaType, srcTable, dataReader)!;
                 return (DataTable[])value;
             }
             finally
@@ -282,7 +283,7 @@ namespace System.Data.Common
             }
         }
 
-        protected virtual DataTable FillSchema(DataTable dataTable, SchemaType schemaType, IDataReader dataReader)
+        protected virtual DataTable? FillSchema(DataTable dataTable, SchemaType schemaType, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataTable, schemaType, dataReader", ObjectID);
             try
@@ -301,8 +302,8 @@ namespace System.Data.Common
                 }
                 // user must Close/Dispose of the dataReader
                 // user will have to call NextResult to access remaining results
-                object value = FillSchemaFromReader(null, dataTable, schemaType, null, dataReader);
-                return (DataTable)value;
+                object? value = FillSchemaFromReader(null, dataTable, schemaType, null, dataReader);
+                return (DataTable?)value;
             }
             finally
             {
@@ -310,9 +311,9 @@ namespace System.Data.Common
             }
         }
 
-        internal object FillSchemaFromReader(DataSet dataset, DataTable datatable, SchemaType schemaType, string srcTable, IDataReader dataReader)
+        internal object? FillSchemaFromReader(DataSet? dataset, DataTable? datatable, SchemaType schemaType, string? srcTable, IDataReader dataReader)
         {
-            DataTable[] dataTables = null;
+            DataTable[]? dataTables = null;
             int schemaCount = 0;
             do
             {
@@ -323,10 +324,10 @@ namespace System.Data.Common
                 {
                     continue;
                 }
-                string tmp = null;
+                string? tmp = null;
                 if (null != dataset)
                 {
-                    tmp = DataAdapter.GetSourceTableName(srcTable, schemaCount);
+                    tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
                     schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
                 }
 
@@ -350,7 +351,7 @@ namespace System.Data.Common
                 }
             } while (dataReader.NextResult()); // FillSchema does not capture errors for FillError event
 
-            object value = dataTables;
+            object? value = dataTables;
             if ((null == value) && (null == datatable))
             {
                 value = Array.Empty<DataTable>();
@@ -429,7 +430,7 @@ namespace System.Data.Common
 
                 int result = 0;
                 bool enforceContraints = false;
-                DataSet commonDataSet = dataTables[0].DataSet;
+                DataSet? commonDataSet = dataTables[0].DataSet;
                 try
                 {
                     if (null != commonDataSet)
@@ -489,7 +490,7 @@ namespace System.Data.Common
                 {
                     if (enforceContraints)
                     {
-                        commonDataSet.EnforceConstraints = true;
+                        commonDataSet!.EnforceConstraints = true;
                     }
                 }
                 return result;
@@ -500,7 +501,7 @@ namespace System.Data.Common
             }
         }
 
-        internal int FillFromReader(DataSet dataset, DataTable datatable, string srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn parentChapterColumn, object parentChapterValue)
+        internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             int rowsAddedToDataSet = 0;
             int schemaCount = 0;
@@ -512,7 +513,7 @@ namespace System.Data.Common
                     continue; // loop to next result
                 }
 
-                SchemaMapping mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
+                SchemaMapping? mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
                 schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
 
                 if (null == mapping)
@@ -641,20 +642,20 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
-        private SchemaMapping FillMappingInternal(DataSet dataset, DataTable datatable, string srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn parentChapterColumn, object parentChapterValue)
+        private SchemaMapping FillMappingInternal(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
-            string tmp = null;
+            string? tmp = null;
             if (null != dataset)
             {
-                tmp = DataAdapter.GetSourceTableName(srcTable, schemaCount);
+                tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
             }
             return new SchemaMapping(this, dataset, datatable, dataReader, withKeyInfo, SchemaType.Mapped, tmp, true, parentChapterColumn, parentChapterValue);
         }
 
-        private SchemaMapping FillMapping(DataSet dataset, DataTable datatable, string srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn parentChapterColumn, object parentChapterValue)
+        private SchemaMapping? FillMapping(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
-            SchemaMapping mapping = null;
+            SchemaMapping? mapping = null;
             if (_hasFillErrorHandler)
             {
                 try
@@ -703,7 +704,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public virtual IDataParameter[] GetFillParameters() => Array.Empty<IDataParameter>();
 
-        internal DataTableMapping GetTableMappingBySchemaAction(string sourceTableName, string dataSetTableName, MissingMappingAction mappingAction)
+        internal DataTableMapping? GetTableMappingBySchemaAction(string sourceTableName, string dataSetTableName, MissingMappingAction mappingAction)
         {
             return DataTableMappingCollection.GetTableMappingBySchemaAction(_tableMappings, sourceTableName, dataSetTableName, mappingAction);
         }
@@ -719,10 +720,10 @@ namespace System.Data.Common
 
         protected virtual void OnFillError(FillErrorEventArgs value)
         {
-            ((FillErrorEventHandler)Events[s_eventFillError])?.Invoke(this, value);
+            ((FillErrorEventHandler?)Events[s_eventFillError])?.Invoke(this, value);
         }
 
-        private void OnFillErrorHandler(Exception e, DataTable dataTable, object[] dataValues)
+        private void OnFillErrorHandler(Exception e, DataTable? dataTable, object?[]? dataValues)
         {
             FillErrorEventArgs fillErrorEvent = new FillErrorEventArgs(dataTable, dataValues);
             fillErrorEvent.Errors = e;

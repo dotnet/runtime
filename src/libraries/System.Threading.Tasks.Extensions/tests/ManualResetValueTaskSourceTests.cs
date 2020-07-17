@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Sources.Tests
@@ -11,6 +11,7 @@ namespace System.Threading.Tasks.Sources.Tests
     public class ManualResetValueTaskSourceTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task ReuseInstanceWithResets_Success()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -63,7 +64,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [Fact]
-        public void SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
+        public async Task SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
             mrvts.Reset();
@@ -75,14 +76,15 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Succeeded, mrvts.GetStatus(2));
             Assert.Equal(42, mrvts.GetResult(2));
 
-            var mres = new ManualResetEventSlim();
-            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
-            mres.Wait();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), tcs, 2, ValueTaskSourceOnCompletedFlags.None);
+            await tcs.Task;
 
             Assert.Equal(2, mrvts.Version);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetResult_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -110,7 +112,7 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [Fact]
-        public void SetException_BeforeOnCompleted_ResultAvailableSynchronously()
+        public async Task SetException_BeforeOnCompleted_ResultAvailableSynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
             mrvts.Reset();
@@ -123,14 +125,15 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Faulted, mrvts.GetStatus(2));
             Assert.Same(e, Assert.Throws<FormatException>(() => mrvts.GetResult(2)));
 
-            var mres = new ManualResetEventSlim();
-            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
-            mres.Wait();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), tcs, 2, ValueTaskSourceOnCompletedFlags.None);
+            await tcs.Task;
 
             Assert.Equal(2, mrvts.Version);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetException_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -173,9 +176,9 @@ namespace System.Threading.Tasks.Sources.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
+        public async Task FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
         {
-            var mres = new ManualResetEventSlim();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var mrvts = new ManualResetValueTaskSource<int>();
 
             mrvts.RunContinuationsAsynchronously = true;
@@ -185,21 +188,21 @@ namespace System.Threading.Tasks.Sources.Tests
             var al = new AsyncLocal<int>();
             al.Value = 42;
             mrvts.OnCompleted(
-                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); tcs.SetResult(); },
                 null,
                 0,
                 flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
 
-            mres.Wait();
+            await tcs.Task;
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
+        public async Task FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
         {
-            var mres = new ManualResetEventSlim();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var mrvts = new ManualResetValueTaskSource<int>();
 
             mrvts.RunContinuationsAsynchronously = true;
@@ -207,14 +210,14 @@ namespace System.Threading.Tasks.Sources.Tests
             var al = new AsyncLocal<int>();
             al.Value = 42;
             mrvts.OnCompleted(
-                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); tcs.SetResult(); },
                 null,
                 0,
                 flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
 
             mrvts.SetResult(1);
 
-            mres.Wait();
+            await tcs.Task;
         }
 
         [Fact]
@@ -242,52 +245,58 @@ namespace System.Threading.Tasks.Sources.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
+        public async Task OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
         {
-            var mres = new ManualResetEventSlim();
             var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
             for (short i = 0; i < 10; i++)
             {
-                int threadId = Environment.CurrentManagedThreadId;
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var tl = new ThreadLocal<int> { Value = 42 };
                 mrvts.SetResult(42);
                 mrvts.OnCompleted(
                     _ =>
                     {
-                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
-                        mres.Set();
+                        Assert.NotEqual(42, tl.Value);
+                        tcs.SetResult();
                     },
                     null,
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.Reset();
-                mres.Wait();
-                mres.Reset();
+
+                tl.Value = 0;
+
+                await tcs.Task;
             }
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
+        public async Task SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
         {
-            var mres = new ManualResetEventSlim();
             var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
             for (short i = 0; i < 10; i++)
             {
-                int threadId = Environment.CurrentManagedThreadId;
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var tl = new ThreadLocal<int> { Value = 42 };
                 mrvts.OnCompleted(
                     _ =>
                     {
-                        Assert.Equal(!runContinuationsAsynchronously, threadId == Environment.CurrentManagedThreadId);
-                        mres.Set();
+                        Assert.Equal(!runContinuationsAsynchronously, tl.Value == 42);
+                        tcs.SetResult();
                     },
                     null,
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.SetResult(42);
-                mres.Wait();
                 mrvts.Reset();
-                mres.Reset();
+
+                tl.Value = 0;
+
+                await tcs.Task;
             }
         }
 
@@ -406,6 +415,7 @@ namespace System.Threading.Tasks.Sources.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task AsyncEnumerable_Success(bool awaitForeach, bool asyncIterator)
         {
             IAsyncEnumerable<int> enumerable = asyncIterator ?

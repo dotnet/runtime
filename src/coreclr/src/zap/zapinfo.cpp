@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapInfo.cpp
 //
@@ -1431,9 +1430,13 @@ LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     _ASSERTE(ppIndirection != NULL);
 
     *ppIndirection = NULL;
-    if (!IsReadyToRunCompilation())
+    if (IsReadyToRunCompilation())
     {
-        *ppIndirection = (LONG*)m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
+        *ppIndirection = m_pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_IndirectTrapThreads);
+    }
+    else
+    {
+        *ppIndirection = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
             offsetof(CORCOMPILE_EE_INFO_TABLE, addrOfCaptureThreadGlobal));
     }
 

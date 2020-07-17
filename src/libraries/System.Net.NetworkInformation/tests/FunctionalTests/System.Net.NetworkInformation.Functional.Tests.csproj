@@ -3,8 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <!-- Shared code with src assembly -->
     <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs"
              Link="SharedSource\StringParsingHelpers.Addresses.cs" />

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // See makefile.inc.  During the build, this file is converted into a .inc
 // file for inclusion by .asm files.  The #defines are converted into EQU's.

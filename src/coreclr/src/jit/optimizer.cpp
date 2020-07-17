@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2318,8 +2317,8 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert((block->bbJumpKind != BBJ_COND) || (block->bbJumpKind != BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
-               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        assert(((block->bbJumpKind != BBJ_COND) && (block->bbJumpKind != BBJ_ALWAYS)) ||
+               (block->bbJumpDest != newNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 
@@ -4266,6 +4265,11 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
     copyOfCondStmt->SetCompilerAdded();
 
+    if (condTree->gtFlags & GTF_CALL)
+    {
+        block->bbFlags |= BBF_HAS_CALL; // Record that the block has a call
+    }
+
     if (opts.compDbgInfo)
     {
         copyOfCondStmt->SetILOffsetX(condStmt->GetILOffsetX());
@@ -6198,6 +6202,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
 
     // Create a copy of the expression and mark it for CSE's.
     GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
+
+    // The hoist Expr does not have to computed into a specific register,
+    // so clear the RegNum if it was set in the original expression
+    hoistExpr->ClearRegNum();
 
     // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
     assert(hoistExpr != origExpr);
@@ -9249,7 +9257,7 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                if (((tree->gtFlags & GTF_CALL) != 0))
                 {
                     hasGCSafePoint = true;
                 }

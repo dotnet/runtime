@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -189,7 +188,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -234,7 +233,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -281,7 +280,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        readStream = nestedContent.ReadAsStream();
+                        readStream = nestedContent.ReadAsStream(cancellationToken);
                     }
                     // Cannot be null, at least an empty stream is necessary.
                     readStream ??= new MemoryStream();
@@ -293,8 +292,10 @@ namespace System.Net.Http
                         // we fall back to the base behavior. We don't dispose of the streams already obtained
                         // as we don't necessarily own them yet.
 
+#pragma warning disable CA2016
                         // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
                         return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
+#pragma warning restore CA2016
                     }
                     streams[streamIndex++] = readStream;
                 }
@@ -306,7 +307,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
