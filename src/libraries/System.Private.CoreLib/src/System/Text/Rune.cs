@@ -1444,6 +1444,7 @@ namespace System.Text
 #endif
         }
 
+        /// <inheritdoc cref="IComparable.CompareTo" />
         int IComparable.CompareTo(object? obj)
         {
             if (obj is null)
