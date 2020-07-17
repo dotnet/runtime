@@ -14,10 +14,7 @@ namespace System.Collections.Generic
 
     internal partial class ArraySortHelper<T>
     {
-        //public void Sort(Span<T> keys)
-        //{
-        //    Sort<IComparer<T>>(keys, null);
-        //}
+        #region IArraySortHelper<T> Members
 
         public void Sort<TComparer>(Span<T> keys, TComparer comparer)
             where TComparer : IComparer<T>?
@@ -49,11 +46,6 @@ namespace System.Collections.Generic
             }
         }
 
-        //public int BinarySearch(T[] array, int index, int length, T value)
-        //{
-        //    return BinarySearch<IComparer<T>>(array, index, length, value, null);
-        //}
-
         public int BinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer comparer)
             where TComparer : IComparer<T>?
         {
@@ -76,6 +68,8 @@ namespace System.Collections.Generic
                 return 0;
             }
         }
+
+        #endregion
 
         internal static void Sort(Span<T> keys, Comparison<T> comparison)
         {
@@ -114,31 +108,6 @@ namespace System.Collections.Generic
     internal static class ComparerArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
     {
-        #region IArraySortHelper<T> Members
-
-
-        #endregion
-
-        //internal static void Sort(Span<T> keys, TComparer comparer)
-        //{
-        //    Debug.Assert(comparer != null, "Check the arguments in the caller!");
-
-        //    // Add a try block here to detect bogus comparisons
-        //    try
-        //    {
-        //        IntrospectiveSort(keys, comparer);
-        //    }
-        //    catch (IndexOutOfRangeException)
-        //    {
-        //        // TODO: Unpack Comparison if `ObjectComparisonComparer`
-        //        ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-        //    }
-        //}
-
         internal static int InternalBinarySearch(T[] array, int index, int length, T value, TComparer comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
@@ -347,11 +316,6 @@ namespace System.Collections.Generic
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
 
         #region IArraySortHelper<T> Members
-
-        //public void Sort(Span<T> keys)
-        //{
-        //    Sort<IComparer<T>>(keys, null);
-        //}
 
         public void Sort<TComparer>(Span<T> keys, TComparer comparer)
             where TComparer : IComparer<T>?

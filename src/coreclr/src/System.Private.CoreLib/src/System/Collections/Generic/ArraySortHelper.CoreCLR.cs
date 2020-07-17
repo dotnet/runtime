@@ -6,42 +6,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
-    //internal interface IComparerArraySortHelper<TKey, TComparer>
-    //    where TComparer : IComparer<TKey>
-    //{
-    //    void Sort(Span<TKey> keys, TComparer comparer);
-    //    int BinarySearch(TKey[] keys, int index, int length, TKey value, TComparer comparer);
-    //}
-
     internal interface IArraySortHelper<TKey>
     {
-        //void Sort(Span<TKey> keys);
         void Sort<TComparer>(Span<TKey> keys, TComparer comparer) where TComparer : IComparer<TKey>?;
-        //int BinarySearch(TKey[] keys, int index, int length, TKey value);
         int BinarySearch<TComparer>(TKey[] keys, int index, int length, TKey value, TComparer comparer) where TComparer : IComparer<TKey>?;
     }
-
-    //[TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
-    //internal partial class ComparerArraySortHelper<T, TComparer>
-    //    : IComparerArraySortHelper<T, TComparer>
-    //{
-    //    private static readonly IComparerArraySortHelper<T, TComparer> s_defaultArraySortHelper = CreateArraySortHelper();
-
-    //    public static IComparerArraySortHelper<T, TComparer> Default => s_defaultArraySortHelper;
-
-    //    [DynamicDependency("#ctor", typeof(GenericArraySortHelper<>))]
-    //    private static IComparerArraySortHelper<T, TComparer> CreateArraySortHelper()
-    //    {
-    //        if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
-    //        {
-    //            return (IArraySortHelper<T>)RuntimeTypeHandle.Allocate(typeof(GenericArraySortHelper<string>).TypeHandle.Instantiate(new Type[] { typeof(T) }));
-    //        }
-    //        else
-    //        {
-    //            return new ComparerArraySortHelper<T, TComparer>();
-    //        }
-    //    }
-    //}
 
     [TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
     internal partial class ArraySortHelper<T>
@@ -70,21 +39,10 @@ namespace System.Collections.Generic
     {
     }
 
-    //internal interface IComparerArraySortHelper<TKey, TValue, TComparer>
-    //    where TComparer : IComparer<TKey>
-    //{
-    //    void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer);
-    //}
-
-    //internal interface IArraySortHelper<TKey, TValue>
-    //{
-    //    void Sort(Span<TKey> keys, Span<TValue> values);
-    //}
     internal interface IArraySortHelper<TKey, TValue>
     {
         void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer) where TComparer : IComparer<TKey>?;
     }
-
 
     [TypeDependency("System.Collections.Generic.GenericArraySortHelper`2")]
     internal partial class ArraySortHelper<TKey, TValue>
