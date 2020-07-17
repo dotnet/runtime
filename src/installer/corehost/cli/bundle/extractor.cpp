@@ -31,6 +31,14 @@ pal::string_t& extractor_t::extraction_dir()
         }
 
         pal::string_t host_name = strip_executable_ext(get_filename(m_bundle_path));
+        if (!pal::is_path_rooted(m_extraction_dir))
+        {
+            pal::string_t current_dir = _X(".");
+            pal::string_t relative_path(m_extraction_dir);
+            m_extraction_dir = pal::realpath(&current_dir);
+            append_path(&m_extraction_dir, relative_path.c_str());
+        }
+
         append_path(&m_extraction_dir, host_name.c_str());
         append_path(&m_extraction_dir, m_bundle_id.c_str());
 

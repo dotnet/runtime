@@ -34,6 +34,7 @@ namespace System.Resources.Extensions
             return false;
         }
 
+        // Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
         private object ReadBinaryFormattedObject()
         {
             if (_formatter == null)

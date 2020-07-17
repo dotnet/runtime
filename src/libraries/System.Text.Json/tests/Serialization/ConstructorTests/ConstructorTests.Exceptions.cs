@@ -28,7 +28,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("'X'", exStr);
             Assert.Contains("'x'", exStr);
             Assert.Contains("(Int32)", exStr);
-            Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
+            Assert.Contains("Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<Url_BindTo_OneConstructorParameter>("{}"));
+
+            exStr = ex.ToString();
+            Assert.Contains("'URL'", exStr);
+            Assert.Contains("'Url'", exStr);
+            Assert.Contains("(Int32)", exStr);
+            Assert.Contains("Url_BindTo_OneConstructorParameter", exStr);
         }
 
         [Fact]
@@ -129,17 +138,126 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void AnonymousObject_InvalidOperationException()
+        public void AnonymousObject()
         {
             var obj = new { Prop = 5 };
+            Type objType = obj.GetType();
 
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", obj.GetType()));
+            // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            // We expect property 'Prop' to bind with a ctor arg called 'prop', but the ctor arg is called 'Prop'.
-            string exStr = ex.ToString();
-            Assert.Contains("AnonymousType", exStr);
-            Assert.Contains("(Int32)", exStr);
-            Assert.Contains("[System.Int32]", exStr);
+            object newObj = JsonSerializer.Deserialize("{}", objType);
+            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
+
+            newObj = JsonSerializer.Deserialize(@"{""Prop"":5}", objType);
+            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
+        }
+
+        [Fact]
+        public void AnonymousObject_NamingPolicy()
+        {
+            const string Json = @"{""prop"":5}";
+
+            var obj = new { Prop = 5 };
+            Type objType = obj.GetType();
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            object newObj = JsonSerializer.Deserialize(Json, objType);
+            // Verify no match if no naming policy
+            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            // Verify match with naming policy
+            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
+        }
+
+#if NETCOREAPP // These require the C# 9.0 "record" feature which is not available for all TFMs.
+        private record MyRecord(int Prop);
+
+        [Fact]
+        public void Record()
+        {
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+            MyRecord obj = JsonSerializer.Deserialize<MyRecord>("{}");
+            Assert.Equal(0, obj.Prop);
+
+            obj = JsonSerializer.Deserialize<MyRecord>(@"{""Prop"":5}");
+            Assert.Equal(5, obj.Prop);
+        }
+
+        public record AgeRecord(int age)
+        {
+            public string Age { get; set; } = age.ToString();
+        }
+
+        [Fact]
+        public void RecordWithSamePropertyNameDifferentTypes()
+        {
+            AgeRecord obj = JsonSerializer.Deserialize<AgeRecord>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
+
+        private record MyRecordWithUnboundCtorProperty(int IntProp1, int IntProp2)
+        {
+            public string StringProp { get; set; }
+        }
+
+        [Fact]
+        public void RecordWithAdditionalProperty()
+        {
+            MyRecordWithUnboundCtorProperty obj = JsonSerializer.Deserialize<MyRecordWithUnboundCtorProperty>(
+                @"{""IntProp1"":1,""IntProp2"":2,""StringProp"":""hello""}");
+
+            Assert.Equal(1, obj.IntProp1);
+            Assert.Equal(2, obj.IntProp2);
+
+            // StringProp is not bound to any constructor property.
+            Assert.Equal("hello", obj.StringProp);
+        }
+
+        [Fact]
+        public void Record_NamingPolicy()
+        {
+            const string Json = @"{""prop"":5}";
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            // Verify no match if no naming policy
+            MyRecord obj = JsonSerializer.Deserialize<MyRecord>(Json);
+            Assert.Equal(0, obj.Prop);
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            // Verify match with naming policy
+            obj = JsonSerializer.Deserialize<MyRecord>(Json, options);
+            Assert.Equal(5, obj.Prop);
+        }
+#endif
+
+        [Fact]
+        public void PocoWithSamePropertyNameDifferentTypes()
+        {
+            AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
+
+        private class AgePoco
+        {
+            public AgePoco(int age)
+            {
+                this.age = age;
+            }
+            public int age { get; set; }
+
+            public string Age { get; set; }
         }
 
         [Fact]
@@ -251,10 +369,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("JsonElement needs to support Path")]
         public async Task ExtensionPropertyRoundTripFails()
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+
             Assert.Equal("$.MyNestedClass.UnknownProperty", e.Path);
         }
 

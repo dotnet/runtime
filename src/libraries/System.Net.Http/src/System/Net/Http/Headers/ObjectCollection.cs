@@ -9,7 +9,7 @@ namespace System.Net.Http.Headers
 {
     /// <summary>An <see cref="ICollection{T}"/> list that prohibits null elements and that is optimized for a small number of elements.</summary>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(nameof(DebugView))]
+    [DebuggerTypeProxy(typeof(ObjectCollection<>.DebugView))]
     internal sealed class ObjectCollection<T> : ICollection<T> where T : class
     {
         private const int DefaultSize = 4;

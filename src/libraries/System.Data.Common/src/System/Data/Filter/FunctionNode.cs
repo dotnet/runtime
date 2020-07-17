@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System.Data
 {
@@ -15,6 +16,7 @@ namespace System.Data
         internal int _argumentCount;
         internal const int initialCapacity = 1;
         internal ExpressionNode[]? _arguments;
+        private readonly TypeLimiter? _capturedLimiter;
 
         private static readonly Function[] s_funcs = new Function[] {
             new Function("Abs", FunctionId.Abs, typeof(object), true, false, 1, typeof(object), null, null),
@@ -39,6 +41,12 @@ namespace System.Data
 
         internal FunctionNode(DataTable? table, string name) : base(table)
         {
+            // Because FunctionNode instances are created eagerly but evaluated lazily,
+            // we need to capture the deserialization scope here. The scope could be
+            // null if no deserialization is in progress.
+
+            _capturedLimiter = TypeLimiter.Capture();
+
             _name = name;
             for (int i = 0; i < s_funcs.Length; i++)
             {
@@ -288,6 +296,11 @@ namespace System.Data
                 throw ExprException.InvalidType(typeName);
             }
 
+            // ReadXml might not be on the current call stack. So we'll use the TypeLimiter
+            // that was captured when this FunctionNode instance was created.
+
+            TypeLimiter.EnsureTypeIsAllowed(dataType, _capturedLimiter);
+
             return dataType;
         }
 
@@ -493,10 +506,17 @@ namespace System.Data
                             {
                                 return SqlConvert.ChangeType2((decimal)SqlConvert.ChangeType2(argumentValues[0], StorageType.Decimal, typeof(decimal), FormatProvider), mytype, type, FormatProvider);
                             }
-                            return SqlConvert.ChangeType2(argumentValues[0], mytype, type, FormatProvider);
                         }
 
-                        return SqlConvert.ChangeType2(argumentValues[0], mytype, type, FormatProvider);
+                        // The Convert function can be called lazily, outside of a previous Serialization Guard scope.
+                        // If there was a type limiter scope on the stack at the time this Convert function was created,
+                        // we must manually re-enter the Serialization Guard scope.
+
+                        DeserializationToken deserializationToken = (_capturedLimiter != null) ? SerializationInfo.StartDeserialization() : default;
+                        using (deserializationToken)
+                        {
+                            return SqlConvert.ChangeType2(argumentValues[0], mytype, type, FormatProvider);
+                        }
                     }
 
                     return argumentValues[0];

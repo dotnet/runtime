@@ -2942,9 +2942,8 @@ public:
 protected:
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
-    void EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit) override;
-private:
-    bool CanUsePinnedLayoutClass();
+    bool CanMarshalViaPinning() override;
+    void EmitMarshalViaPinning(ILCodeStream* pslILEmit) override;
 };
 
 class ILLayoutClassMarshaler : public ILMarshaler

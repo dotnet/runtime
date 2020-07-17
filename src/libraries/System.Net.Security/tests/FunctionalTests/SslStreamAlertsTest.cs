@@ -87,13 +87,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok(bool sendData)
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
             using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
             using (var server = new SslStream(serverStream))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -105,13 +106,21 @@ namespace System.Net.Security.Tests
 
                 await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
+
                 var readBuffer = new byte[1024];
+
+                if (sendData)
+                {
+                    // Send some data before shutting down. This may matter for TLS13.
+                    handshake[0] = server.WriteAsync(readBuffer, 0, 1);
+                    handshake[1] = client.ReadAsync(readBuffer, 0, 1);
+                    await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                }
 
                 await client.ShutdownAsync();
                 int bytesRead = await server.ReadAsync(readBuffer, 0, readBuffer.Length);
                 // close_notify received by the server.
                 Assert.Equal(0, bytesRead);
-
                 await server.ShutdownAsync();
                 bytesRead = await client.ReadAsync(readBuffer, 0, readBuffer.Length);
                 // close_notify received by the client.

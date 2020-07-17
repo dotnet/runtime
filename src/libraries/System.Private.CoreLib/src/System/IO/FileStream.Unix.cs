@@ -684,7 +684,7 @@ namespace System.IO
             }
 
             // Serialize operations using the semaphore.
-            Task waitTask = _asyncState.WaitAsync();
+            Task waitTask = _asyncState.WaitAsync(cancellationToken);
 
             // If we got ownership immediately, and if there's enough space in our buffer
             // to buffer the entire write request, then do so and we're done.

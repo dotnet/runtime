@@ -57,7 +57,7 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        noway_assert(!varTypeIsFloating(varDsc->TypeGet()));
+        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
 
         // Mark the register as holding the variable
         assert(varDsc->GetRegNum() != REG_STK);
