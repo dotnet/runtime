@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        internal delegate void EnumCalendarInfoCallback(
-           [MarshalAs(UnmanagedType.LPWStr)] string calendarString,
+        internal unsafe delegate void EnumCalendarInfoCallback(
+           char* calendarString,
            IntPtr context);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetCalendars")]
@@ -19,8 +19,15 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetCalendarInfo")]
         internal static extern unsafe ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, char* result, int resultCapacity);
 
+#if TARGET_BROWSER
+        // Temp workaround for pinvoke callbacks for Mono-Wasm-Interpreter
+        // https://github.com/dotnet/runtime/issues/39100
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EnumCalendarInfo")]
+        internal static extern bool EnumCalendarInfo(IntPtr callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);
+#else
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EnumCalendarInfo")]
         internal static extern bool EnumCalendarInfo(EnumCalendarInfoCallback callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);
+#endif
 
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLatestJapaneseEra")]
         internal static extern int GetLatestJapaneseEra();

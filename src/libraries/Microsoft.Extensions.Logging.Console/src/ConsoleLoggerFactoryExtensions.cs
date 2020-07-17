@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -51,7 +50,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Add and configure a console log formatter named 'json' to the factory.
+        /// Add and configure a console log formatter named 'simple' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>

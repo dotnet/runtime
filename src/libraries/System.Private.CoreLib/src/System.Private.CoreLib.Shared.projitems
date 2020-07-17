@@ -821,20 +821,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SafeSerializationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.SerializationGuard.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\FrameworkName.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\MinimumOSPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ObsoletedInOSPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\OSPlatformAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\PlatformAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceExposureAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\RemovedInOSPlatformAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\RuntimeType.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
@@ -1073,7 +1070,10 @@
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs">
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneDisplayNameType.cs">
+      <Link>Common\Interop\Interop.TimeZoneDisplayNameType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs" Condition="'$(TargetsBrowser)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
@@ -1826,9 +1826,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Browser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.Invariant.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs">

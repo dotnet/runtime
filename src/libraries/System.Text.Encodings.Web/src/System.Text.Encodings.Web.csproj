@@ -6,9 +6,10 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0' ">
+    <DefineConstants>$(DefineConstants),USE_INTERNAL_ACCESSIBILITY</DefineConstants>
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
-    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(NoWarn);CS3019</NoWarn>
+    <NoWarn>$(NoWarn);CS3019</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />

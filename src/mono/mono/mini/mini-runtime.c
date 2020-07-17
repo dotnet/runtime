@@ -4540,7 +4540,7 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_init ();
 #endif
 
@@ -4987,7 +4987,7 @@ mini_cleanup (MonoDomain *domain)
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
 	mini_get_interp_callbacks ()->cleanup ();
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_shutdown ();
 #endif
 }

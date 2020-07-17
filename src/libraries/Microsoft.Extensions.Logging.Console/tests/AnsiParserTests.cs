@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging.Test.Console;
-using Microsoft.Extensions.Logging.Console;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
@@ -245,16 +244,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             else
             {
                 Assert.Equal(foreground, segment.ForegroundColor);
-            }
-        }
-
-        private class TestAnsiSystemConsole : IAnsiSystemConsole
-        {
-            public string Message { get; private set; }
-
-            public void Write(string message)
-            {
-                Message = message;
             }
         }
 

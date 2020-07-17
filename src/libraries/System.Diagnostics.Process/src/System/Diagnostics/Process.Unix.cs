@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -41,12 +42,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);

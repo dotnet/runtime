@@ -4,15 +4,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;

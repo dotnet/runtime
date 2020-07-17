@@ -42,7 +42,7 @@ namespace System.ComponentModel.Tests
             Assert.Null(exception.ParamName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             using (var stream = new MemoryStream())

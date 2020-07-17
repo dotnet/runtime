@@ -2002,7 +2002,7 @@ namespace System
                 Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
                     return value;
-                object? res = IsConvertibleToPrimitiveType(value, this);
+                object? res = IsConvertibleToPrimitiveType(value, type);
                 if (res != null)
                     return res;
             }

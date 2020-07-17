@@ -608,9 +608,12 @@ namespace System.Tests
             yield return new object[] { "23:00:00", null, new TimeSpan(23, 0, 0) };
             yield return new object[] { "24:00:00", null, new TimeSpan(24, 0, 0, 0) };
 
-            // Croatia uses ',' in place of '.'
-            CultureInfo croatianCulture = new CultureInfo("hr-HR");
-            yield return new object[] { "6:12:14:45,348", croatianCulture, new TimeSpan(6, 12, 14, 45, 348) };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // Croatia uses ',' in place of '.'
+                CultureInfo croatianCulture = new CultureInfo("hr-HR");
+                yield return new object[] { "6:12:14:45,348", croatianCulture, new TimeSpan(6, 12, 14, 45, 348) };
+            }
         }
 
         [Theory]
@@ -655,7 +658,9 @@ namespace System.Tests
             yield return new object[] { "00:00::00", null, typeof(FormatException) }; // duplicated separator
             yield return new object[] { "00:00:00:", null, typeof(FormatException) }; // extra separator at end
             yield return new object[] { "00:00:00:00:00:00:00:00", null, typeof(FormatException) }; // too many components
-            yield return new object[] { "6:12:14:45.3448", new CultureInfo("hr-HR"), typeof(FormatException) }; // culture that uses ',' rather than '.'
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "6:12:14:45.3448", new CultureInfo("hr-HR"), typeof(FormatException) }; // culture that uses ',' rather than '.'
 
             // OverflowExceptions
             yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) }; // overflowing fraction
@@ -956,7 +961,8 @@ namespace System.Tests
             yield return new object[] { input, "dddddd\\.ss", invariantInfo, "000142.18" };
 
             // constant/invariant format
-            foreach (CultureInfo info in new[] { null, invariantInfo, commaSeparatorInfo }) // validate that culture is ignored
+            CultureInfo[] cultureInfos = PlatformDetection.IsInvariantGlobalization ? new[] { (CultureInfo)null } : new[] { null, invariantInfo, commaSeparatorInfo };
+            foreach (CultureInfo info in cultureInfos) // validate that culture is ignored
             {
                 foreach (string constFormat in new[] { null, "c", "t", "T" })
                 {
@@ -989,19 +995,22 @@ namespace System.Tests
             yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "g", invariantInfo, "13:10:56:23.045" };
             yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "g", invariantInfo, "23:59:59.999" };
 
-            // general short format, NumberDecimalSeparator used
-            yield return new object[] { input, "g", commaSeparatorInfo, "142:21:21:18,9101112" };
-            yield return new object[] { TimeSpan.Zero, "g", commaSeparatorInfo, "0:00:00" };
-            yield return new object[] { new TimeSpan(1), "g", commaSeparatorInfo, "0:00:00,0000001" };
-            yield return new object[] { new TimeSpan(-1), "g", commaSeparatorInfo, "-0:00:00,0000001" };
-            yield return new object[] { TimeSpan.MaxValue, "g", commaSeparatorInfo, "10675199:2:48:05,4775807" };
-            yield return new object[] { TimeSpan.MinValue, "g", commaSeparatorInfo, "-10675199:2:48:05,4775808" };
-            yield return new object[] { new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "1:02:03" };
-            yield return new object[] { -new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "-1:02:03" };
-            yield return new object[] { new TimeSpan(12, 34, 56), "g", commaSeparatorInfo, "12:34:56" };
-            yield return new object[] { new TimeSpan(12, 34, 56, 23), "g", commaSeparatorInfo, "13:10:56:23" };
-            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "g", commaSeparatorInfo, "13:10:56:23,045" };
-            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "g", commaSeparatorInfo, "23:59:59,999" };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // general short format, NumberDecimalSeparator used
+                yield return new object[] { input, "g", commaSeparatorInfo, "142:21:21:18,9101112" };
+                yield return new object[] { TimeSpan.Zero, "g", commaSeparatorInfo, "0:00:00" };
+                yield return new object[] { new TimeSpan(1), "g", commaSeparatorInfo, "0:00:00,0000001" };
+                yield return new object[] { new TimeSpan(-1), "g", commaSeparatorInfo, "-0:00:00,0000001" };
+                yield return new object[] { TimeSpan.MaxValue, "g", commaSeparatorInfo, "10675199:2:48:05,4775807" };
+                yield return new object[] { TimeSpan.MinValue, "g", commaSeparatorInfo, "-10675199:2:48:05,4775808" };
+                yield return new object[] { new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "1:02:03" };
+                yield return new object[] { -new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "-1:02:03" };
+                yield return new object[] { new TimeSpan(12, 34, 56), "g", commaSeparatorInfo, "12:34:56" };
+                yield return new object[] { new TimeSpan(12, 34, 56, 23), "g", commaSeparatorInfo, "13:10:56:23" };
+                yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "g", commaSeparatorInfo, "13:10:56:23,045" };
+                yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "g", commaSeparatorInfo, "23:59:59,999" };
+            }
 
             // general long format, invariant culture
             yield return new object[] { input, "G", invariantInfo, "142:21:21:18.9101112" };
@@ -1017,19 +1026,22 @@ namespace System.Tests
             yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "G", invariantInfo, "13:10:56:23.0450000" };
             yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "G", invariantInfo, "0:23:59:59.9990000" };
 
-            // general long format, NumberDecimalSeparator used
-            yield return new object[] { input, "G", commaSeparatorInfo, "142:21:21:18,9101112" };
-            yield return new object[] { TimeSpan.Zero, "G", commaSeparatorInfo, "0:00:00:00,0000000" };
-            yield return new object[] { new TimeSpan(1), "G", commaSeparatorInfo, "0:00:00:00,0000001" };
-            yield return new object[] { new TimeSpan(-1), "G", commaSeparatorInfo, "-0:00:00:00,0000001" };
-            yield return new object[] { TimeSpan.MaxValue, "G", commaSeparatorInfo, "10675199:02:48:05,4775807" };
-            yield return new object[] { TimeSpan.MinValue, "G", commaSeparatorInfo, "-10675199:02:48:05,4775808" };
-            yield return new object[] { new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "0:01:02:03,0000000" };
-            yield return new object[] { -new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "-0:01:02:03,0000000" };
-            yield return new object[] { new TimeSpan(12, 34, 56), "G", commaSeparatorInfo, "0:12:34:56,0000000" };
-            yield return new object[] { new TimeSpan(12, 34, 56, 23), "G", commaSeparatorInfo, "13:10:56:23,0000000" };
-            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "G", commaSeparatorInfo, "13:10:56:23,0450000" };
-            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "G", commaSeparatorInfo, "0:23:59:59,9990000" };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // general long format, NumberDecimalSeparator used
+                yield return new object[] { input, "G", commaSeparatorInfo, "142:21:21:18,9101112" };
+                yield return new object[] { TimeSpan.Zero, "G", commaSeparatorInfo, "0:00:00:00,0000000" };
+                yield return new object[] { new TimeSpan(1), "G", commaSeparatorInfo, "0:00:00:00,0000001" };
+                yield return new object[] { new TimeSpan(-1), "G", commaSeparatorInfo, "-0:00:00:00,0000001" };
+                yield return new object[] { TimeSpan.MaxValue, "G", commaSeparatorInfo, "10675199:02:48:05,4775807" };
+                yield return new object[] { TimeSpan.MinValue, "G", commaSeparatorInfo, "-10675199:02:48:05,4775808" };
+                yield return new object[] { new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "0:01:02:03,0000000" };
+                yield return new object[] { -new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "-0:01:02:03,0000000" };
+                yield return new object[] { new TimeSpan(12, 34, 56), "G", commaSeparatorInfo, "0:12:34:56,0000000" };
+                yield return new object[] { new TimeSpan(12, 34, 56, 23), "G", commaSeparatorInfo, "13:10:56:23,0000000" };
+                yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "G", commaSeparatorInfo, "13:10:56:23,0450000" };
+                yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "G", commaSeparatorInfo, "0:23:59:59,9990000" };
+            }
         }
 
         [Theory]

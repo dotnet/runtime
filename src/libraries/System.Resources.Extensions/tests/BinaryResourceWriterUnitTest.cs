@@ -262,7 +262,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void BinaryFormattedResources()
@@ -300,7 +300,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void BinaryFormattedResourcesWithoutTypeName()
@@ -436,7 +436,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public static void CanReadViaResourceManager()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
@@ -474,7 +474,7 @@ namespace System.Resources.Extensions.Tests
             Assert.IsType<DeserializingResourceReader>(reader);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public static void EmbeddedResourcesAreUpToDate()
         {
             // this is meant to catch a case where our embedded test resources are out of date with respect to the current writer.

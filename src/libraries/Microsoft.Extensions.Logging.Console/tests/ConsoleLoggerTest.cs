@@ -8,8 +8,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Configuration;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;

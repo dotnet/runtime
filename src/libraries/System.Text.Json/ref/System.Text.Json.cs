@@ -494,6 +494,7 @@ namespace System.Text.Json.Serialization
         Never = 0,
         Always = 1,
         WhenWritingDefault = 2,
+        WhenWritingNull = 3,
     }
     public abstract partial class JsonAttribute : System.Attribute
     {

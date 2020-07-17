@@ -15335,16 +15335,16 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);
 
-        if (fgStmtListThreaded)
-        {
-            gtSetStmtInfo(stmt);
-            fgSetStmtSeq(stmt);
-        }
-
         // cloneExpr doesn't handle everything.
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */
