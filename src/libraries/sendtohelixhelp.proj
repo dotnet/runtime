@@ -83,7 +83,7 @@
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TestPackages)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
