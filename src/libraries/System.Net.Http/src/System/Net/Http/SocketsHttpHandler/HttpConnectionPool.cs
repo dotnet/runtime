@@ -339,7 +339,7 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
+        private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (_http3Enabled && request.Version.Major >= 3)
@@ -347,16 +347,32 @@ namespace System.Net.Http
                 HttpAuthority? authority = _http3Authority;
                 if (authority != null)
                 {
-                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                    return await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
                 }
             }
 
             if (_http2Enabled && request.Version.Major >= 2)
             {
-                return GetHttp2ConnectionAsync(request, async, cancellationToken);
+                while (true)
+                {
+                    try
+                    {
+                        return await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Retrying request to find a HTTP/2 connection with available streams: {e}");
+                        }
+
+                        // Eat exception and try again.
+                        continue;
+                    }
+                }
             }
 
-            return GetHttpConnectionAsync(request, async, cancellationToken);
+            return await GetHttpConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
         }
 
         private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(bool async, CancellationToken cancellationToken)
