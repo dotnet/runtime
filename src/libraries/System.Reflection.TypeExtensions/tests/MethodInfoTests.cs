@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(StringImpersonator), nameof(StringImpersonator.IsNullOrEmpty))]
         public void Properties(Type type, string name)
         {
-            MethodInfo method = Helpers.GetMethod(type, name);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, Helpers.AllFlags);
             Assert.Equal(type, method.DeclaringType);
             Assert.Equal(type.GetTypeInfo().Module, method.Module);
 
@@ -69,7 +69,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GetGenericArguments_TestData))]
         public void GetGenericArguments(Type type, string name, string[] argumentNames)
         {
-            MethodInfo method = Helpers.GetMethod(type, name);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, Helpers.AllFlags);
             Type[] arguments = method.GetGenericArguments();
             Assert.Equal(argumentNames.Length, arguments.Length);
             Assert.Equal(argumentNames, arguments.Select(argumentType => argumentType.Name));

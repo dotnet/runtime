@@ -11,18 +11,18 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> ContainsGenericParameters_TestData()
         {
             // Methods
-            yield return new object[] { Helpers.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod)).MakeGenericMethod(typeof(int)), false };
-            yield return new object[] { Helpers.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestMethod)), false };
-            yield return new object[] { Helpers.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestPartialGenericMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericReturnTypeMethod)), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod), Helpers.AllFlags).MakeGenericMethod(typeof(int)), false };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestMethod), Helpers.AllFlags), false };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestPartialGenericMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericReturnTypeMethod), Helpers.AllFlags), true };
 
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestMethod)), false };
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestMultipleGenericMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestMultipleGenericMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestVoidMethod)), true };
-            yield return new object[] { Helpers.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestVoidMethod)), false };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestMethod), Helpers.AllFlags), false };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestMultipleGenericMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestMultipleGenericMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<>), nameof(GenericClass<int>.TestVoidMethod), Helpers.AllFlags), true };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(GenericClass<int>), nameof(GenericClass<int>.TestVoidMethod), Helpers.AllFlags), false };
 
             // Constructors
             yield return new object[] { TypeExtensions.GetConstructor(typeof(NonGenericClass), new Type[0]), false };

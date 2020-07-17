@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
         [InlineData(nameof(EI_Class.ProtectedInternalEvent))]
         public void Attributes_IsSpecialName(string name)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             Assert.Equal(EventAttributes.None, eventInfo.Attributes);
             Assert.False(eventInfo.IsSpecialName);
         }
@@ -80,7 +80,7 @@ namespace System.Reflection.Tests
         [InlineData(nameof(EI_Class.ProtectedInternalEvent), typeof(VoidDelegate))]
         public void EventHandlerType(string name, Type expected)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             Assert.Equal(expected, eventInfo.EventHandlerType);
         }
 
@@ -91,7 +91,7 @@ namespace System.Reflection.Tests
         [InlineData(nameof(EI_Class.ProtectedInternalEvent), "Void add_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)", true)]
         public void GetAddMethod(string name, string expectedToString, bool nonPublic)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             MethodInfo method = eventInfo.GetAddMethod();
             Assert.Equal(nonPublic, method == null);
             if (method != null)
@@ -118,7 +118,7 @@ namespace System.Reflection.Tests
         [InlineData(nameof(EI_Class.ProtectedInternalEvent))]
         public void GetRaiseMethod(string name)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             Assert.Null(eventInfo.GetRaiseMethod());
             Assert.Null(eventInfo.GetRaiseMethod(false));
             Assert.Null(eventInfo.GetRaiseMethod(true));
@@ -131,7 +131,7 @@ namespace System.Reflection.Tests
         [InlineData(nameof(EI_Class.ProtectedInternalEvent), "Void remove_ProtectedInternalEvent(System.Reflection.Tests.VoidDelegate)", true)]
         public void GetRemoveMethod(string name, string expectedToString, bool nonPublic)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             MethodInfo method = eventInfo.GetRemoveMethod();
             Assert.Equal(nonPublic, method == null);
             if (method != null)
@@ -158,7 +158,7 @@ namespace System.Reflection.Tests
         [InlineData("InternalEvent")]
         public void DeclaringType_Module(string name)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             Assert.Equal(typeof(EI_Class), eventInfo.DeclaringType);
             Assert.Equal(typeof(EI_Class).GetTypeInfo().Module, eventInfo.Module);
         }
@@ -170,7 +170,7 @@ namespace System.Reflection.Tests
         [InlineData("InternalEvent")]
         public void Name(string name)
         {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
+            EventInfo eventInfo = TypeExtensions.GetEvent(typeof(EI_Class), name, Helpers.AllFlags);
             Assert.Equal(name, eventInfo.Name);
         }
     }
