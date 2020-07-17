@@ -601,7 +601,7 @@ var MonoSupportLib = {
 
 			switch (asset.behavior) {
 				case "assembly":
-					ctx.loaded_files.push ({ url: response.url, file: virtualName});
+					ctx.loaded_files.push ({ url: url, file: virtualName});
 				case "heap":
 				case "icu":
 					offset = this.mono_wasm_load_bytes_into_heap (bytes);
