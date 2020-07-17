@@ -19,8 +19,7 @@
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="..\..\Common\TypeSystem\Common\Properties\Resources.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.TypeSystem.SR</ClassName>
+      <LogicalName>Internal.TypeSystem.Strings.resources</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 
