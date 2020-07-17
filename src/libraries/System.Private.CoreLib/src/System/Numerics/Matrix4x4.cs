@@ -1137,6 +1137,13 @@ namespace System.Numerics
 
             static unsafe bool SseImpl(Matrix4x4 matrix, out Matrix4x4 result)
             {
+                // Redundant test so we won't prejit remainder of this method
+                // on platforms without SSE.
+                if (!Sse.IsSupported)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
                 // This implementation is based on the DirectX Math Library XMMInverse method
                 // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
