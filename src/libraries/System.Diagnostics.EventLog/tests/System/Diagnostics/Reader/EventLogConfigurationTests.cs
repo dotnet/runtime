@@ -90,6 +90,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31207")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.NotElevatedAndSupportsEventLogs))]
         public void SetProperties_SaveChanges_NotAdmin_Throws()
         {
