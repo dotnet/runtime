@@ -25,8 +25,6 @@ namespace System.Collections.Generic
             {
                 if (comparer is null)
                 {
-                    // TODO: Revisit lambda allocation
-                    //IntrospectiveSort(keys, Comparer<T>.Default.Compare);
                     ComparerArraySortHelper<T, Comparer<T>>
                         .IntrospectiveSort(keys, Comparer<T>.Default);
                 }
@@ -919,8 +917,8 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    // TODO: Change/move this Sort method out of the specific code path
-                    ComparerArraySortHelper<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, comparer);
+                    ComparerArraySortHelper<TKey, TValue, TComparer>
+                        .IntrospectiveSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
