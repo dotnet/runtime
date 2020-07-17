@@ -55,15 +55,27 @@ jobs:
       testGroup: perf
 
 - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+        nameSuffix: WASM_Mono
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
     runtimeFlavor: mono
     buildConfig: release
     platforms:
     - Linux_x64
-    - Browser_wasm
-    jobParameters:
-      buildArgs: -s mono+libs
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -90,6 +102,19 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: mono
         codeGenType: 'Interpreter'
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'WASM'
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
