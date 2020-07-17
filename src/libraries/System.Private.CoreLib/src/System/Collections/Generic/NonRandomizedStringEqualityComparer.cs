@@ -12,7 +12,7 @@ namespace System.Collections.Generic
     // randomized string hashing.
     [Serializable] // Required for compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
     // Needs to be public to support binary serialization compatibility
-    public class NonRandomizedStringEqualityComparer : IEqualityComparer<string?>, IEqualityComparerProxy<string?>, ISerializable
+    public class NonRandomizedStringEqualityComparer : IEqualityComparer<string?>, IInternalStringEqualityComparer, ISerializable
     {
         // Dictionary<...>.Comparer and similar methods need to return the original IEqualityComparer
         // that was passed in to the ctor. The caller chooses one of these singletons so that the

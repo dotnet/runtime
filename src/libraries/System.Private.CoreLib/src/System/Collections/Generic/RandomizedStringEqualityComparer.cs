@@ -6,11 +6,12 @@ using Internal.Runtime.CompilerServices;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// A randomized <see cref="EqualityComparer{String}"/> which uses a different seed
-    /// on each construction as a defense-in-depth measure to help thwart theoretical
-    /// correlation attacks.
+    /// A randomized <see cref="EqualityComparer{String}"/> which uses a different seed on each
+    /// construction as a general good hygiene + defense-in-depth mechanism. This implementation
+    /// *does not* need to stay in sync with <see cref="string.GetHashCode"/>, which for stability
+    /// is required to use an app-global seed.
     /// </summary>
-    internal class RandomizedStringEqualityComparer : EqualityComparer<string?>, IEqualityComparerProxy<string?>
+    internal class RandomizedStringEqualityComparer : EqualityComparer<string?>, IInternalStringEqualityComparer
     {
         private readonly MarvinSeed _seed;
         private readonly IEqualityComparer<string?> _underlyingComparer;

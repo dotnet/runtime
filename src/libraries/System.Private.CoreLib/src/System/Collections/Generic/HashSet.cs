@@ -930,14 +930,13 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (typeof(T).IsValueType)
+                if (typeof(T) == typeof(string))
                 {
-                    // we currently don't use proxies for value type 'T'
-                    return _comparer ?? EqualityComparer<T>.Default;
+                    return (IEqualityComparer<T>)InternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
                 }
                 else
                 {
-                    return EqualityComparerProxy.GetUnderlyingEqualityComparer(_comparer);
+                    return _comparer ?? EqualityComparer<T>.Default;
                 }
             }
         }

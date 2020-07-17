@@ -143,14 +143,13 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (typeof(TKey).IsValueType)
+                if (typeof(TKey) == typeof(string))
                 {
-                    // we currently don't use proxies for value type 'TKey'
-                    return _comparer ?? EqualityComparer<TKey>.Default;
+                    return (IEqualityComparer<TKey>)InternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
                 }
                 else
                 {
-                    return EqualityComparerProxy.GetUnderlyingEqualityComparer(_comparer);
+                    return _comparer ?? EqualityComparer<TKey>.Default;
                 }
             }
         }
