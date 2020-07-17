@@ -91,10 +91,6 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
-          # Download full product dependencies for mono or test
-          - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
-            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if ne(parameters.testDisplayName, '') }}:
@@ -125,13 +121,4 @@ jobs:
 
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
-
-      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, ''))) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(_runtimeDownloadPath)
-            artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
-            artifactName: '$(_runtimeArtifactName)'
-            displayName: '$(runtimeFlavorName) build drop'
-
       - ${{ parameters.steps }}

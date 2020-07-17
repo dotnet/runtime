@@ -25,20 +25,11 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platformGroup: gcstress
-
-#
-# Libraries Test Build - Release innerloop. All libraries are built on x64 and reused on all platforms.
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
     jobParameters:
-      liveRuntimeBuildConfig: checked
-      testScope: innerloop
+      # libraries test build platforms
+      testBuildPlatforms:
+      - Linux_x64
+      - Windows_NT_x64
 
 #
 # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes

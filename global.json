@@ -19,6 +19,6 @@
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-preview.8.20359.4",
     "Microsoft.Build.NoTargets": "1.0.53",
-    "Microsoft.Build.Traversal": "2.0.34"
+    "Microsoft.Build.Traversal": "2.0.52"
   }
 }
