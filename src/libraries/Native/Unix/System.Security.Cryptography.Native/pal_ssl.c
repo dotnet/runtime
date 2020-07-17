@@ -16,6 +16,16 @@ c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 
+#define DOTNET_DEFAULT_CIPHERSTRING \
+    "ECDHE-ECDSA-AES256-GCM-SHA384:" \
+    "ECDHE-ECDSA-AES128-GCM-SHA256:" \
+    "ECDHE-RSA-AES256-GCM-SHA384:" \
+    "ECDHE-RSA-AES128-GCM-SHA256:" \
+    "ECDHE-ECDSA-AES256-SHA384:" \
+    "ECDHE-ECDSA-AES128-SHA256:" \
+    "ECDHE-RSA-AES256-SHA384:" \
+    "ECDHE-RSA-AES128-SHA256:" \
+
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
@@ -25,6 +35,45 @@ static void EnsureLibSsl10Initialized()
     SSL_load_error_strings();
 }
 #endif
+
+static int32_t g_config_specified_ciphersuites = 0;
+
+static void DetectCiphersuiteConfiguration()
+{
+    // Check to see if there's a registered default CipherString. If not, we will use our own.
+    SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+
+    // SSL_CTX_get_ciphers returns a shared pointer, no need to save/free it.
+    // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
+    int defaultCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+
+    int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
+    assert(rv);
+
+    int allCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+
+    // This shouldn't be true, but, just in case it is.
+    if (allCount == defaultCount)
+    {
+        rv = SSL_CTX_set_cipher_list(ctx, "RSA");
+        assert(rv);
+        allCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+        assert(allCount != defaultCount);
+    }
+
+    if (!SSL_CTX_config(ctx, "system_default"))
+    {
+        // There's no system_default configuration, so no default CipherString.
+        ERR_clear_error();
+    }
+    else
+    {
+        int after = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+        g_config_specified_ciphersuites = (allCount != after);
+    }
+
+    SSL_CTX_free(ctx);
+}
 
 void CryptoNative_EnsureLibSslInitialized()
 {
@@ -41,6 +90,8 @@ void CryptoNative_EnsureLibSslInitialized()
 #elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
     EnsureLibSsl10Initialized();
 #endif
+
+    DetectCiphersuiteConfiguration();
 }
 
 const SSL_METHOD* CryptoNative_SslV2_3Method()
@@ -58,7 +109,20 @@ SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
     {
         // As of OpenSSL 1.1.0, compression is disabled by default. In case an older build
         // is used, ensure it's disabled.
-        SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
+        //
+        // The other .NET platforms are server-preference, and the common consensus seems
+        // to be to use server preference (as of June 2020), so just always assert that.
+        SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION | SSL_OP_CIPHER_SERVER_PREFERENCE);
+
+        // If openssl.cnf doesn't have an opinion for CipherString, then use this value instead
+        if (!g_config_specified_ciphersuites)
+        {
+            if (!SSL_CTX_set_cipher_list(ctx, DOTNET_DEFAULT_CIPHERSTRING))
+            {
+                SSL_CTX_free(ctx);
+                return NULL;
+            }
+        }
     }
 
     return ctx;
