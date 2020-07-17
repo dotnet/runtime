@@ -5,6 +5,6 @@ namespace System.IO
 {
     internal static partial class PersistedFiles
     {
-        internal static string GetHomeDirectory() => Environment.GetEnvironmentVariable("HOME");
+        internal static string GetHomeDirectory() => "/Users/" + Environment.UserNameValue;
     }
 }

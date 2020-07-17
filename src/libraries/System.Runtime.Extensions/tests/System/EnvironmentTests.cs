@@ -317,12 +317,21 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public void GetFolderPath_Browser_PersonalIsHomeAndUserProfile()
+        {
+            Assert.Equal("/Users/Browser", Environment.GetFolderPath(Environment.SpecialFolder.Personal));
+            Assert.Equal("/Users/Browser", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            Assert.Equal("/Users/Browser", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 
         [Theory]
