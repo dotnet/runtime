@@ -114,7 +114,7 @@
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200602.3</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200715.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20363.5</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
