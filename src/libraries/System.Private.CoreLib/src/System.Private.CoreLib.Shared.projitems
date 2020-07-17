@@ -825,15 +825,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\FrameworkName.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\MinimumOSPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ObsoletedInOSPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\OSPlatformAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\PlatformAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceExposureAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetPlatformAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\RemovedInOSPlatformAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\RuntimeType.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />

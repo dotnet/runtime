@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>false</ClsCompliant>
     <Nullable>annotations</Nullable>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Directory.cs"

@@ -41,8 +41,8 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessModule? MainModule { get { throw null; } }
         public System.IntPtr MainWindowHandle { get { throw null; } }
         public string MainWindowTitle { get { throw null; } }
-        public System.IntPtr MaxWorkingSet { get { throw null; } set { } }
-        public System.IntPtr MinWorkingSet { get { throw null; } set { } }
+        public System.IntPtr MaxWorkingSet { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public System.IntPtr MinWorkingSet { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public System.Diagnostics.ProcessModuleCollection Modules { get { throw null; } }
         [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int NonpagedSystemMemorySize { get { throw null; } }
@@ -116,8 +116,10 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static System.Diagnostics.Process Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static System.Diagnostics.Process Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
         public override string ToString() { throw null; }
         public void WaitForExit() { }
@@ -163,15 +165,19 @@ namespace System.Diagnostics
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         public string Arguments { get { throw null; } set { } }
         public bool CreateNoWindow { get { throw null; } set { } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public string Domain { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
         public System.Collections.Specialized.StringDictionary EnvironmentVariables { get { throw null; } }
         public bool ErrorDialog { get { throw null; } set { } }
         public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
         public string FileName { get { throw null; } set { } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public bool LoadUserProfile { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public System.Security.SecureString? Password { get { throw null; } set { } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public string? PasswordInClearText { get { throw null; } set { } }
         public bool RedirectStandardError { get { throw null; } set { } }
         public bool RedirectStandardInput { get { throw null; } set { } }
@@ -196,8 +202,9 @@ namespace System.Diagnostics
         public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public System.IntPtr ProcessorAffinity { set { } }
         public System.IntPtr StartAddress { get { throw null; } }
         public System.DateTime StartTime { get { throw null; } }

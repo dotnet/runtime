@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -99,6 +100,7 @@ namespace System.Diagnostics
         /// two, etc.  For example, the value 1 means run on processor one, 2 means run on
         /// processor two, 3 means run on processor one or two.
         /// </summary>
+        [MinimumOSPlatform("windows7.0")]
         public IntPtr ProcessorAffinity
         {
             set
