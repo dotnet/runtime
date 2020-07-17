@@ -19,6 +19,56 @@ namespace Tracing.Tests.ProcessInfoValidation
 {
     public class ProcessInfoValidation
     {
+        public static string NormalizeCommandLine(string cmdline)
+        {
+            // ASSUMPTION: double quotes (") and single quotes (') are used for paths with spaces
+            // ASSUMPTION: This test will only have two parts to the commandline
+
+            // check for quotes in first part
+            var parts = new List<string>();
+            bool isQuoted = false;
+            int start = 0;
+
+            for (int i = 0; i < cmdline.Length; i++)
+            {
+                if (isQuoted)
+                {
+                    if (cmdline[i] == '"' || cmdline[i] == '\'')
+                    {
+                        parts.Add(cmdline.Substring(start, i - start));
+                        isQuoted = false;
+                        start = i + 1;
+                    }
+                }
+                else if (cmdline[i] == '"' || cmdline[i] == '\'')
+                {
+                    isQuoted = true;
+                    start = i + 1;
+                }
+                else if (cmdline[i] == ' ')
+                {
+                    parts.Add(cmdline.Substring(start, i - start));
+                    start = i + 1;
+                }
+                else if (i == cmdline.Length - 1)
+                {
+                    parts.Add(cmdline.Substring(start));
+                }
+            }
+
+            string normalizedCommandLine = parts
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Select(part => (new FileInfo(part)).FullName)
+                .Aggregate((s1, s2) => string.Join(' ', s1, s2));
+
+            // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
+            // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && normalizedCommandLine.StartsWith("/tmp/"))
+                normalizedCommandLine = "/private" + normalizedCommandLine;
+
+            return normalizedCommandLine;
+        }
+
         public static int Main(string[] args)
         {
 
@@ -76,24 +126,11 @@ namespace Tracing.Tests.ProcessInfoValidation
             // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
             // /path/to/corerun /path/to/processinfo.dll
             // or
-            // "C:\path\to\CoreRun.exe" processinfo.dll
-            //
-            // more generally, the cmdline the runtime sends is the following:
-            // Windows     - return value of GetCommandLineW win32 API
-            // non-Windows - /full/path/to/argv[0] arg[1] argv[2] ...
-            var currentAssemblyFileInfo = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            string expectedCommandLine = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                 $"\"{currentProcess.MainModule.FileName}\" {currentAssemblyFileInfo.Name}" :
-                 $"{currentProcess.MainModule.FileName} {currentAssemblyFileInfo.FullName}";
+            // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
+            string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+            string receivedCommandLine = NormalizeCommandLine(commandLine);
 
-            // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
-            // This isn't represented in the output from the Runtime unfortunately, so we'll force that completion in that case.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && expectedCommandLine.StartsWith("/private/tmp/"))
-                expectedCommandLine = expectedCommandLine["/private".Length..];
-            string receivedCommandLine = commandLine.Trim();
-
-            Utils.Assert(expectedCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), 
-                $"CommandLine must match current process. Expected: '{expectedCommandLine}', Received: '{receivedCommandLine}' (original: '{commandLine}')");
+            Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
 
             // VALIDATE OS
             start = end;
