@@ -1879,6 +1879,7 @@ namespace System.Net.Http.Functional.Tests
 
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
+                    request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     request.Content = new StringContent(new string('*', 3000));
                     request.Headers.ExpectContinue = true;
                     request.Headers.Add("x-test", "PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent");

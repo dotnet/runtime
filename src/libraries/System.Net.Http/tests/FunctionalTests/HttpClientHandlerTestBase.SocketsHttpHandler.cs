@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -14,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
         {
             useVersion ??= HttpVersion.Version11;
 
-            HttpClientHandler handler = new HttpClientHandler();
+            HttpClientHandler handler = PlatformDetection.SupportsAlpn ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             if (useVersion >= HttpVersion.Version20)
             {
@@ -28,6 +29,37 @@ namespace System.Net.Http.Functional.Tests
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(handler);
+        }
+    }
+
+    internal class VersionHttpClientHandler : HttpClientHandler
+    {
+        private readonly Version _useVersion;
+        
+        public VersionHttpClientHandler(Version useVersion)
+        {
+            _useVersion = useVersion;
+        }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, Threading.CancellationToken cancellationToken)
+        {
+            if (request.Version == _useVersion)
+            {
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            }
+
+            return base.Send(request, cancellationToken);
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Threading.CancellationToken cancellationToken)
+        {
+
+            if (request.Version == _useVersion)
+            {
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            }
+            
+            return base.SendAsync(request, cancellationToken);
         }
     }
 }
