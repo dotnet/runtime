@@ -950,16 +950,6 @@ if test x$with_core = xonly; then
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
-if test x$with_core = xonly; then
-	if test -f $srcdir/mono/eventpipe/ep.h; then
-		enable_perftracing=yes
-	fi
-	if test x$enable_perftracing = xyes; then
-		AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
-	fi
-fi
-AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
-
 #
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
@@ -1795,7 +1785,7 @@ AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes.],
+	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes, eventpipe.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1991,7 +1981,6 @@ if test "x$mono_feature_disable_sgen_marksweep_conc" = "xyes"; then
 	AC_MSG_NOTICE([Disabled concurrent gc support in SGEN.])
 fi
 
-
 if test "x$mono_feature_disable_sgen_split_nursery" = "xyes"; then
 	AC_DEFINE(DISABLE_SGEN_SPLIT_NURSERY, 1, [Disable minor=split support in SGEN.])
 	AC_MSG_NOTICE([Disabled minor=split support in SGEN.])
@@ -2031,6 +2020,22 @@ if test "x$mono_feature_disable_processes" = "xyes"; then
 	AC_DEFINE(DISABLE_PROCESSES, 1, [Disable process support])
 	AC_MSG_NOTICE([Disabled process support])
 fi
+
+if test "x$mono_feature_disable_eventpipe" = "xyes"; then
+	AC_DEFINE(DISABLE_EVENTPIPE, 1, [Disable EventPipe support])
+	AC_MSG_NOTICE([Disabled EventPipe support])
+	enable_perftracing=no
+fi
+
+if test x$enable_perftracing = x -a x$with_core = xonly; then
+	if test -f $srcdir/mono/eventpipe/ep.h; then
+		enable_perftracing=yes
+	fi
+fi
+if test x$enable_perftracing = xyes; then
+	AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
+fi
+AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
