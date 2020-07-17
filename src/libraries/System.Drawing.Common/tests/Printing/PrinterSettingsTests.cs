@@ -49,7 +49,6 @@ namespace System.Drawing.Printing.Tests
         {
             var printerSettings = new PrinterSettings();
             bool canDuplex = printerSettings.CanDuplex;
-            Assert.True(canDuplex);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -57,7 +56,6 @@ namespace System.Drawing.Printing.Tests
         {
             var printerSettings = new PrinterSettings();
             int copies = printerSettings.Copies;
-            Assert.Equal(1, copies);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -87,7 +85,6 @@ namespace System.Drawing.Printing.Tests
         {
             var printerSettings = new PrinterSettings();
             bool collate = printerSettings.Collate;
-            Assert.True(collate);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -400,7 +397,6 @@ namespace System.Drawing.Printing.Tests
         {
             var printerSettings = new PrinterSettings();
             bool supported = printerSettings.IsDirectPrintingSupported(imageFormat);
-            Assert.True(supported);
         }
 
         public static IEnumerable<object[]> IsDirectPrintingSupported_ImageFormatNotSupported_TestData()
