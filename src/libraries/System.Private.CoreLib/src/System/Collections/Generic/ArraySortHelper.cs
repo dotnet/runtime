@@ -76,9 +76,42 @@ namespace System.Collections.Generic
                 return 0;
             }
         }
+
+        internal static void Sort(Span<T> keys, Comparison<T> comparison)
+        {
+            Debug.Assert(comparison != null, "Check the arguments in the caller!");
+
+            // Add a try block here to detect bogus comparisons
+            try
+            {
+                if (typeof(T).IsValueType)
+                {
+                    var comparer = new StructComparisonComparer<T>(comparison);
+                    ComparerArraySortHelper<T, StructComparisonComparer<T>>
+                        .IntrospectiveSort(keys, comparer);
+                }
+                else
+                {
+                    var comparer = new ObjectComparisonComparer(Unsafe.As<Comparison<object>>(comparison));
+                    var keysAsObjects = MemoryMarshal.CreateSpan(
+                        ref Unsafe.As<T, object>(ref keys.GetPinnableReference()),
+                        keys.Length);
+                    ComparerArraySortHelper<object, ObjectComparisonComparer>
+                        .IntrospectiveSort(keysAsObjects, comparer);
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparison);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
     }
 
-    internal partial class ComparerArraySortHelper<T, TComparer>
+    internal static class ComparerArraySortHelper<T, TComparer>
         where TComparer : IComparer<T>?
     {
         #region IArraySortHelper<T> Members
@@ -685,7 +718,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal partial class ComparerArraySortHelper<TKey, TValue, TComparer>
+    internal static class ComparerArraySortHelper<TKey, TValue, TComparer>
         where TComparer : IComparer<TKey>?
     {
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
