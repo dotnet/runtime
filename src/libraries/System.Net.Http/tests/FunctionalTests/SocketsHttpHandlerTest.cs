@@ -2082,7 +2082,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 // Block the first connection on infinite requests.
-                List<int> blockedStreamIds = await AcceptRequests(connection0);
+                List<int> blockedStreamIds = await AcceptRequests(connection0).ConfigureAwait(false);
 
                 int handledRequestCount = (await HandleAllPendingRequests(connection1, sendTasks.Count - blockedStreamIds.Count).ConfigureAwait(false)).Count;
 
@@ -2090,7 +2090,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(TotalRequestCount - blockedStreamIds.Count, handledRequestCount);
 
                 //Complete inifinite requests.
-                handledRequestCount += await SendResponses(connection0, blockedStreamIds);
+                handledRequestCount += await SendResponses(connection0, blockedStreamIds).ConfigureAwait(false);
 
                 Assert.Equal(TotalRequestCount, handledRequestCount);
 
@@ -2202,7 +2202,7 @@ namespace System.Net.Http.Functional.Tests
         {
             sendTasks.Add(client.GetAsync(server.Address));
             sendTasks.Add(client.GetAsync(server.Address));
-            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(3), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(5), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
             return connection;
         }
 
