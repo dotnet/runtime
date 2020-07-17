@@ -1919,9 +1919,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 		 */
 
 		g_warning ("NULL interp_runtime_invoke");
-		MonoException *thrown_exc = (MonoException*) mono_gchandle_get_target_internal (context->exc_gchandle);
-
-		g_warning ("backtrace: %s", mono_exception_get_managed_backtrace(thrown_exc));
 
 		return NULL;
 	}
