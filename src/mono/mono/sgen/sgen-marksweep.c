@@ -2933,7 +2933,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->post_param_init = post_param_init;
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
+#ifndef DISABLE_SGEN_BINARY_PROTOCOL
 	collector->count_cards = major_count_cards;
+#endif
 	collector->init_block_free_lists = sgen_init_block_free_lists;
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
