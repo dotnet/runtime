@@ -842,8 +842,14 @@ void sgen_register_obj_with_weak_fields (GCObject *obj);
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 
+#ifndef DISABLE_SGEN_TOGGLEREF
 void sgen_process_togglerefs (void);
 void sgen_register_test_toggleref_callback (void);
+#else
+static inline void sgen_process_togglerefs (void) { }
+static inline void sgen_register_test_toggleref_callback (void) { }
+#endif
+
 
 void sgen_mark_bridge_object (GCObject *obj)
 	MONO_PERMIT (need (sgen_gc_locked));
