@@ -215,6 +215,18 @@ namespace System.Text
             goto Finish;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ContainsNonAsciiValue(Vector128<ushort> value)
+        {
+            Debug.Assert(BitConverter.IsLittleEndian, "This ARM64 implementation assumes little endian");
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
+            value = AdvSimd.Arm64.MaxPairwise(value, value);
+            return (value.AsUInt64().ToScalar() & 0x8000800080008000) != 0;
+        }
+
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Sse2(byte* pBuffer, nuint bufferLength)
         {
             // JIT turns the below into constants
@@ -1078,10 +1090,8 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Sse2.IsSupported)
+            if (BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported))
             {
-                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
-
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
                     // Since there's overhead to setting up the vectorized code path, we only want to
@@ -1106,7 +1116,7 @@ namespace System.Text
                         }
                     }
 
-                    currentOffset = NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                    currentOffset = NarrowUtf16ToAscii_Sse2OrArm64(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -1294,7 +1304,7 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint NarrowUtf16ToAscii_Sse2(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+        private static unsafe nuint NarrowUtf16ToAscii_Sse2OrArm64(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
             // will be elided by JIT once we determine which specific ISAs we support.
@@ -1308,17 +1318,30 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Sse2.IsSupported);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
             Vector128<short> asciiMaskForTestZ = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW, UQADD
             const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
 
             // First, perform an unaligned read of the first part of the input buffer.
 
-            Vector128<short> utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer); // unaligned load
+            Vector128<short> utf16VectorFirst;
+
+            if (Sse2.IsSupported)
+            {
+                utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer); // unaligned load
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                utf16VectorFirst = AdvSimd.LoadVector128((short*)pUtf16Buffer);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // If there's non-ASCII data in the first 8 elements of the vector, there's nothing we can do.
             // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
@@ -1332,16 +1355,43 @@ namespace System.Text
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if (Sse2.IsSupported)
                 {
-                    return 0;
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    {
+                        return 0;
+                    }
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (ContainsNonAsciiValue(AdvSimd.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate)))
+                    {
+                        return 0;
+                    }
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
                 }
             }
 
             // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
 
-            Vector128<byte> asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-            Sse2.StoreScalar((ulong*)pAsciiBuffer, asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
+            Vector128<byte> asciiVector;
+            if (Sse2.IsSupported)
+            {
+                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
+                Sse2.StoreScalar((ulong*)pAsciiBuffer, asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16VectorFirst);
+                AdvSimd.Store(pAsciiBuffer, lower); // ulong* calculated here is UNALIGNED
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
@@ -1360,7 +1410,18 @@ namespace System.Text
             {
                 // We need to perform one more partial vector write before we can get the alignment we want.
 
-                utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                if (Sse2.IsSupported)
+                {
+                    utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    utf16VectorFirst = AdvSimd.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 // See comments earlier in this method for information about how this works.
                 if (Sse41.IsSupported)
@@ -1372,15 +1433,41 @@ namespace System.Text
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if (Sse2.IsSupported)
                     {
-                        goto Finish;
+                        if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                        {
+                            goto Finish;
+                        }
+                    }
+                    else if (AdvSimd.Arm64.IsSupported)
+                    {
+                        if (ContainsNonAsciiValue(AdvSimd.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate)))
+                        {
+                            goto Finish;
+                        }
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
                 }
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
-                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-                Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
+                if (Sse2.IsSupported)
+                {
+                    asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
+                    Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16VectorFirst);
+                    AdvSimd.Store((ulong*)pAsciiBuffer + currentOffsetInElements, lower.AsUInt64()); // ulong* calculated here is UNALIGNED
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1397,9 +1484,24 @@ namespace System.Text
             {
                 // In a loop, perform two unaligned reads, narrow to a single vector, then aligned write one vector.
 
-                utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
-                Vector128<short> utf16VectorSecond = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + SizeOfVector128 / sizeof(short)); // unaligned load
-                Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
+                Vector128<short> utf16VectorSecond;
+                Vector128<short> combinedVector;
+                if (Sse2.IsSupported)
+                {
+                    utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                    utf16VectorSecond = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + Vector128<short>.Count); // unaligned load
+                    combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    utf16VectorFirst = AdvSimd.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                    utf16VectorSecond = AdvSimd.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + Vector128<short>.Count); // unaligned load
+                    combinedVector = AdvSimd.Or(utf16VectorFirst, utf16VectorSecond);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
                 if (Sse41.IsSupported)
@@ -1411,18 +1513,55 @@ namespace System.Text
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if (Sse2.IsSupported)
                     {
-                        goto FoundNonAsciiDataInLoop;
+                        if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                        {
+                            goto FoundNonAsciiDataInLoop;
+                        }
+                    }
+                    else if (AdvSimd.Arm64.IsSupported)
+                    {
+                        if (ContainsNonAsciiValue(AdvSimd.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate)))
+                        {
+                            goto FoundNonAsciiDataInLoop;
+                        }
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
                 }
 
                 // Build up the ASCII vector and perform the store.
 
-                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorSecond);
+                if (Sse2.IsSupported)
+                {
+                    asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorSecond);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16VectorFirst);
+                    asciiVector = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(lower, utf16VectorSecond);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % SizeOfVector128 == 0, "Write should be aligned.");
-                Sse2.StoreAligned(pAsciiBuffer + currentOffsetInElements, asciiVector); // aligned
+                if (Sse2.IsSupported)
+                {
+                    Sse2.StoreAligned(pAsciiBuffer + currentOffsetInElements, asciiVector); // aligned
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    AdvSimd.Store(pAsciiBuffer + currentOffsetInElements, asciiVector); // aligned
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 currentOffsetInElements += SizeOfVector128;
             } while (currentOffsetInElements <= finalOffsetWhereCanRunLoop);
@@ -1445,18 +1584,44 @@ namespace System.Text
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if (Sse2.IsSupported)
                 {
-                    goto Finish; // found non-ASCII data
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    {
+                        goto Finish; // found non-ASCII data
+                    }
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (ContainsNonAsciiValue(AdvSimd.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate)))
+                    {
+                        goto Finish;
+                    }
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
                 }
             }
 
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
-            asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
+            if (Sse2.IsSupported)
+            {
+                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
+                Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+                Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is aligned
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16VectorFirst);
+                Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+                AdvSimd.Store((ulong*)(pAsciiBuffer + currentOffsetInElements), lower.AsUInt64()); // ulong* calculated here is aligned;
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
-            Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
-
-            Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is aligned
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
