@@ -14,8 +14,13 @@ namespace System.Collections.Generic
 
     internal partial class ArraySortHelper<T>
     {
+        //public void Sort(Span<T> keys)
+        //{
+        //    Sort<IComparer<T>>(keys, null);
+        //}
+
         public void Sort<TComparer>(Span<T> keys, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>?
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -25,12 +30,13 @@ namespace System.Collections.Generic
                 {
                     // TODO: Revisit lambda allocation
                     //IntrospectiveSort(keys, Comparer<T>.Default.Compare);
-                    ComparerArraySortHelper<T, Comparer<T>>.IntrospectiveSort(
-                        keys, Comparer<T>.Default);
+                    ComparerArraySortHelper<T, Comparer<T>>
+                        .IntrospectiveSort(keys, Comparer<T>.Default);
                 }
                 else
                 {
-                    IntrospectiveSort(keys, comparer);
+                    ComparerArraySortHelper<T, TComparer>
+                        .IntrospectiveSort(keys, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -43,19 +49,25 @@ namespace System.Collections.Generic
             }
         }
 
+        //public int BinarySearch(T[] array, int index, int length, T value)
+        //{
+        //    return BinarySearch<IComparer<T>>(array, index, length, value, null);
+        //}
+
         public int BinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>?
         {
             try
             {
                 if (comparer is null)
                 {
-                    return ComparerArraySortHelper<T, Comparer<T>>.InternalBinarySearch(
-                        array, index, length, value, Comparer<T>.Default);
+                    return ComparerArraySortHelper<T, Comparer<T>>
+                        .InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
                 }
                 else
                 {
-                    return InternalBinarySearch(array, index, length, value, comparer);
+                    return ComparerArraySortHelper<T, TComparer>
+                        .InternalBinarySearch(array, index, length, value, comparer);
                 }
             }
             catch (Exception e)
@@ -67,7 +79,7 @@ namespace System.Collections.Generic
     }
 
     internal partial class ComparerArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>
+        where TComparer : IComparer<T>?
     {
         #region IArraySortHelper<T> Members
 
@@ -104,7 +116,7 @@ namespace System.Collections.Generic
             while (lo <= hi)
             {
                 int i = lo + ((hi - lo) >> 1);
-                int order = comparer.Compare(array[i], value);
+                int order = comparer!.Compare(array[i], value);
 
                 if (order == 0) return i;
                 if (order < 0)
@@ -124,7 +136,7 @@ namespace System.Collections.Generic
         {
             Debug.Assert(i != j);
 
-            if (comparer.Compare(keys[i], keys[j]) > 0)
+            if (comparer!.Compare(keys[i], keys[j]) > 0)
             {
                 T key = keys[i];
                 keys[i] = keys[j];
@@ -285,7 +297,7 @@ namespace System.Collections.Generic
                 T t = keys[i + 1];
 
                 int j = i;
-                while (j >= 0 && comparer.Compare(t, keys[j]) < 0)
+                while (j >= 0 && comparer!.Compare(t, keys[j]) < 0)
                 {
                     keys[j + 1] = keys[j];
                     j--;
@@ -303,8 +315,13 @@ namespace System.Collections.Generic
 
         #region IArraySortHelper<T> Members
 
+        //public void Sort(Span<T> keys)
+        //{
+        //    Sort<IComparer<T>>(keys, null);
+        //}
+
         public void Sort<TComparer>(Span<T> keys, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>?
         {
             try
             {
@@ -347,7 +364,7 @@ namespace System.Collections.Generic
         }
 
         public int BinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>?
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -640,7 +657,7 @@ namespace System.Collections.Generic
     internal partial class ArraySortHelper<TKey, TValue>
     {
         public void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-            where TComparer : IComparer<TKey>
+            where TComparer : IComparer<TKey>?
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -648,12 +665,13 @@ namespace System.Collections.Generic
             {
                 if (comparer is null)
                 {
-                    ComparerArraySortHelper<TKey, TValue, Comparer<TKey>>.IntrospectiveSort(
-                        keys, values, Comparer<TKey>.Default);
+                    ComparerArraySortHelper<TKey, TValue, Comparer<TKey>>
+                        .IntrospectiveSort(keys, values, Comparer<TKey>.Default);
                 }
                 else
                 {
-                    IntrospectiveSort(keys, values, comparer);
+                    ComparerArraySortHelper<TKey, TValue, TComparer>
+                        .IntrospectiveSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -668,7 +686,7 @@ namespace System.Collections.Generic
     }
 
     internal partial class ComparerArraySortHelper<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>
+        where TComparer : IComparer<TKey>?
     {
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
         {
@@ -872,13 +890,14 @@ namespace System.Collections.Generic
         where TKey : IComparable<TKey>
     {
         public void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-            where TComparer : IComparer<TKey>
+            where TComparer : IComparer<TKey>?
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null || comparer == Comparer<TKey>.Default)
+                if (!typeof(TComparer).IsValueType &&
+                    (comparer == null || ReferenceEquals(comparer, Comparer<TKey>.Default)))
                 {
                     if (keys.Length > 1)
                     {
@@ -904,7 +923,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // TODO: Change/move this Sort method out of the specific code path
-                    ComparerArraySortHelper<TKey, TValue, IComparer<TKey>>.IntrospectiveSort(keys, values, comparer);
+                    ComparerArraySortHelper<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)

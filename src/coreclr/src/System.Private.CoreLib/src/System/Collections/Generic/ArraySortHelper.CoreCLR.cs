@@ -15,8 +15,10 @@ namespace System.Collections.Generic
 
     internal interface IArraySortHelper<TKey>
     {
-        void Sort<TComparer>(Span<TKey> keys, TComparer comparer) where TComparer : IComparer<TKey>;
-        int BinarySearch<TComparer>(TKey[] keys, int index, int length, TKey value, TComparer comparer) where TComparer : IComparer<TKey>;
+        //void Sort(Span<TKey> keys);
+        void Sort<TComparer>(Span<TKey> keys, TComparer comparer) where TComparer : IComparer<TKey>?;
+        //int BinarySearch(TKey[] keys, int index, int length, TKey value);
+        int BinarySearch<TComparer>(TKey[] keys, int index, int length, TKey value, TComparer comparer) where TComparer : IComparer<TKey>?;
     }
 
     //[TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
@@ -43,6 +45,7 @@ namespace System.Collections.Generic
 
     [TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
     internal partial class ArraySortHelper<T>
+        : IArraySortHelper<T>
     {
         private static readonly IArraySortHelper<T> s_defaultArraySortHelper = CreateArraySortHelper();
 
@@ -57,7 +60,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                return new ComparerArraySortHelper<T, TComparer>();
+                return new ArraySortHelper<T>();
             }
         }
     }
@@ -79,7 +82,7 @@ namespace System.Collections.Generic
     //}
     internal interface IArraySortHelper<TKey, TValue>
     {
-        void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer) where TComparer : IComparer<TKey>;
+        void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer) where TComparer : IComparer<TKey>?;
     }
 
 
