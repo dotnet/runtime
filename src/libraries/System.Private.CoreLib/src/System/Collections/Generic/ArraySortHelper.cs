@@ -12,36 +12,10 @@ namespace System.Collections.Generic
 {
     #region ArraySortHelper for single arrays
 
-    internal readonly struct ComparisonComparer<T> : IComparer<T>
+    internal partial class ArraySortHelper<T>
     {
-        private readonly Comparison<T> _comparison;
-
-        public ComparisonComparer(Comparison<T> comparison) =>
-            _comparison = comparison;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare([AllowNull] T x, [AllowNull] T y) =>
-            _comparison(x, y);
-    }
-
-    internal readonly struct ObjectComparisonComparer : IComparer<object>
-    {
-        private readonly Comparison<object> _comparison;
-
-        public ObjectComparisonComparer(Comparison<object> comparison) =>
-            _comparison = comparison;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Compare([AllowNull] object x, [AllowNull] object y) =>
-            _comparison(x, y);
-    }
-
-    internal partial class ComparerArraySortHelper<T, TComparer>
-        where TComparer : IComparer<T>
-    {
-        #region IArraySortHelper<T> Members
-
-        public void Sort(Span<T> keys, TComparer comparer)
+        public void Sort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -69,7 +43,8 @@ namespace System.Collections.Generic
             }
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, TComparer comparer)
+        public int BinarySearch<TComparer>(T[] array, int index, int length, T value, TComparer comparer)
+            where TComparer : IComparer<T>
         {
             try
             {
@@ -89,6 +64,13 @@ namespace System.Collections.Generic
                 return 0;
             }
         }
+    }
+
+    internal partial class ComparerArraySortHelper<T, TComparer>
+        where TComparer : IComparer<T>
+    {
+        #region IArraySortHelper<T> Members
+
 
         #endregion
 
@@ -326,7 +308,8 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer == null || ReferenceEquals(comparer, Comparer<T>.Default))
+                if (!typeof(TComparer).IsValueType &&
+                    (comparer == null || ReferenceEquals(comparer, Comparer<T>.Default)))
                 {
                     if (keys.Length > 1)
                     {
@@ -371,7 +354,8 @@ namespace System.Collections.Generic
 
             try
             {
-                if (comparer == null || ReferenceEquals(comparer, Comparer<T>.Default))
+                if (!typeof(TComparer).IsValueType &&
+                    comparer == null || ReferenceEquals(comparer, Comparer<T>.Default))
                 {
                     return BinarySearch(array, index, length, value);
                 }
@@ -653,10 +637,10 @@ namespace System.Collections.Generic
 
     #region ArraySortHelper for paired key and value arrays
 
-    internal partial class ComparerArraySortHelper<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>
+    internal partial class ArraySortHelper<TKey, TValue>
     {
-        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        public void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -681,7 +665,11 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
             }
         }
+    }
 
+    internal partial class ComparerArraySortHelper<TKey, TValue, TComparer>
+        where TComparer : IComparer<TKey>
+    {
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
         {
             Debug.Assert(comparer != null);
@@ -883,7 +871,8 @@ namespace System.Collections.Generic
     internal partial class GenericArraySortHelper<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
+        public void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>
         {
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -1196,5 +1185,29 @@ namespace System.Collections.Generic
 
             return left;
         }
+    }
+
+    internal readonly struct StructComparisonComparer<T> : IComparer<T>
+    {
+        private readonly Comparison<T> _comparison;
+
+        public StructComparisonComparer(Comparison<T> comparison) =>
+            _comparison = comparison;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare([AllowNull] T x, [AllowNull] T y) =>
+            _comparison(x, y);
+    }
+
+    internal readonly struct ObjectComparisonComparer : IComparer<object>
+    {
+        private readonly Comparison<object> _comparison;
+
+        public ObjectComparisonComparer(Comparison<object> comparison) =>
+            _comparison = comparison;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare([AllowNull] object x, [AllowNull] object y) =>
+            _comparison(x, y);
     }
 }
