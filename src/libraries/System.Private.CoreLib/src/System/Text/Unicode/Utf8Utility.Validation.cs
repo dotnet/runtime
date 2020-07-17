@@ -134,12 +134,14 @@ namespace System.Text.Unicode
                                 if (mask != 0)
                                 {
                                     trailingZeroCount = BitOperations.TrailingZeroCount(mask);
+                                    Debug.Assert(trailingZeroCount < 16);
+
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
                             else if (Sse2.IsSupported)
                             {
-                                int mask = Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
+                                uint mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
                                     trailingZeroCount = BitOperations.TrailingZeroCount(mask);
