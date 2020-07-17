@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Serialization;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -18,9 +20,9 @@ namespace System.Collections.Generic
         // that was passed in to the ctor. The caller chooses one of these singletons so that the
         // GetUnderlyingEqualityComparer method can return the correct value.
 
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new NonRandomizedStringEqualityComparer(EqualityComparer<string?>.Default);
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new NonRandomizedStringEqualityComparer(StringComparer.Ordinal);
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new NonRandomizedOrdinalIgnoreCaseComparer();
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
+        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
 
         private readonly IEqualityComparer<string?> _underlyingComparer;
 
@@ -36,9 +38,21 @@ namespace System.Collections.Generic
         {
         }
 
-        public virtual bool Equals(string? x, string? y) => string.Equals(x, y); // Ordinal
+        public virtual bool Equals(string? x, string? y)
+        {
+            // This instance may have been deserialized into a class that doesn't guarantee
+            // these parameters are non-null. Can't short-circuit the null checks.
 
-        public virtual int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCode() ?? 0; // Ordinal
+            return string.Equals(x, y);
+        }
+
+        public virtual int GetHashCode(string? obj)
+        {
+            // This instance may have been deserialized into a class that doesn't guarantee
+            // these parameters are non-null. Can't short-circuit the null checks.
+
+            return obj?.GetNonRandomizedHashCode() ?? 0;
+        }
 
         internal virtual RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
         {
@@ -52,26 +66,81 @@ namespace System.Collections.Generic
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // We are doing this to stay compatible with .NET Framework.
-            // Our own collection types will never call this (since this type is a proxy),
+            // Our own collection types will never call this (since this type is a wrapper),
             // but perhaps third-party collection types could try serializing an instance
             // of this.
             info.SetType(typeof(GenericEqualityComparer<string>));
         }
 
-        private sealed class NonRandomizedOrdinalIgnoreCaseComparer : NonRandomizedStringEqualityComparer
+        private sealed class OrdinalComparer : NonRandomizedStringEqualityComparer
         {
-            internal NonRandomizedOrdinalIgnoreCaseComparer()
-                : base(StringComparer.OrdinalIgnoreCase)
+            internal OrdinalComparer(IEqualityComparer<string?> wrappedComparer)
+                : base(wrappedComparer)
             {
             }
 
-            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
-
-            public override int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCodeOrdinalIgnoreCase() ?? 0;
-
-            internal override RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
+            public override bool Equals(string? x, string? y)
             {
-                return RandomizedStringEqualityComparer.Create(_underlyingComparer, ignoreCase: true);
+                Debug.Assert(x != null && y != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+
+                // This is a slightly tweaked version of string.Equals(x, y).
+                // We bypass the null checks on 'x' and 'y' because our callers guarantee that they're not null.
+
+                if (ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                if (x.Length != y.Length)
+                {
+                    return false;
+                }
+
+                return SpanHelpers.SequenceEqual(
+                    ref Unsafe.As<char, byte>(ref x.GetRawStringData()),
+                    ref Unsafe.As<char, byte>(ref y.GetRawStringData()),
+                    ((nuint)x.Length) * 2);
+            }
+
+            public override int GetHashCode(string? obj)
+            {
+                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+                return obj.GetNonRandomizedHashCode();
+            }
+
+        }
+
+        private sealed class OrdinalIgnoreCaseComparer : NonRandomizedStringEqualityComparer
+        {
+            internal OrdinalIgnoreCaseComparer(IEqualityComparer<string?> wrappedComparer)
+                : base(wrappedComparer)
+            {
+            }
+
+            public override bool Equals(string? x, string? y)
+            {
+                Debug.Assert(x != null && y != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+
+                // This is a slightly tweaked version of string.EqualsOrdinalIgnoreCase(x, y).
+                // We bypass the null checks on 'x' and 'y' because our callers guarantee that they're not null.
+
+                if (ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                if (x.Length != y.Length) // non-linguistic equality requires same UTF-16 code unit count
+                {
+                    return false;
+                }
+
+                return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+            }
+
+            public override int GetHashCode(string? obj)
+            {
+                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+                return obj.GetNonRandomizedHashCodeOrdinalIgnoreCase();
             }
         }
     }
