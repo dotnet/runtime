@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -16,6 +15,8 @@ namespace System.Text.RegularExpressions.Tests
         public static IEnumerable<object[]> Match_Basic_TestData()
         {
             // pattern, input, options, beginning, length, expectedSuccess, expectedValue
+            yield return new object[] { @"H#", "#H#", RegexOptions.IgnoreCase, 0, 3, true, "H#" }; // https://github.com/dotnet/runtime/issues/39390
+            yield return new object[] { @"H#", "#H#", RegexOptions.None, 0, 3, true, "H#" };
 
             // Testing octal sequence matches: "\\060(\\061)?\\061"
             // Octal \061 is ASCII 49 ('1')

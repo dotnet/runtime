@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -400,6 +399,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public static async Task AwaitTasksAndValueTasks_InTaskAndValueTaskMethods()
         {
             for (int i = 0; i < 2; i++)
@@ -522,6 +522,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>
@@ -539,6 +540,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_ConcurrentBuilders_WorkCorrectly()
         {
             await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>

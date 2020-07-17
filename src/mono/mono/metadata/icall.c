@@ -171,7 +171,7 @@ static void
 array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict_enums, gboolean strict_signs, MonoError *error);
 
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error);
 
 static inline MonoBoolean
 is_generic_parameter (MonoType *type)
@@ -2291,7 +2291,7 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandl
 	MonoType *type = mono_field_get_type_checked (field, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
-	return type_array_from_modifiers (m_class_get_image (field->parent), type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 int
@@ -8789,7 +8789,7 @@ leave:
  * and avoid useless allocations.
  */
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error)
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error)
 {
 	int i, count = 0;
 	MonoDomain *domain = mono_domain_get ();
@@ -8845,6 +8845,12 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);	
+	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
+		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
+		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
+		type = mono_reflection_type_handle_mono_type (t, error);
+		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -8859,7 +8865,7 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	else
 		type = sig->params [pos];
 
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 static MonoType*
@@ -8881,13 +8887,11 @@ ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle pro
 {
 	error_init (error);
 	MonoProperty *prop = MONO_HANDLE_GETVAL (property, property);
-	MonoClass *klass = MONO_HANDLE_GETVAL (property, klass);
 	MonoType *type = get_property_type (prop);
-	MonoImage *image = m_class_get_image (klass);
 
 	if (!type)
 		return NULL_HANDLE_ARRAY;
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 /*

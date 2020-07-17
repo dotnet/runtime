@@ -226,7 +226,13 @@ if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DHOST_UNIX)
 
   if(CLR_CMAKE_HOST_OSX)
-    message("Detected OSX x86_64")
+    if(CLR_CMAKE_HOST_UNIX_AMD64)
+      message("Detected OSX x86_64")
+    elseif(CLR_CMAKE_HOST_UNIX_ARM64)
+      message("Detected OSX ARM64")
+    else()
+      clr_unknown_arch()
+    endif()
   elseif(CLR_CMAKE_HOST_FREEBSD)
     message("Detected FreeBSD amd64")
   elseif(CLR_CMAKE_HOST_NETBSD)
@@ -454,7 +460,8 @@ if (MSVC)
   # 4132: Const object should be initialized.
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+  # 35038: data member 'member1' will be initialized after data member 'member2'.
+  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.

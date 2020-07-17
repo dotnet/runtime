@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Bitmap class testing unit
 //
@@ -393,7 +393,7 @@ namespace MonoTests.System.Drawing
         static string ByteArrayToString(byte[] arrInput)
         {
             StringBuilder sOutput = new StringBuilder(arrInput.Length);
-            for (int i = 0; i < arrInput.Length - 1; i++)
+            for (int i = 0; i < arrInput.Length; i++)
             {
                 sOutput.Append(arrInput[i].ToString("X2"));
             }
@@ -496,35 +496,35 @@ namespace MonoTests.System.Drawing
             string sInFile = Helpers.GetTestBitmapPath("almogaver24bits.bmp");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                Assert.Equal("312958A3C67402E1299413794988A3", RotateBmp(bmp, RotateFlipType.Rotate90FlipNone));
-                Assert.Equal("BF70D8DA4F1545AEDD77D0296B47AE", RotateBmp(bmp, RotateFlipType.Rotate180FlipNone));
-                Assert.Equal("15AD2ADBDC7090C0EC744D0F7ACE2F", RotateBmp(bmp, RotateFlipType.Rotate270FlipNone));
-                Assert.Equal("2E10FEC1F4FD64ECC51D7CE68AEB18", RotateBmp(bmp, RotateFlipType.RotateNoneFlipX));
-                Assert.Equal("E63204779B566ED01162B90B49BD9E", RotateBmp(bmp, RotateFlipType.Rotate90FlipX));
-                Assert.Equal("B1ECB17B5093E13D04FF55CFCF7763", RotateBmp(bmp, RotateFlipType.Rotate180FlipX));
-                Assert.Equal("71A173882C16755D86F4BC26532374", RotateBmp(bmp, RotateFlipType.Rotate270FlipX));
+                Assert.Equal("312958A3C67402E1299413794988A3C7", RotateBmp(bmp, RotateFlipType.Rotate90FlipNone));
+                Assert.Equal("BF70D8DA4F1545AEDD77D0296B47AE58", RotateBmp(bmp, RotateFlipType.Rotate180FlipNone));
+                Assert.Equal("15AD2ADBDC7090C0EC744D0F7ACE2FD4", RotateBmp(bmp, RotateFlipType.Rotate270FlipNone));
+                Assert.Equal("2E10FEC1F4FD64ECC51D7CE68AEB183F", RotateBmp(bmp, RotateFlipType.RotateNoneFlipX));
+                Assert.Equal("E63204779B566ED01162B90B49BD9EE9", RotateBmp(bmp, RotateFlipType.Rotate90FlipX));
+                Assert.Equal("B1ECB17B5093E13D04FF55CFCF7763C9", RotateBmp(bmp, RotateFlipType.Rotate180FlipX));
+                Assert.Equal("71A173882C16755D86F4BC2653237425", RotateBmp(bmp, RotateFlipType.Rotate270FlipX));
             }
         }
 
         // Rotate 1- and 4-bit bitmaps in different ways and check the
         // resulting pixels using MD5
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipNone, "64AE60858A02228F7B1B18C7812FB6")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipX, "353E937CFF31B1BF6C3DD0A031ACB5")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipXY, "A4DAF507C92BDE10626BC7B34FEFE5")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipY, "23947CE822C1DDE6BEA69C01F8D0D9")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipNone, "E96D3390938350F9DE2608C4364424")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipX, "AEA18A770A845E25B6A8CE28DD6DCB")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipXY, "C0975EAFD2FC1CC9CC7AF20B92FC9F")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipY, "BE45F685BDEBD7079AA1B2CBA46723")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipNone, "27CF5E9CE70BE9EBC47FB996721B95")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipX, "05A77EDDCDF20D5B0AC0169E95D7D7")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipXY, "3CC874B571902366AACED5D619E87D")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipY, "545876C99ACF833E69FBFFBF436034")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipNone, "A919CCB8F97CAD7DC1F01026D11A5D")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipX, "B6B6245796C836923ABAABDF368B29")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipXY, "8DE25C7E1BE4A3B535DB5D83198D83")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipY, "5DB56687757CDEFC52D89C77CA9223")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipNone, "64AE60858A02228F7B1B18C7812FB683")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipX, "353E937CFF31B1BF6C3DD0A031ACB54D")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipXY, "A4DAF507C92BDE10626BC7B34FEFE5D1")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipY, "23947CE822C1DDE6BEA69C01F8D0D984")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipNone, "E96D3390938350F9DE2608C436442452")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipX, "AEA18A770A845E25B6A8CE28DD6DCB2E")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipXY, "C0975EAFD2FC1CC9CC7AF20B92FC9F15")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipY, "BE45F685BDEBD7079AA1B2CBA467234E")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipNone, "27CF5E9CE70BE9EBC47FB996721B95DC")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipX, "05A77EDDCDF20D5B0AC0169E95D7D778")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipXY, "3CC874B571902366AACED5D619E87D85")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipY, "545876C99ACF833E69FBFFBF4360345D")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipNone, "A919CCB8F97CAD7DC1F01026D11A5D15")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipX, "B6B6245796C836923ABAABDF368B2983")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipXY, "8DE25C7E1BE4A3B535DB5D83198D83E3")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipY, "5DB56687757CDEFC52D89C77CA92239B")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Rotate1bit4bit(string file, RotateFlipType type, string md5)
         {
@@ -1304,7 +1304,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void BitmapTypeStringCtor2()
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap(typeof(Bitmap), null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Bitmap(typeof(Bitmap), null));
         }
 
         private void SetResolution(float x, float y)

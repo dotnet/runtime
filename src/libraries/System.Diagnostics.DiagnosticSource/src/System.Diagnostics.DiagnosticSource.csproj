@@ -35,6 +35,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
     <Compile Include="System\Diagnostics\ActivityCreationOptions.cs" />
     <Compile Include="System\Diagnostics\ActivityDataRequest.cs" />
@@ -89,6 +90,9 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <Reference Include="System.AppContext" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="AssemblyInfo.netfx.cs" />

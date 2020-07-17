@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -127,13 +126,6 @@ namespace System.Linq.Parallel
                         {
                             accumulator = _finalReduce(accumulator, enumerator.Current);
                         }
-#if SUPPORT_THREAD_ABORT
-                        catch (ThreadAbortException)
-                        {
-                            // Do not wrap ThreadAbortExceptions
-                            throw;
-                        }
-#endif
                         catch (Exception ex)
                         {
                             // We need to wrap all exceptions into an aggregate.
@@ -167,13 +159,6 @@ namespace System.Linq.Parallel
             {
                 return _resultSelector(accumulator);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 // We need to wrap all exceptions into an aggregate.
@@ -213,7 +198,7 @@ namespace System.Linq.Parallel
         // Returns an enumerable that represents the query executing sequentially.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "This method should never be called. Associative aggregation can always be parallelized")]
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("This method should never be called. Associative aggregation can always be parallelized.");

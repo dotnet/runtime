@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE0060 // unused parameters
 using System.Runtime.CompilerServices;
@@ -11,7 +10,12 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM base hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class ArmBase
+#if USE_INTERNAL_ACCESSIBILITY
+    internal
+#else
+    public
+#endif
+        abstract class ArmBase
     {
         internal ArmBase() { }
 

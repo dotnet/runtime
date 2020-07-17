@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -34,7 +33,7 @@ namespace System
                 return;
             }
 
-            char[] disallowedSimpleAssemblyNameChars = new char[]
+            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
             {
                 Path.DirectorySeparatorChar,
                 Path.AltDirectorySeparatorChar,

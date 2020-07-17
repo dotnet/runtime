@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_compiler.h"
 #include <stdint.h>
@@ -57,6 +56,14 @@ EvpDigestCurrent
 Shims EVP_DigestFinal_ex on a duplicated value of ctx.
 */
 PALEXPORT int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s);
+
+/*
+Function:
+EvpDigestOneShot
+
+Combines EVP_MD_CTX_create, EVP_DigestUpdate, and EVP_DigestFinal_ex in to a single operation.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize);
 
 /*
 Function:

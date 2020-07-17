@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -368,12 +367,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return unchecked((int)Interop.Kernel32.GetCurrentProcessId());
-        }
-
         /// <summary>
         /// Gets a short-term handle to the process, with the given access.  If a handle exists,
         /// then it is reused.  If the process has exited, it throws an exception.
@@ -660,10 +653,6 @@ namespace System.Diagnostics
             Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         private bool _signaled;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -144,14 +143,14 @@ namespace System
                     return false;
 
                 EnsureConsoleInitialized();
-                return !Interop.Sys.GetSignalForBreak();
+                return Interop.Sys.GetSignalForBreak() == 0;
             }
             set
             {
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }

@@ -68,20 +68,45 @@ endfunction(get_include_directories)
 function(get_include_directories_asm IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
 
-    if (CLR_CMAKE_HOST_ARCH_ARM AND WIN32)
-        list(APPEND INC_DIRECTORIES "-I ")
-    endif()
-
     foreach(dir IN LISTS dirs)
-      if (CLR_CMAKE_HOST_ARCH_ARM AND WIN32)
-        list(APPEND INC_DIRECTORIES ${dir};)
-      else()
-        list(APPEND INC_DIRECTORIES -I${dir})
-      endif()
+      list(APPEND INC_DIRECTORIES -I${dir};)
     endforeach()
 
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
+
+# Finds and returns unwind libs
+function(find_unwind_libs UnwindLibs)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      find_library(UNWIND_ARCH NAMES unwind-aarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_AMD64)
+      find_library(UNWIND_ARCH NAMES unwind-x86_64)
+    endif()
+
+    if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
+       set(UNWIND_LIBS ${UNWIND_ARCH})
+    endif()
+
+    find_library(UNWIND_GENERIC NAMES unwind-generic)
+
+    if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
+      set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND_GENERIC})
+    endif()
+
+    find_library(UNWIND NAMES unwind)
+
+    if(UNWIND STREQUAL UNWIND-NOTFOUND)
+      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+    endif()
+
+    set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)
+endfunction(find_unwind_libs)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths.
@@ -118,10 +143,10 @@ function(preprocess_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# preprocess_compile_asm(ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
+# preprocess_compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
 function(preprocess_compile_asm)
   set(options "")
-  set(oneValueArgs OUTPUT_OBJECTS)
+  set(oneValueArgs TARGET OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
   cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
@@ -135,28 +160,21 @@ function(preprocess_compile_asm)
     file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
     preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
 
-    # We do not pass any defines since we have already done pre-processing above
-    set (ASM_CMDLINE "-o ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj ${ASM_PREPROCESSED_FILE}")
-
-    # Generate the batch file that will invoke the assembler
-    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}.cmd" ASM_SCRIPT_FILE)
-
-    file(GENERATE OUTPUT "${ASM_SCRIPT_FILE}"
-        CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} ${ASM_CMDLINE}")
-
-    message("Generated  - ${ASM_SCRIPT_FILE}")
+    # Produce object file where CMake would store .obj files for an OBJECT library.
+    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
+    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
 
     # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj
-                        COMMAND ${ASM_SCRIPT_FILE}
+    add_custom_command(OUTPUT ${OBJ_FILE}
+                        COMMAND "${CMAKE_ASM_MASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}
                         DEPENDS ${ASM_PREPROCESSED_FILE}
-                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} - ${ASM_SCRIPT_FILE}")
+                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} ---> \"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}")
 
     # mark obj as source that does not require compile
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${name}.obj PROPERTIES EXTERNAL_OBJECT TRUE)
+    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
 
     # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj)
+    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
   endforeach()
 
   set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)

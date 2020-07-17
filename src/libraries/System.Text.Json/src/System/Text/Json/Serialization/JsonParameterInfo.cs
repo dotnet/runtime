@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -19,6 +18,8 @@ namespace System.Text.Json
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; protected set; }
+
+        public bool IgnoreDefaultValuesOnRead { get; private set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         public JsonSerializerOptions? Options { get; set; } // initialized in Init method
@@ -61,13 +62,12 @@ namespace System.Text.Json
             Options = options;
             ShouldDeserialize = true;
             ConverterBase = matchingProperty.ConverterBase;
+            IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
         }
 
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
-            JsonPropertyInfo matchingProperty,
-            JsonSerializerOptions options)
+        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonPropertyInfo matchingProperty)
         {
             return new JsonParameterInfo<sbyte>
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +27,7 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return s_enableActivityPropagation && (Activity.Current != null || s_diagnosticListener.IsEnabled());
+            return Settings.s_activityPropagationEnabled && (Activity.Current != null || Settings.s_diagnosticListener.IsEnabled());
         }
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.
@@ -59,10 +58,11 @@ namespace System.Net.Http
             }
 
             Activity? activity = null;
+            DiagnosticListener diagnosticListener = Settings.s_diagnosticListener;
 
             // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
             // do not write any events just start/stop Activity and propagate Ids
-            if (!s_diagnosticListener.IsEnabled())
+            if (!diagnosticListener.IsEnabled())
             {
                 activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
                 activity.Start();
@@ -83,14 +83,14 @@ namespace System.Net.Http
             Guid loggingRequestId = Guid.Empty;
 
             // There is a listener. Check if listener wants to be notified about HttpClient Activities
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
+            if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
             {
                 activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
 
                 // Only send start event to users who subscribed for it, but start activity anyway
-                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
-                    s_diagnosticListener.StartActivity(activity, new ActivityStartData(request));
+                    diagnosticListener.StartActivity(activity, new ActivityStartData(request));
                 }
                 else
                 {
@@ -98,11 +98,11 @@ namespace System.Net.Http
                 }
             }
             // try to write System.Net.Http.Request event (deprecated)
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
+            if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
             {
                 long timestamp = Stopwatch.GetTimestamp();
                 loggingRequestId = Guid.NewGuid();
-                s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
+                diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
                     new RequestData(request, loggingRequestId, timestamp));
             }
 
@@ -133,12 +133,12 @@ namespace System.Net.Http
             {
                 taskStatus = TaskStatus.Faulted;
 
-                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
                     // If request was initially instrumented, Activity.Current has all necessary context for logging
                     // Request is passed to provide some context if instrumentation was disabled and to avoid
                     // extensive Activity.Tags usage to tunnel request properties
-                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
+                    diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
                 }
                 throw;
             }
@@ -147,7 +147,7 @@ namespace System.Net.Http
                 // always stop activity if it was started
                 if (activity != null)
                 {
-                    s_diagnosticListener.StopActivity(activity, new ActivityStopData(
+                    diagnosticListener.StopActivity(activity, new ActivityStopData(
                         response,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
@@ -156,10 +156,10 @@ namespace System.Net.Http
                         taskStatus));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
-                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
-                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
+                    diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
                         new ResponseData(
                             response,
                             loggingRequestId,
@@ -247,29 +247,35 @@ namespace System.Net.Http
             public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
         }
 
-        private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
-        private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
-
-        private static readonly bool s_enableActivityPropagation = GetEnableActivityPropagationValue();
-
-        private static bool GetEnableActivityPropagationValue()
+        private static class Settings
         {
-            // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(EnableActivityPropagationAppCtxSettingName, out bool enableActivityPropagation))
+            private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
+            private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
+
+            public static readonly bool s_activityPropagationEnabled = GetEnableActivityPropagationValue();
+
+            private static bool GetEnableActivityPropagationValue()
             {
-                return enableActivityPropagation;
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(EnableActivityPropagationAppCtxSettingName, out bool enableActivityPropagation))
+                {
+                    return enableActivityPropagation;
+                }
+
+                // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
+                string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
+                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
+                {
+                    // Suppress Activity propagation.
+                    return false;
+                }
+
+                // Defaults to enabling Activity propagation.
+                return true;
             }
 
-            // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-            string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
-            if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-            {
-                // Suppress Activity propagation.
-                return false;
-            }
-
-            // Defaults to enabling Activity propagation.
-            return true;
+            public static readonly DiagnosticListener s_diagnosticListener =
+                new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
         }
 
         private static void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
@@ -309,9 +315,6 @@ namespace System.Net.Http
                 }
             }
         }
-
-        private static readonly DiagnosticListener s_diagnosticListener =
-            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
         #endregion
     }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -339,6 +338,41 @@ namespace Microsoft.Extensions.Caching.Memory
             // Wait for compaction to complete
             Assert.True(await sem.WaitAsync(TimeSpan.FromSeconds(10)));
 
+            Assert.Equal(0, cache.Size);
+        }
+
+        [Fact]
+        public void TryingToAddExpiredEntryDoesNotIncreaseCacheSize()
+        {
+            var testClock = new TestClock();
+            var cache = new MemoryCache(new MemoryCacheOptions { Clock = testClock, SizeLimit = 10 });
+
+            var entryOptions = new MemoryCacheEntryOptions
+            {
+                Size = 5,
+                AbsoluteExpiration = testClock.UtcNow.Add(TimeSpan.FromMinutes(-1))
+            };
+
+            cache.Set("key", "value", entryOptions);
+            
+            Assert.Null(cache.Get("key"));
+            Assert.Equal(0, cache.Size);
+        }
+
+        [Fact]
+        public void TryingToAddEntryWithExpiredTokenDoesNotIncreaseCacheSize()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+            var testExpirationToken = new TestExpirationToken { HasChanged = true };
+            var entryOptions = new MemoryCacheEntryOptions
+            {
+                Size = 5,
+                ExpirationTokens = { testExpirationToken }
+            };
+
+            cache.Set("key", "value", entryOptions);
+            
+            Assert.Null(cache.Get("key"));
             Assert.Equal(0, cache.Size);
         }
 

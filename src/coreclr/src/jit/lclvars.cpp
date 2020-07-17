@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -910,12 +909,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #if defined(UNIX_AMD64_ABI)
                 if (varTypeIsStruct(argType) && (structDesc.eightByteCount >= 1))
                 {
-                    isFloat = varTypeIsFloating(firstEightByteType);
+                    isFloat = varTypeUsesFloatReg(firstEightByteType);
                 }
                 else
 #endif // !UNIX_AMD64_ABI
                 {
-                    isFloat = varTypeIsFloating(argType);
+                    isFloat = varTypeUsesFloatReg(argType);
                 }
 
 #if defined(UNIX_AMD64_ABI)
@@ -941,13 +940,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                     {
                         printf(", secondEightByte: %s",
                                getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType),
-                                          varTypeIsFloating(secondEightByteType)));
+                                          varTypeUsesFloatReg(secondEightByteType)));
                     }
                 }
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
-                    isFloat            = varTypeIsFloating(argType);
+                    isFloat            = varTypeUsesFloatReg(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
 
                     for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
@@ -999,7 +998,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         {
 #if defined(TARGET_ARM)
             varDscInfo->setAllRegArgUsed(argType);
-            if (varTypeIsFloating(argType))
+            if (varTypeUsesFloatReg(argType))
             {
                 varDscInfo->setAnyFloatStackArgs();
             }
@@ -1974,6 +1973,12 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
+    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
+             (structPromotionInfo.fieldCnt > 1))
+    {
+        // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
+        shouldPromote = false;
+    }
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -2189,7 +2194,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     {
         const lvaStructFieldInfo* pFieldInfo = &structPromotionInfo.fields[index];
 
-        if (varTypeIsFloating(pFieldInfo->fldType) || varTypeIsSIMD(pFieldInfo->fldType))
+        if (varTypeUsesFloatReg(pFieldInfo->fldType))
         {
             // Whenever we promote a struct that contains a floating point field
             // it's possible we transition from a method that originally only had integer
@@ -3640,6 +3645,53 @@ var_types LclVarDsc::lvaArgType()
     return type;
 }
 
+//----------------------------------------------------------------------------------------------
+// CanBeReplacedWithItsField: check if a whole struct reference could be replaced by a field.
+//
+// Arguments:
+//    comp - the compiler instance;
+//
+// Return Value:
+//    true if that can be replaced, false otherwise.
+//
+// Notes:
+//    The replacement can be made only for independently promoted structs
+//    with 1 field without holes.
+//
+bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
+{
+    if (!lvPromoted)
+    {
+        return false;
+    }
+
+    if (comp->lvaGetPromotionType(this) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    {
+        return false;
+    }
+    if (lvFieldCnt != 1)
+    {
+        return false;
+    }
+    if (lvContainsHoles)
+    {
+        return false;
+    }
+
+#if defined(FEATURE_SIMD)
+    // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+    // In order to do that we have to have its field `a` in memory. Right now lowering cannot
+    // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+    LclVarDsc* fieldDsc = comp->lvaGetDesc(lvFieldLclStart);
+    if (varTypeIsSIMD(fieldDsc))
+    {
+        return false;
+    }
+#endif // FEATURE_SIMD
+
+    return true;
+}
+
 //------------------------------------------------------------------------
 // lvaMarkLclRefs: increment local var references counts and more
 //
@@ -5079,10 +5131,26 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 }
 #endif // TARGET_ARM
 
-/*****************************************************************************
- *  lvaUpdateArgsWithInitialReg() : For each argument variable descriptor, update
- *  its current register with the initial register as assigned by LSRA.
- */
+//------------------------------------------------------------------------
+// UpdateLifeFieldVar: Update live sets for only the given field of a multi-reg LclVar node.
+//
+// Arguments:
+//    lclNode - the GT_LCL_VAR node.
+//
+void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
+{
+    noway_assert(varDsc->lvIsParam);
+
+    if (varDsc->lvIsRegCandidate())
+    {
+        varDsc->SetRegNum(varDsc->GetArgInitReg());
+    }
+}
+
+//------------------------------------------------------------------------
+// lvaUpdateArgsWithInitialReg() : For each argument variable descriptor, update
+//     its current register with the initial register as assigned by LSRA.
+//
 void Compiler::lvaUpdateArgsWithInitialReg()
 {
     if (!compLSRADone)
@@ -5092,7 +5160,7 @@ void Compiler::lvaUpdateArgsWithInitialReg()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-        LclVarDsc* varDsc = lvaTable + lclNum;
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         if (varDsc->lvPromotedStruct())
         {
@@ -5106,7 +5174,7 @@ void Compiler::lvaUpdateArgsWithInitialReg()
 
         if (varDsc->lvIsRegCandidate())
         {
-            varDsc->SetRegNum(varDsc->GetArgInitReg());
+            lvaUpdateArgWithInitialReg(varDsc);
         }
     }
 }
@@ -5326,23 +5394,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     unsigned fieldVarNum = BAD_VAR_NUM;
 
     noway_assert(lclNum < lvaCount);
-    LclVarDsc* varDsc = lvaTable + lclNum;
-
-    if (varDsc->lvPromotedStruct())
-    {
-        noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-        fieldVarNum = varDsc->lvFieldLclStart;
-
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType == PROMOTION_TYPE_INDEPENDENT)
-        {
-            lclNum = fieldVarNum;
-            noway_assert(lclNum < lvaCount);
-            varDsc = lvaTable + lclNum;
-            assert(varDsc->lvIsStructField);
-        }
-    }
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     noway_assert(varDsc->lvIsParam);
 
@@ -5388,19 +5440,18 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
     }
 
-    // For struct promoted parameters we need to set the offsets for both LclVars.
+    // For struct promoted parameters we need to set the offsets for the field lclVars.
     //
-    // For a dependent promoted struct we also assign the struct fields stack offset
+    // For a promoted struct we also assign the struct fields stack offset
     if (varDsc->lvPromotedStruct())
     {
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType == PROMOTION_TYPE_DEPENDENT)
+        unsigned firstFieldNum = varDsc->lvFieldLclStart;
+        int      offset        = varDsc->lvStkOffs;
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
-            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-            assert(fieldVarNum == varDsc->lvFieldLclStart);
-            lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+            LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
+            fieldVarDsc->lvStkOffs = offset;
+            offset += fieldVarDsc->lvFldOffset;
         }
     }
     // For an independent promoted struct field we also assign the parent struct stack offset
@@ -5443,23 +5494,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     unsigned fieldVarNum = BAD_VAR_NUM;
 
     noway_assert(lclNum < lvaCount);
-    LclVarDsc* varDsc = lvaTable + lclNum;
-
-    if (varDsc->lvPromotedStruct())
-    {
-        noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-        fieldVarNum = varDsc->lvFieldLclStart;
-
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType == PROMOTION_TYPE_INDEPENDENT)
-        {
-            lclNum = fieldVarNum;
-            noway_assert(lclNum < lvaCount);
-            varDsc = lvaTable + lclNum;
-            assert(varDsc->lvIsStructField);
-        }
-    }
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     noway_assert(varDsc->lvIsParam);
 
@@ -5715,21 +5750,12 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // !defined(TARGET_64BIT)
         if (varDsc->lvPromotedStruct())
     {
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType == PROMOTION_TYPE_DEPENDENT)
+        unsigned firstFieldNum = varDsc->lvFieldLclStart;
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
-            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-            assert(fieldVarNum == varDsc->lvFieldLclStart);
-            lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+            LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
+            fieldVarDsc->lvStkOffs = varDsc->lvStkOffs + fieldVarDsc->lvFldOffset;
         }
-    }
-    // For an independent promoted struct field we also assign the parent struct stack offset
-    else if (varDsc->lvIsStructField)
-    {
-        noway_assert(varDsc->lvParentLcl < lvaCount);
-        lvaTable[varDsc->lvParentLcl].lvStkOffs = varDsc->lvStkOffs;
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -119,13 +118,13 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
 #endif // FEATURE_COMINTEROP
-    m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE)
 #ifdef FEATURE_COMINTEROP
-    , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
+    m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
 #endif
+    m_debuggerFlags(debuggerFlags),
+    m_fTerminated(FALSE),
 #if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
-    , m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
+    m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
 #endif
 {
     STANDARD_VM_CONTRACT;

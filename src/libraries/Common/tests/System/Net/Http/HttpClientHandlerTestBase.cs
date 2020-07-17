@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -110,6 +109,25 @@ namespace System.Net.Http.Functional.Tests
                 _expectedVersion = expectedVersion;
             }
 
+#if NETCOREAPP
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected request version: expected {_expectedVersion}, saw {request.Version}");
+                }
+
+                HttpResponseMessage response = base.Send(request, cancellationToken);
+
+                if (response.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected response version: expected {_expectedVersion}, saw {response.Version}");
+                }
+
+                return response;
+            }
+#endif
+
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (request.Version != _expectedVersion)
@@ -164,6 +182,31 @@ namespace System.Net.Http.Functional.Tests
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => invoker.Send(request, cancellationToken));
+#else
+                // Framework won't ever have the sync API.
+                // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
+                Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
+                throw new Exception("Shouldn't be reachable");
+#endif
+            }
+        }
+
+        public static Task<Stream> ReadAsStreamAsync(this HttpContent content, bool async, CancellationToken cancellationToken = default)
+        {
+            if (async)
+            {
+#if NETCOREAPP
+                // No CancellationToken accepting overload on NETFX.
+                return content.ReadAsStreamAsync(cancellationToken);
+#else
+                return content.ReadAsStreamAsync();
+#endif
+
+            }
+            else
+            {
+#if NETCOREAPP
+                return Task.FromResult(content.ReadAsStream(cancellationToken));
 #else
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.

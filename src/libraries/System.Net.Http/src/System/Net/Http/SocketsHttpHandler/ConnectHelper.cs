@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -77,7 +76,7 @@ namespace System.Net.Http
             }
             catch (Exception error) when (!(error is OperationCanceledException))
             {
-                throw CreateWrappedException(error, cancellationToken);
+                throw CreateWrappedException(error, host, port, cancellationToken);
             }
             finally
             {
@@ -101,13 +100,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 socket.Dispose();
-
-                if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
-                {
-                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
-                }
-
-                throw;
+                throw CreateWrappedException(e, host, port, cancellationToken);
             }
 
             return new NetworkStream(socket, ownsSocket: true);
@@ -249,18 +242,18 @@ namespace System.Net.Http
 
             if (lastException != null)
             {
-                throw CreateWrappedException(lastException, cancellationToken);
+                throw CreateWrappedException(lastException, host, port, cancellationToken);
             }
 
             // TODO: find correct exception to throw here.
             throw new HttpRequestException("No host found.");
         }
 
-        private static Exception CreateWrappedException(Exception error, CancellationToken cancellationToken)
+        private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                new HttpRequestException(error.Message, error, RequestRetryType.RetryOnNextProxy);
+                new HttpRequestException($"{error.Message} ({host}:{port})", error, RequestRetryType.RetryOnNextProxy);
         }
     }
 }

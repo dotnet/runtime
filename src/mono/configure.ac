@@ -146,7 +146,7 @@ case "$host" in
 		CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -s WASM=1"
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -s WASM=1"
 		libgc_threads=pthreads
-		platform_wasm=yes
+		host_wasm=yes
 		# FIXME:
 		RID="osx-x64"
 		COREARCH="wasm32"
@@ -584,7 +584,7 @@ AM_CONDITIONAL(HOST_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
 AM_CONDITIONAL(HOST_TIZEN, test x$platform_tizen = xyes)
 AM_CONDITIONAL(HOST_IOS, test x$platform_ios = xyes)
-AM_CONDITIONAL(HOST_WASM, test x$platform_wasm = xyes)
+AM_CONDITIONAL(HOST_WASM, test x$host_wasm = xyes)
 AM_CONDITIONAL(HOST_AIX, test x$host_aix = xyes)
 
 if test -z "$HOST_DARWIN_TRUE"; then :
@@ -1124,7 +1124,10 @@ AC_ARG_WITH(csc, [  --with-csc=mcs,roslyn,default      Configures the CSharp com
 
 if test $csc_compiler = default; then
    if test $endian = big; then
-      csc_compiler=mcs
+      case "$host" in
+        s390x*) csc_compiler=roslyn ;;
+        *) csc_compiler=mcs
+      esac
    elif test $endian = little; then
       case "$host" in
         powerpc*) csc_compiler=mcs ;;
@@ -1309,6 +1312,12 @@ AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no 
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
 
+AC_ARG_WITH(static_icu, [  --with-static-icu=yes|no      Integrate ICU statically into the runtime (defaults to no)],[
+	if test x$with_static_icu = xyes ; then
+		AC_DEFINE(STATIC_ICU,1,[Integrate ICU statically into the runtime.])
+	fi
+], [with_static_icu=no])
+
 dnl
 dnl Spectre compiler mitigation flag checks
 dnl
@@ -1406,6 +1415,7 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
+   mono_feature_disable_cfgdir_config='yes'
    if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
@@ -1696,6 +1706,7 @@ AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
 AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
+AM_CONDITIONAL(STATIC_ICU, test "x$with_static_icu" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL_INTERP, [test "x$with_testing_aot_full_interp" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_HYBRID, [test "x$with_testing_aot_hybrid" != "xno"])
@@ -6764,8 +6775,10 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 #
 if test "x$enable_llvm_runtime" = "xyes"; then
 	AC_SUBST(MONO_CXXLD, [$CXX])
+	AC_SUBST(MONO_LIBTOOL_TAG, '--tag=CXX')
 else
 	AC_SUBST(MONO_CXXLD, [$CC])
+	AC_SUBST(MONO_LIBTOOL_TAG, '')
 fi
 
 ### Set -Werror options
@@ -6836,7 +6849,10 @@ if test x$with_core = xonly; then
 	fi
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
-		if test x$target_osx = xyes; then
+		if test x$target_wasm = xyes && test x$with_static_icu = xyes; then
+			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING"
+			have_sys_icu=yes
+		elif test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
 			# adding icu path to pkg_config_path
 			PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig
@@ -6863,6 +6879,9 @@ if test x$with_core = xonly; then
 			fi
 		elif test x$host_sunos = xyes; then
 			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes
+		elif test x$host_wasm = xyes; then
+			ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes
 		else
 			GLOBALIZATION_SHIM_DEFINES="-DNO_GLOBALIZATION_SHIM"

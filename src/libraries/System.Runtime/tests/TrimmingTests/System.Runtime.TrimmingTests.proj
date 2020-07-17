@@ -6,6 +6,8 @@
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -14,6 +16,11 @@
       as a workaround while the linker bug is fixed. This bug has been logged in the
       linker repo here: https://github.com/mono/linker/issues/1285 -->
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
+      <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
+      as this test will ensure exceptions are using Resource keys -->
+      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

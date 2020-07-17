@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -26,25 +25,33 @@ namespace Internal.Cryptography.Pal
         private ContentInfoAsn[]? _safeContentsValues;
         private CertAndKey[]? _certs;
         private int _certCount;
+        private PointerMemoryManager<byte>? _tmpManager;
 
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
 
-        protected void ParsePkcs12(byte[] data)
+        protected void ParsePkcs12(ReadOnlySpan<byte> data)
         {
             try
             {
                 // RFC7292 specifies BER instead of DER
                 AsnValueReader reader = new AsnValueReader(data, AsnEncodingRules.BER);
-                ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
 
                 // Windows compatibility: Ignore trailing data.
-                if (encodedData.Length != data.Length)
+                ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
+
+                unsafe
                 {
-                    reader = new AsnValueReader(encodedData, AsnEncodingRules.BER);
+                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
+                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
+                    encodedData.CopyTo(tmpSpan);
+                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
                 }
 
-                PfxAsn.Decode(ref reader, data, out PfxAsn pfxAsn);
+                ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
+                reader = new AsnValueReader(tmpMemory.Span, AsnEncodingRules.BER);
+
+                PfxAsn.Decode(ref reader, tmpMemory, out PfxAsn pfxAsn);
 
                 if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
                 {
@@ -105,6 +112,27 @@ namespace Internal.Cryptography.Pal
 
         public void Dispose()
         {
+            // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
+            // In this case, the UnixPkcs12Reader is only ever created in a using statement,
+            // never accessed by a second thread, and there isn't a manual call to Dispose
+            // mixed in anywhere.
+            if (_tmpManager != null)
+            {
+                unsafe
+                {
+                    Span<byte> tmp = _tmpManager.GetSpan();
+                    CryptographicOperations.ZeroMemory(tmp);
+
+                    fixed (byte* ptr = tmp)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)ptr);
+                    }
+                }
+
+                ((IDisposable)_tmpManager).Dispose();
+                _tmpManager = null;
+            }
+
             ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
             CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
 

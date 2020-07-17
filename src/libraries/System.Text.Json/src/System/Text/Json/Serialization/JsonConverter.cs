@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 
@@ -70,6 +69,11 @@ namespace System.Text.Json.Serialization
         /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
         /// </summary>
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        /// <summary>
+        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// </summary>
+        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized => false;

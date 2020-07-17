@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -2552,5 +2551,18 @@ namespace System.Text.Json
                 JsonTokenType.True => nameof(JsonTokenType.True),
                 _ => ((byte)TokenType).ToString()
             };
+
+        private ReadOnlySpan<byte> GetUnescapedSpan()
+        {
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            if (_stringHasEscaping)
+            {
+                int idx = span.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+                span = JsonReaderHelper.GetUnescapedSpan(span, idx);
+            }
+
+            return span;
+        }
     }
 }
