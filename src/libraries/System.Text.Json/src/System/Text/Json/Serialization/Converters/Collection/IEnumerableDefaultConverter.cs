@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadataForJsonArray(this, ref reader, ref state, options))
+                    if (JsonSerializer.ResolveMetadataForJsonArray(ref reader, ref state, options))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
@@ -274,7 +274,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected abstract bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state);
 
-        public sealed override void CreateInstance(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
             => CreateCollection(ref reader, ref state, options);
     }
 }

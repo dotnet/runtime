@@ -23,12 +23,13 @@ namespace System.Text.Json
         /// Sets state.Current.ReturnValue to the reference target for $ref cases;
         /// Sets state.Current.ReturnValue to a new instance for $id cases.
         /// </summary>
-        internal static bool ResolveMetadataForJsonObject<T>(
-            JsonResumableConverter<T> converter,
+        internal static bool ResolveMetadataForJsonObject(
             ref Utf8JsonReader reader,
             ref ReadStack state,
             JsonSerializerOptions options)
         {
+            JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {
                 // Read the first metadata property name.
@@ -124,7 +125,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                converter.CreateInstance(ref reader, ref state, options);
+                converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
 
                 string referenceId = reader.GetString()!;
                 state.ReferenceResolver.AddReference(referenceId, state.Current.ReturnValue!);
@@ -163,12 +164,13 @@ namespace System.Text.Json
         /// Sets state.Current.ReturnValue to the reference target for $ref cases;
         /// Sets state.Current.ReturnValue to a new instance for $id cases.
         /// </summary>
-        internal static bool ResolveMetadataForJsonArray<T>(
-            JsonResumableConverter<T> converter,
+        internal static bool ResolveMetadataForJsonArray(
             ref Utf8JsonReader reader,
             ref ReadStack state,
             JsonSerializerOptions options)
         {
+            JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {
                 // Read the first metadata property name.
@@ -262,7 +264,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                converter.CreateInstance(ref reader, ref state, options);
+                converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
 
                 string referenceId = reader.GetString()!;
                 state.ReferenceResolver.AddReference(referenceId, state.Current.ReturnValue!);

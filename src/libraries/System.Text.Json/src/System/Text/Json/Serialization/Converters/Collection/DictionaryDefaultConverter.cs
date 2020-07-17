@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Converters
                 bool preserveReferences = options.ReferenceHandler != null;
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadataForJsonObject(this, ref reader, ref state, options))
+                    if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
@@ -297,7 +297,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        public sealed override void CreateInstance(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
             => CreateCollection(ref reader, ref state);
     }
 }

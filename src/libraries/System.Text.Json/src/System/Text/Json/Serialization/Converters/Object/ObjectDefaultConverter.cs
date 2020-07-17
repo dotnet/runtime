@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (options.ReferenceHandler != null)
                     {
-                        if (JsonSerializer.ResolveMetadataForJsonObject(this, ref reader, ref state, options))
+                        if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
                         {
                             if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
@@ -408,7 +408,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        public sealed override void CreateInstance(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonClassInfo.CreateObject == null)
             {
