@@ -1344,7 +1344,7 @@ namespace System.Security.Permissions
     public sealed partial class PrincipalPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
 #if NET50_OBSOLETIONS
-        [System.ObsoleteAttribute("PrincipalPermissionAttribute is not honored by the runtime and must not be used..", true, DiagnosticId = "SYSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", true, DiagnosticId = "SYSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public PrincipalPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public bool Authenticated { get { throw null; } set { } }
