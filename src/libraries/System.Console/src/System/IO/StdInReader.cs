@@ -355,6 +355,12 @@ namespace System.IO
             return default(ConsoleKey);
         }
 
+        private bool IsPotentialKeyCharacter(char keyChar)
+        {
+            // symbol or punctuation ascii characters
+            return keyChar < '\x00ff' && (char.IsSymbol(keyChar) || char.IsPunctuation(keyChar));
+        }
+
         internal bool MapBufferToConsoleKey(out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl)
         {
             Debug.Assert(!IsUnprocessedBufferEmpty());
@@ -382,6 +388,14 @@ namespace System.IO
                 _startIndex++;
                 if (MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl))
                 {
+                    isAlt = true;
+                    return true;
+                }
+                else if (IsPotentialKeyCharacter(ch))
+                {
+                    // The char following Esc is a potential key character
+                    // which however cannot be conclusively mapped to a key chord.
+                    // Just return the keyChar with `isAlt` enabled and no ConsoleKey association.
                     isAlt = true;
                     return true;
                 }
