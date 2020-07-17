@@ -6935,6 +6935,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
                     offset = 0;
 

@@ -1020,6 +1020,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;
@@ -1147,6 +1148,7 @@ void CodeGen::inst_RV_RV_TT(
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;

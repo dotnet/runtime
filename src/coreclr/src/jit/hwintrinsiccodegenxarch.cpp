@@ -470,6 +470,7 @@ void CodeGen::genHWIntrinsic_R_RM(
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;
@@ -699,6 +700,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;
@@ -862,6 +864,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;
@@ -987,6 +990,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
             {
                 case GT_LCL_VAR_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
                     break;
