@@ -1941,10 +1941,15 @@ namespace System.Net.Http.Functional.Tests
                 Console.WriteLine("Step 1");
                 for (int i = 0; i < sendTasks.Length; i++)
                 {
+                    Console.WriteLine($"Step 1.1-{i}");
                     sendTasks[i++] = client.GetAsync(server.Address);
-                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
+                    Console.WriteLine($"Step 1.2-{i}");
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                    Console.WriteLine($"Step 1.3-{i}");
                     connections.Add(connection);
+                    Console.WriteLine($"Step 1.4-{i}");
                     sendTasks[i] = client.GetAsync(server.Address);
+                    Console.WriteLine($"Step 1.5-{i}");
                 }
 
                 Task[] respondTasks = new Task[sendTasks.Length];
