@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -185,7 +186,7 @@ namespace System.Text.Json.Serialization.Tests
         private enum MyCustomEnum
         {
             First = 1,
-            Second =2
+            Second = 2
         }
 
         [Fact]
@@ -293,6 +294,231 @@ namespace System.Text.Json.Serialization.Tests
             T = 1 << 19,
             U = 1 << 20,
             V = 1 << 21,
+        }
+
+        [Fact, OuterLoop]
+        public static void VeryLargeDictionaryOfEnumsToSerialize()
+        {
+            // Ensure we don't throw OutOfMemoryException.
+
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            const int MaxValue = 2097152; // value for MyEnum.V
+
+            // Every value between 0 and MaxValue maps to a valid enum
+            // identifier, and is a candidate to go into the name cache.
+
+            // Write the first 45 values.
+            Dictionary<MyEnum, int> dictionary;
+            for (int i = 1; i < 46; i++)
+            {
+                dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
+                JsonSerializer.Serialize(dictionary, options);
+            }
+
+            // At this point, there are 60 values in the name cache;
+            // 22 cached at warm-up, the rest in the above loop.
+
+            // Ensure the approximate size limit for the name cache (a concurrent dictionary) is honored.
+            // Use multiple threads to perhaps go over the soft limit of 64, but not by more than a couple.
+            Parallel.For(
+                0,
+                8,
+                i =>
+                {
+                    dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
+                    JsonSerializer.Serialize(dictionary, options);
+                }
+            );
+
+            // Write the remaining enum values. The cache is capped to avoid
+            // OutOfMemoryException due to having too many cached items.
+            for (int i = 54; i <= MaxValue; i++)
+            {
+                dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
+                JsonSerializer.Serialize(dictionary, options);
+            }
+        }
+
+        public abstract class NumericEnumKeyDictionaryBase<T>
+        {
+            public abstract Dictionary<T, int> BuildDictionary(int i);
+
+            [Fact]
+            public void SerilizeDictionaryWhenCacheIsFull()
+            {
+                var options = new JsonSerializerOptions
+                {
+                    Converters = { new JsonStringEnumConverter() }
+                };
+
+                Dictionary<T, int> dictionary;
+                for (int i = 1; i < 60; i++)
+                {
+                    dictionary = BuildDictionary(i);
+                    JsonSerializer.Serialize(dictionary, options);
+                }
+
+                dictionary = BuildDictionary(0);
+                string json = JsonSerializer.Serialize(dictionary, options);
+                Assert.Equal($"{{\"0\":0}}", json);
+            }
+        }
+
+        public class Int32EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumInt32>
+        {
+            public override Dictionary<SampleEnumInt32, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumInt32, int> { { (SampleEnumInt32)i, i } };
+        }
+
+        public class UInt32EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumUInt32>
+        {
+            public override Dictionary<SampleEnumUInt32, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumUInt32, int> { { (SampleEnumUInt32)i, i } };
+        }
+
+        public class UInt64EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumUInt64>
+        {
+            public override Dictionary<SampleEnumUInt64, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumUInt64, int> { { (SampleEnumUInt64)i, i } };
+        }
+
+        public class Int64EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumInt64>
+        {
+            public override Dictionary<SampleEnumInt64, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumInt64, int> { { (SampleEnumInt64)i, i } };
+        }
+
+        public class Int16EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumInt16>
+        {
+            public override Dictionary<SampleEnumInt16, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumInt16, int> { { (SampleEnumInt16)i, i } };
+        }
+
+        public class UInt16EnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumUInt16>
+        {
+            public override Dictionary<SampleEnumUInt16, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumUInt16, int> { { (SampleEnumUInt16)i, i } };
+        }
+
+        public class ByteEnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumByte>
+        {
+            public override Dictionary<SampleEnumByte, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumByte, int> { { (SampleEnumByte)i, i } };
+        }
+
+        public class SByteEnumDictionary : NumericEnumKeyDictionaryBase<SampleEnumSByte>
+        {
+            public override Dictionary<SampleEnumSByte, int> BuildDictionary(int i) =>
+                new Dictionary<SampleEnumSByte, int> { { (SampleEnumSByte)i, i } };
+        }
+
+
+        [Flags]
+        public enum SampleEnumInt32
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumUInt32 : uint
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumUInt64 : ulong
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumInt64 : long
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumInt16 : short
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumUInt16 : ushort
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumByte : byte
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+        }
+
+        [Flags]
+        public enum SampleEnumSByte : sbyte
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7 - 1,
         }
     }
 }
