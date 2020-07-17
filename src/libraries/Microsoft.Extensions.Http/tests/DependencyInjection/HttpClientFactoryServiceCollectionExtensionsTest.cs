@@ -1180,8 +1180,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 Assert.NotSame(
                     client.Service,
                     optService);
-            }
 #endif
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
