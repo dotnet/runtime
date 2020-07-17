@@ -1443,7 +1443,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
-    genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + REGSIZE_BYTES;
+    genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + PSPSize;
     genFuncletInfo.fiCallerSP_to_PSP_slot_delta = CallerSP_to_PSP_slot_delta;
 
 #ifdef DEBUG
