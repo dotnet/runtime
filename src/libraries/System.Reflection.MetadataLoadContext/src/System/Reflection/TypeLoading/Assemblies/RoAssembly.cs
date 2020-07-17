@@ -41,10 +41,12 @@ namespace System.Reflection.TypeLoading
 
         // Location and codebase
         public abstract override string Location { get; }
-#pragma warning disable 672
+        [ComponentModel.EditorBrowsableAttribute(ComponentModel.EditorBrowsableState.Never)]
+        [ObsoleteAttribute("CodeBase is only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "TODO", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
+        [ComponentModel.EditorBrowsableAttribute(ComponentModel.EditorBrowsableState.Never)]
+        [ObsoleteAttribute("EscapedCodeBase is only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "TODO", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
-#pragma warning restore 672
 
         // Custom Attributes
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();

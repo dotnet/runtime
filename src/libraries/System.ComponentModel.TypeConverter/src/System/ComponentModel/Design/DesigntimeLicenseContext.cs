@@ -77,16 +77,13 @@ namespace System.ComponentModel.Design
                     // try everything.
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
-                        // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
-                        // when walking through all the assemblies in the current app domain. This throws an
-                        // exception on Assembly.Location and we bail out. Catching exceptions here is not a
-                        // bad thing.
-                        if (asm.IsDynamic)
+                        // Assemblies loaded in memory return empty string from Location.
+                        // The code below throws an exception if this happens.
+                        // Catching exceptions here is not a bad thing.
+                        if (asm.Location == string.Empty)
                             continue;
 
-                        // file://fullpath/foo.exe
-                        string fileName = GetLocalPath(asm.Location);
-                        fileName = new FileInfo(fileName).Name;
+                        string fileName = new FileInfo(asm.Location).Name;
 
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
                         if (s == null)
@@ -103,14 +100,11 @@ namespace System.ComponentModel.Design
                         }
                     }
                 }
-                else if (!resourceAssembly.IsDynamic)
+                // Location is not supported by emitted assemblies and this will throw an exception
+                // down below.
+                else if (!resourceAssembly.IsDynamic && resourceAssembly.Location != string.Empty)
                 {
-                    // Location won't be supported by emitted assemblies anyway
-                    string fileName;
-
-                    fileName = GetLocalPath(resourceAssembly.Location);
-
-                    fileName = Path.GetFileName(fileName);
+                    string fileName = Path.GetFileName(resourceAssembly.Location);
                     string licResourceName = fileName + ".licenses";
 
                     // First try the filename
