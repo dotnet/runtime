@@ -5,16 +5,9 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public class StashBoxDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
+    public class StashBoxDependencyInjectionSpecificationTests: DependencyInjectionSpecificationTests
     {
-        public override string[] SkippedTests => new[]
-        {
-            "PublicNoArgCtorConstrainedOpenGenericServicesCanBeResolved",
-            "SelfReferencingConstrainedOpenGenericServicesCanBeResolved",
-            "ClassConstrainedOpenGenericServicesCanBeResolved"
-        };
-
-        protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
+        protected override IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection)
         {
             return serviceCollection.UseStashbox();
         }

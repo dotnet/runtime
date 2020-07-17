@@ -7,14 +7,9 @@ using Autofac.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public class AutofacDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
+    public class AutofacDependencyInjectionSpecificationTests: DependencyInjectionSpecificationTests
     {
-        public override string[] SkippedTests => new[]
-        {
-            "PublicNoArgCtorConstrainedOpenGenericServicesCanBeResolved"
-        };
-
-        protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
+        protected override IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection)
         {
             var builder = new ContainerBuilder();
             builder.Populate(serviceCollection);
