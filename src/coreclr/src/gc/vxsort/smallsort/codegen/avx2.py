@@ -54,7 +54,7 @@ class AVX2BitonicISA(BitonicISA):
     def i2s(self, v):
         t = self.type
         if t == "double":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         elif t == "float":
             return f"i2s({v})"
         return v
@@ -70,7 +70,7 @@ class AVX2BitonicISA(BitonicISA):
     def s2i(self, v):
         t = self.type
         if t == "double":
-            raise Exception("WTF")
+            raise Exception("Incorrect Type")
         elif t == "float":
             return f"s2i({v})"
         return v
@@ -137,14 +137,14 @@ class AVX2BitonicISA(BitonicISA):
             else:
                 return self.i2s(f"_mm256_blend_epi32({self.s2i(v2)}, {self.s2i(v1)}, 0xF0)")
         elif size == 4:
-            raise Exception("WTF")
+            raise Exception("Incorrect Size")
 
     def generate_cross(self, v):
         size = self.vector_size()
         if size == 8:
             return self.d2i(f"_mm256_permute4x64_pd({self.i2d(v)}, 0x4E)")
         elif size == 4:
-            raise Exception("WTF")
+            raise Exception("Incorrect Size")
 
     def generate_reverse(self, v):
         size = self.vector_size()
