@@ -74,7 +74,8 @@ namespace System.Configuration.Tests
                 }
             };
 
-            Assert.NotEqual(new SettingElement().Value.GetHashCode(), Element.Value.GetHashCode());
+            // Validate the getting the hash code doesn't throw
+            _ = Element.GetHashCode();
         }
     }
 }
