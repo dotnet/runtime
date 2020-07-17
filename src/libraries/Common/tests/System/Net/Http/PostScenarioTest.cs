@@ -22,8 +22,8 @@ namespace System.Net.Http.Functional.Tests
     public abstract class PostScenarioTest : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test contest";
-        private const string UserName = "user";
-        private const string Password = "password";
+        private const string UserName = "user1";
+        private const string Password = "password1";
 
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 

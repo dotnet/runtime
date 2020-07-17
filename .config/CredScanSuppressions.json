@@ -23,15 +23,20 @@
         {
             "_justification": "Test credential for Uri testing",
             "file": [
+                "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
                 "src/libraries/System.Private.Uri/tests/ExtendedFunctionalTests/UriRelativeResolutionTest.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderRefreshTest.cs",
                 "src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderTests.cs",
                 "src/libraries/System.Private.Uri/tests/FunctionalTests/UriRelativeResolutionTest.cs",
                 "src/libraries/System.Runtime/tests/System/Uri.CreateStringTests.cs"
             ],
             "placeholder": [
-                "//user:psw@",
-                "//userinfo1:userinfo2@",
-                "//userinfo!~+-_*()[]:;&$=123USERINFO@"
+                "//*:;&$=123USERINFO@",
+                "//*:bar@",
+                "//*:bar1@",
+                "//*:password1@",
+                "//*:psw@",
+                "//*:userinfo2@"
             ]
         },
         {
@@ -41,20 +46,24 @@
                 "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Authentication.cs",
                 "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.cs",
                 "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.DefaultProxyCredentials.cs",
+                "src/libraries/Common/tests/System/Net/Http/PostScenarioTest.cs",
                 "src/libraries/Common/tests/System/Net/Prerequisites/Deployment/setup_certificates.ps1",
+                "src/libraries/System.Net.Http/tests/FunctionalTests/SocketsHttpHandlerTest.cs",
+                "src/libraries/System.Net.Http/tests/UnitTests/DigestAuthenticationTests.cs",
                 "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
+                "src/libraries/System.Net.Mail/tests/Functional/SmtpClientTest.cs",
                 "src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
                 "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs"
             ],
             "placeholder": [
-                "\"rightpassword\"",
-                "\"wrongpassword\"",
+                "\"anotherpassword\"",
+                "\"bar\"",
                 "\"mono\"",
-                "\"unused\"",
-                "\"testcertificate\"",
                 "\"password1\"",
-                "//*:password1@"
-                /* Credential Scanner already consider "password", "WRONGPASSWORD" as false positive in some cases, hence they are not in this list. */
+                "\"rightpassword\"",
+                "\"testcertificate\"",
+                "\"unused\"",
+                "\"wrongpassword\""
             ]
         }
     ]
