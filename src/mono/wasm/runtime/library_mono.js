@@ -762,7 +762,7 @@ var MonoSupportLib = {
 			var loaded_files_with_debug_info = [];
 
 			MONO.loaded_assets = ctx.loaded_assets;
-			loaded_files.forEach(value => loaded_files_with_debug_info.push(value.url));
+			ctx.loaded_files.forEach(value => loaded_files_with_debug_info.push(value.url));
 			MONO.loaded_files = loaded_files_with_debug_info;
 			if (ctx.tracing) {
 				console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
