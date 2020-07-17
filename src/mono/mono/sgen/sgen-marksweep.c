@@ -912,6 +912,9 @@ static SgenThreadPoolJob * volatile sweep_blocks_job;
 static void
 major_finish_sweep_checking (void)
 {
+	if (!concurrent_sweep)
+		return;
+
 	guint32 block_index;
 	SgenThreadPoolJob *job;
 
