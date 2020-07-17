@@ -67,16 +67,42 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
+            if (Vector.IsHardwareAccelerated)
+            {
+                // For performance, use unsafe pointers and Vector.
+                return IndexOfOrLessThan_Vector(
+                        ref MemoryMarshal.GetReference(span),
+                        JsonConstants.Quote,
+                        JsonConstants.BackSlash,
+                        lessThan: 32,   // Space ' '
+                        span.Length);
+            }
+
+            // For performance, avoid unsafe pointers.
             return IndexOfOrLessThan(
-                    ref MemoryMarshal.GetReference(span),
-                    JsonConstants.Quote,
-                    JsonConstants.BackSlash,
-                    lessThan: 32,   // Space ' '
-                    span.Length);
+                span,
+                JsonConstants.Quote,
+                JsonConstants.BackSlash,
+                lessThan: 32);   // Space ' '
         }
 
-        private static unsafe int IndexOfOrLessThan(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
+        private static unsafe int IndexOfOrLessThan(ReadOnlySpan<byte> span, byte value0, byte value1, byte lessThan)
         {
+            for (int i = 0; i < span.Length; i++)
+            {
+                byte value = span[i];
+                if (value0 == value || value1 == value || lessThan > value)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static unsafe int IndexOfOrLessThan_Vector(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
+        {
+            Debug.Assert(Vector.IsHardwareAccelerated);
             Debug.Assert(length >= 0);
 
             uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
@@ -85,11 +111,12 @@ namespace System.Text.Json
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
 
-            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
+            if (length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
             }
+
         SequentialScan:
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
