@@ -475,7 +475,6 @@ void CodeGen::genHWIntrinsic_R_RM(
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     if (addr->OperIs(GT_LCL_FLD_ADDR))
                     {
-                        assert(!"don't expect GT_LCL_FLD_ADDR");
                         offset = addr->AsLclFld()->GetLclOffs();
                     }
                     else
@@ -714,7 +713,6 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     if (addr->OperIs(GT_LCL_FLD_ADDR))
                     {
-                        assert(!"don't expect GT_LCL_FLD_ADDR");
                         offset = addr->AsLclFld()->GetLclOffs();
                     }
                     else

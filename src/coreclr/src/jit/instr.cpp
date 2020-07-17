@@ -1025,7 +1025,6 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     if (addr->OperIs(GT_LCL_FLD_ADDR))
                     {
-                        assert(!"don't expect GT_LCL_FLD_ADDR");
                         offset = addr->AsLclFld()->GetLclOffs();
                     }
                     else
@@ -1162,7 +1161,6 @@ void CodeGen::inst_RV_RV_TT(
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     if (addr->OperIs(GT_LCL_FLD_ADDR))
                     {
-                        assert(!"don't expect GT_LCL_FLD_ADDR");
                         offset = addr->AsLclFld()->GetLclOffs();
                     }
                     else
