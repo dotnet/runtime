@@ -73,6 +73,8 @@ namespace System.Configuration.Tests
                     }
                 }
             };
+
+            Assert.NotEqual(new SettingElement().Value.GetHashCode(), Element.Value.GetHashCode());
         }
     }
 }
