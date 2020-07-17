@@ -107,17 +107,20 @@ namespace System
                 if (key.Modifiers.HasFlag(ConsoleModifiers.Control)) modifiers += "Ctrl+";
                 if (key.Modifiers.HasFlag(ConsoleModifiers.Alt)) modifiers += "Alt+";
                 if (key.Modifiers.HasFlag(ConsoleModifiers.Shift)) modifiers += "Shift+";
-                return modifiers + key.Key;
+                string keyId = (key.Key == default) ? key.KeyChar.ToString() : key.Key.ToString();
+                return modifiers + keyId;
             }
         }
 
         public static IEnumerable<object[]> GetKeyChords()
         {
             yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
             // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
             yield return MkConsoleKeyInfo('\n', OperatingSystem.IsWindows() ? ConsoleKey.Enter : ConsoleKey.J, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo(',', OperatingSystem.IsWindows() ? ConsoleKey.OemComma : default, ConsoleModifiers.Alt);
 
             static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
             {
