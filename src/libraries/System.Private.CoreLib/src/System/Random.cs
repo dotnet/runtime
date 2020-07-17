@@ -172,11 +172,11 @@ namespace System
             bool negative = (InternalSample() % 2 == 0) ? true : false;  // decide the sign based on second sample
             if (negative)
             {
-                result = -result;
+                result = ~result;
             }
             double d = result;
-            d += (int.MaxValue - 1); // get a number in range [0 .. 2 * Int32MaxValue - 1)
-            d /= 2 * (uint)int.MaxValue - 1;
+            d += int.MaxValue; // get a number in range [0 .. 2 * Int32MaxValue)
+            d /= 2 * (uint)int.MaxValue;
             return d;
         }
 
