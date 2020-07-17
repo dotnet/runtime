@@ -879,8 +879,10 @@ int get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 
 	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size,
 															&typed_args, &named_args, &num_named_args, &arginfo, error);
-	if (!is_ok (error))
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
 		return -4;
+	}
 
 	flags = *(gint32*)typed_args [0];
 	g_free (typed_args [0]);
@@ -1672,4 +1674,3 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	
 	g_free (buffer);
 }
-
