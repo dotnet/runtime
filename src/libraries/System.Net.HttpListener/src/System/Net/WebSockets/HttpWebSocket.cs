@@ -18,17 +18,12 @@ namespace System.Net.WebSockets
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 used only for hashing purposes, not for crypto.")]
         internal static string GetSecWebSocketAcceptString(string secWebSocketKey)
         {
-            string retVal;
+            string acceptString = string.Concat(secWebSocketKey, HttpWebSocket.SecWebSocketKeyGuid);
+            byte[] toHash = Encoding.UTF8.GetBytes(acceptString);
 
             // SHA1 used only for hashing purposes, not for crypto. Check here for FIPS compat.
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                string acceptString = string.Concat(secWebSocketKey, HttpWebSocket.SecWebSocketKeyGuid);
-                byte[] toHash = Encoding.UTF8.GetBytes(acceptString);
-                retVal = Convert.ToBase64String(sha1.ComputeHash(toHash));
-            }
-
-            return retVal;
+            byte[] hash = SHA1.HashData(toHash);
+            return Convert.ToBase64String(hash);
         }
 
         // return value here signifies if a Sec-WebSocket-Protocol header should be returned by the server.
