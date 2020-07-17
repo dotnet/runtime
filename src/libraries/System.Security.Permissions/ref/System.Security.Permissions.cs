@@ -763,6 +763,9 @@ namespace System.Security
         CurrentAppDomain = 0,
         CurrentAssembly = 1,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public static partial class SecurityManager
     {
         [System.ObsoleteAttribute]
@@ -770,9 +773,6 @@ namespace System.Security
         [System.ObsoleteAttribute]
         public static bool SecurityEnabled { get { throw null; } set { } }
         public static bool CurrentThreadRequiresSecurityContextCapture() { throw null; }
-#if NET50_OBSOLETIONS
-        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif
         public static System.Security.PermissionSet GetStandardSandbox(System.Security.Policy.Evidence evidence) { throw null; }
         public static void GetZoneAndOrigin(out System.Collections.ArrayList zone, out System.Collections.ArrayList origin) { throw null; }
         [System.ObsoleteAttribute]
