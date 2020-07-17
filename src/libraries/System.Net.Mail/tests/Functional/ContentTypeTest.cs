@@ -53,7 +53,7 @@ namespace System.Net.Mime.Tests
         [InlineData(typeof(FormatException), "text/plain; charset=utf-8 ,")]
         [InlineData(typeof(FormatException), "text/plain; charset=utf-8,")]
         [InlineData(typeof(FormatException), "textplain")]
-        [InlineData(typeof(IndexOutOfRangeException), "text/")]
+        [InlineData(typeof(FormatException), "text/")]
         [InlineData(typeof(FormatException), ",, , ,,text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,")]
         [InlineData(typeof(FormatException), "text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5")]
         [InlineData(typeof(FormatException), " , */xml; charset=utf-8; q=0.5 ")]

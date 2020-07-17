@@ -269,7 +269,7 @@ namespace System.Net.Mime
 
             if (start == offset)
             {
-                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
+                throw new FormatException(SR.ContentTypeInvalid);
             }
 
             return data.Substring(start, offset - start);
