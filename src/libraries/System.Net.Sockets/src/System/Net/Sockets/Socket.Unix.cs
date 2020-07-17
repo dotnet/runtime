@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        [MinimumOSPlatform("windows7.0")]
         public Socket(SocketInformation socketInformation)
         {
             // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
@@ -17,6 +18,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes

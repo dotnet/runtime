@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
+    <IsWindowsSpecific>true</IsWindowsSpecific>
   </PropertyGroup>
 </Project>

@@ -226,9 +226,6 @@
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
     <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-      </PropertyGroup>
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
       </ItemGroup>
@@ -239,6 +236,15 @@
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
+
+  <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
+  <Choose>
+    <When Condition="('$(IncludePlatformAttributes)' == 'true' or '$(IsWindowsSpecific)' == 'true') and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
+      <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
         This is required to show all the files corresponding to all target frameworks in VS. -->

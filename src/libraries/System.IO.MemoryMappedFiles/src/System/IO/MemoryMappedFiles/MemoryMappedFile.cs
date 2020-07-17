@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -43,16 +44,19 @@ namespace System.IO.MemoryMappedFiles
         // the first override of this method.  Note: having ReadWrite access to the object does not mean that we
         // have ReadWrite access to the pages mapping the file.  The OS will check against the access on the pages
         // when a view is created.
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile OpenExisting(string mapName)
         {
             return OpenExisting(mapName, MemoryMappedFileRights.ReadWrite, HandleInheritability.None);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights)
         {
             return OpenExisting(mapName, desiredAccessRights, HandleInheritability.None);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
@@ -291,18 +295,21 @@ namespace System.IO.MemoryMappedFiles
         // memory mapped file if one exists with the same name.  The capacity, options, and
         // memoryMappedFileSecurity arguments will be ignored in the case of the later.
         // This is ideal for P2P style IPC.
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity)
         {
             return CreateOrOpen(mapName, capacity, MemoryMappedFileAccess.ReadWrite,
                 MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access)
         {
             return CreateOrOpen(mapName, capacity, access, MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
