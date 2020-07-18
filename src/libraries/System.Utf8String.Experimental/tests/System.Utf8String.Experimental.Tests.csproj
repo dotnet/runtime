@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
@@ -41,13 +41,13 @@
     <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />
     <Compile Include="System\Utf8StringTests.Ctor.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == 'net461'">
     <Compile Include="System\MemoryTests.netfx.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Utf8String.Experimental.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

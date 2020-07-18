@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ContainerConfigurationTests.cs" />
@@ -12,7 +12,7 @@
     <ProjectReference Include="..\src\System.Composition.TypedParts.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <!-- S.C.DataAnnotations targeting .NET Framework isn't live built anymore. -->
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>

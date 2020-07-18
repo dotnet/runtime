@@ -10,12 +10,8 @@
     <IncludePath>include\$(TargetFramework)</IncludePath>
     <IncludePath Condition="$(TargetFramework.StartsWith('net4'))">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-    <!-- Use the contract reference path for ApiCompat. -->
-    <ContractTargetFramework Condition="'$(TargetFramework)' == 'net45'">netstandard1.0</ContractTargetFramework>
-    <ContractTargetFramework Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">netstandard2.0</ContractTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />

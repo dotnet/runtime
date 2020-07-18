@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Disable RAR from transitively discovering dependencies for References -->
-    <_FindDependencies Condition="'$(DisableImplicitFrameworkReferences)' == 'true'">false</_FindDependencies>
+    <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
   <!-- netstandard is a default reference whenever building an implementation assembly for .NETCoreApp. -->

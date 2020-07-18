@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;netcoreapp3.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
   </PropertyGroup>
@@ -17,7 +16,7 @@
     <Compile Include="System\IO\Utf8StringStream.cs" />
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND ('$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4')))">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND ('$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4')))">
     <Compile Include="$(CoreLibSharedDir)\System\Index.cs"
              Link="System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs"
@@ -150,6 +149,6 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.ValueTuple" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 </Project>

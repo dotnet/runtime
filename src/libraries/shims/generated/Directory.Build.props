@@ -18,7 +18,7 @@
     <PackageDownload Include="NETStandard.Library"
                      Condition="'$(MSBuildProjectName)' == 'netstandard'"
                      Version="[$(NETStandardLibraryVersion)]" />
-    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NetFrameworkCurrent)"
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
                      Condition="'$(MSBuildProjectName)' != 'netstandard'"
                      Version="[$(MicrosoftNetFrameworkReferenceAssembliesVersion)]" />
     <!-- System.Data.SqlClient is not live built anymore, reference it manually. -->
