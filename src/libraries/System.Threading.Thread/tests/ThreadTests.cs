@@ -731,12 +731,12 @@ namespace System.Threading.Threads.Tests
 
             Action verify = () =>
             {
+#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort(t));
-#pragma warning disable 618 // Obsolete members
                 Assert.Throws<PlatformNotSupportedException>(() => t.Suspend());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Resume());
-#pragma warning restore 618 // Obsolete members
+#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
             };
             verify();
 

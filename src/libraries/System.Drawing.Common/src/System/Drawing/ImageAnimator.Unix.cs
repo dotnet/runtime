@@ -132,7 +132,9 @@ namespace System.Drawing
             if (ht.ContainsKey(image))
             {
                 AnimateEventArgs evtArgs = (AnimateEventArgs)ht[image]!;
+#pragma warning disable SYSLIB0006 // https://github.com/dotnet/runtime/issues/39405
                 evtArgs.RunThread!.Abort();
+#pragma warning restore SYSLIB0006
                 ht.Remove(image);
             }
         }
