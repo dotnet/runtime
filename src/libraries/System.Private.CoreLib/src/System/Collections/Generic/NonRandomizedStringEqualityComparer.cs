@@ -142,6 +142,11 @@ namespace System.Collections.Generic
                 Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
                 return obj.GetNonRandomizedHashCodeOrdinalIgnoreCase();
             }
+
+            internal override RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
+            {
+                return RandomizedStringEqualityComparer.Create(_underlyingComparer, ignoreCase: true);
+            }
         }
     }
 }
