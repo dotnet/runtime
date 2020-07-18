@@ -7,7 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0' ">
-    <DefineConstants>$(DefineConstants),USE_INTERNAL_ACCESSIBILITY</DefineConstants>
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
     <NoWarn>$(NoWarn);CS3019</NoWarn>
   </PropertyGroup>
