@@ -539,21 +539,22 @@ namespace System.Net.Http
             try
             {
                 Http2Connection[]? currentHttp2Connections = _http2Connections;
-                if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
+                if (EnableMultipleHttp2Connections)
+                {
+                    if (currentHttp2Connections != null)
+                    {
+                        http2Connection = FindHttp2ConnectionWithFreeStreamSlot(currentHttp2Connections);
+                        if (http2Connection != null)
+                        {
+                            return (http2Connection, false, null);
+                        }
+                    }
+                }
+                else if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
                 {
                     // Someone beat us to it
 
-                    if (!EnableMultipleHttp2Connections)
-                    {
-                        // Fast shortcut for the most common case
-                        return (currentHttp2Connections[0], false, null);
-                    }
-
-                    http2Connection = FindHttp2ConnectionWithFreeStreamSlot(currentHttp2Connections);
-                    if (http2Connection != null)
-                    {
-                        return (http2Connection, false, null);
-                    }
+                    return (currentHttp2Connections[0], false, null);
                 }
 
                 if (currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer)
@@ -785,6 +786,8 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
+                // New connection is always created only for a request that has to acquire a slot.
+                newConnection.AcquireStreamSlot();
                 Http2Connection[]? localHttp2Connections = _http2Connections;
                 int newCollectionSize = localHttp2Connections == null ? 1 : localHttp2Connections.Length + 1;
                 Http2Connection[] newHttp2Connections = new Http2Connection[newCollectionSize];
