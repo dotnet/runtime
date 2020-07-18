@@ -457,7 +457,7 @@ namespace System.Net.Http
                         // Then kick off the request.  The TCS' result indicates whether content should be sent or not.
                         allowExpect100ToContinue = new TaskCompletionSource<bool>();
                         var expect100Timer = new Timer(
-                            static tcs => ((TaskCompletionSource<bool>)tcs!).TrySetResult(true),
+                            static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
