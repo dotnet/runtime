@@ -478,7 +478,7 @@ namespace System.IO
             string path = Path.Combine(directory.Path, "createMe");
 
             DirectorySecurity basicSecurity = new DirectorySecurity();
-            DirectoryInfo basicDirInfo = basicSecurity.CreateDirectory(path);
+            basicSecurity.CreateDirectory(path);
 
             Assert.True(Directory.Exists(path));
 
@@ -534,7 +534,7 @@ namespace System.IO
             using var directory = new TempDirectory();
             string path = Path.Combine(directory.Path, "createMe");
 
-            DirectoryInfo createdInfo = expectedSecurity.CreateDirectory(path);
+            expectedSecurity.CreateDirectory(path);
 
             Assert.True(Directory.Exists(path));
 

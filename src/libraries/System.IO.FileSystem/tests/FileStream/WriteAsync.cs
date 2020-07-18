@@ -311,7 +311,7 @@ namespace System.IO.Tests
                 }
                 if (exposeHandle)
                 {
-                    var ignored = fs.SafeFileHandle;
+                    _ = fs.SafeFileHandle;
                 }
 
                 Task[] writes = new Task[numWrites];
