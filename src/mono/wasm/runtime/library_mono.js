@@ -1110,7 +1110,15 @@ var MonoSupportLib = {
 			}
 			var manifestSize = dataview.getUint32(4, true);
 			var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
-			var manifest = JSON.parse(manifestContent);
+			var manifest;
+			try {
+				manifest = JSON.parse(manifestContent);
+				if (!(manifest instanceof Array))
+					return false;
+			} catch (exc) {
+				return false;
+			}
+
 			data = data.slice(manifestSize+8);
 
 			// Create the folder structure
