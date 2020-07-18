@@ -993,6 +993,7 @@ namespace System.Text
         private static void NarrowFourUtf16CharsToAsciiAndWriteToBuffer(ref byte outputBuffer, ulong value)
         {
             Debug.Assert(AllCharsInUInt64AreAscii(value));
+            // Comment change to trigger CI
 
             if (Sse2.X64.IsSupported)
             {
