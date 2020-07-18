@@ -269,13 +269,7 @@ namespace System.Text
         }
 #endif
 
-        public int CompareTo(Rune other)
-        {
-            // Since Unicode scalar values don't span the entire 32-bit domain, we can get away with using a
-            // simple subtraction without worrying about integer overflow.
-
-            return this.Value - other.Value;
-        }
+        public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
 
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
