@@ -32,4 +32,7 @@ namespace System.Net.Http.Functional.Tests
             return true;
         }
     }
+
+    public class ThrowingContentException : Exception
+    { }
 }

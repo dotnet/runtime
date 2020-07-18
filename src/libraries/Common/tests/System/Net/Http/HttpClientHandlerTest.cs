@@ -2128,17 +2128,15 @@ namespace System.Net.Http.Functional.Tests
             }
 
             var clientFinished = new TaskCompletionSource<bool>();
-            const string ExpectedMessage = "ThrowingContentException";
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
-                    initialMessage.Content = new ThrowingContent(() => new Exception(ExpectedMessage));
+                    initialMessage.Content = new ThrowingContent(() => new ThrowingContentException());
                     initialMessage.Headers.ExpectContinue = true;
-                    Exception exception = await Assert.ThrowsAsync<Exception>(() => client.SendAsync(TestAsync, initialMessage));
-                    Assert.Equal(ExpectedMessage, exception.Message);
+                    Exception exception = await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
 
                     clientFinished.SetResult(true);
                 }
@@ -2151,7 +2149,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestDataAsync(readBody: true);
                     }
                     catch { } // Eat errors from client disconnect.
-                    await clientFinished.Task;
+                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
                 });
             });
         }
