@@ -24,24 +24,13 @@ namespace Internal.Cryptography
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {
             char[] chars = new char[bytes.Length * 2];
-            ToHexArrayUpper(bytes, chars);
+            HexConverter.EncodeToUtf16(bytes, chars);
             return chars;
-        }
-
-        private static void ToHexArrayUpper(ReadOnlySpan<byte> bytes, Span<char> chars)
-        {
-            Debug.Assert(chars.Length >= bytes.Length * 2);
-            int i = 0;
-            foreach (byte b in bytes)
-            {
-                HexConverter.ToCharsBuffer(b, chars, i, HexConverter.Casing.Upper);
-                i += 2;
-            }
         }
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
+            Convert.ToHexString(bytes);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
@@ -78,7 +67,7 @@ namespace Internal.Cryptography
                 }
 
                 accum <<= 4;
-                accum |= HexToByte(c);
+                accum |= (byte)HexConverter.FromChar(c);
 
                 byteInProgress = !byteInProgress;
 
@@ -100,18 +89,6 @@ namespace Internal.Cryptography
             Debug.Assert(index == cbHex, "index == cbHex");
 
             return hex;
-        }
-
-        private static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         public static bool ContentsEqual(this byte[]? a1, byte[]? a2)

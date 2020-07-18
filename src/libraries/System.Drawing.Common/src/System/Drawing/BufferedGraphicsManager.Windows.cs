@@ -28,7 +28,6 @@ namespace System.Drawing
         /// <summary>
         /// Called on process exit
         /// </summary>
-        [PrePrepareMethod]
         private static void OnShutdown(object? sender, EventArgs e) => Current.Invalidate();
     }
 }
