@@ -4732,3 +4732,12 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     SOSDacLeave();
     return hr;
 }
+
+HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
+{
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    return S_OK;
+}
