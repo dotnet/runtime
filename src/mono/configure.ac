@@ -1783,9 +1783,7 @@ fi
 AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
-     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
-     reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes, eventpipe.],
+     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap, reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting, security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_toggleref, sgen_debug_helpers, sgen_binary_protocol, sockets, gac, threads, processes, eventpipe.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1991,9 +1989,19 @@ if test "x$mono_feature_disable_sgen_gc_bridge" = "xyes"; then
 	AC_MSG_NOTICE([Disabled gc bridge support in SGEN.])
 fi
 
+if test "x$mono_feature_disable_sgen_toggleref" = "xyes"; then
+	AC_DEFINE(DISABLE_SGEN_TOGGLEREF, 1, [Disable toggleref support in SGEN.])
+	AC_MSG_NOTICE([Disabled toggleref support in SGEN.])
+fi
+
 if test "x$mono_feature_disable_sgen_debug_helpers" = "xyes"; then
 	AC_DEFINE(DISABLE_SGEN_DEBUG_HELPERS, 1, [Disable debug helpers in SGEN.])
 	AC_MSG_NOTICE([Disabled debug helpers in SGEN.])
+fi
+
+if test "x$mono_feature_disable_sgen_binary_protocol" = "xyes"; then
+	AC_DEFINE(DISABLE_SGEN_BINARY_PROTOCOL, 1, [Disable binary protocol logging in SGEN.])
+	AC_MSG_NOTICE([Disabled binary protocol logging in SGEN.])
 fi
 
 if test "x$mono_feature_disable_sockets" = "xyes"; then
