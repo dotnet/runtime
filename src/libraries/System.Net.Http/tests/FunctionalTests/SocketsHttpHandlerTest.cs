@@ -2133,24 +2133,19 @@ namespace System.Net.Http.Functional.Tests
                     sendTasks.Add(client.GetAsync(server.Address));
                 }
 
-                int[] lastHandledRequests = new int[3];
-                int finalCount1 = 0;
-                int finalCount3 = 0;
-                int finalCount4 = 0;
-                do
-                {
-                    lastHandledRequests[0] = (await HandleAllPendingRequests(connection1, sendTasks.Count).ConfigureAwait(false)).Count;
-                    lastHandledRequests[1] = (await HandleAllPendingRequests(connection3, sendTasks.Count).ConfigureAwait(false)).Count;
-                    lastHandledRequests[2] = (await HandleAllPendingRequests(connection4, sendTasks.Count).ConfigureAwait(false)).Count;
-                    finalCount1 += lastHandledRequests[0];
-                    finalCount3 += lastHandledRequests[1];
-                    finalCount4 += lastHandledRequests[2];
-                } while (lastHandledRequests.Any(c => c != 0));
-                totalHandledRequests += finalCount1 + finalCount3 + finalCount4;
+                Task<(int Count, int LastStreamId)>[] finalHandleTasks = new[] {
+                    HandleAllPendingRequests(connection1, sendTasks.Count),
+                    HandleAllPendingRequests(connection3, sendTasks.Count),
+                    HandleAllPendingRequests(connection4, sendTasks.Count)
+                };
 
-                Assert.InRange(finalCount1, 1, TotalRequestCount);
-                Assert.InRange(finalCount3, 1, TotalRequestCount);
-                Assert.InRange(finalCount4, 1, TotalRequestCount);
+                await Task.WhenAll(finalHandleTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                totalHandledRequests += finalHandleTasks.Sum(t => t.Result.Count);
+
+                Assert.InRange(finalHandleTasks[0].Result.Count, MaxConcurrentStreams, TotalRequestCount);
+                Assert.InRange(finalHandleTasks[1].Result.Count, MaxConcurrentStreams, TotalRequestCount);
+                Assert.InRange(finalHandleTasks[2].Result.Count, MaxConcurrentStreams, TotalRequestCount);
                 Assert.Equal(TotalRequestCount, totalHandledRequests);
 
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
@@ -2190,7 +2185,7 @@ namespace System.Net.Http.Functional.Tests
         {
             sendTasks.Add(client.GetAsync(server.Address));
             sendTasks.Add(client.GetAsync(server.Address));
-            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(3), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(TimeSpan.FromSeconds(2), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
             return connection;
         }
 
