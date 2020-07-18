@@ -120,7 +120,7 @@ namespace System
 #else
             fixed (byte* bytesPtr = bytes)
             {
-                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), (chars, args) =>
+                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), static (chars, args) =>
                 {
                     var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
                     EncodeToUtf16(ros, chars, args.casing);
