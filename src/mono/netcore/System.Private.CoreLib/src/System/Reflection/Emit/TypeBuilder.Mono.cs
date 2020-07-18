@@ -794,6 +794,8 @@ namespace System.Reflection.Emit
 
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection emitted types have all of their members")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public
         TypeInfo? CreateTypeInfo()
@@ -1821,6 +1823,8 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             /*FIXME I would expect the same checks of GetMethod here*/

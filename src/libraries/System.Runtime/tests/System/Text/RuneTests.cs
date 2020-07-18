@@ -157,6 +157,7 @@ namespace System.Text.Tests
             Rune b = new Rune(other);
 
             Assert.Equal(expectedSign, Math.Sign(a.CompareTo(b)));
+            Assert.Equal(expectedSign, Math.Sign(((IComparable)a).CompareTo(b)));
             Assert.Equal(expectedSign < 0, a < b);
             Assert.Equal(expectedSign <= 0, a <= b);
             Assert.Equal(expectedSign > 0, a > b);
@@ -474,7 +475,24 @@ namespace System.Text.Tests
             Assert.Equal(scalarValueLeft <= scalarValueRight, left <= right);
             Assert.Equal(scalarValueLeft > scalarValueRight, left > right);
             Assert.Equal(scalarValueLeft >= scalarValueRight, left >= right);
-            Assert.Equal(scalarValueLeft.CompareTo(scalarValueRight), left.CompareTo(right));
+            Assert.Equal(Math.Sign(scalarValueLeft.CompareTo(scalarValueRight)), Math.Sign(left.CompareTo(right)));
+            Assert.Equal(Math.Sign(((IComparable)scalarValueLeft).CompareTo(scalarValueRight)), Math.Sign(((IComparable)left).CompareTo(right)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(0x10FFFF)]
+        public static void NonGenericCompareTo_NonNullAlwaysGreaterThanNull(uint scalarValue)
+        {
+            Assert.Equal(1, Math.Sign(((IComparable)new Rune(scalarValue)).CompareTo(null)));
+        }
+
+        [Fact]
+        public static void NonGenericCompareTo_GivenNonRuneArgument_ThrowsArgumentException()
+        {
+            IComparable rune = new Rune(0);
+
+            Assert.Throws<ArgumentException>(() => rune.CompareTo(0 /* int32 */));
         }
 
         [Fact]

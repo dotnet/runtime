@@ -349,11 +349,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCallViaJitHelper()) &&
-                compMethodRequiresPInvokeFrame())
+            if ((call->IsUnmanaged() || call->IsTailCallViaJitHelper()) && compMethodRequiresPInvokeFrame())
             {
                 assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-                if (!opts.ShouldUsePInvokeHelpers())
+                if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
                 {
                     // Get the FrameRoot local and mark it as used.
 
@@ -1476,7 +1475,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     {
         // Get the FrameListRoot local and make it live.
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!opts.ShouldUsePInvokeHelpers())
+        if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
         {
             noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -1901,10 +1900,11 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     blockRange.Remove(node);
 
-                    // Removing a call does not affect liveness unless it is a tail call in a nethod with P/Invokes or
+                    // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
                     if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
-                        ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) || call->IsUnmanaged()) &&
+                        ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) ||
+                         (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         lvaTable[info.compLvFrameListRoot].lvTracked)
                     {
                         fgStmtRemoved = true;

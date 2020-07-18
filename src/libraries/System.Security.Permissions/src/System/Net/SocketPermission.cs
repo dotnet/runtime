@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Net
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class SocketPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public const int AllPorts = -1;
