@@ -955,7 +955,7 @@ namespace System.Text.Unicode
                             if (AdvSimd.IsSupported)
                             {
                                 Vector128<short> isUtf16DataNonAscii = AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask);
-                                bool hasNonAsciiDataInVector = AdvSimd.Arm64.MaxPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;
+                                bool hasNonAsciiDataInVector = AdvSimd.Arm64.MinPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;
 
                                 if (hasNonAsciiDataInVector)
                                 {
