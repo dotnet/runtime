@@ -3766,6 +3766,9 @@
   <data name="Arg_MustBeHalf" xml:space="preserve">
     <value>Object must be of type Half.</value>
   </data>
+  <data name="Arg_MustBeRune" xml:space="preserve">
+    <value>Object must be of type Rune.</value>
+  </data>
   <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
     <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
   </data>
