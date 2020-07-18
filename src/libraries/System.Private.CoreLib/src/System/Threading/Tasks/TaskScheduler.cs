@@ -600,7 +600,7 @@ namespace System.Threading.Tasks
         public override int MaximumConcurrencyLevel => 1;
 
         // preallocated SendOrPostCallback delegate
-        private static readonly SendOrPostCallback s_postCallback = s =>
+        private static readonly SendOrPostCallback s_postCallback = static s =>
         {
             Debug.Assert(s is Task);
             ((Task)s).ExecuteEntry(); // with double-execute check because SC could be buggy

@@ -121,7 +121,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
+                static (buffer, locale, id, type) =>
                 {
                     fixed (char* bufferPtr = buffer)
                     {
