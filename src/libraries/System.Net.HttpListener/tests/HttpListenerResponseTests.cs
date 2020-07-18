@@ -410,7 +410,6 @@ namespace System.Net.Tests
         public async Task CloseResponseEntity_SendToClosedConnection_DoesNotThrow(bool willBlock)
         {
             const string Text = "Some-String";
-            byte[] buffer = Encoding.UTF8.GetBytes(Text);
 
             using (HttpListenerFactory factory = new HttpListenerFactory())
             using (Socket client = factory.GetConnectedSocket())
