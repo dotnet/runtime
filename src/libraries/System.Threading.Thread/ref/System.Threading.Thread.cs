@@ -50,7 +50,9 @@ namespace System.Threading
         public string? Name { get { throw null; } set { } }
         public System.Threading.ThreadPriority Priority { get { throw null; } set { } }
         public System.Threading.ThreadState ThreadState { get { throw null; } }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort() { }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort(object? stateInfo) { }
         public static System.LocalDataStoreSlot AllocateDataSlot() { throw null; }
         public static System.LocalDataStoreSlot AllocateNamedDataSlot(string name) { throw null; }

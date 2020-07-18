@@ -7,11 +7,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : IFormatter
     {
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public object Deserialize(Stream serializationStream)
             => throw new PlatformNotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
 
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Serialize(Stream serializationStream, object graph)
             => throw new PlatformNotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
     }

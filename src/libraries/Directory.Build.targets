@@ -8,6 +8,9 @@
   <PropertyGroup>
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFramework)' == 'netcoreapp2.1'">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable</NoWarn>
+    <!-- Ignore Obsolete errors within the generated shims that type-forward types.
+         SYSLIB0003 is for CAS. SYSLIB0004 is the obsoletion of CER. -->
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
