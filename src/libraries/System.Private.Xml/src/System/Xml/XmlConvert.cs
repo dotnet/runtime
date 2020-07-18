@@ -316,12 +316,7 @@ namespace System.Xml
         private static volatile Regex? s_decodeCharPattern;
         private static int FromHex(char digit)
         {
-            return (digit <= '9')
-            ? ((int)digit - (int)'0')
-            : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-               + 10);
+            return HexConverter.FromChar(digit);
         }
 
         internal static byte[] FromBinHexString(string s)
