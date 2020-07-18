@@ -1275,17 +1275,16 @@ namespace System.Data.OleDb
 
         private bool PropertiesOnCommand(bool throwNotSupported)
         {
+            Debug.Assert(_connection != null);
+
             if (null != _icommandText)
             {
                 return true;
             }
             Debug.Assert(!_isPrepared, "null command isPrepared");
 
-            OleDbConnection? connection = _connection;
-            if (null == connection)
-            {
-                connection.CheckStateOpen(ODB.Properties);
-            }
+            OleDbConnection connection = _connection;
+            connection.CheckStateOpen(ODB.Properties);
             if (!_trackingForClose)
             {
                 _trackingForClose = true;
