@@ -157,6 +157,9 @@ Assembler::Assembler()
 
     dummyClass = new Class(NULL);
     indexKeywords(&indxKeywords);
+
+    m_pdbFormat = CLASSIC;
+    m_pPortablePdbWriter = NULL;
 }
 
 
@@ -218,7 +221,11 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-
+    if (m_pPortablePdbWriter != NULL)
+    {
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
+    }
     if (m_pDisp != NULL)
     {
         m_pDisp->Release();
@@ -227,7 +234,7 @@ Assembler::~Assembler()
 }
 
 
-BOOL Assembler::Init()
+BOOL Assembler::Init(BOOL generatePdb, PdbFormat pdbFormat)
 {
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
@@ -245,6 +252,9 @@ BOOL Assembler::Init()
     if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
+
+    m_fGeneratePDB = generatePdb;
+    m_pdbFormat = pdbFormat;
 
     return TRUE;
 }
@@ -468,6 +478,8 @@ BOOL Assembler::AddMethod(Method *pMethod)
 
 BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
 {
+    HRESULT hr = S_OK;
+
     if(pMethod)
     {
         BinStr* pbsBody = pMethod->m_pbsBody;
@@ -483,7 +495,6 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 VarDescr* pVD;
                 BinStr*   pbsSig = new BinStr();
                 unsigned cnt;
-                HRESULT hr;
                 DWORD   cSig;
                 const COR_SIGNATURE* mySig;
 
@@ -514,57 +525,67 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 pFH->SetLocalVarSigTok(pMethod->m_LocalsSig);
             }
             //--------------------------------------------------------------------------------
-            if(m_fGeneratePDB && (m_pSymWriter != NULL))
+            if(m_fGeneratePDB)
             {
-                m_pSymWriter->OpenMethod(pMethod->m_Tok);
-                ULONG N = pMethod->m_LinePCList.COUNT();
-                if(pMethod->m_fEntryPoint) m_pSymWriter->SetUserEntryPoint(pMethod->m_Tok);
-                if(N)
+                if (m_pSymWriter != NULL)
                 {
-                    LinePC  *pLPC;
-                    ULONG32  *offsets=new ULONG32[N], *lines = new ULONG32[N], *columns = new ULONG32[N];
-                    ULONG32  *endlines=new ULONG32[N], *endcolumns=new ULONG32[N];
-                    if(offsets && lines && columns && endlines && endcolumns)
+                    m_pSymWriter->OpenMethod(pMethod->m_Tok);
+                    ULONG N = pMethod->m_LinePCList.COUNT();
+                    if(pMethod->m_fEntryPoint) m_pSymWriter->SetUserEntryPoint(pMethod->m_Tok);
+                    if(N)
                     {
-                        DocWriter* pDW;
-                        unsigned j=0;
-                        while((pDW = m_DocWriterList.PEEK(j++)))
+                        LinePC  *pLPC;
+                        ULONG32  *offsets=new ULONG32[N], *lines = new ULONG32[N], *columns = new ULONG32[N];
+                        ULONG32  *endlines=new ULONG32[N], *endcolumns=new ULONG32[N];
+                        if(offsets && lines && columns && endlines && endcolumns)
                         {
-                            if((m_pSymDocument = pDW->pWriter))
+                            DocWriter* pDW;
+                            unsigned j=0;
+                            while((pDW = m_DocWriterList.PEEK(j++)))
                             {
-                                int i, n;
-                                for(i=0, n=0; (pLPC = pMethod->m_LinePCList.PEEK(i)); i++)
+                                if((m_pSymDocument = pDW->pWriter))
                                 {
-                                    if(pLPC->pWriter == m_pSymDocument)
+                                    int i, n;
+                                    for(i=0, n=0; (pLPC = pMethod->m_LinePCList.PEEK(i)); i++)
                                     {
-                                        offsets[n] = pLPC->PC;
-                                        lines[n] = pLPC->Line;
-                                        columns[n] = pLPC->Column;
-                                        endlines[n] = pLPC->LineEnd;
-                                        endcolumns[n] = pLPC->ColumnEnd;
-                                        n++;
+                                        if(pLPC->pWriter == m_pSymDocument)
+                                        {
+                                            offsets[n] = pLPC->PC;
+                                            lines[n] = pLPC->Line;
+                                            columns[n] = pLPC->Column;
+                                            endlines[n] = pLPC->LineEnd;
+                                            endcolumns[n] = pLPC->ColumnEnd;
+                                            n++;
+                                        }
                                     }
-                                }
-                                if(n) m_pSymWriter->DefineSequencePoints(m_pSymDocument,n,
-                                                                   offsets,lines,columns,endlines,endcolumns);
-                            } // end if(pSymDocument)
-                        } // end while(pDW = next doc.writer)
-                        pMethod->m_LinePCList.RESET(true);
-                    }
-                    else report->error("\nOutOfMemory!\n");
-                    delete [] offsets;
-                    delete [] lines;
-                    delete [] columns;
-                    delete [] endlines;
-                    delete [] endcolumns;
-                }//enf if(N)
-                HRESULT hrr;
-                if(pMethod->m_ulLines[1])
-                    hrr = m_pSymWriter->SetMethodSourceRange(m_pSymDocument,pMethod->m_ulLines[0], pMethod->m_ulColumns[0],
-                                                       m_pSymDocument,pMethod->m_ulLines[1], pMethod->m_ulColumns[1]);
-                EmitScope(&(pMethod->m_MainScope)); // recursively emits all nested scopes
+                                    if(n) m_pSymWriter->DefineSequencePoints(m_pSymDocument,n,
+                                                                       offsets,lines,columns,endlines,endcolumns);
+                                } // end if(pSymDocument)
+                            } // end while(pDW = next doc.writer)
+                            pMethod->m_LinePCList.RESET(true);
+                        }
+                        else report->error("\nOutOfMemory!\n");
+                        delete [] offsets;
+                        delete [] lines;
+                        delete [] columns;
+                        delete [] endlines;
+                        delete [] endcolumns;
+                    }//enf if(N)
+                    HRESULT hrr;
+                    if(pMethod->m_ulLines[1])
+                        hrr = m_pSymWriter->SetMethodSourceRange(m_pSymDocument,pMethod->m_ulLines[0], pMethod->m_ulColumns[0],
+                                                           m_pSymDocument,pMethod->m_ulLines[1], pMethod->m_ulColumns[1]);
+                    EmitScope(&(pMethod->m_MainScope)); // recursively emits all nested scopes
 
-                m_pSymWriter->CloseMethod();
+                    m_pSymWriter->CloseMethod();
+                }
+                else if (IsPortablePdb())
+                {
+                    if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
+                        return FALSE;
+                    if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
+                        return FALSE;
+                }
             } // end if(fIncludeDebugInfo)
             //-----------------------------------------------------
 

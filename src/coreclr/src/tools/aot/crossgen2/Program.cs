@@ -382,7 +382,14 @@ namespace ILCompiler
                     _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
                     if (_typeSystemContext.InputFilePaths.Count == 0)
+                    {
+                        if (_commandLineOptions.InputFilePaths.Count() > 0)
+                        {
+                            Console.WriteLine(SR.InputWasNotLoadable);
+                            return 2;
+                        }
                         throw new CommandLineException(SR.NoInputFiles);
+                    }
 
                     //
                     // Initialize compilation group and compilation roots

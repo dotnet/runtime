@@ -6,6 +6,7 @@
     <NoWarn>0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -18,6 +19,7 @@
              Link="ProductionCode\System\Net\Dns.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InitializationTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
     <!-- Fakes -->
@@ -27,6 +29,7 @@
     <Compile Include="Fakes\FakeNameResolutionUtilities.cs" />
     <Compile Include="Fakes\FakeSocketExceptionFactory.cs" />
     <Compile Include="Fakes\FakeSocketProtocolSupportPal.cs" />
+    <Compile Include="Fakes\FakeNameResolutionTelemetry.cs" />
   </ItemGroup>
   <!-- Production Code under test-->
   <ItemGroup>
@@ -38,5 +41,7 @@
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   </ItemGroup>
 </Project>

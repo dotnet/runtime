@@ -8,6 +8,7 @@ namespace System.Tests
     public static class OperatingSystemTests
     {
         [Theory]
+        [InlineData(PlatformID.Other, "1.0.0.0")]
         [InlineData(PlatformID.MacOSX, "1.2")]
         [InlineData(PlatformID.Unix, "1.2.3")]
         [InlineData(PlatformID.Win32NT, "1.2.3.4")]

@@ -102,7 +102,7 @@ namespace System.Net.Http
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
-                    _cleaningTimer = new Timer(s =>
+                    _cleaningTimer = new Timer(static s =>
                     {
                         var wr = (WeakReference<HttpConnectionPoolManager>)s!;
                         if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
@@ -482,8 +482,6 @@ namespace System.Net.Http
         /// <summary>Removes unusable connections from each pool, and removes stale pools entirely.</summary>
         private void RemoveStalePools()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             Debug.Assert(_cleaningTimer != null);
 
             // Iterate through each pool in the set of pools.  For each, ask it to clear out
@@ -517,8 +515,6 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)

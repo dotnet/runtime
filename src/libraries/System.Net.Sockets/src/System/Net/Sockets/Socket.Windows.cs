@@ -6,8 +6,8 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -17,10 +17,9 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        [MinimumOSPlatform("windows7.0")]
         public Socket(SocketInformation socketInformation)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             InitializeSockets();
 
             SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
@@ -79,8 +78,6 @@ namespace System.Net.Sockets
                 _handle = null!;
                 throw new SocketException((int)errorCode);
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         private unsafe void LoadSocketTypeFromHandle(
@@ -109,10 +106,9 @@ namespace System.Net.Sockets
             blocking = true;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, targetProcessId);
-
             ThrowIfDisposed();
 
             SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
@@ -128,7 +124,6 @@ namespace System.Net.Sockets
 
             Close(timeout: -1);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return info;
         }
 

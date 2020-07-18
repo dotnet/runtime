@@ -88,21 +88,34 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        foreach (var pinvoke in pinvokes)
+        var decls = new HashSet<string>();
+        foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
         {
-            if (modules.ContainsKey(pinvoke.Module))
-                w.WriteLine(GenPInvokeDecl(pinvoke));
+            if (modules.ContainsKey(pinvoke.Module)) {
+                var decl = GenPInvokeDecl(pinvoke);
+                if (decls.Contains(decl))
+                    continue;
+
+                w.WriteLine(decl);
+                decls.Add(decl);
+            }
         }
 
         foreach (var module in modules.Keys)
         {
             string symbol = module.Replace(".", "_") + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
-            foreach (var pinvoke in pinvokes)
-            {
-                if (pinvoke.Module == module)
-                    w.WriteLine("{\"" + pinvoke.EntryPoint + "\", " + pinvoke.EntryPoint + "},");
+
+            var assemblies_pinvokes = pinvokes.
+                Where(l => l.Module == module).
+                OrderBy(l => l.EntryPoint).
+                GroupBy(d => d.EntryPoint).
+                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
+
+            foreach (var pinvoke in assemblies_pinvokes) {
+                w.WriteLine (pinvoke);
             }
+
             w.WriteLine("{NULL, NULL}");
             w.WriteLine("};");
         }
@@ -156,120 +169,131 @@ public class PInvokeTableGenerator : Task
         return sb.ToString();
     }
 
-	void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
-		// Generate native->interp entry functions
-		// These are called by native code, so they need to obtain
-		// the interp entry function/arg from a global array
-		// They also need to have a signature matching what the
-		// native code expects, which is the native signature
-		// of the delegate invoke in the [MonoPInvokeCallback]
-		// attribute.
-		// Only blittable parameter/return types are supposed.
-		int cb_index = 0;
+        // Generate native->interp entry functions
+        // These are called by native code, so they need to obtain
+        // the interp entry function/arg from a global array
+        // They also need to have a signature matching what the
+        // native code expects, which is the native signature
+        // of the delegate invoke in the [MonoPInvokeCallback]
+        // attribute.
+        // Only blittable parameter/return types are supposed.
+        int cb_index = 0;
 
-		// Arguments to interp entry functions in the runtime
-		w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
+        // Arguments to interp entry functions in the runtime
+        w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
-		foreach (var cb in callbacks) {
-			var method = cb.Method;
+        foreach (var cb in callbacks) {
+            MethodInfo method = cb.Method;
+            bool isVoid = method.ReturnType.FullName == "System.Void";
 
-			if (method.ReturnType != typeof(void) && !IsBlittable(method.ReturnType))
-				Error("The return type of pinvoke callback method '" + method + "' needs to be blittable.");
-			foreach (var p in method.GetParameters()) {
-				if (!IsBlittable(p.ParameterType))
-					Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
-			}
-		}
+            if (!isVoid && !IsBlittable(method.ReturnType))
+                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
+            foreach (var p in method.GetParameters()) {
+                if (!IsBlittable(p.ParameterType))
+                    Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
+            }
+        }
 
-		foreach (var cb in callbacks) {
-			var sb = new StringBuilder();
-			var method = cb.Method;
+        var callbackNames = new HashSet<string>();
 
-			// The signature of the interp entry function
-			// This is a gsharedvt_in signature
-			sb.Append("typedef void ");
-			sb.Append(" (*WasmInterpEntrySig_" + cb_index + ") (");
-			int pindex = 0;
-			if (method.ReturnType.Name != "Void") {
-				sb.Append("int");
-				pindex ++;
-			}
-			foreach (var p in method.GetParameters()) {
-				if (pindex > 0)
-					sb.Append(",");
-				sb.Append("int");
-				pindex ++;
-			}
-			if (pindex > 0)
-				sb.Append(",");
-			// Extra arg
-			sb.Append("int");
-			sb.Append(");\n");
+        foreach (var cb in callbacks) {
+            var sb = new StringBuilder();
+            var method = cb.Method;
 
-			bool is_void = method.ReturnType.Name == "Void";
+            // The signature of the interp entry function
+            // This is a gsharedvt_in signature
+            sb.Append("typedef void ");
+            sb.Append(" (*WasmInterpEntrySig_" + cb_index + ") (");
+            int pindex = 0;
+            if (method.ReturnType.Name != "Void") {
+                sb.Append("int");
+                pindex ++;
+            }
+            foreach (var p in method.GetParameters()) {
+                if (pindex > 0)
+                    sb.Append(",");
+                sb.Append("int");
+                pindex ++;
+            }
+            if (pindex > 0)
+                sb.Append(",");
+            // Extra arg
+            sb.Append("int");
+            sb.Append(");\n");
 
-			string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
-			uint token = (uint)method.MetadataToken;
-			string entry_name = $"wasm_native_to_interp_{module_symbol}_{token}";
+            bool is_void = method.ReturnType.Name == "Void";
+
+            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            uint token = (uint)method.MetadataToken;
+            string class_name = method.DeclaringType.Name;
+            string method_name = method.Name;
+            string entry_name = $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
+            if (callbackNames.Contains (entry_name))
+            {
+                Error($"Two callbacks with the same name '{method_name}' are not supported.");
+            }
+            callbackNames.Add (entry_name);
             cb.EntryName = entry_name;
-			sb.Append(MapType(method.ReturnType));
-			sb.Append($" {entry_name} (");
-			pindex = 0;
-			foreach (var p in method.GetParameters()) {
-				if (pindex > 0)
-					sb.Append(",");
-				sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
-				sb.Append(" arg" + pindex);
-				pindex ++;
-			}
-			sb.Append(") { \n");
-			if (!is_void)
-				sb.Append(MapType(method.ReturnType) + " res;\n");
-			sb.Append("((WasmInterpEntrySig_" + cb_index + ")wasm_native_to_interp_ftndescs [" + cb_index + "].func) (");
-			pindex = 0;
-			if (!is_void) {
-				sb.Append("&res");
-				pindex ++;
-			}
-			int aindex = 0;
-			foreach (var p in method.GetParameters()) {
-				if (pindex > 0)
-					sb.Append(", ");
-				sb.Append("&arg" + aindex);
-				pindex ++;
-				aindex ++;
-			}
-			if (pindex > 0)
-				sb.Append(", ");
-			sb.Append($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
-			sb.Append(");\n");
-			if (!is_void)
-				sb.Append("return res;\n");
-			sb.Append("}");
-			w.WriteLine(sb);
-			cb_index ++;
-		}
+            sb.Append(MapType(method.ReturnType));
+            sb.Append($" {entry_name} (");
+            pindex = 0;
+            foreach (var p in method.GetParameters()) {
+                if (pindex > 0)
+                    sb.Append(",");
+                sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
+                sb.Append(" arg" + pindex);
+                pindex ++;
+            }
+            sb.Append(") { \n");
+            if (!is_void)
+                sb.Append(MapType(method.ReturnType) + " res;\n");
+            sb.Append("((WasmInterpEntrySig_" + cb_index + ")wasm_native_to_interp_ftndescs [" + cb_index + "].func) (");
+            pindex = 0;
+            if (!is_void) {
+                sb.Append("&res");
+                pindex ++;
+            }
+            int aindex = 0;
+            foreach (var p in method.GetParameters()) {
+                if (pindex > 0)
+                    sb.Append(", ");
+                sb.Append("&arg" + aindex);
+                pindex ++;
+                aindex ++;
+            }
+            if (pindex > 0)
+                sb.Append(", ");
+            sb.Append($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
+            sb.Append(");\n");
+            if (!is_void)
+                sb.Append("return res;\n");
+            sb.Append("}");
+            w.WriteLine(sb);
+            cb_index ++;
+        }
 
-		// Array of function pointers
-		w.Write ("static void *wasm_native_to_interp_funcs[] = { ");
-		foreach (var cb in callbacks) {
-			w.Write (cb.EntryName + ",");
-		}
-		w.WriteLine ("};");
+        // Array of function pointers
+        w.Write ("static void *wasm_native_to_interp_funcs[] = { ");
+        foreach (var cb in callbacks) {
+            w.Write (cb.EntryName + ",");
+        }
+        w.WriteLine ("};");
 
-		// Lookup table from method->interp entry
-		// The key is a string of the form <assembly name>_<method token>
-		// FIXME: Use a better encoding
-		w.Write ("static const char *wasm_native_to_interp_map[] = { ");
-		foreach (var cb in callbacks) {
-			var method = cb.Method;
-			string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
-			uint token = (uint)method.MetadataToken;
-			w.WriteLine ($"\"{module_symbol}_{token}\",");
-		}
-		w.WriteLine ("};");
-	}
+        // Lookup table from method->interp entry
+        // The key is a string of the form <assembly name>_<method token>
+        // FIXME: Use a better encoding
+        w.Write ("static const char *wasm_native_to_interp_map[] = { ");
+        foreach (var cb in callbacks) {
+            var method = cb.Method;
+            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            string class_name = method.DeclaringType.Name;
+            string method_name = method.Name;
+            w.WriteLine ($"\"{module_symbol}_{class_name}_{method_name}\",");
+        }
+        w.WriteLine ("};");
+    }
 
     static bool IsBlittable (Type type)
     {

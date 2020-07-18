@@ -4265,6 +4265,11 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
     copyOfCondStmt->SetCompilerAdded();
 
+    if (condTree->gtFlags & GTF_CALL)
+    {
+        block->bbFlags |= BBF_HAS_CALL; // Record that the block has a call
+    }
+
     if (opts.compDbgInfo)
     {
         copyOfCondStmt->SetILOffsetX(condStmt->GetILOffsetX());
@@ -6197,6 +6202,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
 
     // Create a copy of the expression and mark it for CSE's.
     GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
+
+    // The hoist Expr does not have to computed into a specific register,
+    // so clear the RegNum if it was set in the original expression
+    hoistExpr->ClearRegNum();
 
     // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
     assert(hoistExpr != origExpr);
@@ -9248,7 +9257,7 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                if (((tree->gtFlags & GTF_CALL) != 0))
                 {
                     hasGCSafePoint = true;
                 }

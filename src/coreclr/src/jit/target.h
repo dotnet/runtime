@@ -1103,9 +1103,7 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
-  // consider it killed by the return.
-  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_RET_SCRATCH
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_NONE
 
   // Which register are int and long values returned in ?
@@ -1590,7 +1588,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #define BITS_PER_BYTE              8
 #define REGNUM_MASK              ((1 << REGNUM_BITS) - 1)     // a n-bit mask use to encode multiple REGNUMs into a unsigned int
-#define RBM_ALL(type) (varTypeIsFloating(type) ? RBM_ALLFLOAT : RBM_ALLINT)
+#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -1896,7 +1894,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
 #else
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         regMask = genRegMaskFloat(regNum, type);
     }
@@ -1944,7 +1942,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeIsFloating(type))
+    if (varTypeUsesFloatReg(type))
     {
         if (regReturn > REG_FP_LAST)
         {

@@ -309,6 +309,10 @@ void BasicBlock::dspFlags()
     {
         printf("jmp ");
     }
+    if (bbFlags & BBF_HAS_CALL)
+    {
+        printf("hascall ");
+    }
     if (bbFlags & BBF_GC_SAFE_POINT)
     {
         printf("gcsafe ");

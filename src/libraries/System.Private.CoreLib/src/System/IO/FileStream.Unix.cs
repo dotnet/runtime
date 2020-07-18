@@ -290,7 +290,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((FileStream)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -364,7 +364,7 @@ namespace System.IO
             if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => ((FileStream)state!).FlushOSBuffer(),
+                    static state => ((FileStream)state!).FlushOSBuffer(),
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
@@ -556,7 +556,7 @@ namespace System.IO
             // Otherwise, issue the whole request asynchronously.
             synchronousResult = 0;
             _asyncState.Memory = destination;
-            return waitTask.ContinueWith((t, s) =>
+            return waitTask.ContinueWith(static (t, s) =>
             {
                 // The options available on Unix for writing asynchronously to an arbitrary file
                 // handle typically amount to just using another thread to do the synchronous write,
@@ -684,7 +684,7 @@ namespace System.IO
             }
 
             // Serialize operations using the semaphore.
-            Task waitTask = _asyncState.WaitAsync();
+            Task waitTask = _asyncState.WaitAsync(cancellationToken);
 
             // If we got ownership immediately, and if there's enough space in our buffer
             // to buffer the entire write request, then do so and we're done.
@@ -715,7 +715,7 @@ namespace System.IO
 
             // Otherwise, issue the whole request asynchronously.
             _asyncState.ReadOnlyMemory = source;
-            return new ValueTask(waitTask.ContinueWith((t, s) =>
+            return new ValueTask(waitTask.ContinueWith(static (t, s) =>
             {
                 // The options available on Unix for writing asynchronously to an arbitrary file
                 // handle typically amount to just using another thread to do the synchronous write,

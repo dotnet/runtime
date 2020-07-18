@@ -30,7 +30,7 @@ HRESULT Assembler::InitMetaData()
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
     hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx, (void **)&m_pDisp);
+        IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
 
@@ -43,7 +43,7 @@ HRESULT Assembler::InitMetaData()
         hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
         ::SysFreeString(bstr);
     }
-    hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
+    hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
         goto exit;
@@ -52,6 +52,11 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
+    if (m_pdbFormat == PdbFormat::PORTABLE)
+    {
+        m_pPortablePdbWriter = new PortablePdbWriter();
+        if (FAILED(hr = m_pPortablePdbWriter->Init(m_pDisp))) goto exit;
+    }
 
     //m_Parser = new AsmParse(m_pEmitter);
     m_fInitialisedMetaData = TRUE;
@@ -204,7 +209,7 @@ HRESULT Assembler::CreateDebugDirectory()
     ULONG deOffset;
 
     // Only emit this if we're also emitting debug info.
-    if (!(m_fGeneratePDB && m_pSymWriter))
+    if (!(m_fGeneratePDB && (m_pSymWriter || IsPortablePdb())))
         return S_OK;
 
     IMAGE_DEBUG_DIRECTORY  debugDirIDD;
@@ -215,38 +220,80 @@ HRESULT Assembler::CreateDebugDirectory()
     } param;
     param.debugDirData = NULL;
 
-    // Get the debug info from the symbol writer.
-    if (FAILED(hr=m_pSymWriter->GetDebugInfo(NULL, 0, &param.debugDirDataSize, NULL)))
-        return hr;
+    if (m_pSymWriter)   // CLASSIC
+    {
+        // Get the debug info from the symbol writer.
+        if (FAILED(hr=m_pSymWriter->GetDebugInfo(NULL, 0, &param.debugDirDataSize, NULL)))
+            return hr;
 
-    // Will there even be any?
-    if (param.debugDirDataSize == 0)
-        return S_OK;
+        // Will there even be any?
+        if (param.debugDirDataSize == 0)
+            return S_OK;
 
-    // Make some room for the data.
-    PAL_TRY(Param *, pParam, &param) {
-        pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
-    } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
-        hr = E_FAIL;
-    } PAL_ENDTRY
+        // Make some room for the data.
+        PAL_TRY(Param *, pParam, &param) {
+            pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
+        } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
+            hr = E_FAIL;
+        } PAL_ENDTRY
 
-    if(FAILED(hr)) return hr;
-    // Actually get the data now.
-    if (FAILED(hr = m_pSymWriter->GetDebugInfo(&debugDirIDD,
-                                               param.debugDirDataSize,
-                                               NULL,
-                                               param.debugDirData)))
-        goto ErrExit;
+        if(FAILED(hr)) return hr;
+        // Actually get the data now.
+        if (FAILED(hr = m_pSymWriter->GetDebugInfo(&debugDirIDD,
+                                                   param.debugDirDataSize,
+                                                   NULL,
+                                                   param.debugDirData)))
+            goto ErrExit;
 
-    // Grab the timestamp of the PE file.
-    DWORD fileTimeStamp;
+        // Grab the timestamp of the PE file.
+        DWORD fileTimeStamp;
 
-    if (FAILED(hr = m_pCeeFileGen->GetFileTimeStamp(m_pCeeFile,
-                                                    &fileTimeStamp)))
-        goto ErrExit;
+        if (FAILED(hr = m_pCeeFileGen->GetFileTimeStamp(m_pCeeFile,
+                                                        &fileTimeStamp)))
+            goto ErrExit;
 
-    // Fill in the directory entry.
-    debugDirIDD.TimeDateStamp = VAL32(fileTimeStamp);
+        // Fill in the directory entry.
+        debugDirIDD.TimeDateStamp = VAL32(fileTimeStamp);
+    }
+    else if (IsPortablePdb())   // PORTABLE
+    {
+        // get module ID
+        DWORD rsds = 0x53445352;
+        DWORD pdbAge = 0x1;
+        DWORD len = sizeof(rsds) + sizeof(GUID) + sizeof(pdbAge) + (DWORD)strlen(m_szPdbFileName) + 1;
+        BYTE* dbgDirData = new BYTE[len];
+
+        DWORD offset = 0;
+        memcpy_s(dbgDirData + offset, len, &rsds, sizeof(rsds));                            // RSDS
+        offset += sizeof(rsds);
+        memcpy_s(dbgDirData + offset, len, m_pPortablePdbWriter->GetGuid(), sizeof(GUID)); // PDB GUID
+        offset += sizeof(GUID);
+        memcpy_s(dbgDirData + offset, len, &pdbAge, sizeof(pdbAge));                        // PDB AGE
+        offset += sizeof(pdbAge);
+        memcpy_s(dbgDirData + offset, len, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
+
+        debugDirIDD.Characteristics = 0;
+        debugDirIDD.TimeDateStamp = m_pPortablePdbWriter->GetTimestamp();
+        debugDirIDD.MajorVersion = 0x100;
+        debugDirIDD.MinorVersion = 0x504d;
+        debugDirIDD.Type = IMAGE_DEBUG_TYPE_CODEVIEW;
+        debugDirIDD.SizeOfData = len;
+        debugDirIDD.AddressOfRawData = 0; // will be updated bellow
+        debugDirIDD.PointerToRawData = 0; // will be updated bellow
+
+        param.debugDirDataSize = len;
+
+        // Make some room for the data.
+        PAL_TRY(Param*, pParam, &param) {
+            pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
+        } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
+            hr = E_FAIL;
+        } PAL_ENDTRY
+
+        if (FAILED(hr)) return hr;
+
+        param.debugDirData = dbgDirData;
+    }
 
     // Grab memory in the section for our stuff.
     // Note that UpdateResource doesn't work correctly if the debug directory is

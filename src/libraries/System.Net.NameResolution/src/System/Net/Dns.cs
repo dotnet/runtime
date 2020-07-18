@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Internals;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net
 {
@@ -17,14 +19,28 @@ namespace System.Net
         {
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            string name = NameResolutionPal.GetHostName();
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(string.Empty);
+
+            string name;
+            try
+            {
+                name = NameResolutionPal.GetHostName();
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
+            }
+
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
         }
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(address, address);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (address is null)
@@ -40,13 +56,12 @@ namespace System.Net
 
             IPHostEntry ipHostEntry = GetHostEntryCore(address);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(address, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
             return ipHostEntry;
         }
 
         public static IPHostEntry GetHostEntry(string hostNameOrAddress)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (hostNameOrAddress is null)
@@ -71,7 +86,7 @@ namespace System.Net
                 ipHostEntry = GetHostEntryCore(hostNameOrAddress);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(hostNameOrAddress, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostNameOrAddress, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
             return ipHostEntry;
         }
 
@@ -79,9 +94,8 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
                 Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true);
-                t.ContinueWith((t, s) => NetEventSource.Exit((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
+                t.ContinueWith((t, s) => NetEventSource.Info((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
                     hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
                 return t;
             }
@@ -93,8 +107,6 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(address, address);
-
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (address is null)
@@ -109,45 +121,23 @@ namespace System.Net
             }
 
             return RunAsync(s => {
-                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
-                    return ipHostEntry;
-                }, address);
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
+                return ipHostEntry;
+            }, address);
         }
 
-        public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(address, address);
+        public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
+            TaskToApm.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
 
-            IAsyncResult asyncResult = TaskToApm.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
+        public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject) =>
+            TaskToApm.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(address, asyncResult);
-            return asyncResult;
-        }
-
-        public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
-
-            IAsyncResult asyncResult = TaskToApm.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(asyncResult, asyncResult);
-            return asyncResult;
-        }
-
-        public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(asyncResult, asyncResult);
-
-            IPHostEntry ipHostEntry = TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(asyncResult, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries" );
-            return ipHostEntry;
-        }
+        public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult) =>
+            TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (hostNameOrAddress is null)
@@ -172,32 +162,18 @@ namespace System.Net
                 addresses = GetHostAddressesCore(hostNameOrAddress);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(hostNameOrAddress, addresses);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostNameOrAddress, addresses);
             return addresses;
         }
 
         public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) =>
             (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true);
 
-        public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
+        public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state) =>
+            TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
 
-            IAsyncResult asyncResult = TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(hostNameOrAddress, asyncResult);
-            return asyncResult;
-        }
-
-        public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(asyncResult, asyncResult);
-
-            IPAddress[] addresses = TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(asyncResult, addresses);
-            return addresses;
-        }
+        public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult) =>
+            TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByName(string hostName)
@@ -218,31 +194,16 @@ namespace System.Net
         }
 
         [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostName, hostName);
-
-            IAsyncResult asyncResult = TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true), requestCallback, stateObject);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(hostName, asyncResult);
-            return asyncResult;
-        }
+        public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
+            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true), requestCallback, stateObject);
 
         [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(asyncResult, asyncResult);
-
-            IPHostEntry ipHostEntry = TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(asyncResult, ipHostEntry);
-            return ipHostEntry;
-        }
+        public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) =>
+            TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(string address)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(address, address);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (address is null)
@@ -252,14 +213,13 @@ namespace System.Net
 
             IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address));
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(address, ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
             return ipHostEntry;
         }
 
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(address, address);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (address is null)
@@ -269,14 +229,13 @@ namespace System.Net
 
             IPHostEntry ipHostEntry = GetHostEntryCore(address);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(address, ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
             return ipHostEntry;
         }
 
         [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry Resolve(string hostName)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(hostName, hostName);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (hostName is null)
@@ -304,25 +263,17 @@ namespace System.Net
                 ipHostEntry = GetHostEntryCore(hostName);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(hostName, ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, ipHostEntry);
             return ipHostEntry;
         }
 
         [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, hostName);
-
-            IAsyncResult asyncResult = TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false), requestCallback, stateObject);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, asyncResult);
-            return asyncResult;
-        }
+        public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
+            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false), requestCallback, stateObject);
 
         [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, asyncResult);
             IPHostEntry ipHostEntry;
 
             try
@@ -345,7 +296,7 @@ namespace System.Net
                 ipHostEntry = CreateHostEntryForAddress(address);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, ipHostEntry);
             return ipHostEntry;
         }
 
@@ -359,22 +310,36 @@ namespace System.Net
         {
             ValidateHostName(hostName);
 
-            SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
-            if (errorCode != SocketError.Success)
+            object result;
+            try
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
-                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
+                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                }
+
+                result = justAddresses ? (object)
+                    addresses :
+                    new IPHostEntry
+                    {
+                        AddressList = addresses,
+                        HostName = newHostName!,
+                        Aliases = aliases
+                    };
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
             }
 
-            object result = justAddresses ? (object)
-                addresses :
-                new IPHostEntry
-                {
-                    AddressList = addresses,
-                    HostName = newHostName!,
-                    Aliases = aliases
-                };
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -393,20 +358,61 @@ namespace System.Net
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            string? name = NameResolutionPal.TryGetNameInfo(address, out SocketError errorCode, out int nativeErrorCode);
-            if (errorCode != SocketError.Success)
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+
+            SocketError errorCode;
+            string? name;
+            try
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
-                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out int nativeErrorCode);
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
+                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                }
+                Debug.Assert(name != null);
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
             }
 
-            // Do the forward lookup to get the IPs for that host name
-            errorCode = NameResolutionPal.TryGetAddrInfo(name!, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out nativeErrorCode);
-
-            if (errorCode != SocketError.Success)
+            if (NameResolutionTelemetry.Log.IsEnabled())
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+
+                // Do the forward lookup to get the IPs for that host name
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
             }
+
+            object result;
+            try
+            {
+                errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                }
+
+                result = justAddresses ?
+                    (object)addresses :
+                    new IPHostEntry
+                    {
+                        HostName = hostName!,
+                        Aliases = aliases,
+                        AddressList = addresses
+                    };
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
+            }
+
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -415,15 +421,7 @@ namespace System.Net
             //    - Workaround, Check "Use this connection's dns suffix in dns registration" on that network
             //      adapter's advanced dns settings.
             // Return whatever we got.
-
-            return justAddresses ?
-                (object)addresses :
-                new IPHostEntry
-                {
-                    HostName = hostName!,
-                    Aliases = aliases,
-                    AddressList = addresses
-                };
+            return result;
         }
 
         private static Task<IPHostEntry> GetHostEntryCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny) =>
@@ -465,7 +463,42 @@ namespace System.Net
             if (NameResolutionPal.SupportsGetAddrInfoAsync && ipAddress is null)
             {
                 ValidateHostName(hostName);
-                return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+
+                if (NameResolutionTelemetry.Log.IsEnabled())
+                {
+                    ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+
+                    Task coreTask;
+                    try
+                    {
+                        coreTask = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+                    }
+                    catch when (LogFailure(stopwatch))
+                    {
+                        Debug.Fail("LogFailure should return false");
+                        throw;
+                    }
+
+                    coreTask.ContinueWith(
+                        (task, state) =>
+                        {
+                            NameResolutionTelemetry.Log.AfterResolution(
+                                stopwatch: (ValueStopwatch)state!,
+                                successful: task.IsCompletedSuccessfully);
+                        },
+                        state: stopwatch,
+                        cancellationToken: default,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+
+                    // coreTask is not actually a base Task, but Task<IPHostEntry> / Task<IPAddress[]>
+                    // We have to return it and not the continuation
+                    return coreTask;
+                }
+                else
+                {
+                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+                }
             }
 
             return justAddresses ? (Task)
@@ -494,6 +527,15 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
+        }
+
+
+        private static bool LogFailure(ValueStopwatch stopwatch)
+        {
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
+
+            return false;
         }
     }
 }

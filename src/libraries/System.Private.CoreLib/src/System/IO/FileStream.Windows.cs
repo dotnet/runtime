@@ -1325,7 +1325,7 @@ namespace System.IO
                 // in the read/write copy loop.
                 if (cancellationToken.CanBeCanceled)
                 {
-                    cancellationReg = cancellationToken.UnsafeRegister(s =>
+                    cancellationReg = cancellationToken.UnsafeRegister(static s =>
                     {
                         Debug.Assert(s is AsyncCopyToAwaitable);
                         var innerAwaitable = (AsyncCopyToAwaitable)s;

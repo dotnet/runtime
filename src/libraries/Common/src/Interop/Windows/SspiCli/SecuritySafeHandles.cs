@@ -199,8 +199,6 @@ namespace System.Net.Security
             Interop.SspiCli.CredentialUse intent,
             out SafeFreeCredentials outCredential)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, package, intent);
-
             int errorCode = -1;
             long timeStamp;
 
@@ -262,11 +260,8 @@ namespace System.Net.Security
             ref Interop.SspiCli.SCHANNEL_CRED authdata,
             out SafeFreeCredentials outCredential)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, package, intent, authdata);
-
             int errorCode = -1;
             long timeStamp;
-
 
             // If there is a certificate, wrap it into an array.
             // Not threadsafe.
@@ -306,6 +301,38 @@ namespace System.Net.Security
 
             return errorCode;
         }
+
+        public static unsafe int AcquireCredentialsHandle(
+            string package,
+            Interop.SspiCli.CredentialUse intent,
+            Interop.SspiCli.SCH_CREDENTIALS* authdata,
+            out SafeFreeCredentials outCredential)
+        {
+            long timeStamp;
+
+            outCredential = new SafeFreeCredential_SECURITY();
+
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+                                null,
+                                package,
+                                (int)intent,
+                                null,
+                                authdata,
+                                null,
+                                null,
+                                ref outCredential._handle,
+                                out timeStamp);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+
+            if (errorCode != 0)
+            {
+                outCredential.SetHandleAsInvalid();
+            }
+
+            return errorCode;
+        }
+
     }
 
     //
@@ -389,8 +416,6 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
-
             if (inCredentials == null)
             {
                 throw new ArgumentNullException(nameof(inCredentials));
@@ -514,7 +539,6 @@ namespace System.Net.Security
                 outFreeContextBuffer?.Dispose();
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -621,8 +645,6 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
-
             if (inCredentials == null)
             {
                 throw new ArgumentNullException(nameof(inCredentials));
@@ -756,7 +778,6 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -854,12 +875,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(null, "SafeDeleteContext::CompleteAuthToken");
-                NetEventSource.Info(null, $"    refContext       = {refContext}");
-                NetEventSource.Info(null, $"    inSecBuffer      = {inSecBuffer}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}, inSecBuffer = {inSecBuffer}");
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
@@ -906,7 +922,6 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"unmanaged CompleteAuthToken() errorCode:0x{errorCode:x8} refContext:{refContext}");
             return errorCode;
         }
 
@@ -914,12 +929,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(null);
-                NetEventSource.Info(null, $"    refContext       = {refContext}");
-                NetEventSource.Info(null, $"    inSecBuffer      = {inSecBuffer}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}, inSecBuffer = {inSecBuffer}");
 
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
@@ -968,7 +978,6 @@ namespace System.Net.Security
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, $"unmanaged ApplyControlToken() errorCode:0x{errorCode:x8} refContext: {refContext}");
             return errorCode;
         }
     }

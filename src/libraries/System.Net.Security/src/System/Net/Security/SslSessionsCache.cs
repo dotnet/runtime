@@ -210,13 +210,13 @@ namespace System.Net.Security
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Scavenged cache, New Cache Count = {s_cachedCreds.Count}");
                         }
                     }
-                    else if (NetEventSource.Log.IsEnabled())
+                    else
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached.Target}");
                     }
                 }
             }
-            else if (NetEventSource.Log.IsEnabled())
+            else
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached.Target}");
             }

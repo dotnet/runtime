@@ -29,6 +29,10 @@
     <Compile Include="System\Net\Mime\MimeBasePart.cs" />
     <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
     <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
+    <Compile Include="System\Net\Mime\ByteEncoder.cs" />
+    <Compile Include="System\Net\Mime\Base64Encoder.cs" />
+    <Compile Include="System\Net\Mime\IByteEncoder.cs" />
+    <Compile Include="System\Net\Mime\QEncoder.cs" />
     <Compile Include="System\Net\TrackingStringDictionary.cs" />
     <Compile Include="System\Net\TrackingValidationObjectDictionary.cs" />
     <Compile Include="System\Net\Mail\MailHeaderID.cs" />
@@ -121,6 +125,8 @@
              Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

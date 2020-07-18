@@ -914,6 +914,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(numArgs == 4);
                 indexedElementBaseType = getBaseTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, &indexedElementSimdSize);
+
+                if (intrinsic == NI_Dp_DotProductBySelectedQuadruplet)
+                {
+                    assert(((baseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
+                           ((baseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)));
+                    // The second source operand of sdot, udot instructions is an indexed 32-bit element.
+                    indexedElementBaseType = baseType;
+                }
             }
 
             assert(indexedElementBaseType == baseType);

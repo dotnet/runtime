@@ -4,6 +4,7 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILASM__)
+add_definitions(-DFEATURE_METADATA_EMIT_PORTABLE_PDB)
 
 add_definitions(-DFEATURE_CORECLR)
 
@@ -18,6 +19,7 @@ set(ILASM_SOURCES
   main.cpp
   assembler.cpp
   prebuilt/asmparse.cpp
+  portable_pdb.cpp
 )
 
 set(ILASM_HEADERS
@@ -32,6 +34,7 @@ set(ILASM_HEADERS
   method.hpp
   nvpair.h
   typar.hpp
+  portable_pdb.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -72,11 +75,11 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdhotdata_full
-  mdcompiler_wks
-  mdruntime_wks
-  mdruntimerw_wks
-  mdstaticapi
+  mdhotdata_ppdb
+  mdcompiler_ppdb
+  mdruntime_ppdb
+  mdruntimerw_ppdb
+  mdstaticapi_ppdb
   ${END_LIBRARY_GROUP} # End group of libraries that have circular references
   ceefgen
   corguids

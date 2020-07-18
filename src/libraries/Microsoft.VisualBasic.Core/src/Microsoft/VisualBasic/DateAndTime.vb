@@ -58,8 +58,6 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
                 End Try
@@ -108,8 +106,6 @@ Namespace Microsoft.VisualBasic
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
@@ -286,8 +282,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
             End Try
@@ -309,8 +303,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date1"))
             End Try
@@ -319,8 +311,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date2"))
@@ -340,8 +330,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
@@ -416,8 +404,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Year")), vbErrors.IllegalFuncCall)
             End Try
@@ -428,8 +414,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Month")), vbErrors.IllegalFuncCall)
             End Try
@@ -439,8 +423,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Day")), vbErrors.IllegalFuncCall)
@@ -568,8 +550,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Weekday"))

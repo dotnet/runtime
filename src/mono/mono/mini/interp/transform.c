@@ -1502,6 +1502,40 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
+		if (!strcmp (tm, "Block"))
+			*op = MINT_INTRINS_MARVIN_BLOCK;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Text.Unicode") && !strcmp (klass_name, "Utf16Utility")) {
+		if (!strcmp (tm, "ConvertAllAsciiCharsInUInt32ToUppercase"))
+			*op = MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE;
+		else if (!strcmp (tm, "UInt32OrdinalIgnoreCaseAscii"))
+			*op = MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII;
+		else if (!strcmp (tm, "UInt64OrdinalIgnoreCaseAscii"))
+			*op = MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Text") && !strcmp (klass_name, "ASCIIUtility")) {
+		if (!strcmp (tm, "WidenAsciiToUtf16"))
+			*op = MINT_INTRINS_WIDEN_ASCII_TO_UTF16;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
+		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
+			ERROR_DECL(error);
+			MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, target_method->klass, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+			/* Don't use intrinsic if cctor not yet run */
+			if (!vtable->initialized)
+				return FALSE;
+			/* The cache is the first static field. Update this if bcl code changes */
+			MonoClassField *field = m_class_get_fields (target_method->klass);
+			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
+			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
+			td->last_ins->data [0] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (td->rtm->domain, mono_defaults.string_class, error));
+			SET_TYPE (td->sp - 1, STACK_TYPE_O, mono_defaults.string_class);
+			td->ip += 5;
+			return TRUE;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
 			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
 		gboolean is_float = strcmp (klass_name, "MathF") == 0;
@@ -3026,6 +3060,20 @@ mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imetho
 {
 	ERROR_DECL (error);
 	interp_method_compute_offsets (td, imethod, signature, header, error);
+}
+
+static gboolean
+type_has_references (MonoType *type)
+{
+	if (MONO_TYPE_IS_REFERENCE (type))
+		return TRUE;
+	if (MONO_TYPE_ISSTRUCT (type)) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (!m_class_is_inited (klass))
+			mono_class_init_internal (klass);
+		return m_class_has_references (klass);
+	}
+	return FALSE;
 }
 
 /* Return false is failure to init basic blocks due to being in inline method */
@@ -4695,6 +4743,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				PUSH_TYPE (td, stack_type [mint_type (m_class_get_byval_arg (klass))], klass);
 			} else {
+				gboolean can_inline = TRUE;
 				if (m_class_get_parent (klass) == mono_defaults.array_class) {
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 					td->last_ins->data [0] = get_data_item_index (td, m->klass);
@@ -4709,6 +4758,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* public ByReference(ref T value) */
 					g_assert (csignature->hasthis && csignature->param_count == 1);
 					interp_add_ins (td, MINT_INTRINS_BYREFERENCE_CTOR);
+				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
+						(!strcmp (m_class_get_name (m->klass), "Span`1") ||
+						!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
+						csignature->param_count == 2 &&
+						csignature->params [0]->type == MONO_TYPE_PTR &&
+						!type_has_references (mono_method_get_context (m)->class_inst->type_argv [0])) {
+					/* ctor frequently used with ReadOnlySpan over static arrays */
+					interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
@@ -4766,6 +4823,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
 					// Set the method to be executed as part of newobj instruction
 					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					can_inline = FALSE;
 				} else {
 					// Runtime (interp_exec_method_full in interp.c) inserts
 					// extra stack to hold this and return value, before call.
@@ -4775,8 +4833,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				}
 				goto_if_nok (error, exit);
-				/* The constructor was not inlined, abort inlining of current method */
-				INLINE_FAILURE;
+				if (!can_inline) {
+					/* The constructor was not inlined, abort inlining of current method */
+					INLINE_FAILURE;
+				}
 
 				td->sp -= csignature->param_count;
 				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
@@ -4793,7 +4853,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 				}
 				if ((vt_stack_used != 0 || vt_res_size != 0) &&
-						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR) {
+						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR &&
+						td->last_ins->opcode != MINT_INTRINS_SPAN_CTOR) {
 					/* FIXME Remove this once vtsp and sp are unified */
 					interp_add_ins (td, MINT_VTRESULT);
 					td->last_ins->data [0] = vt_res_size;

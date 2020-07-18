@@ -12,7 +12,8 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, uint value, JsonSerializerOptions options)
         {
-            writer.WriteNumberValue(value);
+            // For performance, lift up the writer implementation.
+            writer.WriteNumberValue((ulong)value);
         }
 
         internal override uint ReadWithQuotes(ref Utf8JsonReader reader)

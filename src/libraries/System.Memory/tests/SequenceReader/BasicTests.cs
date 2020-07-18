@@ -128,7 +128,9 @@ namespace System.Memory.Tests.SequenceReader
             Assert.True(sequence.IsEmpty);
             Assert.False(reader.TryReadTo(out sequence, array));
             Assert.True(sequence.IsEmpty);
-            Assert.False(reader.TryReadTo(out ReadOnlySpan<T> span, default));
+            Assert.False(reader.TryReadTo(out ReadOnlySpan<T> span, default(T)));
+            Assert.True(span.IsEmpty);
+            Assert.False(reader.TryReadTo(out span, array));
             Assert.True(span.IsEmpty);
             Assert.False(reader.TryReadToAny(out sequence, array));
             Assert.True(sequence.IsEmpty);

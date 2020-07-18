@@ -119,11 +119,13 @@
     <Compile Include="Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClass.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithFields.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
@@ -139,6 +141,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="Serialization\IsExternalInit.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />

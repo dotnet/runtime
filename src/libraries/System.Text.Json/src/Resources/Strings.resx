@@ -533,4 +533,7 @@
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
     <value>The type '{0}' is not a supported Dictionary key type.</value>
   </data>
+  <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
+    <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
+  </data>
 </root>

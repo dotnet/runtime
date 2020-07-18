@@ -950,16 +950,6 @@ if test x$with_core = xonly; then
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
-if test x$with_core = xonly; then
-	if test -f $srcdir/mono/eventpipe/ep.h; then
-		enable_perftracing=yes
-	fi
-	if test x$enable_perftracing = xyes; then
-		AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
-	fi
-fi
-AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
-
 #
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
@@ -1312,6 +1302,12 @@ AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no 
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
 
+AC_ARG_WITH(static_icu, [  --with-static-icu=yes|no      Integrate ICU statically into the runtime (defaults to no)],[
+	if test x$with_static_icu = xyes ; then
+		AC_DEFINE(STATIC_ICU,1,[Integrate ICU statically into the runtime.])
+	fi
+], [with_static_icu=no])
+
 dnl
 dnl Spectre compiler mitigation flag checks
 dnl
@@ -1409,6 +1405,7 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
+   mono_feature_disable_cfgdir_config='yes'
    if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
@@ -1699,6 +1696,7 @@ AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
 AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
+AM_CONDITIONAL(STATIC_ICU, test "x$with_static_icu" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL_INTERP, [test "x$with_testing_aot_full_interp" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_HYBRID, [test "x$with_testing_aot_hybrid" != "xno"])
@@ -1787,7 +1785,7 @@ AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes.],
+	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes, eventpipe.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1983,7 +1981,6 @@ if test "x$mono_feature_disable_sgen_marksweep_conc" = "xyes"; then
 	AC_MSG_NOTICE([Disabled concurrent gc support in SGEN.])
 fi
 
-
 if test "x$mono_feature_disable_sgen_split_nursery" = "xyes"; then
 	AC_DEFINE(DISABLE_SGEN_SPLIT_NURSERY, 1, [Disable minor=split support in SGEN.])
 	AC_MSG_NOTICE([Disabled minor=split support in SGEN.])
@@ -2023,6 +2020,22 @@ if test "x$mono_feature_disable_processes" = "xyes"; then
 	AC_DEFINE(DISABLE_PROCESSES, 1, [Disable process support])
 	AC_MSG_NOTICE([Disabled process support])
 fi
+
+if test "x$mono_feature_disable_eventpipe" = "xyes"; then
+	AC_DEFINE(DISABLE_EVENTPIPE, 1, [Disable EventPipe support])
+	AC_MSG_NOTICE([Disabled EventPipe support])
+	enable_perftracing=no
+fi
+
+if test x$enable_perftracing = x -a x$with_core = xonly; then
+	if test -f $srcdir/mono/eventpipe/ep.h; then
+		enable_perftracing=yes
+	fi
+fi
+if test x$enable_perftracing = xyes; then
+	AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
+fi
+AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
@@ -6767,8 +6780,10 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 #
 if test "x$enable_llvm_runtime" = "xyes"; then
 	AC_SUBST(MONO_CXXLD, [$CXX])
+	AC_SUBST(MONO_LIBTOOL_TAG, '--tag=CXX')
 else
 	AC_SUBST(MONO_CXXLD, [$CC])
+	AC_SUBST(MONO_LIBTOOL_TAG, '')
 fi
 
 ### Set -Werror options
@@ -6839,7 +6854,10 @@ if test x$with_core = xonly; then
 	fi
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
-		if test x$target_osx = xyes; then
+		if test x$target_wasm = xyes && test x$with_static_icu = xyes; then
+			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING"
+			have_sys_icu=yes
+		elif test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
 			# adding icu path to pkg_config_path
 			PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig

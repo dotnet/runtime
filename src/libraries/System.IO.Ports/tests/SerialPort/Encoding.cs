@@ -175,7 +175,7 @@ namespace System.IO.Ports.Tests
                 if (ThrowAt.Open == throwAt)
                     com.Open();
 
-                object myEncoding = com.Encoding;
+                _ = com.Encoding;
 
                 com.Encoding = origEncoding;
 

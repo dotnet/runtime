@@ -203,7 +203,7 @@ namespace System.Text.Json
             void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.PropertyInfo?.Name;
+                string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.

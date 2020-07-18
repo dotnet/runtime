@@ -23,6 +23,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.OSPlatform FreeBSD { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform iOS { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
+        public static System.Runtime.InteropServices.OSPlatform macOS { get { throw null; } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform tvOS { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform watchOS { get { throw null; } }
@@ -43,5 +45,15 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.Architecture ProcessArchitecture { get { throw null; } }
         public static string RuntimeIdentifier { get { throw null; } }
         public static bool IsOSPlatform(System.Runtime.InteropServices.OSPlatform osPlatform) { throw null; }
+        public static bool IsOSPlatformOrLater(string platformName) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build) { throw null; }
+        public static bool IsOSPlatformOrLater(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build, int revision) { throw null; }
+        public static bool IsOSPlatformEarlierThan(string platformName) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build) { throw null; }
+        public static bool IsOSPlatformEarlierThan(System.Runtime.InteropServices.OSPlatform osPlatform, int major, int minor, int build, int revision) { throw null; }
     }
 }

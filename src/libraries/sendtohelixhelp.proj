@@ -13,17 +13,28 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
     <!-- Normal jobs have a 30 minute (1800 sec.) timeout for arm/arm64, and 15 minute (900 sec.) timeout otherwise.
-         Stress modes can take considerably longer, so double those numbers.
+         Stress modes can take considerably longer, so double those numbers. And GCStress is even slower.
     -->
-    <TimeoutInSeconds Condition="'$(Scenario)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="
+        '$(Scenario)' == 'gcstress0x3' or
+        '$(Scenario)' == 'gcstress0xc' or
+        '$(Scenario)' == 'heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">5400</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == ''">1800</TimeoutInSeconds>
+
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
 
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
-    <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
+    <EnableXunitReporter Condition="'$(TestPackages)' != 'true'">true</EnableXunitReporter>
 
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
@@ -45,7 +56,7 @@
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -59,20 +70,20 @@
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
+    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
+  <ItemGroup Condition="'$(TestPackages)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
@@ -80,7 +91,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != ''">
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
@@ -172,7 +183,7 @@
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(BuildAllConfigurations)' == 'true'" Importance="High" Text="Doing Package Testing" />
+    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
   </Target>
 </Project>

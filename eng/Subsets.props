@@ -162,10 +162,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-    <ProjectToBuild Include="$(MonoProjectRoot)wasm\icu-init.proj" Category="mono" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" Category="mono" />
   </ItemGroup>

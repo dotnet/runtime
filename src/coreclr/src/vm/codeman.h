@@ -876,6 +876,7 @@ class EEJitManager : public IJitManager
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
+    friend class DacDbiInterfaceImpl;
 #endif
     friend class CheckDuplicatedStructLayouts;
     friend class CodeHeapIterator;
@@ -1619,7 +1620,7 @@ private:
 
 #ifdef FEATURE_READYTORUN
 
-class ReadyToRunJitManager : public IJitManager
+class ReadyToRunJitManager final: public IJitManager
 {
     VPTR_VTABLE_CLASS(ReadyToRunJitManager, IJitManager)
 
