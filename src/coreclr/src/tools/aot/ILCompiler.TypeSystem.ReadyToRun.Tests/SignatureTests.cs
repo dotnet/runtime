@@ -27,6 +27,48 @@ namespace TypeSystemTests
             _testModule = _context.GetModuleForSimpleName("ILTestAssembly");
         }
 
+        private static string GetModOptMethodSignatureInfo(MethodSignature signature)
+        {
+            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
+                return "";
+
+            StringBuilder sb = new StringBuilder();
+            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+            {
+                sb.Append(data.kind.ToString());
+                sb.Append(data.index);
+                sb.Append(((MetadataType)data.type).Name);
+            }
+            return sb.ToString();
+        }
+
+        [Fact]
+        public void TestSignatureMatches2ModOptsAtStartOfSig()
+        {
+            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MethodSignature methodWith2ModOptsAtStartOfSig = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method")).Signature;
+
+            // All modopts that are at the very beginning of the signature are given index 0.1.1.1
+            // Both the index and the order in the modopt array are significant for signature comparison
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[0].index);
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[1].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWith2ModOptsAtStartOfSig.GetEmbeddedSignatureData()[2].index);
+            Assert.Equal("OptionalCustomModifier0.1.1.1CharOptionalCustomModifier0.1.1.1VoidOptionalCustomModifier0.1.2.1FooModifier", GetModOptMethodSignatureInfo(methodWith2ModOptsAtStartOfSig));
+        }
+
+        [Fact]
+        public void TestSignatureMatchesModOptAtStartOfSigAndAfterByRef()
+        {
+            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MethodSignature methodWithModOptAtStartOfSigAndAfterByRef = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method2")).Signature;
+
+            // A modopts after an E_T_BYREF will look like 0.1.1.2.1.1
+            Assert.Equal(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[0].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[1].index);
+            Assert.NotEqual(MethodSignature.IndexOfCustomModifiersOnReturnType, methodWithModOptAtStartOfSigAndAfterByRef.GetEmbeddedSignatureData()[2].index);
+            Assert.Equal("OptionalCustomModifier0.1.1.1CharOptionalCustomModifier0.1.1.2.1.1VoidOptionalCustomModifier0.1.2.1FooModifier", GetModOptMethodSignatureInfo(methodWithModOptAtStartOfSigAndAfterByRef));
+        }
+
         [Fact]
         public void TestSignatureMatches()
         {
