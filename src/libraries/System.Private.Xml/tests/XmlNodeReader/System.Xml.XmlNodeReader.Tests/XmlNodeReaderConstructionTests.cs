@@ -22,7 +22,7 @@ namespace System.Xml.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                var nodeReader = new XmlNodeReader(null);
+                new XmlNodeReader(null);
             });
         }
     }
