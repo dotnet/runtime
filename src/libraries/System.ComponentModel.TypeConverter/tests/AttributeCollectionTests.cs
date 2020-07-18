@@ -209,48 +209,6 @@ namespace System.ComponentModel.Tests
             Assert.Null(collection.GetDefaultAttribute(attributeType));
         }
 
-        private class AttributeWithDefaultField : Attribute
-        {
-            public static readonly AttributeWithDefaultField Default = new AttributeWithDefaultField();
-
-            public override bool IsDefaultAttribute() => true;
-        }
-
-        private class AttributeWithDefaultFieldNotDefault : Attribute
-        {
-            public static readonly AttributeWithDefaultFieldNotDefault Default = new AttributeWithDefaultFieldNotDefault();
-
-            public override bool IsDefaultAttribute() => false;
-        }
-
-        private class AttributeWithDefaultConstructor : Attribute
-        {
-            public AttributeWithDefaultConstructor()
-            {
-            }
-
-            public override bool IsDefaultAttribute() => true;
-        }
-
-        private class AttributeWithDefaultConstructorNotDefault : Attribute
-        {
-            public AttributeWithDefaultConstructorNotDefault()
-            {
-            }
-
-            public override bool IsDefaultAttribute() => false;
-        }
-
-        private class AttributeWithDefaultProperty : Attribute
-        {
-            public static AttributeWithDefaultProperty Default { get; } = new AttributeWithDefaultProperty();
-        }
-
-        private class AttributeWithPrivateDefaultField : Attribute
-        {
-            private static readonly AttributeWithPrivateDefaultField Default = new AttributeWithPrivateDefaultField();
-        }
-
         [Fact]
         public void GetDefaultAttribute_NullAttributeType_ThrowsArgumentNullException()
         {
@@ -568,6 +526,48 @@ namespace System.ComponentModel.Tests
         public class TestAttribute5a : Attribute { }
         public class TestAttribute5b : TestAttribute5a { }
         public class TestAttribute6 : Attribute { }
+
+        private class AttributeWithDefaultField : Attribute
+        {
+            public static readonly AttributeWithDefaultField Default = new AttributeWithDefaultField();
+
+            public override bool IsDefaultAttribute() => true;
+        }
+
+        private class AttributeWithDefaultFieldNotDefault : Attribute
+        {
+            public static readonly AttributeWithDefaultFieldNotDefault Default = new AttributeWithDefaultFieldNotDefault();
+
+            public override bool IsDefaultAttribute() => false;
+        }
+
+        private class AttributeWithDefaultConstructor : Attribute
+        {
+            public AttributeWithDefaultConstructor()
+            {
+            }
+
+            public override bool IsDefaultAttribute() => true;
+        }
+
+        private class AttributeWithDefaultConstructorNotDefault : Attribute
+        {
+            public AttributeWithDefaultConstructorNotDefault()
+            {
+            }
+
+            public override bool IsDefaultAttribute() => false;
+        }
+
+        private class AttributeWithDefaultProperty : Attribute
+        {
+            public static AttributeWithDefaultProperty Default { get; } = new AttributeWithDefaultProperty();
+        }
+
+        private class AttributeWithPrivateDefaultField : Attribute
+        {
+            private static readonly AttributeWithPrivateDefaultField Default = new AttributeWithPrivateDefaultField();
+        }
 
         public class SubAttributeCollection : AttributeCollection
         {
