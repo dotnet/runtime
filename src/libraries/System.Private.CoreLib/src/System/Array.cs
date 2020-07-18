@@ -652,7 +652,7 @@ namespace System
             if (array.Length - index < length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
+            return ArraySortHelper<T, IComparer<T>?>.Default.BinarySearch(array, index, length, value, comparer);
         }
 
         public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput, TOutput> converter)
@@ -1757,7 +1757,7 @@ namespace System
             if (array.Length > 1)
             {
                 var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                ArraySortHelper<T>.Default.Sort(span, (IComparer<T>?)null);
+                ArraySortHelper<T, IComparer<T>?>.Default.Sort(span, null);
             }
         }
 
@@ -1806,7 +1806,7 @@ namespace System
             if (length > 1)
             {
                 var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
-                ArraySortHelper<T>.Default.Sort(span, comparer);
+                ArraySortHelper<T, IComparer<T>?>.Default.Sort(span, comparer);
             }
         }
 
@@ -1831,7 +1831,7 @@ namespace System
 
                 var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
                 var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
-                ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
+                ArraySortHelper<TKey, TValue, IComparer<TKey>?>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
 
@@ -1848,7 +1848,7 @@ namespace System
             }
 
             var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-            ArraySortHelper<T>.Sort(span, comparison);
+            DirectArraySortHelper<T>.Sort(span, comparison);
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)

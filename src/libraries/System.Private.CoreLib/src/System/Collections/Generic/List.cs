@@ -1018,7 +1018,7 @@ namespace System.Collections.Generic
 
             if (_size > 1)
             {
-                ArraySortHelper<T>.Sort(new Span<T>(_items, 0, _size), comparison);
+                DirectArraySortHelper<T>.Sort(new Span<T>(_items, 0, _size), comparison);
             }
             _version++;
         }
