@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
+    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

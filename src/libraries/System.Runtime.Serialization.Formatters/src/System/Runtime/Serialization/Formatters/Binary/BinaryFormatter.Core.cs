@@ -7,7 +7,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : IFormatter
     {
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public object Deserialize(Stream serializationStream)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Serialize(Stream serializationStream, object graph)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming

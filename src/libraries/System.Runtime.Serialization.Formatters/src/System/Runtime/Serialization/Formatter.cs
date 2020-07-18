@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
             m_idGenerator = new ObjectIDGenerator();
         }
 
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public abstract object Deserialize(Stream serializationStream);
 
         protected virtual object? GetNext(out long objID)
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             return id;
         }
 
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public abstract void Serialize(Stream serializationStream, object graph);
 
         protected abstract void WriteArray(object obj, string name, Type memberType);

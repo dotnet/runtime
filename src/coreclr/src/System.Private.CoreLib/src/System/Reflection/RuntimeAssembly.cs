@@ -451,6 +451,7 @@ namespace System.Reflection
             }
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;

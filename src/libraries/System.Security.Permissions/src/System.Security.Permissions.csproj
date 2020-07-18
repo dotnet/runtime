@@ -4,8 +4,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <DefineConstants>$(DefineConstants);CAS_OBSOLETIONS</DefineConstants>
+  <!-- We conditionally apply net5.0+ obsoletions -->
+  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
+    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
@@ -179,6 +180,8 @@
     <Compile Include="System\Web\AspNetHostingPermission.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />

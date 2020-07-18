@@ -12,6 +12,7 @@ namespace System.Reflection.Emit
         public override string? CodeBase { get { throw null; } }
         public override System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         public override string? FullName { get { throw null; } }
+        [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override bool GlobalAssemblyCache { get { throw null; } }
         public override long HostContext { get { throw null; } }
         public override string ImageRuntimeVersion { get { throw null; } }

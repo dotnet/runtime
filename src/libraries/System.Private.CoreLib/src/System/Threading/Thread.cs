@@ -177,11 +177,13 @@ namespace System.Threading
             }
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort(object? stateInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
