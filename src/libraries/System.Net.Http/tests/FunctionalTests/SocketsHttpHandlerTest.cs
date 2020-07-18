@@ -1986,29 +1986,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 // If request queueing is enabled as expected, all the requests will be handled by just 2 connections.
-                int[] handledRequests = new int[2];
-                while (handledRequests[0] + handledRequests[1] < TotalRequestCount)
-                {
-                    for (int i = 0; i < connections.Length; i++)
-                    {
-                        try
-                        {
-                            int streamId = await connections[i].ReadRequestHeaderAsync().ConfigureAwait(false);
-                            await connections[i].SendDefaultResponseAsync(streamId).ConfigureAwait(false);
-                            handledRequests[i]++;
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            continue;
-                        }
-                    }
-                }
+                Task<(int count, int lastStreamId)>[] handleRequestTasks = new[] { HandleAllPendingRequests(connections[0], TotalRequestCount), HandleAllPendingRequests(connections[1], TotalRequestCount) };
 
+                await Task.WhenAll(handleRequestTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
 
-                Assert.Equal(handledRequests[0], TotalRequestCount / 2);
-                Assert.Equal(handledRequests[1], TotalRequestCount / 2);
-                Assert.Equal(handledRequests[0] + handledRequests[1], TotalRequestCount);
+                Assert.InRange(handleRequestTasks[0].Result.count, MaxConcurrentStreams, TotalRequestCount);
+                Assert.InRange(handleRequestTasks[1].Result.count, MaxConcurrentStreams, TotalRequestCount);
+                Assert.Equal(handleRequestTasks[0].Result.count + handleRequestTasks[1].Result.count, TotalRequestCount);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2045,17 +2030,20 @@ namespace System.Net.Http.Functional.Tests
                     sendTasks.Add(client.GetAsync(server.Address));
                 }
 
-                uint sufficentStreamsOnConnection0 = TotalRequestCount - MaxConcurrentStreams;
+                for (int i = 0; i < connections.Length; i++)
+                {
+                    await connections[i].WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = TotalRequestCount })).ConfigureAwait(false);
+                    await connections[i].ExpectSettingsAckAsync().ConfigureAwait(false);
+                }
 
-                await connections[0].WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = sufficentStreamsOnConnection0 })).ConfigureAwait(false);
-                await connections[0].ExpectSettingsAckAsync().ConfigureAwait(false);
+                Task<List<int>>[] remainingStreamTasks = new[] { AcceptRequests(connections[0]), AcceptRequests(connections[1]) };
 
-                List<int> remainingStreams = await AcceptRequests(connections[0]).ConfigureAwait(false);
+                await Task.WhenAll(remainingStreamTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                int remainingStreamCount = remainingStreamTasks.Sum(t => t.Result.Count);
+                Assert.Equal(TotalRequestCount, acceptedStreamCount + remainingStreamCount);
 
-                Assert.Equal(TotalRequestCount, acceptedStreamCount + remainingStreams.Count);
-
-                await SendResponses(connections[0], acceptedStreams[0].Concat(remainingStreams)).ConfigureAwait(false);
-                await SendResponses(connections[1], acceptedStreams[1]).ConfigureAwait(false);
+                await SendResponses(connections[0], acceptedStreams[0].Concat(remainingStreamTasks[0].Result)).ConfigureAwait(false);
+                await SendResponses(connections[1], acceptedStreams[1].Concat(remainingStreamTasks[1].Result)).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
