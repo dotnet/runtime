@@ -1216,7 +1216,6 @@ namespace System.Collections.Generic
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
-                _comparer = null;
                 Resize(entries.Length, forceNewHashCodes: true);
                 location = FindItemIndex(value);
                 Debug.Assert(location >= 0);
