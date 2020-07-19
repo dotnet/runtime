@@ -35,6 +35,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	size = 256;
 	code = start = mono_global_codeman_reserve (size);
+	MONO_SCOPE_ENABLE_JIT_WRITE();
 
 	arm_movx (code, ARMREG_IP0, ARMREG_R0);
 	ctx_reg = ARMREG_IP0;
@@ -84,6 +85,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	size = 512;
 	start = code = mono_global_codeman_reserve (size);
+	MONO_SCOPE_ENABLE_JIT_WRITE();
 
 	/* Compute stack frame size and offsets */
 	offset = 0;
@@ -170,6 +172,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	int i, offset, gregs_offset, fregs_offset, frame_size, num_fregs;
 
 	code = start = mono_global_codeman_reserve (size);
+	MONO_SCOPE_ENABLE_JIT_WRITE();
 
 	/* We are being called by JITted code, the exception object/type token is in R0 */
 

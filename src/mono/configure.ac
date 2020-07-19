@@ -449,6 +449,9 @@ case "$host" in
 				platform_ios=yes
 				has_dtrace=no
 				;;
+			aarch64*-darwinmacos*)
+				support_boehm=no
+				;;
 			aarch64*-darwin*)
 				platform_ios=yes
 				;;
@@ -4657,6 +4660,16 @@ case "$host" in
 		# assuming no other target other than watchOS is using aarch64*darwin triple
 		TARGET_SYS=WATCHOS
 		;;
+	aarch64-*-darwinmacos*)
+		TARGET_SYS=MACOS
+		TARGET=ARM64
+		arch_target=arm64
+		boehm_supported=false
+		AOT_SUPPORTED="yes"
+		BTLS_SUPPORTED=yes
+		BTLS_PLATFORM=aarch64
+		AC_CHECK_HEADER(stdalign.h,[],[BTLS_SUPPORTED=no])
+		;;
 	aarch64-*)
 		# https://lkml.org/lkml/2012/7/15/133
 		TARGET=ARM64
@@ -4984,7 +4997,7 @@ if test "x$target_mach" = "xyes"; then
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
 	  BTLS_SUPPORTED=no
-   elif test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64" -o "x$TARGET" = "xARM6432"; then
+   elif test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM6432"; then
    	  AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"

@@ -114,6 +114,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 {
 	guint8 *code, *start;
 
+	MONO_SCOPE_ENABLE_JIT_WRITE();
+
 	if (has_target) {
 		start = code = mono_global_codeman_reserve (12);
 
@@ -5349,6 +5351,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	else
 		buf = mono_domain_code_reserve (domain, buf_len);
 	code = buf;
+	MONO_SCOPE_ENABLE_JIT_WRITE();
 
 	/*
 	 * We are called by JITted code, which passes in the IMT argument in

@@ -12293,7 +12293,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
-#elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#elif (defined(TARGET_AMD64) || (defined(TARGET_ARM64) && defined(TARGET_OSX))) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)

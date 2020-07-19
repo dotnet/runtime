@@ -2158,6 +2158,8 @@ mono_codegen (MonoCompile *cfg)
 	MonoDomain *code_domain;
 	guint unwindlen = 0;
 
+	MONO_SCOPE_ENABLE_JIT_WRITE();
+
 	if (mono_using_xdebug)
 		/*
 		 * Recent gdb versions have trouble processing symbol files containing
@@ -3077,6 +3079,8 @@ is_simd_supported (MonoCompile *cfg)
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts, int aot_method_index)
 {
+	MONO_SCOPE_ENABLE_JIT_WRITE();
+
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	MonoCompile *cfg;

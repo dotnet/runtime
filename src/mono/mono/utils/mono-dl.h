@@ -15,7 +15,7 @@
 #define MONO_SOLIB_EXT ".dylib"
 #elif defined(TARGET_MACH) && defined(TARGET_X86)
 #define MONO_SOLIB_EXT ".dylib"
-#elif defined(TARGET_MACH) && defined(TARGET_AMD64)
+#elif defined(TARGET_MACH) && (defined(TARGET_AMD64) || (defined(TARGET_AMD64) && defined(TARGET_OSX)))
 #define MONO_SOLIB_EXT ".dylib"
 #else
 #define MONO_SOLIB_EXT ".so"

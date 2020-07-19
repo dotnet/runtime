@@ -1460,8 +1460,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			}
 		}
 
-		for (i = 0; i < patch_info->data.table->table_size; i++) {
-			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
+		{
+			MONO_SCOPE_ENABLE_JIT_WRITE ();
+			for (i = 0; i < patch_info->data.table->table_size; i++) {
+				jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
+			}
 		}
 
 		target = jump_table;
@@ -2692,6 +2695,8 @@ lookup_start:
 gpointer
 mono_jit_compile_method (MonoMethod *method, MonoError *error)
 {
+	MONO_SCOPE_ENABLE_JIT_WRITE();
+
 	gpointer code;
 
 	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), FALSE, error);
@@ -3384,6 +3389,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (!is_ok (error))
 			return NULL;
 	} else {
+		MONO_SCOPE_ENABLE_JIT_EXEC();
 		runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
 		result = runtime_invoke ((MonoObject *)obj, params, exc, info->compiled_method);

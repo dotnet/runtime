@@ -4741,7 +4741,10 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					addr = mono_create_ftnptr (domain, addr);
 				mono_memory_barrier ();
-				got [got_slots [pindex]] = addr;
+				{
+					MONO_SCOPE_ENABLE_JIT_WRITE ();
+					got [got_slots [pindex]] = addr;
+				}
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					register_jump_target_got_slot (domain, ji->data.method, &(got [got_slots [pindex]]));
 

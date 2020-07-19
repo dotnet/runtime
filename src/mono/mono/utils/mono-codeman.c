@@ -29,6 +29,11 @@ static void* mono_code_manager_heap;
 #include <mono/utils/mono-os-mutex.h>
 
 
+#if defined(__APPLE__) && defined(__arm64__)
+__thread jit_protect_mode arm_current_jit_protect_mode = JPM_NONE;
+#endif
+
+
 static uintptr_t code_memory_used = 0;
 static size_t dynamic_code_alloc_count;
 static size_t dynamic_code_bytes_count;

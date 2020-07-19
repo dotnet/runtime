@@ -329,7 +329,10 @@ mono_gc_run_finalize (void *obj, void *data)
 		mono_runtime_try_invoke (finalizer, o, params, &exc, error);
 	}
 #else
-	runtime_invoke (o, NULL, &exc, NULL);
+	{
+		MONO_SCOPE_ENABLE_JIT_EXEC ();
+		runtime_invoke (o, NULL, &exc, NULL);
+	}
 #endif
 
 	MONO_PROFILER_RAISE (gc_finalized_object, (o));
