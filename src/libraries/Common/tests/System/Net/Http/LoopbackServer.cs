@@ -15,6 +15,9 @@ namespace System.Net.Test.Common
 {
     public sealed partial class LoopbackServer : GenericLoopbackServer, IDisposable
     {
+        private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
+
         private Socket _listenSocket;
         private Options _options;
         private Uri _uri;
@@ -816,10 +819,13 @@ namespace System.Net.Test.Common
                             isChunked = true;
                         }
 
-                        headerBytes.Write(Encoding.ASCII.GetBytes(headerData.Name));
-                        headerBytes.Write(stackalloc byte[] { (byte)':', (byte)' ' });
-                        headerBytes.Write((headerData.ValueEncoding ?? Encoding.ASCII).GetBytes(headerData.Value));
-                        headerBytes.Write(stackalloc byte[] { (byte)'\r', (byte)'\n' });
+                        byte[] nameBytes = Encoding.ASCII.GetBytes(headerData.Name);
+                        headerBytes.Write(nameBytes, 0, nameBytes.Length);
+                        headerBytes.Write(s_colonSpaceBytes, 0, s_colonSpaceBytes.Length);
+
+                        byte[] valueBytes = (headerData.ValueEncoding ?? Encoding.ASCII).GetBytes(headerData.Value);
+                        headerBytes.Write(valueBytes, 0, valueBytes.Length);
+                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
                     }
                 }
 
@@ -830,15 +836,16 @@ namespace System.Net.Test.Common
 
                     headerBytes.SetLength(0);
 
-                    headerBytes.Write(Encoding.ASCII.GetBytes(
+                    byte[] headerStartBytes = Encoding.ASCII.GetBytes(
                         $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "")));
+                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
 
-                    headerBytes.Write(temp);
+                    headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
+                    headerBytes.Write(temp, 0, temp.Length);
 
                     if (endHeaders)
                     {
-                        headerBytes.Write(stackalloc byte[] { (byte)'\r', (byte)'\n' });
+                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
                     }
                 }
 
