@@ -149,7 +149,7 @@ namespace System.Text.Json
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatSingleLength];
             bool result = TryFormatSingle(value, utf8Number, out int bytesWritten);
             Debug.Assert(result);
-            WriteNumberValueAsString(utf8Number.Slice(0, bytesWritten));
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesWritten));
         }
 
         internal void WriteFloatingPointConstant(float value)
@@ -194,7 +194,7 @@ namespace System.Text.Json
                 return;
             }
 
-            WriteNumberValueAsString(utf8Number.Slice(0, bytesToWrite));
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesToWrite));
         }
     }
 }

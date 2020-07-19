@@ -354,7 +354,7 @@ namespace System.Text.Json
         /// Writes a number as a JSON string. The string value is not escaped.
         /// </summary>
         /// <param name="utf8Value"></param>
-        internal void WriteNumberValueAsString(ReadOnlySpan<byte> utf8Value)
+        internal void WriteNumberValueAsStringUnescaped(ReadOnlySpan<byte> utf8Value)
         {
             // The value has been validated prior to calling this method.
 

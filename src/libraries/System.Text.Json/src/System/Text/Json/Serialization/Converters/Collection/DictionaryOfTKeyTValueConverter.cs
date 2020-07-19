@@ -53,28 +53,16 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
             JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
-            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite)
+
+            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                JsonNumberHandling? numberHandling = state.Current.NumberHandling;
                 // Fast path that avoids validation and extra indirection.
-                if (numberHandling.HasValue && valueConverter.IsInternalConverterForNumberType)
+                do
                 {
-                    do
-                    {
-                        TKey key = enumerator.Current.Key;
-                        keyConverter.WriteWithQuotes(writer, key, options, ref state);
-                        valueConverter.WriteNumberWithCustomHandling(writer, enumerator.Current.Value, numberHandling.Value);
-                    } while (enumerator.MoveNext());
-                }
-                else
-                {
-                    do
-                    {
-                        TKey key = enumerator.Current.Key;
-                        keyConverter.WriteWithQuotes(writer, key, options, ref state);
-                        valueConverter.Write(writer, enumerator.Current.Value, options);
-                    } while (enumerator.MoveNext());
-                }
+                    TKey key = enumerator.Current.Key;
+                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    valueConverter.Write(writer, enumerator.Current.Value, options);
+                } while (enumerator.MoveNext());
             }
             else
             {

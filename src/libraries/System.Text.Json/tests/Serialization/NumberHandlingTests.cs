@@ -6,12 +6,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -400,6 +400,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void DictionariesRoundTripTest()
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
@@ -513,6 +514,33 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+
+        [Fact]
+        public static void Number_AsObjectWithParameterizedCtor_PropHasAttribute()
+        {
+            string json = @"{""ListOfFloats"":[""1""]}";
+            // Strict handling on property overrides loose global policy.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyClassWithNumbers_PropsHasAttribute>(json, s_optionReadFromStr));
+
+            // Serialize
+            json = @"{""ListOfFloats"":[1]}";
+            MyClassWithNumbers_PropsHasAttribute obj = JsonSerializer.Deserialize<MyClassWithNumbers_PropsHasAttribute>(json);
+
+            // Number serialized as JSON number due to strict handling on property which overrides loose global policy.
+            Assert.Equal(json, JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
+        }
+
+        private class MyClassWithNumbers_PropsHasAttribute
+        {
+            [JsonNumberHandling(JsonNumberHandling.Strict)]
+            public List<float> ListOfFloats { get; }
+
+            public MyClassWithNumbers_PropsHasAttribute(List<float> listOfFloats)
+            {
+                ListOfFloats = listOfFloats;
+            }
+        }
+
         [Fact]
         public static void FloatingPointConstants_Pass()
         {
@@ -533,14 +561,26 @@ namespace System.Text.Json.Serialization.Tests
                         obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
                         Assert.Equal(float.NaN, obj.FloatNumber);
                         Assert.Equal(double.NaN, obj.DoubleNumber);
+
+                        obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr);
+                        Assert.Equal(float.NaN, obj.FloatNumber);
+                        Assert.Equal(double.NaN, obj.DoubleNumber);
                         break;
                     case "Infinity":
                         obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
                         Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
                         Assert.Equal(double.PositiveInfinity, obj.DoubleNumber);
+
+                        obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr);
+                        Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
+                        Assert.Equal(double.PositiveInfinity, obj.DoubleNumber);
                         break;
                     case "-Infinity":
                         obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
+                        Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
+                        Assert.Equal(double.NegativeInfinity, obj.DoubleNumber);
+
+                        obj = JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr);
                         Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
                         Assert.Equal(double.NegativeInfinity, obj.DoubleNumber);
                         break;
@@ -550,6 +590,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 JsonTestHelper.AssertJsonEqual(testJson, JsonSerializer.Serialize(obj, s_optionsAllowFloatConstants));
+                JsonTestHelper.AssertJsonEqual(testJson, JsonSerializer.Serialize(obj, s_optionWriteAsStr));
             }
         }
 
@@ -588,6 +629,7 @@ namespace System.Text.Json.Serialization.Tests
                 string testStringAsJson = $@"""{testString}""";
                 string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
                 Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr));
             }
         }
 
@@ -709,7 +751,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string[] testCases = new[]
             {
-                " $123.46", // Currency
+                "$123.46", // Currency
                 "100.00 %", // Percent
                  "1234,57", // Fixed point
                  "00FF", // Hexadecimal
@@ -752,6 +794,7 @@ namespace System.Text.Json.Serialization.Tests
             // All input characters are escaped
             IEnumerable<string> numbersAsStrings = numbers.Select(num => GetNumberAsString(num));
             string input = JsonSerializer.Serialize(numbersAsStrings, options);
+            AssertListNumbersEscaped(input);
 
             // Unescaping works
             List<T> deserialized = JsonSerializer.Deserialize<List<T>>(input, options);
@@ -763,7 +806,44 @@ namespace System.Text.Json.Serialization.Tests
 
             // Every number is written as a string, and custom escaping is not honored.
             string serialized = JsonSerializer.Serialize(deserialized, options);
-            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(serialized));
+            AssertListNumbersUnescaped(serialized);
+        }
+
+        private static void AssertListNumbersEscaped(string json)
+        {
+            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
+            reader.Read();
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    break;
+                }
+                else
+                {
+                    Assert.Equal(JsonTokenType.String, reader.TokenType);
+                    //#if BUILDING_INBOX_LIBRARY
+                    //                    Assert.True(reader.ValueSpan.Contains((byte)'\\'));
+                    //#else
+                    bool foundBackSlash = false;
+                    foreach (byte val in reader.ValueSpan)
+                    {
+                        if (val == (byte)'\\')
+                        {
+                            foundBackSlash = true;
+                            break;
+                        }
+                    }
+
+                    Assert.True(foundBackSlash, "Expected escape token.");
+                    //#endif
+                }
+            }
+        }
+
+        private static void AssertListNumbersUnescaped(string json)
+        {
+            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
             reader.Read();
             while (reader.Read())
             {
@@ -1254,7 +1334,6 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ConverterForMyType : JsonConverter<ClassWith_NumberHandlingOn_Type_WithCustomConverter>
         {
-            [return: MaybeNull]
             public override ClassWith_NumberHandlingOn_Type_WithCustomConverter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 throw new NotImplementedException();
@@ -1271,7 +1350,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions(s_optionReadAndWriteFromStr)
             {
-                Converters = { new ConverterForInt32() }
+                Converters = { new ConverterForInt32(), new ConverterForFloat() }
             };
 
             string json = @"""32""";
@@ -1281,6 +1360,55 @@ namespace System.Text.Json.Serialization.Tests
 
             // Converter throws this exception regardless of input.
             Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(4, options));
+
+            json = @"""NaN""";
+
+            // Converter returns 25 if NaN.
+            Assert.Equal(25, JsonSerializer.Deserialize<float?>(json, options));
+
+            // Converter writes 25 if NaN.
+            Assert.Equal("25", JsonSerializer.Serialize((float?)float.NaN, options));
+        }
+
+        public class ConverterForFloat : JsonConverter<float?>
+        {
+            public override float? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.String && reader.GetString() == "NaN")
+                {
+                    return 25;
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, float? value, JsonSerializerOptions options)
+            {
+                if (float.IsNaN(value.Value))
+                {
+                    writer.WriteNumberValue(25);
+                    return;
+                }
+
+                throw new NotSupportedException();
+            }
+        }
+
+        [Fact]
+        public static void JsonNumberHandling_ArgOutOfRangeFail()
+        {
+            // Global options
+            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
+                () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(-1) });
+            Assert.Contains("value", ex.ToString());
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(8) });
+
+            ex = Assert.Throws<ArgumentOutOfRangeException>(
+                () => new JsonNumberHandlingAttribute((JsonNumberHandling)(-1)));
+            Assert.Contains("handling", ex.ToString());
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
         }
     }
 }

@@ -115,7 +115,7 @@ namespace System.Text.Json
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatInt64Length];
             bool result = Utf8Formatter.TryFormat(value, utf8Number, out int bytesWritten);
             Debug.Assert(result);
-            WriteNumberValueAsString(utf8Number.Slice(0, bytesWritten));
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesWritten));
         }
     }
 }

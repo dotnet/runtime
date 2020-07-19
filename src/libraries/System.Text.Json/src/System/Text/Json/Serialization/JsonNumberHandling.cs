@@ -12,22 +12,22 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Numbers will only be read from <see cref="JsonTokenType.Number"/> tokens and will only be written as JSON numbers (without quotes).
         /// </summary>
-        Strict = 0,
+        Strict = 0x0,
         /// <summary>
         /// Numbers can be read from <see cref="JsonTokenType.String"/> tokens.
         /// Does not prevent numbers from being read from <see cref="JsonTokenType.Number"/> token.
         /// </summary>
-        AllowReadingFromString = 1,
+        AllowReadingFromString = 0x1,
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
         /// </summary>
-        WriteAsString = 2,
+        WriteAsString = 0x2,
         /// <summary>
         /// Floating-point constants represented as <see cref="JsonTokenType.String"/>
         /// tokens such as "NaN", "Infinity", "-Infinity", can be read when reading,
         /// and such CLR values such as <see cref="float.NaN"/>, <see cref="double.PositiveInfinity"/>,
         /// <see cref="float.NegativeInfinity"/> will be written as their corresponding JSON string representations.
         /// </summary>
-        AllowNamedFloatingPointLiterals = 4
+        AllowNamedFloatingPointLiterals = 0x4
     }
 }

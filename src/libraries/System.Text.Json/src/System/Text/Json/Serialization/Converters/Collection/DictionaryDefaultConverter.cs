@@ -73,53 +73,28 @@ namespace System.Text.Json.Serialization.Converters
                 CreateCollection(ref reader, ref state);
 
                 JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
-
-                if (valueConverter.CanUseDirectReadOrWrite)
+                if (valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
-                    // Use number handling on the enumerable property which was preserved when pushing it as a new ReadStackFrame, or
-                    // on the enumerable itself (likely custom). Handling on property wins.
-                    JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.JsonPropertyInfo!.NumberHandling;
-                    if (numberHandling.HasValue && valueConverter.IsInternalConverterForNumberType)
+                    // Process all elements.
+                    while (true)
                     {
-                        // Process all elements.
-                        while (true)
-                        {
-                            // Read the key name.
-                            reader.ReadWithVerify();
-                            if (reader.TokenType == JsonTokenType.EndObject)
-                            {
-                                break;
-                            }
-                            // Read method would have thrown if otherwise.
-                            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+                        // Read the key name.
+                        reader.ReadWithVerify();
 
-                            TKey key = ReadDictionaryKey(ref reader, ref state);
-                            // Read the value and add.
-                            reader.ReadWithVerify();
-                            TValue element = valueConverter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
-                            Add(key, element!, options, ref state);
-                        }
-                    }
-                    else
-                    {
-                        // Process all elements.
-                        while (true)
+                        if (reader.TokenType == JsonTokenType.EndObject)
                         {
-                            // Read the key name.
-                            reader.ReadWithVerify();
-                            if (reader.TokenType == JsonTokenType.EndObject)
-                            {
-                                break;
-                            }
-                            // Read method would have thrown if otherwise.
-                            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-
-                            TKey key = ReadDictionaryKey(ref reader, ref state);
-                            // Read the value and add.
-                            reader.ReadWithVerify();
-                            TValue element = valueConverter.Read(ref reader, s_valueType, options);
-                            Add(key, element!, options, ref state);
+                            break;
                         }
+
+                        // Read method would have thrown if otherwise.
+                        Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+                        TKey key = ReadDictionaryKey(ref reader, ref state);
+
+                        // Read the value and add.
+                        reader.ReadWithVerify();
+                        TValue element = valueConverter.Read(ref reader, s_valueType, options);
+                        Add(key, element!, options, ref state);
                     }
                 }
                 else
@@ -322,9 +297,6 @@ namespace System.Text.Json.Serialization.Converters
                     }
                 }
 
-                // If this enumerable is not a property on an object, or no handling was specified on the property
-                // use the handling specified on the enumrarable type (likely custom) or globally on JsonSerializerOptions.
-                state.Current.NumberHandling ??= state.Current.JsonClassInfo.PropertyInfoForClassInfo!.NumberHandling;
                 state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
             }
 

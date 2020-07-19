@@ -276,6 +276,11 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
+
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
                 _numberHandling = value;
             }
         }

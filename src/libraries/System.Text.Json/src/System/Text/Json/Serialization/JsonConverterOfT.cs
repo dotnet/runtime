@@ -78,30 +78,14 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            JsonNumberHandling? numberHandling = state.Current.NumberHandling;
-            if (numberHandling.HasValue)
-            {
-                WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
-            }
-            else
-            {
-                Write(writer, value, options);
-            }
+            Write(writer, value, options);
             return true;
         }
 
         // Provide a default implementation for value converters.
         internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
-            JsonNumberHandling? numberHandling = state.Current.NumberHandling;
-            if (numberHandling.HasValue)
-            {
-                value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
-            }
-            else
-            {
-                value = Read(ref reader, typeToConvert, options);
-            }
+            value = Read(ref reader, typeToConvert, options);
             return true;
         }
 
@@ -137,16 +121,13 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                JsonNumberHandling? numberHandling = state.Current.JsonClassInfo.PropertyInfoForClassInfo!.NumberHandling;
-
 #if !DEBUG
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    if (IsInternalConverterForNumberType)
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
                     {
-                        Debug.Assert(numberHandling.HasValue);
-                        value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
                     else
                     {
@@ -160,9 +141,9 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (numberHandling.HasValue && IsInternalConverterForNumberType)
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
                     {
-                        value = ReadNumberWithCustomHandling(ref reader, numberHandling.Value);
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
                     else
                     {
@@ -297,17 +278,7 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(!state.IsContinuation);
 
                         int originalPropertyDepth = writer.CurrentDepth;
-
-                        JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.DeclaredJsonPropertyInfo!.NumberHandling;
-                        if (IsInternalConverterForNumberType && numberHandling.HasValue)
-                        {
-                            WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
-                        }
-                        else
-                        {
-                            Write(writer, value, options);
-                        }
-
+                        Write(writer, value, options);
                         VerifyWrite(originalPropertyDepth, writer);
                     }
 
@@ -347,17 +318,15 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                JsonNumberHandling? numberHandling = state.Current.NumberHandling ?? state.Current.DeclaredJsonPropertyInfo!.NumberHandling;
-                if (IsInternalConverterForNumberType && numberHandling.HasValue)
+                if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
                 {
-                    WriteNumberWithCustomHandling(writer, value, numberHandling.Value);
+                    WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
                 }
                 else
                 {
                     Write(writer, value, options);
                 }
 
-                // TODO, for internal converters, do we need to verify write here?
                 VerifyWrite(originalPropertyDepth, writer);
                 return true;
             }

@@ -324,14 +324,16 @@ namespace System.Text.Json
 
         public static char GetFloatingPointStandardParseFormat(ReadOnlySpan<byte> span)
         {
-            foreach (byte token in span)
+            // Assume that 'e/E' is closer to the end.
+            int startIndex = span.Length - 1;
+            for (int i = startIndex; i >= 0; i--)
             {
+                byte token = span[i];
                 if (token == 'E' || token == 'e')
                 {
                     return JsonConstants.ScientificNotationFormat;
                 }
             }
-
             return default;
         }
 
@@ -353,7 +355,7 @@ namespace System.Text.Json
                     return true;
                 }
             }
-            else if (span.Length == 9)
+            else if (span.Length == JsonConstants.NegativeInfinityLiteralConstantLength)
             {
                 if (ValueIsNegativeInfinity(span))
                 {
@@ -384,7 +386,7 @@ namespace System.Text.Json
                     return true;
                 }
             }
-            else if (span.Length == 9)
+            else if (span.Length == JsonConstants.NegativeInfinityLiteralConstantLength)
             {
                 if (ValueIsNegativeInfinity(span))
                 {
@@ -418,7 +420,7 @@ namespace System.Text.Json
 
         private static bool ValueIsNegativeInfinity(ReadOnlySpan<byte> span)
         {
-            Debug.Assert(span.Length == 9);
+            Debug.Assert(span.Length == JsonConstants.NegativeInfinityLiteralConstantLength);
             return span[0] == (byte)'-' &&
                 span[1] == (byte)'I' &&
                 span[2] == (byte)'n' &&

@@ -38,24 +38,12 @@ namespace System.Text.Json.Serialization.Converters
             int index = state.Current.EnumeratorIndex;
 
             JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
-            if (elementConverter.CanUseDirectReadOrWrite)
+            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
-
-                JsonNumberHandling? numberHandling = state.Current.NumberHandling;
-                if (numberHandling.HasValue && elementConverter.IsInternalConverterForNumberType)
+                for (; index < array.Length; index++)
                 {
-                    for (; index < array.Length; index++)
-                    {
-                        elementConverter.WriteNumberWithCustomHandling(writer, array[index], numberHandling.Value);
-                    }
-                }
-                else
-                {
-                    for (; index < array.Length; index++)
-                    {
-                        elementConverter.Write(writer, array[index], options);
-                    }
+                    elementConverter.Write(writer, array[index], options);
                 }
             }
             else

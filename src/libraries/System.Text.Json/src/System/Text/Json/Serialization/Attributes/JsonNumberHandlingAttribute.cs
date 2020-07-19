@@ -18,6 +18,13 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonNumberHandlingAttribute"/>.
         /// </summary>
-        public JsonNumberHandlingAttribute(JsonNumberHandling handling) => Handling = handling;
+        public JsonNumberHandlingAttribute(JsonNumberHandling handling)
+        {
+            if (!JsonSerializer.IsValidNumberHandlingValue(handling))
+            {
+                throw new ArgumentOutOfRangeException(nameof(handling));
+            }
+            Handling = handling;
+        }
     }
 }

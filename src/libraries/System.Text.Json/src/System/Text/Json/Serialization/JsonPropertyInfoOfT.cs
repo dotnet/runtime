@@ -211,16 +211,12 @@ namespace System.Text.Json
 
                 success = true;
             }
-            else if (Converter.CanUseDirectReadOrWrite)
+            else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
-                    JsonNumberHandling? numberHandling = state.Current.NumberHandling;
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastValue = numberHandling.HasValue && Converter.IsInternalConverterForNumberType
-                        ? Converter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value)
-                        : Converter.Read(ref reader, RuntimePropertyType!, Options);
-
+                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     Set!(obj, fastValue!);
                 }
 
@@ -259,12 +255,9 @@ namespace System.Text.Json
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
-                    JsonNumberHandling? numberHandling = state.Current.NumberHandling;
-                    value = numberHandling.HasValue && Converter.IsInternalConverterForNumberType
-                        ? Converter.ReadNumberWithCustomHandling(ref reader, numberHandling.Value)
-                        : Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }
                 else

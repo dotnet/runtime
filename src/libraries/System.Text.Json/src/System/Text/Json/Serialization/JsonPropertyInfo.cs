@@ -184,7 +184,6 @@ namespace System.Text.Json
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
         {
-            bool converterIsInternalAndForNumbers = ConverterBase.IsInternalConverterForNumberType;
             if (IsForClassInfo)
             {
                 if (parentTypeNumberHandling != null && !ConverterBase.IsInternalConverter)
@@ -211,7 +210,7 @@ namespace System.Text.Json
                     JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
 
                     if (attribute != null &&
-                        !converterIsInternalAndForNumbers &&
+                        !ConverterBase.IsInternalConverterForNumberType &&
                         ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
@@ -231,8 +230,6 @@ namespace System.Text.Json
 
                 NumberHandling = handling;
             }
-
-            IsNumberTypeWithCustomHandling = converterIsInternalAndForNumbers && NumberHandling != JsonNumberHandling.Strict;
         }
 
         public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
@@ -400,7 +397,6 @@ namespace System.Text.Json
         public bool ShouldDeserialize { get; private set; }
         public bool IsIgnored { get; private set; }
 
-        public bool IsNumberTypeWithCustomHandling { get; private set; }
         public JsonNumberHandling? NumberHandling { get; private set; }
     }
 }

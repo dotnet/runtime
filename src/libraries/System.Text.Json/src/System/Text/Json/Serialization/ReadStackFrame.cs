@@ -63,6 +63,7 @@ namespace System.Text.Json
             MetadataId = null;
 
             // No need to clear these since they are overwritten each time:
+            //  NumberHandling
             //  UseExtensionProperty
         }
 
@@ -93,7 +94,6 @@ namespace System.Text.Json
             CtorArgumentStateIndex = 0;
             CtorArgumentState = null;
             JsonClassInfo = null!;
-            NumberHandling = null;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;

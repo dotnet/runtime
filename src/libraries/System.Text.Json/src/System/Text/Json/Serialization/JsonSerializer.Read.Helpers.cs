@@ -36,5 +36,11 @@ namespace System.Text.Json
             Debug.Assert(value == null || value is TValue);
             return (TValue)value!;
         }
+
+        internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
+        {
+            int handlingValue = (int)handling;
+            return handlingValue >= 0 && handlingValue <= 7;
+        }
     }
 }
