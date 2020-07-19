@@ -13,7 +13,4 @@
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-  </ItemGroup>
 </Project>

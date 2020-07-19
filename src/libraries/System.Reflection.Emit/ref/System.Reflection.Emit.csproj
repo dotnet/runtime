@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.cs" />
-    <Compile Include="..\..\Common\src\System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
