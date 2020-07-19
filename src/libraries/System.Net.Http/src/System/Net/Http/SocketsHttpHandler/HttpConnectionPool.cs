@@ -339,11 +339,11 @@ namespace System.Net.Http
             {
                 if (request.Version.Major >= 3 && !_http3Enabled)
                 {
-                    throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled. See '{3}' AppContext switch.");
+                    throw new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3));
                 }
                 if (request.Version.Major >= 2 && !_http2Enabled)
                 {
-                    throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled. See '{3}' AppContext switch.");
+                    throw new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2));
                 }
             }
 
@@ -358,7 +358,7 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
+                throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3));
             }
 
             if (_http2Enabled && (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher) &&
@@ -370,7 +370,7 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.");
+                throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2));
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);
@@ -639,8 +639,7 @@ namespace System.Net.Http
 
                     if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        // Could this even happen if we do not allow HTTP/1.1 in ALPN for different version policies?
-                        throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.");
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3));
                     }
 
                     if (_associatedConnectionCount < _maxConnections)
@@ -816,10 +815,10 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
-                    // Throw NSE, since fallback is not allowed by the version policy.
+                    // Throw since fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        throw new NotSupportedException("ToDo: Message=Requesting HTTP version {0} with version policy {1} while server offers only version fallback.", e);
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
                     }
 
                     if (NetEventSource.Log.IsEnabled())
@@ -1176,20 +1175,7 @@ namespace System.Net.Http
                 TransportContext? transportContext = null;
                 if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
                 {
-                    // SslOptions based on request version and version policy.
-                    SslClientAuthenticationOptions sslOptions = _sslOptionsHttp11!;
-                    if (_http2Enabled && request.Version.Major >= 2)
-                    {
-                        if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
-                        {
-                            sslOptions = _sslOptionsHttp2!;
-                        }
-                        else
-                        {
-                            sslOptions = _sslOptionsHttp2Only!;
-                        }
-                    }
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(sslOptions, request, async, stream!, cancellationToken).ConfigureAwait(false);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream!, cancellationToken).ConfigureAwait(false);
                     stream = sslStream;
                     transportContext = sslStream.TransportContext;
                 }
@@ -1213,6 +1199,20 @@ namespace System.Net.Http
             }
 
             return (ConstructHttp11Connection(socket, stream!, transportContext), null);
+        }
+
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
+        {
+            if (_http2Enabled)
+            {
+                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    return _sslOptionsHttp2Only!;
+                }
+
+                return _sslOptionsHttp2!;
+            }
+            return _sslOptionsHttp11!;
         }
 
         private HttpConnection ConstructHttp11Connection(Socket? socket, Stream stream, TransportContext? transportContext)
