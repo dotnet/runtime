@@ -12,7 +12,8 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
+             Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
   </ItemGroup>
   <!-- Source includes -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$(TargetFramework.StartsWith('net4'))">

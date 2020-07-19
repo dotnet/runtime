@@ -1472,6 +1472,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GC_COOKIE");
                     break;
 
+                case ReadyToRunHelper.IndirectTrapThreads:
+                    builder.Append("INDIRECT_TRAP_THREADS");
+                    break;
 
                 //
                 // Delay load helpers

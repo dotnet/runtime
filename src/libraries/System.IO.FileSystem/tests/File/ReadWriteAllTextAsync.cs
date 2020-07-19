@@ -26,7 +26,6 @@ namespace System.IO.Tests
         [Fact]
         public async Task NullParametersAsync()
         {
-            string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await WriteAsync(null, "Text"));
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await ReadAsync(null));
         }
@@ -54,7 +53,6 @@ namespace System.IO.Tests
         [Fact]
         public async Task InvalidParametersAsync()
         {
-            string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await WriteAsync(string.Empty, "Text"));
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await ReadAsync(""));
         }

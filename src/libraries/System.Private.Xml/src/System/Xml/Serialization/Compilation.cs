@@ -301,10 +301,7 @@ namespace System.Xml.Serialization
                             continue;
                         }
 
-                        if (!a.GlobalAssemblyCache)
-                        {
-                            assemblies[name] = a;
-                        }
+                        assemblies[name] = a;
                     }
                 }
 

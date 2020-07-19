@@ -34,7 +34,7 @@
 
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
-    <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
+    <EnableXunitReporter Condition="'$(TestPackages)' != 'true'">true</EnableXunitReporter>
 
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
@@ -56,7 +56,7 @@
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -70,20 +70,20 @@
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
+    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
+  <ItemGroup Condition="'$(TestPackages)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
@@ -91,7 +91,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != ''">
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
@@ -183,7 +183,7 @@
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(BuildAllConfigurations)' == 'true'" Importance="High" Text="Doing Package Testing" />
+    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
   </Target>
 </Project>

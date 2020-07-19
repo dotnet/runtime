@@ -16,6 +16,7 @@
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
     <Reference Include="System.Net.Mail" />
     <Reference Include="System.Net.Http" />
@@ -24,6 +25,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
     <Reference Include="System.Buffers" />

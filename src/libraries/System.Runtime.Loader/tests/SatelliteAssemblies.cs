@@ -189,6 +189,7 @@ namespace System.Runtime.Loader.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39379", TestPlatforms.Browser)]
         public void SatelliteLoadsCorrectly(string alc, string assemblyName, string culture)
         {
             AssemblyName satelliteAssemblyName = new AssemblyName(assemblyName + ".resources");

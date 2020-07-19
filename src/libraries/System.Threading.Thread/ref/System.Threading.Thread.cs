@@ -50,7 +50,9 @@ namespace System.Threading
         public string? Name { get { throw null; } set { } }
         public System.Threading.ThreadPriority Priority { get { throw null; } set { } }
         public System.Threading.ThreadState ThreadState { get { throw null; } }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort() { }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort(object? stateInfo) { }
         public static System.LocalDataStoreSlot AllocateDataSlot() { throw null; }
         public static System.LocalDataStoreSlot AllocateNamedDataSlot(string name) { throw null; }
@@ -78,6 +80,7 @@ namespace System.Threading
         public static void ResetAbort() { }
         [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume() { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
         [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }

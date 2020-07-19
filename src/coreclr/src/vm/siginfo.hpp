@@ -780,9 +780,30 @@ class MetaSig
         }
 
         //----------------------------------------------------------
-        // Returns the unmanaged calling convention.
+        // Gets the unmanaged calling convention by reading any modopts.
+        // If there are multiple modopts specifying recognized calling
+        // conventions, the first one that is found in the metadata wins.
+        // Note: the order in the metadata is the reverse of that in IL.
+        //
+        // Returns:
+        //   E_FAIL - Signature had an invalid format
+        //   S_OK - Calling convention was read from modopt
+        //   S_FALSE - Calling convention was not read from modopt
         //----------------------------------------------------------
-        static BOOL GetUnmanagedCallingConvention(Module *pModule, PCCOR_SIGNATURE pSig, ULONG cSig, CorPinvokeMap *pPinvokeMapOut);
+        static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
+            _In_ Module *pModule,
+            _In_ PCCOR_SIGNATURE pSig,
+            _In_ ULONG cSig,
+            _Out_ CorUnmanagedCallingConvention *callConvOut);
+
+        static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
+        {
+#ifdef TARGET_UNIX
+            return IMAGE_CEE_UNMANAGED_CALLCONV_C;
+#else // TARGET_UNIX
+            return IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL;
+#endif // !TARGET_UNIX
+        }
 
         //------------------------------------------------------------------
         // Like NextArg, but return only normalized type (enums flattned to

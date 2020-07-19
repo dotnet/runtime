@@ -17,7 +17,7 @@ NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 
-all: build-native timezone-data
+all: build-native timezone-data icu-data
 
 #
 # EMSCRIPTEN SETUP
@@ -54,7 +54,8 @@ MONO_LIBS = \
 	${NATIVE_DIR}/System.Native/libSystem.Native.a \
 	${NATIVE_DIR}/System.IO.Compression.Native/libSystem.IO.Compression.Native.a \
 	$(ICU_LIBDIR)/libicuuc.a \
-	$(ICU_LIBDIR)/libicui18n.a
+	$(ICU_LIBDIR)/libicui18n.a \
+	$(ICU_LIBDIR)/libicudata.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
@@ -113,6 +114,9 @@ clean:
 
 timezone-data:
 	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
+
+icu-data:
+	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true

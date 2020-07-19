@@ -21,7 +21,11 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumberValue(decimal value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteNumberValueIndented(value);

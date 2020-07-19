@@ -104,7 +104,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #endif // HOST_UNIX
 
-#if defined(HAVE_UNW_GET_ACCESSORS)
+#ifdef HAVE_UNW_GET_ACCESSORS
 
 #ifdef HOST_UNIX
 #include <link.h>
@@ -135,6 +135,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define Nhdr   ElfW(Nhdr)
 #define Dyn    ElfW(Dyn)
 
+#ifndef FEATURE_USE_SYSTEM_LIBUNWIND
 extern "C" int
 _OOP_find_proc_info(
     unw_word_t start_ip,
@@ -148,10 +149,11 @@ _OOP_find_proc_info(
     unw_proc_info_t *pi,
     int need_unwind_info,
     void *arg);
+#endif // FEATURE_USE_SYSTEM_LIBUNWIND
 
 #endif // HAVE_UNW_GET_ACCESSORS
 
-#if defined(HAVE_UNW_GET_ACCESSORS) || defined(__APPLE__)
+#if defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)
 
 typedef struct _libunwindInfo
 {
@@ -160,9 +162,11 @@ typedef struct _libunwindInfo
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
-#define EXTRACT_BITS(value, mask)       ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
+#define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
+
+#define DW_EH_VERSION           1
 
 // DWARF Pointer-Encoding (PEs).
 //
@@ -203,6 +207,32 @@ typedef struct _libunwindInfo
 #define DW_EH_PE_aligned        0x50    // aligned pointer
 
 #define DWARF_CIE_VERSION       3       // GCC emits version 1???
+
+// DWARF frame header
+typedef struct __attribute__((packed)) _eh_frame_hdr
+{
+    unsigned char version;
+    unsigned char eh_frame_ptr_enc;
+    unsigned char fde_count_enc;
+    unsigned char table_enc;
+    // The rest of the header is variable-length and consists of the
+    // following members:
+    //
+    //   encoded_t eh_frame_ptr;
+    //   encoded_t fde_count;
+    //   struct
+    //   {
+    //      encoded_t start_ip;     // first address covered by this FDE
+    //      encoded_t fde_offset;   // offset of the FDE
+    //   } binary_search_table[fde_count];
+} eh_frame_hdr;
+
+// "DW_EH_PE_datarel|DW_EH_PE_sdata4" encoded fde table entry
+typedef struct table_entry
+{
+    int32_t start_ip;
+    int32_t fde_offset;
+} table_entry_t;
 
 // DWARF unwind info
 typedef struct dwarf_cie_info
@@ -510,6 +540,7 @@ BinarySearchEntries(
 
     static_assert_no_msg(sizeof(T) >= sizeof(uint32_t));
 
+#ifdef __APPLE__
     static_assert_no_msg(offsetof(unwind_info_section_header_index_entry, functionOffset) == 0);
     static_assert_no_msg(sizeof(unwind_info_section_header_index_entry::functionOffset) == sizeof(uint32_t));
 
@@ -518,6 +549,7 @@ BinarySearchEntries(
 
     static_assert_no_msg(offsetof(unwind_info_section_header_lsda_index_entry, functionOffset) == 0);
     static_assert_no_msg(sizeof(unwind_info_section_header_lsda_index_entry::functionOffset) == sizeof(uint32_t));
+#endif // __APPLE__
 
     // Do a binary search on table
     for (low = 0, high = tableCount; low < high;)
@@ -529,9 +561,11 @@ BinarySearchEntries(
         if (!ReadValue32(info, &addr, (uint32_t*)&functionOffset)) {
             return false;
         }
+#ifdef __APPLE__
         if (compressed) {
             functionOffset = UNWIND_INFO_COMPRESSED_ENTRY_FUNC_OFFSET(functionOffset);
         }
+#endif // __APPLE__
         if (ip < functionOffset) {
             high = mid;
         }
@@ -914,6 +948,8 @@ ExtractProcInfoFromFde(
     return true;
 }
 
+#ifdef __APPLE__
+
 static bool
 SearchCompactEncodingSection(
     const libunwindInfo* info,
@@ -1142,6 +1178,7 @@ SearchDwarfSection(
     return false;
 }
 
+
 static bool
 GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool* step, int need_unwind_info)
 {
@@ -1351,6 +1388,8 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 }
 
 #endif // __APPLE__
+
+#endif // defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
 static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, SIZE_T **contextPointer)
 {
@@ -1689,7 +1728,81 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
+#ifdef FEATURE_USE_SYSTEM_LIBUNWIND
+    if (ehFrameHdrAddr  == 0) {
+        ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
+        return -UNW_EINVAL;
+    }
+    eh_frame_hdr ehFrameHdr;
+    if (!info->ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
+        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
+        return -UNW_EINVAL;
+    }
+    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
+        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
+
+    if (ehFrameHdr.version != DW_EH_VERSION) {
+        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        return -UNW_EBADVERSION;
+    }
+    unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
+    unw_word_t ehFrameStart;
+    unw_word_t fdeCount;
+
+    // Decode the eh_frame_hdr info
+    if (!ReadEncodedPointer(info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFrameStart)) {
+        ERROR("decoding eh_frame_ptr\n");
+        return -UNW_EINVAL;
+    }
+    if (!ReadEncodedPointer(info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
+        ERROR("decoding fde_count_enc\n");
+        return -UNW_EINVAL;
+    }
+    TRACE("ehFrameStart %p fdeCount %p ip offset %08x\n", ehFrameStart, fdeCount, (int32_t)(ip - ehFrameHdrAddr));
+
+    // If there are no frame table entries
+    if (fdeCount == 0) {
+        TRACE("No frame table entries\n");
+        return -UNW_ENOINFO;
+    }
+
+    // We assume this encoding
+    if (ehFrameHdr.table_enc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
+        ASSERT("Table encoding not supported %x\n", ehFrameHdr.table_enc);
+        return -UNW_EINVAL;
+    }
+
+    // Find the fde using a binary search on the frame table
+    table_entry_t entry;
+    table_entry_t entryNext;
+    bool found;
+    if (!BinarySearchEntries(info, ip - ehFrameHdrAddr, addr, fdeCount, &entry, &entryNext, false, &found)) {
+        ERROR("LookupTableEntry\n");
+        return -UNW_EINVAL;
+    }
+    unw_word_t fdeAddr = entry.fde_offset + ehFrameHdrAddr;
+    TRACE("start_ip %08x fde_offset %08x fdeAddr %p found %d\n", entry.start_ip, entry.fde_offset, fdeAddr, found);
+
+    // Unwind info not found
+    if (!found) {
+        return -UNW_ENOINFO;
+    }
+
+    // Now get the unwind info
+    if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
+        ERROR("ExtractProcInfoFromFde\n");
+        return -UNW_EINVAL;
+    }
+
+    if (ip < pip->start_ip || ip >= pip->end_ip) {
+        TRACE("ip %p not in range start_ip %p end_ip %p\n", ip, pip->start_ip, pip->end_ip);
+        return -UNW_ENOINFO;
+    }
+    return UNW_ESUCCESS;
+#else
     return _OOP_find_proc_info(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
+#endif // FEATURE_USE_SYSTEM_LIBUNWIND
+
 #endif // __APPLE__
 }
 
@@ -1796,4 +1909,4 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     return FALSE;
 }
 
-#endif // defined(HAVE_UNW_GET_ACCESSORS) || defined(__APPLE__)
+#endif // defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)

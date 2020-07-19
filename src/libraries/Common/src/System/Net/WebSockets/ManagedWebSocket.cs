@@ -182,7 +182,7 @@ namespace System.Net.WebSockets
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
             // There's no need to store the resulting CancellationTokenRegistration, as this instance owns
             // the CancellationTokenSource, and the lifetime of that CTS matches the lifetime of the registration.
-            _abortSource.Token.UnsafeRegister(s =>
+            _abortSource.Token.UnsafeRegister(static s =>
             {
                 var thisRef = (ManagedWebSocket)s!;
 
@@ -203,7 +203,7 @@ namespace System.Net.WebSockets
             // that could keep the web socket rooted in erroneous cases.
             if (keepAliveInterval > TimeSpan.Zero)
             {
-                _keepAliveTimer = new Timer(s =>
+                _keepAliveTimer = new Timer(static s =>
                 {
                     var wr = (WeakReference<ManagedWebSocket>)s!;
                     if (wr.TryGetTarget(out ManagedWebSocket? thisRef))
@@ -368,7 +368,7 @@ namespace System.Net.WebSockets
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
-            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
+            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
                 SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
@@ -448,7 +448,7 @@ namespace System.Net.WebSockets
             try
             {
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
-                using (cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this))
+                using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
                 }
@@ -523,7 +523,7 @@ namespace System.Net.WebSockets
                 else
                 {
                     // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
-                    t.AsTask().ContinueWith(p => { _ = p.Exception; },
+                    t.AsTask().ContinueWith(static p => { _ = p.Exception; },
                         CancellationToken.None,
                         TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Default);
@@ -633,7 +633,7 @@ namespace System.Net.WebSockets
             // those to be much less frequent (e.g. we should only get one close per websocket), and thus we can afford to pay
             // a bit more for readability and maintainability.
 
-            CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this);
+            CancellationTokenRegistration registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
             try
             {
                 while (true) // in case we get control frames that should be ignored from the user's perspective
@@ -868,7 +868,7 @@ namespace System.Net.WebSockets
             {
                 const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same as netfx)
                 using (var finalCts = new CancellationTokenSource(WaitForCloseTimeoutMs))
-                using (finalCts.Token.Register(s => ((ManagedWebSocket)s!).Abort(), this))
+                using (finalCts.Token.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     try
                     {
@@ -1138,7 +1138,7 @@ namespace System.Net.WebSockets
                         // If this is an existing receive, and if we have a cancelable token, we need to register with that
                         // token while we wait, since it may not be the same one that was given to the receive initially.
                         Debug.Assert(receiveTask != null);
-                        using (usingExistingReceive ? cancellationToken.Register(s => ((ManagedWebSocket)s!).Abort(), this) : default)
+                        using (usingExistingReceive ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this) : default)
                         {
                             await receiveTask.ConfigureAwait(false);
                         }

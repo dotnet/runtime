@@ -24,7 +24,6 @@ namespace System.IO.Tests
         [Fact]
         public async Task InvalidParametersAsync()
         {
-            string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.WriteAllBytesAsync(string.Empty, new byte[0]));
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.ReadAllBytesAsync(string.Empty));
         }

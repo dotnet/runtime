@@ -94,7 +94,9 @@ namespace System.Security.Cryptography
         public static bool AllowOnlyFipsAlgorithms { get { throw null; } }
         public static void AddAlgorithm(System.Type algorithm, params string[] names) { }
         public static void AddOID(string oid, params string[] names) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args) { throw null; }
         public static byte[] EncodeOID(string str) { throw null; }
         public static string? MapNameToOID(string name) { throw null; }
@@ -470,6 +472,7 @@ namespace System.Security.Cryptography
         public void AppendData(System.ReadOnlySpan<byte> data) { }
         public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { throw null; }
+        public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key) { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash() { throw null; }
         public int GetCurrentHash(System.Span<byte> destination) { throw null; }
