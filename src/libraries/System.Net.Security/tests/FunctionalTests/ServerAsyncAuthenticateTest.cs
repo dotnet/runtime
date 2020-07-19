@@ -251,7 +251,7 @@ namespace System.Net.Security.Tests
                 yield return new object[] { SslProtocols.Tls11 };
             }
 
-            if (!PlatformDetection.SupportsTls12)
+            if (PlatformDetection.SupportsTls12)
             {
                 yield return new object[] { SslProtocols.Tls12 };
             }
