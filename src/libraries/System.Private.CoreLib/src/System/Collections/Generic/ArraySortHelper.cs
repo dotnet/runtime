@@ -23,15 +23,16 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer is null)
-                {
-                    ComparerArraySortHelper<T, Comparer<T>>
-                        .IntrospectiveSort(keys, Comparer<T>.Default);
-                }
-                else
+                if (typeof(TComparer).IsValueType)
                 {
                     ComparerArraySortHelper<T, TComparer>
                         .IntrospectiveSort(keys, comparer);
+                }
+                else
+                {
+                    IComparer<T> referenceComparer = comparer ?? (IComparer<T>)Comparer<T>.Default;
+                    ComparerArraySortHelper<T, IComparer<T>>
+                        .IntrospectiveSort(keys, referenceComparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -48,15 +49,16 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer is null)
-                {
-                    return ComparerArraySortHelper<T, Comparer<T>>
-                        .InternalBinarySearch(array, index, length, value, Comparer<T>.Default);
-                }
-                else
+                if (typeof(TComparer).IsValueType)
                 {
                     return ComparerArraySortHelper<T, TComparer>
                         .InternalBinarySearch(array, index, length, value, comparer);
+                }
+                else
+                {
+                    IComparer<T> referenceComparer = comparer ?? (IComparer<T>)Comparer<T>.Default;
+                    return ComparerArraySortHelper<T, IComparer<T>>
+                        .InternalBinarySearch(array, index, length, value, referenceComparer);
                 }
             }
             catch (Exception e)
@@ -659,15 +661,16 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer is null)
-                {
-                    ComparerArraySortHelper<TKey, TValue, Comparer<TKey>>
-                        .IntrospectiveSort(keys, values, Comparer<TKey>.Default);
-                }
-                else
+                if (typeof(TComparer).IsValueType)
                 {
                     ComparerArraySortHelper<TKey, TValue, TComparer>
                         .IntrospectiveSort(keys, values, comparer);
+                }
+                else
+                {
+                    IComparer<TKey> referenceComparer = comparer ?? (IComparer<TKey>)Comparer<TKey>.Default;
+                    ComparerArraySortHelper<TKey, TValue, IComparer<TKey>>
+                        .IntrospectiveSort(keys, values, referenceComparer);
                 }
             }
             catch (IndexOutOfRangeException)
