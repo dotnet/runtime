@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http
 {
@@ -128,6 +129,20 @@ namespace System.Net.Http
         }
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+
+        public delegate Encoding? HeaderEncodingSelector(string headerName, HttpRequestMessage request);
+
+        public HeaderEncodingSelector? RequestHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public HeaderEncodingSelector? ResponseHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
