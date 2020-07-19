@@ -5,6 +5,9 @@ using System.Security;
 using System.Security.Permissions;
 namespace System.Diagnostics
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event,
     AllowMultiple = true, Inherited = false)]
     public class PerformanceCounterPermissionAttribute : CodeAccessSecurityAttribute
