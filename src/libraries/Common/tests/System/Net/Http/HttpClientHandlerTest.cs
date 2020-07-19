@@ -232,7 +232,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
+                var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress(), UseSsl = false };
                 if (options.Address == null)
                 {
                     throw new SkipTestException("Unable to find valid IPv6 LL address.");
@@ -243,7 +243,7 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync(url));
+                        client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }));
                 }, options: options);
             }
         }
@@ -259,13 +259,13 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                var options = new GenericLoopbackOptions { Address = address };
+                var options = new GenericLoopbackOptions { Address = address, UseSsl = false };
                 await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync(url));
+                        client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }));
                 }, options: options);
             }
         }

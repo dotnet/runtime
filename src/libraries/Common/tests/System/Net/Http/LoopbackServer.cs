@@ -902,6 +902,8 @@ namespace System.Net.Test.Common
             if (options != null)
             {
                 newOptions.Address = options.Address;
+                newOptions.UseSsl = options.UseSsl;
+                newOptions.SslProtocols = options.SslProtocols;
             }
             return newOptions;
         }

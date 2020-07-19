@@ -243,7 +243,7 @@ namespace System.Net.Test.Common
             }
         }
 
-    public override Version Version => HttpVersion20.Value;
+        public override Version Version => HttpVersion20.Value;
     }
 
     public enum ProtocolErrors

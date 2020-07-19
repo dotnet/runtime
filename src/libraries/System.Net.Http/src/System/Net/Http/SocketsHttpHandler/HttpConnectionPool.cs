@@ -639,7 +639,8 @@ namespace System.Net.Http
 
                     if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3));
+                        sslStream.Close();
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy));
                     }
 
                     if (_associatedConnectionCount < _maxConnections)
@@ -1207,11 +1208,17 @@ namespace System.Net.Http
             {
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp2Only)}");
                     return _sslOptionsHttp2Only!;
                 }
 
-                return _sslOptionsHttp2!;
+                if (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp2)}");
+                    return _sslOptionsHttp2!;
+                }
             }
+            if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp11)}");
             return _sslOptionsHttp11!;
         }
 
