@@ -786,8 +786,12 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                // New connection is always created only for a request that has to acquire a slot.
-                newConnection.AcquireStreamSlot();
+                if (EnableMultipleHttp2Connections)
+                {
+                    // New connection is always created only for a request that has to acquire a slot.
+                    newConnection.AcquireStreamSlot();
+                }
+
                 Http2Connection[]? localHttp2Connections = _http2Connections;
                 int newCollectionSize = localHttp2Connections == null ? 1 : localHttp2Connections.Length + 1;
                 Http2Connection[] newHttp2Connections = new Http2Connection[newCollectionSize];
