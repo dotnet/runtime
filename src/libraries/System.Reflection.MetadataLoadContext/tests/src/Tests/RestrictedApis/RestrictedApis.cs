@@ -14,10 +14,10 @@ namespace System.Reflection.Tests
             {
                 Assembly a = lc.LoadFromAssemblyPath(typeof(TopLevelType).Assembly.Location);
 
-#pragma warning disable 618
+#pragma warning disable SYSLIB0012
                 Assert.Throws<NotSupportedException>(() => a.CodeBase);
                 Assert.Throws<NotSupportedException>(() => a.EscapedCodeBase);
-#pragma warning restore 618
+#pragma warning restore SYSLIB0012
                 Assert.Throws<NotSupportedException>(() => a.GetObjectData(null, default));
                 Assert.Throws<NotSupportedException>(() => a.GetSatelliteAssembly(null));
                 Assert.Throws<NotSupportedException>(() => a.GetSatelliteAssembly(null, null));

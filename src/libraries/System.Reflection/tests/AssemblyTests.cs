@@ -464,13 +464,13 @@ namespace System.Reflection.Tests
             Assert.NotNull(Helpers.ExecutingAssembly.Location);
         }
 
-#pragma warning disable 618
+#pragma warning disable SYSLIB0012
         [Fact]
         public void CodeBase()
         {
             Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
         }
-#pragma warning restore 618
+#pragma warning restore SYSLIB0012
 
         [Fact]
         public void ImageRuntimeVersion()
