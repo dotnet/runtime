@@ -452,7 +452,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        // Based on the OIDC login scenario described comments:
+        // Based on the OIDC login scenario described in comments:
         // https://github.com/dotnet/runtime/pull/39250#issuecomment-659783480
         // https://github.com/dotnet/runtime/issues/26141#issuecomment-612097147
         [Fact]
