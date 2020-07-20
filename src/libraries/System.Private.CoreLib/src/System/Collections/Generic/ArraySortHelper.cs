@@ -344,7 +344,8 @@ namespace System.Collections.Generic
                             keys = keys.Slice(nanLeft);
                         }
 
-                        IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        ComparableArraySortHelper<T>
+                            .IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
                     }
                 }
                 else
@@ -372,11 +373,13 @@ namespace System.Collections.Generic
                 if (!typeof(TComparer).IsValueType &&
                     comparer == null || ReferenceEquals(comparer, Comparer<T>.Default))
                 {
-                    return BinarySearch(array, index, length, value);
+                    return ComparableArraySortHelper<T>
+                        .BinarySearch(array, index, length, value);
                 }
                 else
                 {
-                    return ComparerArraySortHelper<T, TComparer>.InternalBinarySearch(array, index, length, value, comparer);
+                    return ComparerArraySortHelper<T, TComparer>
+                        .InternalBinarySearch(array, index, length, value, comparer);
                 }
             }
             catch (Exception e)
@@ -387,11 +390,15 @@ namespace System.Collections.Generic
         }
 
         #endregion
+    }
 
+    internal static class ComparableArraySortHelper<T>
+        where T : IComparable<T>
+    {
         // This function is called when the user doesn't specify any comparer.
         // Since T is constrained here, we can call IComparable<T>.CompareTo here.
         // We can avoid boxing for value type and casting for reference types.
-        private static int BinarySearch(T[] array, int index, int length, T value)
+        internal static int BinarySearch(T[] array, int index, int length, T value)
         {
             int lo = index;
             int hi = index + length - 1;
@@ -447,7 +454,7 @@ namespace System.Collections.Generic
             j = t;
         }
 
-        private static void IntroSort(Span<T> keys, int depthLimit)
+        internal static void IntroSort(Span<T> keys, int depthLimit)
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(depthLimit >= 0);
@@ -952,7 +959,8 @@ namespace System.Collections.Generic
                             values = values.Slice(nanLeft);
                         }
 
-                        IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        ComparableArraySortHelper<TKey, TValue>
+                            .IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
                     }
                 }
                 else
@@ -970,7 +978,11 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
             }
         }
+    }
 
+    internal static class ComparableArraySortHelper<TKey, TValue>
+        where TKey : IComparable<TKey>
+    {
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, int i, int j)
         {
             Debug.Assert(i != j);
@@ -1002,7 +1014,7 @@ namespace System.Collections.Generic
             values[j] = v;
         }
 
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit)
+        internal static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit)
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(values.Length == keys.Length);
