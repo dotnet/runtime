@@ -7,7 +7,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.Cryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.SystemSecurityCryptographyCsp_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />

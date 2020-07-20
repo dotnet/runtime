@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Ping_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
