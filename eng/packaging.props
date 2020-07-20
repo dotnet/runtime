@@ -12,9 +12,6 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
 
-    <!-- Used by PackageLibs.targets -->
-    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/IntellisenseFiles/netcoreapp</XmlDocFileRoot>
-
     <!-- By default the packaging targets will package desktop facades as ref,
          but we don't use this as we now build partial-reference-facades. -->
     <PackageDesktopAsRef>false</PackageDesktopAsRef>

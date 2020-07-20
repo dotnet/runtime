@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -43,7 +42,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, (nuint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, (nuint)valueTailLength))  // The (nuint)-cast is necessary to pick the correct overload
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -601,7 +600,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 if (length >= Vector128<byte>.Count * 2)
@@ -780,6 +779,47 @@ namespace System
                     }
                 }
             }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                if (offset < (nuint)(uint)length)
+                {
+                    lengthToExamine = GetByteVector128SpanLength(offset, length);
+
+                    // Mask to help find the first lane in compareResult that is set.
+                    // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
+                    Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
+                    int matchedLane = 0;
+
+                    Vector128<byte> values0 = Vector128.Create(value0);
+                    Vector128<byte> values1 = Vector128.Create(value1);
+
+                    while (lengthToExamine > offset)
+                    {
+                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+
+                        // Same method as above
+                        Vector128<byte> compareResult = AdvSimd.Or(
+                            AdvSimd.CompareEqual(values0, search),
+                            AdvSimd.CompareEqual(values1, search));
+
+                        if (!TryFindFirstMatchedLane(mask, compareResult, ref matchedLane))
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector128<byte>.Count;
+                            continue;
+                        }
+
+                        // Find bitflag offset of first match and add to current offset
+                        return (int)(offset + (uint)matchedLane);
+                    }
+
+                    if (offset < (nuint)(uint)length)
+                    {
+                        lengthToExamine = ((nuint)(uint)length - offset);
+                        goto SequentialScan;
+                    }
+                }
+            }
             else if (Vector.IsHardwareAccelerated)
             {
                 if (offset < (nuint)(uint)length)
@@ -842,7 +882,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 if (length >= Vector128<byte>.Count * 2)
@@ -1016,6 +1056,50 @@ namespace System
 
                         // Find bitflag offset of first match and add to current offset
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                    }
+
+                    if (offset < (nuint)(uint)length)
+                    {
+                        lengthToExamine = ((nuint)(uint)length - offset);
+                        goto SequentialScan;
+                    }
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                if (offset < (nuint)(uint)length)
+                {
+                    lengthToExamine = GetByteVector128SpanLength(offset, length);
+
+                    // Mask to help find the first lane in compareResult that is set.
+                    // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
+                    Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
+                    int matchedLane = 0;
+
+                    Vector128<byte> values0 = Vector128.Create(value0);
+                    Vector128<byte> values1 = Vector128.Create(value1);
+                    Vector128<byte> values2 = Vector128.Create(value2);
+
+                    while (lengthToExamine > offset)
+                    {
+                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+
+                        // Same method as above
+                        Vector128<byte> matches0 = AdvSimd.CompareEqual(values0, search);
+                        Vector128<byte> matches1 = AdvSimd.CompareEqual(values1, search);
+                        Vector128<byte> matches2 = AdvSimd.CompareEqual(values2, search);
+
+                        Vector128<byte> compareResult = AdvSimd.Or(AdvSimd.Or(matches0, matches1), matches2);
+
+                        if (!TryFindFirstMatchedLane(mask, compareResult, ref matchedLane))
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector128<byte>.Count;
+                            continue;
+                        }
+
+                        // Find bitflag offset of first match and add to current offset
+                        return (int)(offset + (uint)matchedLane);
                     }
 
                     if (offset < (nuint)(uint)length)
@@ -1467,6 +1551,13 @@ namespace System
                     goto NotEqual;
                 }
             }
+            //else if (AdvSimd.Arm64.IsSupported)
+            //{
+            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
+            //    // when compared to the vectorized implementation below. In addition to comparing the bytes in chunks of
+            //    // 16-bytes, the only check that is done is if there is a mismatch and if yes, return false. This check
+            //    // done with Vector<T> will generate same code by JIT as that if used ARM64 intrinsic instead.
+            //}
             else if (Vector.IsHardwareAccelerated && length >= (nuint)Vector<byte>.Count)
             {
                 nuint offset = 0;
@@ -1702,6 +1793,15 @@ namespace System
                     return result;
                 }
             }
+            //else if (AdvSimd.Arm64.IsSupported)
+            //{
+            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
+            //    // when compared to the vectorized implementation below. There were some wins if the mismatch happen
+            //    // after 8th index of the chunk because with ARM64 intrinsic, using fewer instructions the first mismatched
+            //    // index can be retrieved. In case of vectorization, sequential scan has to be done instead. However, at the
+            //    // same time, there are losses if the mismatch index is less than 7~8. So the overall benefit doesn't justify
+            //    // to optimize this method with ARM64 hardware intrinsics.
+            //}
             else if (Vector.IsHardwareAccelerated)
             {
                 if (lengthToExamine > (nuint)Vector<byte>.Count)

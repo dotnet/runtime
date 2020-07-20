@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // UtilCode.h
 //
@@ -4072,13 +4071,13 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 // The registry keys and values that contain the information regarding
 // the default registered unmanaged debugger.
 //*****************************************************************************
-SELECTANY const WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
-SELECTANY const WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
+constexpr WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
+constexpr WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 
-SELECTANY const WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
-SELECTANY const WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
+constexpr WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
+constexpr WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
+constexpr WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
+constexpr WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
 
 BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           LPCWSTR szKey,                   // Key name to look at.
@@ -4924,28 +4923,15 @@ namespace Com
 
 }}
 
-#if defined(FEATURE_APPX) && !defined(DACCESS_COMPILE)
-    // Forward declaration of AppX::IsAppXProcess
-    namespace AppX { bool IsAppXProcess(); }
-
-    // LOAD_WITH_ALTERED_SEARCH_PATH is unsupported in AppX processes.
-    inline DWORD GetLoadWithAlteredSearchPathFlag()
-    {
-        WRAPPER_NO_CONTRACT;
-        return AppX::IsAppXProcess() ? 0 : LOAD_WITH_ALTERED_SEARCH_PATH;
-    }
-#else // FEATURE_APPX && !DACCESS_COMPILE
-    // LOAD_WITH_ALTERED_SEARCH_PATH can be used unconditionally.
-    inline DWORD GetLoadWithAlteredSearchPathFlag()
-    {
-        LIMITED_METHOD_CONTRACT;
-        #ifdef LOAD_WITH_ALTERED_SEARCH_PATH
-            return LOAD_WITH_ALTERED_SEARCH_PATH;
-        #else
-            return 0;
-        #endif
-    }
-#endif // FEATURE_APPX && !DACCESS_COMPILE
+inline DWORD GetLoadWithAlteredSearchPathFlag()
+{
+    LIMITED_METHOD_CONTRACT;
+    #ifdef LOAD_WITH_ALTERED_SEARCH_PATH
+        return LOAD_WITH_ALTERED_SEARCH_PATH;
+    #else
+        return 0;
+    #endif
+}
 
 // clr::SafeAddRef and clr::SafeRelease helpers.
 namespace clr

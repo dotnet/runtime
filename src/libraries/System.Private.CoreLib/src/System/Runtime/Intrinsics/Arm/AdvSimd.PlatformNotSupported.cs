@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -10,7 +9,12 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM AdvSIMD hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class AdvSimd : ArmBase
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    abstract class AdvSimd : ArmBase
     {
         internal AdvSimd() { }
 
@@ -27,51 +31,123 @@ namespace System.Runtime.Intrinsics.Arm
         //     /// float32x2_t vmla_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         //     ///   A32: VMLA.F32 Dd, Dn, Dm
         //     /// </summary>
-        //     public static Vector64<float> MultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<float> MultiplyAdd(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float32x4_t vmlaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         //     ///   A32: VMLA.F32 Qd, Qn, Qm
         //     /// </summary>
-        //     public static Vector128<float> MultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector128<float> MultiplyAdd(Vector128<float> addend, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_n_f32 (float32x2_t a, float32x2_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[0]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddByScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_n_f32 (float32x4_t a, float32x4_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[0]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddByScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
         //     ///   A32: VMLA.F64 Dd, Dn, Dm
         //     /// </summary>
-        //     public static Vector64<double> MultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<double> MultiplyAddScalar(Vector64<double> addend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float32_t vmlas_f32 (float32_t a, float32_t b, float32_t c)
         //     ///   A32: VMLA.F32 Sd, Sn, Sm
         //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         //     /// </summary>
-        //     public static Vector64<float> MultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<float> MultiplyAddScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float32x2_t vmls_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         //     ///   A32: VMLS.F32 Dd, Dn, Dm
         //     /// </summary>
-        //     public static Vector64<float> MultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<float> MultiplySubtract(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float32x4_t vmlsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         //     ///   A32: VMLS.F32 Qd, Qn, Qm
         //     /// </summary>
-        //     public static Vector128<float> MultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector128<float> MultiplySubtract(Vector128<float> minuend, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_n_f32 (float32x2_t a, float32x2_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[0]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractByScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_n_f32 (float32x4_t a, float32x4_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[0]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractByScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float64x1_t vmls_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
         //     ///   A32: VMLS.F64 Dd, Dn, Dm
         //     /// </summary>
-        //     public static Vector64<double> MultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<double> MultiplySubtractScalar(Vector64<double> minuend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
         //
         //     /// <summary>
         //     /// float32_t vmlss_f32 (float32_t a, float32_t b, float32_t c)
         //     ///   A32: VMLS.F32 Sd, Sn, Sm
         //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         //     /// </summary>
-        //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         // }
 
         public new abstract class Arm64 : ArmBase.Arm64
@@ -91,6 +167,36 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: ABS Vd.2D, Vn.2D
             /// </summary>
             public static Vector128<ulong> Abs(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vqabsq_s64 (int64x2_t a)
+            ///   A64: SQABS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> AbsSaturate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqabsh_s16 (int16_t a)
+            ///   A64: SQABS Hd, Hn
+            /// </summary>
+            public static Vector64<short> AbsSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqabss_s32 (int32_t a)
+            ///   A64: SQABS Sd, Sn
+            /// </summary>
+            public static Vector64<int> AbsSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqabsd_s64 (int64_t a)
+            ///   A64: SQABS Dd, Dn
+            /// </summary>
+            public static Vector64<long> AbsSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqabsb_s8 (int8_t a)
+            ///   A64: SQABS Bd, Bn
+            /// </summary>
+            public static Vector64<sbyte> AbsSaturateScalar(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int64x1_t vabs_s64 (int64x1_t a)
@@ -255,6 +361,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint16_t vaddlv_u8 (uint8x8_t a)
+            ///   A64: UADDLV Hd, Vn.8B
+            /// </summary>
+            public static Vector64<ushort> AddAcrossWidening(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vaddlv_s16 (int16x4_t a)
+            ///   A64: SADDLV Sd, Vn.4H
+            /// </summary>
+            public static Vector64<int> AddAcrossWidening(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vaddlv_s8 (int8x8_t a)
+            ///   A64: SADDLV Hd, Vn.8B
+            /// </summary>
+            public static Vector64<short> AddAcrossWidening(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vaddlv_u16 (uint16x4_t a)
+            ///   A64: UADDLV Sd, Vn.4H
+            /// </summary>
+            public static Vector64<uint> AddAcrossWidening(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vaddlvq_u8 (uint8x16_t a)
+            ///   A64: UADDLV Hd, Vn.16B
+            /// </summary>
+            public static Vector64<ushort> AddAcrossWidening(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vaddlvq_s16 (int16x8_t a)
+            ///   A64: SADDLV Sd, Vn.8H
+            /// </summary>
+            public static Vector64<int> AddAcrossWidening(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vaddlvq_s32 (int32x4_t a)
+            ///   A64: SADDLV Dd, Vn.4S
+            /// </summary>
+            public static Vector64<long> AddAcrossWidening(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vaddlvq_s8 (int8x16_t a)
+            ///   A64: SADDLV Hd, Vn.16B
+            /// </summary>
+            public static Vector64<short> AddAcrossWidening(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vaddlvq_u16 (uint16x8_t a)
+            ///   A64: UADDLV Sd, Vn.8H
+            /// </summary>
+            public static Vector64<uint> AddAcrossWidening(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64_t vaddlvq_u32 (uint32x4_t a)
+            ///   A64: UADDLV Dd, Vn.4S
+            /// </summary>
+            public static Vector64<ulong> AddAcrossWidening(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// uint8x16_t vpaddq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
@@ -339,10 +505,100 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> AddPairwiseScalar(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint8x8_t vsqadd_u8 (uint8x8_t a, int8x8_t b)
+            ///   A64: USQADD Vd.8B, Vn.8B
+            /// </summary>
+            public static Vector64<byte> AddSaturate(Vector64<byte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x4_t vuqadd_s16 (int16x4_t a, uint16x4_t b)
+            ///   A64: SUQADD Vd.4H, Vn.4H
+            /// </summary>
+            public static Vector64<short> AddSaturate(Vector64<short> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x2_t vuqadd_s32 (int32x2_t a, uint32x2_t b)
+            ///   A64: SUQADD Vd.2S, Vn.2S
+            /// </summary>
+            public static Vector64<int> AddSaturate(Vector64<int> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x8_t vuqadd_s8 (int8x8_t a, uint8x8_t b)
+            ///   A64: SUQADD Vd.8B, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> AddSaturate(Vector64<sbyte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x4_t vsqadd_u16 (uint16x4_t a, int16x4_t b)
+            ///   A64: USQADD Vd.4H, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> AddSaturate(Vector64<ushort> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x2_t vsqadd_u32 (uint32x2_t a, int32x2_t b)
+            ///   A64: USQADD Vd.2S, Vn.2S
+            /// </summary>
+            public static Vector64<uint> AddSaturate(Vector64<uint> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vsqaddq_u8 (uint8x16_t a, int8x16_t b)
+            ///   A64: USQADD Vd.16B, Vn.16B
+            /// </summary>
+            public static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vuqaddq_s16 (int16x8_t a, uint16x8_t b)
+            ///   A64: SUQADD Vd.8H, Vn.8H
+            /// </summary>
+            public static Vector128<short> AddSaturate(Vector128<short> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vuqaddq_s32 (int32x4_t a, uint32x4_t b)
+            ///   A64: SUQADD Vd.4S, Vn.4S
+            /// </summary>
+            public static Vector128<int> AddSaturate(Vector128<int> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vuqaddq_s64 (int64x2_t a, uint64x2_t b)
+            ///   A64: SUQADD Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> AddSaturate(Vector128<long> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vuqaddq_s8 (int8x16_t a, uint8x16_t b)
+            ///   A64: SUQADD Vd.16B, Vn.16B
+            /// </summary>
+            public static Vector128<sbyte> AddSaturate(Vector128<sbyte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vsqaddq_u16 (uint16x8_t a, int16x8_t b)
+            ///   A64: USQADD Vd.8H, Vn.8H
+            /// </summary>
+            public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vsqaddq_u32 (uint32x4_t a, int32x4_t b)
+            ///   A64: USQADD Vd.4S, Vn.4S
+            /// </summary>
+            public static Vector128<uint> AddSaturate(Vector128<uint> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vsqaddq_u64 (uint64x2_t a, int64x2_t b)
+            ///   A64: USQADD Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> AddSaturate(Vector128<ulong> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// uint8_t vqaddb_u8 (uint8_t a, uint8_t b)
             ///   A64: UQADD Bd, Bn, Bm
             /// </summary>
             public static Vector64<byte> AddSaturateScalar(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vsqaddb_u8 (uint8_t a, int8_t b)
+            ///   A64: USQADD Bd, Bn
+            /// </summary>
+            public static Vector64<byte> AddSaturateScalar(Vector64<byte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int16_t vqaddh_s16 (int16_t a, int16_t b)
@@ -351,10 +607,28 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<short> AddSaturateScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int16_t vuqaddh_s16 (int16_t a, uint16_t b)
+            ///   A64: SUQADD Hd, Hn
+            /// </summary>
+            public static Vector64<short> AddSaturateScalar(Vector64<short> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// int32_t vqadds_s32 (int32_t a, int32_t b)
             ///   A64: SQADD Sd, Sn, Sm
             /// </summary>
             public static Vector64<int> AddSaturateScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vuqadds_s32 (int32_t a, uint32_t b)
+            ///   A64: SUQADD Sd, Sn
+            /// </summary>
+            public static Vector64<int> AddSaturateScalar(Vector64<int> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vuqadd_s64 (int64x1_t a, uint64x1_t b)
+            ///   A64: SUQADD Dd, Dn
+            /// </summary>
+            public static Vector64<long> AddSaturateScalar(Vector64<long> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int8_t vqaddb_s8 (int8_t a, int8_t b)
@@ -363,16 +637,45 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<sbyte> AddSaturateScalar(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// int8_t vuqaddb_s8 (int8_t a, uint8_t b)
+            ///   A64: SUQADD Bd, Bn
+            /// </summary>
+            public static Vector64<sbyte> AddSaturateScalar(Vector64<sbyte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// uint16_t vqaddh_u16 (uint16_t a, uint16_t b)
             ///   A64: UQADD Hd, Hn, Hm
             /// </summary>
             public static Vector64<ushort> AddSaturateScalar(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint16_t vsqaddh_u16 (uint16_t a, int16_t b)
+            ///   A64: USQADD Hd, Hn
+            /// </summary>
+            public static Vector64<ushort> AddSaturateScalar(Vector64<ushort> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// uint32_t vqadds_u32 (uint32_t a, uint32_t b)
             ///   A64: UQADD Sd, Sn, Sm
             /// </summary>
             public static Vector64<uint> AddSaturateScalar(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vsqadds_u32 (uint32_t a, int32_t b)
+            ///   A64: USQADD Sd, Sn
+            /// </summary>
+            public static Vector64<uint> AddSaturateScalar(Vector64<uint> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vsqadd_u64 (uint64x1_t a, int64x1_t b)
+            ///   A64: USQADD Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> AddSaturateScalar(Vector64<ulong> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// float64x2_t vrndpq_f64 (float64x2_t a)
+            ///   A64: FRINTP Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Ceiling(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
@@ -623,6 +926,186 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vcvt_f64_f32 (float32x2_t a)
+            ///   A64: FCVTL Vd.2D, Vn.2S
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vcvtq_f64_s64 (int64x2_t a)
+            ///   A64: SCVTF Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vcvtq_f64_u64 (uint64x2_t a)
+            ///   A64: UCVTF Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ConvertToDouble(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vcvt_f64_s64 (int64x1_t a)
+            ///   A64: SCVTF Dd, Dn
+            /// </summary>
+            public static Vector64<double> ConvertToDoubleScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vcvt_f64_u64 (uint64x1_t a)
+            ///   A64: UCVTF Dd, Dn
+            /// </summary>
+            public static Vector64<double> ConvertToDoubleScalar(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vcvt_high_f64_f32 (float32x4_t a)
+            ///   A64: FCVTL2 Vd.2D, Vn.4S
+            /// </summary>
+            public static Vector128<double> ConvertToDoubleUpper(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcvtaq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTAS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundAwayFromZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vcvta_s64_f64 (float64x1_t a)
+            ///   A64: FCVTAS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundAwayFromZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcvtnq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTNS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToEven(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vcvtn_s64_f64 (float64x1_t a)
+            ///   A64: FCVTNS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToEvenScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcvtmq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTMS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToNegativeInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vcvtm_s64_f64 (float64x1_t a)
+            ///   A64: FCVTMS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToNegativeInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcvtpq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTPS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToPositiveInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vcvtp_s64_f64 (float64x1_t a)
+            ///   A64: FCVTPS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToPositiveInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcvtq_s64_f64 (float64x2_t a)
+            ///   A64: FCVTZS Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> ConvertToInt64RoundToZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vcvt_s64_f64 (float64x1_t a)
+            ///   A64: FCVTZS Dd, Dn
+            /// </summary>
+            public static Vector64<long> ConvertToInt64RoundToZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vcvt_f32_f64 (float64x2_t a)
+            ///   A64: FCVTN Vd.2S, Vn.2D
+            /// </summary>
+            public static Vector64<float> ConvertToSingleLower(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vcvtx_f32_f64 (float64x2_t a)
+            ///   A64: FCVTXN Vd.2S, Vn.2D
+            /// </summary>
+            public static Vector64<float> ConvertToSingleRoundToOddLower(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vcvtx_high_f32_f64 (float32x2_t r, float64x2_t a)
+            ///   A64: FCVTXN2 Vd.4S, Vn.2D
+            /// </summary>
+            public static Vector128<float> ConvertToSingleRoundToOddUpper(Vector64<float> lower, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vcvt_high_f32_f64 (float32x2_t r, float64x2_t a)
+            ///   A64: FCVTN2 Vd.4S, Vn.2D
+            /// </summary>
+            public static Vector128<float> ConvertToSingleUpper(Vector64<float> lower, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcvtaq_u64_f64 (float64x2_t a)
+            ///   A64: FCVTAU Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> ConvertToUInt64RoundAwayFromZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcvta_u64_f64 (float64x1_t a)
+            ///   A64: FCVTAU Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> ConvertToUInt64RoundAwayFromZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcvtnq_u64_f64 (float64x2_t a)
+            ///   A64: FCVTNU Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> ConvertToUInt64RoundToEven(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcvtn_u64_f64 (float64x1_t a)
+            ///   A64: FCVTNU Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> ConvertToUInt64RoundToEvenScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcvtmq_u64_f64 (float64x2_t a)
+            ///   A64: FCVTMU Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> ConvertToUInt64RoundToNegativeInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcvtm_u64_f64 (float64x1_t a)
+            ///   A64: FCVTMU Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> ConvertToUInt64RoundToNegativeInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcvtpq_u64_f64 (float64x2_t a)
+            ///   A64: FCVTPU Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> ConvertToUInt64RoundToPositiveInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcvtp_u64_f64 (float64x1_t a)
+            ///   A64: FCVTPU Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> ConvertToUInt64RoundToPositiveInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcvtq_u64_f64 (float64x2_t a)
+            ///   A64: FCVTZU Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<ulong> ConvertToUInt64RoundToZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcvt_u64_f64 (float64x1_t a)
+            ///   A64: FCVTZU Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> ConvertToUInt64RoundToZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
             /// </summary>
@@ -644,19 +1127,19 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vdupq_laneq_f64 (float64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<double> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
+            public static Vector128<double> DuplicateSelectedScalarToVector128(Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int64x2_t vdupq_laneq_s64 (int64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<long> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
+            public static Vector128<long> DuplicateSelectedScalarToVector128(Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vdupq_laneq_u64 (uint64x2_t vec, const int lane)
             ///   A64: DUP Vd.2D, Vn.D[index]
             /// </summary>
-            public static System.Runtime.Intrinsics.Vector128<ulong> DuplicateSelectedScalarToVector128(System.Runtime.Intrinsics.Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
+            public static Vector128<ulong> DuplicateSelectedScalarToVector128(Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vdupq_n_f64 (float64_t value)
@@ -677,16 +1160,412 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> DuplicateToVector128(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint8_t vqmovnh_u16 (uint16_t a)
+            ///   A64: UQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateScalar(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqmovns_s32 (int32_t a)
+            ///   A64: SQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<short> ExtractNarrowingSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqmovnd_s64 (int64_t a)
+            ///   A64: SQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<int> ExtractNarrowingSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqmovnh_s16 (int16_t a)
+            ///   A64: SQXTN Bd, Hn
+            /// </summary>
+            public static Vector64<sbyte> ExtractNarrowingSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqmovns_u32 (uint32_t a)
+            ///   A64: UQXTN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateScalar(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqmovnd_u64 (uint64_t a)
+            ///   A64: UQXTN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateScalar(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vqmovunh_s16 (int16_t a)
+            ///   A64: SQXTUN Bd, Hn
+            /// </summary>
+            public static Vector64<byte> ExtractNarrowingSaturateUnsignedScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vqmovuns_s32 (int32_t a)
+            ///   A64: SQXTUN Hd, Sn
+            /// </summary>
+            public static Vector64<ushort> ExtractNarrowingSaturateUnsignedScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vqmovund_s64 (int64_t a)
+            ///   A64: SQXTUN Sd, Dn
+            /// </summary>
+            public static Vector64<uint> ExtractNarrowingSaturateUnsignedScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndmq_f64 (float64x2_t a)
+            ///   A64: FRINTM Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Floor(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> addend, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfma_n_f32 (float32x2_t a, float32x2_t b, float32_t n)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[0]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddByScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmaq_n_f64 (float64x2_t a, float64x2_t b, float64_t n)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAddByScalar(Vector128<double> addend, Vector128<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmaq_n_f32 (float32x4_t a, float32x4_t b, float32_t n)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[0]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddByScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfma_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfma_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmaq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAddBySelectedScalar(Vector128<double> addend, Vector128<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vfmad_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
+            ///   A64: FMLA Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> FusedMultiplyAddScalarBySelectedScalar(Vector64<double> addend, Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vfmas_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
+            ///   A64: FMLA Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vfmas_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
+            ///   A64: FMLA Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplyAddScalarBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> minuend, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfms_n_f32 (float32x2_t a, float32x2_t b, float32_t n)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[0]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractByScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmsq_n_f64 (float64x2_t a, float64x2_t b, float64_t n)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtractByScalar(Vector128<double> minuend, Vector128<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmsq_n_f32 (float32x4_t a, float32x4_t b, float32_t n)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[0]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractByScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfms_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vfms_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmsq_laneq_f64 (float64x2_t a, float64x2_t b, float64x2_t v, const int lane)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtractBySelectedScalar(Vector128<double> minuend, Vector128<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vfmsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> FusedMultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vfmsd_laneq_f64 (float64_t a, float64_t b, float64x2_t v, const int lane)
+            ///   A64: FMLS Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> FusedMultiplySubtractScalarBySelectedScalar(Vector64<double> minuend, Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vfmss_lane_f32 (float32_t a, float32_t b, float32x2_t v, const int lane)
+            ///   A64: FMLS Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vfmss_laneq_f32 (float32_t a, float32_t b, float32x4_t v, const int lane)
+            ///   A64: FMLS Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x8_t vcopy_lane_u8 (uint8x8_t a, const int lane1, uint8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x8_t vcopy_laneq_u8 (uint8x8_t a, const int lane1, uint8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x4_t vcopy_lane_s16 (int16x4_t a, const int lane1, int16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x4_t vcopy_laneq_s16 (int16x4_t a, const int lane1, int16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x2_t vcopy_lane_s32 (int32x2_t a, const int lane1, int32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x2_t vcopy_laneq_s32 (int32x2_t a, const int lane1, int32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x8_t vcopy_lane_s8 (int8x8_t a, const int lane1, int8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x8_t vcopy_laneq_s8 (int8x8_t a, const int lane1, int8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vcopy_lane_f32 (float32x2_t a, const int lane1, float32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vcopy_laneq_f32 (float32x2_t a, const int lane1, float32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x4_t vcopy_lane_u16 (uint16x4_t a, const int lane1, uint16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x4_t vcopy_laneq_u16 (uint16x4_t a, const int lane1, uint16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x2_t vcopy_lane_u32 (uint32x2_t a, const int lane1, uint32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x2_t vcopy_laneq_u32 (uint32x2_t a, const int lane1, uint32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vcopyq_lane_u8 (uint8x16_t a, const int lane1, uint8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vcopyq_laneq_u8 (uint8x16_t a, const int lane1, uint8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vcopyq_laneq_f64 (float64x2_t a, const int lane1, float64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<double> InsertSelectedScalar(Vector128<double> result, byte resultIndex, Vector128<double> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vcopyq_lane_s16 (int16x8_t a, const int lane1, int16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vcopyq_laneq_s16 (int16x8_t a, const int lane1, int16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vcopyq_lane_s32 (int32x4_t a, const int lane1, int32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vcopyq_laneq_s32 (int32x4_t a, const int lane1, int32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vcopyq_laneq_s64 (int64x2_t a, const int lane1, int64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<long> InsertSelectedScalar(Vector128<long> result, byte resultIndex, Vector128<long> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vcopyq_lane_s8 (int8x16_t a, const int lane1, int8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vcopyq_laneq_s8 (int8x16_t a, const int lane1, int8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vcopyq_lane_f32 (float32x4_t a, const int lane1, float32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vcopyq_laneq_f32 (float32x4_t a, const int lane1, float32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vcopyq_lane_u16 (uint16x8_t a, const int lane1, uint16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vcopyq_laneq_u16 (uint16x8_t a, const int lane1, uint16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vcopyq_lane_u32 (uint32x4_t a, const int lane1, uint32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vcopyq_laneq_u32 (uint32x4_t a, const int lane1, uint32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcopyq_laneq_u64 (uint64x2_t a, const int lane1, uint64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, byte resultIndex, Vector128<ulong> value, byte valueIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vld1q_dup_f64 (float64_t const * ptr)
+            ///   A64: LD1R { Vt.2D }, [Xn]
+            /// </summary>
+            public static unsafe Vector128<double> LoadAndReplicateToVector128(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vld1q_dup_s64 (int64_t const * ptr)
+            ///   A64: LD1R { Vt.2D }, [Xn]
+            /// </summary>
+            public static unsafe Vector128<long> LoadAndReplicateToVector128(long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vld1q_dup_u64 (uint64_t const * ptr)
+            ///   A64: LD1R { Vt.2D }, [Xn]
+            /// </summary>
+            public static unsafe Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
@@ -1069,6 +1948,162 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vmulq_n_f64 (float64x2_t a, float64_t b)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> MultiplyByScalar(Vector128<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmulq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> MultiplyBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqdmulhh_s16 (int16_t a, int16_t b)
+            ///   A64: SQDMULH Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingSaturateHighScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_s32 (int32_t a, int32_t b)
+            ///   A64: SQDMULH Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingSaturateHighScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqdmulhh_lane_s16 (int16_t a, int16x4_t v, const int lane)
+            ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqdmulhh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
+            ///   A64: SQDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_lane_s32 (int32_t a, int32x2_t v, const int lane)
+            ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmulhs_laneq_s32 (int32_t a, int32x4_t v, const int lane)
+            ///   A64: SQDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_s16 (int32_t a, int16_t b, int16_t c)
+            ///   A64: SQDMLAL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningAndAddSaturateScalar(Vector64<int> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_s32 (int64_t a, int32_t b, int32_t c)
+            ///   A64: SQDMLAL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningAndAddSaturateScalar(Vector64<long> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_s16 (int32_t a, int16_t b, int16_t c)
+            ///   A64: SQDMLSL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningAndSubtractSaturateScalar(Vector64<int> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_s32 (int64_t a, int32_t b, int32_t c)
+            ///   A64: SQDMLSL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningAndSubtractSaturateScalar(Vector64<long> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_s16 (int16_t a, int16_t b)
+            ///   A64: SQDMULL Sd, Hn, Hm
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_s32 (int32_t a, int32_t b)
+            ///   A64: SQDMULL Dd, Sn, Sm
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_lane_s16 (int16_t a, int16x4_t v, const int lane)
+            ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmullh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
+            ///   A64: SQDMULL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_lane_s32 (int32_t a, int32x2_t v, const int lane)
+            ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmulls_laneq_s32 (int32_t a, int32x4_t v, const int lane)
+            ///   A64: SQDMULL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningSaturateScalarBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
+            ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlalh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
+            ///   A64: SQDMLAL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
+            ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlals_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
+            ///   A64: SQDMLAL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate(Vector64<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_lane_s16 (int32_t a, int16_t b, int16x4_t v, const int lane)
+            ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqdmlslh_laneq_s16 (int32_t a, int16_t b, int16x8_t v, const int lane)
+            ///   A64: SQDMLSL Sd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_lane_s32 (int64_t a, int32_t b, int32x2_t v, const int lane)
+            ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqdmlsls_laneq_s32 (int64_t a, int32_t b, int32x4_t v, const int lane)
+            ///   A64: SQDMLSL Dd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<long> MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate(Vector64<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FMULX Vd.2S, Vn.2S, Vm.2S
             /// </summary>
@@ -1087,6 +2122,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> MultiplyExtended(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vmulxq_lane_f64 (float64x2_t a, float64x1_t v, const int lane)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> MultiplyExtendedByScalar(Vector128<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vmulx_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vmulx_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmulxq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> MultiplyExtendedBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vmulxq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vmulxq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x1_t vmulx_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMULX Dd, Dn, Dm
             /// </summary>
@@ -1099,6 +2170,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> MultiplyExtendedScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64_t vmulxd_laneq_f64 (float64_t a, float64x2_t v, const int lane)
+            ///   A64: FMULX Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> MultiplyExtendedScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmulxs_lane_f32 (float32_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmulxs_laneq_f32 (float32_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqrdmulhh_s16 (int16_t a, int16_t b)
+            ///   A64: SQRDMULH Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> MultiplyRoundedDoublingSaturateHighScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqrdmulhs_s32 (int32_t a, int32_t b)
+            ///   A64: SQRDMULH Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> MultiplyRoundedDoublingSaturateHighScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqrdmulhh_lane_s16 (int16_t a, int16x4_t v, const int lane)
+            ///   A64: SQRDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqrdmulhh_laneq_s16 (int16_t a, int16x8_t v, const int lane)
+            ///   A64: SQRDMULH Hd, Hn, Vm.H[lane]
+            /// </summary>
+            public static Vector64<short> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqrdmulhs_lane_s32 (int32_t a, int32x2_t v, const int lane)
+            ///   A64: SQRDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqrdmulhs_laneq_s32 (int32_t a, int32x4_t v, const int lane)
+            ///   A64: SQRDMULH Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<int> MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vmuld_laneq_f64 (float64_t a, float64x2_t v, const int lane)
+            ///   A64: FMUL Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> MultiplyScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vnegq_f64 (float64x2_t a)
             ///   A64: FNEG Vd.2D, Vn.2D
             /// </summary>
@@ -1109,6 +2240,36 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: NEG Vd.2D, Vn.2D
             /// </summary>
             public static Vector128<long> Negate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vqnegq_s64 (int64x2_t a)
+            ///   A64: SQNEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> NegateSaturate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vqnegh_s16 (int16_t a)
+            ///   A64: SQNEG Hd, Hn
+            /// </summary>
+            public static Vector64<short> NegateSaturateScalar(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vqnegs_s32 (int32_t a)
+            ///   A64: SQNEG Sd, Sn
+            /// </summary>
+            public static Vector64<int> NegateSaturateScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vqnegd_s64 (int64_t a)
+            ///   A64: SQNEG Dd, Dn
+            /// </summary>
+            public static Vector64<long> NegateSaturateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vqnegb_s8 (int8_t a)
+            ///   A64: SQNEG Bd, Bn
+            /// </summary>
+            public static Vector64<sbyte> NegateSaturateScalar(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int64x1_t vneg_s64 (int64x1_t a)
@@ -1199,6 +2360,36 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FRECPS Sd, Sn, Sm
             /// </summary>
             public static Vector64<float> ReciprocalStepScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndaq_f64 (float64x2_t a)
+            ///   A64: FRINTA Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundAwayFromZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndnq_f64 (float64x2_t a)
+            ///   A64: FRINTN Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToNearest(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndmq_f64 (float64x2_t a)
+            ///   A64: FRINTM Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToNegativeInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndpq_f64 (float64x2_t a)
+            ///   A64: FRINTP Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToPositiveInfinity(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vrndq_f64 (float64x2_t a)
+            ///   A64: FRINTZ Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> RoundToZero(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int16_t vqrshlh_s16 (int16_t a, int16_t b)
@@ -1523,6 +2714,236 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -2282,6 +3703,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FABS Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<float> Abs(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqabs_s16 (int16x4_t a)
+        ///   A32: VQABS.S16 Dd, Dm
+        ///   A64: SQABS Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> AbsSaturate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqabs_s32 (int32x2_t a)
+        ///   A32: VQABS.S32 Dd, Dm
+        ///   A64: SQABS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> AbsSaturate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqabs_s8 (int8x8_t a)
+        ///   A32: VQABS.S8 Dd, Dm
+        ///   A64: SQABS Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> AbsSaturate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqabsq_s16 (int16x8_t a)
+        ///   A32: VQABS.S16 Qd, Qm
+        ///   A64: SQABS Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> AbsSaturate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqabsq_s32 (int32x4_t a)
+        ///   A32: VQABS.S32 Qd, Qm
+        ///   A64: SQABS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> AbsSaturate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqabsq_s8 (int8x16_t a)
+        ///   A32: VQABS.S8 Qd, Qm
+        ///   A64: SQABS Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> AbsSaturate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vabs_f64 (float64x1_t a)
@@ -3939,6 +5402,35 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> BitwiseSelect(Vector128<ulong> select, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float32x2_t vrndp_f32 (float32x2_t a)
+        ///   A32: VRINTP.F32 Dd, Dm
+        ///   A64: FRINTP Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Ceiling(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndpq_f32 (float32x4_t a)
+        ///   A32: VRINTP.F32 Qd, Qm
+        ///   A64: FRINTP Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Ceiling(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndp_f64 (float64x1_t a)
+        ///   A32: VRINTP.F64 Dd, Dm
+        ///   A64: FRINTP Dd, Dn
+        /// </summary>
+        public static Vector64<double> CeilingScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndps_f32 (float32_t a)
+        ///   A32: VRINTP.F32 Sd, Sm
+        ///   A64: FRINTP Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> CeilingScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vceq_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VCEQ.I8 Dd, Dn, Dm
         ///   A64: CMEQ Vd.8B, Vn.8B, Vm.8B
@@ -4529,6 +6021,258 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int32x2_t vcvta_s32_f32 (float32x2_t a)
+        ///   A32: VCVTA.S32.F32 Dd, Dm
+        ///   A64: FCVTAS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundAwayFromZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vcvtaq_s32_f32 (float32x4_t a)
+        ///   A32: VCVTA.S32.F32 Qd, Qm
+        ///   A64: FCVTAS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> ConvertToInt32RoundAwayFromZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vcvtas_s32_f32 (float32_t a)
+        ///   A32: VCVTA.S32.F32 Sd, Sm
+        ///   A64: FCVTAS Sd, Sn
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundAwayFromZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vcvtn_s32_f32 (float32x2_t a)
+        ///   A32: VCVTN.S32.F32 Dd, Dm
+        ///   A64: FCVTNS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToEven(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vcvtnq_s32_f32 (float32x4_t a)
+        ///   A32: VCVTN.S32.F32 Qd, Qm
+        ///   A64: FCVTNS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> ConvertToInt32RoundToEven(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vcvtns_s32_f32 (float32_t a)
+        ///   A32: VCVTN.S32.F32 Sd, Sm
+        ///   A64: FCVTNS Sd, Sn
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToEvenScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vcvtm_s32_f32 (float32x2_t a)
+        ///   A32: VCVTM.S32.F32 Dd, Dm
+        ///   A64: FCVTMS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToNegativeInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vcvtmq_s32_f32 (float32x4_t a)
+        ///   A32: VCVTM.S32.F32 Qd, Qm
+        ///   A64: FCVTMS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> ConvertToInt32RoundToNegativeInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vcvtms_s32_f32 (float32_t a)
+        ///   A32: VCVTM.S32.F32 Sd, Sm
+        ///   A64: FCVTMS Sd, Sn
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToNegativeInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vcvtp_s32_f32 (float32x2_t a)
+        ///   A32: VCVTP.S32.F32 Dd, Dm
+        ///   A64: FCVTPS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToPositiveInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vcvtpq_s32_f32 (float32x4_t a)
+        ///   A32: VCVTP.S32.F32 Qd, Qm
+        ///   A64: FCVTPS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> ConvertToInt32RoundToPositiveInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vcvtps_s32_f32 (float32_t a)
+        ///   A32: VCVTP.S32.F32 Sd, Sm
+        ///   A64: FCVTPS Sd, Sn
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToPositiveInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vcvt_s32_f32 (float32x2_t a)
+        ///   A32: VCVT.S32.F32 Dd, Dm
+        ///   A64: FCVTZS Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vcvtq_s32_f32 (float32x4_t a)
+        ///   A32: VCVT.S32.F32 Qd, Qm
+        ///   A64: FCVTZS Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> ConvertToInt32RoundToZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vcvts_s32_f32 (float32_t a)
+        ///   A32: VCVT.S32.F32 Sd, Sm
+        ///   A64: FCVTZS Sd, Sn
+        /// </summary>
+        public static Vector64<int> ConvertToInt32RoundToZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vcvt_f32_s32 (int32x2_t a)
+        ///   A32: VCVT.F32.S32 Dd, Dm
+        ///   A64: SCVTF Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ConvertToSingle(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vcvt_f32_u32 (uint32x2_t a)
+        ///   A32: VCVT.F32.U32 Dd, Dm
+        ///   A64: UCVTF Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ConvertToSingle(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vcvtq_f32_s32 (int32x4_t a)
+        ///   A32: VCVT.F32.S32 Qd, Qm
+        ///   A64: SCVTF Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ConvertToSingle(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vcvtq_f32_u32 (uint32x4_t a)
+        ///   A32: VCVT.F32.U32 Qd, Qm
+        ///   A64: UCVTF Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ConvertToSingle(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vcvts_f32_s32 (int32_t a)
+        ///   A32: VCVT.F32.S32 Sd, Sm
+        ///   A64: SCVTF Sd, Sn
+        /// </summary>
+        public static Vector64<float> ConvertToSingleScalar(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vcvts_f32_u32 (uint32_t a)
+        ///   A32: VCVT.F32.U32 Sd, Sm
+        ///   A64: UCVTF Sd, Sn
+        /// </summary>
+        public static Vector64<float> ConvertToSingleScalar(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvta_u32_f32 (float32x2_t a)
+        ///   A32: VCVTA.U32.F32 Dd, Dm
+        ///   A64: FCVTAU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundAwayFromZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtaq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTA.U32.F32 Qd, Qm
+        ///   A64: FCVTAU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundAwayFromZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtas_u32_f32 (float32_t a)
+        ///   A32: VCVTA.U32.F32 Sd, Sm
+        ///   A64: FCVTAU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundAwayFromZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtn_u32_f32 (float32x2_t a)
+        ///   A32: VCVTN.U32.F32 Dd, Dm
+        ///   A64: FCVTNU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToEven(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtnq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTN.U32.F32 Qd, Qm
+        ///   A64: FCVTNU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToEven(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtns_u32_f32 (float32_t a)
+        ///   A32: VCVTN.U32.F32 Sd, Sm
+        ///   A64: FCVTNU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToEvenScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtm_u32_f32 (float32x2_t a)
+        ///   A32: VCVTM.U32.F32 Dd, Dm
+        ///   A64: FCVTMU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToNegativeInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtmq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTM.U32.F32 Qd, Qm
+        ///   A64: FCVTMU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToNegativeInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtms_u32_f32 (float32_t a)
+        ///   A32: VCVTM.U32.F32 Sd, Sm
+        ///   A64: FCVTMU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToNegativeInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvtp_u32_f32 (float32x2_t a)
+        ///   A32: VCVTP.U32.F32 Dd, Dm
+        ///   A64: FCVTPU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToPositiveInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtpq_u32_f32 (float32x4_t a)
+        ///   A32: VCVTP.U32.F32 Qd, Qm
+        ///   A64: FCVTPU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToPositiveInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvtps_u32_f32 (float32_t a)
+        ///   A32: VCVTP.U32.F32 Sd, Sm
+        ///   A64: FCVTPU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToPositiveInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcvt_u32_f32 (float32x2_t a)
+        ///   A32: VCVT.U32.F32 Dd, Dm
+        ///   A64: FCVTZU Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vcvtq_u32_f32 (float32x4_t a)
+        ///   A32: VCVT.U32.F32 Qd, Qm
+        ///   A64: FCVTZU Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ConvertToUInt32RoundToZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vcvts_u32_f32 (float32_t a)
+        ///   A32: VCVT.U32.F32 Sd, Sm
+        ///   A64: FCVTZU Sd, Sn
+        /// </summary>
+        public static Vector64<uint> ConvertToUInt32RoundToZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VDIV.F64 Dd, Dn, Dm
         ///   A64: FDIV Dd, Dn, Dm
@@ -4957,88 +6701,214 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong Extract(Vector128<ulong> vector, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
-        ///   A32: VMOVN.I16 Dd+1, Qm
-        ///   A64: XTN2 Vd.16B, Vn.8H
-        /// </summary>
-        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
-        ///   A32: VMOVN.I32 Dd+1, Qm
-        ///   A64: XTN2 Vd.8H, Vn.4S
-        /// </summary>
-        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
-        ///   A32: VMOVN.I64 Dd+1, Qm
-        ///   A64: XTN2 Vd.4S, Vn.2D
-        /// </summary>
-        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int8x8_t vmovn_s16 (int16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
-        /// </summary>
-        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int16x4_t vmovn_s32 (int32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
-        /// </summary>
-        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int32x2_t vmovn_s64 (int64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
-        /// </summary>
-        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        /// uint8x8_t vmovn_u16 (uint16x8_t a)
         ///   A32: VMOVN.I16 Dd, Qm
         ///   A64: XTN Vd.8B, Vn.8H
         /// </summary>
         public static Vector64<byte> ExtractNarrowingLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        /// int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmovn_u32 (uint32x4_t a)
         ///   A32: VMOVN.I32 Dd, Qm
         ///   A64: XTN Vd.4H, Vn.4S
         /// </summary>
         public static Vector64<ushort> ExtractNarrowingLower(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        /// uint32x2_t vmovn_u64 (uint64x2_t a)
         ///   A32: VMOVN.I64 Dd, Qm
         ///   A64: XTN Vd.2S, Vn.2D
         /// </summary>
         public static Vector64<uint> ExtractNarrowingLower(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vqmovn_u16 (uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd, Qm
+        ///   A64: UQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqmovn_s32 (int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd, Qm
+        ///   A64: SQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractNarrowingSaturateLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqmovn_s64 (int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd, Qm
+        ///   A64: SQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractNarrowingSaturateLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqmovn_s16 (int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd, Qm
+        ///   A64: SQXTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractNarrowingSaturateLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqmovn_u32 (uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd, Qm
+        ///   A64: UQXTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateLower(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqmovn_u64 (uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd, Qm
+        ///   A64: UQXTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateLower(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vqmovun_s16 (int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd, Qm
+        ///   A64: SQXTUN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractNarrowingSaturateUnsignedLower(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vqmovun_s32 (int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd, Qm
+        ///   A64: SQXTUN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractNarrowingSaturateUnsignedLower(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vqmovun_s64 (int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd, Qm
+        ///   A64: SQXTUN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractNarrowingSaturateUnsignedLower(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vqmovun_high_s16 (uint8x8_t r, int16x8_t a)
+        ///   A32: VQMOVUN.S16 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUnsignedUpper(Vector64<byte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vqmovun_high_s32 (uint16x4_t r, int32x4_t a)
+        ///   A32: VQMOVUN.S32 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUnsignedUpper(Vector64<ushort> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vqmovun_high_s64 (uint32x2_t r, int64x2_t a)
+        ///   A32: VQMOVUN.S64 Dd+1, Qm
+        ///   A64: SQXTUN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUnsignedUpper(Vector64<uint> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vqmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VQMOVN.U16 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingSaturateUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VQMOVN.S32 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VQMOVN.S64 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VQMOVN.S16 Dd+1, Qm
+        ///   A64: SQXTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vqmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VQMOVN.U32 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingSaturateUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vqmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VQMOVN.U64 Dd+1, Qm
+        ///   A64: UQXTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingSaturateUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractNarrowingUpper(Vector64<byte> lower, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractNarrowingUpper(Vector64<short> lower, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractNarrowingUpper(Vector64<int> lower, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractNarrowingUpper(Vector64<sbyte> lower, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractNarrowingUpper(Vector64<ushort> lower, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractNarrowingUpper(Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vext_s8 (uint8x8_t a, uint8x8_t b, const int n)
@@ -5158,6 +7028,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
         /// </summary>
         public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndm_f32 (float32x2_t a)
+        ///   A32: VRINTM.F32 Dd, Dm
+        ///   A64: FRINTM Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Floor(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndmq_f32 (float32x4_t a)
+        ///   A32: VRINTM.F32 Qd, Qm
+        ///   A64: FRINTM Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Floor(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndm_f64 (float64x1_t a)
+        ///   A32: VRINTM.F64 Dd, Dm
+        ///   A64: FRINTM Dd, Dn
+        /// </summary>
+        public static Vector64<double> FloorScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndms_f32 (float32_t a)
+        ///   A32: VRINTM.F32 Sd, Sm
+        ///   A64: FRINTM Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FloorScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vhadd_u8 (uint8x8_t a, uint8x8_t b)
@@ -5332,29 +7231,14 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VFMA.F32 Dd, Dn, Dm
         ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<float> FusedMultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplyAdd(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x4_t vfmaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         ///   A32: VFMA.F32 Qd, Qn, Qm
         ///   A64: FMLA Vd.4S, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<float> FusedMultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float64x1_t vfma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
-        ///   A32: VFMA.F64 Dd, Dn, Dm
-        ///   A64: FMADD Dd, Dn, Dm, Da
-        /// </summary>
-        public static Vector64<double> FusedMultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float32_t vfmas_f32 (float32_t a, float32_t b, float32_t c)
-        ///   A32: VFMA.F32 Sd, Sn, Sm
-        ///   A64: FMADD Sd, Sn, Sm, Sa
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<float> FusedMultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> addend, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vfnma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
@@ -5362,7 +7246,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMADD Dd, Dn, Dm, Da
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<double> FusedMultiplyAddNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> FusedMultiplyAddNegatedScalar(Vector64<double> addend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32_t vfnmas_f32 (float32_t a, float32_t b, float32_t c)
@@ -5370,36 +7254,36 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMADD Sd, Sn, Sm, Sa
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> FusedMultiplyAddNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplyAddNegatedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMA.F64 Dd, Dn, Dm
+        ///   A64: FMADD Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddScalar(Vector64<double> addend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMA.F32 Sd, Sn, Sm
+        ///   A64: FMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vfms_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VFMS.F32 Dd, Dn, Dm
         ///   A64: FMLS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<float> FusedMultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplySubtract(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x4_t vfmsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         ///   A32: VFMS.F32 Qd, Qn, Qm
         ///   A64: FMLS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<float> FusedMultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
-        ///   A32: VFMS.F64 Dd, Dn, Dm
-        ///   A64: FMSUB Dd, Dn, Dm, Da
-        /// </summary>
-        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
-        ///   A32: VFMS.F32 Sd, Sn, Sm
-        ///   A64: FMSUB Sd, Sn, Sm, Sa
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> FusedMultiplySubtract(Vector128<float> minuend, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vfnms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
@@ -5407,7 +7291,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMSUB Dd, Dn, Dm, Da
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> minuend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32_t vfnmss_f32 (float32_t a, float32_t b, float32_t c)
@@ -5415,7 +7299,22 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMSUB Sd, Sn, Sm, Sa
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMS.F64 Dd, Dn, Dm
+        ///   A64: FMSUB Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> minuend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMS.F32 Sd, Sn, Sm
+        ///   A64: FMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vhsub_u8 (uint8x8_t a, uint8x8_t b)
@@ -5621,6 +7520,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> Insert(Vector128<ulong> vector, byte index, ulong data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float64x2_t vcopyq_lane_f64 (float64x2_t a, const int lane1, float64x1_t b, const int lane2)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<double> InsertScalar(Vector128<double> result, byte resultIndex, Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vcopyq_lane_s64 (int64x2_t a, const int lane1, int64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<long> InsertScalar(Vector128<long> result, byte resultIndex, Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vcopyq_lane_u64 (uint64x2_t a, const int lane1, uint64x1_t b, const int lane2)
+        ///   A32: VMOV Dd, Dm
+        ///   A64: INS Vd.D[lane1], Vn.D[0]
+        /// </summary>
+        public static Vector128<ulong> InsertScalar(Vector128<ulong> result, byte resultIndex, Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
@@ -5745,6 +7665,223 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CLZ Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vld1_lane_u8 (uint8_t const * ptr, uint8x8_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<byte> LoadAndInsertScalar(Vector64<byte> value, byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vld1_lane_s16 (int16_t const * ptr, int16x4_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<short> LoadAndInsertScalar(Vector64<short> value, byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vld1_lane_s32 (int32_t const * ptr, int32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<int> LoadAndInsertScalar(Vector64<int> value, byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vld1_lane_s8 (int8_t const * ptr, int8x8_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<sbyte> LoadAndInsertScalar(Vector64<sbyte> value, byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vld1_lane_f32 (float32_t const * ptr, float32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<float> LoadAndInsertScalar(Vector64<float> value, byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vld1_lane_u16 (uint16_t const * ptr, uint16x4_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<ushort> LoadAndInsertScalar(Vector64<ushort> value, byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vld1_lane_u32 (uint32_t const * ptr, uint32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<uint> LoadAndInsertScalar(Vector64<uint> value, byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vld1q_lane_u8 (uint8_t const * ptr, uint8x16_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<byte> LoadAndInsertScalar(Vector128<byte> value, byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x2_t vld1q_lane_f64 (float64_t const * ptr, float64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<double> LoadAndInsertScalar(Vector128<double> value, byte index, double* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vld1q_lane_s16 (int16_t const * ptr, int16x8_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<short> LoadAndInsertScalar(Vector128<short> value, byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vld1q_lane_s32 (int32_t const * ptr, int32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<int> LoadAndInsertScalar(Vector128<int> value, byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vld1q_lane_s64 (int64_t const * ptr, int64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<long> LoadAndInsertScalar(Vector128<long> value, byte index, long* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vld1q_lane_s8 (int8_t const * ptr, int8x16_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<sbyte> LoadAndInsertScalar(Vector128<sbyte> value, byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vld1q_lane_f32 (float32_t const * ptr, float32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<float> LoadAndInsertScalar(Vector128<float> value, byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vld1q_lane_u16 (uint16_t const * ptr, uint16x8_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<ushort> LoadAndInsertScalar(Vector128<ushort> value, byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vld1q_lane_u32 (uint32_t const * ptr, uint32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<uint> LoadAndInsertScalar(Vector128<uint> value, byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vld1q_lane_u64 (uint64_t const * ptr, uint64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, byte index, ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vld1_dup_u8 (uint8_t const * ptr)
+        ///   A32: VLD1.8 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<byte> LoadAndReplicateToVector64(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vld1_dup_s16 (int16_t const * ptr)
+        ///   A32: VLD1.16 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<short> LoadAndReplicateToVector64(short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vld1_dup_s32 (int32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<int> LoadAndReplicateToVector64(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vld1_dup_s8 (int8_t const * ptr)
+        ///   A32: VLD1.8 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<sbyte> LoadAndReplicateToVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vld1_dup_f32 (float32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<float> LoadAndReplicateToVector64(float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vld1_dup_u16 (uint16_t const * ptr)
+        ///   A32: VLD1.16 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<ushort> LoadAndReplicateToVector64(ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vld1_dup_u32 (uint32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[] }, [Rn]
+        ///   A64: LD1R { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe Vector64<uint> LoadAndReplicateToVector64(uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vld1q_dup_u8 (uint8_t const * ptr)
+        ///   A32: VLD1.8 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<byte> LoadAndReplicateToVector128(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vld1q_dup_s16 (int16_t const * ptr)
+        ///   A32: VLD1.16 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<short> LoadAndReplicateToVector128(short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vld1q_dup_s32 (int32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<int> LoadAndReplicateToVector128(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vld1q_dup_s8 (int8_t const * ptr)
+        ///   A32: VLD1.8 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<sbyte> LoadAndReplicateToVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vld1q_dup_f32 (float32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<float> LoadAndReplicateToVector128(float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vld1q_dup_u16 (uint16_t const * ptr)
+        ///   A32: VLD1.16 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<ushort> LoadAndReplicateToVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vld1q_dup_u32 (uint32_t const * ptr)
+        ///   A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]
+        ///   A64: LD1R { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe Vector128<uint> LoadAndReplicateToVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vld1_u8 (uint8_t const * ptr)
@@ -6335,6 +8472,1364 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplyAdd(Vector64<byte> addend, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyAdd(Vector64<short> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyAdd(Vector64<int> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmla_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplyAdd(Vector64<sbyte> addend, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplyAdd(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplyAdd(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmlaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplyAdd(Vector128<byte> addend, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyAdd(Vector128<short> addend, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyAdd(Vector128<int> addend, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmlaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> addend, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplyAdd(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplyAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_n_s16 (int16x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyAddByScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_n_s32 (int32x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyAddByScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_n_u16 (uint16x4_t a, uint16x4_t b, uint16_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddByScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_n_u32 (uint32x2_t a, uint32x2_t b, uint32_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddByScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_n_s16 (int16x8_t a, int16x8_t b, int16_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyAddByScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_n_s32 (int32x4_t a, int32x4_t b, int32_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyAddByScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_n_u16 (uint16x8_t a, uint16x8_t b, uint16_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddByScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_n_u32 (uint32x4_t a, uint32x4_t b, uint32_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddByScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_lane_s16 (int16x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmul_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyByScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmul_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyByScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmul_n_f32 (float32x2_t a, float32_t b)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[0]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<float> MultiplyByScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmul_n_u16 (uint16x4_t a, uint16_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplyByScalar(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmul_n_u32 (uint32x2_t a, uint32_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[0]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplyByScalar(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmulq_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyByScalar(Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmulq_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyByScalar(Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmulq_n_f32 (float32x4_t a, float32_t b)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[0]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<float> MultiplyByScalar(Vector128<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmulq_n_u16 (uint16x8_t a, uint16_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplyByScalar(Vector128<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmulq_n_u32 (uint32x4_t a, uint32_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[0]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplyByScalar(Vector128<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmul_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmul_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmul_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmul_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmul_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmul_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Dd, Dn, Dm[lane]
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmul_lane_u16 (uint16x4_t a, uint16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmul_laneq_u16 (uint16x4_t a, uint16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyBySelectedScalar(Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmul_lane_u32 (uint32x2_t a, uint32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmul_laneq_u32 (uint32x2_t a, uint32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Dd, Dn, Dm[lane]
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyBySelectedScalar(Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmulq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmulq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyBySelectedScalar(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmulq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmulq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalar(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmulq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmulq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Qd, Qn, Dm[lane]
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<float> MultiplyBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmulq_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmulq_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
+        ///   A32: VMUL.I16 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyBySelectedScalar(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmulq_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmulq_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
+        ///   A32: VMUL.I32 Qd, Qn, Dm[lane]
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalar(Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmull_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmull_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLower(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLower(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_lane_u16 (uint16x4_t a, uint16x4_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_laneq_u16 (uint16x4_t a, uint16x8_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLower(Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_lane_u32 (uint32x2_t a, uint32x2_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_laneq_u32 (uint32x2_t a, uint32x4_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLower(Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlal_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLAL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlal_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLAL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlal_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLAL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlal_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLAL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlal_lane_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLAL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlal_laneq_u16 (uint32x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLAL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlal_lane_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLAL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlal_laneq_u32 (uint64x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLAL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsl_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsl_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_lane_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_laneq_u16 (uint32x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_lane_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_laneq_u32 (uint64x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmull_high_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmull_high_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_high_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_high_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_high_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_high_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_high_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_high_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlal_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLAL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlal_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLAL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<int> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlal_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLAL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlal_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLAL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<long> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlal_high_lane_u16 (uint32x4_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLAL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlal_high_laneq_u16 (uint32x4_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLAL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<uint> addend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlal_high_lane_u32 (uint64x2_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLAL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlal_high_laneq_u32 (uint64x2_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLAL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsl_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsl_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_high_lane_u16 (uint32x4_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_high_laneq_u16 (uint32x4_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_high_lane_u32 (uint64x2_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_high_laneq_u32 (uint64x2_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqdmulh_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VQDMULH.S16 Dd, Dn, Dm[0]
+        ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyDoublingByScalarSaturateHigh(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqdmulh_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VQDMULH.S32 Dd, Dn, Dm[0]
+        ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyDoublingByScalarSaturateHigh(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqdmulhq_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VQDMULH.S16 Qd, Qn, Dm[0]
+        ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyDoublingByScalarSaturateHigh(Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmulhq_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VQDMULH.S32 Qd, Qn, Dm[0]
+        ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingByScalarSaturateHigh(Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqdmulh_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VQDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqdmulh_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VQDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqdmulh_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VQDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqdmulh_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VQDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqdmulhq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VQDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqdmulhq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VQDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmulhq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VQDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmulhq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VQDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqdmulh_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQDMULH.S16 Dd, Dn, Dm
+        ///   A64: SQDMULH Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyDoublingSaturateHigh(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqdmulh_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQDMULH.S32 Dd, Dn, Dm
+        ///   A64: SQDMULH Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyDoublingSaturateHigh(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqdmulhq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQDMULH.S16 Qd, Qn, Qm
+        ///   A64: SQDMULH Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyDoublingSaturateHigh(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmulhq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQDMULH.S32 Qd, Qn, Qm
+        ///   A64: SQDMULH Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingSaturateHigh(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_s16 (int32x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VQDMLAL.S16 Qd, Dn, Dm
+        ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_s32 (int64x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VQDMLAL.S32 Qd, Dn, Dm
+        ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_s16 (int32x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VQDMLSL.S16 Qd, Dn, Dm
+        ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_s32 (int64x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VQDMLSL.S32 Qd, Dn, Dm
+        ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_n_s16 (int32x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VQDMLAL.S16 Qd, Dn, Dm[0]
+        ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerByScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_n_s32 (int64x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VQDMLAL.S32 Qd, Dn, Dm[0]
+        ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerByScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_n_s16 (int32x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VQDMLSL.S16 Qd, Dn, Dm[0]
+        ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerByScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_n_s32 (int64x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VQDMLSL.S32 Qd, Dn, Dm[0]
+        ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerByScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VQDMLAL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VQDMLAL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLAL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VQDMLAL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VQDMLAL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLAL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VQDMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VQDMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VQDMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VQDMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQDMULL.S16 Qd, Dn, Dm
+        ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateLower(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQDMULL.S32 Qd, Dn, Dm
+        ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateLower(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VQDMULL.S16 Qd, Dn, Dm[0]
+        ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateLowerByScalar(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VQDMULL.S32 Qd, Dn, Dm[0]
+        ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateLowerByScalar(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VQDMULL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VQDMULL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SQDMULL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VQDMULL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VQDMULL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SQDMULL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateLowerBySelectedScalar(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_high_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQDMULL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpper(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_high_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQDMULL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpper(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_high_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VQDMULL.S16 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpperByScalar(Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_high_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VQDMULL.S32 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpperByScalar(Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_high_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VQDMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmull_high_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VQDMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_high_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VQDMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmull_high_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VQDMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningSaturateUpperBySelectedScalar(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_high_s16 (int32x4_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_high_s32 (int64x2_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_high_s16 (int32x4_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_high_s32 (int64x2_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_high_n_s16 (int32x4_t a, int16x8_t b, int16_t c)
+        ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperByScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_high_n_s32 (int64x2_t a, int32x4_t b, int32_t c)
+        ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperByScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_high_n_s16 (int32x4_t a, int16x8_t b, int16_t c)
+        ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_high_n_s32 (int64x2_t a, int32x4_t b, int32_t c)
+        ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm[0]
+        ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlal_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VQDMLAL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLAL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<int> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlal_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VQDMLAL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLAL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate(Vector128<long> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_high_lane_s16 (int32x4_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqdmlsl_high_laneq_s16 (int32x4_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VQDMLSL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLSL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<int> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_high_lane_s32 (int64x2_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vqdmlsl_high_laneq_s32 (int64x2_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VQDMLSL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SQDMLSL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate(Vector128<long> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_n_s16 (int16x4_t a, int16_t b)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[0]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingByScalarSaturateHigh(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_n_s32 (int32x2_t a, int32_t b)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[0]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingByScalarSaturateHigh(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_n_s16 (int16x8_t a, int16_t b)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[0]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingByScalarSaturateHigh(Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_n_s32 (int32x4_t a, int32_t b)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[0]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingByScalarSaturateHigh(Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_lane_s16 (int16x4_t a, int16x4_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_laneq_s16 (int16x4_t a, int16x8_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_lane_s32 (int32x2_t a, int32x2_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_laneq_s32 (int32x2_t a, int32x4_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm[lane]
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Dm[lane]
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqrdmulh_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQRDMULH.S16 Dd, Dn, Dm
+        ///   A64: SQRDMULH Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyRoundedDoublingSaturateHigh(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqrdmulh_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQRDMULH.S32 Dd, Dn, Dm
+        ///   A64: SQRDMULH Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyRoundedDoublingSaturateHigh(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqrdmulhq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQRDMULH.S16 Qd, Qn, Qm
+        ///   A64: SQRDMULH Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedDoublingSaturateHigh(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqrdmulhq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQRDMULH.S32 Qd, Qn, Qm
+        ///   A64: SQRDMULH Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyRoundedDoublingSaturateHigh(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VMUL.F64 Dd, Dn, Dm
         ///   A64: FMUL Dd, Dn, Dm
@@ -6350,172 +9845,270 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
-        ///   A32: VMLA.I8 Dd, Dn, Dm
-        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// float32_t vmuls_lane_f32 (float32_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
+        ///   A64: FMUL Sd, Sn, Vm.S[lane]
         /// </summary>
-        public static Vector64<byte> MultiplyAdd(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vmla_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
-        ///   A32: VMLA.I16 Dd, Dn, Dm
-        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// float32_t vmuls_laneq_f32 (float32_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
+        ///   A64: FMUL Sd, Sn, Vm.S[lane]
         /// </summary>
-        public static Vector64<short> MultiplyAdd(Vector64<short> acc, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int32x2_t vmla_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
-        ///   A32: VMLA.I32 Dd, Dn, Dm
-        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
-        /// </summary>
-        public static Vector64<int> MultiplyAdd(Vector64<int> acc, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int8x8_t vmla_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
-        ///   A32: VMLA.I8 Dd, Dn, Dm
-        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
-        /// </summary>
-        public static Vector64<sbyte> MultiplyAdd(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint16x4_t vmla_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
-        ///   A32: VMLA.I16 Dd, Dn, Dm
-        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
-        /// </summary>
-        public static Vector64<ushort> MultiplyAdd(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint32x2_t vmla_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
-        ///   A32: VMLA.I32 Dd, Dn, Dm
-        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
-        /// </summary>
-        public static Vector64<uint> MultiplyAdd(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint8x16_t vmlaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
-        ///   A32: VMLA.I8 Qd, Qn, Qm
-        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
-        /// </summary>
-        public static Vector128<byte> MultiplyAdd(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int16x8_t vmlaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
-        ///   A32: VMLA.I16 Qd, Qn, Qm
-        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
-        /// </summary>
-        public static Vector128<short> MultiplyAdd(Vector128<short> acc, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int32x4_t vmlaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
-        ///   A32: VMLA.I32 Qd, Qn, Qm
-        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
-        /// </summary>
-        public static Vector128<int> MultiplyAdd(Vector128<int> acc, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int8x16_t vmlaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
-        ///   A32: VMLA.I8 Qd, Qn, Qm
-        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
-        /// </summary>
-        public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint16x8_t vmlaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
-        ///   A32: VMLA.I16 Qd, Qn, Qm
-        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
-        /// </summary>
-        public static Vector128<ushort> MultiplyAdd(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint32x4_t vmlaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
-        ///   A32: VMLA.I32 Qd, Qn, Qm
-        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
-        /// </summary>
-        public static Vector128<uint> MultiplyAdd(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
         ///   A32: VMLS.I8 Dd, Dn, Dm
         ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<byte> MultiplySubtract(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<byte> MultiplySubtract(Vector64<byte> minuend, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vmls_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
         ///   A32: VMLS.I16 Dd, Dn, Dm
         ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
         /// </summary>
-        public static Vector64<short> MultiplySubtract(Vector64<short> acc, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> MultiplySubtract(Vector64<short> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vmls_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
         ///   A32: VMLS.I32 Dd, Dn, Dm
         ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<int> MultiplySubtract(Vector64<int> acc, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> MultiplySubtract(Vector64<int> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vmls_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
         ///   A32: VMLS.I8 Dd, Dn, Dm
         ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<sbyte> MultiplySubtract(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> MultiplySubtract(Vector64<sbyte> minuend, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vmls_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
         ///   A32: VMLS.I16 Dd, Dn, Dm
         ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
         /// </summary>
-        public static Vector64<ushort> MultiplySubtract(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> MultiplySubtract(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vmls_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
         ///   A32: VMLS.I32 Dd, Dn, Dm
         ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<uint> MultiplySubtract(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> MultiplySubtract(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vmlsq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
         ///   A32: VMLS.I8 Qd, Qn, Qm
         ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<byte> MultiplySubtract(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> MultiplySubtract(Vector128<byte> minuend, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vmlsq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
         ///   A32: VMLS.I16 Qd, Qn, Qm
         ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<short> MultiplySubtract(Vector128<short> acc, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> MultiplySubtract(Vector128<short> minuend, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vmlsq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
         ///   A32: VMLS.I32 Qd, Qn, Qm
         ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<int> MultiplySubtract(Vector128<int> acc, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> MultiplySubtract(Vector128<int> minuend, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vmlsq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
         ///   A32: VMLS.I8 Qd, Qn, Qm
         ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<sbyte> MultiplySubtract(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> MultiplySubtract(Vector128<sbyte> minuend, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vmlsq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
         ///   A32: VMLS.I16 Qd, Qn, Qm
         ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
         /// </summary>
-        public static Vector128<ushort> MultiplySubtract(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> MultiplySubtract(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vmlsq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
         ///   A32: VMLS.I32 Qd, Qn, Qm
         ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<uint> MultiplySubtract(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> MultiplySubtract(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_n_s16 (int16x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractByScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_n_s32 (int32x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractByScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_n_u16 (uint16x4_t a, uint16x4_t b, uint16_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractByScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_n_u32 (uint32x2_t a, uint32x2_t b, uint32_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractByScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_n_s16 (int16x8_t a, int16x8_t b, int16_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractByScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_n_s32 (int32x4_t a, int32x4_t b, int32_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractByScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_n_u16 (uint16x8_t a, uint16x8_t b, uint16_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractByScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_n_u32 (uint32x4_t a, uint32x4_t b, uint32_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractByScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_lane_s16 (int16x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vmull_u8 (uint8x8_t a, uint8x8_t b)
@@ -6824,6 +10417,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNEG Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<float> Negate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vqneg_s16 (int16x4_t a)
+        ///   A32: VQNEG.S16 Dd, Dm
+        ///   A64: SQNEG Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> NegateSaturate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vqneg_s32 (int32x2_t a)
+        ///   A32: VQNEG.S32 Dd, Dm
+        ///   A64: SQNEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> NegateSaturate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vqneg_s8 (int8x8_t a)
+        ///   A32: VQNEG.S8 Dd, Dm
+        ///   A64: SQNEG Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> NegateSaturate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vqnegq_s16 (int16x8_t a)
+        ///   A32: VQNEG.S16 Qd, Qm
+        ///   A64: SQNEG Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> NegateSaturate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vqnegq_s32 (int32x4_t a)
+        ///   A32: VQNEG.S32 Qd, Qm
+        ///   A64: SQNEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> NegateSaturate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vqnegq_s8 (int8x16_t a)
+        ///   A32: VQNEG.S8 Qd, Qm
+        ///   A64: SQNEG Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> NegateSaturate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vneg_f64 (float64x1_t a)
@@ -7441,228 +11076,317 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Dd, Dm, #n
-        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// int16x4_t vrev32_s16 (int16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
         /// </summary>
-        public static Vector64<byte> ShiftLeftLogicalAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> ReverseElement16(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Dd, Dm, #n
-        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// int16x4_t vrev64_s16 (int16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
         /// </summary>
-        public static Vector64<short> ShiftLeftLogicalAndInsert(Vector64<short> left, Vector64<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<long> ReverseElement16(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Dd, Dm, #n
-        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// uint16x4_t vrev32_u16 (uint16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
         /// </summary>
-        public static Vector64<int> ShiftLeftLogicalAndInsert(Vector64<int> left, Vector64<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> ReverseElement16(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Dd, Dm, #n
-        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// uint16x4_t vrev64_u16 (uint16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
         /// </summary>
-        public static Vector64<sbyte> ShiftLeftLogicalAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ulong> ReverseElement16(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Dd, Dm, #n
-        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// int16x8_t vrev32q_s16 (int16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
         /// </summary>
-        public static Vector64<ushort> ShiftLeftLogicalAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ReverseElement16(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Dd, Dm, #n
-        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// int16x8_t vrev64q_s16 (int16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
         /// </summary>
-        public static Vector64<uint> ShiftLeftLogicalAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ReverseElement16(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Qd, Qm, #n
-        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// uint16x8_t vrev32q_u16 (uint16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogicalAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ReverseElement16(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Qd, Qm, #n
-        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// uint16x8_t vrev64q_u16 (uint16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
         /// </summary>
-        public static Vector128<short> ShiftLeftLogicalAndInsert(Vector128<short> left, Vector128<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ReverseElement16(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Qd, Qm, #n
-        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// int32x2_t vrev64_s32 (int32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
         /// </summary>
-        public static Vector128<int> ShiftLeftLogicalAndInsert(Vector128<int> left, Vector128<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<long> ReverseElement32(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Qd, Qm, #n
-        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// uint32x2_t vrev64_u32 (uint32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
         /// </summary>
-        public static Vector128<long> ShiftLeftLogicalAndInsert(Vector128<long> left, Vector128<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ulong> ReverseElement32(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.8 Qd, Qm, #n
-        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// int32x4_t vrev64q_s32 (int32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogicalAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ReverseElement32(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.16 Qd, Qm, #n
-        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// uint32x4_t vrev64q_u32 (uint32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogicalAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ReverseElement32(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.32 Qd, Qm, #n
-        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// int8x8_t vrev16_s8 (int8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogicalAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> ReverseElement8(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Qd, Qm, #n
-        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// int8x8_t vrev32_s8 (int8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogicalAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> ReverseElement8(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Dd, Dm, #n
-        ///   A64: SLI Dd, Dn, #n
+        /// int8x8_t vrev64_s8 (int8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector64<long> ShiftLeftLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<long> ReverseElement8(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
-        ///   A32: VSLI.64 Dd, Dm, #n
-        ///   A64: SLI Dd, Dn, #n
+        /// uint8x8_t vrev16_u8 (uint8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector64<ulong> ShiftLeftLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> ReverseElement8(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x8_t vsri_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Dd, Dm, #n
-        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// uint8x8_t vrev32_u8 (uint8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> ReverseElement8(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Dd, Dm, #n
-        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// uint8x8_t vrev64_u8 (uint8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
         /// </summary>
-        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ulong> ReverseElement8(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Dd, Dm, #n
-        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// int8x16_t vrev16q_s8 (int8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ReverseElement8(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Dd, Dm, #n
-        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// int8x16_t vrev32q_s8 (int8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ReverseElement8(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Dd, Dm, #n
-        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// int8x16_t vrev64q_s8 (int8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ReverseElement8(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Dd, Dm, #n
-        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// uint8x16_t vrev16q_u8 (uint8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ReverseElement8(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Qd, Qm, #n
-        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// uint8x16_t vrev32q_u8 (uint8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ReverseElement8(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Qd, Qm, #n
-        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// uint8x16_t vrev64q_u8 (uint8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
         /// </summary>
-        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ReverseElement8(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Qd, Qm, #n
-        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// float32x2_t vrnda_f32 (float32x2_t a)
+        ///   A32: VRINTA.F32 Dd, Dm
+        ///   A64: FRINTA Vd.2S, Vn.2S
         /// </summary>
-        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> RoundAwayFromZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Qd, Qm, #n
-        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// float32x4_t vrndaq_f32 (float32x4_t a)
+        ///   A32: VRINTA.F32 Qd, Qm
+        ///   A64: FRINTA Vd.4S, Vn.4S
         /// </summary>
-        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> RoundAwayFromZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.8 Qd, Qm, #n
-        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// float64x1_t vrnda_f64 (float64x1_t a)
+        ///   A32: VRINTA.F64 Dd, Dm
+        ///   A64: FRINTA Dd, Dn
         /// </summary>
-        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> RoundAwayFromZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.16 Qd, Qm, #n
-        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// float32_t vrndas_f32 (float32_t a)
+        ///   A32: VRINTA.F32 Sd, Sm
+        ///   A64: FRINTA Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> RoundAwayFromZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.32 Qd, Qm, #n
-        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// float32x2_t vrndn_f32 (float32x2_t a)
+        ///   A32: VRINTN.F32 Dd, Dm
+        ///   A64: FRINTN Vd.2S, Vn.2S
         /// </summary>
-        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> RoundToNearest(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Qd, Qm, #n
-        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// float32x4_t vrndnq_f32 (float32x4_t a)
+        ///   A32: VRINTN.F32 Qd, Qm
+        ///   A64: FRINTN Vd.4S, Vn.4S
         /// </summary>
-        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> RoundToNearest(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
-        ///   A32: VSRI.64 Dd, Dm, #n
-        ///   A64: SRI Dd, Dn, #n
+        /// float64x1_t vrndn_f64 (float64x1_t a)
+        ///   A32: VRINTN.F64 Dd, Dm
+        ///   A64: FRINTN Dd, Dn
         /// </summary>
-        public static Vector64<long> ShiftRightLogicalAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> RoundToNearestScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
-        ///    A32: VSRI.64 Dd, Dm, #n
-        ///    A64: SRI Dd, Dn, #n
+        /// float32_t vrndns_f32 (float32_t a)
+        ///   A32: VRINTN.F32 Sd, Sm
+        ///   A64: FRINTN Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<ulong> ShiftRightLogicalAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> RoundToNearestScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndm_f32 (float32x2_t a)
+        ///   A32: VRINTM.F32 Dd, Dm
+        ///   A64: FRINTM Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToNegativeInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndmq_f32 (float32x4_t a)
+        ///   A32: VRINTM.F32 Qd, Qm
+        ///   A64: FRINTM Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToNegativeInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndm_f64 (float64x1_t a)
+        ///   A32: VRINTM.F64 Dd, Dm
+        ///   A64: FRINTM Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToNegativeInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndms_f32 (float32_t a)
+        ///   A32: VRINTM.F32 Sd, Sm
+        ///   A64: FRINTM Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToNegativeInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrndp_f32 (float32x2_t a)
+        ///   A32: VRINTP.F32 Dd, Dm
+        ///   A64: FRINTP Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToPositiveInfinity(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndpq_f32 (float32x4_t a)
+        ///   A32: VRINTP.F32 Qd, Qm
+        ///   A64: FRINTP Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToPositiveInfinity(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrndp_f64 (float64x1_t a)
+        ///   A32: VRINTP.F64 Dd, Dm
+        ///   A64: FRINTP Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToPositiveInfinityScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrndps_f32 (float32_t a)
+        ///   A32: VRINTP.F32 Sd, Sm
+        ///   A64: FRINTP Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToPositiveInfinityScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrnd_f32 (float32x2_t a)
+        ///   A32: VRINTZ.F32 Dd, Dm
+        ///   A64: FRINTZ Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> RoundToZero(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrndq_f32 (float32x4_t a)
+        ///   A32: VRINTZ.F32 Qd, Qm
+        ///   A64: FRINTZ Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> RoundToZero(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vrnd_f64 (float64x1_t a)
+        ///   A32: VRINTZ.F64 Dd, Dm
+        ///   A64: FRINTZ Dd, Dn
+        /// </summary>
+        public static Vector64<double> RoundToZeroScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vrnds_f32 (float32_t a)
+        ///   A32: VRINTZ.F32 Sd, Sm
+        ///   A64: FRINTZ Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> RoundToZeroScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vshl_s16 (int16x4_t a, int16x4_t b)
@@ -7887,6 +11611,118 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SSHL Dd, Dn, Dm
         /// </summary>
         public static Vector64<long> ShiftArithmeticScalar(Vector64<long> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vsli_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftLeftAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vsli_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftLeftAndInsert(Vector64<short> left, Vector64<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vsli_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftLeftAndInsert(Vector64<int> left, Vector64<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vsli_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Dd, Dm, #n
+        ///   A64: SLI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftLeftAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vsli_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Dd, Dm, #n
+        ///   A64: SLI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftLeftAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vsli_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Dd, Dm, #n
+        ///   A64: SLI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftLeftAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vsliq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftLeftAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vsliq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftLeftAndInsert(Vector128<short> left, Vector128<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vsliq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftLeftAndInsert(Vector128<int> left, Vector128<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vsliq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftLeftAndInsert(Vector128<long> left, Vector128<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vsliq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.8 Qd, Qm, #n
+        ///   A64: SLI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftLeftAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vsliq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.16 Qd, Qm, #n
+        ///   A64: SLI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vsliq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.32 Qd, Qm, #n
+        ///   A64: SLI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftLeftAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vsliq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Qd, Qm, #n
+        ///   A64: SLI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t vslid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftLeftAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t vslid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///   A32: VSLI.64 Dd, Dm, #n
+        ///   A64: SLI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftLeftAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vshl_n_u8 (uint8x8_t a, const int n)
@@ -8692,6 +12528,118 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: USHL Dd, Dn, Dm
         /// </summary>
         public static Vector64<ulong> ShiftLogicalScalar(Vector64<ulong> value, Vector64<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vsri_n_u8(uint8x8_t a, uint8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<byte> ShiftRightAndInsert(Vector64<byte> left, Vector64<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vsri_n_s16(int16x4_t a, int16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<short> ShiftRightAndInsert(Vector64<short> left, Vector64<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vsri_n_s32(int32x2_t a, int32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<int> ShiftRightAndInsert(Vector64<int> left, Vector64<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vsri_n_s8(int8x8_t a, int8x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Dd, Dm, #n
+        ///   A64: SRI Vd.8B, Vn.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ShiftRightAndInsert(Vector64<sbyte> left, Vector64<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vsri_n_u16(uint16x4_t a, uint16x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Dd, Dm, #n
+        ///   A64: SRI Vd.4H, Vn.4H, #n
+        /// </summary>
+        public static Vector64<ushort> ShiftRightAndInsert(Vector64<ushort> left, Vector64<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vsri_n_u32(uint32x2_t a, uint32x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Dd, Dm, #n
+        ///   A64: SRI Vd.2S, Vn.2S, #n
+        /// </summary>
+        public static Vector64<uint> ShiftRightAndInsert(Vector64<uint> left, Vector64<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vsriq_n_u8(uint8x16_t a, uint8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<byte> ShiftRightAndInsert(Vector128<byte> left, Vector128<byte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vsriq_n_s16(int16x8_t a, int16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<short> ShiftRightAndInsert(Vector128<short> left, Vector128<short> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vsriq_n_s32(int32x4_t a, int32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<int> ShiftRightAndInsert(Vector128<int> left, Vector128<int> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vsriq_n_s64(int64x2_t a, int64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<long> ShiftRightAndInsert(Vector128<long> left, Vector128<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vsriq_n_s8(int8x16_t a, int8x16_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.8 Qd, Qm, #n
+        ///   A64: SRI Vd.16B, Vn.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ShiftRightAndInsert(Vector128<sbyte> left, Vector128<sbyte> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vsriq_n_u16(uint16x8_t a, uint16x8_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.16 Qd, Qm, #n
+        ///   A64: SRI Vd.8H, Vn.8H, #n
+        /// </summary>
+        public static Vector128<ushort> ShiftRightAndInsert(Vector128<ushort> left, Vector128<ushort> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vsriq_n_u32(uint32x4_t a, uint32x4_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.32 Qd, Qm, #n
+        ///   A64: SRI Vd.4S, Vn.4S, #n
+        /// </summary>
+        public static Vector128<uint> ShiftRightAndInsert(Vector128<uint> left, Vector128<uint> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vsriq_n_u64(uint64x2_t a, uint64x2_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Qd, Qm, #n
+        ///   A64: SRI Vd.2D, Vn.2D, #n
+        /// </summary>
+        public static Vector128<ulong> ShiftRightAndInsert(Vector128<ulong> left, Vector128<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t vsrid_n_s64(int64_t a, int64_t b, __builtin_constant_p(n))
+        ///   A32: VSRI.64 Dd, Dm, #n
+        ///   A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<long> ShiftRightAndInsertScalar(Vector64<long> left, Vector64<long> right, byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  uint64_t vsrid_n_u64(uint64_t a, uint64_t b, __builtin_constant_p(n))
+        ///    A32: VSRI.64 Dd, Dm, #n
+        ///    A64: SRI Dd, Dn, #n
+        /// </summary>
+        public static Vector64<ulong> ShiftRightAndInsertScalar(Vector64<ulong> left, Vector64<ulong> right, byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vshr_n_s16 (int16x4_t a, const int n)
@@ -10065,6 +14013,125 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST1 { Vt.2D }, [Xn]
         /// </summary>
         public static unsafe void Store(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_u8 (uint8_t * ptr, uint8x8_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(byte* address, Vector64<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s16 (int16_t * ptr, int16x4_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(short* address, Vector64<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s32 (int32_t * ptr, int32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(int* address, Vector64<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s8 (int8_t * ptr, int8x8_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector64<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_f32 (float32_t * ptr, float32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(float* address, Vector64<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_u16 (uint16_t * ptr, uint16x4_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector64<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_u32 (uint32_t * ptr, uint32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u8 (uint8_t * ptr, uint8x16_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_f64 (float64_t * ptr, float64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s16 (int16_t * ptr, int16x8_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s32 (int32_t * ptr, int32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s64 (int64_t * ptr, int64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s8 (int8_t * ptr, int8x16_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_f32 (float32_t * ptr, float32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u16 (uint16_t * ptr, uint16x8_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u32 (uint32_t * ptr, uint32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u64 (uint64_t * ptr, uint64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)

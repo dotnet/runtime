@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -639,13 +638,6 @@ namespace System.Text.Json.Serialization.Tests
         public class Poco
         {
             public int Id { get; set; }
-        }
-
-        [Fact]
-        public static void FirstGenericArgNotStringFail()
-        {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, int>>(@"{1:1}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ImmutableDictionary<int, int>>(@"{1:1}"));
         }
 
         [Fact]
@@ -1619,8 +1611,7 @@ namespace System.Text.Json.Serialization.Tests
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNotSupportedDictionary>(json));
 
             // The exception contains the type.
-            Assert.Contains(typeof(Dictionary<int, int>).ToString(), ex.Message);
-            Assert.DoesNotContain("Path: ", ex.Message);
+            Assert.Contains(typeof(Dictionary<int[,], int>).ToString(), ex.Message);
         }
 
         [Fact]
@@ -1840,12 +1831,12 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithNotSupportedDictionary
         {
-            public Dictionary<int, int> MyDictionary { get; set; }
+            public Dictionary<int[,], int> MyDictionary { get; set; }
         }
 
         public class ClassWithNotSupportedDictionaryButIgnored
         {
-            [JsonIgnore] public Dictionary<int, int> MyDictionary { get; set; }
+            [JsonIgnore] public Dictionary<int[,], int> MyDictionary { get; set; }
         }
 
         public class AllSingleUpperPropertiesParent
@@ -2141,15 +2132,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, ((JsonElement)dictionary["One"]).GetProperty("Id").GetInt32());
             Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetProperty("Id").GetInt32());
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
-        }
-
-
-        [Fact]
-        public static void VerifyIDictionaryWithNonStringKey()
-        {
-            IDictionary dictionary = new Hashtable();
-            dictionary.Add(1, "value");
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(dictionary));
         }
 
         private class ClassWithoutParameterlessCtor

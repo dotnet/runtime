@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -65,11 +64,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Dispose()
         {
-            var toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
-                for (var i = toDispose.Count - 1; i >= 0; i--)
+                for (int i = toDispose.Count - 1; i >= 0; i--)
                 {
                     if (toDispose[i] is IDisposable disposable)
                     {
@@ -85,18 +84,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ValueTask DisposeAsync()
         {
-            var toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
                 try
                 {
-                    for (var i = toDispose.Count - 1; i >= 0; i--)
+                    for (int i = toDispose.Count - 1; i >= 0; i--)
                     {
-                        var disposable = toDispose[i];
+                        object disposable = toDispose[i];
                         if (disposable is IAsyncDisposable asyncDisposable)
                         {
-                            var vt = asyncDisposable.DisposeAsync();
+                            ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
                                 return Await(i, vt, toDispose);
@@ -122,14 +121,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
-                await vt;
+                await vt.ConfigureAwait(false);
 
                 for (; i >= 0; i--)
                 {
-                    var disposable = toDispose[i];
+                    object disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        await asyncDisposable.DisposeAsync();
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     }
                     else
                     {
@@ -154,7 +153,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 _disposables = null;
 
                 // Not clearing ResolvedServices here because there might be a compilation running in background
-                // trying to get a cached singleton service instance and if it won't find 
+                // trying to get a cached singleton service instance and if it won't find
                 // it it will try to create a new one tripping the Debug.Assert in CaptureDisposable
                 // and leaking a Disposable object in Release mode
             }

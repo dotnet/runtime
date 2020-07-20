@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Remove this after System.Data.{Odbc,OleDb} are null-annotated
+#nullable disable
+#pragma warning disable CS8632
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -91,8 +95,8 @@ namespace System.Data.Common
         }
 
         private readonly string _usersConnectionString;
-        private readonly Dictionary<string, string> _parsetable;
-        internal readonly NameValuePair _keyChain;
+        private readonly Dictionary<string, string?> _parsetable;
+        internal readonly NameValuePair? _keyChain;
         internal readonly bool _hasPasswordKeyword;
 
         public string UsersConnectionString(bool hidePassword) =>
@@ -114,9 +118,10 @@ namespace System.Data.Common
 
         public bool ConvertValueToBoolean(string keyName, bool defaultValue)
         {
-            string value;
+            string? value;
+            // TODO: Is it possible for _parsetable to contain a null value here? If so there's a bug here, investigate.
             return _parsetable.TryGetValue(keyName, out value) ?
-                ConvertValueToBooleanInternal(keyName, value) :
+                ConvertValueToBooleanInternal(keyName, value!) :
                 defaultValue;
         }
 
@@ -144,7 +149,7 @@ namespace System.Data.Common
             (0 == StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst));
 
         [System.Diagnostics.Conditional("DEBUG")]
-        static partial void DebugTraceKeyValuePair(string keyname, string keyvalue, Dictionary<string, string> synonyms);
+        static partial void DebugTraceKeyValuePair(string keyname, string? keyvalue, Dictionary<string, string>? synonyms);
 
         private static string GetKeyName(StringBuilder buffer)
         {
@@ -192,7 +197,7 @@ namespace System.Data.Common
             NullTermination,
         };
 
-        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string keyname, out string keyvalue)
+        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string? keyname, out string? keyvalue)
         {
             int startposition = currentPosition;
 
@@ -396,7 +401,8 @@ namespace System.Data.Common
             return currentPosition;
         }
 
-        private static bool IsValueValidInternal(string keyvalue)
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'. This file is built into libraries that don't have string.Contains(char).
+        private static bool IsValueValidInternal(string? keyvalue)
         {
             if (null != keyvalue)
             {
@@ -410,7 +416,8 @@ namespace System.Data.Common
             return true;
         }
 
-        private static bool IsKeyNameValid(string keyname)
+        // TODO: Annotate with [NotNullWhen(true)] when annotating System.Data.{Odbc,OleDb}
+        private static bool IsKeyNameValid(string? keyname)
         {
             if (null != keyname)
             {
@@ -423,9 +430,10 @@ namespace System.Data.Common
             }
             return false;
         }
+#pragma warning restore CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
 
 #if DEBUG
-        private static Dictionary<string, string> SplitConnectionString(string connectionString, Dictionary<string, string> synonyms, bool firstKey)
+        private static Dictionary<string, string> SplitConnectionString(string connectionString, Dictionary<string, string>? synonyms, bool firstKey)
         {
             var parsetable = new Dictionary<string, string>();
             Regex parser = (firstKey ? s_connectionStringRegexOdbc : s_connectionStringRegex);
@@ -446,7 +454,7 @@ namespace System.Data.Common
                 foreach (Capture keypair in match.Groups[KeyIndex].Captures)
                 {
                     string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLowerInvariant();
-                    string keyvalue = keyvalues[indexValue++].Value;
+                    string? keyvalue = keyvalues[indexValue++].Value;
                     if (0 < keyvalue.Length)
                     {
                         if (!firstKey)
@@ -469,8 +477,8 @@ namespace System.Data.Common
                         keyvalue = null;
                     }
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
-                    string synonym;
-                    string realkeyname = null != synonyms ?
+                    string? synonym;
+                    string? realkeyname = null != synonyms ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) : keyname;
 
                     if (!IsKeyNameValid(realkeyname))
@@ -479,14 +487,14 @@ namespace System.Data.Common
                     }
                     if (!firstKey || !parsetable.ContainsKey(realkeyname))
                     {
-                        parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
+                        parsetable[realkeyname] = keyvalue!; // last key-value pair wins (or first)
                     }
                 }
             }
             return parsetable;
         }
 
-        private static void ParseComparison(Dictionary<string, string> parsetable, string connectionString, Dictionary<string, string> synonyms, bool firstKey, Exception e)
+        private static void ParseComparison(Dictionary<string, string?> parsetable, string connectionString, Dictionary<string, string>? synonyms, bool firstKey, Exception? e)
         {
             try
             {
@@ -495,7 +503,7 @@ namespace System.Data.Common
                 {
                     string keyname = entry.Key;
                     string value1 = entry.Value;
-                    string value2;
+                    string? value2;
                     bool parsetableContainsKey = parsetable.TryGetValue(keyname, out value2);
                     Debug.Assert(parsetableContainsKey, $"{nameof(ParseInternal)} code vs. regex mismatch keyname <{keyname}>");
                     Debug.Assert(value1 == value2, $"{nameof(ParseInternal)} code vs. regex mismatch keyvalue <{value1}> <{value2}>");
@@ -538,11 +546,11 @@ namespace System.Data.Common
         }
 #endif
 
-        private static NameValuePair ParseInternal(Dictionary<string, string> parsetable, string connectionString, bool buildChain, Dictionary<string, string> synonyms, bool firstKey)
+        private static NameValuePair? ParseInternal(Dictionary<string, string?> parsetable, string connectionString, bool buildChain, Dictionary<string, string>? synonyms, bool firstKey)
         {
             Debug.Assert(null != connectionString, "null connectionstring");
             StringBuilder buffer = new StringBuilder();
-            NameValuePair localKeychain = null, keychain = null;
+            NameValuePair? localKeychain = null, keychain = null;
 #if DEBUG
             try
             {
@@ -553,7 +561,7 @@ namespace System.Data.Common
                 {
                     int startPosition = nextStartPosition;
 
-                    string keyname, keyvalue;
+                    string? keyname, keyvalue;
                     nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
                     if (string.IsNullOrEmpty(keyname))
                     {
@@ -565,8 +573,8 @@ namespace System.Data.Common
                     Debug.Assert(IsKeyNameValid(keyname), "ParseFailure, invalid keyname");
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
-                    string synonym;
-                    string realkeyname = null != synonyms ?
+                    string? synonym;
+                    string? realkeyname = null != synonyms ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
                         keyname;
 
@@ -601,13 +609,13 @@ namespace System.Data.Common
             return keychain;
         }
 
-        internal NameValuePair ReplacePasswordPwd(out string constr, bool fakePassword)
+        internal NameValuePair? ReplacePasswordPwd(out string constr, bool fakePassword)
         {
             bool expanded = false;
             int copyPosition = 0;
-            NameValuePair head = null, tail = null, next = null;
+            NameValuePair? head = null, tail = null, next = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
             {
                 if ((KEY.Password != current.Name) && (SYNONYM.Pwd != current.Name))
                 {

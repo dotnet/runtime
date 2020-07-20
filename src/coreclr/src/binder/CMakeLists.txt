@@ -83,7 +83,7 @@ convert_to_absolute_path(BINDER_SOURCES ${BINDER_SOURCES})
 convert_to_absolute_path(BINDER_CROSSGEN_SOURCES ${BINDER_CROSSGEN_SOURCES})
 
 add_library_clr(v3binder
-    STATIC
+    OBJECT
     ${BINDER_SOURCES}
 )
 add_dependencies(v3binder eventing_headers)

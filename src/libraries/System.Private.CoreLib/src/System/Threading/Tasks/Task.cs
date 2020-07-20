@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -174,7 +173,7 @@ namespace System.Threading.Tasks
 
         // Can be null, a single continuation, a list of continuations, or s_taskCompletionSentinel,
         // in that order. The logic arround this object assumes it will never regress to a previous state.
-        private volatile object? m_continuationObject = null; // SOS DumpAsync command depends on this name
+        private volatile object? m_continuationObject; // SOS DumpAsync command depends on this name
 
         // m_continuationObject is set to this when the task completes.
         private static readonly object s_taskCompletionSentinel = new object();
@@ -620,7 +619,7 @@ namespace System.Threading.Tasks
                         if (antecedent == null)
                         {
                             // if no antecedent was specified, use this task's reference as the cancellation state object
-                            ctr = cancellationToken.UnsafeRegister(t => ((Task)t!).InternalCancel(), this);
+                            ctr = cancellationToken.UnsafeRegister(static t => ((Task)t!).InternalCancel(), this);
                         }
                         else
                         {
@@ -629,7 +628,7 @@ namespace System.Threading.Tasks
                             // If an antecedent was specified, pack this task, its antecedent and the TaskContinuation together as a tuple
                             // and use it as the cancellation state object. This will be unpacked in the cancellation callback so that
                             // antecedent.RemoveCancellation(continuation) can be invoked.
-                            ctr = cancellationToken.UnsafeRegister(t =>
+                            ctr = cancellationToken.UnsafeRegister(static t =>
                             {
                                 var tuple = (Tuple<Task, Task, TaskContinuation>)t!;
 
@@ -1656,11 +1655,11 @@ namespace System.Threading.Tasks
             if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
 
-            if (AsyncCausalityTracer.LoggingOn && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
+            if (TplEventSource.Log.IsEnabled() && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action.Method.Name);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.Method.Name, 0);
             }
 
             try
@@ -1881,7 +1880,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     // Post the throwing of the exception to that context, and return.
-                    targetContext.Post(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
+                    targetContext.Post(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
                     return;
                 }
                 catch (Exception postException)
@@ -1896,7 +1895,7 @@ namespace System.Threading.Tasks
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
-            ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
+            ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
 #endif // CORERT
         }
@@ -2028,8 +2027,8 @@ namespace System.Threading.Tasks
             if (ExceptionRecorded)
             {
                 completionState = TASK_STATE_FAULTED;
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Error);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Error);
 
                 if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
@@ -2044,8 +2043,8 @@ namespace System.Threading.Tasks
                 // then we regard it as a regular exception
 
                 completionState = TASK_STATE_CANCELED;
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Canceled);
 
                 if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
@@ -2053,8 +2052,8 @@ namespace System.Threading.Tasks
             else
             {
                 completionState = TASK_STATE_RAN_TO_COMPLETION;
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                 if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
@@ -2291,9 +2290,9 @@ namespace System.Threading.Tasks
                     log.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
             }
 
-            bool loggingOn = AsyncCausalityTracer.LoggingOn;
+            bool loggingOn = TplEventSource.Log.IsEnabled();
             if (loggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
+                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
 
             try
             {
@@ -2329,7 +2328,7 @@ namespace System.Threading.Tasks
                 }
 
                 if (loggingOn)
-                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
 
                 Finish(true);
             }
@@ -3049,8 +3048,8 @@ namespace System.Threading.Tasks
                 cp.UnregisterCancellationCallback();
             }
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Canceled);
 
             if (s_asyncDebuggingEnabled)
                 RemoveFromActiveTasks(this);
@@ -3206,8 +3205,8 @@ namespace System.Threading.Tasks
                 log = null;
             }
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.CompletionNotification);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.CompletionNotification);
 
             bool canInlineContinuations =
                 (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0 &&
@@ -3360,8 +3359,8 @@ namespace System.Threading.Tasks
 
         private static void LogFinishCompletionNotification()
         {
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.CompletionNotification);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.CompletionNotification);
         }
 
         #region Continuation methods
@@ -5374,8 +5373,8 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(millisecondsDelay != 0);
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.Delay");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.Delay", 0);
 
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -5402,8 +5401,8 @@ namespace System.Threading.Tasks
                     if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
                 }
             }
 
@@ -5421,7 +5420,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(token.CanBeCanceled);
 
                 _token = token;
-                _registration = token.UnsafeRegister(state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
+                _registration = token.UnsafeRegister(static state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
             }
 
             private void CompleteCanceled()
@@ -5588,8 +5587,8 @@ namespace System.Threading.Tasks
                 Debug.Assert(tasks != null, "Expected a non-null task array");
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.WhenAll");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
 
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -5606,8 +5605,8 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task completedTask)
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
@@ -5655,8 +5654,8 @@ namespace System.Threading.Tasks
                     }
                     else
                     {
-                        if (AsyncCausalityTracer.LoggingOn)
-                            AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                        if (TplEventSource.Log.IsEnabled())
+                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                         if (s_asyncDebuggingEnabled)
                             RemoveFromActiveTasks(this);
@@ -5824,8 +5823,8 @@ namespace System.Threading.Tasks
                 m_tasks = tasks;
                 m_count = tasks.Length;
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.WhenAll");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
 
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -5839,8 +5838,8 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task ignored)
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
@@ -5894,8 +5893,8 @@ namespace System.Threading.Tasks
                     }
                     else
                     {
-                        if (AsyncCausalityTracer.LoggingOn)
-                            AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                        if (TplEventSource.Log.IsEnabled())
+                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                         if (Task.s_asyncDebuggingEnabled)
                             RemoveFromActiveTasks(this);
@@ -6000,9 +5999,9 @@ namespace System.Threading.Tasks
                 _task1 = task1;
                 _task2 = task2;
 
-                if (AsyncCausalityTracer.LoggingOn)
+                if (TplEventSource.Log.IsEnabled())
                 {
-                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.WhenAny");
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAny", 0);
                 }
 
                 if (s_asyncDebuggingEnabled)
@@ -6035,10 +6034,10 @@ namespace System.Threading.Tasks
                     Debug.Assert(task1 != null && task2 != null);
                     Debug.Assert(task1.IsCompleted || task2.IsCompleted);
 
-                    if (AsyncCausalityTracer.LoggingOn)
+                    if (TplEventSource.Log.IsEnabled())
                     {
-                        AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Choice);
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                        TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Choice);
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
                     }
 
                     if (s_asyncDebuggingEnabled)
@@ -6512,7 +6511,7 @@ namespace System.Threading.Tasks
         private const byte STATE_WAITING_ON_INNER_TASK = 1; // Invoke() means "process completed inner task"
         private const byte STATE_DONE = 2;                  // Invoke() means "something went wrong and we are hosed!"
 
-        // Keep track of our state; initialized to STATE_WAITING_ON_OUTER_TASK in the constructor
+        // Keep track of our state; defaults to STATE_WAITING_ON_OUTER_TASK
         private byte _state;
 
         // "Should we check for OperationCanceledExceptions on the outer task and interpret them as proxy cancellation?"
@@ -6524,10 +6523,9 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(outerTask != null, "Expected non-null outerTask");
             _lookForOce = lookForOce;
-            _state = STATE_WAITING_ON_OUTER_TASK;
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(this, "Task.Unwrap");
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task.Unwrap", 0);
 
             if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
@@ -6592,7 +6590,7 @@ namespace System.Threading.Tasks
             // there's a high liklihood this thread is going to be doing lots more work before
             // returning to the thread pool (at the very least unwinding through thousands of
             // stack frames).  So we queue to the global queue.
-            ThreadPool.UnsafeQueueUserWorkItem(state =>
+            ThreadPool.UnsafeQueueUserWorkItem(static state =>
             {
                 // InvokeCore(completingTask);
                 var tuple = (Tuple<UnwrapPromise<TResult>, Task>)state!;
@@ -6636,8 +6634,8 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null && task.IsCompleted, "TrySetFromTask: Expected task to have completed.");
 
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
             bool result = false;
             switch (task.Status)
@@ -6662,8 +6660,8 @@ namespace System.Threading.Tasks
                     break;
 
                 case TaskStatus.RanToCompletion:
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);

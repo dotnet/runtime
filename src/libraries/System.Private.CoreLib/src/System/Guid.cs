@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -19,7 +18,7 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
-        public static readonly Guid Empty = default;
+        public static readonly Guid Empty;
 
         private int _a;   // Do not rename (binary serialization)
         private short _b; // Do not rename (binary serialization)
@@ -664,13 +663,12 @@ namespace System
             for (; i < guidString.Length && guidString[i] == '0'; i++) ;
 
             int processedDigits = 0;
-            ReadOnlySpan<byte> charToHexLookup = Number.CharToHexLookup;
             uint tmp = 0;
             for (; i < guidString.Length; i++)
             {
-                int numValue;
                 char c = guidString[i];
-                if (c >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[c]) == 0xFF)
+                int numValue = HexConverter.FromChar(c);
+                if (numValue == 0xFF)
                 {
                     if (processedDigits > 8) overflow = true;
                     result = 0;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEFile.h
 //
@@ -479,7 +478,10 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    int                     m_flags;
+    int                      m_flags;
+
+    // AssemblyLoadContext that this PEFile is associated with
+    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -566,19 +568,32 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
-    AssemblyLoadContext* GetAssemblyLoadContext();
+#ifndef DACCESS_COMPILE
+    void SetupAssemblyLoadContext();
+
+    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        SetupAssemblyLoadContext();
+    }
+
+#endif //!DACCESS_COMPILE
+
+    // Returns AssemblyLoadContext into which the current PEFile was loaded.
+    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_pAssemblyLoadContext != NULL);
+        return m_pAssemblyLoadContext;
+    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
     bool CanUseWithBindingCache()
     { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
-
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
-    }
 
     PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {

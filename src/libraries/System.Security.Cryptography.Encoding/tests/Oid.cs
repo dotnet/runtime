@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -81,6 +80,13 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(expectedFriendlyName, oid.FriendlyName);
         }
 
+        [Fact]
+        public static void Oid_StringString_ExplicitNullFriendlyName()
+        {
+            Oid oid = new Oid(SHA1_Oid, null) { FriendlyName = null };
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA1_Name);
+        }
+
         [Theory]
         [InlineData(SHA1_Name)]
         [InlineData(SHA256_Name)]
@@ -116,49 +122,79 @@ namespace System.Security.Cryptography.Encoding.Tests
         {
             Oid oid = new Oid(null, null);
 
-            // Value property is just a field exposed as a property - no extra policy at all.
+            // Should allow setting null
+            oid.Value = null;
+
+            // Value property permits initializing once if null, or to its current value
 
             oid.Value = "BOGUS";
             Assert.Equal("BOGUS", oid.Value);
 
-            oid.Value = null;
-            Assert.Null(oid.Value);
+            Assert.Throws<PlatformNotSupportedException>(() => oid.Value = null);
+            Assert.Throws<PlatformNotSupportedException>(() => oid.Value = "SUGOB");
+            Assert.Throws<PlatformNotSupportedException>(() => oid.Value = "bogus");
+
+            oid.Value = "BOGUS";
+            Assert.Equal("BOGUS", oid.Value);
         }
 
         [Fact]
         public static void TestFriendlyNameProperty()
         {
-            Oid oid;
+            // Setting the FriendlyName can be initialized once, and may update
+            // the value as well. If the value updates, it must match the current
+            // value, if any.
 
-            oid = new Oid(null, null);
-
-            // Friendly name property can initialize itself from the Value (but only
-            // if it was originally null.)
-
-            oid.Value = SHA1_Oid;
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-
-            oid.Value = SHA256_Oid;
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-
-            oid.Value = null;
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-
-            oid.Value = Bogus_Name;
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-
-            // Setting the FriendlyName can also updates the value if there a valid OID for the new name.
-            oid.FriendlyName = Bogus_Name;
-            Assert.Equal(Bogus_Name, oid.FriendlyName);
-            Assert.Equal(Bogus_Name, oid.Value);
-
-            oid.FriendlyName = SHA1_Name;
+            Oid oid = new Oid
+            {
+                FriendlyName = SHA1_Name
+            };
             Assert.Equal(SHA1_Name, oid.FriendlyName);
             Assert.Equal(SHA1_Oid, oid.Value);
 
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = "BOGUS");
+
+            oid.FriendlyName = SHA1_Name;
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+        }
+
+        [Fact]
+        public static void TestFriendlyNameWithExistingValue()
+        {
+            Oid oid = new Oid(SHA1_Oid, null);
+            Assert.Equal(SHA1_Oid, oid.Value);
+            // Do not assert the friendly name here since the getter will populate it
+
+            // FriendlyName will attempt to set the Value if the FriendlyName is known.
+            // If the new Value does not match, do not permit mutating the value.
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = SHA256_Name);
+            Assert.Equal(SHA1_Oid, oid.Value);
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+        }
+
+        [Fact]
+        public static void TestFriendlyNameGetInitializes()
+        {
+            Oid oid = new Oid(SHA1_Oid, null);
+            Assert.Equal(SHA1_Oid, oid.Value);
+
+            // Getter should initialize and lock the friendly name
+            Assert.Equal(SHA1_Name, oid.FriendlyName);
+
+            // Set to a friendly name that does not map to an OID
+            Assert.Throws<PlatformNotSupportedException>(() => oid.FriendlyName = Bogus_Name);
+        }
+
+        [Fact]
+        public static void TestFriendlyNameWithMismatchedValue()
+        {
+            Oid oid = new Oid(SHA1_Oid, SHA256_Name);
+            Assert.Equal(SHA1_Oid, oid.Value);
+            
             oid.FriendlyName = SHA256_Name;
+            
             Assert.Equal(SHA256_Name, oid.FriendlyName);
-            Assert.Equal(SHA256_Oid, oid.Value);
+            Assert.Equal(SHA1_Oid, oid.Value);
         }
 
         [Theory]

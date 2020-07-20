@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -11,12 +10,14 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void DefaultStaticCreateMethods()
         {
+#pragma warning disable SYSLIB0007 // These methods are marked as Obsolete
             // .NET Core does not allow the base classes to pick an algorithm.
             Assert.Throws<PlatformNotSupportedException>(() => AsymmetricAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => HashAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => KeyedHashAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => HMAC.Create());
             Assert.Throws<PlatformNotSupportedException>(() => SymmetricAlgorithm.Create());
+#pragma warning restore SYSLIB0007
         }
 
         [Fact]

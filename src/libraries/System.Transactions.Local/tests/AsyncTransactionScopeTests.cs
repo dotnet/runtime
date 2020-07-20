@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -435,7 +434,7 @@ namespace System.Transactions.Tests
             }, variation.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void AsyncTSAndDependantClone(bool requiresNew, bool syncronizeScope, string txId)
@@ -525,7 +524,7 @@ namespace System.Transactions.Tests
             AssertTransaction(txId);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string txId)
@@ -1107,7 +1106,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void VerifyBYOTOpenConnSimulationTest()
         {
             // Create threads to do work
@@ -1123,7 +1122,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task VerifyBYOTSyncTSNestedAsync()
         {
             string txId1;
@@ -1150,7 +1149,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task VerifyBYOTAsyncTSNestedAsync()
         {
             string txId1;
@@ -1174,7 +1173,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxQueueWorkItem(TransactionScopeAsyncFlowOption asyncFlowOption)
@@ -1210,7 +1209,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxNewThread(TransactionScopeAsyncFlowOption asyncFlowOption)

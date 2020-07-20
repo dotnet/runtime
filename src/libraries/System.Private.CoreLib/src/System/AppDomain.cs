@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable CS0067 // events are declared but not used
 
@@ -8,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -38,6 +36,7 @@ namespace System
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();
 
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
         public event UnhandledExceptionEventHandler? UnhandledException
@@ -405,8 +404,9 @@ namespace System
             return oh?.Unwrap();
         }
 
-        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
-        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
+        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
+        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
+        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;

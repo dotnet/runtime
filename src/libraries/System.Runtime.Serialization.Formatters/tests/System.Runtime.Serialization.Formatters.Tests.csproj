@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="DisableBitTests.cs" />
     <Compile Include="EqualityExtensions.cs" />
     <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />
@@ -34,5 +35,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Text.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
   </ItemGroup>
 </Project>

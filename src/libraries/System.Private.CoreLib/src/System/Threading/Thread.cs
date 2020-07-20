@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -177,11 +177,13 @@ namespace System.Threading
             }
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort(object? stateInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -225,6 +227,7 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public void SetApartmentState(ApartmentState state)
         {
             if (!TrySetApartmentState(state))

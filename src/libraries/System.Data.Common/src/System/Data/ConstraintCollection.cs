@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
 using System.ComponentModel;
+using System.Resources;
 
 namespace System.Data
 {
@@ -18,9 +18,9 @@ namespace System.Data
         private readonly ArrayList _list = new ArrayList();
         private int _defaultNameIndex = 1;
 
-        private CollectionChangeEventHandler _onCollectionChanged;
-        private Constraint[] _delayLoadingConstraints;
-        private bool _fLoadForeignKeyConstraintsOnly = false;
+        private CollectionChangeEventHandler? _onCollectionChanged;
+        private Constraint[]? _delayLoadingConstraints;
+        private bool _fLoadForeignKeyConstraintsOnly;
 
         /// <summary>
         /// ConstraintCollection constructor.  Used only by DataTable.
@@ -46,7 +46,7 @@ namespace System.Data
             {
                 if (index >= 0 && index < List.Count)
                 {
-                    return (Constraint)List[index];
+                    return (Constraint)List[index]!;
                 }
                 throw ExceptionBuilder.ConstraintOutOfRange(index);
             }
@@ -60,16 +60,16 @@ namespace System.Data
         /// <summary>
         /// Gets the <see cref='System.Data.Constraint'/> from the collection with the specified name.
         /// </summary>
-        public Constraint this[string name]
+        public Constraint? this[string? name]
         {
             get
             {
                 int index = InternalIndexOf(name);
                 if (index == -2)
                 {
-                    throw ExceptionBuilder.CaseInsensitiveNameConflict(name);
+                    throw ExceptionBuilder.CaseInsensitiveNameConflict(name!);
                 }
-                return (index < 0) ? null : (Constraint)List[index];
+                return (index < 0) ? null : (Constraint)List[index]!;
             }
         }
 
@@ -87,9 +87,9 @@ namespace System.Data
             }
 
             // It is an error if we find an equivalent constraint already in collection
-            if (FindConstraint(constraint) != null)
+            if (FindConstraint(constraint) is { } matchedConstraint)
             {
-                throw ExceptionBuilder.DuplicateConstraint(FindConstraint(constraint).ConstraintName);
+                throw ExceptionBuilder.DuplicateConstraint(matchedConstraint.ConstraintName);
             }
 
             if (1 < _table.NestedParentRelations.Length)
@@ -116,7 +116,7 @@ namespace System.Data
                 ForeignKeyConstraint fk = (ForeignKeyConstraint)constraint;
                 if (addUniqueWhenAddingForeign)
                 {
-                    UniqueConstraint key = fk.RelatedTable.Constraints.FindKeyConstraint(fk.RelatedColumnsReference);
+                    UniqueConstraint? key = fk.RelatedTable.Constraints.FindKeyConstraint(fk.RelatedColumnsReference);
                     if (key == null)
                     {
                         if (constraint.ConstraintName.Length == 0)
@@ -148,7 +148,7 @@ namespace System.Data
         ///    specified array of <see cref='System.Data.DataColumn'/>
         ///    objects and adds it to the collection.
         /// </summary>
-        public Constraint Add(string name, DataColumn[] columns, bool primaryKey)
+        public Constraint Add(string? name, DataColumn[] columns, bool primaryKey)
         {
             UniqueConstraint constraint = new UniqueConstraint(name, columns);
             Add(constraint);
@@ -161,7 +161,7 @@ namespace System.Data
         /// Constructs a new <see cref='System.Data.UniqueConstraint'/> using the
         ///    specified <see cref='System.Data.DataColumn'/> and adds it to the collection.
         /// </summary>
-        public Constraint Add(string name, DataColumn column, bool primaryKey)
+        public Constraint Add(string? name, DataColumn column, bool primaryKey)
         {
             UniqueConstraint constraint = new UniqueConstraint(name, column);
             Add(constraint);
@@ -176,7 +176,7 @@ namespace System.Data
         /// specified parent and child
         /// columns and adds the constraint to the collection.
         /// </summary>
-        public Constraint Add(string name, DataColumn primaryKeyColumn, DataColumn foreignKeyColumn)
+        public Constraint Add(string? name, DataColumn primaryKeyColumn, DataColumn foreignKeyColumn)
         {
             ForeignKeyConstraint constraint = new ForeignKeyConstraint(name, primaryKeyColumn, foreignKeyColumn);
             Add(constraint);
@@ -187,14 +187,14 @@ namespace System.Data
         /// Constructs a new <see cref='System.Data.ForeignKeyConstraint'/> with the specified parent columns and
         ///    child columns and adds the constraint to the collection.
         /// </summary>
-        public Constraint Add(string name, DataColumn[] primaryKeyColumns, DataColumn[] foreignKeyColumns)
+        public Constraint Add(string? name, DataColumn[] primaryKeyColumns, DataColumn[] foreignKeyColumns)
         {
             ForeignKeyConstraint constraint = new ForeignKeyConstraint(name, primaryKeyColumns, foreignKeyColumns);
             Add(constraint);
             return constraint;
         }
 
-        public void AddRange(Constraint[] constraints)
+        public void AddRange(Constraint[]? constraints)
         {
             if (_table.fInitInProgress)
             {
@@ -247,7 +247,7 @@ namespace System.Data
 
         private bool AutoGenerated(Constraint constraint)
         {
-            ForeignKeyConstraint fk = (constraint as ForeignKeyConstraint);
+            ForeignKeyConstraint? fk = (constraint as ForeignKeyConstraint);
             if (null != fk)
             {
                 return XmlTreeGen.AutoGenerated(fk, false);
@@ -263,7 +263,7 @@ namespace System.Data
         /// Occurs when the <see cref='System.Data.ConstraintCollection'/> is changed through additions or
         ///    removals.
         /// </summary>
-        public event CollectionChangeEventHandler CollectionChanged
+        public event CollectionChangeEventHandler? CollectionChanged
         {
             add
             {
@@ -445,12 +445,12 @@ namespace System.Data
             try
             {
                 // this will smartly add and remove the appropriate tables.
-                BaseGroupSwitch(constraints, oldLength, null, 0);
+                BaseGroupSwitch(constraints, oldLength, Array.Empty<Constraint>(), 0);
             }
             catch (Exception e) when (Common.ADP.IsCatchableOrSecurityExceptionType(e))
             {
                 // something messed up.  restore to original state.
-                BaseGroupSwitch(null, 0, constraints, oldLength);
+                BaseGroupSwitch(Array.Empty<Constraint>(), 0, constraints, oldLength);
                 List.Clear();
                 for (int i = 0; i < oldLength; i++)
                 {
@@ -466,19 +466,19 @@ namespace System.Data
         /// <summary>
         /// Indicates whether the <see cref='System.Data.Constraint'/>, specified by name, exists in the collection.
         /// </summary>
-        public bool Contains(string name)
+        public bool Contains(string? name)
         {
             return (InternalIndexOf(name) >= 0);
         }
 
-        internal bool Contains(string name, bool caseSensitive)
+        internal bool Contains(string? name, bool caseSensitive)
         {
             if (!caseSensitive)
                 return Contains(name);
             int index = InternalIndexOf(name);
             if (index < 0)
                 return false;
-            return (name == ((Constraint)List[index]).ConstraintName);
+            return (name == ((Constraint)List[index]!).ConstraintName);
         }
 
         public void CopyTo(Constraint[] array, int index)
@@ -491,20 +491,20 @@ namespace System.Data
                 throw ExceptionBuilder.InvalidOffsetLength();
             for (int i = 0; i < _list.Count; ++i)
             {
-                array[index + i] = (Constraint)_list[i];
+                array[index + i] = (Constraint)_list[i]!;
             }
         }
 
         /// <summary>
         /// Returns a matching constraint object.
         /// </summary>
-        internal Constraint FindConstraint(Constraint constraint)
+        internal Constraint? FindConstraint(Constraint? constraint)
         {
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
             {
-                if (((Constraint)List[i]).Equals(constraint))
-                    return (Constraint)List[i];
+                if (((Constraint)List[i]!).Equals(constraint))
+                    return (Constraint)List[i]!;
             }
             return null;
         }
@@ -512,12 +512,12 @@ namespace System.Data
         /// <summary>
         /// Returns a matching constraint object.
         /// </summary>
-        internal UniqueConstraint FindKeyConstraint(DataColumn[] columns)
+        internal UniqueConstraint? FindKeyConstraint(DataColumn[] columns)
         {
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
             {
-                UniqueConstraint constraint = (List[i] as UniqueConstraint);
+                UniqueConstraint? constraint = (List[i] as UniqueConstraint);
                 if ((null != constraint) && CompareArrays(constraint.Key.ColumnsReference, columns))
                 {
                     return constraint;
@@ -529,12 +529,12 @@ namespace System.Data
         /// <summary>
         /// Returns a matching constraint object.
         /// </summary>
-        internal UniqueConstraint FindKeyConstraint(DataColumn column)
+        internal UniqueConstraint? FindKeyConstraint(DataColumn column)
         {
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
             {
-                UniqueConstraint constraint = (List[i] as UniqueConstraint);
+                UniqueConstraint? constraint = (List[i] as UniqueConstraint);
                 if ((null != constraint) && (constraint.Key.ColumnsReference.Length == 1) && (constraint.Key.ColumnsReference[0] == column))
                     return constraint;
             }
@@ -544,12 +544,12 @@ namespace System.Data
         /// <summary>
         /// Returns a matching constraint object.
         /// </summary>
-        internal ForeignKeyConstraint FindForeignKeyConstraint(DataColumn[] parentColumns, DataColumn[] childColumns)
+        internal ForeignKeyConstraint? FindForeignKeyConstraint(DataColumn[] parentColumns, DataColumn[] childColumns)
         {
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
             {
-                ForeignKeyConstraint constraint = (List[i] as ForeignKeyConstraint);
+                ForeignKeyConstraint? constraint = (List[i] as ForeignKeyConstraint);
                 if ((null != constraint) &&
                     CompareArrays(constraint.ParentKey.ColumnsReference, parentColumns) &&
                     CompareArrays(constraint.ChildKey.ColumnsReference, childColumns))
@@ -588,14 +588,14 @@ namespace System.Data
         /// <summary>
         /// Returns the index of the specified <see cref='System.Data.Constraint'/> .
         /// </summary>
-        public int IndexOf(Constraint constraint)
+        public int IndexOf(Constraint? constraint)
         {
             if (null != constraint)
             {
                 int count = Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    if (constraint == (Constraint)List[i])
+                    if (constraint == (Constraint)List[i]!)
                         return i;
                 }
                 // didn't find the constraint
@@ -606,7 +606,7 @@ namespace System.Data
         /// <summary>
         /// Returns the index of the <see cref='System.Data.Constraint'/>, specified by name.
         /// </summary>
-        public int IndexOf(string constraintName)
+        public int IndexOf(string? constraintName)
         {
             int index = InternalIndexOf(constraintName);
             return (index < 0) ? -1 : index;
@@ -616,7 +616,7 @@ namespace System.Data
         //      >= 0: find the match
         //        -1: No match
         //        -2: At least two matches with different cases
-        internal int InternalIndexOf(string constraintName)
+        internal int InternalIndexOf(string? constraintName)
         {
             int cachedI = -1;
             if ((null != constraintName) && (0 < constraintName.Length))
@@ -625,7 +625,7 @@ namespace System.Data
                 int result = 0;
                 for (int i = 0; i < constraintCount; i++)
                 {
-                    Constraint constraint = (Constraint)List[i];
+                    Constraint constraint = (Constraint)List[i]!;
                     result = NamesEqual(constraint.ConstraintName, constraintName, false, _table.Locale);
                     if (result == 1)
                         return i;
@@ -669,9 +669,9 @@ namespace System.Data
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
             {
-                if (NamesEqual(name, ((Constraint)List[i]).ConstraintName, true, _table.Locale) != 0)
+                if (NamesEqual(name, ((Constraint)List[i]!).ConstraintName, true, _table.Locale) != 0)
                 {
-                    throw ExceptionBuilder.DuplicateConstraintName(((Constraint)List[i]).ConstraintName);
+                    throw ExceptionBuilder.DuplicateConstraintName(((Constraint)List[i]!).ConstraintName);
                 }
             }
             if (NamesEqual(name, MakeName(_defaultNameIndex), true, _table.Locale) != 0)
@@ -720,7 +720,7 @@ namespace System.Data
         /// </summary>
         public void Remove(string name)
         {
-            Constraint c = this[name];
+            Constraint? c = this[name];
             if (c == null)
                 throw ExceptionBuilder.ConstraintNotInTheTable(name);
             Remove(c);
@@ -766,7 +766,7 @@ namespace System.Data
                     colCount = constr._columnNames.Length;
                     parents = new DataColumn[colCount];
                     for (int j = 0; j < colCount; j++)
-                        parents[j] = _table.Columns[constr._columnNames[j]];
+                        parents[j] = _table.Columns[constr._columnNames[j]]!;
                     if (constr._bPrimaryKey)
                     {
                         if (_table._primaryKey != null)
@@ -792,6 +792,8 @@ namespace System.Data
                         continue;
                     }
 
+                    Debug.Assert(constr._parentTableName != null);
+
                     if (_table.DataSet == null)
                     {
                         _fLoadForeignKeyConstraintsOnly = true;
@@ -804,10 +806,10 @@ namespace System.Data
                     for (int j = 0; j < colCount; j++)
                     {
                         if (constr._parentTableNamespace == null)
-                            parents[j] = _table.DataSet.Tables[constr._parentTableName].Columns[constr._parentColumnNames[j]];
+                            parents[j] = _table.DataSet.Tables[constr._parentTableName]!.Columns[constr._parentColumnNames[j]]!;
                         else
-                            parents[j] = _table.DataSet.Tables[constr._parentTableName, constr._parentTableNamespace].Columns[constr._parentColumnNames[j]];
-                        childs[j] = _table.Columns[constr._childColumnNames[j]];
+                            parents[j] = _table.DataSet.Tables[constr._parentTableName, constr._parentTableNamespace]!.Columns[constr._parentColumnNames[j]]!;
+                        childs[j] = _table.Columns[constr._childColumnNames[j]]!;
                     }
                     ForeignKeyConstraint newConstraint = new ForeignKeyConstraint(constr._constraintName, parents, childs);
                     newConstraint.AcceptRejectRule = constr._acceptRejectRule;

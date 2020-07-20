@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // --------------------------------------------------------------------------------------
 //
@@ -153,7 +152,7 @@ namespace System
             }
         }
 
-        internal static T CreateViaDefaultConstructor<T>()
+        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
             try
             {
@@ -184,7 +183,7 @@ namespace System
     /// </remarks>
     [DebuggerTypeProxy(typeof(LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
-    public class Lazy<T>
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
         private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();
 

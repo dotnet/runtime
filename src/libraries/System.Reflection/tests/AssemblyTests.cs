@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -230,11 +229,13 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(G<G<int>>), t);
         }
 
+#pragma warning disable SYSLIB0005 // Obsolete: GAC
         [Fact]
         public void GlobalAssemblyCache()
         {
             Assert.False(typeof(AssemblyTests).Assembly.GlobalAssemblyCache);
         }
+#pragma warning restore SYSLIB0005 // Obsolete: GAC
 
         [Fact]
         public void HostContext()

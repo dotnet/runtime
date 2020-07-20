@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // This file contains the classes, methods, and field used by the EE from mscorlib
 
 //
@@ -707,9 +706,10 @@ DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, No
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer, SM_Int_IntPtr_RetIntPtr)
+DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      FREE_TAILCALL_ARG_BUFFER, FreeTailCallArgBuffer, SM_RetVoid)
+DEFINE_METHOD(RUNTIME_HELPERS,      FREE_TAILCALL_ARG_BUFFER, FreeTailCallArgBuffer,    SM_RetVoid)
+DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
@@ -979,7 +979,6 @@ DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,             
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
-DEFINE_METHOD(STUBHELPERS,          IS_QCALL,               IsQCall,                    SM_IntPtr_RetBool)
 DEFINE_METHOD(STUBHELPERS,          INIT_DECLARING_TYPE,    InitDeclaringType,          SM_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_NDIRECT_TARGET,     GetNDirectTarget,           SM_IntPtr_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RefIntPtr_RetIntPtr)
@@ -1240,6 +1239,30 @@ DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _tra
 DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
 
 DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
+
+DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
+DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
+DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
+DEFINE_FIELD_U(_memoryLoadBytes, GCMemoryInfoData, lastRecordedMemLoadBytes)
+DEFINE_FIELD_U(_heapSizeBytes, GCMemoryInfoData, lastRecordedHeapSizeBytes)
+DEFINE_FIELD_U(_fragmentedBytes, GCMemoryInfoData, lastRecordedFragmentationBytes)
+DEFINE_FIELD_U(_totalCommittedBytes, GCMemoryInfoData, totalCommittedBytes)
+DEFINE_FIELD_U(_promotedBytes, GCMemoryInfoData, promotedBytes)
+DEFINE_FIELD_U(_pinnedObjectsCount, GCMemoryInfoData, pinnedObjectCount)
+DEFINE_FIELD_U(_finalizationPendingCount, GCMemoryInfoData, finalizationPendingCount)
+DEFINE_FIELD_U(_index, GCMemoryInfoData, index)
+DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
+DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
+DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
+DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
+DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
+DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
+DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
+DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
+DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
+DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
+DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

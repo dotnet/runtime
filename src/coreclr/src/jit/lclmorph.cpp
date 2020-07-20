@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 
@@ -519,6 +518,37 @@ public:
 
                 PopValue();
                 PopValue();
+                break;
+
+            case GT_RETURN:
+                if (TopValue(0).Node() != node)
+                {
+                    assert(TopValue(1).Node() == node);
+                    assert(TopValue(0).Node() == node->gtGetOp1());
+                    GenTreeUnOp* ret    = node->AsUnOp();
+                    GenTree*     retVal = ret->gtGetOp1();
+                    if (!m_compiler->compDoOldStructRetyping() && retVal->OperIs(GT_LCL_VAR))
+                    {
+                        // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
+                        // having `doNotEnreg` affect block init and copy transformations that affect many methods.
+                        // I have a change that introduces more precise and effective solution for that, but it would
+                        // be merged separatly.
+                        GenTreeLclVar* lclVar = retVal->AsLclVar();
+                        unsigned       lclNum = lclVar->GetLclNum();
+                        if (!m_compiler->compMethodReturnsMultiRegRegTypeAlternate() &&
+                            !m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
+                        {
+                            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+                            if (varDsc->lvFieldCnt > 1)
+                            {
+                                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+                            }
+                        }
+                    }
+
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
                 break;
 
             default:

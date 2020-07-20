@@ -63,8 +63,8 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
-    <value>The destination is too small to hold the encoded value.</value>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
   </data>
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
@@ -347,5 +347,11 @@
   </data>
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
+  </data>
+  <data name="SystemSecurityCryptographyAlgorithms_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.Algorithms is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
+    <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
 </root>

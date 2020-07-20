@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,18 +11,18 @@ namespace System.Text.Json.Serialization.Tests
     public static class CacheTests
     {
         [Fact, OuterLoop]
-        public static void MultipleThreadsLooping()
+        public static async Task MultipleThreads_SameType_DifferentJson_Looping()
         {
             const int Iterations = 100;
 
             for (int i = 0; i < Iterations; i++)
             {
-                MultipleThreads();
+                await MultipleThreads_SameType_DifferentJson();
             }
         }
 
         [Fact]
-        public static void MultipleThreads()
+        public static async Task MultipleThreads_SameType_DifferentJson()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -70,7 +69,59 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i + 3] = Task.Run(() => SerializeObject());
             };
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
+        }
+
+        [Fact, OuterLoop]
+        public static async Task MultipleThreads_DifferentTypes_Looping()
+        {
+            const int Iterations = 100;
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                await MultipleThreads_DifferentTypes();
+            }
+        }
+
+        [Fact]
+        public static async Task MultipleThreads_DifferentTypes()
+        {
+            // Use local options to avoid obtaining already cached metadata from the default options.
+            var options = new JsonSerializerOptions();
+
+            const int TestClassCount = 2;
+
+            var testObjects = new ITestClass[TestClassCount]
+            {
+                new SimpleTestClassWithNulls(),
+                new SimpleTestClass(),
+            };
+
+            foreach (ITestClass obj in testObjects)
+            {
+                obj.Initialize();
+            }
+
+            void Test(int i)
+            {
+                Type testClassType = testObjects[i].GetType();
+
+                string json = JsonSerializer.Serialize(testObjects[i], testClassType, options);
+
+                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testClassType, options);
+                obj.Verify();
+            };
+
+            const int OuterCount = 12;
+            Task[] tasks = new Task[OuterCount * TestClassCount];
+
+            for (int i = 0; i < tasks.Length; i += TestClassCount)
+            {
+                tasks[i + 0] = Task.Run(() => Test(TestClassCount - 1));
+                tasks[i + 1] = Task.Run(() => Test(TestClassCount - 2));
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         [Fact]
@@ -111,18 +162,19 @@ namespace System.Text.Json.Serialization.Tests
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
         // this options is not the default options instance the tests will not use previously cached metadata.
-        private static JsonSerializerOptions s_options = new JsonSerializerOptions();
+        private static JsonSerializerOptions s_options = new JsonSerializerOptions { IncludeFields = true };
 
         [Theory]
         [MemberData(nameof(WriteSuccessCases))]
-        public static void MultipleTypes(ITestClass testObj)
+        public static async Task MultipleTypes(ITestClass testObj)
         {
             Type type = testObj.GetType();
 
             // Get the test json with the default options to avoid cache pollution of Deserialize() below.
             testObj.Initialize();
             testObj.Verify();
-            string json = JsonSerializer.Serialize(testObj, type);
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            string json = JsonSerializer.Serialize(testObj, type, options);
 
             void Serialize()
             {
@@ -148,7 +200,7 @@ namespace System.Text.Json.Serialization.Tests
                 tasks[i + 1] = Task.Run(() => Serialize());
             };
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
         }
 
         public static IEnumerable<object[]> WriteSuccessCases

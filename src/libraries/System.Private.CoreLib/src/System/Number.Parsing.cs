@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -42,17 +41,8 @@ namespace System
         private const int SingleMaxExponent = 39;
         private const int SingleMinExponent = -45;
 
-        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        internal static ReadOnlySpan<byte> CharToHexLookup => new byte[]
-        {
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 47
-            0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 63
-            0xFF, 0xA,  0xB,  0xC,  0xD,  0xE,  0xF,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 79
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 95
-            0xFF, 0xa,  0xb,  0xc,  0xd,  0xe,  0xf // 102
-        };
+        private const int HalfMaxExponent = 5;
+        private const int HalfMinExponent = -8;
 
         private static unsafe bool TryNumberToInt32(ref NumberBuffer number, ref int value)
         {
@@ -1131,9 +1121,8 @@ namespace System
 
             bool overflow = false;
             uint answer = 0;
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
 
-            if ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF)
+            if (HexConverter.IsHexChar(num))
             {
                 // Skip past leading zeros.
                 if (num == '0')
@@ -1145,12 +1134,12 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
-                    if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                    if (!HexConverter.IsHexChar(num))
                         goto HasTrailingChars;
                 }
 
                 // Parse up through 8 digits, as no overflow is possible
-                answer = charToHexLookup[num]; // first digit
+                answer = (uint)HexConverter.FromChar(num); // first digit
                 index++;
                 for (int i = 0; i < 7; i++) // next 7 digits can't overflow
                 {
@@ -1158,8 +1147,8 @@ namespace System
                         goto DoneAtEnd;
                     num = value[index];
 
-                    uint numValue;
-                    if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                    uint numValue = (uint)HexConverter.FromChar(num);
+                    if (numValue == 0xFF)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -1169,7 +1158,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                if (!HexConverter.IsHexChar(num))
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1180,7 +1169,7 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto OverflowExit;
                     num = value[index];
-                } while ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF);
+                } while (HexConverter.IsHexChar(num));
                 overflow = true;
                 goto HasTrailingChars;
             }
@@ -1460,9 +1449,8 @@ namespace System
 
             bool overflow = false;
             ulong answer = 0;
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
 
-            if ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF)
+            if (HexConverter.IsHexChar(num))
             {
                 // Skip past leading zeros.
                 if (num == '0')
@@ -1474,12 +1462,12 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
-                    if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                    if (!HexConverter.IsHexChar(num))
                         goto HasTrailingChars;
                 }
 
                 // Parse up through 16 digits, as no overflow is possible
-                answer = charToHexLookup[num]; // first digit
+                answer = (uint)HexConverter.FromChar(num); // first digit
                 index++;
                 for (int i = 0; i < 15; i++) // next 15 digits can't overflow
                 {
@@ -1487,8 +1475,8 @@ namespace System
                         goto DoneAtEnd;
                     num = value[index];
 
-                    uint numValue;
-                    if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                    uint numValue = (uint)HexConverter.FromChar(num);
+                    if (numValue == 0xFF)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -1498,7 +1486,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                if (!HexConverter.IsHexChar(num))
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1509,7 +1497,7 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto OverflowExit;
                     num = value[index];
-                } while ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF);
+                } while (HexConverter.IsHexChar(num));
                 overflow = true;
                 goto HasTrailingChars;
             }
@@ -1707,6 +1695,16 @@ namespace System
             return result;
         }
 
+        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        {
+            if (!TryParseHalf(value, styles, info, out Half result))
+            {
+                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+            }
+
+            return result;
+        }
+
         internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
             byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
@@ -1784,6 +1782,73 @@ namespace System
             else
             {
                 result = NumberToDouble(ref number);
+            }
+
+            return true;
+        }
+
+        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
+        {
+            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                ReadOnlySpan<char> valueTrim = value.Trim();
+
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+                //
+                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
+                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
+                // that case so that we don't start parsing things like `++infini`.
+
+                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                {
+                    result = Half.PositiveInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
+                {
+                    result = Half.NegativeInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+
+                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    {
+                        result = Half.PositiveInfinity;
+                    }
+                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    {
+                        result = Half.NaN;
+                    }
+                    else
+                    {
+                        result = (Half)0;
+                        return false;
+                    }
+                }
+                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else
+                {
+                    result = (Half)0;
+                    return false; // We really failed
+                }
+            }
+            else
+            {
+                result = NumberToHalf(ref number);
             }
 
             return true;
@@ -1997,6 +2062,28 @@ namespace System
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static Half NumberToHalf(ref NumberBuffer number)
+        {
+            number.CheckConsistency();
+            Half result;
+
+            if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
+            {
+                result = default;
+            }
+            else if (number.Scale > HalfMaxExponent)
+            {
+                result = Half.PositiveInfinity;
+            }
+            else
+            {
+                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
+                result = new Half(bits);
+            }
+
+            return number.IsNegative ? Half.Negate(result) : result;
         }
 
         internal static float NumberToSingle(ref NumberBuffer number)

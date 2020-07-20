@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <Nullable>enable</Nullable>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- Shared CoreCLR -->

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: methodtable.h
 //
@@ -2975,14 +2974,6 @@ public:
 
     // Get and cache the GUID for this interface/class
     void    GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic = TRUE);
-
-#ifdef FEATURE_COMINTEROP
-    // Get the GUID used for WinRT interop
-    //   * for projection generic interfaces returns the equivalent WinRT type's GUID
-    //   * for everything else returns the GetGuid(, TRUE)
-    BOOL    GetGuidForWinRT(GUID *pGuid);
-
-#endif // FEATURE_COMINTEROP
 
     // Convenience method - determine if the interface/class has a guid specified (even if not yet cached)
     BOOL HasExplicitGuid();

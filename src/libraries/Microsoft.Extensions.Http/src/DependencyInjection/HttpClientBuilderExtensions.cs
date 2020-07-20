@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -335,10 +334,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                var httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                var httpClient = httpClientFactory.CreateClient(builder.Name);
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
-                var typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
+                ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
                 return typedClientFactory.CreateClient(httpClient);
             });
 
@@ -396,10 +395,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                var httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                var httpClient = httpClientFactory.CreateClient(builder.Name);
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
-                var typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation>>();
+                ITypedHttpClientFactory<TImplementation> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation>>();
                 return typedClientFactory.CreateClient(httpClient);
             });
 
@@ -450,8 +449,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                var httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                var httpClient = httpClientFactory.CreateClient(builder.Name);
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
                 return factory(httpClient);
             });
@@ -513,8 +512,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                var httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                var httpClient = httpClientFactory.CreateClient(builder.Name);
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
                 return factory(httpClient, s);
             });
@@ -625,7 +624,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(registry != null);
 
             // Check for same name registered to two types. This won't work because we rely on named options for the configuration.
-            if (registry.NamedClientRegistrations.TryGetValue(name, out var otherType) &&
+            if (registry.NamedClientRegistrations.TryGetValue(name, out Type otherType) &&
 
                 // Allow using the same name with multiple types in some cases (see callers).
                 validateSingleType &&
@@ -633,7 +632,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 // Allow registering the same name twice to the same type.
                 type != otherType)
             {
-                var message =
+                string message =
                     $"The HttpClient factory already has a registered client with the name '{name}', bound to the type '{otherType.FullName}'. " +
                     $"Client names are computed based on the type name without considering the namespace ('{otherType.Name}'). " +
                     $"Use an overload of AddHttpClient that accepts a string and provide a unique name to resolve the conflict.";

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -60,7 +59,7 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryRemove(string name)
         {
             name = name ?? Options.DefaultName;
-            return _cache.TryRemove(name, out var ignored);
+            return _cache.TryRemove(name, out Lazy<TOptions> ignored);
         }
     }
 }

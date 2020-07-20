@@ -126,6 +126,7 @@ mono_mem_account_type_name (MonoMemAccountType type)
 		"SGen binary protocol",
 		"exceptions",
 		"profiler",
+		"interp stack",
 		"other"
 	};
 

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Data
@@ -28,11 +28,11 @@ namespace System.Data
         internal bool _inDeletingEvent;
         internal bool _inCascade;
 
-        private DataColumn _lastChangedColumn; // last successfully changed column
+        private DataColumn? _lastChangedColumn; // last successfully changed column
         private int _countColumnChange;        // number of columns changed during edit mode
 
-        private DataError _error;
-        private object _element;
+        private DataError? _error;
+        private object? _element;
 
         private int _rbTreeNodeId; // if row is not detached, Id used for computing index in rows collection
 
@@ -50,13 +50,13 @@ namespace System.Data
             _columns = _table.Columns;
         }
 
-        internal XmlBoundElement Element
+        internal XmlBoundElement? Element
         {
-            get { return (XmlBoundElement)_element; }
+            get { return (XmlBoundElement?)_element; }
             set { _element = value; }
         }
 
-        internal DataColumn LastChangedColumn
+        internal DataColumn? LastChangedColumn
         {
             get
             {
@@ -85,6 +85,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the custom error description for a row.
         /// </summary>
+        [AllowNull]
         public string RowError
         {
             get { return _error == null ? string.Empty : _error.Text; }
@@ -208,7 +209,7 @@ namespace System.Data
 
             int count = _table.Rows.Count, i = 0;
             // need to optimize this for count > 100
-            DataRow parent = GetParentRow(rel);
+            DataRow? parent = GetParentRow(rel);
             while (parent != null)
             {
                 if ((parent == this) || (i > count))
@@ -234,7 +235,7 @@ namespace System.Data
                 {
                     CheckForLoops(rel);
                 }
-                DataRow row = GetParentRow(rel);
+                DataRow? row = GetParentRow(rel);
                 if (row != null)
                 {
                     count++;
@@ -248,6 +249,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the data stored in the column specified by name.
         /// </summary>
+        [AllowNull]
         public object this[string columnName]
         {
             get
@@ -268,6 +270,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the data stored in the specified <see cref='System.Data.DataColumn'/>.
         /// </summary>
+        [AllowNull]
         public object this[DataColumn column]
         {
             get
@@ -294,7 +297,7 @@ namespace System.Data
                 // note we intentionally do not try/catch this event.
                 // note: we also allow user to do anything at this point
                 // infinite loops are possible if user calls Item or ItemArray during the event
-                DataColumnChangeEventArgs e = null;
+                DataColumnChangeEventArgs? e = null;
                 if (_table.NeedColumnChangeEvents)
                 {
                     e = new DataColumnChangeEventArgs(this, column, value);
@@ -312,7 +315,7 @@ namespace System.Data
                     throw ExceptionBuilder.ReadOnly(column.ColumnName);
                 }
 
-                object proposed = ((null != e) ? e.ProposedValue : value);
+                object? proposed = ((null != e) ? e.ProposedValue : value);
                 if (null == proposed)
                 {
                     if (column.IsValueType)
@@ -359,6 +362,7 @@ namespace System.Data
         /// <summary>
         /// Gets the data stored in the column, specified by index and version of the data to retrieve.
         /// </summary>
+        [AllowNull]
         public object this[int columnIndex, DataRowVersion version]
         {
             get
@@ -374,6 +378,7 @@ namespace System.Data
         /// <summary>
         ///  Gets the specified version of data stored in the named column.
         /// </summary>
+        [AllowNull]
         public object this[string columnName, DataRowVersion version]
         {
             get
@@ -389,6 +394,7 @@ namespace System.Data
         /// <summary>
         /// Gets the specified version of data stored in the specified <see cref='System.Data.DataColumn'/>.
         /// </summary>
+        [AllowNull]
         public object this[DataColumn column, DataRowVersion version]
         {
             get
@@ -404,7 +410,12 @@ namespace System.Data
         /// <summary>
         /// Gets or sets all of the values for this row through an array.
         /// </summary>
-        public object[] ItemArray
+        /// <remarks>
+        /// Arrays returned from this property will never contain <see langword="null" />.
+        /// When setting this property, <see langword="null" /> indicates that the current column value
+        /// should be left as-is. <see cref="DBNull.Value" /> can be used to set the the value to null.
+        /// </remarks>
+        public object?[] ItemArray
         {
             get
             {
@@ -429,7 +440,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.ValueArrayLength();
                 }
-                DataColumnChangeEventArgs e = null;
+                DataColumnChangeEventArgs? e = null;
                 if (_table.NeedColumnChangeEvents)
                 {
                     e = new DataColumnChangeEventArgs(this);
@@ -439,7 +450,7 @@ namespace System.Data
                 for (int i = 0; i < value.Length; ++i)
                 {
                     // Empty means don't change the row.
-                    if (null != value[i])
+                    if (value[i] is { } item)
                     {
                         // may throw exception if user removes column from table during event
                         DataColumn column = _columns[i];
@@ -455,7 +466,7 @@ namespace System.Data
                         // infinite loops are possible if user calls Item or ItemArray during the event
                         if (null != e)
                         {
-                            e.InitializeColumnChangeEvent(column, value[i]);
+                            e.InitializeColumnChangeEvent(column, item);
                             _table.OnColumnChanging(e);
                         }
 
@@ -475,7 +486,7 @@ namespace System.Data
                             BeginEditInternal();
                         }
 
-                        object proposed = (null != e) ? e.ProposedValue : value[i];
+                        object? proposed = (null != e) ? e.ProposedValue : item;
                         if (null == proposed)
                         {
                             if (column.IsValueType)
@@ -691,7 +702,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified by index.
         /// </summary>
-        public void SetColumnError(int columnIndex, string error)
+        public void SetColumnError(int columnIndex, string? error)
         {
             DataColumn column = _columns[columnIndex];
             if (column == null)
@@ -704,7 +715,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified by name.
         /// </summary>
-        public void SetColumnError(string columnName, string error)
+        public void SetColumnError(string columnName, string? error)
         {
             DataColumn column = GetDataColumn(columnName);
             SetColumnError(column, error);
@@ -713,7 +724,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified as a <see cref='System.Data.DataColumn'/>.
         /// </summary>
-        public void SetColumnError(DataColumn column, string error)
+        public void SetColumnError(DataColumn column, string? error)
         {
             CheckColumn(column);
 
@@ -786,23 +797,23 @@ namespace System.Data
         public DataColumn[] GetColumnsInError() => _error == null ?
             Array.Empty<DataColumn>() : _error.GetColumnsInError();
 
-        public DataRow[] GetChildRows(string relationName) =>
+        public DataRow[] GetChildRows(string? relationName) =>
             GetChildRows(_table.ChildRelations[relationName], DataRowVersion.Default);
 
-        public DataRow[] GetChildRows(string relationName, DataRowVersion version) =>
+        public DataRow[] GetChildRows(string? relationName, DataRowVersion version) =>
             GetChildRows(_table.ChildRelations[relationName], version);
 
         /// <summary>
         /// Gets the child rows of this <see cref='System.Data.DataRow'/> using the
         /// specified <see cref='System.Data.DataRelation'/>.
         /// </summary>
-        public DataRow[] GetChildRows(DataRelation relation) =>
+        public DataRow[] GetChildRows(DataRelation? relation) =>
             GetChildRows(relation, DataRowVersion.Default);
 
         /// <summary>
         /// Gets the child rows of this <see cref='System.Data.DataRow'/> using the specified <see cref='System.Data.DataRelation'/> and the specified <see cref='System.Data.DataRowVersion'/>
         /// </summary>
-        public DataRow[] GetChildRows(DataRelation relation, DataRowVersion version)
+        public DataRow[] GetChildRows(DataRelation? relation, DataRowVersion version)
         {
             if (relation == null)
             {
@@ -822,7 +833,7 @@ namespace System.Data
 
         internal DataColumn GetDataColumn(string columnName)
         {
-            DataColumn column = _columns[columnName];
+            DataColumn? column = _columns[columnName];
             if (null != column)
             {
                 return column;
@@ -830,23 +841,23 @@ namespace System.Data
             throw ExceptionBuilder.ColumnNotInTheTable(columnName, _table.TableName);
         }
 
-        public DataRow GetParentRow(string relationName) =>
+        public DataRow? GetParentRow(string? relationName) =>
             GetParentRow(_table.ParentRelations[relationName], DataRowVersion.Default);
 
-        public DataRow GetParentRow(string relationName, DataRowVersion version) =>
+        public DataRow? GetParentRow(string? relationName, DataRowVersion version) =>
             GetParentRow(_table.ParentRelations[relationName], version);
 
         /// <summary>
         /// Gets the parent row of this <see cref='System.Data.DataRow'/> using the specified <see cref='System.Data.DataRelation'/> .
         /// </summary>
-        public DataRow GetParentRow(DataRelation relation) =>
+        public DataRow? GetParentRow(DataRelation? relation) =>
             GetParentRow(relation, DataRowVersion.Default);
 
         /// <summary>
         /// Gets the parent row of this <see cref='System.Data.DataRow'/>
         /// using the specified <see cref='System.Data.DataRelation'/> and <see cref='System.Data.DataRowVersion'/>.
         /// </summary>
-        public DataRow GetParentRow(DataRelation relation, DataRowVersion version)
+        public DataRow? GetParentRow(DataRelation? relation, DataRowVersion version)
         {
             if (relation == null)
             {
@@ -868,7 +879,7 @@ namespace System.Data
 
         // a multiple nested child table's row can have only one non-null FK per row. So table has multiple
         // parents, but a row can have only one parent. Same nested row cannot below to 2 parent rows.
-        internal DataRow GetNestedParentRow(DataRowVersion version)
+        internal DataRow? GetNestedParentRow(DataRowVersion version)
         {
             // 1) Walk over all FKs and get the non-null. 2) Get the relation. 3) Get the parent Row.
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
@@ -883,7 +894,7 @@ namespace System.Data
                     CheckForLoops(rel);
                 }
 
-                DataRow row = GetParentRow(rel, version);
+                DataRow? row = GetParentRow(rel, version);
                 if (row != null)
                 {
                     return row;
@@ -893,22 +904,22 @@ namespace System.Data
         }
         // No Nested in 1-many
 
-        public DataRow[] GetParentRows(string relationName) =>
+        public DataRow[] GetParentRows(string? relationName) =>
             GetParentRows(_table.ParentRelations[relationName], DataRowVersion.Default);
 
-        public DataRow[] GetParentRows(string relationName, DataRowVersion version) =>
+        public DataRow[] GetParentRows(string? relationName, DataRowVersion version) =>
             GetParentRows(_table.ParentRelations[relationName], version);
 
         /// <summary>
         /// Gets the parent rows of this <see cref='System.Data.DataRow'/> using the specified <see cref='System.Data.DataRelation'/> .
         /// </summary>
-        public DataRow[] GetParentRows(DataRelation relation) =>
+        public DataRow[] GetParentRows(DataRelation? relation) =>
             GetParentRows(relation, DataRowVersion.Default);
 
         /// <summary>
         /// Gets the parent rows of this <see cref='System.Data.DataRow'/> using the specified <see cref='System.Data.DataRelation'/> .
         /// </summary>
-        public DataRow[] GetParentRows(DataRelation relation, DataRowVersion version)
+        public DataRow[] GetParentRows(DataRelation? relation, DataRowVersion version)
         {
             if (relation == null)
             {
@@ -1175,7 +1186,7 @@ namespace System.Data
                         {
                             if (!dc.ImplementsIRevertibleChangeTracking)
                             {
-                                object value = null;
+                                object? value = null;
                                 if (RowState != DataRowState.Deleted)
                                     value = this[dc];
                                 else
@@ -1184,7 +1195,7 @@ namespace System.Data
                                 {
                                     if (((IChangeTracking)value).IsChanged)
                                     {
-                                        throw ExceptionBuilder.UDTImplementsIChangeTrackingButnotIRevertible(dc.DataType.AssemblyQualifiedName);
+                                        throw ExceptionBuilder.UDTImplementsIChangeTrackingButnotIRevertible(dc.DataType.AssemblyQualifiedName!);
                                     }
                                 }
                             }
@@ -1192,7 +1203,7 @@ namespace System.Data
                     }
                     foreach (DataColumn dc in _columns.ColumnsImplementingIChangeTracking)
                     {
-                        object value = null;
+                        object? value = null;
                         if (RowState != DataRowState.Deleted)
                             value = this[dc];
                         else
@@ -1253,7 +1264,7 @@ namespace System.Data
             this[column] = DBNull.Value;
         }
 
-        internal void SetNestedParentRow(DataRow parentRow, bool setNonNested)
+        internal void SetNestedParentRow(DataRow? parentRow, bool setNonNested)
         {
             if (parentRow == null)
             {
@@ -1286,7 +1297,7 @@ namespace System.Data
             }
         }
 
-        public void SetParentRow(DataRow parentRow)
+        public void SetParentRow(DataRow? parentRow)
         {
             SetNestedParentRow(parentRow, true);
         }
@@ -1294,7 +1305,7 @@ namespace System.Data
         /// <summary>
         /// Sets current row's parent row with specified relation.
         /// </summary>
-        public void SetParentRow(DataRow parentRow, DataRelation relation)
+        public void SetParentRow(DataRow? parentRow, DataRelation? relation)
         {
             if (relation == null)
             {
@@ -1387,7 +1398,7 @@ namespace System.Data
                 //Copy original record for the row in Unchanged, Modified, Deleted state.
                 for (int i = 0; i < _columns.Count; i++)
                 {
-                    _columns[i].CopyValueIntoStore(_oldRecord, storeList[i], (BitArray)nullbitList[i], storeIndex);
+                    _columns[i].CopyValueIntoStore(_oldRecord, storeList[i]!, (BitArray)nullbitList[i]!, storeIndex);
                 }
                 recordCount++;
                 storeIndex++;
@@ -1399,7 +1410,7 @@ namespace System.Data
                 //Copy current record for the row in Added, Modified state.
                 for (int i = 0; i < _columns.Count; i++)
                 {
-                    _columns[i].CopyValueIntoStore(_newRecord, storeList[i], (BitArray)nullbitList[i], storeIndex);
+                    _columns[i].CopyValueIntoStore(_newRecord, storeList[i]!, (BitArray)nullbitList[i]!, storeIndex);
                 }
                 recordCount++;
                 storeIndex++;
@@ -1410,7 +1421,7 @@ namespace System.Data
                 //Copy temp record for the row in edit mode.
                 for (int i = 0; i < _columns.Count; i++)
                 {
-                    _columns[i].CopyValueIntoStore(_tempRecord, storeList[i], (BitArray)nullbitList[i], storeIndex);
+                    _columns[i].CopyValueIntoStore(_tempRecord, storeList[i]!, (BitArray)nullbitList[i]!, storeIndex);
                 }
                 recordCount++;
                 storeIndex++;

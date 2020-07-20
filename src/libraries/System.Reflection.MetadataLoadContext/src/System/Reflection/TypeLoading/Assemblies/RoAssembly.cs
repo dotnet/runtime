@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -146,6 +145,9 @@ namespace System.Reflection.TypeLoading
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
+#if NET50_OBSOLETIONS
+        [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public sealed override bool GlobalAssemblyCache => false;
         public sealed override long HostContext => 0;
         public abstract override string ImageRuntimeVersion { get; }

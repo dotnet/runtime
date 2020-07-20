@@ -1,7 +1,6 @@
 // -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -29,9 +28,10 @@ public class WasmAppBuilder : Task
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
-    public ITaskItem[]? ExtraFiles { get; set; }
+    public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
+    public ITaskItem[]? RemoteSources { get; set; }
 
-    Dictionary<string, Assembly>? _assemblies;
+    SortedDictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
 
     public override bool Execute ()
@@ -42,7 +42,7 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
 
         var paths = new List<string>();
-        _assemblies = new Dictionary<string, Assembly>();
+        _assemblies = new SortedDictionary<string, Assembly>();
 
         // Collect and load assemblies used by the app
         foreach (var v in AssemblySearchPaths!)
@@ -72,35 +72,71 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, "managed"));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
-
-        if (ExtraFiles != null)
-        {
-            foreach (var item in ExtraFiles)
-                File.Copy(item.ItemSpec, Path.Join(AppDir, Path.GetFileName(item.ItemSpec)),  true);
-        }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
             sw.WriteLine("config = {");
-            sw.WriteLine("\tvfs_prefix: \"managed\",");
-            sw.WriteLine("\tdeploy_prefix: \"managed\",");
+            sw.WriteLine("\tassembly_root: \"managed\",");
             sw.WriteLine("\tenable_debugging: 0,");
-            sw.WriteLine("\tfile_list: [");
+            sw.WriteLine("\tassets: [");
+
             foreach (var assembly in _assemblies.Values)
+                sw.WriteLine($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }},");
+
+            if (FilesToIncludeInFileSystem != null)
             {
-                sw.Write("\"" + Path.GetFileName(assembly.Location) + "\"");
-                sw.Write(", ");
+                string supportFilesDir = Path.Join(AppDir, "supportFiles");
+                Directory.CreateDirectory(supportFilesDir);
+
+                var i = 0;
+                foreach (var item in FilesToIncludeInFileSystem)
+                {
+                    string? targetPath = item.GetMetadata("TargetPath");
+                    if (string.IsNullOrEmpty(targetPath))
+                    {
+                        targetPath = Path.GetFileName(item.ItemSpec);
+                    }
+
+                    // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                    targetPath = targetPath.Replace('\\', '/');
+
+                    var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
+
+                    File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
+
+                    var actualItemName = "supportFiles/" + generatedFileName;
+
+                    sw.WriteLine("\t\t{");
+                    sw.WriteLine("\t\t\tbehavior: \"vfs\",");
+                    sw.WriteLine($"\t\t\tname: \"{actualItemName}\",");
+                    sw.WriteLine($"\t\t\tvirtual_path: \"{targetPath}\",");
+                    sw.WriteLine("\t\t},");
+                }
             }
-            sw.WriteLine ("],");
-            sw.WriteLine ("}");
+
+            var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
+            var sEnableRemote = enableRemote ? "true" : "false";
+
+            sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"icudt.dat\", load_remote: {sEnableRemote} }},");
+            sw.WriteLine($"\t\t{{ behavior: \"vfs\", name: \"dotnet.timezones.blat\", virtual_path: \"/usr/share/zoneinfo/\" }}");
+            sw.WriteLine ("\t],");
+
+            if (enableRemote) {
+                sw.WriteLine("\tremote_sources: [");
+                foreach (var source in RemoteSources!)
+                    sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
+                sw.WriteLine ("\t],");
+            }
+
+            sw.WriteLine ("};");
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
         {
-            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;
@@ -113,8 +149,14 @@ public class WasmAppBuilder : Task
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {
-            var refAssembly = mlc.LoadFromAssemblyName(aname);
-            Add(mlc, refAssembly);
+            try
+            {
+                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
+                Add(mlc, refAssembly);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }

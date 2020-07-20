@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
+    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
@@ -22,9 +23,9 @@
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LDAP.Configuration.xml">
+    <Content Include="LDAP.Configuration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />

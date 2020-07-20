@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -31,7 +30,6 @@ namespace System.Net.Mail
         private readonly SmtpClient? _client;
         private NetworkStream? _networkStream;
         internal TcpClient? _tcpClient;
-        internal int _port = 0;
         private SmtpReplyReaderFactory? _responseReader;
 
         private readonly ICredentialsByHost? _credentials;
@@ -418,7 +416,6 @@ namespace System.Net.Mail
 
             internal void GetConnection()
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
@@ -435,7 +432,7 @@ namespace System.Net.Mail
                     try
                     {
                         _connection.EndInitializeConnection(result);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connect returned");
 
                         Handshake();
                     }
@@ -454,7 +451,7 @@ namespace System.Net.Mail
                     try
                     {
                         thisPtr._connection.EndInitializeConnection(result);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect returned {thisPtr}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Connect returned {thisPtr}");
 
                         thisPtr.Handshake();
                     }

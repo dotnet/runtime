@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: Method.CPP
 //
@@ -1329,11 +1328,9 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
 ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
 {
-#ifdef HOST_64BIT
     // For simplicity, we don't hijack in funclets, but if you ever change that,
     // be sure to choose the OnHijack... callback type to match that of the FUNCLET
     // not the main method (it would probably be Scalar).
-#endif // HOST_64BIT
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
     // Mark that we are performing a stackwalker like operation on the current thread.
@@ -5597,7 +5594,15 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifdef FEATURE_CODE_VERSIONING
     // Make sure the active IL and native code version are in triage dumps.
-    GetCodeVersionManager()->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this)).GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    if (!ilVersion.IsNull())
+    {
+        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+        ilVersion.GetVersionId();
+        ilVersion.GetRejitState();
+        ilVersion.GetIL();
+    }
 #endif
 
     // Also, call DacValidateMD to dump the memory it needs. !clrstack calls

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // DacDbiInterface.h
 //
@@ -2730,6 +2729,9 @@ public:
         VMPTR_Object delegateObject,
         OUT VMPTR_Object *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain) = 0;
+
+    virtual
+    HRESULT GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> *pRanges) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

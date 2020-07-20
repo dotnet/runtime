@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DIAGNOSTICS_PROTOCOL_H__
 #define __DIAGNOSTICS_PROTOCOL_H__
@@ -71,14 +70,16 @@ namespace DiagnosticsIpc
         Dump          = 0x01,
         EventPipe     = 0x02,
         Profiler      = 0x03,
+        Process       = 0x04,
 
         Server        = 0xFF,
     };
 
-    enum class DiagnosticServerCommandId : uint8_t
+    enum class DiagnosticServerResponseId : uint8_t
     {
-        OK    = 0x00,
-        Error = 0xFF,
+        OK            = 0x00,
+        // future
+        Error         = 0xFF,
     };
 
     struct MagicVersion
@@ -162,7 +163,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::OK,
+        (uint8_t)DiagnosticServerResponseId::OK,
         (uint16_t)0x0000
     };
 
@@ -171,7 +172,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::Error,
+        (uint8_t)DiagnosticServerResponseId::Error,
         (uint16_t)0x0000
     };
 
@@ -196,12 +197,12 @@ namespace DiagnosticsIpc
     //
     // For more details on this pattern, look up "Substitution Failure Is Not An Error" or SFINAE
 
-    // template meta-programming to check for bool(Flatten)(void*) member function
+    // template meta-programming to check for bool(Flatten)(BYTE*&, uint16_t&) member function
     template <typename T>
     struct HasFlatten
     {
         template <typename U, U u> struct Has;
-        template <typename U> static std::true_type test(Has<bool (U::*)(void*), &U::Flatten>*);
+        template <typename U> static std::true_type test(Has<bool (U::*)(BYTE*&, uint16_t&), &U::Flatten>*);
         template <typename U> static std::false_type test(...);
         static constexpr bool value = decltype(test<T>(nullptr))::value;
     };
@@ -454,7 +455,7 @@ namespace DiagnosticsIpc
         // Handles the case where the payload structure exposes Flatten
         // and GetSize methods
         template <typename U,
-                  typename std::enable_if<HasFlatten<U>::value&& HasGetSize<U>::value, int>::type = 0>
+                  typename std::enable_if<HasFlatten<U>::value && HasGetSize<U>::value, int>::type = 0>
         bool FlattenImpl(U& payload)
         {
             CONTRACTL
@@ -473,6 +474,7 @@ namespace DiagnosticsIpc
             ASSERT(!temp_size.IsOverflow());
 
             m_Size = temp_size.Value();
+            uint16_t remainingBytes = temp_size.Value();
 
             BYTE* temp_buffer = new (nothrow) BYTE[m_Size];
             if (temp_buffer == nullptr)
@@ -487,13 +489,14 @@ namespace DiagnosticsIpc
 
             memcpy(temp_buffer_cursor, &m_Header, sizeof(struct IpcHeader));
             temp_buffer_cursor += sizeof(struct IpcHeader);
+            remainingBytes -= sizeof(struct IpcHeader);
 
-            payload.Flatten(temp_buffer_cursor);
+            const bool fSuccess = payload.Flatten(temp_buffer_cursor, remainingBytes);
 
             ASSERT(m_pData == nullptr);
             m_pData = temp_buffer;
 
-            return true;
+            return fSuccess;
         };
 
         // handles the case where we were handed a struct with no Flatten or GetSize method

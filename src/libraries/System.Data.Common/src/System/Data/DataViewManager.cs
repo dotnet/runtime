@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -13,18 +13,18 @@ namespace System.Data
     public class DataViewManager : MarshalByValueComponent, IBindingList, System.ComponentModel.ITypedList
     {
         private DataViewSettingCollection _dataViewSettingsCollection;
-        private DataSet _dataSet;
+        private DataSet? _dataSet;
         private readonly DataViewManagerListItemTypeDescriptor _item;
         private readonly bool _locked;
-        internal int _nViews = 0;
+        internal int _nViews;
 
         private static readonly NotSupportedException s_notSupported = new NotSupportedException();
 
         public DataViewManager() : this(null, false) { }
 
-        public DataViewManager(DataSet dataSet) : this(dataSet, false) { }
+        public DataViewManager(DataSet? dataSet) : this(dataSet, false) { }
 
-        internal DataViewManager(DataSet dataSet, bool locked)
+        internal DataViewManager(DataSet? dataSet, bool locked)
         {
             GC.SuppressFinalize(this);
             _dataSet = dataSet;
@@ -39,7 +39,8 @@ namespace System.Data
         }
 
         [DefaultValue(null)]
-        public DataSet DataSet
+        [DisallowNull]
+        public DataSet? DataSet
         {
             get { return _dataSet; }
             set
@@ -120,15 +121,15 @@ namespace System.Data
                     string table = XmlConvert.DecodeName(r.LocalName);
                     if (r.MoveToAttribute("Sort"))
                     {
-                        _dataViewSettingsCollection[table].Sort = r.Value;
+                        _dataViewSettingsCollection[table]!.Sort = r.Value;
                     }
                     if (r.MoveToAttribute("RowFilter"))
                     {
-                        _dataViewSettingsCollection[table].RowFilter = r.Value;
+                        _dataViewSettingsCollection[table]!.RowFilter = r.Value;
                     }
                     if (r.MoveToAttribute("RowStateFilter"))
                     {
-                        _dataViewSettingsCollection[table].RowStateFilter = (DataViewRowState)Enum.Parse(typeof(DataViewRowState), r.Value);
+                        _dataViewSettingsCollection[table]!.RowStateFilter = (DataViewRowState)Enum.Parse(typeof(DataViewRowState), r.Value);
                     }
                 }
             }
@@ -156,13 +157,13 @@ namespace System.Data
             array.SetValue(new DataViewManagerListItemTypeDescriptor(this), index);
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return _item; }
             set { throw ExceptionBuilder.CannotModifyCollection(); }
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw ExceptionBuilder.CannotModifyCollection();
         }
@@ -172,16 +173,16 @@ namespace System.Data
             throw ExceptionBuilder.CannotModifyCollection();
         }
 
-        bool IList.Contains(object value) => (value == _item);
+        bool IList.Contains(object? value) => (value == _item);
 
-        int IList.IndexOf(object value) => (value == _item) ? 1 : -1;
+        int IList.IndexOf(object? value) => (value == _item) ? 1 : -1;
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw ExceptionBuilder.CannotModifyCollection();
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw ExceptionBuilder.CannotModifyCollection();
         }
@@ -224,7 +225,7 @@ namespace System.Data
             get { throw s_notSupported; }
         }
 
-        public event System.ComponentModel.ListChangedEventHandler ListChanged;
+        public event System.ComponentModel.ListChangedEventHandler? ListChanged;
 
         void IBindingList.AddIndex(PropertyDescriptor property)
         {
@@ -254,7 +255,7 @@ namespace System.Data
         // SDUB: GetListName and GetItemProperties almost the same in DataView and DataViewManager
         string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
         {
-            DataSet dataSet = DataSet;
+            DataSet? dataSet = DataSet;
             if (dataSet == null)
             {
                 throw ExceptionBuilder.CanNotUseDataViewManager();
@@ -266,7 +267,7 @@ namespace System.Data
             }
             else
             {
-                DataTable table = dataSet.FindTable(null, listAccessors, 0);
+                DataTable? table = dataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
                     return table.TableName;
@@ -277,7 +278,7 @@ namespace System.Data
 
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
-            DataSet dataSet = DataSet;
+            DataSet? dataSet = DataSet;
             if (dataSet == null)
             {
                 throw ExceptionBuilder.CanNotUseDataViewManager();
@@ -289,7 +290,7 @@ namespace System.Data
             }
             else
             {
-                DataTable table = dataSet.FindTable(null, listAccessors, 0);
+                DataTable? table = dataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
                     return table.GetPropertyDescriptorCollection(null);
@@ -325,23 +326,23 @@ namespace System.Data
 
         protected virtual void TableCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
-            PropertyDescriptor NullProp = null;
+            PropertyDescriptor? NullProp = null;
             OnListChanged(
                 e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
                 e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element)) :
-                /*default*/ null
+                /*default*/ null! // TODO: This is very likely wrong
             );
         }
 
         protected virtual void RelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataRelationPropertyDescriptor NullProp = null;
+            DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
                 e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
                 e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
-            /*default*/ null
+            /*default*/ null! // TODO: This is very likely wrong
             );
         }
     }

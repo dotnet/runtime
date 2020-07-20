@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: eventtrace.cpp
 // Abstract: This module implements Event Tracing support
@@ -3560,7 +3559,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     {
         CrstHolder _crst(GetHashCrst());
         // Like above, check if the type has been added from a different thread since we last looked it up.
-        if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+        if (!pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
         {
             *pfCreatedNew = FALSE;
             return fSucceeded;
