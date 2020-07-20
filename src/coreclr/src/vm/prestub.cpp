@@ -1071,7 +1071,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
             // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
             // native code version of a method. The current optimization tier should be consistent with the change being made
             // (Tier 0 to Optimized), such that the tier is not changed in an unexpected way or at an unexpected time. Since
-            // changes to the optimziation tier are unlocked, this assertion is just a speculative check on possible values.
+            // changes to the optimization tier are unlocked, this assertion is just a speculative check on possible values.
             NativeCodeVersion::OptimizationTier previousOptimizationTier = pConfig->GetCodeVersion().GetOptimizationTier();
             _ASSERTE(
                 previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
