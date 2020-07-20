@@ -395,6 +395,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         // Default path should be calculated according to https://tools.ietf.org/html/rfc6265#section-5.1.4
+        // When a cookie is being sent without an explicitly defined Path for a URL with URL-Path /path/sub,
+        // the cookie should be added with Path=/path.
         [Fact]
         public async Task GetAsync_NoPathDefined_CookieAddedWithDefaultPath()
         {
