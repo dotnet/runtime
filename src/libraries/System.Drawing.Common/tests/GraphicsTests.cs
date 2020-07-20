@@ -63,7 +63,7 @@ namespace System.Drawing.Tests
             using (var bitmap = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(bitmap))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.GetHdc());
@@ -416,7 +416,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.CompositingMode);
@@ -510,7 +510,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.CompositingQuality);
@@ -573,7 +573,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DpiX);
@@ -604,7 +604,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DpiX);
@@ -656,7 +656,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.Flush());
@@ -730,7 +730,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.InterpolationMode);
@@ -792,7 +792,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.PageScale);
@@ -864,7 +864,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.PageUnit);
@@ -935,7 +935,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.PixelOffsetMode);
@@ -1004,7 +1004,6 @@ namespace System.Drawing.Tests
         [MemberData(nameof(RenderingOrigin_TestData))]
         public void RenderingOrigin_SetToCustom_RendersExpected(Point renderingOrigin, Color[][] expectedRendering)
         {
-            Color empty = Color.FromArgb(255, 0, 0, 0);
             Color red = Color.FromArgb(Color.Red.ToArgb());
 
             using (var image = new Bitmap(3, 3))
@@ -1026,7 +1025,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.RenderingOrigin);
@@ -1097,7 +1096,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.SmoothingMode);
@@ -1156,7 +1155,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.TextContrast);
@@ -1218,7 +1217,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.TextRenderingHint);
@@ -1315,7 +1314,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var matrix = new Matrix())
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.Transform);
@@ -1364,7 +1363,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.ResetTransform());
@@ -1483,7 +1482,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var matrix = new Matrix())
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.MultiplyTransform(matrix));
@@ -1570,7 +1569,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.TranslateTransform(0, 0));
@@ -1664,7 +1663,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.ScaleTransform(0, 0));
@@ -1751,7 +1750,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.RotateTransform(0));
@@ -1814,8 +1813,6 @@ namespace System.Drawing.Tests
         [InlineData(1, 1, 2, 2, 3, 3)]
         public void CopyFromScreen_ValidRange_AffectsGraphics(int sourceX, int sourceY, int destinationX, int destinationY, int width, int height)
         {
-            Size screenSize = Helpers.GetHWndRect(IntPtr.Zero).Size;
-
             Color color = Color.FromArgb(2, 3, 4);
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -1934,7 +1931,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.CopyFromScreen(0, 0, 0, 0, Size.Empty));
@@ -2198,7 +2195,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Page, new Point[] { Point.Empty }));
@@ -2250,7 +2247,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.GetNearestColor(Color.Red));
@@ -2344,7 +2341,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
@@ -2412,7 +2409,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
@@ -2498,7 +2495,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangles(pen, new Rectangle[2]));
@@ -2563,7 +2560,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
@@ -2661,7 +2658,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
@@ -2751,7 +2748,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawPolygon(pen, new Point[2]));
@@ -2837,7 +2834,7 @@ namespace System.Drawing.Tests
             using (var pen = new Pen(Color.Red))
             using (var graphicsPath = new GraphicsPath())
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawPath(pen, graphicsPath));
@@ -2961,7 +2958,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new Point[2]));
@@ -3066,7 +3063,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawClosedCurve(pen, new Point[3]));
@@ -3125,7 +3122,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.Clear(Color.Red));

@@ -63,7 +63,7 @@ inline T _ClearThumbBit(T addr)
     CORDbgInsertBreakpointExImpl((CORDB_ADDRESS_TYPE *)((_buffer) + (_ClearThumbBit(_patchAddr) - (_requestedAddr))));
 
 
-SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
+constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
     REGISTER_ARM_R0,
     REGISTER_ARM_R1,

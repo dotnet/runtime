@@ -14,7 +14,8 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, short value, JsonSerializerOptions options)
         {
-            writer.WriteNumberValue(value);
+            // For performance, lift up the writer implementation.
+            writer.WriteNumberValue((long)value);
         }
 
         internal override short ReadWithQuotes(ref Utf8JsonReader reader)

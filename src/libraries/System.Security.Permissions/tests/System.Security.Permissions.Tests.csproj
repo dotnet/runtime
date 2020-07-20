@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- SYSLIB0003 is the obsoletion of CAS, but we still have unit tests for it -->
+    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />

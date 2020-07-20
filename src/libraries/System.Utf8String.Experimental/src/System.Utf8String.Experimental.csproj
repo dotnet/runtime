@@ -110,7 +110,7 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs"
              Link="System\Text\Utf8Span.Searching.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">

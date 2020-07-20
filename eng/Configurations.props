@@ -31,6 +31,7 @@
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
 
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
+    <MinimiumSupportedWindowsPlatform>WINDOWS7.0</MinimiumSupportedWindowsPlatform>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->

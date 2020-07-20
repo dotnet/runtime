@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
+#pragma warning disable SYSLIB0003
+    // Conditionally marking this type as obsolete in .NET 5+ will require diverging its net5.0 build from netstandard2.0
+    // https://github.com/dotnet/runtime/issues/39413
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct |
         AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event,
         AllowMultiple = true, Inherited = false)]
@@ -16,4 +19,5 @@ namespace System.DirectoryServices
         public string Path { get; set; }
         public override IPermission CreatePermission() { return default(IPermission); }
     }
+#pragma warning restore SYSLIB0003
 }

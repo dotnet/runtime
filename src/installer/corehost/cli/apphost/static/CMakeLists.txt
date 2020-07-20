@@ -39,6 +39,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 include(../../exe.cmake)
+include(configure.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
@@ -57,7 +58,7 @@ endif()
 
 # Path like: artifacts/bin/coreclr/Windows_NT.x64.Release/lib  or
 #            /root/runtime/artifacts/transport/coreclr/lib
-set(CORECLR_STATIC_LIB_LOCATION "$ENV{__CoreClrArtifacts}/lib")
+set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
 
 message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCATION}'.")
 
@@ -78,7 +79,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
-else()
+elseif(CLR_CMAKE_TARGET_LINUX)
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
@@ -86,54 +87,114 @@ else()
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
+
+    # currently linking coreclr into the singlefilehost is only supported on linux
+    # the following code here would be needed if/when BSD and OSX are supported too
+    #
+    # if(CLR_CMAKE_TARGET_OSX)
+    #   find_library(COREFOUNDATION CoreFoundation)
+    #   find_library(CORESERVICES CoreServices)
+    #   find_library(SECURITY Security)
+    #   find_library(SYSTEM System)
+    # 
+    #   LIST(APPEND CORECLR_LIBRARIES
+    #     ${COREFOUNDATION}
+    #     ${CORESERVICES}
+    #     ${SECURITY}
+    #     ${SYSTEM}
+    #   )
+    # endif(CLR_CMAKE_TARGET_OSX)
+    # 
+    # # On OSX and *BSD, we use the libunwind that's part of the OS
+    # if(CLR_CMAKE_TARGET_FREEBSD)
+    #     find_unwind_libs(UNWIND_LIBS)
+    # 
+    #     LIST(APPEND CORECLR_LIBRARIES
+    #       ${UNWIND_LIBS}
+    #     )
+    # endif(CLR_CMAKE_TARGET_FREEBSD)
+    # 
+    # if(CLR_CMAKE_TARGET_NETBSD)
+    #     find_library(KVM kvm)
+    # 
+    #     LIST(APPEND CORECLR_LIBRARIES
+    #       ${KVM}
+    #     )
+    # endif(CLR_CMAKE_TARGET_NETBSD)
 endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_TARGET_OSX)
-  find_library(COREFOUNDATION CoreFoundation)
-  find_library(CORESERVICES CoreServices)
-  find_library(SECURITY Security)
-  find_library(SYSTEM System)
+# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
+set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
+message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
 
-  LIST(APPEND CORECLR_LIBRARIES
-    ${COREFOUNDATION}
-    ${CORESERVICES}
-    ${SECURITY}
-    ${SYSTEM}
-  )
-endif(CLR_CMAKE_TARGET_OSX)
-
-# On OSX and *BSD, we use the libunwind that's part of the OS
-if(CLR_CMAKE_TARGET_FREEBSD)
-    find_unwind_libs(UNWIND_LIBS)
-
-    LIST(APPEND CORECLR_LIBRARIES
-      ${UNWIND_LIBS}
+if(NOT CLR_CMAKE_TARGET_LINUX)
+    set(NATIVE_LIBS
+        # Native libs linked into singlefilehost is supported only on Linux for now.
+        # if/when BSD and OSX are supported too, consider the commented code sections below.
     )
-endif(CLR_CMAKE_TARGET_FREEBSD)
-
-if(CLR_CMAKE_TARGET_NETBSD)
-    find_library(KVM kvm)
-
-    LIST(APPEND CORECLR_LIBRARIES
-      ${KVM}
+else()
+    set(NATIVE_LIBS
+      ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
+      ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
     )
-endif(CLR_CMAKE_TARGET_NETBSD)
 
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
-    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
-    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+    find_package(ZLIB REQUIRED)
 
-    set_exports_linker_option(${EXPORTS_FILE})
-endif(NOT CLR_CMAKE_TARGET_WIN32)
+    # Additional requirements for System.System.IO.Compression.Native
+    #
+    # if (CLR_CMAKE_TARGET_SUNOS)
+    #     set(ZLIB_LIBRARIES z m)
+    # elseif (CLR_CMAKE_TARGET_UNIX)
+    #     find_package(ZLIB REQUIRED)
+    # endif ()
+    
+    # Additional requirements for System.Net.Security.Native
+    if (HAVE_GSSFW_HEADERS)
+       find_library(LIBGSS NAMES GSS)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
+       endif()
+    elseif(HAVE_HEIMDAL_HEADERS)
+       find_library(LIBGSS NAMES gssapi)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi and System.Net.Security.Native cannot build without it. Try installing heimdal (or the appropriate package for your platform)")
+       endif()
+    else()
+       find_library(LIBGSS NAMES gssapi_krb5)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
+       endif()
+    endif()
+    
+    # Additional requirements for System.Native
+    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+        set(NATIVE_LIBS_EXTRA
+          rt
+        )
+    # elseif (CLR_CMAKE_TARGET_FREEBSD)
+    #     set(NATIVE_LIBS_EXTRA
+    #       pthread
+    #     )
+    #     find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+    #     if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
+    #       LIST(APPEND NATIVE_LIBS_EXTRA
+    #         ${INOTIFY_LIBRARY}
+    #       )
+    #     endif ()
+    # elseif (CLR_CMAKE_TARGET_SUNOS)
+    #     set(NATIVE_LIBS_EXTRA
+    #         socket
+    #     )
+    endif ()
 
-if(CLR_CMAKE_HOST_UNIX)
-    add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})
-    add_dependencies(singlefilehost singlefilehost_exports)
-
-    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
-    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+        # These options are used to force every object to be included even if it's unused.
+        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+endif(NOT CLR_CMAKE_TARGET_LINUX)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
@@ -142,4 +203,12 @@ target_link_libraries(singlefilehost
     libhostpolicy_static
     libhostcommon
     ${CORECLR_LIBRARIES}
+
+    ${ZLIB_LIBRARIES}
+    ${LIBGSS}
+    ${NATIVE_LIBS_EXTRA}
+
+    ${START_WHOLE_ARCHIVE}
+    ${NATIVE_LIBS}
+    ${END_WHOLE_ARCHIVE}
 )

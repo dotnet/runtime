@@ -2,9 +2,18 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <!-- When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
+    <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CS0649</NoWarn>
   </PropertyGroup>
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
@@ -14,10 +23,13 @@
     <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
     <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
-    <Compile Include="System\Runtime\Serialization\Obsoletions.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationFieldInfo.cs" />
@@ -49,12 +61,16 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>

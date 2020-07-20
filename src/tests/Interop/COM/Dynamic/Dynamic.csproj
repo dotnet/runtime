@@ -8,6 +8,10 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- This test would require the runincontext.exe to include App.manifest describing the COM interfaces -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- This test is very slow under some GCStress variations, especially with COMPlus_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
+         Issue: https://github.com/dotnet/runtime/issues/39584
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />

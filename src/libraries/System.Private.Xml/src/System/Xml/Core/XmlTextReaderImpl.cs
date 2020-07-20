@@ -7376,15 +7376,10 @@ namespace System.Xml
                     badDigitExceptionString = SR.Xml_BadHexEntity;
                     while (true)
                     {
-                        char ch = chars[pos];
-                        if (ch >= '0' && ch <= '9')
-                            val = checked(val * 16 + ch - '0');
-                        else if (ch >= 'a' && ch <= 'f')
-                            val = checked(val * 16 + 10 + ch - 'a');
-                        else if (ch >= 'A' && ch <= 'F')
-                            val = checked(val * 16 + 10 + ch - 'A');
-                        else
+                        int ch = HexConverter.FromChar(chars[pos]);
+                        if (ch == 0xFF)
                             break;
+                        val = checked(val * 16 + ch);
                         pos++;
                     }
                     entityType = EntityType.CharacterHex;

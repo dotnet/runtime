@@ -675,7 +675,6 @@ namespace System.Data.Odbc
                 bool mustRelease = false;
                 CNativeBuffer parameterBuffer = _cmdWrapper._nativeParameterBuffer;
 
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     //Handle Parameters
