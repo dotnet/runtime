@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Converters
                 bool preserveReferences = options.ReferenceHandler != null;
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
+                    if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
@@ -156,18 +156,6 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     CreateCollection(ref reader, ref state);
-
-                    if (state.Current.MetadataId != null)
-                    {
-                        Debug.Assert(CanHaveIdMetadata);
-
-                        value = (TCollection)state.Current.ReturnValue!;
-                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
-                        // Clear metadata name, if the next read fails
-                        // we want to point the JSON path to the property's object.
-                        state.Current.JsonPropertyName = null;
-                    }
-
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
@@ -308,5 +296,8 @@ namespace System.Text.Json.Serialization.Converters
 
             return success;
         }
+
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            => CreateCollection(ref reader, ref state);
     }
 }
