@@ -1938,17 +1938,24 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage>[] sendTasks = new Task<HttpResponseMessage>[MaxHttp2ConnectionsPerServer * MaxConcurrentStreams];
                 List<Http2LoopbackConnection> connections = new List<Http2LoopbackConnection>();
                 List<int> acceptedStreams = new List<int>();
+                Console.WriteLine("Step 1");
                 for (int i = 0; i < sendTasks.Length; i++)
                 {
+                    Console.WriteLine($"Step 1-1[{i}]");
                     sendTasks[i++] = client.GetAsync(server.Address);
+                    Console.WriteLine($"Step 1-2[{i}]");
                     Http2LoopbackConnection connection = await GetConnection(server, MaxConcurrentStreams).ConfigureAwait(false);
+                    Console.WriteLine($"Step 1-3[{i}]");
                     connections.Add(connection);
                     sendTasks[i] = client.GetAsync(server.Address);
                     int prevAcceptedStreamCount = acceptedStreams.Count;
+                    Console.WriteLine($"Step 1-4[{i}]");
                     acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
+                    Console.WriteLine($"Step 1-5[{i}]");
                     Assert.Equal(prevAcceptedStreamCount + MaxConcurrentStreams, acceptedStreams.Count);
                 }
 
+                Console.WriteLine("Step 2");
                 int responseIndex = 0;
                 List<Task> responseTasks = new List<Task>();
                 foreach (Http2LoopbackConnection connection in connections)
@@ -1960,9 +1967,12 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
 
+                Console.WriteLine("Step 3");
                 await Task.WhenAll(responseTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Console.WriteLine("Step 4");
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
 
+                Console.WriteLine("Step 5");
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
         }
@@ -2060,12 +2070,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 server.AllowMultipleConnections = true;
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                Console.WriteLine("Step 1");
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
 
+                Console.WriteLine("Step 2");
                 // Block the first connection on infinite requests.
                 List<int> blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
                 Assert.Equal(MaxConcurrentStreams, blockedStreamIds.Count);
 
+                Console.WriteLine("Step 3");
                 Http2LoopbackConnection connection1 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
                 int warmUpRequestCount = sendTasks.Count;
                 for (int i = 0; i < TotalRequestCount - warmUpRequestCount; i++)
@@ -2074,18 +2087,22 @@ namespace System.Net.Http.Functional.Tests
                     sendTasks.Add(client.GetAsync(server.Address));
                 }
 
+                Console.WriteLine("Step 4");
                 int handledRequestCount = (await HandleAllPendingRequests(connection1, sendTasks.Count - blockedStreamIds.Count).ConfigureAwait(false)).Count;
 
                 // First connection is blocked by 'MaxConcurrentStreams' requests.
                 Assert.Equal(TotalRequestCount - MaxConcurrentStreams, handledRequestCount);
 
+                Console.WriteLine("Step 5");
                 //Complete inifinite requests.
                 handledRequestCount += await SendResponses(connection0, blockedStreamIds).ConfigureAwait(false);
 
                 Assert.Equal(TotalRequestCount, handledRequestCount);
 
+                Console.WriteLine("Step 6");
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
 
+                Console.WriteLine("Step 7");
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
         }
