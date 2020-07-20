@@ -57,7 +57,7 @@ namespace System.Diagnostics
         public static bool ForceDefaultIdFormat { get; set; }
 
         private string? _traceState;
-        private State _state;
+        private StateFlags _stateFlags;
         private int _currentChildId;  // A unique number for all children of this activity.
 
         // State associated with ID.
@@ -1202,16 +1202,16 @@ namespace System.Diagnostics
 
         private bool IsFinished
         {
-            get => (_state & State.IsFinished) != 0;
+            get => (_stateFlags & StateFlags.IsFinished) != 0;
             set
             {
                 if (value)
                 {
-                    _state |= State.IsFinished;
+                    _stateFlags |= StateFlags.IsFinished;
                 }
                 else
                 {
-                    _state &= ~State.IsFinished;
+                    _stateFlags &= ~StateFlags.IsFinished;
                 }
             }
         }
@@ -1221,8 +1221,8 @@ namespace System.Diagnostics
         /// </summary>
         public ActivityIdFormat IdFormat
         {
-            get => (ActivityIdFormat)(_state & State.FormatFlags);
-            private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
+            get => (ActivityIdFormat)(_stateFlags & StateFlags.FormatFlags);
+            private set => _stateFlags = (_stateFlags & ~StateFlags.FormatFlags) | (StateFlags)((byte)value & (byte)StateFlags.FormatFlags);
         }
 
         private partial class LinkedListNode<T>
@@ -1405,7 +1405,7 @@ namespace System.Diagnostics
         }
 
         [Flags]
-        private enum State : byte
+        private enum StateFlags : byte
         {
             None = 0,
 
