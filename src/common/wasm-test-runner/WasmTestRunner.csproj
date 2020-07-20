@@ -35,6 +35,7 @@
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
+      <AssemblySearchPaths Include="$(ArtifactsDir)/TargetingPack" />
     </ItemGroup>
   
     <Message Importance="High" Text="@(TestAssemblyItems)"/>

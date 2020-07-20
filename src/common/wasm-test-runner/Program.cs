@@ -10,12 +10,32 @@ public static class Program
 {
     public static int Main(string[] args)
     {
-	string assemblyName = args[0];
+	try
+        {
+		string assemblyName = args[0];
 
-	var assembly = Assembly.Load(assemblyName);
-	var mainMethod = assembly.EntryPoint;
-	mainMethod.Invoke (null, new object [] { args } );
+		Console.WriteLine("Load");
+		var assembly = Assembly.Load(assemblyName);
 
-	return 0;
+		Console.WriteLine("EntryPoint");
+		var mainMethod = assembly.EntryPoint;
+
+		Console.WriteLine("Invoke");
+	
+		if (mainMethod != null)
+		{	
+			return (int)mainMethod.Invoke (null, new object [] { args } );
+		}
+		else
+		{
+			return 72345;
+		}
+
+	}
+	catch(Exception e)
+	{
+		Console.WriteLine(e);
+		throw;
+	}
     }
 }

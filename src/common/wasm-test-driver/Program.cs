@@ -1,4 +1,11 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Reflection;
+
 using System.Diagnostics;
 
 namespace wasm_test_driver
@@ -7,20 +14,34 @@ namespace wasm_test_driver
     {
         static void Main(string[] args)
         {
-	    string[] benchmarkAssemblyNames = new string [] { "runningmono" };
+	    // string testAssemblyFile = "test_assemblies.txt"; 
+	    string testAssemblFile;
+	    
+	    if (args.Length > 0) 
+	    {
+	       testAssemblyFile = args[1];		
+ 	    }
+	    else
+	    {
+	       testAssemblyFile = "/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt";
+	    }
 
-	    string runtimeJs = "";
-            string wasmTestRunnerAssembly = "";
+	    List<AssemblyName> benchmarkAssemblyNames = File.ReadAllLines(testAssemblyFile).Select( file => AssemblyName.GetAssemblyName(file)).ToList();
 
+            ProcessStartInfo processStartInfo = new ProcessStartInfo("sh");
 
-        ProcessStartInfo processStartInfo = new ProcessStartInfo("sh");
 	    processStartInfo.WorkingDirectory = "/Users/naricc/workspace/runtime-webassembly-ci/src/common/wasm-test-runner/bin/Release/publish/";
 	    processStartInfo.UseShellExecute = true;
 
-	    foreach (string assemblyName in benchmarkAssemblyNames)
+	    foreach (AssemblyName assemblyName in benchmarkAssemblyNames)
 	    {
-			processStartInfo.Arguments = $"run-v8.sh {assemblyName}";
-			Process.Start(processStartInfo);
+			processStartInfo.Arguments = $"run-v8.sh {assemblyName.Name}";
+
+			Console.WriteLine($"---- Starting test {assemblyName.Name} ----");
+			Process testProcess = Process.Start(processStartInfo);
+			testProcess.WaitForExit();
+
+			Console.WriteLine($"{assemblyName} exit code: {testProcess.ExitCode}");
 	    }
         }
     }
