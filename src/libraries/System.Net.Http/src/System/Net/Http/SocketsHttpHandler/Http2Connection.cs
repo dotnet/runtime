@@ -1206,13 +1206,20 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                if (_pool.ThrowOnStreamLimitReached)
+                if (_pool.EnableMultipleHttp2Connections)
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
                         // Maximum number of streams reached
                         _canAddNewStream = false;
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
+                        if (_pool.ThrowOnStreamLimitReached)
+                        {
+                            throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
+                        }
+                        else
+                        {
+                            await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                        }
                     }
                 }
                 else

@@ -332,6 +332,8 @@ namespace System.Net.Http
 
         public bool ThrowOnStreamLimitReached => _http2Connections != null && _http2Connections.Length < _poolManager.Settings._maxHttp2ConnectionsPerServer;
 
+        public bool EnableMultipleHttp2Connections => _poolManager.Settings.EnableMultipleHttp2Connections;
+
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
@@ -486,7 +488,7 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
             // See if we have an HTTP2 connection
-            Http2Connection? http2Connection = GetHttp2ConnectionAcceptingNewStreams();
+            Http2Connection? http2Connection = GetHttp2ConnectionAcceptingNewStreams(request);
 
             if (http2Connection != null)
             {
@@ -512,36 +514,41 @@ namespace System.Net.Http
             Socket? socket = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
-            IReadOnlyList<Http2Connection>? lastHttp2Connections = _http2Connections;
+            Http2Connection[]? lastHttp2Connections = _http2Connections;
 
             // Serialize creation attempt
             await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                IReadOnlyList<Http2Connection>? currentHttp2Connections = _http2Connections;
-                if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
+                Http2Connection[]? currentHttp2Connections = _http2Connections;
+                if (EnableMultipleHttp2Connections)
                 {
-                    // Someone beat us to it
-
-                    for (int i = 0; i < currentHttp2Connections.Count; i++)
+                    if (currentHttp2Connections != null)
                     {
-                        if (currentHttp2Connections[i].CanAddNewStream)
+                        for (int i = 0; i < currentHttp2Connections.Length; i++)
                         {
-                            if (NetEventSource.Log.IsEnabled())
+                            if (currentHttp2Connections[i].CanAddNewStream)
                             {
-                                Trace("Using existing HTTP2 connection.");
-                            }
+                                if (NetEventSource.Log.IsEnabled())
+                                {
+                                    Trace("Using existing HTTP2 connection.");
+                                }
 
-                            return (currentHttp2Connections[i], false, null);
+                                return (currentHttp2Connections[i], false, null);
+                            }
                         }
                     }
                 }
-
-                if (currentHttp2Connections != null && _poolManager.Settings.EnableMultipleHttp2Connections && currentHttp2Connections.Count == _poolManager.Settings._maxHttp2ConnectionsPerServer)
+                else if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
                 {
-                    // All connections are busy so pick a random one to wait on it.
-                    int randomIndex = request.GetHashCode() % _poolManager.Settings._maxHttp2ConnectionsPerServer;
-                    return (currentHttp2Connections[randomIndex], false, null);
+                    // Someone beat us to it
+
+                    return (currentHttp2Connections[0], false, null);
+                }
+
+                if (IsConnectionMaximumReached(currentHttp2Connections))
+                {
+                    return (PickRandomConnection(request, currentHttp2Connections!), false, null);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -654,33 +661,46 @@ namespace System.Net.Http
             return await GetHttpConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
         }
 
-        private Http2Connection? GetHttp2ConnectionAcceptingNewStreams()
+        private bool IsConnectionMaximumReached(Http2Connection[]? currentHttp2Connections) => currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer;
+
+        private Http2Connection PickRandomConnection(HttpRequestMessage request, Http2Connection[] currentHttp2Connections)
         {
-            IReadOnlyList<Http2Connection>? localConnections = _http2Connections;
+            // All connections are busy so pick a random one to wait on it.
+            int randomIndex = request.GetHashCode() % _poolManager.Settings._maxHttp2ConnectionsPerServer;
+            return currentHttp2Connections[randomIndex];
+        }
+
+        private Http2Connection? GetHttp2ConnectionAcceptingNewStreams(HttpRequestMessage request)
+        {
+            Http2Connection[]? localConnections = _http2Connections;
 
             if (localConnections == null)
             {
                 return null;
             }
 
-            for (int i = 0; i < localConnections.Count; i++)
+            for (int i = 0; i < localConnections.Length; i++)
             {
                 Http2Connection http2Connection = localConnections[i];
 
-                if (!_poolManager.Settings.EnableMultipleHttp2Connections || http2Connection.CanAddNewStream)
+                TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+                if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
                 {
-                    TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                    if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
-                    {
-                        // Connection expired.
-                        http2Connection.Dispose();
-                        InvalidateHttp2Connection(http2Connection);
-                    }
-                    else
-                    {
-                        return http2Connection;
-                    }
+                    // Connection expired.
+                    http2Connection.Dispose();
+                    InvalidateHttp2Connection(http2Connection);
                 }
+                else if (!EnableMultipleHttp2Connections || http2Connection.CanAddNewStream)
+                {
+                    return http2Connection;
+                }
+            }
+
+            // Re-read _http2Connections because some connections could have been invalidated above.
+            localConnections = _http2Connections;
+            if (IsConnectionMaximumReached(localConnections))
+            {
+                return PickRandomConnection(request, localConnections!);
             }
 
             return null;
@@ -845,6 +865,16 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
+                    }
+
+                    // Eat exception and try again.
+                    continue;
+                }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnNextConnection)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
                     }
 
                     // Eat exception and try again.
@@ -1478,10 +1508,10 @@ namespace System.Net.Http
 
                     if (_http2Connections != null)
                     {
-                        IReadOnlyList<Http2Connection> localHttp2Connections = _http2Connections;
+                        Http2Connection[] localHttp2Connections = _http2Connections;
                         if (localHttp2Connections != null)
                         {
-                            for (int i = 0; i < localHttp2Connections.Count; i++)
+                            for (int i = 0; i < localHttp2Connections.Length; i++)
                             {
                                 localHttp2Connections[i].Dispose();
                             }
@@ -1530,11 +1560,11 @@ namespace System.Net.Http
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
                 long nowTicks = Environment.TickCount64;
-                IReadOnlyList<Http2Connection>? localHttp2Connections = _http2Connections;
+                Http2Connection[]? localHttp2Connections = _http2Connections;
 
                 if (localHttp2Connections != null)
                 {
-                    for (int i = 0; i < localHttp2Connections.Count; i++)
+                    for (int i = 0; i < localHttp2Connections.Length; i++)
                     {
                         Http2Connection http2Connection = localHttp2Connections[i];
                         if (http2Connection != null)
