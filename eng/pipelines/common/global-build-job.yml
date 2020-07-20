@@ -58,7 +58,6 @@ jobs:
         - name: ANDROID_OPENSSL_AAR
           value: /tmp/openssl-android
 
-      - ${{ parameters.variables }}
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
