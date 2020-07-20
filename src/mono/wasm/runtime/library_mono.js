@@ -601,7 +601,7 @@ var MonoSupportLib = {
 
 			switch (asset.behavior) {
 				case "assembly":
-					ctx.loaded_files.push (url);
+					ctx.loaded_files.push ({ url: url, file: virtualName});
 				case "heap":
 				case "icu":
 					offset = this.mono_wasm_load_bytes_into_heap (bytes);
@@ -645,8 +645,14 @@ var MonoSupportLib = {
 					throw new Error ("Unrecognized asset behavior:", asset.behavior, "for asset", asset.name);
 			}
 
-			if (asset.behavior === "assembly")
-				ctx.mono_wasm_add_assembly (virtualName, offset, bytes.length);
+			if (asset.behavior === "assembly") {
+				var hasPpdb = ctx.mono_wasm_add_assembly (virtualName, offset, bytes.length);
+
+				if (!hasPpdb) {
+					var index = ctx.loaded_files.findIndex(element => element.file == virtualName);
+					ctx.loaded_files.splice(index, 1);
+				}
+			}
 			else if (asset.behavior === "icu") {
 				if (this.mono_wasm_load_icu_data (offset))
 					ctx.num_icu_assets_loaded_successfully += 1;
@@ -753,8 +759,11 @@ var MonoSupportLib = {
 		},
 
 		_finalize_startup: function (args, ctx) {
+			var loaded_files_with_debug_info = [];
+
 			MONO.loaded_assets = ctx.loaded_assets;
-			MONO.loaded_files = ctx.loaded_files;
+			ctx.loaded_files.forEach(value => loaded_files_with_debug_info.push(value.url));
+			MONO.loaded_files = loaded_files_with_debug_info;
 			if (ctx.tracing) {
 				console.log ("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
 				console.log ("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
@@ -799,7 +808,7 @@ var MonoSupportLib = {
 			var ctx = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
-				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']),
+				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', 'number', ['string', 'number', 'number']),
 				loaded_assets: Object.create (null),
 				// dlls and pdbs, used by blazor and the debugger
 				loaded_files: [],
