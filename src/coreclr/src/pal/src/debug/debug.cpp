@@ -62,6 +62,11 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include <procfs.h>
 #endif // HAVE_PROCFS_H
 
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#endif // __APPLE__
+
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -539,6 +544,161 @@ SetThreadContext(
     }
 
     return ret;
+}
+
+/*++
+Function:
+  PAL_OpenProcessMemory
+
+Abstract
+  Creates the handle for PAL_ReadProcessMemory.
+
+Parameter
+  processId : process id to read memory
+  pHandle : returns a platform specific handle or UINT32_MAX if failed
+
+Return
+  true successful, false invalid process id or not supported.
+--*/
+BOOL
+PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+)
+{
+    _ASSERTE(pHandle != nullptr);
+    *pHandle = UINT32_MAX;
+#ifdef __APPLE__
+    mach_port_name_t port;
+    kern_return_t result = ::task_for_pid(mach_task_self(), (int)processId, &port);
+    if (result != KERN_SUCCESS)
+    {
+        ERROR("task_for_pid(%d) FAILED %x %s\n", processId, result, mach_error_string(result));
+        return FALSE;
+    }
+    *pHandle = port;
+#else
+    char memPath[128];
+    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", processId);
+
+    int fd = open(memPath, O_RDONLY);
+    if (fd == -1)
+    {
+        ERROR("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        return FALSE;
+    }
+    *pHandle = fd;
+#endif
+    return TRUE;
+}
+
+/*++
+Function:
+  PAL_CloseProcessMemory
+
+Abstract
+  Closes the PAL_OpenProcessMemory handle.
+
+Parameter
+  handle : from PAL_OpenProcessMemory
+
+Return
+  none
+--*/
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+)
+{
+    if (handle != UINT32_MAX)
+    {
+#ifdef __APPLE__
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), (mach_port_name_t)handle);
+        if (result != KERN_SUCCESS)
+        {
+            ERROR("mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+        }
+#else
+        close(handle);
+#endif
+    }
+}
+
+/*++
+Function:
+  PAL_ReadProcessMemory
+
+Abstract
+  Reads process memory. 
+
+Parameter
+  handle : from PAL_OpenProcessMemory
+  address : address of memory to read
+  buffer : buffer to read memory to
+  size : number of bytes to read
+  numberOfBytesRead: number of bytes read (optional)
+
+Return
+  true read memory is successful, false if not.
+--*/
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead)
+{
+    _ASSERTE(handle != 0);
+    _ASSERTE(numberOfBytesRead != nullptr);
+    *numberOfBytesRead = 0;
+    size_t read = 0;
+#ifdef __APPLE__
+    vm_map_t task = (vm_map_t)handle;
+
+    // vm_read_overwrite usually requires that the address be page-aligned
+    // and the size be a multiple of the page size.  We can't differentiate
+    // between the cases in which that's required and those in which it
+    // isn't, so we do it all the time.
+    vm_address_t addressAligned = address & ~(PAGE_SIZE - 1);
+    size_t offset = (address & (PAGE_SIZE - 1));
+    char *data = (char*)alloca(PAGE_SIZE);
+    size_t bytesToRead;
+
+    while (size > 0)
+    {
+        vm_size_t bytesRead;
+        
+        bytesToRead = PAGE_SIZE - offset;
+        if (bytesToRead > size)
+        {
+            bytesToRead = size;
+        }
+        bytesRead = PAGE_SIZE;
+        kern_return_t result = ::vm_read_overwrite(task, addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
+        if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
+        {
+            ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", PAGE_SIZE, (void*)addressAligned, result, mach_error_string(result));
+            return FALSE;
+        }
+        memcpy((LPSTR)buffer + read , data + offset, bytesToRead);
+        addressAligned = addressAligned + PAGE_SIZE;
+        read += bytesToRead;
+        size -= bytesToRead;
+        offset = 0;
+    }
+#else
+    read = pread64(handle, buffer, size, address);
+    if (read == (size_t)-1)
+    {
+        return FALSE;
+    }
+#endif
+    *numberOfBytesRead = read;
+    return TRUE;
 }
 
 /*++
