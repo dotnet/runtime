@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
 </Project>

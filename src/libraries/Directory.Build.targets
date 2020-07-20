@@ -8,6 +8,9 @@
   <PropertyGroup>
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFramework)' == 'netcoreapp2.1'">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable</NoWarn>
+    <!-- Ignore Obsolete errors within the generated shims that type-forward types.
+         SYSLIB0003 is for CAS. SYSLIB0004 is the obsoletion of CER. -->
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
@@ -219,26 +222,28 @@
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
 
-  <PropertyGroup>
-    <DefineConstants Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(DefineConstants),USE_INTERNAL_ACCESSIBILITY</DefineConstants>
-  </PropertyGroup>
-  
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
     <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-      </PropertyGroup>
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
       </ItemGroup>
     </When>
   </Choose>
-  
+
   <PropertyGroup>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
+
+  <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
+  <Choose>
+    <When Condition="('$(IncludePlatformAttributes)' == 'true' or '$(IsWindowsSpecific)' == 'true') and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
+      <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
         This is required to show all the files corresponding to all target frameworks in VS. -->

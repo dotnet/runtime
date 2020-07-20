@@ -423,7 +423,7 @@ namespace System.IO
             // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
             AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() =>
             {
-                var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+                new DirectorySecurity(longDir, AccessControlSections.Owner);
             });
             
         }
@@ -440,7 +440,7 @@ namespace System.IO
             // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
             AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() =>
             {
-                var security = new FileSecurity(filePath, AccessControlSections.Owner);
+                new FileSecurity(filePath, AccessControlSections.Owner);
             });
         }
 

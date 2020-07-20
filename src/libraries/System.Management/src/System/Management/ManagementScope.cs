@@ -969,8 +969,6 @@ namespace System.Management
         private void InitializeGuts(object o)
         {
             ManagementScope threadParam = (ManagementScope)o;
-            IWbemLocator loc = (IWbemLocator)new WbemLocator();
-            IntPtr punk = IntPtr.Zero;
 
             if (null == threadParam.options)
             {
@@ -986,8 +984,7 @@ namespace System.Management
                 // path here as we do NOT want to trigger an
                 // IdentifierChanged event as a result of this set
 
-                bool bUnused;
-                nsPath = threadParam.prvpath.SetNamespacePath(ManagementPath.DefaultPath.Path, out bUnused);
+                nsPath = threadParam.prvpath.SetNamespacePath(ManagementPath.DefaultPath.Path, out _);
             }
 
             int status = (int)ManagementStatus.NoError;

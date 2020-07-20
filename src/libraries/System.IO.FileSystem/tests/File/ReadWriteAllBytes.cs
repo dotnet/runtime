@@ -22,7 +22,6 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentException>(() => File.WriteAllBytes(string.Empty, new byte[0]));
             Assert.Throws<ArgumentException>(() => File.ReadAllBytes(string.Empty));
         }

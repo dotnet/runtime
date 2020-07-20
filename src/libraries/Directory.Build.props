@@ -63,7 +63,7 @@
   <!-- Warnings that should be disabled in our test projects. -->
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
     <!-- don't warn on usage of BinaryFormatter from test projects -->
-    <NoWarn>$(NoWarn);MSLIB0003</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
   </PropertyGroup>
 
   <!-- Common repo directories -->

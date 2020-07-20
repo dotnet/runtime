@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <!-- The GAC is obsolete, but there are unit tests still referencing it -->
+    <NoWarn>$(NoWarn);SYSLIB0005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"

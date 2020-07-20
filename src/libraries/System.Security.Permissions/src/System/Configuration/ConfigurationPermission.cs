@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Configuration
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class ConfigurationPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public ConfigurationPermission(PermissionState state) { }
