@@ -909,14 +909,19 @@ namespace System.Net
             }
         }
 
-        // Implement path-matching according to https://tools.ietf.org/html/rfc6265#section-5.1.4
+        // Implement path-matching according to https://tools.ietf.org/html/rfc6265#section-5.1.4:
+        // | A request-path path-matches a given cookie-path if at least one of the following conditions holds:
+        // | - The cookie-path and the request-path are identical.
+        // | - The cookie-path is a prefix of the request-path, and the last character of the cookie-path is %x2F ("/").
+        // | - The cookie-path is a prefix of the request-path, and the first character of the request-path that is not included in the cookie-path is a %x2F ("/") character.
+        // The latter conditions are needed to make sure that
+        // PathMatch("/fooBar, "/foo") == false
+        // but:
+        // PathMatch("/foo/bar", "/foo") == true, PathMatch("/foo/bar", "/foo/") == true
         private static bool PathMatch(string requestPath, string cookiePath)
         {
             cookiePath = CookieParser.CheckQuoted(cookiePath);
-            // A request-path path-matches a given cookie-path if at least one of the following conditions holds:
-            // - The cookie-path and the request-path are identical.
-            // - The cookie-path is a prefix of the request-path, and the last character of the cookie-path is %x2F ("/").
-            // - The cookie-path is a prefix of the request-path, and the first character of the request-path that is not included in the cookie-path is a %x2F ("/") character.
+
             if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
                 return false;
             return requestPath.Length == cookiePath.Length ||
