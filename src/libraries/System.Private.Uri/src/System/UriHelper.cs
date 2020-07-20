@@ -671,36 +671,18 @@ namespace System
         /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
         /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
         /// </summary>
-        internal static char DecodeHexChars(uint first, uint second)
+        internal static char DecodeHexChars(int first, int second)
         {
-            first -= '0';
+            int a = HexConverter.FromChar(first);
+            int b = HexConverter.FromChar(second);
 
-            if (first <= 9)
+            if ((a | b) == 0xFF)
             {
-                // first is already [0, 9]
+                // either a or b is 0xFF (invalid)
+                return Uri.c_DummyChar;
             }
-            else if ((uint)((first - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
-            {
-                first = ((first + '0') | 0x20) - 'a' + 10;
-            }
-            else goto Invalid;
 
-            second -= '0';
-
-            if (second <= 9)
-            {
-                // second is already [0, 9]
-            }
-            else if ((uint)((second - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
-            {
-                second = ((second + '0') | 0x20) - 'a' + 10;
-            }
-            else goto Invalid;
-
-            return (char)((first << 4) | second);
-
-        Invalid:
-            return Uri.c_DummyChar;
+            return (char)((a << 4) | b);
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
@@ -782,9 +764,7 @@ namespace System
             ((((uint)character - 'A') & ~0x20) < 26) ||
             (((uint)character - '0') < 10);
 
-        internal static bool IsHexDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 6) ||
-            (((uint)character - '0') < 10);
+        internal static bool IsHexDigit(char character) => HexConverter.IsHexChar(character);
 
         //
         // Is this a Bidirectional control char.. These get stripped

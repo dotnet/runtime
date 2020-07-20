@@ -499,6 +499,7 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetReferencedAssemblies();
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => InternalAssembly.GlobalAssemblyCache;
 
         public override long HostContext => InternalAssembly.HostContext;

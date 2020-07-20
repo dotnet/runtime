@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.ConstrainedExecution.Tests
 {
+#pragma warning disable SYSLIB0004 // Obsolete: CER
     public class PrePrepareMethodAttributeTests
     {
         public sealed class ConstrainedType
@@ -34,4 +35,5 @@ namespace System.Runtime.ConstrainedExecution.Tests
                 typeof(ConstrainedType).GetConstructors()[0].GetCustomAttribute<PrePrepareMethodAttribute>());
         }
     }
+#pragma warning restore SYSLIB0004 // Obsolete: CER
 }

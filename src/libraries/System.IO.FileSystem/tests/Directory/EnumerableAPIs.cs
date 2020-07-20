@@ -94,8 +94,8 @@ namespace System.IO.Tests
         public void Delete_Directory_After_Creating_Enumerable()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            DirectoryInfo subDir1 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
-            DirectoryInfo subDir2 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
+            Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
+            Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
             var enumerator = Directory.EnumerateDirectories(testDir.FullName);
             foreach (var dir in enumerator)
             {
@@ -110,8 +110,8 @@ namespace System.IO.Tests
         {
             // A searchpattern of c:\temp\ will become c:\temp\* internally
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            DirectoryInfo subDir1 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
-            DirectoryInfo subDir2 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
+            Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
+            Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
             var enumerator = Directory.EnumerateDirectories(testDir.FullName, "a" + Path.DirectorySeparatorChar);
             Assert.Equal(0, enumerator.ToArray().Length);
         }

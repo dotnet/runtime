@@ -122,6 +122,8 @@ namespace System.Reflection.Emit
             return InflateType(type, type_arguments, method_args);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection emitted types have all of their members")]
         internal static Type? InflateType(Type? type, Type[]? type_args, Type[]? method_args)
         {
             if (type == null)

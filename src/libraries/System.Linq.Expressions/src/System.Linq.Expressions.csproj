@@ -11,6 +11,8 @@
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
     <Compile Include="System\Dynamic\Utils\CacheDict.cs" />

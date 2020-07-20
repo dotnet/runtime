@@ -29,6 +29,7 @@
     <Compile Include="Fakes\FakeNameResolutionUtilities.cs" />
     <Compile Include="Fakes\FakeSocketExceptionFactory.cs" />
     <Compile Include="Fakes\FakeSocketProtocolSupportPal.cs" />
+    <Compile Include="Fakes\FakeNameResolutionTelemetry.cs" />
   </ItemGroup>
   <!-- Production Code under test-->
   <ItemGroup>
@@ -40,5 +41,7 @@
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   </ItemGroup>
 </Project>

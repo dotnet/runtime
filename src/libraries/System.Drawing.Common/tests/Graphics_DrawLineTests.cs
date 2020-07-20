@@ -76,7 +76,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, Point.Empty, Point.Empty));
@@ -166,7 +166,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new Point[2]));
