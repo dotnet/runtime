@@ -40,24 +40,38 @@ static int32_t g_config_specified_ciphersuites = 0;
 
 static void DetectCiphersuiteConfiguration()
 {
+    // This routine will always produce g_config_specified_ciphersuites = 0 on OpenSSL 1.0.x,
+    // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
+    // just omit all the code here.
+    //
+    // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
+    // make the portable version easier.
+#ifdef NEED_OPENSSL_1_1
+
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
 
-    // SSL_CTX_get_ciphers returns a shared pointer, no need to save/free it.
+    // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
-    int defaultCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+    SSL* ssl = SSL_new(ctx);
+    int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+    SSL_free(ssl);
 
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
     assert(rv);
 
-    int allCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+    ssl = SSL_new(ctx);
+    int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+    SSL_free(ssl);
 
     // This shouldn't be true, but, just in case it is.
     if (allCount == defaultCount)
     {
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
         assert(rv);
-        allCount = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+        ssl = SSL_new(ctx);
+        allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+        SSL_free(ssl);
         assert(allCount != defaultCount);
     }
 
@@ -68,11 +82,15 @@ static void DetectCiphersuiteConfiguration()
     }
     else
     {
-        int after = sk_SSL_CIPHER_num(SSL_CTX_get_ciphers(ctx));
+        ssl = SSL_new(ctx);
+        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+        SSL_free(ssl);
+
         g_config_specified_ciphersuites = (allCount != after);
     }
 
     SSL_CTX_free(ctx);
+#endif
 }
 
 void CryptoNative_EnsureLibSslInitialized()
