@@ -619,7 +619,6 @@ var MonoSupportLib = {
 						: virtualName;
 					if (fileName.startsWith("/"))
 						fileName = fileName.substr(1);
-
 					if (parentDirectory) {
 						if (ctx.tracing)
 							console.log ("MONO_WASM: Creating directory '" + parentDirectory + "'");
@@ -634,11 +633,12 @@ var MonoSupportLib = {
 					if (ctx.tracing)
 						console.log ("MONO_WASM: Creating file '" + fileName + "' in directory '" + parentDirectory + "'");
 
-					var fileRet = ctx.createDataFile (
-						parentDirectory, fileName,
-						bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-					);
-
+					if (!this.mono_wasm_load_data_archive (bytes, parentDirectory)) {
+						var fileRet = ctx.createDataFile (
+							parentDirectory, fileName,
+							bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+						);
+					}
 					break;
 
 				default:
@@ -1110,16 +1110,30 @@ var MonoSupportLib = {
 			return className.replace(/\//g, '.').replace(/`\d+/g, '');
 		},
 
-		mono_wasm_load_data: function (data, prefix) {
+		mono_wasm_load_data_archive: function (data, prefix) {
+			if (data.length < 8)
+				return false;
+
 			var dataview = new DataView(data.buffer);
 			var magic = dataview.getUint32(0, true);
 			//	get magic number
 			if (magic != 0x626c6174) {
-				throw new Error ("File is of wrong type");
+				return false;
 			}
 			var manifestSize = dataview.getUint32(4, true);
-			var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
-			var manifest = JSON.parse(manifestContent);
+			if (manifestSize == 0 || data.length < manifestSize + 8)
+				return false;
+
+			var manifest;
+			try {
+				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+				manifest = JSON.parse(manifestContent);
+				if (!(manifest instanceof Array))
+					return false;
+			} catch (exc) {
+				return false;
+			}
+
 			data = data.slice(manifestSize+8);
 
 			// Create the folder structure
@@ -1127,18 +1141,13 @@ var MonoSupportLib = {
 			// /usr/share/zoneinfo/Africa
 			// /usr/share/zoneinfo/Asia
 			// ..
-			var p = prefix.slice(1).split('/');
-			p.forEach((v, i) => {
-				FS.mkdir(v);
-				Module['FS_createPath']("/" + p.slice(0, i).join('/'), v, true, true);
-			})
+
 			var folders = new Set()
 			manifest.filter(m => {
-				m = m[0].split('/')
-				if (m!= null) {
-					if (m.length > 2) folders.add(m.slice(0,m.length-1).join('/'));
-					folders.add(m[0]);
-				}
+				var file = m[0];
+				var last = file.lastIndexOf ("/");
+				var directory = file.slice (0, last);
+				folders.add(directory);
 			});
 			folders.forEach(folder => {
 				Module['FS_createPath'](prefix, folder, true, true);
@@ -1148,9 +1157,10 @@ var MonoSupportLib = {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
-				Module['FS_createDataFile'](`${prefix}/${name}`, null, bytes, true, true);
+				Module['FS_createDataFile'](prefix, name, bytes, true, true);
 				data = data.slice(length);
 			}
+			return true;
 		}
 	},
 
