@@ -2170,7 +2170,11 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
                 if (eventId == -1 ?
+#if !ES_BUILD_STANDALONE
                     (LocalAppContextSwitches.DisableSelfDescribingEventFiltering || dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
+#else
+                    (dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
+#endif !ES_BUILD_STANDALONE
                     (dispatcher.m_EventEnabled[eventId]))
                 {
                     {
@@ -4485,7 +4489,7 @@ namespace System.Diagnostics.Tracing
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
         private static bool s_EventSourceShutdownRegistered;
-        #endregion
+#endregion
     }
 
     /// <summary>

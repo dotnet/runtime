@@ -677,6 +677,7 @@ namespace System.Diagnostics.Tracing
 
                             if (m_Dispatchers != null)
                             {
+#if !ES_BUILD_STANDALONE
                                 // If filtering is disabled, just write to all listeners.
                                 if (LocalAppContextSwitches.DisableSelfDescribingEventFiltering)
                                 {
@@ -686,7 +687,8 @@ namespace System.Diagnostics.Tracing
                                 // otherwise, check whether any of the listeners are subscribed to this event before writing to all listeners.
                                 else
                                 {
-                                    if (((EventKeywords)descriptor.Keywords == 0) || (m_EventListenersKeywords == 0) || ((EventLevel)descriptor.Level == EventLevel.LogAlways) ||
+#endif // !ES_BUILD_STANDALONE
+                                if (((EventKeywords)descriptor.Keywords == 0) || (m_EventListenersKeywords == 0) || ((EventLevel)descriptor.Level == EventLevel.LogAlways) ||
                                         ((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0))
                                     {
                                         var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
