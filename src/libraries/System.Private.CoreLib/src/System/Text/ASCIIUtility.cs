@@ -1006,14 +1006,11 @@ namespace System.Text
             else if (AdvSimd.Arm64.IsSupported)
             {
                 // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
-                // [ b0 b1 b2 b3 b0 b1 b2 b3 ], then writes 4 bytes (32 bits) to the destination.
+                // [ b0 b1 b2 b3 * * * * ], then writes 4 bytes (32 bits) to the destination.
 
                 Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
-                unsafe
-                {
-                    AdvSimd.StoreSelectedScalar((byte*)Unsafe.AsPointer(ref outputBuffer), lower, 0);
-                }
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
             }
 
             else
