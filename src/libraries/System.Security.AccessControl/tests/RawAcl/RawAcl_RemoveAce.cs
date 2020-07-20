@@ -41,6 +41,13 @@ namespace System.Security.AccessControl.Tests
                 rawAcl.RemoveAce(index);
             });
 
+            //test remove at value too large
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                index = int.MaxValue;
+                rawAcl.RemoveAce(index);
+            });
+
             //test remove at 0, only need to catch ArgumentOutOfRangeException if Count = 0
             index = 0;
             try
