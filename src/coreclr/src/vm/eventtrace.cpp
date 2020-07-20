@@ -31,6 +31,7 @@
 #include "dbginterface.h"
 #include "finalizerthread.h"
 #include "clrversion.h"
+#include "typestring.h"
 
 #define Win32EventWrite EventWrite
 
@@ -3152,6 +3153,69 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
     return &AllLoggedTypes::s_cs;
 }
 
+// The number of type load operations
+// NOTE: This isn't the count of types loaded, as some types may have multiple type loads
+//       occur to them as they transition up type loader levels
+UINT32 s_TypeLoadOps = 0;
+
+UINT32 ETW::TypeSystemLog::TypeLoadBegin()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    UINT32 typeLoad = InterlockedIncrement(&s_TypeLoadOps);
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStart))
+    {
+        EX_TRY
+        {
+            FireEtwTypeLoadStart(
+                typeLoad,
+                GetClrInstanceId());
+
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+
+    return typeLoad;
+}
+
+void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 loadLevel)
+{
+    CONTRACTL{
+        NOTHROW;
+        THROWS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        EX_TRY
+        {
+            StackSString typeName;
+            const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
+                TypeString::FormatNamespace |
+                TypeString::FormatAngleBrackets);
+
+            TypeString::AppendType(typeName, th, formatFlags);
+
+            SCOUNT_T maxTypeNameLen = (cbMaxEtwEvent / 2) - 0x100;
+            if (typeName.GetCount() > (unsigned)maxTypeNameLen)
+            {
+                typeName.Truncate(typeName.Begin() + maxTypeNameLen);
+            }
+
+            FireEtwTypeLoadStop(
+                typeLoad,
+                GetClrInstanceId(),
+                loadLevel,
+                (UINT64)th.AsPtr(),
+                typeName
+                );
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Outermost level of ETW-type-logging.  Clients outside eventtrace.cpp call this to log
@@ -5304,6 +5368,26 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
         } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
     }
 }
+
+VOID ETW::MethodLog::GetR2RGetEntryPointStarted(MethodDesc *pMethodDesc)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStarted))
+    {
+        EX_TRY
+        {
+                FireEtwR2RGetEntryPointStarted(
+                    (UINT64)pMethodDesc,
+                    GetClrInstanceId());
+
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+}
+
 
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */

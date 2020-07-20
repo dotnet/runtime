@@ -83,6 +83,8 @@
                              message="$(string.RuntimePublisher.CompilationDiagnosticKeywordMessage)" symbol="CLR_COMPILATIONDIAGNOSTIC_KEYWORD" />
                     <keyword name="MethodDiagnosticKeyword" mask="0x4000000000"
                              message="$(string.RuntimePublisher.MethodDiagnosticKeywordMessage)" symbol="CLR_METHODDIAGNOSTIC_KEYWORD" />
+                    <keyword name="TypeDiagnosticKeyword" mask="0x8000000000"
+                             message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -245,6 +247,7 @@
                             <opcode name="AssemblyUnload" message="$(string.RuntimePublisher.AssemblyUnloadOpcodeMessage)" symbol="CLR_ASSEMBLYUNLOAD_OPCODE" value="38"> </opcode>
                             <opcode name="AppDomainLoad" message="$(string.RuntimePublisher.AppDomainLoadOpcodeMessage)" symbol="CLR_APPDOMAINLOAD_OPCODE" value="41"> </opcode>
                             <opcode name="AppDomainUnload" message="$(string.RuntimePublisher.AppDomainUnloadOpcodeMessage)" symbol="CLR_APPDOMAINUNLOAD_OPCODE" value="42"> </opcode>
+                            <opcode name="TypeLoad" message="$(string.RuntimePublisher.TypeLoadOpcodeMessage)" symbol="CLR_TYPELOAD_OPCODE" value="46"> </opcode>
                         </opcodes>
                     </task>
 
@@ -1895,6 +1898,34 @@
                         </UserData>
                     </template>
 
+                    <template tid="TypeLoadStart">
+                        <data name="TypeLoadStartID" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <TypeLoadStart xmlns="myNs">
+                                <TypeLoadStartID> %1 </TypeLoadStartID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </TypeLoadStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="TypeLoadStop">
+                        <data name="TypeLoadStartID" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="LoadLevel" inType="win:UInt16" />
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeName" inType="win:UnicodeString" />
+                        <UserData>
+                            <TypeLoadStop xmlns="myNs">
+                                <TypeLoadStartID> %1 </TypeLoadStartID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <LoadLevel> %3 </LoadLevel>
+                                <TypeID> %4 </TypeID>
+                                <TypeName> %5 </TypeName>
+                            </TypeLoadStop>
+                        </UserData>
+                    </template>
+
                     <template tid="MethodLoadUnload">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -1977,6 +2008,17 @@
                                 <EntryPoint> %5 </EntryPoint>
                                 <ClrInstanceID> %6 </ClrInstanceID>
                             </R2RGetEntryPoint>
+                        </UserData>
+                    </template>
+
+                    <template tid="R2RGetEntryPointStarted">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <R2RGetEntryPointStarted xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </R2RGetEntryPointStarted>
                         </UserData>
                     </template>
 
@@ -3200,12 +3242,27 @@
                            opcode="Running"
                            symbol="ThreadRunning"
                            message="$(string.RuntimePublisher.ThreadRunningEventMessage)"/>
+
                     <event value="72" version="0" level="win:Informational"  template="MethodDetails"
                            keywords="MethodDiagnosticKeyword"
                            task="CLRMethod"
                            opcode="MethodDetails"
                            symbol="MethodDetails"
                            message="$(string.RuntimePublisher.MethodDetailsEventMessage)"/>
+
+                    <event value="73" version="0" level="win:Informational"  template="TypeLoadStart"
+                           keywords="TypeDiagnosticKeyword"
+                           task="CLRLoader"
+                           opcode="TypeLoad"
+                           symbol="TypeLoadStart"
+                           message="$(string.RuntimePublisher.TypeLoadStartEventMessage)"/>
+
+                    <event value="74" version="0" level="win:Informational"  template="TypeLoadStop"
+                           keywords="TypeDiagnosticKeyword"
+                           task="CLRLoader"
+                           opcode="TypeLoad"
+                           symbol="TypeLoadStop"
+                           message="$(string.RuntimePublisher.TypeLoadStopEventMessage)"/>
 
                     <!-- CLR Exception events -->
                     <event value="80" version="0" level="win:Informational"
@@ -3364,10 +3421,15 @@
                            task="CLRMethod"
                            symbol="MethodLoad_V2" message="$(string.RuntimePublisher.MethodLoad_V2EventMessage)"/>
 
-                    <event value="159" version="0" level="win:Verbose" template="R2RGetEntryPoint"
+                    <event value="159" version="0" level="win:Informational" template="R2RGetEntryPoint"
                            keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
                            task="CLRMethod"
                            symbol="R2RGetEntryPoint" message="$(string.RuntimePublisher.R2RGetEntryPointEventMessage)"/>
+
+                    <event value="160" version="0" level="win:Informational" template="R2RGetEntryPointStarted"
+                           keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
+                           task="CLRMethod"
+                           symbol="R2RGetEntryPointStarted" message="$(string.RuntimePublisher.R2RGetEntryPointStartedEventMessage)"/>
 
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnload"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
@@ -6899,6 +6961,8 @@
                 <string id="RuntimePublisher.ThreadCreatingEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.ThreadRunningEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.MethodDetailsEventMessage" value="MethodID=%1;%TypeID=%2;MethodToken=%3;TypeParameterCount=%4;LoaderModuleID=%5" />
+                <string id="RuntimePublisher.TypeLoadStartEventMessage" value="TypeLoadStartID=%1;ClrInstanceID=%2" />
+                <string id="RuntimePublisher.TypeLoadStopEventMessage" value="TypeLoadStartID=%1;ClrInstanceID=%2;LoadLevel=%3;TypeID=%4;TypeName=%5" />
                 <string id="RuntimePublisher.ExceptionExceptionThrownEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ExceptionExceptionThrown_V1EventMessage" value="ExceptionType=%1;%nExceptionMessage=%2;%nExceptionEIP=%3;%nExceptionHRESULT=%4;%nExceptionFlags=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.ExceptionExceptionHandlingEventMessage" value="EntryEIP=%1;%nMethodID=%2;%nMethodName=%3;%nClrInstanceID=%4" />
@@ -6917,6 +6981,7 @@
                 <string id="RuntimePublisher.MethodLoad_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.MethodLoad_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
                 <string id="RuntimePublisher.R2RGetEntryPointEventMessage" value="MethodID=%1;%nMethodName=%2;%nEntryPoint=%3;%nClrInstanceID=%4" />
+                <string id="RuntimePublisher.R2RGetEntryPointStartedEventMessage" value="MethodID=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.MethodLoadVerboseEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />
@@ -7475,6 +7540,7 @@
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
+                <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7540,6 +7606,7 @@
                 <string id="RuntimePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="RuntimePublisher.BulkTypeOpcodeMessage" value="BulkType" />
                 <string id="RuntimePublisher.MethodDetailsOpcodeMessage" value="MethodDetails" />
+                <string id="RuntimePublisher.TypeLoadOpcodeMessage" value="TypeLoad" />
                 <string id="RuntimePublisher.MethodLoadOpcodeMessage" value="Load" />
                 <string id="RuntimePublisher.MethodUnloadOpcodeMessage" value="Unload" />
                 <string id="RuntimePublisher.MethodLoadVerboseOpcodeMessage" value="LoadVerbose" />
