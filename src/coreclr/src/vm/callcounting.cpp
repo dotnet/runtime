@@ -479,7 +479,7 @@ void CallCountingManager::DisableCallCounting(NativeCodeVersion codeVersion)
     {
         // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
         // native code version of a method. The call counting info is created with call counting enabled or disabled and it
-        // cannot be changed thereafter for consistency in dependencies of the info.
+        // cannot be changed thereafter for consistency in dependents of the info.
         _ASSERTE(callCountingInfo->GetStage() == CallCountingInfo::Stage::Disabled);
         return;
     }
