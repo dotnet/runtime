@@ -301,6 +301,38 @@ namespace System.Net.Security
 
             return errorCode;
         }
+
+        public static unsafe int AcquireCredentialsHandle(
+            string package,
+            Interop.SspiCli.CredentialUse intent,
+            Interop.SspiCli.SCH_CREDENTIALS* authdata,
+            out SafeFreeCredentials outCredential)
+        {
+            long timeStamp;
+
+            outCredential = new SafeFreeCredential_SECURITY();
+
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+                                null,
+                                package,
+                                (int)intent,
+                                null,
+                                authdata,
+                                null,
+                                null,
+                                ref outCredential._handle,
+                                out timeStamp);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+
+            if (errorCode != 0)
+            {
+                outCredential.SetHandleAsInvalid();
+            }
+
+            return errorCode;
+        }
+
     }
 
     //

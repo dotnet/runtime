@@ -343,7 +343,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
+mono_wasm_load_runtime (const char *unused, int enable_debugging)
 {
 	const char *interp_opts = "";
 
@@ -354,9 +354,6 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
-#endif
-#ifdef ENABLE_NETCORE
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
 #endif
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");

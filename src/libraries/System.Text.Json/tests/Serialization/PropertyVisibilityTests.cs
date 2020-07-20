@@ -2031,5 +2031,341 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; } = -1;
             public Point_2D_Struct MyPoint { get; set; } = new Point_2D_Struct(-1, -1);
         }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_ClassTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyBool"":null,""MyPointClass"":null,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            ClassWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<ClassWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types/nullable value types.
+            Assert.Equal("Default", obj.MyString);
+            Assert.NotNull(obj.MyPointClass);
+            Assert.True(obj.MyBool);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj.MyString = null;
+            obj.MyPointClass = null;
+            obj.MyBool = null;
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_LargeStructTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyBool"":null,""MyPointClass"":null,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            LargeStructWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<LargeStructWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types.
+
+            Assert.Equal("Default", obj.MyString);
+            // No way to specify a non-constant default before construction with ctor, so this remains null.
+            Assert.Null(obj.MyPointClass);
+            Assert.True(obj.MyBool);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj = new LargeStructWithValueAndReferenceTypes(null, new Point_2D_Struct(0, 0), null, 0, null);
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        [Fact]
+        public static void ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_SmallStructTest()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+
+            // Deserialization.
+            string json = @"{""MyString"":null,""MyInt"":0,""MyBool"":null,""MyPointStruct"":{""X"":0,""Y"":0}}";
+
+            SmallStructWithValueAndReferenceTypes obj = JsonSerializer.Deserialize<SmallStructWithValueAndReferenceTypes>(json, options);
+
+            // Null values ignored for reference types.
+            Assert.Equal("Default", obj.MyString);
+            Assert.True(obj.MyBool);
+
+            // Default values not ignored for value types.
+            Assert.Equal(0, obj.MyInt);
+            Assert.Equal(0, obj.MyPointStruct.X);
+            Assert.Equal(0, obj.MyPointStruct.Y);
+
+            // Serialization.
+
+            // Make all members their default CLR value.
+            obj = new SmallStructWithValueAndReferenceTypes(new Point_2D_Struct(0, 0), null, 0, null);
+
+            json = JsonSerializer.Serialize(obj, options);
+
+            // Null values not serialized, default values for value types serialized.
+            JsonTestHelper.AssertJsonEqual(@"{""MyInt"":0,""MyPointStruct"":{""X"":0,""Y"":0}}", json);
+        }
+
+        private class ClassWithValueAndReferenceTypes
+        {
+            public string MyString { get; set; } = "Default";
+            public int MyInt { get; set; } = -1;
+            public bool? MyBool { get; set; } = true;
+            public PointClass MyPointClass { get; set; } = new PointClass();
+            public Point_2D_Struct MyPointStruct { get; set; } = new Point_2D_Struct(1, 2);
+        }
+
+        private struct LargeStructWithValueAndReferenceTypes
+        {
+            public string MyString { get; }
+            public int MyInt { get; set; }
+            public bool? MyBool { get; set; }
+            public PointClass MyPointClass { get; set; }
+            public Point_2D_Struct MyPointStruct { get; set; }
+
+            [JsonConstructor]
+            public LargeStructWithValueAndReferenceTypes(
+                PointClass myPointClass,
+                Point_2D_Struct myPointStruct,
+                string myString = "Default",
+                int myInt = -1,
+                bool? myBool = true)
+            {
+                MyString = myString;
+                MyInt = myInt;
+                MyBool = myBool;
+                MyPointClass = myPointClass;
+                MyPointStruct = myPointStruct;
+            }
+        }
+
+        private struct SmallStructWithValueAndReferenceTypes
+        {
+            public string MyString { get; }
+            public int MyInt { get; set; }
+            public bool? MyBool { get; set; }
+            public Point_2D_Struct MyPointStruct { get; set; }
+
+            [JsonConstructor]
+            public SmallStructWithValueAndReferenceTypes(
+                Point_2D_Struct myPointStruct,
+                string myString = "Default",
+                int myInt = -1,
+                bool? myBool = true)
+            {
+                MyString = myString;
+                MyInt = myInt;
+                MyBool = myBool;
+                MyPointStruct = myPointStruct;
+            }
+        }
+
+        public class PointClass { }
+
+        [Fact]
+        public static void Ignore_WhenWritingNull_Globally()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                IncludeFields = true
+            };
+
+            string json = @"{
+""MyPointClass2_IgnoredWhenWritingNull"":{},
+""MyString1_IgnoredWhenWritingNull"":""Default"",
+""MyNullableBool1_IgnoredWhenWritingNull"":null,
+""MyInt2"":0,
+""MyPointStruct2"":{""X"":1,""Y"":2},
+""MyInt1"":1,
+""MyString2_IgnoredWhenWritingNull"":null,
+""MyPointClass1_IgnoredWhenWritingNull"":null,
+""MyNullableBool2_IgnoredWhenWritingNull"":true,
+""MyPointStruct1"":{""X"":0,""Y"":0}
+}";
+
+            // All members should correspond to JSON contents, as ignore doesn't apply to deserialization.
+            ClassWithThingsToIgnore obj = JsonSerializer.Deserialize<ClassWithThingsToIgnore>(json, options);
+            Assert.NotNull(obj.MyPointClass2_IgnoredWhenWritingNull);
+            Assert.Equal("Default", obj.MyString1_IgnoredWhenWritingNull);
+            Assert.Null(obj.MyNullableBool1_IgnoredWhenWritingNull);
+            Assert.Equal(0, obj.MyInt2);
+            Assert.Equal(1, obj.MyPointStruct2.X);
+            Assert.Equal(2, obj.MyPointStruct2.Y);
+            Assert.Equal(1, obj.MyInt1);
+            Assert.Null(obj.MyString2_IgnoredWhenWritingNull);
+            Assert.Null(obj.MyPointClass1_IgnoredWhenWritingNull);
+            Assert.True(obj.MyNullableBool2_IgnoredWhenWritingNull);
+            Assert.Equal(0, obj.MyPointStruct1.X);
+            Assert.Equal(0, obj.MyPointStruct1.Y);
+
+            // Ignore null as appropriate during serialization.
+            string expectedJson = @"{
+""MyPointClass2_IgnoredWhenWritingNull"":{},
+""MyString1_IgnoredWhenWritingNull"":""Default"",
+""MyInt2"":0,
+""MyPointStruct2"":{""X"":1,""Y"":2},
+""MyInt1"":1,
+""MyNullableBool2_IgnoredWhenWritingNull"":true,
+""MyPointStruct1"":{""X"":0,""Y"":0}
+}";
+            JsonTestHelper.AssertJsonEqual(expectedJson, JsonSerializer.Serialize(obj, options));
+        }
+
+        public class ClassWithThingsToIgnore
+        {
+            public string MyString1_IgnoredWhenWritingNull { get; set; }
+
+            public string MyString2_IgnoredWhenWritingNull;
+
+            public int MyInt1;
+
+            public int MyInt2 { get; set; }
+
+            public bool? MyNullableBool1_IgnoredWhenWritingNull { get; set; }
+
+            public bool? MyNullableBool2_IgnoredWhenWritingNull;
+
+            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+
+            public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
+
+            public Point_2D_Struct_WithAttribute MyPointStruct1;
+
+            public Point_2D_Struct_WithAttribute MyPointStruct2 { get; set; }
+        }
+
+        [Fact]
+        public static void Ignore_WhenWritingNull_PerProperty()
+        {
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+
+            string json = @"{
+""MyPointClass2_IgnoredWhenWritingNull"":{},
+""MyString1_IgnoredWhenWritingNull"":""Default"",
+""MyNullableBool1_IgnoredWhenWritingNull"":null,
+""MyInt2"":0,
+""MyPointStruct2"":{""X"":1,""Y"":2},
+""MyInt1"":1,
+""MyString2_IgnoredWhenWritingNull"":null,
+""MyPointClass1_IgnoredWhenWritingNull"":null,
+""MyNullableBool2_IgnoredWhenWritingNull"":true,
+""MyPointStruct1"":{""X"":0,""Y"":0}
+}";
+
+            // All members should correspond to JSON contents, as ignore doesn't apply to deserialization.
+            ClassWithThingsToIgnore_PerProperty obj = JsonSerializer.Deserialize<ClassWithThingsToIgnore_PerProperty>(json, options);
+            Assert.NotNull(obj.MyPointClass2_IgnoredWhenWritingNull);
+            Assert.Equal("Default", obj.MyString1_IgnoredWhenWritingNull);
+            Assert.Null(obj.MyNullableBool1_IgnoredWhenWritingNull);
+            Assert.Equal(0, obj.MyInt2);
+            Assert.Equal(1, obj.MyPointStruct2.X);
+            Assert.Equal(2, obj.MyPointStruct2.Y);
+            Assert.Equal(1, obj.MyInt1);
+            Assert.Null(obj.MyString2_IgnoredWhenWritingNull);
+            Assert.Null(obj.MyPointClass1_IgnoredWhenWritingNull);
+            Assert.True(obj.MyNullableBool2_IgnoredWhenWritingNull);
+            Assert.Equal(0, obj.MyPointStruct1.X);
+            Assert.Equal(0, obj.MyPointStruct1.Y);
+
+            // Ignore null as appropriate during serialization.
+            string expectedJson = @"{
+""MyPointClass2_IgnoredWhenWritingNull"":{},
+""MyString1_IgnoredWhenWritingNull"":""Default"",
+""MyInt2"":0,
+""MyPointStruct2"":{""X"":1,""Y"":2},
+""MyInt1"":1,
+""MyNullableBool2_IgnoredWhenWritingNull"":true,
+""MyPointStruct1"":{""X"":0,""Y"":0}
+}";
+            JsonTestHelper.AssertJsonEqual(expectedJson, JsonSerializer.Serialize(obj, options));
+        }
+
+        public class ClassWithThingsToIgnore_PerProperty
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string MyString1_IgnoredWhenWritingNull { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string MyString2_IgnoredWhenWritingNull;
+
+            public int MyInt1;
+
+            public int MyInt2 { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public bool? MyNullableBool1_IgnoredWhenWritingNull { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public bool? MyNullableBool2_IgnoredWhenWritingNull;
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
+
+            public Point_2D_Struct_WithAttribute MyPointStruct1;
+
+            public Point_2D_Struct_WithAttribute MyPointStruct2 { get; set; }
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithBadIgnoreAttribute))]
+        [InlineData(typeof(StructWithBadIgnoreAttribute))]
+        public static void JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
+        {
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
+            string exAsStr = ex.ToString();
+            Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
+            Assert.Contains("MyBadMember", exAsStr);
+            Assert.Contains(type.ToString(), exAsStr);
+            Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(Activator.CreateInstance(type)));
+            exAsStr = ex.ToString();
+            Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
+            Assert.Contains("MyBadMember", exAsStr);
+            Assert.Contains(type.ToString(), exAsStr);
+            Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+        }
+
+        private class ClassWithBadIgnoreAttribute
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public int MyBadMember { get; set; }
+        }
+
+        private struct StructWithBadIgnoreAttribute
+        {
+            [JsonInclude]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public Point_2D_Struct MyBadMember { get; set; }
+        }
     }
 }

@@ -39,6 +39,7 @@ namespace System.Net.Security.Tests
         {
             if (Capability.SecurityForceSocketStreams())
             {
+                // DOTNET_TEST_NET_SECURITY_FORCE_SOCKET_STREAMS is set.
                 return GetConnectedTcpStreams();
             }
 

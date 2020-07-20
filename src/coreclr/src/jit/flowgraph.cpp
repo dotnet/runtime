@@ -3650,6 +3650,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             case BBJ_SWITCH:
             case BBJ_NONE:
             case BBJ_THROW:
+            case BBJ_CALLFINALLY:
                 break;
             default:
                 assert(!"Unexpected block kind");
@@ -4058,9 +4059,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if (block->bbJumpKind == BBJ_ALWAYS)
+        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
+            (block->bbJumpKind == BBJ_NONE))
         {
-            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
         else
@@ -4265,6 +4268,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 __fallthrough;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
                 fgReplacePred(bottom->bbJumpDest, top, bottom);
                 break;
             case BBJ_SWITCH:
@@ -15339,6 +15343,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */

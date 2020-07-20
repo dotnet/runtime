@@ -3,6 +3,9 @@
 
 namespace System.Security.Policy
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class FileCodeGroup : CodeGroup
     {
         public FileCodeGroup(IMembershipCondition membershipCondition, Permissions.FileIOPermissionAccess access) : base(default(IMembershipCondition), default(PolicyStatement)) { }

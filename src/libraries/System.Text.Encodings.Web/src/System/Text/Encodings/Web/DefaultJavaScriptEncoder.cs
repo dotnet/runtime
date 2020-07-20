@@ -10,6 +10,7 @@ using System.Text.Unicode;
 #if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Text.Encodings.Web
@@ -87,21 +88,33 @@ namespace System.Text.Encodings.Web
                 int idx = 0;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported)
+                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
                 {
                     sbyte* startingAddress = (sbyte*)ptr;
                     while (utf8Text.Length - 16 >= idx)
                     {
                         Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
 
-                        // Load the next 16 bytes.
-                        Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+                        bool containsNonAsciiBytes;
 
-                        // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
-                        // casted to signed byte.
-                        int index = Sse2.MoveMask(sourceValue);
+                        // Load the next 16 bytes, and check for ASCII text.
+                        // Any byte that's not in the ASCII range will already be negative when casted to signed byte.
+                        if (Sse2.IsSupported)
+                        {
+                            Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
+                        }
+                        else if (AdvSimd.Arm64.IsSupported)
+                        {
+                            Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
+                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
+                        }
+                        else
+                        {
+                            throw new PlatformNotSupportedException();
+                        }
 
-                        if (index != 0)
+                        if (containsNonAsciiBytes)
                         {
                             // At least one of the following 16 bytes is non-ASCII.
 

@@ -57,6 +57,7 @@ internal static partial class Interop
         internal static extern IntPtr OpenDir(string path);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
+        [SuppressGCTransition]
         internal static extern int GetReadDirRBufferSize();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]

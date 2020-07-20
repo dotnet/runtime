@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
@@ -60,6 +61,7 @@ namespace System.Reflection
             return typeHandleArgs;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -86,6 +88,7 @@ namespace System.Reflection
             return sig;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -165,6 +168,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -219,6 +223,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -251,6 +256,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -295,6 +301,7 @@ namespace System.Reflection
                 nameof(metadataToken));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override string ResolveString(int metadataToken)
         {
             MetadataToken tk = new MetadataToken(metadataToken);
@@ -336,6 +343,7 @@ namespace System.Reflection
         #endregion
 
         #region Protected Virtuals
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -415,6 +423,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
@@ -439,6 +448,7 @@ namespace System.Reflection
 
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
+      [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             return GetTypes(GetNativeHandle());
@@ -464,6 +474,7 @@ namespace System.Reflection
             return IsResource(GetNativeHandle());
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
@@ -472,6 +483,7 @@ namespace System.Reflection
             return RuntimeType.GetFields(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (name == null)
@@ -483,6 +495,7 @@ namespace System.Reflection
             return RuntimeType.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)

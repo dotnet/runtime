@@ -56,7 +56,7 @@ namespace System.Configuration
                 Type = typeof(CallBackValidatorAttributeTests),
                 CallbackMethodName = "CallBackValidatorTestMethod"
             };
-            var response = testCallBackValidatorAttribute.ValidatorInstance;
+            _ = testCallBackValidatorAttribute.ValidatorInstance;
             Assert.IsType<CallbackValidator>(testCallBackValidatorAttribute.ValidatorInstance);
         }
 

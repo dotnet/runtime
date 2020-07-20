@@ -8,6 +8,8 @@
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
+    <!-- Constrained Execution Regions only apply to netstandard2.0 and net4* -->
+    <DefineConstants Condition="$(TargetFramework.StartsWith('netstandard2.0')) or $(TargetFramework.StartsWith('net4'))">$(DefineConstants);FEATURE_CER</DefineConstants>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0' and '$(TargetsAnyOS)' == 'true'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
@@ -113,8 +115,8 @@
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs"
-             Link="Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
+             Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />

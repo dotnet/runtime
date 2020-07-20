@@ -236,17 +236,7 @@ namespace System.Net.Http
                 bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
                 Debug.Assert(hashComputed && bytesWritten == result.Length);
 
-                StringBuilder sb = StringBuilderCache.Acquire(result.Length * 2);
-
-                Span<char> byteX2 = stackalloc char[2];
-                for (int i = 0; i < result.Length; i++)
-                {
-                    bool formatted = result[i].TryFormat(byteX2, out int charsWritten, "x2");
-                    Debug.Assert(formatted && charsWritten == 2);
-                    sb.Append(byteX2);
-                }
-
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return HexConverter.ToString(result, HexConverter.Casing.Lower);
             }
         }
 

@@ -28,7 +28,7 @@
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE ExeMainX86Template[] =
+constexpr BYTE ExeMainX86Template[] =
 {
 	// Jump through IAT to _CorExeMain
 	0xFF, 0x25,				// jmp [iat:_CorDllMain entry]
@@ -51,7 +51,7 @@ SELECTANY const BYTE ExeMainX86Template[] =
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainX86Template[] =
+constexpr BYTE DllMainX86Template[] =
 {
 	// Jump through IAT to CorDllMain
 	0xFF, 0x25,				// jmp [iat:_CorDllMain entry]
@@ -74,7 +74,7 @@ SELECTANY const BYTE DllMainX86Template[] =
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE ExeMainAMD64Template[] =
+constexpr BYTE ExeMainAMD64Template[] =
 {
 	// Jump through IAT to _CorExeMain
 	0x48, 0xA1,				// rex.w rex.b mov rax,[following address]
@@ -98,7 +98,7 @@ SELECTANY const BYTE ExeMainAMD64Template[] =
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainAMD64Template[] =
+constexpr BYTE DllMainAMD64Template[] =
 {
 	// Jump through IAT to CorDllMain
 	0x48, 0xA1,				// rex.w rex.b mov rax,[following address]
@@ -120,7 +120,7 @@ SELECTANY const BYTE DllMainAMD64Template[] =
 // We set the value of gp to point at the iat table entry for _CorExeMain
 //*****************************************************************************
 
-SELECTANY const BYTE ExeMainIA64Template[] =
+constexpr BYTE ExeMainIA64Template[] =
 {
     // ld8    r9  = [gp]    ;;
     // ld8    r10 = [r9],8
@@ -148,7 +148,7 @@ SELECTANY const BYTE ExeMainIA64Template[] =
 // We set the value of gp to point at the iat table entry for _CorExeMain
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainIA64Template[] =
+constexpr BYTE DllMainIA64Template[] =
 {
     // ld8    r9  = [gp]    ;;
     // ld8    r10 = [r9],8

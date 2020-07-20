@@ -21,5 +21,7 @@ internal partial class Interop
         internal static extern bool SetConsoleMode(IntPtr handle, int mode);
 
         internal const int ENABLE_PROCESSED_INPUT = 0x0001;
+        internal const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+        internal const int STD_OUTPUT_HANDLE = -11;
     }
 }

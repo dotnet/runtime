@@ -2304,8 +2304,6 @@ namespace System.Management
             {
                 Initialize(false);
                 InvokeMethodOptions o = (null != options) ? options : new InvokeMethodOptions();
-                IWbemServices wbemServices = scope.GetIWbemServices();
-
                 SecurityHandler securityHandler = null;
                 int status = (int)ManagementStatus.NoError;
 

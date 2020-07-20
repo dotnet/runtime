@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -19,8 +21,13 @@ namespace Microsoft.Extensions.Logging
         {
             builder.AddConfiguration();
 
+            builder.AddConsoleFormatter<JsonConsoleFormatter, JsonConsoleFormatterOptions>();
+            builder.AddConsoleFormatter<SystemdConsoleFormatter, ConsoleFormatterOptions>();
+            builder.AddConsoleFormatter<SimpleConsoleFormatter, SimpleConsoleFormatterOptions>();
+
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
             LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
+
             return builder;
         }
 
@@ -40,6 +47,105 @@ namespace Microsoft.Extensions.Logging
             builder.Services.Configure(configure);
 
             return builder;
+        }
+
+        /// <summary>
+        /// Add and configure a console log formatter named 'simple' to the factory.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>
+        public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder, Action<SimpleConsoleFormatterOptions> configure)
+        {
+            return builder.AddConsoleWithFormatter<SimpleConsoleFormatterOptions>(ConsoleFormatterNames.Simple, configure);
+        }
+
+        /// <summary>
+        /// Add and configure a console log formatter named 'json' to the factory.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in json log formatter.</param>
+        public static ILoggingBuilder AddJsonConsole(this ILoggingBuilder builder, Action<JsonConsoleFormatterOptions> configure)
+        {
+            return builder.AddConsoleWithFormatter<JsonConsoleFormatterOptions>(ConsoleFormatterNames.Json, configure);
+        }
+
+        /// <summary>
+        /// Add and configure a console log formatter named 'systemd' to the factory.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in systemd log formatter.</param>
+        public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder, Action<ConsoleFormatterOptions> configure)
+        {
+            return builder.AddConsoleWithFormatter<ConsoleFormatterOptions>(ConsoleFormatterNames.Systemd, configure);
+        }
+
+        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
+            where TOptions : ConsoleFormatterOptions
+        {
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = name);
+            builder.Services.Configure(configure);
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        public static ILoggingBuilder AddConsoleFormatter<TFormatter, TOptions>(this ILoggingBuilder builder)
+            where TOptions : ConsoleFormatterOptions
+            where TFormatter : ConsoleFormatter
+        {
+            builder.AddConfiguration();
+
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, TFormatter>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<TOptions>, ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions>>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOptionsChangeTokenSource<TOptions>, ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions>>());
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        /// <param name="configure">A delegate to configure options 'TOptions' for custom formatter 'TFormatter'.</param>
+        public static ILoggingBuilder AddConsoleFormatter<TFormatter, TOptions>(this ILoggingBuilder builder, Action<TOptions> configure)
+            where TOptions : ConsoleFormatterOptions
+            where TFormatter : ConsoleFormatter
+        {
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            builder.AddConsoleFormatter<TFormatter, TOptions>();
+            builder.Services.Configure(configure);
+            return builder;
+        }
+    }
+
+    internal class ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions> : ConfigureFromConfigurationOptions<TOptions>
+        where TOptions : ConsoleFormatterOptions
+        where TFormatter : ConsoleFormatter
+    {
+        public ConsoleLoggerFormatterConfigureOptions(ILoggerProviderConfiguration<ConsoleLoggerProvider> providerConfiguration) :
+            base(providerConfiguration.Configuration.GetSection("FormatterOptions"))
+        {
+        }
+    }
+
+    internal class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
+        where TOptions : ConsoleFormatterOptions
+        where TFormatter : ConsoleFormatter
+    {
+        public ConsoleLoggerFormatterOptionsChangeTokenSource(ILoggerProviderConfiguration<ConsoleLoggerProvider> providerConfiguration)
+            : base(providerConfiguration.Configuration.GetSection("FormatterOptions"))
+        {
         }
     }
 }

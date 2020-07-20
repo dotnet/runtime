@@ -265,7 +265,6 @@ namespace System.Diagnostics
                 throw new ArgumentException(SR.Format(SR.ParameterTooLong, nameof(source), 254 - EventLogKey.Length));
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -371,7 +370,6 @@ namespace System.Diagnostics
             RegistryKey eventlogkey = null;
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -442,7 +440,6 @@ namespace System.Diagnostics
             }
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
