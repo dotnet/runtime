@@ -163,14 +163,14 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
       <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
-      <XHarnessPackageToTest Include="@(_apks)">
+      <XHarnessApkToTest Include="@(_apks)">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
-      </XHarnessPackageToTest>
+      </XHarnessApkToTest>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Android'">
