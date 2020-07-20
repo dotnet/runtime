@@ -1161,6 +1161,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesSent(bytesTransferred);
 
             if (errorCode != SocketError.Success)
             {
@@ -1211,6 +1212,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesSent(bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1249,6 +1251,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffer, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesSent(bytesTransferred);
 
             if (errorCode != SocketError.Success)
             {
@@ -1314,6 +1317,11 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1400,6 +1408,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1433,6 +1442,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1482,6 +1492,8 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             if (errorCode != SocketError.Success)
@@ -1542,6 +1554,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress receiveAddress;
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveMessageFrom(this, _handle, buffer, offset, size, ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1618,6 +1631,11 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -2573,6 +2591,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesSent(bytesTransferred);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransffered:{bytesTransferred}");
 
@@ -2751,6 +2770,11 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
 
@@ -2985,6 +3009,7 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -3141,6 +3166,11 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
 
             // Update socket address size.
             castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();
@@ -3344,6 +3374,11 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
 
             // Update socket address size.
             castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();

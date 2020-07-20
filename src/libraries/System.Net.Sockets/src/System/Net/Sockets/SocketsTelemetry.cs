@@ -11,11 +11,11 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
-        private PollingCounter _connectionEstablishedCounter;
-        private PollingCounter _bytesReceivedCounter;
-        private PollingCounter _bytesSentCounter;
-        private PollingCounter _datagramsReceivedCounter;
-        private PollingCounter _datagramsSentCounter;
+        private PollingCounter? _connectionEstablishedCounter;
+        private PollingCounter? _bytesReceivedCounter;
+        private PollingCounter? _bytesSentCounter;
+        private PollingCounter? _datagramsReceivedCounter;
+        private PollingCounter? _datagramsSentCounter;
 
         private long _connectionEstablished;
         private long _bytesReceived;
@@ -99,15 +99,15 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void DatagramsReceived(long count)
+        public void DatagramReceived()
         {
-            Interlocked.Add(ref _datagramsReceived, count);
+            Interlocked.Increment(ref _datagramsReceived);
         }
 
         [NonEvent]
-        public void DatagramsSent(long count)
+        public void DatagramSent()
         {
-            Interlocked.Add(ref _datagramsSent, count);
+            Interlocked.Increment(ref _datagramsSent);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
