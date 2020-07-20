@@ -143,14 +143,14 @@ namespace System
                     return false;
 
                 EnsureConsoleInitialized();
-                return !Interop.Sys.GetSignalForBreak();
+                return Interop.Sys.GetSignalForBreak() == 0;
             }
             set
             {
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }

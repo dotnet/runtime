@@ -122,7 +122,7 @@
       <Rule Id="CA2013" Action="Warning" />          <!-- Do not use ReferenceEquals with value types -->
       <Rule Id="CA2014" Action="Warning" />          <!-- Do not use stackalloc in loops. -->
       <Rule Id="CA2015" Action="Warning" />          <!-- Do not define finalizers for types derived from MemoryManager<T> -->
-      <Rule Id="CA2016" Action="Info" />             <!-- Forward the 'CancellationToken' parameter to methods that take one -->
+      <Rule Id="CA2016" Action="Warning" />          <!-- Forward the 'CancellationToken' parameter to methods that take one -->
       <Rule Id="CA2100" Action="None" />             <!-- Review SQL queries for security vulnerabilities -->
       <Rule Id="CA2101" Action="None" />             <!-- Specify marshaling for P/Invoke string arguments -->
       <Rule Id="CA2109" Action="None" />             <!-- Review visible event handlers -->

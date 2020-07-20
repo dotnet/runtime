@@ -1,6 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>0168,0169,0414,0219,0649</NoWarn>
+    <NoWarn>$(NoWarn),0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
@@ -112,6 +112,7 @@
     <Compile Include="System\Data\VersionNotFoundException.cs" />
     <Compile Include="System\Data\XmlDataLoaderTest.cs" />
     <Compile Include="System\Data\XmlDataReaderTest.cs" />
+    <Compile Include="System\Data\RestrictedTypeHandlingTests.cs" />
     <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />

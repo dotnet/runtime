@@ -3650,6 +3650,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             case BBJ_SWITCH:
             case BBJ_NONE:
             case BBJ_THROW:
+            case BBJ_CALLFINALLY:
                 break;
             default:
                 assert(!"Unexpected block kind");
@@ -4058,9 +4059,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if (block->bbJumpKind == BBJ_ALWAYS)
+        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
+            (block->bbJumpKind == BBJ_NONE))
         {
-            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
         else
@@ -4265,6 +4268,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 __fallthrough;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
                 fgReplacePred(bottom->bbJumpDest, top, bottom);
                 break;
             case BBJ_SWITCH:
@@ -7299,13 +7303,15 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    tree - The tree node under consideration
 //
 // Return Value:
-//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is an ADDR,
-//    whose arg in turn is a LCL_VAR, return that LCL_VAR node, else nullptr.
+//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
+//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
+//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
+//    - else nullptr.
 //
 // static
-GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
+GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 {
-    GenTree* res = nullptr;
+    GenTreeLclVar* res = nullptr;
     if (tree->OperIsIndir())
     {
         GenTree* addr = tree->AsIndir()->Addr();
@@ -7338,12 +7344,12 @@ GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
             GenTree* lclvar = addr->AsOp()->gtOp1;
             if (lclvar->OperGet() == GT_LCL_VAR)
             {
-                res = lclvar;
+                res = lclvar->AsLclVar();
             }
         }
         else if (addr->OperGet() == GT_LCL_VAR_ADDR)
         {
-            res = addr;
+            res = addr->AsLclVar();
         }
     }
     return res;
@@ -7458,7 +7464,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
         {
-            JITDUMP("\nmarking helper call [06%u] as special dce...\n", result->gtTreeID);
+            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
             result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
         }
     }
@@ -15337,6 +15343,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */

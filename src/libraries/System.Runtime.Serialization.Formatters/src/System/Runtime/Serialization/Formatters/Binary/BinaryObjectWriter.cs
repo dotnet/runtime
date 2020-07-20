@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectManager = new SerializationObjectManager(context);
         }
 
-        internal void Serialize(object graph, BinaryFormatterWriter serWriter, bool fCheck)
+        internal void Serialize(object graph, BinaryFormatterWriter serWriter)
         {
             if (graph == null)
             {

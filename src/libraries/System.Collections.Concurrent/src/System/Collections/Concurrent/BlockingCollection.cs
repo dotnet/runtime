@@ -418,7 +418,7 @@ namespace System.Collections.Concurrent
                 CancellationTokenSource? linkedTokenSource = null;
                 try
                 {
-                    waitForSemaphoreWasSuccessful = _freeNodes.Wait(0);
+                    waitForSemaphoreWasSuccessful = _freeNodes.Wait(0, default);
                     if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                     {
                         linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(

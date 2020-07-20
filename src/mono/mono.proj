@@ -643,7 +643,8 @@
       <_MonoConfigureParams Include="--disable-icall-tables"/>
       <_MonoConfigureParams Include="--disable-crash-reporting"/>
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
-      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,$(_MonoEnableMinimal)"/>
+      <_MonoConfigureParams Include="--with-static-icu=yes"/>
+      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,eventpipe,$(_MonoEnableMinimal)"/>
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include" />
       <_MonoCXXFLAGS Include="-fexceptions" />

@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// <param name="kind"><see cref="ActivityKind"/> to create the Activity object with.</param>
         /// <param name="tags">Key-value pairs list for the tags to create the Activity object with.<see cref="ActivityContext"/></param>
         /// <param name="links"><see cref="ActivityLink"/> list to create the Activity object with.</param>
-        internal ActivityCreationOptions(ActivitySource source, string name, T parent, ActivityKind kind, IEnumerable<KeyValuePair<string, string?>>? tags, IEnumerable<ActivityLink>? links)
+        internal ActivityCreationOptions(ActivitySource source, string name, T parent, ActivityKind kind, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links)
         {
             Source = source;
             Name = name;
@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Retrieve the tags which requested to create the Activity object with.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, string?>>? Tags { get; }
+        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
         /// Retrieve the list of <see cref="ActivityLink"/> which requested to create the Activity object with.

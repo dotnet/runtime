@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="DisableBitTests.cs" />
     <Compile Include="EqualityExtensions.cs" />
     <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />

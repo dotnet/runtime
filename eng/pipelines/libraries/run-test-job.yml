@@ -52,16 +52,20 @@ jobs:
       dependsOn:
       - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+        # tests are built as part of product build
+        - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration)) }}:
+          - ${{ format('libraries_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
       - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
+        
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
+
         - ${{ parameters.variables }}
 
       steps:
@@ -80,6 +84,14 @@ jobs:
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
+        
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(_runtimeDownloadPath)
+              artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
+              artifactName: '$(_runtimeArtifactName)'
+              displayName: '$(runtimeFlavorName) build drop'
 
         - ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra') }}:
           # We need to find and download the GC stress dependencies (namely, coredistools). Put them
@@ -138,7 +150,10 @@ jobs:
               - jitstress2
               - jitstress2_tiered
               - zapdisable
-              - tailcallstress
+              # tailcallstress currently has hundreds of failures on Linux/arm32, so disable it.
+              # Tracked by https://github.com/dotnet/runtime/issues/38892.
+              - ${{ if or(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'arm')) }}:
+                - tailcallstress
             ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
               scenarios:
               - jitstressregs1

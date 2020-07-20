@@ -183,6 +183,19 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<string> GetTestLocales()
+        {
+            yield return "tr";
+            yield return "tr-TR";
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't contain these locales
+                yield return "az";
+                yield return "az-Latn-AZ";
+            }
+        }
+
         public static IEnumerable<object[]> ToLower_TestData()
         {
             foreach (string cultureName in s_cultureNames)
@@ -226,7 +239,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
             }
 
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
@@ -349,7 +362,7 @@ namespace System.Globalization.Tests
             }
 
             // Turkish i
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "i", "\u0130" };
                 yield return new object[] { cultureName, "\u0130", "\u0130" };

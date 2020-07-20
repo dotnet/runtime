@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binder = binder;
             _formatterEnums = formatterEnums;
         }
-        internal object Deserialize(BinaryParser serParser, bool fCheck)
+        internal object Deserialize(BinaryParser serParser)
         {
             if (serParser == null)
             {

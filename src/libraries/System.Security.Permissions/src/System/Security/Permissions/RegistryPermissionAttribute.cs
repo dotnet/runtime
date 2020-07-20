@@ -3,6 +3,9 @@
 
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
     public sealed partial class RegistryPermissionAttribute : CodeAccessSecurityAttribute
     {
