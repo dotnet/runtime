@@ -31,7 +31,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
 
-    Dictionary<string, Assembly>? _assemblies;
+    SortedDictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
 
     public override bool Execute ()
@@ -42,7 +42,7 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
 
         var paths = new List<string>();
-        _assemblies = new Dictionary<string, Assembly>();
+        _assemblies = new SortedDictionary<string, Assembly>();
 
         // Collect and load assemblies used by the app
         foreach (var v in AssemblySearchPaths!)
