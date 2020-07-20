@@ -359,11 +359,11 @@ namespace System.Net.Http
                     {
                         return await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                     }
-                    catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
+                    catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnNextConnection)
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            Trace($"Retrying request to find a HTTP/2 connection with available streams: {e}");
+                            Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
                         }
 
                         // Eat exception and try again.
@@ -560,7 +560,7 @@ namespace System.Net.Http
                 if (currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer)
                 {
                     // All connections are completely occupied. Retry request to make it wait until a stream slot gets available.
-                    throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -970,6 +970,16 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
+                    }
+
+                    // Eat exception and try again.
+                    continue;
+                }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnNextConnection)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
                     }
 
                     // Eat exception and try again.

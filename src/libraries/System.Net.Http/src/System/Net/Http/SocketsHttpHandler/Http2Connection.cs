@@ -1258,7 +1258,7 @@ namespace System.Net.Http
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                     }
                 }
                 else

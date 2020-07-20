@@ -1941,10 +1941,12 @@ namespace System.Net.Http.Functional.Tests
                 for (int i = 0; i < sendTasks.Length; i++)
                 {
                     sendTasks[i++] = client.GetAsync(server.Address);
-                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
+                    Http2LoopbackConnection connection = await GetConnection(server, MaxConcurrentStreams).ConfigureAwait(false);
                     connections.Add(connection);
                     sendTasks[i] = client.GetAsync(server.Address);
-                    acceptedStreams.AddRange(await AcceptRequests(connection, 2).ConfigureAwait(false));
+                    int prevAcceptedStreamCount = acceptedStreams.Count;
+                    acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
+                    Assert.Equal(prevAcceptedStreamCount + MaxConcurrentStreams, acceptedStreams.Count);
                 }
 
                 int responseIndex = 0;
@@ -2013,16 +2015,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 server.AllowMultipleConnections = true;
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection[] connections = new[] {
-                    await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false),
-                    await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false)
-                };
+                Http2LoopbackConnection[] connections = new Http2LoopbackConnection[2];
+                List<int>[] acceptedStreams = new List<int>[2];
+                connections[0] = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
+                acceptedStreams[0] = await AcceptRequests(connections[0]).ConfigureAwait(false);
+                connections[1] = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
+                acceptedStreams[1] = await AcceptRequests(connections[1]).ConfigureAwait(false);
 
-                Task<List<int>>[] acceptTasks = new[] { AcceptRequests(connections[0]), AcceptRequests(connections[1])};
-
-                await Task.WhenAll(acceptTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
-
-                List<int>[] acceptedStreams = new[] { acceptTasks[0].Result, acceptTasks[1].Result };
                 int acceptedStreamCount = acceptedStreams.Sum(l => l.Count);
                 Assert.Equal(MaxConcurrentStreams * 2, acceptedStreamCount);
 
@@ -2037,7 +2036,7 @@ namespace System.Net.Http.Functional.Tests
                 await connections[0].WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = sufficentStreamsOnConnection0 })).ConfigureAwait(false);
                 await connections[0].ExpectSettingsAckAsync().ConfigureAwait(false);
 
-                List<int> remainingStreams = await AcceptRequests(connections[0]).ConfigureAwait(false);
+                List<int> remainingStreams = await AcceptRequests(connections[0], TotalRequestCount - acceptedStreamCount).ConfigureAwait(false);
 
                 Assert.Equal(TotalRequestCount, acceptedStreamCount + remainingStreams.Count);
 
@@ -2064,7 +2063,8 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
 
                 // Block the first connection on infinite requests.
-                List<int> blockedStreamIds = await AcceptRequests(connection0, 2).ConfigureAwait(false);
+                List<int> blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+                Assert.Equal(MaxConcurrentStreams, blockedStreamIds.Count);
 
                 Http2LoopbackConnection connection1 = await PrepareConnection(server, client, sendTasks, MaxConcurrentStreams).ConfigureAwait(false);
                 int warmUpRequestCount = sendTasks.Count;
@@ -2210,7 +2210,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static async Task<Http2LoopbackConnection> GetConnection(Http2LoopbackServer server, uint maxConcurrentStreams) =>
-            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(2), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
+            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(5), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
 
         private async Task<Http2LoopbackConnection> GetWarmedUpConnection(Http2LoopbackServer server, HttpClient client, List<Task<HttpResponseMessage>> sendTasks, uint maxConcurrentStreams)
         {
