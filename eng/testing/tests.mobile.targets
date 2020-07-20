@@ -132,6 +132,9 @@
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Private.CoreLib.dll" Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.MetadataLoadContext.Tests.dll" Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)mscorlib.dll" Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'" />
       <ExtraAssemblies Include="$(PublishDir)$(AssemblyName).dll" />
       <!-- we need to preserve these facades for BinaryFormatter tests -->
       <ExtraAssemblies Include="$(PublishDir)mscorlib.dll" />
