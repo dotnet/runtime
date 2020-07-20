@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Net.PeerToPeer
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct |
          AttributeTargets.Constructor | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public sealed class PnrpPermissionAttribute : CodeAccessSecurityAttribute
