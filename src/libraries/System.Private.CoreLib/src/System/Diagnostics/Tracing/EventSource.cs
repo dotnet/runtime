@@ -2174,7 +2174,7 @@ namespace System.Diagnostics.Tracing
                     (LocalAppContextSwitches.DisableSelfDescribingEventFiltering || dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
 #else
                     (dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
-#endif !ES_BUILD_STANDALONE
+#endif // !ES_BUILD_STANDALONE
                     (dispatcher.m_EventEnabled[eventId]))
                 {
                     {
