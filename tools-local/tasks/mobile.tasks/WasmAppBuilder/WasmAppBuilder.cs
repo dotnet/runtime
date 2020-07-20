@@ -145,8 +145,8 @@ public class WasmAppBuilder : Task
 
         var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
 
-        config.assets.Add(new IcuData() { name = "icudt.dat", load_remote = enableRemote });
-        config.assets.Add(new VfsEntry() { name = "dotnet.timezones.blat", virtual_path = "/usr/share/zoneinfo/"});
+        config.assets.Add(new IcuData { name = "icudt.dat", load_remote = enableRemote });
+        config.assets.Add(new VfsEntry { name = "dotnet.timezones.blat", virtual_path = "/usr/share/zoneinfo/"});
 
         if (enableRemote) {
                 foreach (var source in RemoteSources!)
