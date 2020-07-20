@@ -91,7 +91,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != '' and '$(TargetOS)' != 'Android'">
+  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != ''>
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
