@@ -293,18 +293,19 @@ namespace System.Net.Http.Functional.Tests
         {
             const string path1 = "/foo";
             const string path2 = "/bar";
+            const string unusedPath = "/unused";
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 Uri url1 = new Uri(url, path1);
                 Uri url2 = new Uri(url, path2);
-                Uri unusedUrl = new Uri(url, "/unused");
+                Uri unusedUrl = new Uri(url, unusedPath);
 
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = new CookieContainer();
-                handler.CookieContainer.Add(url1, new Cookie("cookie1", "value1"));
-                handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2"));
-                handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3"));
+                handler.CookieContainer.Add(url1, new Cookie("cookie1", "value1", path1));
+                handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2", path2));
+                handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3", unusedPath));
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -399,7 +400,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
-                Uri requestUrl = new Uri(serverUrl + "path/sub");
+                Uri requestUrl = new Uri(serverUrl, "path/sub");
                 HttpClientHandler handler = CreateHttpClientHandler();
 
                 using (HttpClient client = CreateHttpClient(handler))
@@ -428,7 +429,8 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
-                Uri requestUrl = new Uri(serverUrl + "original");
+                Uri requestUrl = new Uri(serverUrl, "original");
+                Uri otherUrl = new Uri(serverUrl, "other");
                 HttpClientHandler handler = CreateHttpClientHandler();
 
                 using (HttpClient client = CreateHttpClient(handler))
@@ -436,18 +438,63 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(requestUrl);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
                         HttpStatusCode.OK,
-                        new HttpHeaderData[]
+                        new[]
                         {
-                            new HttpHeaderData("Set-Cookie", "A=1; Path=/redirect"),
+                            new HttpHeaderData("Set-Cookie", "A=1; Path=/other"),
                         },
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    CookieCollection collection = handler.CookieContainer.GetCookies(new Uri(serverUrl + "redirect"));
+                    CookieCollection collection = handler.CookieContainer.GetCookies(otherUrl);
                     Cookie cookie = collection.Single();
-                    Assert.Equal("/redirect", cookie.Path);
+                    Assert.Equal("/other", cookie.Path);
                 }
             });
+        }
+
+        // Based on the OIDC login scenario described comments:
+        // https://github.com/dotnet/runtime/pull/39250#issuecomment-659783480
+        // https://github.com/dotnet/runtime/issues/26141#issuecomment-612097147
+        [Fact]
+        public async Task GetAsync_Redirect_CookiesArePreserved()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+
+            string loginPath = "/login/user";
+            string returnPath = "/return";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async serverUrl =>
+                {
+                    Uri loginUrl = new Uri(serverUrl, loginPath);
+                    Uri returnUrl = new Uri(serverUrl, returnPath);
+                    CookieContainer cookies = handler.CookieContainer;
+
+                    using (HttpClient client = CreateHttpClient(handler))
+                    {
+                        client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
+                        HttpResponseMessage response = await client.GetAsync(loginUrl);
+                        string content = await response.Content.ReadAsStringAsync();
+                        Assert.Equal(s_simpleContent, content);
+
+                        Cookie cookie = cookies.GetCookies(returnUrl).Single();
+                        Assert.Equal("LoggedIn", cookie.Name);
+                    }
+                },
+                async server =>
+                {
+                    HttpRequestData requestData1 = await server.HandleRequestAsync(HttpStatusCode.Found, new[]
+                    {
+                        new HttpHeaderData("Location", returnPath),
+                        new HttpHeaderData("Set-Cookie", "LoggedIn=true; Path=/return"),
+                    });
+
+                    Assert.Equal(0, requestData1.GetHeaderValueCount("Cookie"));
+
+                    HttpRequestData requestData2 = await server.HandleRequestAsync(content: s_simpleContent, headers: new[]{
+                        new HttpHeaderData("Set-Cookie", "LoggedIn=true; Path=/return"),
+                    });
+                    Assert.Equal("LoggedIn=true", requestData2.GetSingleHeaderValue("Cookie"));
+                });
         }
 
         [Fact]
