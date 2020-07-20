@@ -738,12 +738,12 @@ public:
         CONTRACTL_END;
 
         DebuggerIPCEvent *dipce = (DebuggerIPCEvent *) new (nothrow) BYTE [CorDBIPC_BUFFER_SIZE];
-        dipce->next = NULL;
 
         LOG((LF_CORDB,LL_INFO1000000, "About to GIPCESBC 0x%x\n",dipce));
 
         if (dipce != NULL)
         {
+            dipce->next = NULL;
             eventCur->next = dipce;
         }
 #ifdef _DEBUG
