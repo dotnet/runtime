@@ -54,7 +54,7 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
-      - ${{ if and(eq(parameters.osGroup, 'Android'), eq(parameters.isOfficialBuild, false)) }}:
+      - ${{ if eq(parameters.osGroup, 'Android') }}:
         - name: ANDROID_OPENSSL_AAR
           value: /tmp/openssl-android
 
@@ -68,7 +68,7 @@ jobs:
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if or(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), and(eq(parameters.osGroup, 'Android'), eq(parameters.isOfficialBuild, false))) }}:
+    - ${{ if or(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), eq(parameters.osGroup, 'Android')) }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
