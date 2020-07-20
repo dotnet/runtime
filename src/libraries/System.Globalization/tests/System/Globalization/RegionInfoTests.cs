@@ -146,11 +146,6 @@ namespace System.Globalization.Tests
         [InlineData("zh-CN", true)]
         public void IsMetric(string name, bool expected)
         {
-            if (PlatformDetection.IsBrowser)
-            {
-                // Browser's ICU always return true for IsMetric
-                expected = true;
-            }
             Assert.Equal(expected, new RegionInfo(name).IsMetric);
         }
 

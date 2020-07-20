@@ -167,8 +167,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        // TODO: Investigate why Browser's ICU fails
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39285", TestPlatforms.Browser)]
         public void TestFirstYearOfJapaneseEra()
         {
             DateTimeFormatInfo jpnFormat = new CultureInfo("ja-JP").DateTimeFormat;
