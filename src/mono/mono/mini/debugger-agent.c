@@ -3612,9 +3612,9 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 		return;
 
 	// NOTE: The following Debugger attributes may not exist if they are trimmed away by the ILLinker
-    MonoClass *hidden_klass = mono_class_try_get_hidden_klass_class ();
-    MonoClass *step_through_klass = mono_class_try_get_step_through_klass_class ();
-    MonoClass *non_user_klass = mono_class_try_get_non_user_klass_class ();
+	MonoClass *hidden_klass = mono_class_try_get_hidden_klass_class ();
+	MonoClass *step_through_klass = mono_class_try_get_step_through_klass_class ();
+	MonoClass *non_user_klass = mono_class_try_get_non_user_klass_class ();
 
 	ainfo = mono_custom_attrs_from_method_checked (jinfo_get_method (ji), error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error? */
