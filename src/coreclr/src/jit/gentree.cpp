@@ -19350,6 +19350,18 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     return genRegNumFromMask(tempRegMask);
 }
 
+uint16_t GenTreeLclVarCommon::GetLclOffs() const
+{
+    if (OperIsLocalField())
+    {
+        return AsLclFld()->GetLclOffs();
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 #ifdef TARGET_ARM
 //------------------------------------------------------------------------
 // IsOffsetMisaligned: check if the field needs a special handling on arm.
