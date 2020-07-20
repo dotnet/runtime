@@ -6360,6 +6360,7 @@ protected:
 
         ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
                                    // number, this will reflect it; otherwise, NoVN.
+                                   // not used for shared const CSE's
     };
 
     static const size_t s_optCSEhashSize;

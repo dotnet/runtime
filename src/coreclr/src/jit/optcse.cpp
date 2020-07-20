@@ -1519,23 +1519,28 @@ void Compiler::optValnumCSE_Availablity()
                             }
                         }
 
-                        // Record or update the value of desc->defConservNormVN
+                        // For shared const CSE we don't set/use the defConservNormVN
                         //
-                        ValueNum theConservNormVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                        if (!Is_Shared_Const_CSE(desc->csdHashKey))
+                        {
+                            // Record or update the value of desc->defConservNormVN
+                            //
+                            ValueNum theConservNormVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
 
-                        // Is defConservNormVN still set to the uninit marker value of VNForNull() ?
-                        if (desc->defConservNormVN == vnStore->VNForNull())
-                        {
-                            // This is the first def that we have visited, set defConservNormVN
-                            desc->defConservNormVN = theConservNormVN;
-                        }
-                        else
-                        {
-                            // Check to see if all defs have the same conservative normal VN
-                            if (theConservNormVN != desc->defConservNormVN)
+                            // Is defConservNormVN still set to the uninit marker value of VNForNull() ?
+                            if (desc->defConservNormVN == vnStore->VNForNull())
                             {
-                                // This candidate has defs with differing conservative normal VNs, mark it with NoVN
-                                desc->defConservNormVN = ValueNumStore::NoVN; // record the marker for differing VNs
+                                // This is the first def that we have visited, set defConservNormVN
+                                desc->defConservNormVN = theConservNormVN;
+                            }
+                            else
+                            {
+                                // Check to see if all defs have the same conservative normal VN
+                                if (theConservNormVN != desc->defConservNormVN)
+                                {
+                                    // This candidate has defs with differing conservative normal VNs, mark it with NoVN
+                                    desc->defConservNormVN = ValueNumStore::NoVN; // record the marker for differing VNs
+                                }
                             }
                         }
 
@@ -2985,54 +2990,61 @@ public:
                 // assign the proper ValueNumber, A CSE use discards any exceptions
                 cse->gtVNPair = vnStore->VNPNormalPair(exp->gtVNPair);
 
-                ValueNum theConservativeVN = successfulCandidate->CseDsc()->defConservNormVN;
-
-                if (theConservativeVN != ValueNumStore::NoVN)
+                // shared const CSE has the correct value number assigned
+                // and both liberal and conservative are identical
+                // and they do not use theConservativeVN
+                //
+                if (!isSharedConst)
                 {
-                    // All defs of this CSE share the same normal conservative VN, and we are rewriting this
-                    // use to fetch the same value with no reload, so we can safely propagate that
-                    // conservative VN to this use.  This can help range check elimination later on.
-                    cse->gtVNPair.SetConservative(theConservativeVN);
+                    ValueNum theConservativeVN = successfulCandidate->CseDsc()->defConservNormVN;
 
-                    // If the old VN was flagged as a checked bound, propagate that to the new VN
-                    // to make sure assertion prop will pay attention to this VN.
-                    ValueNum oldVN = exp->gtVNPair.GetConservative();
-                    if (!vnStore->IsVNConstant(theConservativeVN) && vnStore->IsVNCheckedBound(oldVN))
+                    if (theConservativeVN != ValueNumStore::NoVN)
                     {
-                        vnStore->SetVNIsCheckedBound(theConservativeVN);
-                    }
+                        // All defs of this CSE share the same normal conservative VN, and we are rewriting this
+                        // use to fetch the same value with no reload, so we can safely propagate that
+                        // conservative VN to this use.  This can help range check elimination later on.
+                        cse->gtVNPair.SetConservative(theConservativeVN);
 
-                    GenTree* cmp;
-                    if ((m_pCompiler->optCseCheckedBoundMap != nullptr) &&
-                        (m_pCompiler->optCseCheckedBoundMap->Lookup(exp, &cmp)))
-                    {
-                        // Propagate the new value number to this compare node as well, since
-                        // subsequent range check elimination will try to correlate it with
-                        // the other appearances that are getting CSEd.
-
-                        ValueNum oldCmpVN = cmp->gtVNPair.GetConservative();
-                        ValueNum newCmpArgVN;
-
-                        ValueNumStore::CompareCheckedBoundArithInfo info;
-                        if (vnStore->IsVNCompareCheckedBound(oldCmpVN))
+                        // If the old VN was flagged as a checked bound, propagate that to the new VN
+                        // to make sure assertion prop will pay attention to this VN.
+                        ValueNum oldVN = exp->gtVNPair.GetConservative();
+                        if (!vnStore->IsVNConstant(theConservativeVN) && vnStore->IsVNCheckedBound(oldVN))
                         {
-                            // Comparison is against the bound directly.
-
-                            newCmpArgVN = theConservativeVN;
-                            vnStore->GetCompareCheckedBound(oldCmpVN, &info);
+                            vnStore->SetVNIsCheckedBound(theConservativeVN);
                         }
-                        else
+
+                        GenTree* cmp;
+                        if ((m_pCompiler->optCseCheckedBoundMap != nullptr) &&
+                            (m_pCompiler->optCseCheckedBoundMap->Lookup(exp, &cmp)))
                         {
-                            // Comparison is against the bound +/- some offset.
+                            // Propagate the new value number to this compare node as well, since
+                            // subsequent range check elimination will try to correlate it with
+                            // the other appearances that are getting CSEd.
 
-                            assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
-                            vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+                            ValueNum oldCmpVN = cmp->gtVNPair.GetConservative();
+                            ValueNum newCmpArgVN;
+
+                            ValueNumStore::CompareCheckedBoundArithInfo info;
+                            if (vnStore->IsVNCompareCheckedBound(oldCmpVN))
+                            {
+                                // Comparison is against the bound directly.
+
+                                newCmpArgVN = theConservativeVN;
+                                vnStore->GetCompareCheckedBound(oldCmpVN, &info);
+                            }
+                            else
+                            {
+                                // Comparison is against the bound +/- some offset.
+
+                                assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
+                                vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
+                                newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
+                                                                 info.arrOp, theConservativeVN);
+                            }
+                            ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
+                                                                   info.cmpOp, newCmpArgVN);
+                            cmp->gtVNPair.SetConservative(newCmpVN);
                         }
-                        ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
-                                                               info.cmpOp, newCmpArgVN);
-                        cmp->gtVNPair.SetConservative(newCmpVN);
                     }
                 }
 #ifdef DEBUG
