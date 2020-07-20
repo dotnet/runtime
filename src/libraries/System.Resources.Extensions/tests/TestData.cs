@@ -303,8 +303,15 @@ namespace System.Resources.Extensions.Tests
                 // workaround for https://github.com/dotnet/runtime/issues/31289
                 assemblyQualifiedTypeName = assemblyQualifiedTypeName.Replace(s_coreAssemblyName, s_mscorlibAssemblyName);
 
-                if (TryDeconstructFullyQualifiedTypeName(assemblyQualifiedTypeName, out string newTypeName, out assemblyName))
+                // The logic below is intentionally incorrect. Generic type names like System.Collections.Generic.List`1[[System.String, ...]]
+                // will be split on the first comma, causing unbalanced [[ and ]] in the resulting substrings. This is for compatibility
+                // with the existing incorrect logic in Full Framework.
+
+                int pos = assemblyQualifiedTypeName.IndexOf(',');
+                if (pos > 0 && pos < assemblyQualifiedTypeName.Length - 1)
                 {
+                    assemblyName = assemblyQualifiedTypeName.Substring(pos + 1).TrimStart();
+                    string newTypeName = assemblyQualifiedTypeName.Substring(0, pos);
                     if (!string.Equals(newTypeName, serializedType.FullName, StringComparison.InvariantCulture))
                     {
                         typeName = newTypeName;
@@ -318,48 +325,6 @@ namespace System.Resources.Extensions.Tests
             {
                 // We should never be using this binder during Deserialization
                 throw new NotSupportedException($"{nameof(TypeNameManglingSerializationBinder)}.{nameof(BindToType)} should not be used during testing.");
-            }
-
-            private static bool TryDeconstructFullyQualifiedTypeName(string assemblyQualifiedTypeName, out string typeName, out string assemblyName)
-            {
-                // Skip over all generic arguments in the assembly-qualified type name.
-
-                int genericDepth = 0;
-                int i;
-                for (i = 0; i < assemblyQualifiedTypeName.Length; i++)
-                {
-                    switch (assemblyQualifiedTypeName[i])
-                    {
-                        case '[':
-                            checked { genericDepth++; }
-                            break;
-
-                        case ']':
-                            checked { genericDepth--; }
-                            break;
-
-                        case ',' when genericDepth == 0:
-                            goto AfterLoop;
-
-                        default:
-                            continue;
-                    }
-                }
-
-            AfterLoop:
-
-                if (i < assemblyQualifiedTypeName.Length - 1)
-                {
-                    // Found a proper fully-qualified type name with assembly!
-                    typeName = assemblyQualifiedTypeName.Substring(0, i);
-                    assemblyName = assemblyQualifiedTypeName.Substring(i + 1).Trim();
-                    return true;
-                }
-
-                // Couldn't find an assembly after the type name.
-                typeName = default;
-                assemblyName = default;
-                return false;
             }
         }
     }
