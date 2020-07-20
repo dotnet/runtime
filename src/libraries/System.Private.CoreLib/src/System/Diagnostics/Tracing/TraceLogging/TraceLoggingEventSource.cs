@@ -694,7 +694,9 @@ namespace System.Diagnostics.Tracing
                                         var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
                                         WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
                                     }
+#if !ES_BUILD_STANDALONE
                                 }
+#endif // !ES_BUILD_STANDALONE
                             }
                         }
                         catch (Exception ex)
