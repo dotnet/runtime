@@ -1003,7 +1003,7 @@ namespace System.Text
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
                 Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
-            else if (AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.IsSupported)
             {
                 // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
                 // [ b0 b1 b2 b3 * * * * ], then writes 4 bytes (32 bits) to the destination.
