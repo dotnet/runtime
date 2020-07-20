@@ -1102,6 +1102,9 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_load_data_archive: function (data, prefix) {
+			if (data.length < 8)
+				return false;
+
 			var dataview = new DataView(data.buffer);
 			var magic = dataview.getUint32(0, true);
 			//	get magic number
@@ -1109,9 +1112,12 @@ var MonoSupportLib = {
 				return false;
 			}
 			var manifestSize = dataview.getUint32(4, true);
-			var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+			if (manifestSize == 0 || data.length < manifestSize + 8)
+				return false;
+
 			var manifest;
 			try {
+				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
 				manifest = JSON.parse(manifestContent);
 				if (!(manifest instanceof Array))
 					return false;
