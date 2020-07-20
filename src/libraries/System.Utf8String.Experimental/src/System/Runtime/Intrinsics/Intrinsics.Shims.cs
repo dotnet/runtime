@@ -8,6 +8,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<ulong> Create(ulong value) => throw new PlatformNotSupportedException();
         public static Vector64<uint> CreateScalar(uint value) => throw new PlatformNotSupportedException();
         public static Vector64<byte> AsByte<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
+        public static Vector64<uint> AsUInt32<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector64<T>
         where T : struct
