@@ -3100,11 +3100,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        unsigned             offset  = 0;
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            offset = varNode->AsLclFld()->GetLclOffs();
-        }
+        unsigned             offset  = varNode->GetLclOffs();
         if (data->isContainedIntOrIImmed())
         {
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());

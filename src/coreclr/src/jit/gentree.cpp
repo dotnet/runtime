@@ -16365,11 +16365,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             *pLclVarTree                    = addrArgLcl;
             if (pIsEntire != nullptr)
             {
-                unsigned lclOffset = 0;
-                if (addrArg->OperIsLocalField())
-                {
-                    lclOffset = addrArg->AsLclFld()->GetLclOffs();
-                }
+                unsigned lclOffset = addrArgLcl->GetLclOffs();
 
                 if (lclOffset != 0)
                 {
