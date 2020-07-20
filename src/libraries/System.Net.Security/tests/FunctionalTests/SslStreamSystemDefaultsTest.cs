@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 using System.Threading.Tasks;
@@ -55,9 +56,30 @@ namespace System.Net.Security.Tests
                 string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
-                    AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
+                try
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
+                        AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
+                }
+                catch (AggregateException)
+                {
+                    // The default configuration on Linux does not enable any TLS 1.0 or TLS 1.1 ciphersuites, so if either side specified
+                    // explicit protocols which do not contain TLS 1.2 or higher, ignore the exception.
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        bool clientOldProtocols = (clientProtocols.GetValueOrDefault() & NegotiatedCipherSuiteTest.PreTls12Protocols) != 0;
+                        bool serverOldProtocols = (serverProtocols.GetValueOrDefault() & NegotiatedCipherSuiteTest.PreTls12Protocols) != 0;
+
+                        if (clientOldProtocols || serverOldProtocols)
+                        {
+                            return;
+                        }
+                    }
+
+                    throw;
+                }
+
                 if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10 &&
 #pragma warning disable 0618
                     clientProtocols.GetValueOrDefault() != SslProtocols.Default &&

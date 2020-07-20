@@ -22,6 +22,13 @@ namespace System.Net.Test.Common
             get
             {
                 SslProtocols supported = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // The default ciphersuite configuration on Linux effectively disables TLS 1.0/TLS 1.1
+                    supported = SslProtocols.Tls12;
+                }
+
 #pragma warning disable 0618 // SSL2/3 are deprecated
                 if (PlatformDetection.SupportsSsl3)
                 {

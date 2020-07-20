@@ -27,6 +27,7 @@ namespace System.Net.Security.Tests
 #pragma warning restore CS0618
 
         public const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
+        public const SslProtocols PreTls12Protocols = NonTls13Protocols & (~SslProtocols.Tls12);
 
         private static bool IsKnownPlatformSupportingTls13 => PlatformDetection.SupportsTls13;
         private static bool CipherSuitesPolicySupported => s_cipherSuitePolicySupported.Value;
