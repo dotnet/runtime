@@ -119,7 +119,7 @@ namespace System.Text.Unicode
                         // the alignment check consumes at most a single DWORD.)
 
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
-                        int trailingZeroCount;
+                        nuint trailingZeroCount;
 
                         Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
                             Vector128.Create((ushort)0x1001).AsByte() :
@@ -137,7 +137,7 @@ namespace System.Text.Unicode
                                 ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), bitMask128);
                                 if (mask != 0)
                                 {
-                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask) >> 2;
+                                    trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask) >> 2;
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
@@ -146,7 +146,7 @@ namespace System.Text.Unicode
                                 uint mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
-                                    trailingZeroCount = BitOperations.TrailingZeroCount(mask);
+                                    trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask);
                                     goto LoopTerminatedEarlyDueToNonAsciiData;
                                 }
                             }
