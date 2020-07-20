@@ -11,7 +11,6 @@ namespace System.Runtime.Intrinsics
         public static Vector64<uint> AsUInt32<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector64<T> GetLower<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector64<ulong> AsUInt64<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
-        public static Vector64<uint> AsUInt32<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector64<T>
         where T : struct
