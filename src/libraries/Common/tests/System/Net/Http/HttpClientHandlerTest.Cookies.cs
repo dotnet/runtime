@@ -417,8 +417,7 @@ namespace System.Net.Http.Functional.Tests
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    CookieCollection collection = handler.CookieContainer.GetCookies(requestUrl);
-                    Cookie cookie = collection.Single();
+                    Cookie cookie = GetFirstCookie(handler.CookieContainer, requestUrl);
                     Assert.Equal("/path", cookie.Path);
                 }
             });
@@ -447,8 +446,7 @@ namespace System.Net.Http.Functional.Tests
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    CookieCollection collection = handler.CookieContainer.GetCookies(otherUrl);
-                    Cookie cookie = collection.Single();
+                    Cookie cookie = GetFirstCookie(handler.CookieContainer, otherUrl);
                     Assert.Equal("/other", cookie.Path);
                 }
             });
@@ -498,17 +496,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("LoggedIn=true", requestData2.GetSingleHeaderValue("Cookie"));
                 });
 
-            // Workaround for Framework, where CookieCollection does not implement IEnumerable<Cookie>
-            static Cookie GetFirstCookie(CookieContainer container, Uri uri)
-            {
-                CookieCollection coll = container.GetCookies(uri);
-                System.Collections.IEnumerator e = coll.GetEnumerator();
-                if (e.MoveNext())
-                {
-                    return (Cookie)e.Current;
-                }
-                throw new Exception($"No cookies found for for {uri}");
-            }
+
         }
 
         [Fact]
@@ -701,6 +689,18 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal("A=1", requestData2.GetSingleHeaderValue("Cookie"));
             });
+        }
+
+        // Workaround for Framework, where CookieCollection does not implement IEnumerable<Cookie>
+        static Cookie GetFirstCookie(CookieContainer container, Uri uri)
+        {
+            CookieCollection coll = container.GetCookies(uri);
+            System.Collections.IEnumerator e = coll.GetEnumerator();
+            if (e.MoveNext())
+            {
+                return (Cookie)e.Current;
+            }
+            throw new Exception($"No cookies found for for {uri}");
         }
 
         //
