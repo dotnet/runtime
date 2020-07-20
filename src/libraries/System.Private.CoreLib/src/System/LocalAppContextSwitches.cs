@@ -42,11 +42,11 @@ namespace System
             get => GetCachedSwitchValue("Switch.System.Diagnostics.EventSource.PreserveEventListnerObjectIdentity", ref s_preserveEventListnerObjectIdentity);
         }
 
-        private static int s_disableEventListenerFiltering;
-        public static bool DisableEventListenerFiltering
+        private static int s_disableSelfDescribingEventFiltering;
+        public static bool DisableSelfDescribingEventFiltering
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Diagnostics.EventListener.DisableEventListenerFiltering", ref s_disableEventListenerFiltering);
+            get => GetCachedSwitchValue("Switch.System.Diagnostics.EventListener.DisableSelfDescribingEventFiltering", ref s_disableSelfDescribingEventFiltering);
         }
 
         private static int s_serializationGuard;

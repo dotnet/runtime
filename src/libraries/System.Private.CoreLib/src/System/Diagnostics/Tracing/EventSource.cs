@@ -2170,7 +2170,7 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
                 if (eventId == -1 ?
-                    (LocalAppContextSwitches.DisableEventListenerFiltering || dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
+                    (LocalAppContextSwitches.DisableSelfDescribingEventFiltering || dispatcher.IsEventEnabled(eventCallbackArgs.Level, eventCallbackArgs.Keywords)) :
                     (dispatcher.m_EventEnabled[eventId]))
                 {
                     {
@@ -2714,11 +2714,28 @@ namespace System.Diagnostics.Tracing
 
                         // There is a good chance EnabledForAnyListener are not as accurate as
                         // they could be, go ahead and get a better estimate.
+
+                        // For self-describing events, loop through the dispatchers m_Level and m_Keywords to compute
+                        // the remaining listeners' maximum level and keywords.
+                        if (SelfDescribingEvents)
+                        {
+                            EventLevel maxLevel = 0;
+                            EventKeywords unionKeywords = 0;
+                            for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
+                            {
+                                if (dispatcher.m_Listener != null)
+                                {
+                                    maxLevel = maxLevel > dispatcher.m_Level ? maxLevel : dispatcher.m_Level;
+                                    unionKeywords |= dispatcher.m_Keywords;
+                                }
+                            }
+                            m_EventListenersMaxLevel = maxLevel;
+                            m_EventListenersKeywords = unionKeywords;
+                        }
+
                         for (int i = 0; i < m_eventData.Length; i++)
                         {
                             bool isEnabledForAnyListener = false;
-                            EventLevel maxLevel = 0;
-                            EventKeywords unionKeywords = 0;
                             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
                             {
                                 Debug.Assert(dispatcher.m_EventEnabled != null);
@@ -2728,16 +2745,8 @@ namespace System.Diagnostics.Tracing
                                     isEnabledForAnyListener = true;
                                     break;
                                 }
-
-                                if (dispatcher.m_Listener != null)
-                                {
-                                    maxLevel = maxLevel > dispatcher.m_Level ? maxLevel : dispatcher.m_Level;
-                                    unionKeywords |= dispatcher.m_Keywords;
-                                }
                             }
                             m_eventData[i].EnabledForAnyListener = isEnabledForAnyListener;
-                            m_EventListenersMaxLevel = maxLevel;
-                            m_EventListenersKeywords = unionKeywords;
                         }
 
                         // If no events are enabled, disable the global enabled bit.
@@ -5201,11 +5210,11 @@ namespace System.Diagnostics.Tracing
 
         internal bool IsEventEnabled(EventLevel level, EventKeywords keywords)
         {
-            if (keywords != 0 && m_Keywords != 0)
+            if (level == EventLevel.LogAlways || keywords == 0 || m_Keywords == 0)
             {
-                return (m_Level <= level) && ((m_Keywords | keywords) > 0);
+                return true;
             }
-            return true;
+            return (m_Level <= level) && ((m_Keywords & keywords) > 0);
         }
 
         // Only guaranteed to exist after a InsureInit()
