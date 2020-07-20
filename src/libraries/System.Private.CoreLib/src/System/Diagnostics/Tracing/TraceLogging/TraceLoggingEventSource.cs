@@ -688,7 +688,7 @@ namespace System.Diagnostics.Tracing
                                 else
                                 {
 #endif // !ES_BUILD_STANDALONE
-                                if (((EventKeywords)descriptor.Keywords == 0) || (m_EventListenersKeywords == 0) || ((EventLevel)descriptor.Level == EventLevel.LogAlways) ||
+                                    if (((EventKeywords)descriptor.Keywords == 0) || (m_EventListenersKeywords == 0) || ((EventLevel)descriptor.Level == EventLevel.LogAlways) ||
                                         ((EventLevel)descriptor.Level <= m_EventListenersMaxLevel) && (((EventKeywords)descriptor.Keywords & m_EventListenersKeywords) > 0))
                                     {
                                         var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
