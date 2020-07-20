@@ -90,20 +90,51 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> NativeName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "GB", "United Kingdom" };
+                yield return new object[] { "SE", "Sverige" };
+                yield return new object[] { "FR", "France" };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.NativeName
+                yield return new object[] { "GB", "GB" };
+                yield return new object[] { "SE", "SE" };
+                yield return new object[] { "FR", "FR" };
+            }
+        }
+
         [Theory]
-        [InlineData("GB", "United Kingdom")]
-        [InlineData("SE", "Sverige")]
-        [InlineData("FR", "France")]
+        [MemberData(nameof(NativeName_TestData))]
         public void NativeName(string name, string expected)
         {
             Assert.Equal(expected, new RegionInfo(name).NativeName);
         }
 
+        public static IEnumerable<object[]> EnglishName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "en-US", new string[] { "United States" } };
+                yield return new object[] { "US", new string[] { "United States" } };
+                yield return new object[] { "zh-CN", new string[] { "China", "People's Republic of China", "China mainland" }};
+                yield return new object[] { "CN", new string[] { "China", "People's Republic of China", "China mainland" } };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.EnglishName
+                yield return new object[] { "en-US", new string[] { "US" } };
+                yield return new object[] { "US", new string[] { "US" } };
+                yield return new object[] { "zh-CN", new string[] { "CN" }};
+                yield return new object[] { "CN", new string[] { "CN" } };
+            }
+        }
+
         [Theory]
-        [InlineData("en-US", new string[] { "United States" })]
-        [InlineData("US", new string[] { "United States" })]
-        [InlineData("zh-CN", new string[] { "China", "People's Republic of China", "China mainland" })]
-        [InlineData("CN", new string[] { "China", "People's Republic of China", "China mainland" })]
+        [MemberData(nameof(EnglishName_TestData))]
         public void EnglishName(string name, string[] expected)
         {
             string result = new RegionInfo(name).EnglishName;
