@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
+                    if (JsonSerializer.ResolveMetadataForJsonArray(ref reader, ref state, options))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
@@ -131,23 +131,6 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     CreateCollection(ref reader, ref state, options);
-
-                    if (state.Current.MetadataId != null)
-                    {
-                        value = (TCollection)state.Current.ReturnValue!;
-
-                        // TODO: https://github.com/dotnet/runtime/issues/37168
-                        //Separate logic for IEnumerable to call AddReference when the reader is at `$id`, in order to avoid remembering the last metadata.
-
-                        // Remember the prior metadata and temporarily use '$id' to write it in the path in case AddReference throws
-                        // in this case, the last property seen will be '$values' when we reach this point.
-                        byte[]? lastMetadataProperty = state.Current.JsonPropertyName;
-                        state.Current.JsonPropertyName = JsonSerializer.s_idPropertyName;
-
-                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
-                        state.Current.JsonPropertyName = lastMetadataProperty;
-                    }
-
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
@@ -203,34 +186,25 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     state.Current.ObjectState = StackFrameObjectState.EndToken;
 
-                    // Read the EndObject for $values.
-                    if (state.Current.MetadataId != null)
+                    // Read the EndObject token for an array with preserve semantics.
+                    if (state.Current.ValidateEndTokenOnArray)
                     {
                         if (!reader.Read())
                         {
                             value = default;
                             return false;
                         }
-
-                        if (reader.TokenType != JsonTokenType.EndObject)
-                        {
-                            if (reader.TokenType == JsonTokenType.PropertyName)
-                            {
-                                state.Current.JsonPropertyName = reader.GetSpan().ToArray();
-                            }
-
-                            ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(typeToConvert, reader);
-                        }
                     }
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
                 {
-                    if (state.Current.MetadataId != null)
+                    if (state.Current.ValidateEndTokenOnArray)
                     {
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {
-                            ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(typeToConvert, reader);
+                            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+                            ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(ref state, typeToConvert, reader);
                         }
                     }
                 }
@@ -299,5 +273,8 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         protected abstract bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state);
+
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            => CreateCollection(ref reader, ref state, options);
     }
 }
