@@ -37,4 +37,30 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <_packageTargetsFile>$(IntermediateOutputPath)$(AssemblyName).targets</_packageTargetsFile>
+  </PropertyGroup>
+
+  <Target Name="GeneratePackageTargetsFile" 
+          Condition="'$(TargetFramework)' == 'net461'"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="$(_packageTargetsFile)"
+          BeforeTargets="GetFilesToPackage">
+    <PropertyGroup>
+      <_packageTargetsFileContent><![CDATA[<Project>
+  <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
+       force a binding redirect ourselves so that we'll always unify to the System.Resources.Extensions
+       version provided by this package -->
+  <ItemGroup>
+    <SuggestedBindingRedirects Include="$(AssemblyName), Culture=neutral, PublicKeyToken=$(PublicKeyToken)" MaxVersion="$(AssemblyVersion)" />
+  </ItemGroup>
+</Project>
+]]></_packageTargetsFileContent>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_packageTargetsFile)" Overwrite="true" Lines="$(_packageTargetsFileContent)" />
+    <ItemGroup>
+      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="build/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 </Project>
