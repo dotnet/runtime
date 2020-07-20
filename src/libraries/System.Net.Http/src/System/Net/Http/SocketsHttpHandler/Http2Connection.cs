@@ -1214,7 +1214,7 @@ namespace System.Net.Http
                         _canAddNewStream = false;
                         if (_pool.ThrowOnStreamLimitReached)
                         {
-                            throw new HttpRequestException(null, null, RequestRetryType.RetryOnSameOrNextProxy);
+                            throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                         }
                         else
                         {
