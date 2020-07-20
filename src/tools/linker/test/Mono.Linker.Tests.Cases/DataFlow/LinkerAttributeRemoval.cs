@@ -37,6 +37,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[LogContains ("IL2045: Mono.Linker.Tests.Cases.DataFlow.LinkerAttributeRemoval.TestType(): Custom Attribute System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute is " +
 		"being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove " +
 		"the linker attribute XML portion which removes the attribute instances, or to override this use the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).")]
+	[LogContains ("IL2048: Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on 'method' 'System.String Mono.Linker.Tests.Cases.DataFlow.LinkerAttributeRemoval::methodWithCustomAttribute(System.String)'")]
+	[LogContains ("IL2049: Unrecognized internal attribute 'InvalidInternal'")]
 	class LinkerAttributeRemoval
 	{
 		public static void Main ()

@@ -12,6 +12,12 @@
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.TestRemoveAttribute">
       <attribute internal="RemoveAttributeInstances"/>
+      <attribute internal="InvalidInternal"/>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.LinkerAttributeRemoval">
+      <method signature="methodWithCustomAttribute (System.String)">
+        <attribute internal="RemoveAttributeInstances"/>
+      </method>
     </type>
   </assembly>
   <assembly fullname="attribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
