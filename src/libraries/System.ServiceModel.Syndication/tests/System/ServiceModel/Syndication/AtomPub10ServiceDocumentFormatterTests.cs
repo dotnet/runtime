@@ -255,7 +255,6 @@ namespace System.ServiceModel.Syndication.Tests
                 writer.WriteEndElement();
             });
 
-            var genericFormatter = new AtomPub10ServiceDocumentFormatter<ServiceDocument>(document);
             CompareHelper.AssertEqualWriteOutput(expected, writer => formatter.WriteTo(writer));
             CompareHelper.AssertEqualWriteOutput(expected, writer => document.Save(writer));
             CompareHelper.AssertEqualWriteOutput(expected, writer =>
@@ -490,7 +489,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("category_scheme", secondDocumentSecondCategory.Scheme);
                 Assert.Equal("category_label", secondDocumentSecondCategory.Label);
 
-                InlineCategoriesDocument thirdDocument = Assert.IsType<InlineCategoriesDocument>(secondCollection.Categories[2]);
+                Assert.IsType<InlineCategoriesDocument>(secondCollection.Categories[2]);
                 Assert.Empty(secondDocumentFirstCategory.AttributeExtensions);
                 Assert.Empty(secondDocumentFirstCategory.ElementExtensions);
                 Assert.Empty(secondDocumentFirstCategory.Name);
@@ -516,7 +515,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Null(fifthDocument.Language);
                 Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
 
-                ReferencedCategoriesDocument sixthDocument = Assert.IsType<ReferencedCategoriesDocument>(secondCollection.Categories[5]);
+                Assert.IsType<ReferencedCategoriesDocument>(secondCollection.Categories[5]);
                 Assert.Empty(fifthDocument.AttributeExtensions);
                 Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), fifthDocument.BaseUri);
                 Assert.Empty(fifthDocument.ElementExtensions);
@@ -666,7 +665,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("category_scheme", secondDocumentSecondCategory.Scheme);
                 Assert.Equal("category_label", secondDocumentSecondCategory.Label);
 
-                InlineCategoriesDocumentTryParseTrueSubclass thirdDocument = Assert.IsType<InlineCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[2]);
+                Assert.IsType<InlineCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[2]);
                 Assert.Empty(secondDocumentFirstCategory.AttributeExtensions);
                 Assert.Empty(secondDocumentFirstCategory.ElementExtensions);
                 Assert.Empty(secondDocumentFirstCategory.Name);
@@ -687,7 +686,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Null(fifthDocument.Language);
                 Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
 
-                ReferencedCategoriesDocumentTryParseTrueSubclass sixthDocument = Assert.IsType<ReferencedCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[5]);
+                Assert.IsType<ReferencedCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[5]);
                 Assert.Empty(fifthDocument.AttributeExtensions);
                 Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), fifthDocument.BaseUri);
                 Assert.Empty(fifthDocument.ElementExtensions);
@@ -944,7 +943,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Empty(document.Workspaces);
 
             var typedFormatter = new GenericFormatter<ServiceDocumentSubclass>();
-            ServiceDocumentSubclass item = Assert.IsType<ServiceDocumentSubclass>(typedFormatter.CreateDocumentInstanceEntryPoint());
+            Assert.IsType<ServiceDocumentSubclass>(typedFormatter.CreateDocumentInstanceEntryPoint());
             Assert.Empty(document.AttributeExtensions);
             Assert.Null(document.BaseUri);
             Assert.Empty(document.ElementExtensions);
