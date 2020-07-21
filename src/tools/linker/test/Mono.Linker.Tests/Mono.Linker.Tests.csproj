@@ -35,7 +35,7 @@
   <ItemGroup Condition="'$(MonoBuild)' == ''">
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.6.0" />
     <PackageReference Include="nunit" Version="3.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
     <!-- This reference is purely so that the linker can resolve this
