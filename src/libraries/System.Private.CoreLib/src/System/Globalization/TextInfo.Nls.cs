@@ -17,11 +17,8 @@ namespace System.Globalization
             Debug.Assert(pResultLen >= 0);
             Debug.Assert(pSourceLen <= pResultLen);
 
-            // Check for Invariant to avoid A/V in LCMapStringEx
-            uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
-
             int ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                                     linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
+                                                     LCMAP_LINGUISTIC_CASING | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
                                                      pSource,
                                                      pSourceLen,
                                                      pResult,
@@ -44,7 +41,5 @@ namespace System.Globalization
         private const uint LCMAP_LINGUISTIC_CASING = 0x01000000;
         private const uint LCMAP_LOWERCASE = 0x00000100;
         private const uint LCMAP_UPPERCASE = 0x00000200;
-
-        private static bool IsInvariantLocale(string localeName) => localeName == "";
     }
 }
