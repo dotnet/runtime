@@ -115,7 +115,6 @@ namespace System.Net.Http
             if (host != null)
             {
                 _originAuthority = new HttpAuthority(host, port);
-                _http3Authority = _originAuthority;
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
@@ -348,9 +347,15 @@ namespace System.Net.Http
                 }
             }
 
+            // Either H3 explicitely requested or secured upgraded allowed.
             if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
                 HttpAuthority? authority = _http3Authority;
+                // H3 is explicitely requested, assume prenegotiated H3.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    authority = authority ?? _originAuthority;
+                }
                 if (authority != null)
                 {
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
