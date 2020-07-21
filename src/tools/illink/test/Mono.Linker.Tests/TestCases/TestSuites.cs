@@ -236,6 +236,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.LinkAttributesTests))]
+		public void LinkAttributesTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		protected virtual void Run (TestCase testCase)
 		{
 			var runner = new TestRunner (new ObjectFactory ());

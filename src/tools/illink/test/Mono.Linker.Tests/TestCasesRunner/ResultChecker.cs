@@ -594,19 +594,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger)
 		{
-			string allMessages = string.Join (Environment.NewLine, logger.Messages.Select (mc => mc.Message));
-
 			foreach (var testType in original.AllDefinedTypes ()) {
 				foreach (var attr in testType.CustomAttributes.Concat (testType.AllMembers ().SelectMany (m => m.CustomAttributes))) {
 					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
 						var expectedMessage = (string) attr.ConstructorArguments[0].Value;
 
-						Assert.That (() => {
-							if ((bool) attr.ConstructorArguments[1].Value)
-								return logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessage));
-							return logger.Messages.Any (mc => mc.Message.Contains (expectedMessage));
-						},
-						$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+						List<LinkerTestLogger.MessageRecord> matchedMessages;
+						if ((bool) attr.ConstructorArguments[1].Value)
+							matchedMessages = logger.Messages.Where (mc => Regex.IsMatch (mc.Message, expectedMessage)).ToList ();
+						else
+							matchedMessages = logger.Messages.Where (mc => mc.Message.Contains (expectedMessage)).ToList (); ;
+						Assert.IsTrue (
+							matchedMessages.Count > 0,
+							$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, logger.Messages.Select (mc => mc.Message))}");
+
+						foreach (var matchedMessage in matchedMessages)
+							logger.Messages.Remove (matchedMessage);
 					}
 
 					if (attr.AttributeType.Resolve ().Name == nameof (LogDoesNotContainAttribute)) {
@@ -617,7 +620,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 									return !Regex.IsMatch (loggedMessage.Message, unexpectedMessage);
 								return !Regex.IsMatch (loggedMessage.Message, unexpectedMessage);
 							},
-							$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+							$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, logger.Messages.Select (mc => mc.Message))}");
 						}
 					}
 				}
