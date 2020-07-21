@@ -1,7 +1,7 @@
 <linker>
   <assembly fullname="System.Net.Http">
     <type fullname="System.Net.Http.DiagnosticsHandler">
-      <method signature="System.Boolean IsEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
+      <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
   </assembly>
 </linker>
