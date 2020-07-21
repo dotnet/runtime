@@ -1280,7 +1280,7 @@ gms2YM+honjUS1sXk1zdm/8=");
             using (RSA key = RSAFactory.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
             }
         }
 

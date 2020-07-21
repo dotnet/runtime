@@ -312,9 +312,6 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Pkcs12Builder builder = new Pkcs12Builder();
             Pkcs12SafeContents contents = new Pkcs12SafeContents();
             contents.AddShroudedKey(rsa, pw, pbeParameters);
-
-
-
             builder.AddSafeContentsEncrypted(contents, pw, pbeParameters);
             builder.SealWithMac(pw, hashAlgorithmName, iterations);
 

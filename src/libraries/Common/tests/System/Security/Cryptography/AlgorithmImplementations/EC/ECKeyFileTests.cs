@@ -964,7 +964,7 @@ Tj/54rcY3i0gXT6da/r/o+qV");
             using (T key = CreateKey())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
             }
         }
 
