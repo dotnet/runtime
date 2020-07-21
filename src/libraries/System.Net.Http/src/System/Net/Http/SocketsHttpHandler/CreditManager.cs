@@ -28,6 +28,8 @@ namespace System.Net.Http
             _current = initialCredit;
         }
 
+        public bool IsCreditAvailable => Volatile.Read(ref _current) > 0;
+
         private object SyncObject
         {
             // Generally locking on "this" is considered poor form, but this type is internal,
@@ -158,6 +160,8 @@ namespace System.Net.Http
 
         private int TryRequestCreditNoLock(int amount)
         {
+            Debug.Assert(Monitor.IsEntered(SyncObject), "Shouldn't be called outside lock.");
+
             if (_disposed)
             {
                 throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");

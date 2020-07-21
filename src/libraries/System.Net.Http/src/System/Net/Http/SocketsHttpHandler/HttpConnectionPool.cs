@@ -1508,12 +1508,11 @@ namespace System.Net.Http
 
                     if (_http2Connections != null)
                     {
-                        Http2Connection[] localHttp2Connections = _http2Connections;
-                        if (localHttp2Connections != null)
+                        if (_http2Connections != null)
                         {
-                            for (int i = 0; i < localHttp2Connections.Length; i++)
+                            for (int i = 0; i < _http2Connections.Length; i++)
                             {
-                                localHttp2Connections[i].Dispose();
+                                _http2Connections[i].Dispose();
                             }
                             _http2Connections = null;
                         }
