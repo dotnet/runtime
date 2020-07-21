@@ -243,7 +243,7 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }));
+                        client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
                 }, options: options);
             }
         }
@@ -265,7 +265,7 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }));
+                        client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
                 }, options: options);
             }
         }
