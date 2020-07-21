@@ -95,38 +95,38 @@ namespace System
             Debug.Assert(Avx2.IsSupported);
             Debug.Assert(bytesCount >= 32);
 
-            var x00 = Vector256.Create((byte)0x00);
-            var x0F = Vector256.Create((byte)0x0F);
-            var hexLookupTable = casing == Casing.Lower ?
+            Vector256<byte> x00 = Vector256<byte>.Zero;
+            Vector256<byte> x0F = Vector256.Create((byte)0x0F);
+            Vector256<byte> hexLookupTable = casing == Casing.Lower ?
                 CreateVector(LowerHexLookupTable) :
                 CreateVector(UpperHexLookupTable);
 
-            var bytesToRead = RoundDownToNext32(bytesCount);
-            var eof = bytes + bytesToRead;
-            var charsAsByte = (byte*)chars;
+            int bytesToRead = RoundDownToNext32(bytesCount);
+            byte* eof = bytes + bytesToRead;
+            byte* charsAsByte = (byte*)chars;
             do
             {
-                var value = Avx.LoadVector256(bytes);
+                Vector256<byte> value = Avx.LoadVector256(bytes);
                 bytes += 32;
 
-                var hiShift = Avx2.ShiftRightLogical(value.AsInt16(), 4).AsByte();
-                var loHalf = Avx2.And(value, x0F);
-                var hiHalf = Avx2.And(hiShift, x0F);
-                var lo02 = Avx2.UnpackLow(hiHalf, loHalf);
-                var hi13 = Avx2.UnpackHigh(hiHalf, loHalf);
+                Vector256<byte> hiShift = Avx2.ShiftRightLogical(value.AsInt16(), 4).AsByte();
+                Vector256<byte> loHalf = Avx2.And(value, x0F);
+                Vector256<byte> hiHalf = Avx2.And(hiShift, x0F);
+                Vector256<byte> lo02 = Avx2.UnpackLow(hiHalf, loHalf);
+                Vector256<byte> hi13 = Avx2.UnpackHigh(hiHalf, loHalf);
 
-                var resLo = Avx2.Shuffle(hexLookupTable, lo02);
-                var resHi = Avx2.Shuffle(hexLookupTable, hi13);
+                Vector256<byte> resLo = Avx2.Shuffle(hexLookupTable, lo02);
+                Vector256<byte> resHi = Avx2.Shuffle(hexLookupTable, hi13);
 
-                var ae = Avx2.UnpackLow(resLo, x00);
-                var bf = Avx2.UnpackHigh(resLo, x00);
-                var cg = Avx2.UnpackLow(resHi, x00);
-                var dh = Avx2.UnpackHigh(resHi, x00);
+                Vector256<byte> ae = Avx2.UnpackLow(resLo, x00);
+                Vector256<byte> bf = Avx2.UnpackHigh(resLo, x00);
+                Vector256<byte> cg = Avx2.UnpackLow(resHi, x00);
+                Vector256<byte> dh = Avx2.UnpackHigh(resHi, x00);
 
-                var ab = Avx2.Permute2x128(ae, bf, 0b0010_0000);
-                var ef = Avx2.Permute2x128(ae, bf, 0b0011_0001);
-                var cd = Avx2.Permute2x128(cg, dh, 0b0010_0000);
-                var gh = Avx2.Permute2x128(cg, dh, 0b0011_0001);
+                Vector256<byte> ab = Avx2.Permute2x128(ae, bf, 0b0010_0000);
+                Vector256<byte> ef = Avx2.Permute2x128(ae, bf, 0b0011_0001);
+                Vector256<byte> cd = Avx2.Permute2x128(cg, dh, 0b0010_0000);
+                Vector256<byte> gh = Avx2.Permute2x128(cg, dh, 0b0011_0001);
 
                 Avx.Store(charsAsByte, ab);
                 charsAsByte += 32;
@@ -147,7 +147,8 @@ namespace System
             int pos = 0;
             if (Avx2.IsSupported && bytesCount >= 32)
             {
-                fixed (char* charPtr = chars)
+                Debug.Assert(!chars.IsEmpty);
+                fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
                 {
                     pos = ToCharsBufferAvx2(bytes, bytesCount, charPtr, casing);
                 }
@@ -236,7 +237,7 @@ namespace System
             return TryDecodeFromUtf16(chars, bytes, out _);
         }
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        public static unsafe bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
             Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
             Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
@@ -245,16 +246,13 @@ namespace System
             int j = 0;
             if (Avx2.IsSupported && bytes.Length > 32)
             {
-                unsafe
+                fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
+                fixed (byte* bytePtr = &MemoryMarshal.GetReference(bytes))
                 {
-                    fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
-                    fixed (byte* bytePtr = &MemoryMarshal.GetReference(bytes))
-                    {
-                        j = DecodeFromUtf16Avx2(charPtr, bytePtr, bytes.Length);
-                        Debug.Assert(j % 32 == 0);
-                        Debug.Assert(j <= bytes.Length);
-                        i = j * 2;
-                    }
+                    j = DecodeFromUtf16Avx2(charPtr, bytePtr, bytes.Length);
+                    Debug.Assert(j % 32 == 0);
+                    Debug.Assert(j <= bytes.Length);
+                    i = j * 2;
                 }
             }
 
@@ -285,64 +283,64 @@ namespace System
         {
             Debug.Assert(Avx2.IsSupported);
 
-            var x0F = Vector256.Create((byte) 0x0F);
-            var xF0 = Vector256.Create((byte) 0xF0);
-            var digHexSelector = CreateVector(UpperLowerDigHexSelector);
-            var digits = CreateVector(Digits);
-            var hexs = CreateVector(Hexs);
-            var evenBytes = CreateVector(EvenBytes);
-            var oddBytes = CreateVector(OddBytes);
+            Vector256<byte> x0F = Vector256.Create((byte) 0x0F);
+            Vector256<byte> xF0 = Vector256.Create((byte) 0xF0);
+            Vector256<byte> digHexSelector = CreateVector(UpperLowerDigHexSelector);
+            Vector256<byte> digits = CreateVector(Digits);
+            Vector256<byte> hexs = CreateVector(Hexs);
+            Vector256<byte> evenBytes = CreateVector(EvenBytes);
+            Vector256<byte> oddBytes = CreateVector(OddBytes);
 
-            var bytesToWrite = RoundDownToNext32(bytesCount);
-            var eof = bytes + bytesToWrite;
-            var dest = bytes;
-            var charsAsByte = (byte*)chars;
+            int bytesToWrite = RoundDownToNext32(bytesCount);
+            byte* eof = bytes + bytesToWrite;
+            byte* dest = bytes;
+            byte* charsAsByte = (byte*)chars;
             int leftOk, rightOk;
             while (dest != eof)
             {
-                var a = Avx.LoadVector256(charsAsByte).AsInt16();
+                Vector256<short> a = Avx.LoadVector256(charsAsByte).AsInt16();
                 charsAsByte += 32;
-                var b = Avx.LoadVector256(charsAsByte).AsInt16();
+                Vector256<short> b = Avx.LoadVector256(charsAsByte).AsInt16();
                 charsAsByte += 32;
-                var c = Avx.LoadVector256(charsAsByte).AsInt16();
+                Vector256<short> c = Avx.LoadVector256(charsAsByte).AsInt16();
                 charsAsByte += 32;
-                var d = Avx.LoadVector256(charsAsByte).AsInt16();
+                Vector256<short> d = Avx.LoadVector256(charsAsByte).AsInt16();
                 charsAsByte += 32;
 
-                var ab = Avx2.PackUnsignedSaturate(a, b);
-                var cd = Avx2.PackUnsignedSaturate(c, d);
+                Vector256<byte> ab = Avx2.PackUnsignedSaturate(a, b);
+                Vector256<byte> cd = Avx2.PackUnsignedSaturate(c, d);
 
-                var inputLeft = Avx2.Permute4x64(ab.AsUInt64(), 0b11_01_10_00).AsByte();
-                var inputRight = Avx2.Permute4x64(cd.AsUInt64(), 0b11_01_10_00).AsByte();
+                Vector256<byte> inputLeft = Avx2.Permute4x64(ab.AsUInt64(), 0b11_01_10_00).AsByte();
+                Vector256<byte> inputRight = Avx2.Permute4x64(cd.AsUInt64(), 0b11_01_10_00).AsByte();
 
-                var loNibbleLeft = Avx2.And(inputLeft, x0F);
-                var loNibbleRight = Avx2.And(inputRight, x0F);
+                Vector256<byte> loNibbleLeft = Avx2.And(inputLeft, x0F);
+                Vector256<byte> loNibbleRight = Avx2.And(inputRight, x0F);
 
-                var hiNibbleLeft = Avx2.And(inputLeft, xF0);
-                var hiNibbleRight = Avx2.And(inputRight, xF0);
+                Vector256<byte> hiNibbleLeft = Avx2.And(inputLeft, xF0);
+                Vector256<byte> hiNibbleRight = Avx2.And(inputRight, xF0);
 
-                var leftDigits = Avx2.Shuffle(digits, loNibbleLeft);
-                var leftHex = Avx2.Shuffle(hexs, loNibbleLeft);
+                Vector256<byte> leftDigits = Avx2.Shuffle(digits, loNibbleLeft);
+                Vector256<byte> leftHex = Avx2.Shuffle(hexs, loNibbleLeft);
 
-                var hiNibbleShLeft = Avx2.ShiftRightLogical(hiNibbleLeft.AsInt16(), 4).AsByte();
-                var hiNibbleShRight = Avx2.ShiftRightLogical(hiNibbleRight.AsInt16(), 4).AsByte();
+                Vector256<byte> hiNibbleShLeft = Avx2.ShiftRightLogical(hiNibbleLeft.AsInt16(), 4).AsByte();
+                Vector256<byte> hiNibbleShRight = Avx2.ShiftRightLogical(hiNibbleRight.AsInt16(), 4).AsByte();
 
-                var rightDigits = Avx2.Shuffle(digits, loNibbleRight);
-                var rightHex = Avx2.Shuffle(hexs, loNibbleRight);
+                Vector256<byte> rightDigits = Avx2.Shuffle(digits, loNibbleRight);
+                Vector256<byte> rightHex = Avx2.Shuffle(hexs, loNibbleRight);
 
-                var magicLeft = Avx2.Shuffle(digHexSelector, hiNibbleShLeft);
-                var magicRight = Avx2.Shuffle(digHexSelector, hiNibbleShRight);
+                Vector256<byte> magicLeft = Avx2.Shuffle(digHexSelector, hiNibbleShLeft);
+                Vector256<byte> magicRight = Avx2.Shuffle(digHexSelector, hiNibbleShRight);
 
-                var valueLeft = Avx2.BlendVariable(leftDigits, leftHex, magicLeft);
-                var valueRight = Avx2.BlendVariable(rightDigits, rightHex, magicRight);
+                Vector256<byte> valueLeft = Avx2.BlendVariable(leftDigits, leftHex, magicLeft);
+                Vector256<byte> valueRight = Avx2.BlendVariable(rightDigits, rightHex, magicRight);
 
-                var errLeft = Avx2.ShiftLeftLogical(magicLeft.AsInt16(), 7).AsByte();
-                var errRight = Avx2.ShiftLeftLogical(magicRight.AsInt16(), 7).AsByte();
+                Vector256<byte> errLeft = Avx2.ShiftLeftLogical(magicLeft.AsInt16(), 7).AsByte();
+                Vector256<byte> errRight = Avx2.ShiftLeftLogical(magicRight.AsInt16(), 7).AsByte();
 
-                var evenBytesLeft = Avx2.Shuffle(valueLeft, evenBytes);
-                var oddBytesLeft = Avx2.Shuffle(valueLeft, oddBytes);
-                var evenBytesRight = Avx2.Shuffle(valueRight, evenBytes);
-                var oddBytesRight = Avx2.Shuffle(valueRight, oddBytes);
+                Vector256<byte> evenBytesLeft = Avx2.Shuffle(valueLeft, evenBytes);
+                Vector256<byte> oddBytesLeft = Avx2.Shuffle(valueLeft, oddBytes);
+                Vector256<byte> evenBytesRight = Avx2.Shuffle(valueRight, evenBytes);
+                Vector256<byte> oddBytesRight = Avx2.Shuffle(valueRight, oddBytes);
 
                 evenBytesLeft = Avx2.ShiftLeftLogical(evenBytesLeft.AsUInt16(), 4).AsByte();
                 evenBytesRight = Avx2.ShiftLeftLogical(evenBytesRight.AsUInt16(), 4).AsByte();
@@ -350,10 +348,10 @@ namespace System
                 evenBytesLeft = Avx2.Or(evenBytesLeft, oddBytesLeft);
                 evenBytesRight = Avx2.Or(evenBytesRight, oddBytesRight);
 
-                var result = Merge(evenBytesLeft, evenBytesRight);
+                Vector256<byte> result = Merge(evenBytesLeft, evenBytesRight);
 
-                var validationResultLeft = Avx2.Or(errLeft, valueLeft);
-                var validationResultRight = Avx2.Or(errRight, valueRight);
+                Vector256<byte> validationResultLeft = Avx2.Or(errLeft, valueLeft);
+                Vector256<byte> validationResultRight = Avx2.Or(errRight, valueRight);
 
                 leftOk = Avx2.MoveMask(validationResultLeft);
                 rightOk = Avx2.MoveMask(validationResultRight);
@@ -478,13 +476,13 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> CreateVector(ReadOnlySpan<byte> data)
-            => Unsafe.As<byte, Vector256<byte>>(ref MemoryMarshal.GetReference(data));
+            => Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(data));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> Merge(Vector256<byte> a, Vector256<byte> b)
         {
-            var a1 = Avx2.Permute4x64(a.AsUInt64(), 0b11_10_10_00);
-            var b1 = Avx2.Permute4x64(b.AsUInt64(), 0b11_00_01_00);
+            Vector256<ulong> a1 = Avx2.Permute4x64(a.AsUInt64(), 0b11_10_10_00);
+            Vector256<ulong> b1 = Avx2.Permute4x64(b.AsUInt64(), 0b11_00_01_00);
             return Avx2.Blend(a1.AsUInt32(), b1.AsUInt32(), 0b1111_0000).AsByte();
         }
     }
