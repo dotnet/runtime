@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -37,20 +38,26 @@ public class WasmAppBuilder : Task
 
     private class WasmAppConfig
     {
-        public string assembly_root { get; set; } = "managed";
-        public int enable_debugging { get; set; } = 0;
-        public List<object> assets { get; } = new List<object>();
-        public List<string> remote_sources { get; set; } = new List<string>();
+        [JsonPropertyName("assembly_root")]
+        public string AssemblyRoot { get; set; } = "managed";
+        [JsonPropertyName("enable_debugging")]
+        public int EnableDebugging { get; set; } = 0;
+        [JsonPropertyName("assets")]
+        public List<object> Assets { get; } = new List<object>();
+        [JsonPropertyName("remote_sources")]
+        public List<string> RemoteSources { get; set; } = new List<string>();
     }
 
     private class AssetEntry {
         protected AssetEntry (string name, string behavior)
         {
-            this.name = name;
-            this.behavior = behavior;
+            Name = name;
+            Behavior = behavior;
         }
-        public string behavior { get; init; }
-        public string name { get; init; }
+        [JsonPropertyName("behavior")]
+        public string Behavior { get; init; }
+        [JsonPropertyName("name")]
+        public string Name { get; init; }
     }
 
     private class AssemblyEntry : AssetEntry
@@ -60,12 +67,14 @@ public class WasmAppBuilder : Task
 
     private class VfsEntry : AssetEntry {
         public VfsEntry(string name) : base(name, "vfs") {}
-        public string? virtual_path { get; set; }
+        [JsonPropertyName("virtual_path")]
+        public string? VirtualPath { get; set; }
     }
 
     private class IcuData : AssetEntry {
-        public IcuData() : base("icudt.data", "icu") {}
-        public bool load_remote { get; set; }
+        public IcuData(string name = "icudt.dat") : base(name, "icu") {}
+        [JsonPropertyName("load_remote")]
+        public bool LoadRemote { get; set; }
     }
 
     public override bool Execute ()
@@ -105,15 +114,15 @@ public class WasmAppBuilder : Task
 
         // Create app
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(Path.Join(AppDir, config.assembly_root));
+        Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
         foreach (var assembly in _assemblies!.Values)
-            File.Copy(assembly.Location, Path.Join(AppDir, config.assembly_root, Path.GetFileName(assembly.Location)), true);
+            File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
         foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
         foreach (var assembly in _assemblies.Values)
-            config.assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+            config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
 
         if (FilesToIncludeInFileSystem != null)
         {
@@ -137,19 +146,19 @@ public class WasmAppBuilder : Task
                 File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
 
                 var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
-                    virtual_path = targetPath
+                    VirtualPath = targetPath
                 };
-                config.assets.Add(asset);
+                config.Assets.Add(asset);
             }
         }
 
-        config.assets.Add(new IcuData { load_remote = RemoteSources?.Length > 0 });
-        config.assets.Add(new VfsEntry ("dotnet.timezones.blat") { virtual_path = "/usr/share/zoneinfo/"});
+        config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+        config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
-                    config.remote_sources.Add(source.ItemSpec);
+                    config.RemoteSources.Add(source.ItemSpec);
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
