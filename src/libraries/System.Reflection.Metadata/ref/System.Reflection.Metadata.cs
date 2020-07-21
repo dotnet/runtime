@@ -2058,7 +2058,6 @@ namespace System.Reflection.Metadata
             void System.IDisposable.Dispose() { }
         }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class PEReaderExtensions
     {
         public static System.Reflection.Metadata.MetadataReader GetMetadataReader(this System.Reflection.PortableExecutable.PEReader peReader) { throw null; }

@@ -121,7 +121,6 @@ namespace System.Security.Cryptography
     }
     public readonly partial struct PemFields
     {
-        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Range Base64Data { get { throw null; } }
         public int DecodedDataLength { get { throw null; } }

@@ -24,6 +24,13 @@ namespace System.Security.Cryptography.Xml
         public override System.Xml.XmlElement GetXml() { throw null; }
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
+    public partial class CryptoSignedXmlRecursionException : System.Xml.XmlException
+    {
+        public CryptoSignedXmlRecursionException() { }
+        protected CryptoSignedXmlRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public CryptoSignedXmlRecursionException(string message) { }
+        public CryptoSignedXmlRecursionException(string message, System.Exception inner) { }
+    }
     public partial class DataObject
     {
         public DataObject() { }

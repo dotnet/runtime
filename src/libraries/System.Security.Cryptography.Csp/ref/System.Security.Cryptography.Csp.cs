@@ -6,7 +6,6 @@
 
 namespace System.Security.Cryptography
 {
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
         public AesCryptoServiceProvider() { }
@@ -72,7 +71,6 @@ namespace System.Security.Cryptography
         NoPrompt = 64,
         CreateEphemeralKey = 128,
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES
     {
         public DESCryptoServiceProvider() { }
@@ -107,6 +105,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public void ImportCspBlob(byte[] keyBlob) { }
+        public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public byte[] SignData(byte[] buffer) { throw null; }
         public byte[] SignData(byte[] buffer, int offset, int count) { throw null; }
@@ -127,7 +127,6 @@ namespace System.Security.Cryptography
         Exchange = 1,
         Signature = 2,
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
         public MD5CryptoServiceProvider() { }
@@ -138,7 +137,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class PasswordDeriveBytes : System.Security.Cryptography.DeriveBytes
     {
         public PasswordDeriveBytes(byte[] password, byte[]? salt) { }
@@ -155,11 +153,9 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
-        [System.ObsoleteAttribute("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
         public override byte[] GetBytes(int cb) { throw null; }
         public override void Reset() { }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RC2CryptoServiceProvider : System.Security.Cryptography.RC2
     {
         public RC2CryptoServiceProvider() { }
@@ -170,12 +166,11 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RNGCryptoServiceProvider : System.Security.Cryptography.RandomNumberGenerator
     {
         public RNGCryptoServiceProvider() { }
         public RNGCryptoServiceProvider(byte[] rgb) { }
-        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters cspParams) { }
+        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters? cspParams) { }
         public RNGCryptoServiceProvider(string str) { }
         protected override void Dispose(bool disposing) { }
         public override void GetBytes(byte[] data) { }
@@ -213,6 +208,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public void ImportCspBlob(byte[] keyBlob) { }
+        public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public override void ImportParameters(System.Security.Cryptography.RSAParameters parameters) { }
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) { throw null; }
         public byte[] SignData(byte[] buffer, object halg) { throw null; }
@@ -223,7 +220,6 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
         public SHA1CryptoServiceProvider() { }
@@ -234,7 +230,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256CryptoServiceProvider : System.Security.Cryptography.SHA256
     {
         public SHA256CryptoServiceProvider() { }
@@ -245,7 +240,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384CryptoServiceProvider : System.Security.Cryptography.SHA384
     {
         public SHA384CryptoServiceProvider() { }
@@ -256,7 +250,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512CryptoServiceProvider : System.Security.Cryptography.SHA512
     {
         public SHA512CryptoServiceProvider() { }
@@ -267,7 +260,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {
         public TripleDESCryptoServiceProvider() { }

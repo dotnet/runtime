@@ -64,13 +64,11 @@ namespace System.Configuration
     {
         public AppSettingsSection() { }
         public string File { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.KeyValueConfigurationCollection Settings { get { throw null; } }
-        protected override void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
-        protected override object GetRuntimeObject() { throw null; }
-        protected override bool IsModified() { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentSection) { }
-        protected override string SerializeSection(System.Configuration.ConfigurationElement parentElement, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
+        protected internal override void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
+        protected internal override object GetRuntimeObject() { throw null; }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentSection) { }
     }
     public sealed partial class CallbackValidator : System.Configuration.ConfigurationValidatorBase
     {
@@ -89,7 +87,7 @@ namespace System.Configuration
     public sealed partial class ClientSettingsSection : System.Configuration.ConfigurationSection
     {
         public ClientSettingsSection() { }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.SettingElementCollection Settings { get { throw null; } }
     }
     public sealed partial class CommaDelimitedStringCollection : System.Collections.Specialized.StringCollection
@@ -173,25 +171,25 @@ namespace System.Configuration
         protected ConfigurationElement() { }
         public System.Configuration.Configuration CurrentConfiguration { get { throw null; } }
         public System.Configuration.ElementInformation ElementInformation { get { throw null; } }
-        protected virtual System.Configuration.ConfigurationElementProperty ElementProperty { get { throw null; } }
+        protected internal virtual System.Configuration.ConfigurationElementProperty ElementProperty { get { throw null; } }
         protected System.Configuration.ContextInformation EvaluationContext { get { throw null; } }
         protected bool HasContext { get { throw null; } }
-        protected object this[System.Configuration.ConfigurationProperty prop] { get { throw null; } set { } }
-        protected object this[string propertyName] { get { throw null; } set { } }
+        protected internal object this[System.Configuration.ConfigurationProperty prop] { get { throw null; } set { } }
+        protected internal object this[string propertyName] { get { throw null; } set { } }
         public System.Configuration.ConfigurationLockCollection LockAllAttributesExcept { get { throw null; } }
         public System.Configuration.ConfigurationLockCollection LockAllElementsExcept { get { throw null; } }
         public System.Configuration.ConfigurationLockCollection LockAttributes { get { throw null; } }
         public System.Configuration.ConfigurationLockCollection LockElements { get { throw null; } }
         public bool LockItem { get { throw null; } set { } }
-        protected virtual System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
-        protected virtual void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
+        protected internal virtual System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal virtual void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
         public override bool Equals(object compareTo) { throw null; }
         public override int GetHashCode() { throw null; }
         protected virtual string GetTransformedAssemblyString(string assemblyName) { throw null; }
         protected virtual string GetTransformedTypeString(string typeName) { throw null; }
-        protected virtual void Init() { }
-        protected virtual void InitializeDefault() { }
-        protected virtual bool IsModified() { throw null; }
+        protected internal virtual void Init() { }
+        protected internal virtual void InitializeDefault() { }
+        protected internal virtual bool IsModified() { throw null; }
         public virtual bool IsReadOnly() { throw null; }
         protected virtual void ListErrors(System.Collections.IList errorList) { }
         protected virtual bool OnDeserializeUnrecognizedAttribute(string name, string value) { throw null; }
@@ -199,41 +197,40 @@ namespace System.Configuration
         protected virtual object OnRequiredPropertyNotFound(string name) { throw null; }
         protected virtual void PostDeserialize() { }
         protected virtual void PreSerialize(System.Xml.XmlWriter writer) { }
-        protected virtual void Reset(System.Configuration.ConfigurationElement parentElement) { }
-        protected virtual void ResetModified() { }
-        protected virtual bool SerializeElement(System.Xml.XmlWriter writer, bool serializeCollectionKey) { throw null; }
-        protected virtual bool SerializeToXmlElement(System.Xml.XmlWriter writer, string elementName) { throw null; }
+        protected internal virtual void Reset(System.Configuration.ConfigurationElement parentElement) { }
+        protected internal virtual void ResetModified() { }
+        protected internal virtual bool SerializeElement(System.Xml.XmlWriter writer, bool serializeCollectionKey) { throw null; }
+        protected internal virtual bool SerializeToXmlElement(System.Xml.XmlWriter writer, string elementName) { throw null; }
         protected void SetPropertyValue(System.Configuration.ConfigurationProperty prop, object value, bool ignoreLocks) { }
-        protected virtual void SetReadOnly() { }
-        protected virtual void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
+        protected internal virtual void SetReadOnly() { }
+        protected internal virtual void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
     public abstract partial class ConfigurationElementCollection : System.Configuration.ConfigurationElement, System.Collections.ICollection, System.Collections.IEnumerable
     {
         protected ConfigurationElementCollection() { }
         protected ConfigurationElementCollection(System.Collections.IComparer comparer) { }
-        protected string AddElementName { get { throw null; } set { } }
-        protected string ClearElementName { get { throw null; } set { } }
+        protected internal string AddElementName { get { throw null; } set { } }
+        protected internal string ClearElementName { get { throw null; } set { } }
         public virtual System.Configuration.ConfigurationElementCollectionType CollectionType { get { throw null; } }
         public int Count { get { throw null; } }
         protected virtual string ElementName { get { throw null; } }
         public bool EmitClear { get { throw null; } set { } }
         public bool IsSynchronized { get { throw null; } }
-        protected string RemoveElementName { get { throw null; } set { } }
+        protected internal string RemoveElementName { get { throw null; } set { } }
         public object SyncRoot { get { throw null; } }
         protected virtual bool ThrowOnDuplicate { get { throw null; } }
         protected virtual void BaseAdd(System.Configuration.ConfigurationElement element) { }
-        protected void BaseAdd(System.Configuration.ConfigurationElement element, bool throwIfExists) { }
+        protected internal void BaseAdd(System.Configuration.ConfigurationElement element, bool throwIfExists) { }
         protected virtual void BaseAdd(int index, System.Configuration.ConfigurationElement element) { }
-        protected void BaseClear() { }
-        protected System.Configuration.ConfigurationElement BaseGet(int index) { throw null; }
-        protected System.Configuration.ConfigurationElement BaseGet(object key) { throw null; }
-        protected object[] BaseGetAllKeys() { throw null; }
-        protected object BaseGetKey(int index) { throw null; }
+        protected internal void BaseClear() { }
+        protected internal System.Configuration.ConfigurationElement BaseGet(int index) { throw null; }
+        protected internal System.Configuration.ConfigurationElement BaseGet(object key) { throw null; }
+        protected internal object[] BaseGetAllKeys() { throw null; }
+        protected internal object BaseGetKey(int index) { throw null; }
         protected int BaseIndexOf(System.Configuration.ConfigurationElement element) { throw null; }
-        protected bool BaseIsRemoved(object key) { throw null; }
-        protected void BaseRemove(object key) { }
-        protected void BaseRemoveAt(int index) { }
+        protected internal bool BaseIsRemoved(object key) { throw null; }
+        protected internal void BaseRemove(object key) { }
+        protected internal void BaseRemoveAt(int index) { }
         public void CopyTo(System.Configuration.ConfigurationElement[] array, int index) { }
         protected abstract System.Configuration.ConfigurationElement CreateNewElement();
         protected virtual System.Configuration.ConfigurationElement CreateNewElement(string elementName) { throw null; }
@@ -243,15 +240,15 @@ namespace System.Configuration
         public override int GetHashCode() { throw null; }
         protected virtual bool IsElementName(string elementName) { throw null; }
         protected virtual bool IsElementRemovable(System.Configuration.ConfigurationElement element) { throw null; }
-        protected override bool IsModified() { throw null; }
+        protected internal override bool IsModified() { throw null; }
         public override bool IsReadOnly() { throw null; }
         protected override bool OnDeserializeUnrecognizedElement(string elementName, System.Xml.XmlReader reader) { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentElement) { }
-        protected override void ResetModified() { }
-        protected override bool SerializeElement(System.Xml.XmlWriter writer, bool serializeCollectionKey) { throw null; }
-        protected override void SetReadOnly() { }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentElement) { }
+        protected internal override void ResetModified() { }
+        protected internal override bool SerializeElement(System.Xml.XmlWriter writer, bool serializeCollectionKey) { throw null; }
+        protected internal override void SetReadOnly() { }
         void System.Collections.ICollection.CopyTo(System.Array arr, int index) { }
-        protected override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
+        protected internal override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
     }
     public enum ConfigurationElementCollectionType
     {
@@ -277,7 +274,6 @@ namespace System.Configuration
         public ConfigurationErrorsException(string message, string filename, int line) { }
         public ConfigurationErrorsException(string message, System.Xml.XmlNode node) { }
         public ConfigurationErrorsException(string message, System.Xml.XmlReader reader) { }
-        public override string BareMessage { get { throw null; } }
         public System.Collections.ICollection Errors { get { throw null; } }
         public override string Filename { get { throw null; } }
         public override int Line { get { throw null; } }
@@ -290,29 +286,20 @@ namespace System.Configuration
     }
     public partial class ConfigurationException : System.SystemException
     {
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException() { }
         protected ConfigurationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner, System.Xml.XmlNode node) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Xml.XmlNode node) { }
         public virtual string BareMessage { get { throw null; } }
         public virtual string Filename { get { throw null; } }
         public virtual int Line { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead")]
         public static string GetXmlNodeFilename(System.Xml.XmlNode node) { throw null; }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetLinenumber instead")]
         public static int GetXmlNodeLineNumber(System.Xml.XmlNode node) { throw null; }
     }
     public partial class ConfigurationFileMap : System.ICloneable
@@ -432,22 +419,20 @@ namespace System.Configuration
     {
         protected ConfigurationSection() { }
         public System.Configuration.SectionInformation SectionInformation { get { throw null; } }
-        protected virtual void DeserializeSection(System.Xml.XmlReader reader) { }
-        protected virtual object GetRuntimeObject() { throw null; }
-        protected override bool IsModified() { throw null; }
-        protected override void ResetModified() { }
-        protected virtual string SerializeSection(System.Configuration.ConfigurationElement parentElement, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
-        protected virtual bool ShouldSerializeElementInTargetVersion(System.Configuration.ConfigurationElement element, string elementName, System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
-        protected virtual bool ShouldSerializePropertyInTargetVersion(System.Configuration.ConfigurationProperty property, string propertyName, System.Runtime.Versioning.FrameworkName targetFramework, System.Configuration.ConfigurationElement parentConfigurationElement) { throw null; }
-        protected virtual bool ShouldSerializeSectionInTargetVersion(System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
+        protected internal virtual void DeserializeSection(System.Xml.XmlReader reader) { }
+        protected internal virtual object GetRuntimeObject() { throw null; }
+        protected internal override bool IsModified() { throw null; }
+        protected internal override void ResetModified() { }
+        protected internal virtual string SerializeSection(System.Configuration.ConfigurationElement parentElement, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
+        protected internal virtual bool ShouldSerializeElementInTargetVersion(System.Configuration.ConfigurationElement element, string elementName, System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
+        protected internal virtual bool ShouldSerializePropertyInTargetVersion(System.Configuration.ConfigurationProperty property, string propertyName, System.Runtime.Versioning.FrameworkName targetFramework, System.Configuration.ConfigurationElement parentConfigurationElement) { throw null; }
+        protected internal virtual bool ShouldSerializeSectionInTargetVersion(System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
     }
     public sealed partial class ConfigurationSectionCollection : System.Collections.Specialized.NameObjectCollectionBase
     {
         internal ConfigurationSectionCollection() { }
-        public override int Count { get { throw null; } }
         public System.Configuration.ConfigurationSection this[int index] { get { throw null; } }
         public System.Configuration.ConfigurationSection this[string name] { get { throw null; } }
-        public override System.Collections.Specialized.NameObjectCollectionBase.KeysCollection Keys { get { throw null; } }
         public void Add(string name, System.Configuration.ConfigurationSection section) { }
         public void Clear() { }
         public void CopyTo(System.Configuration.ConfigurationSection[] array, int index) { }
@@ -455,7 +440,6 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSection Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
     }
@@ -471,15 +455,13 @@ namespace System.Configuration
         public string Type { get { throw null; } set { } }
         public void ForceDeclaration() { }
         public void ForceDeclaration(bool force) { }
-        protected virtual bool ShouldSerializeSectionGroupInTargetVersion(System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
+        protected internal virtual bool ShouldSerializeSectionGroupInTargetVersion(System.Runtime.Versioning.FrameworkName targetFramework) { throw null; }
     }
     public sealed partial class ConfigurationSectionGroupCollection : System.Collections.Specialized.NameObjectCollectionBase
     {
         internal ConfigurationSectionGroupCollection() { }
-        public override int Count { get { throw null; } }
         public System.Configuration.ConfigurationSectionGroup this[int index] { get { throw null; } }
         public System.Configuration.ConfigurationSectionGroup this[string name] { get { throw null; } }
-        public override System.Collections.Specialized.NameObjectCollectionBase.KeysCollection Keys { get { throw null; } }
         public void Add(string name, System.Configuration.ConfigurationSectionGroup sectionGroup) { }
         public void Clear() { }
         public void CopyTo(System.Configuration.ConfigurationSectionGroup[] array, int index) { }
@@ -487,16 +469,13 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSectionGroup Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
     }
     public sealed partial class ConfigurationSettings
     {
         internal ConfigurationSettings() { }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.AppSettings")]
         public static System.Collections.Specialized.NameValueCollection AppSettings { get { throw null; } }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.GetSection")]
         public static object GetConfig(string sectionName) { throw null; }
     }
     public enum ConfigurationUserLevel
@@ -543,7 +522,7 @@ namespace System.Configuration
         public ConnectionStringSettings(string name, string connectionString, string providerName) { }
         public string ConnectionString { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public string ProviderName { get { throw null; } set { } }
         public override string ToString() { throw null; }
     }
@@ -553,7 +532,7 @@ namespace System.Configuration
         public ConnectionStringSettingsCollection() { }
         public System.Configuration.ConnectionStringSettings this[int index] { get { throw null; } set { } }
         public new System.Configuration.ConnectionStringSettings this[string name] { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public void Add(System.Configuration.ConnectionStringSettings settings) { }
         protected override void BaseAdd(int index, System.Configuration.ConfigurationElement element) { }
         public void Clear() { }
@@ -568,8 +547,8 @@ namespace System.Configuration
     {
         public ConnectionStringsSection() { }
         public System.Configuration.ConnectionStringSettingsCollection ConnectionStrings { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
-        protected override object GetRuntimeObject() { throw null; }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override object GetRuntimeObject() { throw null; }
     }
     public sealed partial class ContextInformation
     {
@@ -581,12 +560,12 @@ namespace System.Configuration
     public sealed partial class DefaultSection : System.Configuration.ConfigurationSection
     {
         public DefaultSection() { }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
-        protected override void DeserializeSection(System.Xml.XmlReader xmlReader) { }
-        protected override bool IsModified() { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentSection) { }
-        protected override void ResetModified() { }
-        protected override string SerializeSection(System.Configuration.ConfigurationElement parentSection, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override void DeserializeSection(System.Xml.XmlReader xmlReader) { }
+        protected internal override bool IsModified() { throw null; }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentSection) { }
+        protected internal override void ResetModified() { }
+        protected internal override string SerializeSection(System.Configuration.ConfigurationElement parentSection, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class DefaultSettingValueAttribute : System.Attribute
@@ -607,7 +586,6 @@ namespace System.Configuration
         protected virtual string ValueAttributeName { get { throw null; } }
         public virtual object Create(object parent, object context, System.Xml.XmlNode section) { throw null; }
     }
-    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
     public sealed partial class DpapiProtectedConfigurationProvider : System.Configuration.ProtectedConfigurationProvider
     {
         public DpapiProtectedConfigurationProvider() { }
@@ -669,17 +647,17 @@ namespace System.Configuration
     {
         public IdnElement() { }
         public System.UriIdnScope Enabled { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
     }
     public sealed partial class IgnoreSection : System.Configuration.ConfigurationSection
     {
         public IgnoreSection() { }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
-        protected override void DeserializeSection(System.Xml.XmlReader xmlReader) { }
-        protected override bool IsModified() { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentSection) { }
-        protected override void ResetModified() { }
-        protected override string SerializeSection(System.Configuration.ConfigurationElement parentSection, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override void DeserializeSection(System.Xml.XmlReader xmlReader) { }
+        protected internal override bool IsModified() { throw null; }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentSection) { }
+        protected internal override void ResetModified() { }
+        protected internal override string SerializeSection(System.Configuration.ConfigurationElement parentSection, string name, System.Configuration.ConfigurationSaveMode saveMode) { throw null; }
     }
     public partial class IgnoreSectionHandler : System.Configuration.IConfigurationSectionHandler
     {
@@ -727,7 +705,7 @@ namespace System.Configuration
     {
         public IriParsingElement() { }
         public bool Enabled { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
     }
     public partial interface ISettingsProviderService
     {
@@ -739,7 +717,7 @@ namespace System.Configuration
         public KeyValueConfigurationCollection() { }
         public string[] AllKeys { get { throw null; } }
         public new System.Configuration.KeyValueConfigurationElement this[string key] { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         protected override bool ThrowOnDuplicate { get { throw null; } }
         public void Add(System.Configuration.KeyValueConfigurationElement keyValue) { }
         public void Add(string key, string value) { }
@@ -752,9 +730,9 @@ namespace System.Configuration
     {
         public KeyValueConfigurationElement(string key, string value) { }
         public string Key { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public string Value { get { throw null; } set { } }
-        protected override void Init() { }
+        protected internal override void Init() { }
     }
     public partial class LocalFileSettingsProvider : System.Configuration.SettingsProvider, System.Configuration.IApplicationSettingsProvider
     {
@@ -790,7 +768,7 @@ namespace System.Configuration
         public NameValueConfigurationCollection() { }
         public string[] AllKeys { get { throw null; } }
         public new System.Configuration.NameValueConfigurationElement this[string name] { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public void Add(System.Configuration.NameValueConfigurationElement nameValue) { }
         public void Clear() { }
         protected override System.Configuration.ConfigurationElement CreateNewElement() { throw null; }
@@ -802,7 +780,7 @@ namespace System.Configuration
     {
         public NameValueConfigurationElement(string name, string value) { }
         public string Name { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public string Value { get { throw null; } set { } }
     }
     public partial class NameValueFileSectionHandler : System.Configuration.IConfigurationSectionHandler
@@ -864,7 +842,6 @@ namespace System.Configuration
         public System.Configuration.PropertyInformation this[string propertyName] { get { throw null; } }
         public void CopyTo(System.Configuration.PropertyInformation[] array, int index) { }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum PropertyValueOrigin
     {
@@ -896,13 +873,13 @@ namespace System.Configuration
     {
         public ProtectedConfigurationSection() { }
         public string DefaultProvider { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.ProviderSettingsCollection Providers { get { throw null; } }
     }
     public partial class ProtectedProviderSettings : System.Configuration.ConfigurationElement
     {
         public ProtectedProviderSettings() { }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.ProviderSettingsCollection Providers { get { throw null; } }
     }
     public sealed partial class ProviderSettings : System.Configuration.ConfigurationElement
@@ -911,12 +888,12 @@ namespace System.Configuration
         public ProviderSettings(string name, string type) { }
         public string Name { get { throw null; } set { } }
         public System.Collections.Specialized.NameValueCollection Parameters { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public string Type { get { throw null; } set { } }
-        protected override bool IsModified() { throw null; }
+        protected internal override bool IsModified() { throw null; }
         protected override bool OnDeserializeUnrecognizedAttribute(string name, string value) { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentElement) { }
-        protected override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentElement) { }
+        protected internal override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
     }
     [System.Configuration.ConfigurationCollectionAttribute(typeof(System.Configuration.ProviderSettings))]
     public sealed partial class ProviderSettingsCollection : System.Configuration.ConfigurationElementCollection
@@ -924,7 +901,7 @@ namespace System.Configuration
         public ProviderSettingsCollection() { }
         public System.Configuration.ProviderSettings this[int index] { get { throw null; } set { } }
         public new System.Configuration.ProviderSettings this[string key] { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public void Add(System.Configuration.ProviderSettings provider) { }
         public void Clear() { }
         protected override System.Configuration.ConfigurationElement CreateNewElement() { throw null; }
@@ -959,14 +936,13 @@ namespace System.Configuration
         public override System.Xml.XmlNode Encrypt(System.Xml.XmlNode node) { throw null; }
         public void ExportKey(string xmlFileName, bool includePrivateParameters) { }
         public void ImportKey(string xmlFileName, bool exportable) { }
-        public override void Initialize(string name, System.Collections.Specialized.NameValueCollection configurationValues) { }
     }
     public sealed partial class SchemeSettingElement : System.Configuration.ConfigurationElement
     {
         public SchemeSettingElement() { }
         public System.GenericUriParserOptions GenericUriParserOptions { get { throw null; } }
         public string Name { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
     }
     [System.Configuration.ConfigurationCollectionAttribute(typeof(System.Configuration.SchemeSettingElement), CollectionType=System.Configuration.ConfigurationElementCollectionType.AddRemoveClearMap, AddItemName="add", ClearItemsName="clear", RemoveItemName="remove")]
     public sealed partial class SchemeSettingElementCollection : System.Configuration.ConfigurationElementCollection
@@ -1030,7 +1006,7 @@ namespace System.Configuration
         public SettingElement() { }
         public SettingElement(string name, System.Configuration.SettingsSerializeAs serializeAs) { }
         public string Name { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.SettingsSerializeAs SerializeAs { get { throw null; } set { } }
         public System.Configuration.SettingValueElement Value { get { throw null; } set { } }
         public override bool Equals(object settings) { throw null; }
@@ -1052,6 +1028,7 @@ namespace System.Configuration
     {
         public SettingsAttributeDictionary() { }
         public SettingsAttributeDictionary(System.Configuration.SettingsAttributeDictionary attributes) { }
+        protected SettingsAttributeDictionary(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class SettingsBase
     {
@@ -1070,6 +1047,7 @@ namespace System.Configuration
     public partial class SettingsContext : System.Collections.Hashtable
     {
         public SettingsContext() { }
+        protected SettingsContext(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class SettingsDescriptionAttribute : System.Attribute
@@ -1225,16 +1203,16 @@ namespace System.Configuration
     public sealed partial class SettingValueElement : System.Configuration.ConfigurationElement
     {
         public SettingValueElement() { }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Xml.XmlNode ValueXml { get { throw null; } set { } }
-        protected override void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
+        protected internal override void DeserializeElement(System.Xml.XmlReader reader, bool serializeCollectionKey) { }
         public override bool Equals(object settingValue) { throw null; }
         public override int GetHashCode() { throw null; }
-        protected override bool IsModified() { throw null; }
-        protected override void Reset(System.Configuration.ConfigurationElement parentElement) { }
-        protected override void ResetModified() { }
-        protected override bool SerializeToXmlElement(System.Xml.XmlWriter writer, string elementName) { throw null; }
-        protected override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
+        protected internal override bool IsModified() { throw null; }
+        protected internal override void Reset(System.Configuration.ConfigurationElement parentElement) { }
+        protected internal override void ResetModified() { }
+        protected internal override bool SerializeToXmlElement(System.Xml.XmlWriter writer, string elementName) { throw null; }
+        protected internal override void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
     }
     public partial class SingleTagSectionHandler : System.Configuration.IConfigurationSectionHandler
     {
@@ -1338,7 +1316,7 @@ namespace System.Configuration
         public UriSection() { }
         public System.Configuration.IdnElement Idn { get { throw null; } }
         public System.Configuration.IriParsingElement IriParsing { get { throw null; } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
         public System.Configuration.SchemeSettingElementCollection SchemeSettings { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
@@ -1577,6 +1555,6 @@ namespace System.Drawing.Configuration
     {
         public SystemDrawingSection() { }
         public string BitmapSuffix { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected internal override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
     }
 }

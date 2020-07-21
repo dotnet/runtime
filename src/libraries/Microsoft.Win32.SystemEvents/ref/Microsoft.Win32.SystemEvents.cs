@@ -62,8 +62,6 @@ namespace Microsoft.Win32
         public static event System.EventHandler? EventsThreadShutdown { add { } remove { } }
         public static event System.EventHandler? InstalledFontsChanged { add { } remove { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This event has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static event System.EventHandler? LowMemory { add { } remove { } }
         public static event System.EventHandler? PaletteChanged { add { } remove { } }
         public static event Microsoft.Win32.PowerModeChangedEventHandler? PowerModeChanged { add { } remove { } }

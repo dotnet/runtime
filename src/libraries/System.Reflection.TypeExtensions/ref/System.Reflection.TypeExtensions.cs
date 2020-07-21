@@ -12,6 +12,31 @@ namespace System.Reflection
         public static System.Reflection.Module[] GetModules(this System.Reflection.Assembly assembly) { throw null; }
         public static System.Type[] GetTypes(this System.Reflection.Assembly assembly) { throw null; }
     }
+    [System.FlagsAttribute]
+    public enum BindingFlags
+    {
+        Default = 0,
+        IgnoreCase = 1,
+        DeclaredOnly = 2,
+        Instance = 4,
+        Static = 8,
+        Public = 16,
+        NonPublic = 32,
+        FlattenHierarchy = 64,
+        InvokeMethod = 256,
+        CreateInstance = 512,
+        GetField = 1024,
+        SetField = 2048,
+        GetProperty = 4096,
+        SetProperty = 8192,
+        PutDispProperty = 16384,
+        PutRefDispProperty = 32768,
+        ExactBinding = 65536,
+        SuppressChangeType = 131072,
+        OptionalParamBinding = 262144,
+        IgnoreReturn = 16777216,
+        DoNotWrapExceptions = 33554432,
+    }
     public static partial class EventInfoExtensions
     {
         public static System.Reflection.MethodInfo? GetAddMethod(this System.Reflection.EventInfo eventInfo) { throw null; }
@@ -28,7 +53,7 @@ namespace System.Reflection
     }
     public static partial class MethodInfoExtensions
     {
-        public static System.Reflection.MethodInfo? GetBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
+        public static System.Reflection.MethodInfo GetBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
     }
     public static partial class ModuleExtensions
     {

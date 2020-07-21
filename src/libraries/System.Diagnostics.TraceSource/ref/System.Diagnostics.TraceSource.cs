@@ -55,7 +55,6 @@ namespace System.Diagnostics
         Warning = 7,
         Information = 15,
         Verbose = 31,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         ActivityTracing = 65280,
     }
     public partial class SourceSwitch : System.Diagnostics.Switch
@@ -75,7 +74,7 @@ namespace System.Diagnostics
         public string DisplayName { get { throw null; } }
         protected int SwitchSetting { get { throw null; } set { } }
         protected string Value { get { throw null; } set { } }
-        protected virtual string[]? GetSupportedAttributes() { throw null; }
+        protected internal virtual string[]? GetSupportedAttributes() { throw null; }
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
     }
@@ -222,7 +221,7 @@ namespace System.Diagnostics
         public virtual void Fail(string? message) { }
         public virtual void Fail(string? message, string? detailMessage) { }
         public virtual void Flush() { }
-        protected virtual string[]? GetSupportedAttributes() { throw null; }
+        protected internal virtual string[]? GetSupportedAttributes() { throw null; }
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id) { }
@@ -263,11 +262,11 @@ namespace System.Diagnostics
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object? value) { throw null; }
-        bool System.Collections.IList.Contains(object? value) { throw null; }
-        int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object? value) { }
-        void System.Collections.IList.Remove(object? value) { }
+        int System.Collections.IList.Add(object value) { throw null; }
+        bool System.Collections.IList.Contains(object value) { throw null; }
+        int System.Collections.IList.IndexOf(object value) { throw null; }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
     }
     [System.FlagsAttribute]
     public enum TraceOptions
@@ -290,7 +289,7 @@ namespace System.Diagnostics
         public System.Diagnostics.SourceSwitch Switch { get { throw null; } set { } }
         public void Close() { }
         public void Flush() { }
-        protected virtual string[]? GetSupportedAttributes() { throw null; }
+        protected internal virtual string[]? GetSupportedAttributes() { throw null; }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceData(System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]

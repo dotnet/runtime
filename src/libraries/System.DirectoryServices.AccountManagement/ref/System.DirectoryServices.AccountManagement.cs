@@ -174,7 +174,6 @@ namespace System.DirectoryServices.AccountManagement
         protected Principal() { }
         public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected internal System.DirectoryServices.AccountManagement.PrincipalContext ContextRaw { get { throw null; } set { } }
         public System.DirectoryServices.AccountManagement.ContextType ContextType { get { throw null; } }
         public string Description { get { throw null; } set { } }

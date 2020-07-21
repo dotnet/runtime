@@ -141,11 +141,11 @@ namespace System.Dynamic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Contains(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Remove(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
-        void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object? value) { }
+        void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object value) { }
         bool System.Collections.Generic.IDictionary<string, object?>.ContainsKey(string key) { throw null; }
         bool System.Collections.Generic.IDictionary<string, object?>.Remove(string key) { throw null; }
-        bool System.Collections.Generic.IDictionary<string, object?>.TryGetValue(string key, out object? value) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>.GetEnumerator() { throw null; }
+        bool System.Collections.Generic.IDictionary<string, object?>.TryGetValue(string key, out object value) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         System.Dynamic.DynamicMetaObject System.Dynamic.IDynamicMetaObjectProvider.GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
     }
@@ -332,6 +332,7 @@ namespace System.Linq.Expressions
         internal DynamicExpression() { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Runtime.CompilerServices.CallSiteBinder Binder { get { throw null; } }
+        public override bool CanReduce { get { throw null; } }
         public System.Type DelegateType { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
         int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
@@ -349,30 +350,30 @@ namespace System.Linq.Expressions
         public static new System.Linq.Expressions.DynamicExpression MakeDynamic(System.Type delegateType, System.Runtime.CompilerServices.CallSiteBinder binder, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1, System.Linq.Expressions.Expression arg2) { throw null; }
         public static new System.Linq.Expressions.DynamicExpression MakeDynamic(System.Type delegateType, System.Runtime.CompilerServices.CallSiteBinder binder, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1, System.Linq.Expressions.Expression arg2, System.Linq.Expressions.Expression arg3) { throw null; }
         public static new System.Linq.Expressions.DynamicExpression MakeDynamic(System.Type delegateType, System.Runtime.CompilerServices.CallSiteBinder binder, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
+        public override System.Linq.Expressions.Expression Reduce() { throw null; }
         System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
         object System.Linq.Expressions.IDynamicExpression.CreateCallSite() { throw null; }
         System.Linq.Expressions.Expression System.Linq.Expressions.IDynamicExpression.Rewrite(System.Linq.Expressions.Expression[] args) { throw null; }
         public System.Linq.Expressions.DynamicExpression Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
-    public abstract partial class DynamicExpressionVisitor : System.Linq.Expressions.ExpressionVisitor
+    public partial class DynamicExpressionVisitor : System.Linq.Expressions.ExpressionVisitor
     {
-        protected DynamicExpressionVisitor() { }
+        public DynamicExpressionVisitor() { }
         protected internal override System.Linq.Expressions.Expression VisitDynamic(System.Linq.Expressions.DynamicExpression node) { throw null; }
     }
     public sealed partial class ElementInit : System.Linq.Expressions.IArgumentProvider
     {
         internal ElementInit() { }
         public System.Reflection.MethodInfo AddMethod { get { throw null; } }
+        public int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
-        int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
-        System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
+        public System.Linq.Expressions.Expression GetArgument(int index) { throw null; }
         public override string ToString() { throw null; }
         public System.Linq.Expressions.ElementInit Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> arguments) { throw null; }
     }
     public abstract partial class Expression
     {
         protected Expression() { }
-        [System.ObsoleteAttribute("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(System.Linq.Expressions.ExpressionType nodeType, System.Type type) { }
         public virtual bool CanReduce { get { throw null; } }
         public virtual System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
@@ -827,7 +828,7 @@ namespace System.Linq.Expressions
         protected internal virtual System.Linq.Expressions.Expression VisitUnary(System.Linq.Expressions.UnaryExpression node) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> Visit<T>(System.Collections.ObjectModel.ReadOnlyCollection<T> nodes, System.Func<T, T> elementVisitor) { throw null; }
     }
-    public sealed partial class Expression<TDelegate> : System.Linq.Expressions.LambdaExpression
+    public partial class Expression<TDelegate> : System.Linq.Expressions.LambdaExpression
     {
         internal Expression() { }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
@@ -868,26 +869,26 @@ namespace System.Linq.Expressions
     public sealed partial class IndexExpression : System.Linq.Expressions.Expression, System.Linq.Expressions.IArgumentProvider
     {
         internal IndexExpression() { }
+        public int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Reflection.PropertyInfo? Indexer { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
         public System.Linq.Expressions.Expression? Object { get { throw null; } }
-        int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
-        System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
+        public System.Linq.Expressions.Expression GetArgument(int index) { throw null; }
         public System.Linq.Expressions.IndexExpression Update(System.Linq.Expressions.Expression @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
-    public sealed partial class InvocationExpression : System.Linq.Expressions.Expression, System.Linq.Expressions.IArgumentProvider
+    public partial class InvocationExpression : System.Linq.Expressions.Expression, System.Linq.Expressions.IArgumentProvider
     {
         internal InvocationExpression() { }
+        public virtual int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Linq.Expressions.Expression Expression { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
-        int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
-        System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
+        public virtual System.Linq.Expressions.Expression GetArgument(int index) { throw null; }
         public System.Linq.Expressions.InvocationExpression Update(System.Linq.Expressions.Expression expression, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
     public sealed partial class LabelExpression : System.Linq.Expressions.Expression
@@ -952,7 +953,6 @@ namespace System.Linq.Expressions
     }
     public abstract partial class MemberBinding
     {
-        [System.ObsoleteAttribute("Do not use this constructor. It will be removed in future releases.")]
         protected MemberBinding(System.Linq.Expressions.MemberBindingType type, System.Reflection.MemberInfo member) { }
         public System.Linq.Expressions.MemberBindingType BindingType { get { throw null; } }
         public System.Reflection.MemberInfo Member { get { throw null; } }
@@ -1000,14 +1000,14 @@ namespace System.Linq.Expressions
     public partial class MethodCallExpression : System.Linq.Expressions.Expression, System.Linq.Expressions.IArgumentProvider
     {
         internal MethodCallExpression() { }
+        public virtual int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
         public System.Linq.Expressions.Expression? Object { get { throw null; } }
-        int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
-        System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
+        public virtual System.Linq.Expressions.Expression GetArgument(int index) { throw null; }
         public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
     public partial class NewArrayExpression : System.Linq.Expressions.Expression
@@ -1021,14 +1021,14 @@ namespace System.Linq.Expressions
     public partial class NewExpression : System.Linq.Expressions.Expression, System.Linq.Expressions.IArgumentProvider
     {
         internal NewExpression() { }
+        public int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Reflection.ConstructorInfo? Constructor { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.MemberInfo>? Members { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
-        int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
         public override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
-        System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
+        public System.Linq.Expressions.Expression GetArgument(int index) { throw null; }
         public System.Linq.Expressions.NewExpression Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
     public partial class ParameterExpression : System.Linq.Expressions.Expression
@@ -1114,6 +1114,15 @@ namespace System.Linq.Expressions
         public System.Linq.Expressions.UnaryExpression Update(System.Linq.Expressions.Expression operand) { throw null; }
     }
 }
+namespace System.Linq.Expressions.Interpreter
+{
+    public partial class LightLambda
+    {
+        internal LightLambda() { }
+        public object? Run(params object?[] arguments) { throw null; }
+        public object? RunVoid(params object?[] arguments) { throw null; }
+    }
+}
 namespace System.Runtime.CompilerServices
 {
     public partial class CallSite
@@ -1134,6 +1143,20 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
     }
+    public static partial class CallSiteOps
+    {
+        public static void AddRule<T>(System.Runtime.CompilerServices.CallSite<T> site, T rule) where T : class { }
+        public static T Bind<T>(System.Runtime.CompilerServices.CallSiteBinder binder, System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
+        public static void ClearMatch(System.Runtime.CompilerServices.CallSite site) { }
+        public static System.Runtime.CompilerServices.CallSite<T> CreateMatchmaker<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
+        public static T[] GetCachedRules<T>(System.Runtime.CompilerServices.RuleCache<T> cache) where T : class { throw null; }
+        public static bool GetMatch(System.Runtime.CompilerServices.CallSite site) { throw null; }
+        public static System.Runtime.CompilerServices.RuleCache<T> GetRuleCache<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
+        public static T[]? GetRules<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
+        public static void MoveRule<T>(System.Runtime.CompilerServices.RuleCache<T> cache, T rule, int i) where T : class { }
+        public static bool SetNotMatched(System.Runtime.CompilerServices.CallSite site) { throw null; }
+        public static void UpdateRules<T>(System.Runtime.CompilerServices.CallSite<T> @this, int matched) where T : class { }
+    }
     public partial class CallSite<T> : System.Runtime.CompilerServices.CallSite where T : class
     {
         internal CallSite() { }
@@ -1141,10 +1164,15 @@ namespace System.Runtime.CompilerServices
         public T Update { get { throw null; } }
         public static System.Runtime.CompilerServices.CallSite<T> Create(System.Runtime.CompilerServices.CallSiteBinder binder) { throw null; }
     }
+    public sealed partial class Closure
+    {
+        public readonly object[] Constants;
+        public readonly object[]? Locals;
+        public Closure(object[] constants, object[]? locals) { }
+    }
     public abstract partial class DebugInfoGenerator
     {
         protected DebugInfoGenerator() { }
-        [System.ObsoleteAttribute("The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0008", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
         public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
     }
@@ -1187,16 +1215,29 @@ namespace System.Runtime.CompilerServices
         public void Reverse(int index, int count) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object? value) { throw null; }
-        bool System.Collections.IList.Contains(object? value) { throw null; }
-        int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object? value) { }
-        void System.Collections.IList.Remove(object? value) { }
+        int System.Collections.IList.Add(object value) { throw null; }
+        bool System.Collections.IList.Contains(object value) { throw null; }
+        int System.Collections.IList.IndexOf(object value) { throw null; }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
         public T[] ToArray() { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection() { throw null; }
     }
     public partial class RuleCache<T> where T : class
     {
         internal RuleCache() { }
+    }
+    public static partial class RuntimeOps
+    {
+        public static System.Runtime.CompilerServices.IRuntimeVariables CreateRuntimeVariables() { throw null; }
+        public static System.Runtime.CompilerServices.IRuntimeVariables CreateRuntimeVariables(object[] data, long[] indexes) { throw null; }
+        public static bool ExpandoCheckVersion(System.Dynamic.ExpandoObject expando, object? version) { throw null; }
+        public static void ExpandoPromoteClass(System.Dynamic.ExpandoObject expando, object oldClass, object newClass) { }
+        public static bool ExpandoTryDeleteValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase) { throw null; }
+        public static bool ExpandoTryGetValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value) { throw null; }
+        public static object? ExpandoTrySetValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase) { throw null; }
+        public static System.Runtime.CompilerServices.IRuntimeVariables MergeRuntimeVariables(System.Runtime.CompilerServices.IRuntimeVariables first, System.Runtime.CompilerServices.IRuntimeVariables second, int[] indexes) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("expression")]
+        public static System.Linq.Expressions.Expression? Quote(System.Linq.Expressions.Expression? expression, object hoistedLocals, object[] locals) { throw null; }
     }
 }

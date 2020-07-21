@@ -12,9 +12,7 @@ namespace System.Net
         public static System.Net.ICredentialPolicy? CredentialPolicy { get { throw null; } set { } }
         public static System.Collections.Specialized.StringDictionary CustomTargetNameDictionary { get { throw null; } }
         public static System.Collections.IEnumerator RegisteredModules { get { throw null; } }
-        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? Authenticate(string challenge, System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
-        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
         public static void Register(System.Net.IAuthenticationModule authenticationModule) { }
         public static void Unregister(System.Net.IAuthenticationModule authenticationModule) { }
@@ -33,7 +31,6 @@ namespace System.Net
     }
     public partial class FileWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected FileWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string? ConnectionGroupName { get { throw null; } set { } }
         public override long ContentLength { get { throw null; } set { } }
@@ -60,7 +57,6 @@ namespace System.Net
     }
     public partial class FileWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected FileWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
@@ -115,11 +111,13 @@ namespace System.Net
     public sealed partial class FtpWebRequest : System.Net.WebRequest
     {
         internal FtpWebRequest() { }
+        public override System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         public override string? ConnectionGroupName { get { throw null; } set { } }
         public override long ContentLength { get { throw null; } set { } }
         public long ContentOffset { get { throw null; } set { } }
         public override string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public override System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static new System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public bool EnableSsl { get { throw null; } set { } }
@@ -129,6 +127,7 @@ namespace System.Net
         public override bool PreAuthenticate { get { throw null; } set { } }
         public override System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         public int ReadWriteTimeout { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? RenameTo { get { throw null; } set { } }
         public override System.Uri RequestUri { get { throw null; } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
@@ -160,7 +159,6 @@ namespace System.Net
         public override void Close() { }
         public override System.IO.Stream GetResponseStream() { throw null; }
     }
-    [System.ObsoleteAttribute("This class has been deprecated. Please use WebRequest.DefaultWebProxy instead to access and set the global default proxy. Use 'null' instead of GetEmptyWebProxy. https://go.microsoft.com/fwlink/?linkid=14202")]
     public partial class GlobalProxySelection
     {
         public GlobalProxySelection() { }
@@ -171,7 +169,7 @@ namespace System.Net
     public delegate void HttpContinueDelegate(int StatusCode, System.Net.WebHeaderCollection httpHeaders);
     public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        public HttpWebRequest() { }
         protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? Accept { get { throw null; } set { } }
         public System.Uri Address { get { throw null; } }
@@ -232,20 +230,15 @@ namespace System.Net
         public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
         public System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult, out System.Net.TransportContext? context) { throw null; }
         public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override System.IO.Stream GetRequestStream() { throw null; }
         public System.IO.Stream GetRequestStream(out System.Net.TransportContext? context) { throw null; }
         public override System.Net.WebResponse GetResponse() { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo? serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class HttpWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HttpWebResponse() { }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? CharacterSet { get { throw null; } }
         public string ContentEncoding { get { throw null; } }
@@ -264,11 +257,9 @@ namespace System.Net
         public override bool SupportsHeaders { get { throw null; } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string GetResponseHeader(string headerName) { throw null; }
         public override System.IO.Stream GetResponseStream() { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial interface IAuthenticationModule
@@ -305,7 +296,7 @@ namespace System.Net
         public System.Net.WebResponse? Response { get { throw null; } }
         public System.Net.WebExceptionStatus Status { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo? serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum WebExceptionStatus
     {
@@ -340,6 +331,7 @@ namespace System.Net
         public virtual string? ConnectionGroupName { get { throw null; } set { } }
         public virtual long ContentLength { get { throw null; } set { } }
         public virtual string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public virtual System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public static System.Net.IWebProxy? DefaultWebProxy { get { throw null; } set { } }

@@ -14,7 +14,6 @@ namespace System.Collections
         public static System.Collections.CaseInsensitiveComparer DefaultInvariant { get { throw null; } }
         public int Compare(object? a, object? b) { throw null; }
     }
-    [System.ObsoleteAttribute("Please use StringComparer instead.")]
     public partial class CaseInsensitiveHashCodeProvider : System.Collections.IHashCodeProvider
     {
         public CaseInsensitiveHashCodeProvider() { }
@@ -49,11 +48,11 @@ namespace System.Collections
         protected virtual void OnValidate(object value) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object? value) { throw null; }
-        bool System.Collections.IList.Contains(object? value) { throw null; }
-        int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object? value) { }
-        void System.Collections.IList.Remove(object? value) { }
+        int System.Collections.IList.Add(object value) { throw null; }
+        bool System.Collections.IList.Contains(object value) { throw null; }
+        int System.Collections.IList.IndexOf(object value) { throw null; }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
     }
     public abstract partial class DictionaryBase : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
     {
@@ -81,7 +80,7 @@ namespace System.Collections
         protected virtual void OnSet(object key, object? oldValue, object? newValue) { }
         protected virtual void OnSetComplete(object key, object? oldValue, object? newValue) { }
         protected virtual void OnValidate(object key, object? value) { }
-        void System.Collections.IDictionary.Add(object key, object? value) { }
+        void System.Collections.IDictionary.Add(object key, object value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }

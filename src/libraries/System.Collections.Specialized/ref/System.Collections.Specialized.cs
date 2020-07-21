@@ -84,16 +84,21 @@ namespace System.Collections.Specialized
         public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         public void Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public partial class DictionaryNode
+        {
+            public object key;
+            public System.Collections.Specialized.ListDictionary.DictionaryNode? next;
+            public object? value;
+            public DictionaryNode() { }
+        }
     }
     public abstract partial class NameObjectCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         protected NameObjectCollectionBase() { }
         protected NameObjectCollectionBase(System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         protected NameObjectCollectionBase(int capacity) { }
         protected NameObjectCollectionBase(int capacity, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         protected NameObjectCollectionBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int Count { get { throw null; } }
@@ -117,7 +122,7 @@ namespace System.Collections.Specialized
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void OnDeserialization(object? sender) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        void System.Collections.ICollection.CopyTo(System.Array? array, int index) { }
         public partial class KeysCollection : System.Collections.ICollection, System.Collections.IEnumerable
         {
             internal KeysCollection() { }
@@ -134,12 +139,10 @@ namespace System.Collections.Specialized
     {
         public NameValueCollection() { }
         public NameValueCollection(System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("Please use NameValueCollection(IEqualityComparer) instead.")]
         public NameValueCollection(System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         public NameValueCollection(System.Collections.Specialized.NameValueCollection col) { }
         public NameValueCollection(int capacity) { }
         public NameValueCollection(int capacity, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         public NameValueCollection(int capacity, System.Collections.Specialized.NameValueCollection col) { }
         protected NameValueCollection(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -188,7 +191,7 @@ namespace System.Collections.Specialized
         public void Remove(object key) { }
         public void RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
     }
     public partial class StringCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
@@ -211,8 +214,8 @@ namespace System.Collections.Specialized
         public void Insert(int index, string? value) { }
         public void Remove(string? value) { }
         public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        void System.Collections.ICollection.CopyTo(System.Array? array, int index) { }
+        System.Collections.IEnumerator? System.Collections.IEnumerable.GetEnumerator() { throw null; }
         int System.Collections.IList.Add(object? value) { throw null; }
         bool System.Collections.IList.Contains(object? value) { throw null; }
         int System.Collections.IList.IndexOf(object? value) { throw null; }

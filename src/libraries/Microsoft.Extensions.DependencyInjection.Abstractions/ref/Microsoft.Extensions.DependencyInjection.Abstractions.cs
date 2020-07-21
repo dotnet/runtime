@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object GetServiceOrCreateInstance(System.IServiceProvider provider, System.Type type) { throw null; }
         public static T GetServiceOrCreateInstance<T>(System.IServiceProvider provider) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class ActivatorUtilitiesConstructorAttribute : System.Attribute
     {
         public ActivatorUtilitiesConstructorAttribute() { }
@@ -109,7 +110,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T GetService<T>(this System.IServiceProvider provider) { throw null; }
     }
 }

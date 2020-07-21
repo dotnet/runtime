@@ -10,9 +10,9 @@ namespace System.Diagnostics
     {
         public const int OFFSET_UNKNOWN = -1;
         public StackFrame() { }
-        public StackFrame(bool fNeedFileInfo) { }
+        public StackFrame(bool needFileInfo) { }
         public StackFrame(int skipFrames) { }
-        public StackFrame(int skipFrames, bool fNeedFileInfo) { }
+        public StackFrame(int skipFrames, bool needFileInfo) { }
         public StackFrame(string? fileName, int lineNumber) { }
         public StackFrame(string? fileName, int lineNumber, int colNumber) { }
         public virtual int GetFileColumnNumber() { throw null; }
@@ -54,7 +54,6 @@ namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
     {
-        [System.ObsoleteAttribute("The recommended alternative is ISymbolBinder1.GetReader. ISymbolBinder1.GetReader takes the importer interface pointer as an IntPtr instead of an Int32, and thus works on both 32-bit and 64-bit architectures. https://go.microsoft.com/fwlink/?linkid=14202=14202")]
         System.Diagnostics.SymbolStore.ISymbolReader? GetReader(int importer, string filename, string searchPath);
     }
     public partial interface ISymbolBinder1

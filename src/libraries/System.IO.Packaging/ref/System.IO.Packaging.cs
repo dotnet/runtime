@@ -9,6 +9,7 @@ namespace System.IO
     public partial class FileFormatException : System.FormatException
     {
         public FileFormatException() { }
+        protected FileFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public FileFormatException(string? message) { }
         public FileFormatException(string? message, System.Exception? innerException) { }
         public FileFormatException(System.Uri? sourceUri) { }
@@ -16,6 +17,7 @@ namespace System.IO
         public FileFormatException(System.Uri? sourceUri, string? message) { }
         public FileFormatException(System.Uri? sourceUri, string? message, System.Exception? innerException) { }
         public System.Uri? SourceUri { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
 namespace System.IO.Packaging
@@ -151,9 +153,15 @@ namespace System.IO.Packaging
     public static partial class PackUriHelper
     {
         public static readonly string UriSchemePack;
+        public static int ComparePackUri(System.Uri? firstPackUri, System.Uri? secondPackUri) { throw null; }
         public static int ComparePartUri(System.Uri? firstPartUri, System.Uri? secondPartUri) { throw null; }
+        public static System.Uri Create(System.Uri packageUri) { throw null; }
+        public static System.Uri Create(System.Uri packageUri, System.Uri? partUri) { throw null; }
+        public static System.Uri Create(System.Uri packageUri, System.Uri? partUri, string? fragment) { throw null; }
         public static System.Uri CreatePartUri(System.Uri partUri) { throw null; }
         public static System.Uri GetNormalizedPartUri(System.Uri partUri) { throw null; }
+        public static System.Uri GetPackageUri(System.Uri packUri) { throw null; }
+        public static System.Uri? GetPartUri(System.Uri packUri) { throw null; }
         public static System.Uri GetRelationshipPartUri(System.Uri partUri) { throw null; }
         public static System.Uri GetRelativeUri(System.Uri sourcePartUri, System.Uri targetPartUri) { throw null; }
         public static System.Uri GetSourcePartUriFromRelationshipPartUri(System.Uri relationshipPartUri) { throw null; }

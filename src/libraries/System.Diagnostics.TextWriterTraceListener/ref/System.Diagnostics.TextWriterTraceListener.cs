@@ -18,8 +18,8 @@ namespace System.Diagnostics
         public DelimitedListTraceListener(System.IO.Stream stream, string? name) { }
         public DelimitedListTraceListener(System.IO.TextWriter writer) { }
         public DelimitedListTraceListener(System.IO.TextWriter writer, string? name) { }
-        public DelimitedListTraceListener(string? fileName) { }
-        public DelimitedListTraceListener(string? fileName, string? name) { }
+        public DelimitedListTraceListener(string fileName) { }
+        public DelimitedListTraceListener(string fileName, string? name) { }
         public string Delimiter { get { throw null; } set { } }
         protected override string[] GetSupportedAttributes() { throw null; }
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }

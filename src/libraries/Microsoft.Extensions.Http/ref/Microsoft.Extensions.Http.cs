@@ -1,5 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -57,10 +60,10 @@ namespace Microsoft.Extensions.Http
     {
         public HttpClientFactoryOptions() { }
         public System.TimeSpan HandlerLifetime { get { throw null; } set { } }
-        public System.Collections.Generic.IList<System.Action<System.Net.Http.HttpClient>> HttpClientActions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Collections.Generic.IList<System.Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>> HttpMessageHandlerBuilderActions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<string, bool> ShouldRedactHeaderValue { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public bool SuppressHandlerScope { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IList<System.Action<System.Net.Http.HttpClient>> HttpClientActions { get { throw null; } }
+        public System.Collections.Generic.IList<System.Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>> HttpMessageHandlerBuilderActions { get { throw null; } }
+        public System.Func<string, bool> ShouldRedactHeaderValue { get { throw null; } set { } }
+        public bool SuppressHandlerScope { get { throw null; } set { } }
     }
     public abstract partial class HttpMessageHandlerBuilder
     {
@@ -68,7 +71,7 @@ namespace Microsoft.Extensions.Http
         public abstract System.Collections.Generic.IList<System.Net.Http.DelegatingHandler> AdditionalHandlers { get; }
         public abstract string Name { get; set; }
         public abstract System.Net.Http.HttpMessageHandler PrimaryHandler { get; set; }
-        public virtual System.IServiceProvider Services { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public virtual System.IServiceProvider Services { get { throw null; } }
         public abstract System.Net.Http.HttpMessageHandler Build();
         protected internal static System.Net.Http.HttpMessageHandler CreateHandlerPipeline(System.Net.Http.HttpMessageHandler primaryHandler, System.Collections.Generic.IEnumerable<System.Net.Http.DelegatingHandler> additionalHandlers) { throw null; }
     }
@@ -87,14 +90,12 @@ namespace Microsoft.Extensions.Http.Logging
     {
         public LoggingHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger) { }
         public LoggingHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Http.HttpClientFactoryOptions options) { }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class LoggingScopeHttpMessageHandler : System.Net.Http.DelegatingHandler
     {
         public LoggingScopeHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger) { }
         public LoggingScopeHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Http.HttpClientFactoryOptions options) { }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }

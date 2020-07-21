@@ -4,6 +4,172 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Reflection
+{
+    [System.FlagsAttribute]
+    public enum CallingConventions
+    {
+        Standard = 1,
+        VarArgs = 2,
+        Any = 3,
+        HasThis = 32,
+        ExplicitThis = 64,
+    }
+    [System.FlagsAttribute]
+    public enum EventAttributes
+    {
+        None = 0,
+        SpecialName = 512,
+        ReservedMask = 1024,
+        RTSpecialName = 1024,
+    }
+    [System.FlagsAttribute]
+    public enum FieldAttributes
+    {
+        PrivateScope = 0,
+        Private = 1,
+        FamANDAssem = 2,
+        Assembly = 3,
+        Family = 4,
+        FamORAssem = 5,
+        Public = 6,
+        FieldAccessMask = 7,
+        Static = 16,
+        InitOnly = 32,
+        Literal = 64,
+        NotSerialized = 128,
+        HasFieldRVA = 256,
+        SpecialName = 512,
+        RTSpecialName = 1024,
+        HasFieldMarshal = 4096,
+        PinvokeImpl = 8192,
+        HasDefault = 32768,
+        ReservedMask = 38144,
+    }
+    [System.FlagsAttribute]
+    public enum GenericParameterAttributes
+    {
+        None = 0,
+        Covariant = 1,
+        Contravariant = 2,
+        VarianceMask = 3,
+        ReferenceTypeConstraint = 4,
+        NotNullableValueTypeConstraint = 8,
+        DefaultConstructorConstraint = 16,
+        SpecialConstraintMask = 28,
+    }
+    [System.FlagsAttribute]
+    public enum MethodAttributes
+    {
+        PrivateScope = 0,
+        ReuseSlot = 0,
+        Private = 1,
+        FamANDAssem = 2,
+        Assembly = 3,
+        Family = 4,
+        FamORAssem = 5,
+        Public = 6,
+        MemberAccessMask = 7,
+        UnmanagedExport = 8,
+        Static = 16,
+        Final = 32,
+        Virtual = 64,
+        HideBySig = 128,
+        NewSlot = 256,
+        VtableLayoutMask = 256,
+        CheckAccessOnOverride = 512,
+        Abstract = 1024,
+        SpecialName = 2048,
+        RTSpecialName = 4096,
+        PinvokeImpl = 8192,
+        HasSecurity = 16384,
+        RequireSecObject = 32768,
+        ReservedMask = 53248,
+    }
+    public enum MethodImplAttributes
+    {
+        IL = 0,
+        Managed = 0,
+        Native = 1,
+        OPTIL = 2,
+        CodeTypeMask = 3,
+        Runtime = 3,
+        ManagedMask = 4,
+        Unmanaged = 4,
+        NoInlining = 8,
+        ForwardRef = 16,
+        Synchronized = 32,
+        NoOptimization = 64,
+        PreserveSig = 128,
+        AggressiveInlining = 256,
+        AggressiveOptimization = 512,
+        InternalCall = 4096,
+        MaxMethodImplVal = 65535,
+    }
+    [System.FlagsAttribute]
+    public enum ParameterAttributes
+    {
+        None = 0,
+        In = 1,
+        Out = 2,
+        Lcid = 4,
+        Retval = 8,
+        Optional = 16,
+        HasDefault = 4096,
+        HasFieldMarshal = 8192,
+        Reserved3 = 16384,
+        Reserved4 = 32768,
+        ReservedMask = 61440,
+    }
+    [System.FlagsAttribute]
+    public enum PropertyAttributes
+    {
+        None = 0,
+        SpecialName = 512,
+        RTSpecialName = 1024,
+        HasDefault = 4096,
+        Reserved2 = 8192,
+        Reserved3 = 16384,
+        Reserved4 = 32768,
+        ReservedMask = 62464,
+    }
+    [System.FlagsAttribute]
+    public enum TypeAttributes
+    {
+        AnsiClass = 0,
+        AutoLayout = 0,
+        Class = 0,
+        NotPublic = 0,
+        Public = 1,
+        NestedPublic = 2,
+        NestedPrivate = 3,
+        NestedFamily = 4,
+        NestedAssembly = 5,
+        NestedFamANDAssem = 6,
+        NestedFamORAssem = 7,
+        VisibilityMask = 7,
+        SequentialLayout = 8,
+        ExplicitLayout = 16,
+        LayoutMask = 24,
+        ClassSemanticsMask = 32,
+        Interface = 32,
+        Abstract = 128,
+        Sealed = 256,
+        SpecialName = 1024,
+        RTSpecialName = 2048,
+        Import = 4096,
+        Serializable = 8192,
+        WindowsRuntime = 16384,
+        UnicodeClass = 65536,
+        AutoClass = 131072,
+        CustomFormatClass = 196608,
+        StringFormatMask = 196608,
+        HasSecurity = 262144,
+        ReservedMask = 264192,
+        BeforeFieldInit = 1048576,
+        CustomFormatMask = 12582912,
+    }
+}
 namespace System.Reflection.Emit
 {
     public enum FlowControl
@@ -14,7 +180,6 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         Phi = 6,
         Return = 7,
         Throw = 8,
@@ -270,7 +435,6 @@ namespace System.Reflection.Emit
     }
     public enum OpCodeType
     {
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         Annotation = 0,
         Macro = 1,
         Nternal = 2,
@@ -286,7 +450,6 @@ namespace System.Reflection.Emit
         InlineI8 = 3,
         InlineMethod = 4,
         InlineNone = 5,
-        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         InlinePhi = 6,
         InlineR = 7,
         InlineSig = 9,

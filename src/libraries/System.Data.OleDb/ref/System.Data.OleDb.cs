@@ -130,9 +130,15 @@ namespace System.Data.OleDb
         public string FileName { get { throw null; } set { } }
         public override object this[string keyword] { get { throw null; } set { } }
         public override System.Collections.ICollection Keys { get { throw null; } }
+        [System.ComponentModel.DisplayNameAttribute("OLE DB Services")]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
+        public int OleDbServices { get { throw null; } set { } }
         [System.ComponentModel.DisplayNameAttribute("Persist Security Info")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public bool PersistSecurityInfo { get { throw null; } set { } }
+        [System.ComponentModel.DisplayNameAttribute("Provider")]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
+        public string Provider { get { throw null; } set { } }
         public override void Clear() { }
         public override bool ContainsKey(string keyword) { throw null; }
         public override bool Remove(string keyword) { throw null; }
@@ -238,6 +244,7 @@ namespace System.Data.OleDb
     public sealed partial class OleDbException : System.Data.Common.DbException
     {
         internal OleDbException() { }
+        public override int ErrorCode { get { throw null; } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.OleDb.OleDbErrorCollection Errors { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }

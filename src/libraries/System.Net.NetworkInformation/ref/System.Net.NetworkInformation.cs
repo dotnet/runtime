@@ -278,13 +278,9 @@ namespace System.Net.NetworkInformation
     }
     public partial class NetworkChange
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange() { }
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler? NetworkAddressChanged { add { } remove { } }
         public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged { add { } remove { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(System.Net.NetworkInformation.NetworkChange nc) { }
     }
     public partial class NetworkInformationException : System.ComponentModel.Win32Exception
@@ -368,11 +364,11 @@ namespace System.Net.NetworkInformation
         public override bool Equals(object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Net.NetworkInformation.PhysicalAddress Parse(System.ReadOnlySpan<char> address) { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(string? address) { throw null; }
-        public static System.Net.NetworkInformation.PhysicalAddress Parse(ReadOnlySpan<char> address) { throw null; }
-        public static bool TryParse(string? address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
-        public static bool TryParse(ReadOnlySpan<char> address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
         public override string ToString() { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
+        public static bool TryParse(string? address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
     }
     public enum PrefixOrigin
     {

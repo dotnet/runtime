@@ -144,14 +144,14 @@ namespace System.Net.Sockets
         public override int Read(byte[] buffer, int offset, int size) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int size, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int size) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int size, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
     }
     public enum ProtocolFamily
@@ -221,6 +221,7 @@ namespace System.Net.Sockets
     public sealed partial class SafeSocketHandle : Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid
     {
         public SafeSocketHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
+        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public enum SelectMode
@@ -252,8 +253,9 @@ namespace System.Net.Sockets
     }
     public partial class Socket : System.IDisposable
     {
-        public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public Socket(System.Net.Sockets.SocketInformation socketInformation) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
@@ -282,9 +284,7 @@ namespace System.Net.Sockets
         public int SendBufferSize { get { throw null; } set { } }
         public int SendTimeout { get { throw null; } set { } }
         public System.Net.Sockets.SocketType SocketType { get { throw null; } }
-        [System.ObsoleteAttribute("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static bool SupportsIPv4 { get { throw null; } }
-        [System.ObsoleteAttribute("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static bool SupportsIPv6 { get { throw null; } }
         public short Ttl { get { throw null; } set { } }
         public bool UseOnlyOverlappedIO { get { throw null; } set { } }
@@ -613,7 +613,6 @@ namespace System.Net.Sockets
     }
     public partial class TcpListener
     {
-        [System.ObsoleteAttribute("This method has been deprecated. Please use TcpListener(IPAddress localaddr, int port) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public TcpListener(int port) { }
         public TcpListener(System.Net.IPAddress localaddr, int port) { }
         public TcpListener(System.Net.IPEndPoint localEP) { }
@@ -680,7 +679,7 @@ namespace System.Net.Sockets
         protected virtual void Dispose(bool disposing) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr, int ifindex) { }
-        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint remoteEP) { throw null; }
+        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public int EndSend(System.IAsyncResult asyncResult) { throw null; }
         public void JoinMulticastGroup(int ifindex, System.Net.IPAddress multicastAddr) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr) { }
@@ -711,5 +710,9 @@ namespace System.Net.Sockets
     public sealed partial class UnixDomainSocketEndPoint : System.Net.EndPoint
     {
         public UnixDomainSocketEndPoint(string path) { }
+        public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
+        public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress) { throw null; }
+        public override System.Net.SocketAddress Serialize() { throw null; }
+        public override string ToString() { throw null; }
     }
 }

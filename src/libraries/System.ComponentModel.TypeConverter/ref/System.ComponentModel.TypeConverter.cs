@@ -203,7 +203,6 @@ namespace System.ComponentModel
         public CollectionConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
-        public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class ComplexBindingPropertiesAttribute : System.Attribute
@@ -442,9 +441,9 @@ namespace System.ComponentModel
     }
     public abstract partial class EventDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
+        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
         public abstract System.Type ComponentType { get; }
         public abstract System.Type EventType { get; }
         public abstract bool IsMulticast { get; }
@@ -555,7 +554,6 @@ namespace System.ComponentModel
         void CancelNew(int itemIndex);
         void EndNew(int itemIndex);
     }
-    [System.ObsoleteAttribute("This interface has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead. https://go.microsoft.com/fwlink/?linkid=14202")]
     public partial interface IComNativeDescriptorHandler
     {
         System.ComponentModel.AttributeCollection GetAttributes(object component);
@@ -978,7 +976,6 @@ namespace System.ComponentModel
         protected static System.Reflection.MethodInfo FindMethod(System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { throw null; }
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
-        [System.ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static object GetInvokee(System.Type componentClass, object component) { throw null; }
         protected static System.ComponentModel.ISite GetSite(object component) { throw null; }
     }
@@ -1032,9 +1029,9 @@ namespace System.ComponentModel
     }
     public abstract partial class PropertyDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
+        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
         public abstract System.Type ComponentType { get; }
         public virtual System.ComponentModel.TypeConverter Converter { get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
@@ -1148,7 +1145,6 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
-    [System.ObsoleteAttribute("Use System.ComponentModel.SettingsBindableAttribute instead to work with the new settings model.")]
     public partial class RecommendedAsConfigurableAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.RecommendedAsConfigurableAttribute Default;
@@ -1306,8 +1302,8 @@ namespace System.ComponentModel
         protected System.ComponentModel.PropertyDescriptorCollection SortProperties(System.ComponentModel.PropertyDescriptorCollection props, string[] names) { throw null; }
         protected abstract partial class SimplePropertyDescriptor : System.ComponentModel.PropertyDescriptor
         {
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(System.ComponentModel.MemberDescriptor)) { }
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(System.ComponentModel.MemberDescriptor)) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(string), default(System.Attribute[])) { }
             public override System.Type ComponentType { get { throw null; } }
             public override bool IsReadOnly { get { throw null; } }
             public override System.Type PropertyType { get { throw null; } }
@@ -1347,27 +1343,19 @@ namespace System.ComponentModel
     public sealed partial class TypeDescriptor
     {
         internal TypeDescriptor() { }
-        [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public static System.Type ComObjectType { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public static System.Type InterfaceType { get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(object instance, params System.Attribute[] attributes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(System.Type type, params System.Attribute[] attributes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddEditorTable(System.Type editorBaseType, System.Collections.Hashtable table) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary) { }
         public static System.ComponentModel.Design.IDesigner CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
@@ -1375,40 +1363,30 @@ namespace System.ComponentModel
         public static object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static object GetAssociation(System.Type type, object primary) { throw null; }
         public static System.ComponentModel.AttributeCollection GetAttributes(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.AttributeCollection GetAttributes(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.AttributeCollection GetAttributes(System.Type componentType) { throw null; }
         public static string GetClassName(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static string GetClassName(object component, bool noCustomTypeDesc) { throw null; }
         public static string GetClassName(System.Type componentType) { throw null; }
         public static string GetComponentName(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static string GetComponentName(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.TypeConverter GetConverter(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeConverter GetConverter(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.TypeConverter GetConverter(System.Type type) { throw null; }
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(System.Type componentType) { throw null; }
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(System.Type componentType) { throw null; }
         public static object GetEditor(object component, System.Type editorBaseType) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static object GetEditor(object component, System.Type editorBaseType, bool noCustomTypeDesc) { throw null; }
         public static object GetEditor(System.Type type, System.Type editorBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component) { throw null; }
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType) { throw null; }
         public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType, System.Attribute[] attributes) { throw null; }
@@ -1416,33 +1394,22 @@ namespace System.ComponentModel
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType, System.Attribute[] attributes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(System.Type type) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type GetReflectionType(object instance) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type GetReflectionType(System.Type type) { throw null; }
         public static void Refresh(object component) { }
         public static void Refresh(System.Reflection.Assembly assembly) { }
         public static void Refresh(System.Reflection.Module module) { }
         public static void Refresh(System.Type type) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveAssociations(object primary) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveProvider(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
         public static void SortDescriptorArray(System.Collections.IList infos) { }
     }
@@ -1620,7 +1587,6 @@ namespace System.ComponentModel.Design
     }
     public partial class DesignerTransactionCloseEventArgs : System.EventArgs
     {
-        [System.ObsoleteAttribute("This constructor is obsolete. Use DesignerTransactionCloseEventArgs(bool, bool) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public DesignerTransactionCloseEventArgs(bool commit) { }
         public DesignerTransactionCloseEventArgs(bool commit, bool lastTransaction) { }
         public bool LastTransaction { get { throw null; } }
@@ -1647,10 +1613,6 @@ namespace System.ComponentModel.Design
         public void CopyTo(System.ComponentModel.Design.DesignerVerb[] array, int index) { }
         public int IndexOf(System.ComponentModel.Design.DesignerVerb value) { throw null; }
         public void Insert(int index, System.ComponentModel.Design.DesignerVerb value) { }
-        protected override void OnClear() { }
-        protected override void OnInsert(int index, object value) { }
-        protected override void OnRemove(int index, object value) { }
-        protected override void OnSet(int index, object oldValue, object newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.ComponentModel.Design.DesignerVerb value) { }
     }
@@ -1905,17 +1867,12 @@ namespace System.ComponentModel.Design
     public enum SelectionTypes
     {
         Auto = 1,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Normal = 1,
         Replace = 2,
-        [System.ObsoleteAttribute("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseDown = 4,
-        [System.ObsoleteAttribute("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseUp = 8,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Click = 16,
         Primary = 16,
-        [System.ObsoleteAttribute("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. https://go.microsoft.com/fwlink/?linkid=14202")]
         Valid = 31,
         Toggle = 32,
         Add = 64,
@@ -2016,9 +1973,7 @@ namespace System.ComponentModel.Design
     }
     public enum ViewTechnology
     {
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Passthrough = 0,
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         WindowsForms = 1,
         Default = 2,
     }
@@ -2131,7 +2086,6 @@ namespace System.ComponentModel.Design.Serialization
         public System.Reflection.MemberInfo MemberInfo { get { throw null; } }
         public object Invoke() { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct MemberRelationship
     {
         private readonly object _dummy;
@@ -2163,7 +2117,6 @@ namespace System.ComponentModel.Design.Serialization
     }
     public delegate void ResolveNameEventHandler(object sender, System.ComponentModel.Design.Serialization.ResolveNameEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)). https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class RootDesignerSerializerAttribute : System.Attribute
     {
         public RootDesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName, bool reloadable) { }
@@ -2272,7 +2225,7 @@ namespace System.Timers
         public bool AutoReset { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool Enabled { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute(100d)]
+        [System.ComponentModel.DefaultValueAttribute(100)]
         public double Interval { get { throw null; } set { } }
         public override System.ComponentModel.ISite Site { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]

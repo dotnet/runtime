@@ -64,7 +64,6 @@ namespace System.Diagnostics
         public void Close() { }
         public static void CreateEventSource(System.Diagnostics.EventSourceCreationData sourceData) { }
         public static void CreateEventSource(string source, string logName) { }
-        [System.ObsoleteAttribute("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public static void CreateEventSource(string source, string logName, string machineName) { }
         public static void Delete(string logName) { }
         public static void Delete(string logName, string machineName) { }
@@ -97,7 +96,6 @@ namespace System.Diagnostics
         public static void WriteEvent(string source, System.Diagnostics.EventInstance instance, params object[] values) { }
     }
     [System.ComponentModel.DesignTimeVisibleAttribute(false)]
-    [System.ComponentModel.ToolboxItemAttribute(false)]
     public sealed partial class EventLogEntry : System.ComponentModel.Component, System.Runtime.Serialization.ISerializable
     {
         internal EventLogEntry() { }
@@ -105,7 +103,6 @@ namespace System.Diagnostics
         public short CategoryNumber { get { throw null; } }
         public byte[] Data { get { throw null; } }
         public System.Diagnostics.EventLogEntryType EntryType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int EventID { get { throw null; } }
         public int Index { get { throw null; } }
         public long InstanceId { get { throw null; } }
@@ -147,13 +144,9 @@ namespace System.Diagnostics
         public override string Name { get { throw null; } set { } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, object data) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, params object[] data) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string message) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string format, params object[] args) { }
         public override void Write(string message) { }
         public override void WriteLine(string message) { }
@@ -513,7 +506,6 @@ namespace System.Diagnostics.Eventing.Reader
         WdiDiagnostic = (long)1125899906842624,
         Sqm = (long)2251799813685248,
         AuditFailure = (long)4503599627370496,
-        [System.ObsoleteAttribute("Incorrect value: use CorrelationHint2 instead", false)]
         CorrelationHint = (long)4503599627370496,
         AuditSuccess = (long)9007199254740992,
         CorrelationHint2 = (long)18014398509481984,

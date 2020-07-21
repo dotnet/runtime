@@ -6,7 +6,7 @@
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class DynamicILInfo
+    public partial class DynamicILInfo
     {
         internal DynamicILInfo() { }
         public System.Reflection.Emit.DynamicMethod DynamicMethod { get { throw null; } }

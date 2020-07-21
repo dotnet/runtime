@@ -85,11 +85,11 @@ namespace System
         public static bool SequenceEqual<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T> { throw null; }
         public static bool SequenceEqual<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T> { throw null; }
         public static void Sort<T>(this System.Span<T> span) { }
-        public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
         public static void Sort<T>(this System.Span<T> span, System.Comparison<T> comparison) { }
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items) { }
-        public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
+        public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
+        public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
@@ -140,20 +140,134 @@ namespace System
         public static System.Span<T> Trim<T>(this System.Span<T> span, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
         public static System.Span<T> Trim<T>(this System.Span<T> span, T trimElement) where T : System.IEquatable<T> { throw null; }
     }
+    public readonly partial struct Memory<T> : System.IEquatable<System.Memory<T>>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public Memory(T[]? array) { throw null; }
+        public Memory(T[]? array, int start, int length) { throw null; }
+        public static System.Memory<T> Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        public System.Span<T> Span { get { throw null; } }
+        public void CopyTo(System.Memory<T> destination) { }
+        public bool Equals(System.Memory<T> other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static implicit operator System.Memory<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
+        public static implicit operator System.Memory<T> (T[]? array) { throw null; }
+        public System.Buffers.MemoryHandle Pin() { throw null; }
+        public System.Memory<T> Slice(int start) { throw null; }
+        public System.Memory<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public override string ToString() { throw null; }
+        public bool TryCopyTo(System.Memory<T> destination) { throw null; }
+    }
+    public readonly partial struct ReadOnlyMemory<T> : System.IEquatable<System.ReadOnlyMemory<T>>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public ReadOnlyMemory(T[]? array) { throw null; }
+        public ReadOnlyMemory(T[]? array, int start, int length) { throw null; }
+        public static System.ReadOnlyMemory<T> Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        public System.ReadOnlySpan<T> Span { get { throw null; } }
+        public void CopyTo(System.Memory<T> destination) { }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.ReadOnlyMemory<T> other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (T[]? array) { throw null; }
+        public System.Buffers.MemoryHandle Pin() { throw null; }
+        public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
+        public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public override string ToString() { throw null; }
+        public bool TryCopyTo(System.Memory<T> destination) { throw null; }
+    }
+    public readonly ref partial struct ReadOnlySpan<T>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        [System.CLSCompliantAttribute(false)]
+        public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
+        public ReadOnlySpan(T[]? array) { throw null; }
+        public ReadOnlySpan(T[]? array, int start, int length) { throw null; }
+        public static System.ReadOnlySpan<T> Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public ref readonly T this[int index] { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void CopyTo(System.Span<T> destination) { }
+        public override bool Equals(object? obj) { throw null; }
+        public System.ReadOnlySpan<T>.Enumerator GetEnumerator() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public ref readonly T GetPinnableReference() { throw null; }
+        public static bool operator ==(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (T[]? array) { throw null; }
+        public static bool operator !=(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
+        public System.ReadOnlySpan<T> Slice(int start) { throw null; }
+        public System.ReadOnlySpan<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public override string ToString() { throw null; }
+        public bool TryCopyTo(System.Span<T> destination) { throw null; }
+        public ref partial struct Enumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public ref readonly T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
+    }
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public SequencePosition(object? @object, int integer) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.SequencePosition other) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public int GetInteger() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public object? GetObject() { throw null; }
+    }
+    public readonly ref partial struct Span<T>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        [System.CLSCompliantAttribute(false)]
+        public unsafe Span(void* pointer, int length) { throw null; }
+        public Span(T[]? array) { throw null; }
+        public Span(T[]? array, int start, int length) { throw null; }
+        public static System.Span<T> Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public ref T this[int index] { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void Clear() { }
+        public void CopyTo(System.Span<T> destination) { }
+        public override bool Equals(object? obj) { throw null; }
+        public void Fill(T value) { }
+        public System.Span<T>.Enumerator GetEnumerator() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public ref T GetPinnableReference() { throw null; }
+        public static bool operator ==(System.Span<T> left, System.Span<T> right) { throw null; }
+        public static implicit operator System.Span<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (System.Span<T> span) { throw null; }
+        public static implicit operator System.Span<T> (T[]? array) { throw null; }
+        public static bool operator !=(System.Span<T> left, System.Span<T> right) { throw null; }
+        public System.Span<T> Slice(int start) { throw null; }
+        public System.Span<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public override string ToString() { throw null; }
+        public bool TryCopyTo(System.Span<T> destination) { throw null; }
+        public ref partial struct Enumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
     }
 }
 namespace System.Buffers
@@ -185,6 +299,38 @@ namespace System.Buffers
         System.Memory<T> GetMemory(int sizeHint = 0);
         System.Span<T> GetSpan(int sizeHint = 0);
     }
+    public partial interface IMemoryOwner<T> : System.IDisposable
+    {
+        System.Memory<T> Memory { get; }
+    }
+    public partial interface IPinnable
+    {
+        System.Buffers.MemoryHandle Pin(int elementIndex);
+        void Unpin();
+    }
+    public partial struct MemoryHandle : System.IDisposable
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        [System.CLSCompliantAttribute(false)]
+        public unsafe MemoryHandle(void* pointer, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle), System.Buffers.IPinnable? pinnable = null) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void* Pointer { get { throw null; } }
+        public void Dispose() { }
+    }
+    public abstract partial class MemoryManager<T> : System.Buffers.IMemoryOwner<T>, System.Buffers.IPinnable, System.IDisposable
+    {
+        protected MemoryManager() { }
+        public virtual System.Memory<T> Memory { get { throw null; } }
+        protected System.Memory<T> CreateMemory(int length) { throw null; }
+        protected System.Memory<T> CreateMemory(int start, int length) { throw null; }
+        protected abstract void Dispose(bool disposing);
+        public abstract System.Span<T> GetSpan();
+        public abstract System.Buffers.MemoryHandle Pin(int elementIndex = 0);
+        void System.IDisposable.Dispose() { }
+        protected internal virtual bool TryGetArray(out System.ArraySegment<T> segment) { throw null; }
+        public abstract void Unpin();
+    }
     public abstract partial class MemoryPool<T> : System.IDisposable
     {
         protected MemoryPool() { }
@@ -193,6 +339,13 @@ namespace System.Buffers
         public void Dispose() { }
         protected abstract void Dispose(bool disposing);
         public abstract System.Buffers.IMemoryOwner<T> Rent(int minBufferSize = -1);
+    }
+    public enum OperationStatus
+    {
+        Done = 0,
+        DestinationTooSmall = 1,
+        NeedMoreData = 2,
+        InvalidData = 3,
     }
     public abstract partial class ReadOnlySequenceSegment<T>
     {
@@ -249,7 +402,7 @@ namespace System.Buffers
         public static bool TryReadLittleEndian(this ref System.Buffers.SequenceReader<byte> reader, out int value) { throw null; }
         public static bool TryReadLittleEndian(this ref System.Buffers.SequenceReader<byte> reader, out long value) { throw null; }
     }
-    public ref partial struct SequenceReader<T> where T : unmanaged, System.IEquatable<T>
+    public ref partial struct SequenceReader<T> where T : struct
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -270,15 +423,15 @@ namespace System.Buffers
         public long AdvancePastAny(T value0, T value1) { throw null; }
         public long AdvancePastAny(T value0, T value1, T value2) { throw null; }
         public long AdvancePastAny(T value0, T value1, T value2, T value3) { throw null; }
-        public void AdvanceToEnd() { throw null; }
+        public void AdvanceToEnd() { }
         public bool IsNext(System.ReadOnlySpan<T> next, bool advancePast = false) { throw null; }
         public bool IsNext(T next, bool advancePast = false) { throw null; }
         public void Rewind(long count) { }
         public bool TryAdvanceTo(T delimiter, bool advancePastDelimiter = true) { throw null; }
         public bool TryAdvanceToAny(System.ReadOnlySpan<T> delimiters, bool advancePastDelimiter = true) { throw null; }
         public readonly bool TryCopyTo(System.Span<T> destination) { throw null; }
-        public readonly bool TryPeek(out T value) { throw null; }
         public readonly bool TryPeek(long offset, out T value) { throw null; }
+        public readonly bool TryPeek(out T value) { throw null; }
         public bool TryRead(out T value) { throw null; }
         public bool TryReadTo(out System.Buffers.ReadOnlySequence<T> sequence, System.ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true) { throw null; }
         public bool TryReadTo(out System.Buffers.ReadOnlySequence<T> sequence, T delimiter, bool advancePastDelimiter = true) { throw null; }
@@ -507,7 +660,7 @@ namespace System.Runtime.InteropServices
         public static bool TryGetArray<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ArraySegment<T> segment) { throw null; }
         public static bool TryGetReadOnlyMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Buffers.ReadOnlySequenceSegment<T>? startSegment, out int startIndex, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Buffers.ReadOnlySequenceSegment<T>? endSegment, out int endIndex) { throw null; }
-        public static bool TryRead<T>(ref System.Buffers.SequenceReader<byte> reader, out T value) where T : unmanaged { throw null; }
+        public static bool TryRead<T>(ref System.Buffers.SequenceReader<byte> reader, out T value) where T : struct { throw null; }
     }
 }
 namespace System.Text

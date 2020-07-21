@@ -24,11 +24,8 @@ namespace System.Drawing
         public System.Drawing.Bitmap Clone(System.Drawing.RectangleF rect, System.Drawing.Imaging.PixelFormat format) { throw null; }
         public static System.Drawing.Bitmap FromHicon(System.IntPtr hicon) { throw null; }
         public static System.Drawing.Bitmap FromResource(System.IntPtr hinstance, string bitmapName) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.IntPtr GetHbitmap() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.IntPtr GetHbitmap(System.Drawing.Color background) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.IntPtr GetHicon() { throw null; }
         public System.Drawing.Color GetPixel(int x, int y) { throw null; }
         public System.Drawing.Imaging.BitmapData LockBits(System.Drawing.Rectangle rect, System.Drawing.Imaging.ImageLockMode flags, System.Drawing.Imaging.PixelFormat format) { throw null; }
@@ -207,7 +204,6 @@ namespace System.Drawing
         internal BufferedGraphics() { }
         public System.Drawing.Graphics Graphics { get { throw null; } }
         public void Dispose() { }
-        ~BufferedGraphics() { }
         public void Render() { }
         public void Render(System.Drawing.Graphics? target) { }
         public void Render(System.IntPtr targetDC) { }
@@ -269,9 +265,7 @@ namespace System.Drawing
         Whiteness = 16711778,
         CaptureBlt = 1073741824,
     }
-#if NETCOREAPP
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.FontConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
     public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
@@ -351,7 +345,6 @@ namespace System.Drawing
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
         public int GetEmHeight(System.Drawing.FontStyle style) { throw null; }
-        [System.ObsoleteAttribute("Do not use method GetFamilies, use property Families instead")]
         public static System.Drawing.FontFamily[] GetFamilies(System.Drawing.Graphics graphics) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetLineSpacing(System.Drawing.FontStyle style) { throw null; }
@@ -552,18 +545,12 @@ namespace System.Drawing
         ~Graphics() { }
         public void Flush() { }
         public void Flush(System.Drawing.Drawing2D.FlushIntention intention) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHdc(System.IntPtr hdc) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHdc(System.IntPtr hdc, System.IntPtr hdevice) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHdcInternal(System.IntPtr hdc) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHwnd(System.IntPtr hwnd) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public object GetContextInfo() { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }
@@ -590,9 +577,7 @@ namespace System.Drawing
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix) { }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Drawing2D.MatrixOrder order) { }
         public void ReleaseHdc() { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public void ReleaseHdc(System.IntPtr hdc) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(System.IntPtr hdc) { }
         public void ResetClip() { }
         public void ResetTransform() { }
@@ -630,9 +615,7 @@ namespace System.Drawing
         Document = 5,
         Millimeter = 6,
     }
-#if NETCOREAPP
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
     public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Icon(System.Drawing.Icon original, System.Drawing.Size size) { }
@@ -657,7 +640,7 @@ namespace System.Drawing
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -667,9 +650,7 @@ namespace System.Drawing
         void ReleaseHdc();
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
-#if NETCOREAPP
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.ImageConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
     public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal Image() { }
@@ -731,7 +712,7 @@ namespace System.Drawing
         public void SaveAdd(System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
     }
     public sealed partial class ImageAnimator
@@ -962,7 +943,7 @@ namespace System.Drawing
         public bool IsVisible(System.Drawing.Rectangle rect, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(System.Drawing.RectangleF rect) { throw null; }
         public bool IsVisible(System.Drawing.RectangleF rect, System.Drawing.Graphics? g) { throw null; }
-        public bool IsVisible(int x, int y, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(int x, int y, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
         public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
@@ -2096,17 +2077,17 @@ namespace System.Drawing.Imaging
     {
         public static readonly System.Drawing.Imaging.Encoder ChrominanceTable;
         public static readonly System.Drawing.Imaging.Encoder ColorDepth;
+        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
         public static readonly System.Drawing.Imaging.Encoder Compression;
+        public static readonly System.Drawing.Imaging.Encoder ImageItems;
         public static readonly System.Drawing.Imaging.Encoder LuminanceTable;
         public static readonly System.Drawing.Imaging.Encoder Quality;
         public static readonly System.Drawing.Imaging.Encoder RenderMethod;
+        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public static readonly System.Drawing.Imaging.Encoder SaveFlag;
         public static readonly System.Drawing.Imaging.Encoder ScanMethod;
         public static readonly System.Drawing.Imaging.Encoder Transformation;
         public static readonly System.Drawing.Imaging.Encoder Version;
-        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
-        public static readonly System.Drawing.Imaging.Encoder ImageItems;
-        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public Encoder(System.Guid guid) { }
         public System.Guid Guid { get { throw null; } }
     }
@@ -2120,7 +2101,6 @@ namespace System.Drawing.Imaging
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, short[] value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numberValues, System.Drawing.Imaging.EncoderParameterValueType type, System.IntPtr value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator, int denominator) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int NumberOfValues, int Type, int Value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator1, int demoninator1, int numerator2, int demoninator2) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int[] numerator, int[] denominator) { }
@@ -2293,9 +2273,7 @@ namespace System.Drawing.Imaging
         ReadOnly = 65536,
         Caching = 131072,
     }
-#if NETCOREAPP
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.ImageFormatConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
     public sealed partial class ImageFormat
     {
         public ImageFormat(System.Guid guid) { }
@@ -2492,9 +2470,7 @@ namespace System.Drawing.Printing
         protected InvalidPrinterException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-#if NETCOREAPP
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.Printing.MarginsConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
     public partial class Margins : System.ICloneable
     {
         public Margins() { }
@@ -2506,8 +2482,8 @@ namespace System.Drawing.Printing
         public object Clone() { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
-        public static bool operator !=(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
+        public static bool operator ==(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }
+        public static bool operator !=(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class PageSettings : System.ICloneable
@@ -2718,8 +2694,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
-    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     [System.ComponentModel.DefaultEventAttribute("PrintPage")]
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }
@@ -2810,7 +2786,6 @@ namespace System.Drawing.Printing
             int System.Collections.ICollection.Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public int Add(System.Drawing.Printing.PaperSize paperSize) { throw null; }
             public void CopyTo(System.Drawing.Printing.PaperSize[] paperSizes, int index) { }
             public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -2825,7 +2800,6 @@ namespace System.Drawing.Printing
             int System.Collections.ICollection.Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public int Add(System.Drawing.Printing.PaperSource paperSource) { throw null; }
             public void CopyTo(System.Drawing.Printing.PaperSource[] paperSources, int index) { }
             public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -2840,7 +2814,6 @@ namespace System.Drawing.Printing
             int System.Collections.ICollection.Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public int Add(System.Drawing.Printing.PrinterResolution printerResolution) { throw null; }
             public void CopyTo(System.Drawing.Printing.PrinterResolution[] printerResolutions, int index) { }
             public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -2855,7 +2828,6 @@ namespace System.Drawing.Printing
             int System.Collections.ICollection.Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public int Add(string value) { throw null; }
             public void CopyTo(string[] strings, int index) { }
             public System.Collections.IEnumerator GetEnumerator() { throw null; }

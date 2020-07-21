@@ -38,7 +38,6 @@ namespace System.ServiceProcess
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public virtual System.Diagnostics.EventLog EventLog { get { throw null; } }
         public int ExitCode { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected System.IntPtr ServiceHandle { get { throw null; } }
         public string ServiceName { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -53,7 +52,6 @@ namespace System.ServiceProcess
         public void RequestAdditionalTime(int milliseconds) { }
         public static void Run(System.ServiceProcess.ServiceBase service) { }
         public static void Run(System.ServiceProcess.ServiceBase[] services) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
         public void Stop() { }
     }

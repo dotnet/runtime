@@ -216,7 +216,6 @@ namespace System.DirectoryServices.Protocols
         public DirectoryOperationException(string message) { }
         public DirectoryOperationException(string message, System.Exception inner) { }
         public System.DirectoryServices.Protocols.DirectoryResponse Response { get { throw null; } }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class DirectoryRequest : System.DirectoryServices.Protocols.DirectoryOperation
     {
@@ -351,7 +350,6 @@ namespace System.DirectoryServices.Protocols
         public int ErrorCode { get { throw null; } }
         public System.DirectoryServices.Protocols.PartialResultsCollection PartialResults { get { throw null; } }
         public string ServerErrorMessage { get { throw null; } }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class LdapSessionOptions
     {
@@ -562,13 +560,8 @@ namespace System.DirectoryServices.Protocols
     public partial class SearchResponse : System.DirectoryServices.Protocols.DirectoryResponse
     {
         internal SearchResponse() { }
-        public override System.DirectoryServices.Protocols.DirectoryControl[] Controls { get { throw null; } }
         public System.DirectoryServices.Protocols.SearchResultEntryCollection Entries { get { throw null; } }
-        public override string ErrorMessage { get { throw null; } }
-        public override string MatchedDN { get { throw null; } }
         public System.DirectoryServices.Protocols.SearchResultReferenceCollection References { get { throw null; } }
-        public override System.Uri[] Referral { get { throw null; } }
-        public override System.DirectoryServices.Protocols.ResultCode ResultCode { get { throw null; } }
     }
     public partial class SearchResultAttributeCollection : System.Collections.DictionaryBase
     {

@@ -388,7 +388,7 @@ namespace System.Net.Http.Headers
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.Http.Headers.ContentDispositionHeaderValue Parse(string? input) { throw null; }
-        object System.ICloneable.Clone() { throw null; }
+        object? System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.ContentDispositionHeaderValue? parsedValue) { throw null; }
     }
@@ -541,7 +541,7 @@ namespace System.Net.Http.Headers
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.Http.Headers.MediaTypeHeaderValue Parse(string? input) { throw null; }
-        object System.ICloneable.Clone() { throw null; }
+        object? System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.MediaTypeHeaderValue? parsedValue) { throw null; }
     }

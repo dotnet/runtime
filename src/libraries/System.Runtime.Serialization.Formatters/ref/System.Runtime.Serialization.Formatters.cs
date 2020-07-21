@@ -4,6 +4,19 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    public sealed partial class NonSerializedAttribute : System.Attribute
+    {
+        public NonSerializedAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class SerializableAttribute : System.Attribute
+    {
+        public SerializableAttribute() { }
+    }
+}
 namespace System.Runtime.Serialization
 {
     [System.CLSCompliantAttribute(false)]
@@ -15,11 +28,9 @@ namespace System.Runtime.Serialization
         public abstract System.Runtime.Serialization.SerializationBinder? Binder { get; set; }
         public abstract System.Runtime.Serialization.StreamingContext Context { get; set; }
         public abstract System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public abstract object Deserialize(System.IO.Stream serializationStream);
         protected virtual object? GetNext(out long objID) { throw null; }
         protected virtual long Schedule(object? obj) { throw null; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public abstract void Serialize(System.IO.Stream serializationStream, object graph);
         protected abstract void WriteArray(object obj, string name, System.Type memberType);
         protected abstract void WriteBoolean(bool val, string name);
@@ -79,18 +90,45 @@ namespace System.Runtime.Serialization
         public static System.Reflection.MemberInfo[] GetSerializableMembers(System.Type type, System.Runtime.Serialization.StreamingContext context) { throw null; }
         public static System.Runtime.Serialization.ISerializationSurrogate GetSurrogateForCyclicalReference(System.Runtime.Serialization.ISerializationSurrogate innerSurrogate) { throw null; }
         public static System.Type? GetTypeFromAssembly(System.Reflection.Assembly assem, string name) { throw null; }
-        public static object GetUninitializedObject(System.Type type) { throw null; }
+        public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static object PopulateObjectMembers(object obj, System.Reflection.MemberInfo[] members, object?[] data) { throw null; }
+    }
+    public partial interface IDeserializationCallback
+    {
+        void OnDeserialization(object? sender);
     }
     public partial interface IFormatter
     {
         System.Runtime.Serialization.SerializationBinder? Binder { get; set; }
         System.Runtime.Serialization.StreamingContext Context { get; set; }
         System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         object Deserialize(System.IO.Stream serializationStream);
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         void Serialize(System.IO.Stream serializationStream, object graph);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IFormatterConverter
+    {
+        object Convert(object value, System.Type type);
+        object Convert(object value, System.TypeCode typeCode);
+        bool ToBoolean(object value);
+        byte ToByte(object value);
+        char ToChar(object value);
+        System.DateTime ToDateTime(object value);
+        decimal ToDecimal(object value);
+        double ToDouble(object value);
+        short ToInt16(object value);
+        int ToInt32(object value);
+        long ToInt64(object value);
+        sbyte ToSByte(object value);
+        float ToSingle(object value);
+        string? ToString(object value);
+        ushort ToUInt16(object value);
+        uint ToUInt32(object value);
+        ulong ToUInt64(object value);
+    }
+    public partial interface ISerializable
+    {
+        void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);
     }
     public partial interface ISerializationSurrogate
     {
@@ -131,6 +169,86 @@ namespace System.Runtime.Serialization
         public virtual void BindToName(System.Type serializedType, out string? assemblyName, out string? typeName) { throw null; }
         public abstract System.Type? BindToType(string assemblyName, string typeName);
     }
+    public readonly partial struct SerializationEntry
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public string Name { get { throw null; } }
+        public System.Type ObjectType { get { throw null; } }
+        public object? Value { get { throw null; } }
+    }
+    public delegate void SerializationEventHandler(System.Runtime.Serialization.StreamingContext context);
+    public sealed partial class SerializationInfo
+    {
+        [System.CLSCompliantAttribute(false)]
+        public SerializationInfo(System.Type type, System.Runtime.Serialization.IFormatterConverter converter) { }
+        [System.CLSCompliantAttribute(false)]
+        public SerializationInfo(System.Type type, System.Runtime.Serialization.IFormatterConverter converter, bool requireSameTokenInPartialTrust) { }
+        public string AssemblyName { get { throw null; } set { } }
+        public static bool DeserializationInProgress { get { throw null; } }
+        public string FullTypeName { get { throw null; } set { } }
+        public bool IsAssemblyNameSetExplicit { get { throw null; } }
+        public bool IsFullTypeNameSetExplicit { get { throw null; } }
+        public int MemberCount { get { throw null; } }
+        public System.Type ObjectType { get { throw null; } }
+        public void AddValue(string name, bool value) { }
+        public void AddValue(string name, byte value) { }
+        public void AddValue(string name, char value) { }
+        public void AddValue(string name, System.DateTime value) { }
+        public void AddValue(string name, decimal value) { }
+        public void AddValue(string name, double value) { }
+        public void AddValue(string name, short value) { }
+        public void AddValue(string name, int value) { }
+        public void AddValue(string name, long value) { }
+        public void AddValue(string name, object? value) { }
+        public void AddValue(string name, object? value, System.Type type) { }
+        [System.CLSCompliantAttribute(false)]
+        public void AddValue(string name, sbyte value) { }
+        public void AddValue(string name, float value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void AddValue(string name, ushort value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void AddValue(string name, uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void AddValue(string name, ulong value) { }
+        public bool GetBoolean(string name) { throw null; }
+        public byte GetByte(string name) { throw null; }
+        public char GetChar(string name) { throw null; }
+        public System.DateTime GetDateTime(string name) { throw null; }
+        public decimal GetDecimal(string name) { throw null; }
+        public double GetDouble(string name) { throw null; }
+        public System.Runtime.Serialization.SerializationInfoEnumerator GetEnumerator() { throw null; }
+        public short GetInt16(string name) { throw null; }
+        public int GetInt32(string name) { throw null; }
+        public long GetInt64(string name) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public sbyte GetSByte(string name) { throw null; }
+        public float GetSingle(string name) { throw null; }
+        public string? GetString(string name) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public ushort GetUInt16(string name) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public uint GetUInt32(string name) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public ulong GetUInt64(string name) { throw null; }
+        public object? GetValue(string name, System.Type type) { throw null; }
+        public void SetType(System.Type type) { }
+        public static System.Runtime.Serialization.DeserializationToken StartDeserialization() { throw null; }
+        public static void ThrowIfDeserializationInProgress() { }
+        public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue) { }
+        public void UpdateValue(string name, object value, System.Type type) { }
+    }
+    public sealed partial class SerializationInfoEnumerator : System.Collections.IEnumerator
+    {
+        internal SerializationInfoEnumerator() { }
+        public System.Runtime.Serialization.SerializationEntry Current { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Type ObjectType { get { throw null; } }
+        object? System.Collections.IEnumerator.Current { get { throw null; } }
+        public object? Value { get { throw null; } }
+        public bool MoveNext() { throw null; }
+        public void Reset() { }
+    }
     public sealed partial class SerializationObjectManager
     {
         public SerializationObjectManager(System.Runtime.Serialization.StreamingContext context) { }
@@ -145,6 +263,10 @@ namespace System.Runtime.Serialization
         public virtual System.Runtime.Serialization.ISurrogateSelector? GetNextSelector() { throw null; }
         public virtual System.Runtime.Serialization.ISerializationSurrogate? GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector) { throw null; }
         public virtual void RemoveSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    public sealed partial class TypeLoadExceptionHolder
+    {
+        internal TypeLoadExceptionHolder() { }
     }
 }
 namespace System.Runtime.Serialization.Formatters
@@ -183,9 +305,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public System.Runtime.Serialization.Formatters.TypeFilterLevel FilterLevel { get { throw null; } set { } }
         public System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get { throw null; } set { } }
         public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
     }
 }

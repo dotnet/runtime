@@ -53,7 +53,8 @@ namespace System.Reflection.Emit
         public virtual void EndExceptionBlock() { }
         public virtual void EndScope() { }
         public virtual void MarkLabel(System.Reflection.Emit.Label loc) { }
-        public virtual void ThrowException(System.Type excType) { }
+        public virtual void MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) { }
+        public virtual void ThrowException([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type excType) { }
         public virtual void UsingNamespace(string usingNamespace) { }
     }
     public readonly partial struct Label : System.IEquatable<System.Reflection.Emit.Label>
@@ -71,6 +72,8 @@ namespace System.Reflection.Emit
         public override bool IsPinned { get { throw null; } }
         public override int LocalIndex { get { throw null; } }
         public override System.Type LocalType { get { throw null; } }
+        public void SetLocalSymInfo(string name) { }
+        public void SetLocalSymInfo(string name, int startOffset, int endOffset) { }
     }
     public partial class ParameterBuilder
     {
@@ -81,6 +84,7 @@ namespace System.Reflection.Emit
         public bool IsOut { get { throw null; } }
         public virtual string? Name { get { throw null; } }
         public virtual int Position { get { throw null; } }
+        public virtual System.Reflection.Emit.ParameterToken GetToken() { throw null; }
         public virtual void SetConstant(object? defaultValue) { }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
@@ -100,7 +104,9 @@ namespace System.Reflection.Emit
         public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper(System.Reflection.Module? mod) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.CallingConventions callingConvention, System.Type? returnType) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module? mod, System.Reflection.CallingConventions callingConvention, System.Type? returnType) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module? mod, System.Runtime.InteropServices.CallingConvention unmanagedCallConv, System.Type? returnType) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module? mod, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Runtime.InteropServices.CallingConvention unmanagedCallingConvention, System.Type? returnType) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module? mod, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? requiredReturnTypeCustomModifiers, System.Type[]? optionalReturnTypeCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? requiredParameterTypeCustomModifiers, System.Type[][]? optionalParameterTypeCustomModifiers) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module? mod, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module? mod, System.Type? returnType, System.Type[]? requiredReturnTypeCustomModifiers, System.Type[]? optionalReturnTypeCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? requiredParameterTypeCustomModifiers, System.Type[][]? optionalParameterTypeCustomModifiers) { throw null; }

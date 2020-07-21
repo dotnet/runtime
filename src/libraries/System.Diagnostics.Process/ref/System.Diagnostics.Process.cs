@@ -44,27 +44,20 @@ namespace System.Diagnostics
         public System.IntPtr MaxWorkingSet { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public System.IntPtr MinWorkingSet { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public System.Diagnostics.ProcessModuleCollection Modules { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int NonpagedSystemMemorySize { get { throw null; } }
         public long NonpagedSystemMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedMemorySize { get { throw null; } }
         public long PagedMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedSystemMemorySize { get { throw null; } }
         public long PagedSystemMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakPagedMemorySize { get { throw null; } }
         public long PeakPagedMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakVirtualMemorySize { get { throw null; } }
         public long PeakVirtualMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakWorkingSet { get { throw null; } }
         public long PeakWorkingSet64 { get { throw null; } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
         public System.Diagnostics.ProcessPriorityClass PriorityClass { get { throw null; } set { } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PrivateMemorySize { get { throw null; } }
         public long PrivateMemorySize64 { get { throw null; } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
@@ -82,10 +75,8 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessThreadCollection Threads { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize { get { throw null; } }
         public long VirtualMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int WorkingSet { get { throw null; } }
         public long WorkingSet64 { get { throw null; } }
         public event System.Diagnostics.DataReceivedEventHandler? ErrorDataReceived { add { } remove { } }
@@ -117,14 +108,14 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
-        public static System.Diagnostics.Process Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
+        public static System.Diagnostics.Process? Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
-        public static System.Diagnostics.Process Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
+        public static System.Diagnostics.Process? Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
-        public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
     }

@@ -9,7 +9,6 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeMemoryMappedFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeMemoryMappedFileHandle() : base (default(bool)) { }
-        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public sealed partial class SafeMemoryMappedViewHandle : System.Runtime.InteropServices.SafeBuffer

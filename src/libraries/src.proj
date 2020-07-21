@@ -49,4 +49,10 @@
              Projects="@(ApiCompatProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
+  
+  <Target Name="RunGlobalGenerateReferenceSource">
+    <MSBuild Targets="GenerateReferenceSource"
+             Projects="@(ProjectReference)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
 </Project>

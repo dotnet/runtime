@@ -49,7 +49,7 @@ namespace System.IO.Compression
         public override void Write(byte[] array, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] array, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class GZipStream : System.IO.Stream
     {
@@ -120,5 +120,13 @@ namespace System.IO.Compression
         Read = 0,
         Create = 1,
         Update = 2,
+    }
+    public partial class ZLibException : System.IO.IOException, System.Runtime.Serialization.ISerializable
+    {
+        public ZLibException() { }
+        protected ZLibException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public ZLibException(string? message, System.Exception? innerException) { }
+        public ZLibException(string? message, string? zlibErrorContext, int zlibErrorCode, string? zlibErrorMessage) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

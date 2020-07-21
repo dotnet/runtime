@@ -9,14 +9,14 @@ namespace System.Security.Cryptography
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
     {
         protected int KeySizeValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
         public virtual string? KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public virtual string? SignatureAlgorithm { get { throw null; } }
         public void Clear() { }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.AsymmetricAlgorithm? Create(string algName) { throw null; }
         public void Dispose() { }
@@ -43,9 +43,7 @@ namespace System.Security.Cryptography
     {
         CBC = 1,
         ECB = 2,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         OFB = 3,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         CFB = 4,
         CTS = 5,
     }
@@ -114,7 +112,6 @@ namespace System.Security.Cryptography
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(System.IO.Stream inputStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.HashAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.HashAlgorithm? Create(string hashName) { throw null; }
         public void Dispose() { }
@@ -154,7 +151,6 @@ namespace System.Security.Cryptography
         protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
         public static new System.Security.Cryptography.HMAC? Create(string algorithmName) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -178,7 +174,6 @@ namespace System.Security.Cryptography
         protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
         public virtual byte[] Key { get { throw null; } set { } }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.KeyedHashAlgorithm Create() { throw null; }
         public static new System.Security.Cryptography.KeyedHashAlgorithm? Create(string algName) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -220,8 +215,10 @@ namespace System.Security.Cryptography
         protected byte[]? IVValue;
         protected int KeySizeValue;
         protected byte[]? KeyValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected System.Security.Cryptography.CipherMode ModeValue;
         protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }
@@ -235,7 +232,6 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public virtual System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public void Clear() { }
-        [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.SymmetricAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.SymmetricAlgorithm? Create(string algName) { throw null; }
         public virtual System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }

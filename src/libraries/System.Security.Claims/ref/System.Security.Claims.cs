@@ -20,7 +20,7 @@ namespace System.Security.Claims
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public string Issuer { get { throw null; } }
         public string OriginalIssuer { get { throw null; } }
-        public System.Collections.Generic.IDictionary<string, string?> Properties { get { throw null; } }
+        public System.Collections.Generic.IDictionary<string, string> Properties { get { throw null; } }
         public System.Security.Claims.ClaimsIdentity? Subject { get { throw null; } }
         public string Type { get { throw null; } }
         public string Value { get { throw null; } }

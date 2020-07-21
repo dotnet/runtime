@@ -73,11 +73,7 @@ namespace System.Net
     public partial class WebClient : System.ComponentModel.Component
     {
         public WebClient() { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public bool AllowReadStreamBuffering { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string BaseAddress { get { throw null; } set { } }
@@ -103,9 +99,7 @@ namespace System.Net
         public event System.Net.UploadProgressChangedEventHandler? UploadProgressChanged { add { } remove { } }
         public event System.Net.UploadStringCompletedEventHandler? UploadStringCompleted { add { } remove { } }
         public event System.Net.UploadValuesCompletedEventHandler? UploadValuesCompleted { add { } remove { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        public event System.Net.WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
+        public event System.Net.WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
         public void CancelAsync() { }
         public byte[] DownloadData(string address) { throw null; }
         public byte[] DownloadData(System.Uri address) { throw null; }
@@ -139,8 +133,6 @@ namespace System.Net
         protected virtual void OnUploadProgressChanged(System.Net.UploadProgressChangedEventArgs e) { }
         protected virtual void OnUploadStringCompleted(System.Net.UploadStringCompletedEventArgs e) { }
         protected virtual void OnUploadValuesCompleted(System.Net.UploadValuesCompletedEventArgs e) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         protected virtual void OnWriteStreamClosed(System.Net.WriteStreamClosedEventArgs e) { }
         public System.IO.Stream OpenRead(string address) { throw null; }
         public System.IO.Stream OpenRead(System.Uri address) { throw null; }
@@ -204,16 +196,10 @@ namespace System.Net
         public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(System.Uri address, System.Collections.Specialized.NameValueCollection data) { throw null; }
         public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(System.Uri address, string? method, System.Collections.Specialized.NameValueCollection data) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class WriteStreamClosedEventArgs : System.EventArgs
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public WriteStreamClosedEventArgs() { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public System.Exception? Error { get { throw null; } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void WriteStreamClosedEventHandler(object sender, System.Net.WriteStreamClosedEventArgs e);
 }
