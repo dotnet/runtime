@@ -1533,6 +1533,12 @@ namespace System.Net.Http
             return false;
         }
 
+        internal void HeartBeat()
+        {
+            _http2Connection?.HeartBeat();
+        }
+
+
         // For diagnostic purposes
         public override string ToString() =>
             $"{nameof(HttpConnectionPool)} " +
@@ -1612,7 +1618,6 @@ namespace System.Net.Http
                 // The connection is usable.
                 return true;
             }
-
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
             public override bool Equals(object? obj) => obj is CachedConnection && Equals((CachedConnection)obj);
             public override int GetHashCode() => _connection?.GetHashCode() ?? 0;

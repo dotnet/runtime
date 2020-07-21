@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -94,6 +95,91 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
+
+        private readonly Http2KeepAlive _keepAlive;
+
+        internal enum KeepAliveState
+        {
+            None,
+            PingSent
+        }
+
+        internal enum KeepAliveVerifyAction
+        {
+            None,
+            SendPing,
+            Throw
+        }
+
+        internal class Http2KeepAlive
+        {
+
+            private long _pingPayload;
+
+            private readonly TimeSpan _keepAliveInterval;
+            private readonly TimeSpan _keepAliveTimeout;
+            private DateTimeOffset _nextPingRequestTimestamp;
+            private DateTimeOffset _pingTimeoutTimestamp;
+
+            private KeepAliveState _state;
+
+            public Http2KeepAlive(TimeSpan keepAliveInterval, TimeSpan keepAliveTimeout)
+            {
+                _keepAliveInterval = keepAliveInterval;
+                _keepAliveTimeout = keepAliveTimeout;
+                _nextPingRequestTimestamp = DateTimeOffset.Now.Add(keepAliveInterval);
+            }
+
+            public long PingPayload => _pingPayload;
+
+            public void ProcessFrame()
+            {
+                _nextPingRequestTimestamp = DateTimeOffset.Now.Add(_keepAliveInterval);
+            }
+
+            public bool ProcessPingAck(long payload)
+            {
+                if (_state != KeepAliveState.PingSent)
+                    return false;
+                if (Interlocked.Read(ref _pingPayload) != payload)
+                    return false;
+                _state = KeepAliveState.None;
+                return true;
+            }
+
+            public KeepAliveVerifyAction VerifyKeepAlive()
+            {
+                var now = DateTimeOffset.Now;
+                switch (_state)
+                {
+                    case KeepAliveState.None:
+                        // Check whether keep alive interval has passed since last frame received
+                        if (_keepAliveInterval > TimeSpan.Zero && now > _nextPingRequestTimestamp)
+                        {
+                            // Ping will be sent immeditely after this method finishes.
+                            // Set the status directly to ping sent and set the timestamp
+                            _state = KeepAliveState.PingSent;
+                            // System clock only has 1 second of precision, so the clock could be up to 1 second in the past.
+                            // To err on the side of caution, add a second to the clock when calculating the ping sent time.
+                            _pingTimeoutTimestamp = now.Add(_keepAliveTimeout);
+                            Interlocked.Increment(ref _pingPayload);
+                            return KeepAliveVerifyAction.SendPing;
+                        }
+                        break;
+                    case KeepAliveState.PingSent:
+                        if (_keepAliveTimeout != TimeSpan.MaxValue)
+                        {
+                            if (now > _pingTimeoutTimestamp)
+                                return KeepAliveVerifyAction.Throw;
+                        }
+
+                        break;
+                }
+
+                return KeepAliveVerifyAction.None;
+            }
+        }
+
         public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
@@ -114,6 +200,8 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
+
+            _keepAlive = new Http2KeepAlive(_pool.Settings._keepAlivePingDelay, _pool.Settings._keepAlivePingTimeout);
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
         }
@@ -272,6 +360,8 @@ namespace System.Net.Http
                     // Read the frame.
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame {frameNum}: {frameHeader}.");
+
+                    _keepAlive.ProcessFrame();
 
                     // Process the frame.
                     switch (frameHeader.Type)
@@ -642,12 +732,6 @@ namespace System.Net.Http
                 ThrowProtocolError();
             }
 
-            if (frameHeader.AckFlag)
-            {
-                // We never send PING, so an ACK indicates a protocol error
-                ThrowProtocolError();
-            }
-
             if (frameHeader.PayloadLength != FrameHeader.PingLength)
             {
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
@@ -660,8 +744,15 @@ namespace System.Net.Http
             ReadOnlySpan<byte> pingContent = _incomingBuffer.ActiveSpan.Slice(0, FrameHeader.PingLength);
             long pingContentLong = BinaryPrimitives.ReadInt64BigEndian(pingContent);
 
-            LogExceptions(SendPingAckAsync(pingContentLong));
-
+            if (frameHeader.AckFlag)
+            {
+                if (!_keepAlive.ProcessPingAck(pingContentLong))
+                    ThrowProtocolError();
+            }
+            else
+            {
+                LogExceptions(SendPingAckAsync(pingContentLong));
+            }
             _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
@@ -925,6 +1016,21 @@ namespace System.Net.Http
                 return true;
             });
 
+        /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
+        private Task SendPingAsync(long pingContent) =>
+            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent), static (state, writeBuffer) =>
+            {
+                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
+
+                Debug.Assert(sizeof(long) == FrameHeader.PingLength);
+
+                Span<byte> span = writeBuffer.Span;
+                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.None, streamId: 0);
+                BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
+
+                return true;
+            });
+
         private Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
             PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), static (s, writeBuffer) =>
             {
@@ -936,6 +1042,29 @@ namespace System.Net.Http
 
                 return true;
             });
+
+
+        internal void HeartBeat()
+        {
+            try
+            {
+                switch (_keepAlive.VerifyKeepAlive())
+                {
+                    case KeepAliveVerifyAction.SendPing:
+                        SendPingAsync(_keepAlive.PingPayload);
+                        break;
+                    case KeepAliveVerifyAction.Throw:
+                        ThrowProtocolError();
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
+
+                Abort(e);
+            }
+        }
 
         private static (ReadOnlyMemory<byte> first, ReadOnlyMemory<byte> rest) SplitBuffer(ReadOnlyMemory<byte> buffer, int maxSize) =>
             buffer.Length > maxSize ?

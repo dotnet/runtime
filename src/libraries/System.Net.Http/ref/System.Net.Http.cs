@@ -293,6 +293,9 @@ namespace System.Net.Http
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
+        public System.TimeSpan KeepAlivePingDelay { get { throw null; } set { } }
+        public System.TimeSpan KeepAlivePingTimeout { get { throw null; } set { } }
+        public bool KeepAlivePingWithoutRequests { get { throw null; } set { } }
         public int MaxAutomaticRedirections { get { throw null; } set { } }
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }

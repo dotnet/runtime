@@ -273,6 +273,41 @@ namespace System.Net.Http
             }
         }
 
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => _settings._keepAlivePingDelay;
+            set
+            {
+                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingDelay = value;
+            }
+        }
+
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => _settings._keepAlivePingTimeout;
+            set
+            {
+                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingTimeout = value;
+            }
+        }
+
+
+        public bool KeepAlivePingWithoutRequests => _settings._keepAlivePingWithoutRequests;
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 

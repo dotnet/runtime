@@ -36,6 +36,8 @@ namespace System.Net.Http
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
         private readonly Timer? _cleaningTimer;
+        /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
+        private readonly Timer _heartBeatTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
         // Temporary
@@ -130,6 +132,15 @@ namespace System.Net.Http
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
             }
+
+            _heartBeatTimer = new Timer(static state =>
+                {
+                var wr = (WeakReference<HttpConnectionPoolManager>)state!;
+                if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
+                {
+                    thisRef.HeartBeat();
+                }
+            }, new WeakReference<HttpConnectionPoolManager>(this), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
@@ -453,7 +464,7 @@ namespace System.Net.Http
         public void Dispose()
         {
             _cleaningTimer?.Dispose();
-
+            _heartBeatTimer.Dispose();
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
@@ -515,6 +526,14 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
+        }
+
+        private void HeartBeat()
+        {
+            foreach (HttpConnectionPool pool in _pools.Values)
+            {
+                pool.HeartBeat();
+            }
         }
 
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)
