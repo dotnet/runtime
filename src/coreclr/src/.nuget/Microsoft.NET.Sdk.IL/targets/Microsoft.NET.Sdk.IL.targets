@@ -153,14 +153,14 @@ Copyright (c) .NET Foundation. All rights reserved.
 <![CDATA[
 #define CORE_ASSEMBLY "$(CoreAssembly)"
 #define ASSEMBLY_VERSION "$(_AssemblyVersion)"
-#define CORE_ASSEMBLY_Version "$(_CoreAssemblyVersion)"
+#define CORE_ASSEMBLY_VERSION "$(_CoreAssemblyVersion)"
 $(ExtraMacros)
 
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY
 {
-  .publickeytoken = ($(_PublicKeyToken) )
-  .ver CORE_ASSEMBLY_Version
+  .publickeytoken = ($(AssemblyPublicKeyToken) )
+  .ver CORE_ASSEMBLY_VERSION
 }
  ]]>      
       </_VersionFileContents>
@@ -175,7 +175,7 @@ $(ExtraMacros)
     <ItemGroup>
       <FileWrites Include="$(VersionFilePath)" />
     </ItemGroup>
-  </Target>
+  </Target> 
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
   <!-- Required for project to load in Visual Studio. -->
