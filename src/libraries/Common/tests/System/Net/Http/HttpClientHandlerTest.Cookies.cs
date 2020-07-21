@@ -495,8 +495,6 @@ namespace System.Net.Http.Functional.Tests
                     });
                     Assert.Equal("LoggedIn=true", requestData2.GetSingleHeaderValue("Cookie"));
                 });
-
-
         }
 
         [Fact]
