@@ -1451,20 +1451,20 @@ namespace System.Net.Http
                     return;
                 }
 
-                if (TryRemoveHttp2Connection(connection, localHttp2Connections, out Http2Connection[] newConnections))
+                if (TryRemoveHttp2Connection(connection, localHttp2Connections, out Http2Connection[] newHttp2Connections))
                 {
-                    _http2Connections = newConnections;
+                    _http2Connections = newHttp2Connections;
                 }
             }
         }
 
-        private static bool TryRemoveHttp2Connection(Http2Connection connection, Http2Connection[] localHttp2Connections, out Http2Connection[] newConnections)
+        private static bool TryRemoveHttp2Connection(Http2Connection connection, Http2Connection[] localHttp2Connections, out Http2Connection[] newHttp2Connections)
         {
             int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
 
             if (invalidatedIndex >= 0)
             {
-                Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
+                newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
 
                 if (invalidatedIndex > 0)
                 {
@@ -1476,11 +1476,10 @@ namespace System.Net.Http
                     Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
                 }
 
-                newConnections = newHttp2Connections;
                 return true;
             }
 
-            newConnections = localHttp2Connections;
+            newHttp2Connections = localHttp2Connections;
             return false;
         }
 
@@ -1579,9 +1578,11 @@ namespace System.Net.Http
                                 http2Connection.Dispose();
                                 if (_http2Connections != null)
                                 {
-                                    Debug.Assert(TryRemoveHttp2Connection(http2Connection, _http2Connections, out Http2Connection[] newConnections), "Failed to remove HTTP/2 connection that is guaranteed to be present in the collection.");
-                                    // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
-                                    _http2Connections = newConnections;
+                                    if (TryRemoveHttp2Connection(http2Connection, _http2Connections, out Http2Connection[] newConnections))
+                                    {
+                                        // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
+                                        _http2Connections = newConnections;
+                                    }
                                 }
                             }
                         }
