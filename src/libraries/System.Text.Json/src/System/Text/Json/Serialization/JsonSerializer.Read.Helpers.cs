@@ -39,8 +39,7 @@ namespace System.Text.Json
 
         internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
         {
-            int handlingValue = (int)handling;
-            return handlingValue >= 0 && handlingValue <= 7;
+            return JsonHelpers.IsInRangeInclusive((int)handling, 0, 7);
         }
     }
 }
