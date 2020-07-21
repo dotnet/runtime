@@ -423,7 +423,7 @@ namespace System.Globalization
             return result;
         }
 
-#if MONO
+#if TARGET_BROWSER
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
             // Temp workaround for pinvoke callbacks for Mono

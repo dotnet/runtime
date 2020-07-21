@@ -15,7 +15,7 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetCalendarInfo")]
         internal static extern unsafe ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, char* result, int resultCapacity);
 
-#if MONO
+#if TARGET_BROWSER
         // Temp workaround for pinvoke callbacks for Mono
         // https://github.com/dotnet/runtime/issues/39100
 
