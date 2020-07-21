@@ -50,6 +50,8 @@
     <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
+    <!-- delete the OutDir in CI builds to save disk space on build agents since it's no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(OutDir)" />
   </Target>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
