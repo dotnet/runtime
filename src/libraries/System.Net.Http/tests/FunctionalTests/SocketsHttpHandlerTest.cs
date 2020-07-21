@@ -2158,9 +2158,9 @@ namespace System.Net.Http.Functional.Tests
 
                 totalHandledRequests += finalHandleTasks.Sum(t => t.Result.Count);
 
-                Assert.InRange(finalHandleTasks[0].Result.Count, MaxConcurrentStreams, TotalRequestCount);
-                Assert.InRange(finalHandleTasks[1].Result.Count, MaxConcurrentStreams, TotalRequestCount);
-                Assert.InRange(finalHandleTasks[2].Result.Count, MaxConcurrentStreams, TotalRequestCount);
+                Assert.InRange(finalHandleTasks[0].Result.Count, 1, TotalRequestCount);
+                Assert.InRange(finalHandleTasks[1].Result.Count, 1, TotalRequestCount);
+                Assert.InRange(finalHandleTasks[2].Result.Count, 1, TotalRequestCount);
                 Assert.Equal(TotalRequestCount, totalHandledRequests);
 
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
