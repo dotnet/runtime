@@ -56,12 +56,12 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```bash
-./build.sh -runtimeConfiguration Release
+./build.sh -runtimeConfiguration Release -c Release
 ```
 
 For Windows:
 ```bat
-./build.cmd -runtimeConfiguration Release
+./build.cmd -runtimeConfiguration Release -c Release
 ```
 
 Detailed information about building and testing runtimes and the libraries is in the documents linked below.
