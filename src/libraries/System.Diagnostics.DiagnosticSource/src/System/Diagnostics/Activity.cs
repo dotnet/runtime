@@ -77,8 +77,10 @@ namespace System.Diagnostics
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
-        private ConcurrentDictionary<string, object>? _customProperties;
         private string? _displayName;
+
+        private const int CustomPropertiesFastListMaxSize = 7;
+        private object? _customProperties;
 
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.
@@ -881,42 +883,206 @@ namespace System.Diagnostics
 
         /// <summary>
         /// SetCustomProperty allow attaching any custom object to this Activity object.
-        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// If the specified property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// If the specified property name is <c>null</c>, the mapping will be deleted.
+        /// The <c>SetCustomProperty(..)</c> and the <c>GetCustomProperty(..)</c> methods are thread-safe.
         /// </summary>
+        /// <remarks>
+        /// <para>Important performance considerations:</para>
+        /// <para>The <c>SetCustomProperty(..)</c> and the corresponding <c>GetCustomProperty(..)</c> methods
+        /// are performance-optimized for scenarios where the number of different property names is small,
+        /// and the number of property Get operations strongly dominates the number of Set operations.</para>
+        /// <para>When the number of  property name-value pairs is small, the data is held in an array.
+        /// Look-up is performed via a linear scan of the array, however, using very fast comparisons.
+        /// Updates use optimistic concurrency and perform a full array copy.
+        /// Once the number of  property name-value pairs crosses a certain threshold,
+        /// a concurrent dictionary is used to hold the data instead of the array.
+        /// Look-up are performed in an amortized constant time, however, the required book-keeping may
+        /// have a significant performance impact if properties are accessed very frequently.</para>
+        /// <para>If you need a large number of custom properties, consider using a custom ActivityProperties
+        /// class, instead of using many properties entries.</para>
+        /// <para>For example, the following code is less performant than the code below.</para>
+        /// <para>Less performant code:</para>
+        /// <code>
+        ///   Activity a = new Activity("a");
+        ///   a.SetCustomProperty("Your.Company.SpecialId", someGuid);
+        ///   a.SetCustomProperty("Your.Company.RelatedActivity", someActivity);
+        ///   a.SetCustomProperty("Your.Company.ExtraName", "Lorem Ipsum");
+        ///   . . .
+        ///   string extraName = (string) a.GetCustomProperty("Your.Company.ExtraName");
+        /// </code>
+        /// <para>Equivalent faster code (number of property set/get operations is reduced):</para>
+        /// <code>
+        ///   internal class ProprietaryTracingInfo
+        ///   {
+        ///       public Guid SpecialId { get; set; }
+        ///       public Activity RelatedActivity { get; set; }
+        ///       public string ExtraName { get; set; }
+        ///   }
+        ///   . . .
+        ///   Activity a = new Activity("a");
+        ///   a.SetCustomProperty("Your.Company.ProprietaryTracingInfo", new ProprietaryTracingInfo() {  ExtraName = "Lorem Ipsum" });
+        ///   . . .
+        ///   string extraName = ((ProprietaryTracingInfo) a.GetCustomProperty("Your.Company.ExtraName")).ExtraName;
+        /// </code>
+        /// </remarks>
         /// <param name="propertyName"> The name to associate the value with.<see cref="OperationName"/></param>
         /// <param name="propertyValue">The object to attach and map to the property name.</param>
         public void SetCustomProperty(string propertyName, object? propertyValue)
         {
-            if (_customProperties == null)
+            object? currProps = _customProperties;
+
+            bool hasRace;
+            do
             {
-                Interlocked.CompareExchange(ref _customProperties, new ConcurrentDictionary<string, object>(), null);
+                if (currProps != null && currProps is ConcurrentDictionary<string, object> currPropsTable)
+                {
+                    if (propertyValue == null)
+                    {
+                        currPropsTable.TryRemove(propertyName, out object _);
+                    }
+                    else
+                    {
+                        currPropsTable[propertyName] = propertyValue!;
+                    }
+
+                    return;
+                }
+
+                KeyValuePair<string, object>[]? currPropsArray = (KeyValuePair<string, object>[]?) currProps;
+                object? newProps = ModifyCustomPropertiesArray(currPropsArray, propertyName, propertyValue);
+
+                hasRace = (newProps != currProps)
+                                && (currProps != Interlocked.CompareExchange(ref _customProperties, newProps, currProps));
+            } while (hasRace);
+        }
+
+        private object? ModifyCustomPropertiesArray(KeyValuePair<string, object>[]? currProps, string propName, object? propValue)
+        {
+            bool deleting = (propValue == null);
+
+            // No current properties:
+            if (currProps == null)
+            {
+                return deleting
+                            ? null
+                            : new KeyValuePair<string, object>[1] { new KeyValuePair<string, object>(propName, propValue!) };
             }
 
-            if (propertyValue == null)
+            // One element AND ...
+            if (currProps.Length == 1)
             {
-                _customProperties.TryRemove(propertyName, out object _);
+                return currProps[0].Key.Equals(propName, StringComparison.Ordinal)
+
+                            // ...it DOES match the specified propName: Delete OR Replace.
+                            ? deleting
+                                    ? null
+                                    : new KeyValuePair<string, object>[1] { new KeyValuePair<string, object>(propName, propValue!) }
+
+                            // ...it does NOT match the specified propName: Leave as is OR Add new element.
+                            : deleting
+                                    ? currProps
+                                    : new KeyValuePair<string, object>[2] { currProps[0], new KeyValuePair<string, object>(propName, propValue!) };
+
+            }
+
+            // Ok, we have more than one element.
+
+            // Scroll through the array:
+            for (int i = 0; i < currProps.Length; i++)
+            {
+                // If there is a atch, we delete it or update it:
+                if (currProps[i].Key.Equals(propName, StringComparison.Ordinal))
+                {
+                    if (deleting)
+                    {
+                        var newProps = new KeyValuePair<string, object>[currProps.Length - 1];
+                        Buffer.BlockCopy(currProps, 0, newProps, 0, i);
+                        Buffer.BlockCopy(currProps, i + 1, newProps, i, newProps.Length - i);
+                        return newProps;
+                    }
+                    else
+                    {
+                        var newProps = new KeyValuePair<string, object>[currProps.Length];
+                        Buffer.BlockCopy(currProps, 0, newProps, 0, currProps.Length);
+                        newProps[i] = new KeyValuePair<string, object>(propName, propValue!);
+                        return newProps;
+                    }
+                }
+            }
+
+            // We did not find a match.
+
+            if (deleting)
+            {
+                // If we were deleting, we did not find anything and there is nothing to do.
+                return currProps;
             }
             else
             {
-                _customProperties[propertyName] = propertyValue!;
+                // Insert.
+                if (currProps.Length < CustomPropertiesFastListMaxSize)
+                {
+                    var newProps = new KeyValuePair<string, object>[currProps.Length + 1];
+                    Buffer.BlockCopy(currProps, 0, newProps, 0, currProps.Length);
+                    newProps[currProps.Length] = new KeyValuePair<string, object>(propName, propValue!);
+                    return newProps;
+                }
+                else
+                {
+                    var newProps = new ConcurrentDictionary<string, object>(currProps);
+                    newProps[propName] = propValue!;
+                    return newProps;
+                }
             }
         }
 
         /// <summary>
         /// GetCustomProperty retrieve previously attached object mapped to the property name.
+        /// The <c>SetCustomProperty(..)</c> and the <c>GetCustomProperty(..)</c> methods are thread-safe.
         /// </summary>
+        /// <remarks>
+        /// The performance of this method is optimized for reference-comparisons of <c>propertyName</c> keys.
+        /// Use constant <c>propertyName</c> keys where possible.
+        /// See also <see cref="SetCustomProperty(string, object?)" /> for important performance considerations.
+        /// </remarks>
         /// <param name="propertyName"> The name to get the associated object with.</param>
         /// <returns>The object mapped to the property name. Or null if there is no mapping previously done with this property name.</returns>
         public object? GetCustomProperty(string propertyName)
         {
-            // We don't check null name here as the dictionary is performing this check anyway.
-
-            if (_customProperties == null)
+            object? currProps = _customProperties;
+            if (currProps == null)
             {
                 return null;
             }
 
-            return _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            if (currProps is KeyValuePair<string, object>[] currPropsArray)
+            {
+                for (int i = currPropsArray.Length - 1; i >= 0; i--)
+                {
+                    if (ReferenceEquals(currPropsArray[i].Key, propertyName))
+                    {
+                        return currPropsArray[i].Value;
+                    }
+                }
+
+                for (int i = currPropsArray.Length - 1; i >= 0; i--)
+                {
+                    if (currPropsArray[i].Key.Equals(propertyName, StringComparison.Ordinal))
+                    {
+                        return currPropsArray[i].Value;
+                    }
+                }
+
+                return null;
+            }
+            else
+            {
+                ConcurrentDictionary<string, object> currPropsTable = (ConcurrentDictionary<string, object>) currProps;
+                return currPropsTable.TryGetValue(propertyName, out object? propertyValue)
+                        ? propertyValue
+                        : null;
+            }
         }
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
@@ -1127,8 +1293,8 @@ namespace System.Diagnostics
 #endif
         private static unsafe long GetRandomNumber()
         {
-            // Use the first 8 bytes of the GUID as a random number.
-            Guid g = Guid.NewGuid();
+                // Use the first 8 bytes of the GUID as a random number.
+                Guid g = Guid.NewGuid();
             return *((long*)&g);
         }
 
