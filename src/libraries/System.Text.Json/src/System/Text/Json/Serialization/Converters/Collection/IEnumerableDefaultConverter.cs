@@ -16,9 +16,9 @@ namespace System.Text.Json.Serialization.Converters
         protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
-        protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
+        protected static JsonConverter<TElement> GetElementConverter(JsonClassInfo elementClassInfo)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)elementClassInfo.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -39,6 +39,8 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
+            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+
             if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
@@ -50,8 +52,8 @@ namespace System.Text.Json.Serialization.Converters
 
                 CreateCollection(ref reader, ref state, options);
 
-                JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
-                if (elementConverter.CanUseDirectReadOrWrite)
+                JsonConverter<TElement> elementConverter = GetElementConverter(elementClassInfo);
+                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Fast path that avoids validation and extra indirection.
                     while (true)
@@ -137,7 +139,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.ObjectState < StackFrameObjectState.ReadElements)
                 {
-                    JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
+                    JsonConverter<TElement> elementConverter = GetElementConverter(elementClassInfo);
 
                     // Process all elements.
                     while (true)

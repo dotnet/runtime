@@ -227,6 +227,28 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
+        {
+            MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
+
+            if (!jsonPropertyInfo.ConverterBase.IsInternalConverter)
+            {
+                throw new InvalidOperationException(SR.Format(
+                    SR.NumberHandlingConverterMustBeBuiltIn,
+                    jsonPropertyInfo.ConverterBase.GetType(),
+                    jsonPropertyInfo.IsForClassInfo ? jsonPropertyInfo.DeclaredPropertyType : memberInfo!.DeclaringType));
+            }
+
+            // This exception is only thrown for object properties.
+            Debug.Assert(!jsonPropertyInfo.IsForClassInfo && memberInfo != null);
+            throw new InvalidOperationException(SR.Format(
+                SR.NumberHandlingOnPropertyTypeMustBeNumberOrCollection,
+                memberInfo.Name,
+                memberInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,

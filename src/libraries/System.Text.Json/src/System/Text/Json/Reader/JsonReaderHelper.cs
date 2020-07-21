@@ -321,5 +321,82 @@ namespace System.Text.Json
             value = default;
             return false;
         }
+
+        public static char GetFloatingPointStandardParseFormat(ReadOnlySpan<byte> span)
+        {
+            // Assume that 'e/E' is closer to the end.
+            int startIndex = span.Length - 1;
+            for (int i = startIndex; i >= 0; i--)
+            {
+                byte token = span[i];
+                if (token == 'E' || token == 'e')
+                {
+                    return JsonConstants.ScientificNotationFormat;
+                }
+            }
+            return default;
+        }
+
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)
+        {
+            if (span.Length == 3)
+            {
+                if (span.SequenceEqual(JsonConstants.NaNValue))
+                {
+                    value = float.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (span.SequenceEqual(JsonConstants.PositiveInfinityValue))
+                {
+                    value = float.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (span.SequenceEqual(JsonConstants.NegativeInfinityValue))
+                {
+                    value = float.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = 0;
+            return false;
+        }
+
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out double value)
+        {
+            if (span.Length == 3)
+            {
+                if (span.SequenceEqual(JsonConstants.NaNValue))
+                {
+                    value = double.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (span.SequenceEqual(JsonConstants.PositiveInfinityValue))
+                {
+                    value = double.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (span.SequenceEqual(JsonConstants.NegativeInfinityValue))
+                {
+                    value = double.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = 0;
+            return false;
+        }
     }
 }

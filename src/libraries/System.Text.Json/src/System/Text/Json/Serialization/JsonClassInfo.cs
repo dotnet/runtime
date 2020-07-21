@@ -89,6 +89,8 @@ namespace System.Text.Json
                 Options);
 
             ClassType = converter.ClassType;
+            JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
+
             PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(Type, runtimeType, converter, Options);
 
             switch (ClassType)
@@ -124,7 +126,7 @@ namespace System.Text.Json
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, cache, ref ignoredMembers);
+                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, cache, ref ignoredMembers);
                                 }
                                 else
                                 {
@@ -150,7 +152,7 @@ namespace System.Text.Json
                                 {
                                     if (hasJsonInclude || Options.IncludeFields)
                                     {
-                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, cache, ref ignoredMembers);
+                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, cache, ref ignoredMembers);
                                     }
                                 }
                                 else
@@ -225,10 +227,11 @@ namespace System.Text.Json
             Type declaringType,
             Type memberType,
             MemberInfo memberInfo,
+            JsonNumberHandling? typeNumberHandling,
             Dictionary<string, JsonPropertyInfo> cache,
             ref Dictionary<string, MemberInfo>? ignoredMembers)
         {
-            JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, Options);
+            JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, typeNumberHandling, Options);
             Debug.Assert(jsonPropertyInfo.NameAsString != null);
 
             string memberName = memberInfo.Name;
@@ -569,6 +572,14 @@ namespace System.Text.Json
 
             return false;
 #endif
+        }
+
+        private static JsonNumberHandling? GetNumberHandlingForType(Type type)
+        {
+            var numberHandlingAttribute =
+                (JsonNumberHandlingAttribute?)JsonSerializerOptions.GetAttributeThatCanHaveMultiple(type, typeof(JsonNumberHandlingAttribute));
+
+            return numberHandlingAttribute?.Handling;
         }
     }
 }
