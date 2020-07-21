@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -81,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Console
                         // Example: \x1B[40m
                         if (IsDigit(span[i + 2]) && IsDigit(span[i + 3]))
                         {
-                            escapeCode = (int) (span[i + 2] - '0') * 10 + (int)(span[i + 3] - '0') ;
+                            escapeCode = (int)(span[i + 2] - '0') * 10 + (int)(span[i + 3] - '0');
                             if (startIndex != -1)
                             {
                                 _onParseWrite(message, startIndex, length, background, foreground);
@@ -125,6 +126,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsDigit(char c) => (uint)(c - '0') <= ('9' - '0');
 
         internal const string DefaultForegroundColor = "\x1B[39m\x1B[22m"; // reset to default foreground color
