@@ -89,6 +89,13 @@ static void DetectCiphersuiteConfiguration()
     }
 
     SSL_CTX_free(ctx);
+
+#elif !defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(SSL_SYSTEM_DEFAULT_CIPHER_LIST)
+
+    // The Fedora, RHEL, and CentOS builds replace the normal defaults (with a configuration model).
+    // Consider their non-portable builds to always have specified ciphersuites in config.
+    g_config_specified_ciphersuites = 1;
+
 #endif
 }
 
