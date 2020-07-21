@@ -13,6 +13,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
+    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);GenerateVersionFile</PrepareForBuildDependsOn>
     <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
     <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
     <Language>IL</Language>
@@ -142,6 +143,37 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
 
     <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
+  </Target>
+
+  <Target Name="GenerateVersionFile">
+   <PropertyGroup>
+      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$(IncludePath)version.h</VersionFilePath>
+      <_DotnetVersion>$(AssemblyVersion.Replace('.', ':'))</_DotnetVersion>
+      <_VersionFileContents>
+<![CDATA[
+#define CORE_ASSEMBLY "$(CoreAssembly)"
+#define NET_VERSION "$(_DotnetVersion)"
+$(ExtraMacros)
+
+// Metadata version: v4.0.30319
+.assembly extern CORE_ASSEMBLY
+{
+  .publickeytoken = ($(_PublicKeyToken) )
+  .ver NET_VERSION
+}
+ ]]>      
+      </_VersionFileContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(VersionFilePath)"
+      Lines="$(_VersionFileContents)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(VersionFilePath)" />
+    </ItemGroup>
   </Target>
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
