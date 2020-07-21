@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Console
                     if (span[i + 3] == 'm')
                     {
                         // Example: \x1B[1m
-                        if ((uint)((int)span[i + 2] - (int)'0') <= (uint)('9' - '0'))
+                        if (IsDigit(span[i + 2]))
                         {
                             escapeCode = (int)(span[i + 2] - '0');
                             if (startIndex != -1)
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Logging.Console
                     else if (span.Length >= i + 5 && span[i + 4] == 'm')
                     {
                         // Example: \x1B[40m
-                        if ((uint)((int)span[i + 2] - (int)'0') <= (uint)('9' - '0') && (uint)((int)span[i + 3] - (int)'0') <= (uint)('9' - '0'))
+                        if (IsDigit(span[i + 2]) && IsDigit(span[i + 3]))
                         {
                             escapeCode = (int) (span[i + 2] - '0') * 10 + (int)(span[i + 3] - '0') ;
                             if (startIndex != -1)
@@ -124,6 +124,8 @@ namespace Microsoft.Extensions.Logging.Console
                 _onParseWrite(message, startIndex, length, background, foreground);
             }
         }
+
+        private static bool IsDigit(char c) => (uint)((int)c - (int)'0') <= (uint)('9' - '0');
 
         internal const string DefaultForegroundColor = "\x1B[39m\x1B[22m"; // reset to default foreground color
         internal const string DefaultBackgroundColor = "\x1B[49m"; // reset to the background color
