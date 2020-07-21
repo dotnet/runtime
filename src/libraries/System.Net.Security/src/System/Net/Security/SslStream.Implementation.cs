@@ -422,7 +422,7 @@ namespace System.Net.Security
                         if (_sslAuthenticationOptions.ServerOptionDelegate != null)
                         {
                             SslServerAuthenticationOptions userOptions =
-                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions!.TargetHost, _lastFrame.SupportedVersions),
+                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
                                                                                     _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
                             _sslAuthenticationOptions.UpdateOptions(userOptions);
                         }

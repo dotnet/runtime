@@ -205,7 +205,7 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
         {
-            string tagetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -218,12 +218,12 @@ namespace System.Net.Security.Tests
                 Assert.Equal(string.Empty, client.TargetHostName);
                 Assert.Equal(string.Empty, server.TargetHostName);
 
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = tagetName };
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName };
                 clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
                         SslStream stream = (SslStream)sender;
-                        Assert.Equal(tagetName, stream.TargetHostName);
+                        Assert.Equal(targetName, stream.TargetHostName);
 
                         return true;
                     };
@@ -233,7 +233,7 @@ namespace System.Net.Security.Tests
                     (sender, name) =>
                     {
                         SslStream stream = (SslStream)sender;
-                        Assert.Equal(tagetName, stream.TargetHostName);
+                        Assert.Equal(targetName, stream.TargetHostName);
 
                         return certificate;
                     };
@@ -241,8 +241,8 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
-                Assert.Equal(tagetName, client.TargetHostName);
-                Assert.Equal(tagetName, server.TargetHostName);
+                Assert.Equal(targetName, client.TargetHostName);
+                Assert.Equal(targetName, server.TargetHostName);
             }
         }
 
