@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensioFieldNotUsed()
+        public static void ExtensionFieldNotUsed()
         {
             string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
             ClassWithExtensionField obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
