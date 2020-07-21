@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
+        public void MainWindowHandle_GetUnix_ReturnsDefaultValue()
         {
             CreateDefaultProcess();
 

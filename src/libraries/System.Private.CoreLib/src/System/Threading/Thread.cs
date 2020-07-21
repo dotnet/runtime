@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -224,6 +225,7 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public void SetApartmentState(ApartmentState state)
         {
             if (!TrySetApartmentState(state))
