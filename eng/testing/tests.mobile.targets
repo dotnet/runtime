@@ -147,6 +147,11 @@
       <ExtraAssemblies Include="$(PublishDir)System.Xml.dll" />
       <ExtraAssemblies Include="$(PublishDir)WindowsBase.dll" />
     </ItemGroup>
+    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'">
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Private.CoreLib.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.MetadataLoadContext.Tests.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)mscorlib.dll" />
+    </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
