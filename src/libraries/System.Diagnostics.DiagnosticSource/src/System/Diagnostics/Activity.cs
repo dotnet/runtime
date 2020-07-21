@@ -80,6 +80,8 @@ namespace System.Diagnostics
         private ConcurrentDictionary<string, object>? _customProperties;
         private string? _displayName;
 
+        private object? _state;
+
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.
         /// </summary>
@@ -1223,6 +1225,68 @@ namespace System.Diagnostics
         {
             get => (ActivityIdFormat)(_stateFlags & StateFlags.FormatFlags);
             private set => _stateFlags = (_stateFlags & ~StateFlags.FormatFlags) | (StateFlags)((byte)value & (byte)StateFlags.FormatFlags);
+        }
+
+        /// <summary>
+        /// The state object associated with this <c>Activity</c> instance.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for use by auto-instrumentation tools trageted at production and application monitoring.
+        /// It should not be used by application or library code.
+        /// </remarks>
+        public object? State { get { return _state; } }
+
+        /// <summary>
+        /// Sets the <see cref="State" />-object of this <c>Activity</c> instance, if the cuttent state in <c>null</c>.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for use by auto-instrumentation tools trageted at production and application monitoring.
+        /// It should not be used by application or library code.
+        /// </remarks>
+        /// <param name="newState"><c>true</c> if the activity state was <c>null</c> and has been set
+        /// to the specified <c>newState</c>. <c>false</c> otherwise.</param>
+        /// <returns>><c>true</c> if the <see cref="State" /> of this <c>Activity</c> instance was set
+        /// to <c>newState</c>, because the state was null previously. <c>false</c> otherwise.</returns>
+        public bool TrySetState(object newState)
+        {
+            object? prevState = Interlocked.CompareExchange(ref _state, newState, null);
+            return (prevState == null);
+        }
+
+        /// <summary>
+        /// Sets the <see cref="State" />-object of this <c>Activity</c> instance, if the current state is <c>null</c> or
+        /// if <c>forceIfStateExists</c> is <c>true</c>.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for use by auto-instrumentation tools trageted at production and application monitoring.
+        /// It should not be used by application or library code.
+        /// </remarks>
+        /// <param name="newState">The state object to be set as the new state.</param>
+        /// <param name="forceIfStateExists">If <c>forceIfStateExists</c> is <c>true</c>, then
+        /// <c>newState</c> is always set as the new state.
+        /// If <c>forceIfStateExists</c> is <c>false</c>, then <c>newState</c> is only set if the new state
+        /// if the previous state is <c>null</c>.</param>
+        /// <param name="prevState">If this method returns <c>true</c>, the <c>prevState</c> is set to
+        /// the previous state, that was current before <c>newState</c> was set.
+        /// If this method returns <c>false</c>, <c>prevState</c> is set to refer to the object that is both,
+        /// the previous and the current state.
+        /// The state change from <c>prevState</c> to <c>newState</c> occurs atomically in respect to concurrent
+        /// operations.</param>
+        /// <returns><c>true</c> if the <see cref="State" /> of this <c>Activity</c> instance was set
+        /// to <c>newState</c>, because the state was null previously
+        /// or becasue <c>forceIfStateExists</c> was <c>true</c>. <c>false</c> otherwise.</returns>
+        public bool TrySetState(object newState, bool forceIfStateExists, out object? prevState)
+        {
+            if (forceIfStateExists)
+            {
+                prevState = Interlocked.Exchange(ref _state, newState);
+                return true;
+            }
+            else
+            {
+                prevState = Interlocked.CompareExchange(ref _state, newState, null);
+                return (prevState == null);
+            }
         }
 
         private partial class LinkedListNode<T>

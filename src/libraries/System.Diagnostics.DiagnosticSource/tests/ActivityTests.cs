@@ -1419,6 +1419,51 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestState()
+        {
+            using (Activity activity = new Activity("Test Activity 1"))
+            {
+                Assert.Null(activity.State);
+
+                object state1 = "State Object #1";
+                Assert.True(activity.TrySetState(state1));
+                Assert.NotNull(activity.State);
+                Assert.Same(activity.State, state1);
+
+                object state2 = "State Object #2";
+                Assert.False(activity.TrySetState(state2));
+                Assert.NotSame(activity.State, state2);
+                Assert.NotEqual(activity.State, state2);
+                Assert.Same(activity.State, state1);
+
+                object state3 = "State Object #3";
+                Assert.False(activity.TrySetState(state3, forceIfStateExists: false, out object prevState3));
+                Assert.NotNull(prevState3);
+                Assert.NotNull(activity.State);
+                Assert.Same(activity.State, state1);
+                Assert.Same(activity.State, prevState3);
+                Assert.Same(state1, prevState3);
+            }
+
+            using (Activity activity = new Activity("Test Activity 2"))
+            {
+                object state1 = "State Object #1";
+                Assert.True(activity.TrySetState(state1, forceIfStateExists: false, out object prevState1));
+                Assert.Null(prevState1);
+                Assert.NotNull(activity.State);
+                Assert.Same(activity.State, state1);
+
+                object state2 = "State Object #2";
+                Assert.True(activity.TrySetState(state2, forceIfStateExists: true, out object prevState2));
+                Assert.NotNull(prevState2);
+                Assert.NotNull(activity.State);
+                Assert.NotSame(activity.State, state1);
+                Assert.Same(activity.State, state2);
+                Assert.Same(state1, prevState2);
+            }
+        }
+
+        [Fact]
         public void TestIsAllDataRequested()
         {
             // Activity constructor allways set IsAllDataRequested to true for compatability.

@@ -70,6 +70,9 @@ namespace System.Diagnostics
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
         public ActivityContext Context { get { throw null; } }
+        public object? State { get { throw null; } }
+        public bool TrySetState(object newState) { throw null; }
+        public bool TrySetState(object newState, bool forceIfStateExists, out object? prevState) { throw null; }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object>
     {
