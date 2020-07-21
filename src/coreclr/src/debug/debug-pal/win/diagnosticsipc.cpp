@@ -302,6 +302,12 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                             return -1;
                     }
                 }
+                else
+                {
+                    // there's already data to be read
+                    pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
+                }
+                
             }
             else
             {
