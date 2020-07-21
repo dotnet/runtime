@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -57,21 +58,41 @@ namespace Mono.Linker.Steps
 			if (!type.HasInterfaces)
 				return;
 
+			// Foreach interface and for each newslot virtual method on the interface, try
+			// to find the method implementation and record it.
 			foreach (var interfaceImpl in type.GetInflatedInterfaces ()) {
 				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods ()) {
 					MethodDefinition resolvedInterfaceMethod = interfaceMethod.Resolve ();
 					if (resolvedInterfaceMethod == null)
 						continue;
 
+					// TODO-NICE: if the interface method is implemented explicitly (with an override),
+					// we shouldn't need to run the below logic. This results in linker potentially
+					// keeping more methods than needed.
+
+					if (!resolvedInterfaceMethod.IsVirtual
+						|| resolvedInterfaceMethod.IsFinal
+						|| !resolvedInterfaceMethod.IsNewSlot)
+						continue;
+
+					// Try to find an implementation with a name/sig match on the current type
 					MethodDefinition exactMatchOnType = TryMatchMethod (type, interfaceMethod);
 					if (exactMatchOnType != null) {
 						AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
 						continue;
 					}
 
+					// Next try to find an implementation with a name/sig match in the base hierarchy
 					var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
-					if (@base != null)
+					if (@base != null) {
 						AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
+						continue;
+					}
+
+					// Look for a default implementation last.
+					foreach (var defaultImpl in GetDefaultInterfaceImplementations (type, resolvedInterfaceMethod)) {
+						Annotations.AddDefaultInterfaceImplementation (resolvedInterfaceMethod, type, defaultImpl);
+					}
 				}
 			}
 		}
@@ -135,6 +156,53 @@ namespace Mono.Linker.Steps
 			}
 
 			return null;
+		}
+
+		// Returns a list of default implementations of the given interface method on this type.
+		// Note that this returns a list to potentially cover the diamond case (more than one
+		// most specific implementation of the given interface methods). Linker needs to preserve
+		// all the implementations so that the proper exception can be thrown at runtime.
+		static IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
+		{
+			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
+			// interface method in question.
+			foreach (var interfaceImpl in type.Interfaces) {
+				var potentialImplInterface = interfaceImpl.InterfaceType.Resolve ();
+				if (potentialImplInterface == null)
+					continue;
+
+				bool foundImpl = false;
+
+				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
+					if (potentialImplMethod == interfaceMethod &&
+						!potentialImplMethod.IsAbstract) {
+						yield return interfaceImpl;
+					}
+
+					if (!potentialImplMethod.HasOverrides)
+						continue;
+
+					// This method is an override of something. Let's see if it's the method we are looking for.
+					foreach (var @override in potentialImplMethod.Overrides) {
+						if (@override.Resolve () == interfaceMethod) {
+							yield return interfaceImpl;
+							foundImpl = true;
+							break;
+						}
+					}
+
+					if (foundImpl) {
+						break;
+					}
+				}
+
+				// We haven't found a MethodImpl on the current interface, but one of the interfaces
+				// this interface requires could still provide it.
+				if (!foundImpl) {
+					foreach (var impl in GetDefaultInterfaceImplementations (potentialImplInterface, interfaceMethod))
+						yield return impl;
+				}
+			}
 		}
 
 		static MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)

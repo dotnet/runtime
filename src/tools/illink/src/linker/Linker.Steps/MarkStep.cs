@@ -434,11 +434,17 @@ namespace Mono.Linker.Steps
 			_context.Annotations.EnqueueVirtualMethod (method);
 
 			var overrides = Annotations.GetOverrides (method);
-			if (overrides == null)
-				return;
+			if (overrides != null) {
+				foreach (OverrideInformation @override in overrides)
+					ProcessOverride (@override);
+			}
 
-			foreach (OverrideInformation @override in overrides)
-				ProcessOverride (@override);
+			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
+			if (defaultImplementations != null) {
+				foreach (var defaultImplementationInfo in defaultImplementations) {
+					ProcessDefaultImplementation (defaultImplementationInfo.InstanceType, defaultImplementationInfo.ProvidingInterface);
+				}
+			}
 		}
 
 		void ProcessOverride (OverrideInformation overrideInformation)
@@ -516,6 +522,14 @@ namespace Mono.Linker.Steps
 			}
 
 			return false;
+		}
+
+		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation)
+		{
+			if (!Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
+				return;
+
+			MarkInterfaceImplementation (implementation, typeWithDefaultImplementedInterfaceMethod);
 		}
 
 		void MarkMarshalSpec (IMarshalInfoProvider spec, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
