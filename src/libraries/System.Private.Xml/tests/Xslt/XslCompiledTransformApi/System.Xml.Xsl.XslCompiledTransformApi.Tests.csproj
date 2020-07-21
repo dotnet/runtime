@@ -14,7 +14,7 @@
     <Compile Include="XsltSettings.cs" />
     <Compile Include="XunitAssemblyAttribute.cs" />
     <Compile Include="XslCompiledTransform.cs" />
-    <Compile Include="..\XslTransformApi\CThread.cs" />
+    <Compile Include="..\XslTransformApi\cthread.cs" />
     <Compile Include="..\XslTransformApi\CThreads.cs" />
     <Compile Include="..\XslTransformApi\DataHelper.cs" />
     <Compile Include="..\XslTransformApi\ExceptionVerifier.cs" />
