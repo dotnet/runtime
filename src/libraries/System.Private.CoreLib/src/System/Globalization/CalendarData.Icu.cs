@@ -429,9 +429,11 @@ namespace System.Globalization
             // Temp workaround for pinvoke callbacks for Mono
             // https://github.com/dotnet/runtime/issues/39100
             var calendarInfoCallback = new Interop.Globalization.EnumCalendarInfoCallback(EnumCalendarInfoCallback);
-            return Interop.Globalization.EnumCalendarInfo(
+            bool ret = Interop.Globalization.EnumCalendarInfo(
                 System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(calendarInfoCallback),
                 localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            GC.KeepAlive(calendarInfoCallback);
+            return ret;
         }
 
         [Mono.MonoPInvokeCallback(typeof(Interop.Globalization.EnumCalendarInfoCallback))]
