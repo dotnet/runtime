@@ -147,18 +147,20 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="GenerateVersionFile">
    <PropertyGroup>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'version', 'version.h'))</VersionFilePath>
-      <_DotnetVersion>$(AssemblyVersion.Replace('.', ':'))</_DotnetVersion>
+      <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
+      <_CoreAssemblyVersion>$(CoreAssemblyVersion.Replace('.', ':'))</_CoreAssemblyVersion>
       <_VersionFileContents>
 <![CDATA[
 #define CORE_ASSEMBLY "$(CoreAssembly)"
-#define NET_VERSION "$(_DotnetVersion)"
+#define ASSEMBLY_VERSION "$(_AssemblyVersion)"
+#define CORE_ASSEMBLY_Version "$(_CoreAssemblyVersion)"
 $(ExtraMacros)
 
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY
 {
   .publickeytoken = ($(_PublicKeyToken) )
-  .ver NET_VERSION
+  .ver CORE_ASSEMBLY_Version
 }
  ]]>      
       </_VersionFileContents>
