@@ -68,12 +68,10 @@ namespace System.Text.Json
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
-            Current.JsonClassInfo = jsonClassInfo;
 
-            if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
-            {
-                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
-            }
+            Current.JsonClassInfo = jsonClassInfo;
+            Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
 
             if (options.ReferenceHandler != null)
             {
@@ -97,12 +95,15 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeClassInfo;
+                    JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     AddCurrent();
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    // Allow number handling on property to win over handling on type.
+                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
                 }
             }
             else if (_continuationCount == 1)

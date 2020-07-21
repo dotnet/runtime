@@ -49,16 +49,18 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
+            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+
             JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
-            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite)
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
+
+            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
                 do
                 {
                     TKey key = enumerator.Current.Key;
                     keyConverter.WriteWithQuotes(writer, key, options, ref state);
-
                     valueConverter.Write(writer, enumerator.Current.Value, options);
                 } while (enumerator.MoveNext());
             }
