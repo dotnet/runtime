@@ -397,16 +397,10 @@ namespace System.Net.Http.Functional.Tests
         // Default path should be calculated according to https://tools.ietf.org/html/rfc6265#section-5.1.4
         // When a cookie is being sent without an explicitly defined Path for a URL with URL-Path /path/sub,
         // the cookie should be added with Path=/path.
-        [Fact]
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public async Task GetAsync_NoPathDefined_CookieAddedWithDefaultPath()
         {
-            if (PlatformDetection.IsNetFramework)
-            {
-                // CookieContainer does not follow RFC6265 on .NET Framework,
-                // therefore WinHttpHandler is not expected to function correctly
-                return;
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
                 Uri requestUrl = new Uri(serverUrl, "path/sub");
@@ -424,7 +418,7 @@ namespace System.Net.Http.Functional.Tests
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    Cookie cookie = GetFirstCookie(handler.CookieContainer, requestUrl);
+                    Cookie cookie = handler.CookieContainer.GetCookies(requestUrl)[0];
                     Assert.Equal("/path", cookie.Path);
                 }
             });
@@ -432,16 +426,10 @@ namespace System.Net.Http.Functional.Tests
 
         // According to RFC6265, cookie path is not expected to match the request's path,
         // these cookies should be accepted by the client.
-        [Fact]
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public async Task GetAsync_CookiePathDoesNotMatchRequestPath_CookieAccepted()
         {
-            if (PlatformDetection.IsNetFramework)
-            {
-                // CookieContainer does not follow RFC6265 on .NET Framework,
-                // therefore WinHttpHandler is not expected to function correctly
-                return;
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
                 Uri requestUrl = new Uri(serverUrl, "original");
@@ -460,7 +448,7 @@ namespace System.Net.Http.Functional.Tests
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    Cookie cookie = GetFirstCookie(handler.CookieContainer, otherUrl);
+                    Cookie cookie = handler.CookieContainer.GetCookies(otherUrl)[0];
                     Assert.Equal("/other", cookie.Path);
                 }
             });
@@ -469,16 +457,10 @@ namespace System.Net.Http.Functional.Tests
         // Based on the OIDC login scenario described in comments:
         // https://github.com/dotnet/runtime/pull/39250#issuecomment-659783480
         // https://github.com/dotnet/runtime/issues/26141#issuecomment-612097147
-        [Fact]
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public async Task GetAsync_Redirect_CookiesArePreserved()
         {
-            if (PlatformDetection.IsNetFramework)
-            {
-                // CookieContainer does not follow RFC6265 on .NET Framework,
-                // therefore WinHttpHandler is not expected to function correctly
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
 
             string loginPath = "/login/user";
@@ -497,7 +479,7 @@ namespace System.Net.Http.Functional.Tests
                         string content = await response.Content.ReadAsStringAsync();
                         Assert.Equal(s_simpleContent, content);
 
-                        Cookie cookie = GetFirstCookie(cookies, returnUrl);
+                        Cookie cookie = handler.CookieContainer.GetCookies(returnUrl)[0];
                         Assert.Equal("LoggedIn", cookie.Name);
                     }
                 },
@@ -708,18 +690,6 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal("A=1", requestData2.GetSingleHeaderValue("Cookie"));
             });
-        }
-
-        // Workaround for Framework, where CookieCollection does not implement IEnumerable<Cookie>
-        static Cookie GetFirstCookie(CookieContainer container, Uri uri)
-        {
-            CookieCollection coll = container.GetCookies(uri);
-            System.Collections.IEnumerator e = coll.GetEnumerator();
-            if (e.MoveNext())
-            {
-                return (Cookie)e.Current;
-            }
-            throw new Exception($"No cookies found for for {uri}");
         }
 
         //
