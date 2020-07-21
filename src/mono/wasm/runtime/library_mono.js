@@ -100,28 +100,17 @@ var MonoSupportLib = {
 		_fixup_name_value_objects: function (var_list) {
 			var out_list = [];
 
-			var _fixup_value = function (value) {
-				if (value != null && value != undefined) {
-					var descr = value.description;
-					if (descr == null || descr == undefined)
-						value.description = '' + value.value;
-				}
-				return value;
-			};
-
 			var i = 0;
 			while (i < var_list.length) {
 				var o = var_list [i];
 				var name = o.name;
 				if (name == null || name == undefined) {
 					i ++;
-					o.value = _fixup_value(o.value);
 					out_list.push (o);
 					continue;
 				}
 
 				if (i + 1 < var_list.length) {
-					_fixup_value(var_list[i + 1].value);
 					o = Object.assign (o, var_list [i + 1]);
 				}
 
@@ -1179,6 +1168,7 @@ var MonoSupportLib = {
 				value: {
 					type: "string",
 					value: var_value,
+					description: var_value
 				}
 			});
 		},
@@ -1232,33 +1222,39 @@ var MonoSupportLib = {
 			var type_str = type;
 			if (typeof type != 'string')
 				type_str = Module.UTF8ToString (type);
-			if (typeof str_value != 'string')
 				str_value = Module.UTF8ToString (str_value);
 
 			switch (type_str) {
-			case "bool":
+			case "bool": {
+				const v = value != 0;
 				MONO.var_info.push ({
 					value: {
 						type: "boolean",
-						value: value != 0
+						value: v,
+						description: v.toString ()
 					}
 				});
 				break;
+			}
 
-			case "char":
+			case "char": {
+				const v = `${value} '${String.fromCharCode (value)}'`;
 				MONO.var_info.push ({
 					value: {
 						type: "symbol",
-						value: `${value} '${String.fromCharCode (value)}'`
+						value: v,
+						description: v
 					}
 				});
 				break;
+			}
 
 			case "number":
 				MONO.var_info.push ({
 					value: {
 						type: "number",
-						value: value
+						value: value,
+						description: '' + value
 					}
 				});
 				break;

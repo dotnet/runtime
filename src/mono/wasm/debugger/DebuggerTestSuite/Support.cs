@@ -308,32 +308,14 @@ namespace DebuggerTests
 
         internal void CheckString(JToken locals, string name, string value)
         {
-            foreach (var l in locals)
-            {
-                if (name != l["name"]?.Value<string>())
-                    continue;
-                var val = l["value"];
-                if (value == null)
-                {
-                    Assert.Equal("object", val["type"]?.Value<string>());
-                    Assert.Equal("null", val["subtype"]?.Value<string>());
-                }
-                else
-                {
-                    Assert.Equal("string", val["type"]?.Value<string>());
-                    Assert.Equal(value, val["value"]?.Value<string>());
-                }
-                return;
-            }
-            Assert.True(false, $"Could not find variable '{name}'");
+            var l = GetAndAssertObjectWithName(locals, name);
+            CheckValue(l["value"], TString(value), name).Wait();
         }
 
         internal JToken CheckSymbol(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("symbol", val["type"]?.Value<string>());
-            Assert.Equal(value, val["value"]?.Value<string>());
+            CheckValue(l["value"], TSymbol(value), name).Wait();
             return l;
         }
 
@@ -341,14 +323,7 @@ namespace DebuggerTests
         {
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
-            Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
-
-            var has_null_subtype = val["subtype"] != null && val["subtype"]?.Value<string>() == "null";
-            Assert.Equal(is_null, has_null_subtype);
-            if (subtype != null)
-                Assert.Equal(subtype, val["subtype"]?.Value<string>());
+            CheckValue(val, TObject(class_name, is_null: is_null), name).Wait();
 
             return l;
         }
@@ -387,12 +362,7 @@ namespace DebuggerTests
         internal JToken CheckBool(JToken locals, string name, bool expected)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("boolean", val["type"]?.Value<string>());
-            if (val["value"] == null)
-                Assert.True(false, "expected bool value not found for variable named {name}");
-            Assert.Equal(expected, val["value"]?.Value<bool>());
-
+            CheckValue(l["value"], TBool(expected), name).Wait();
             return l;
         }
 
@@ -405,41 +375,21 @@ namespace DebuggerTests
         internal JToken CheckValueType(JToken locals, string name, string class_name)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
-            Assert.True(val["isValueType"] != null && val["isValueType"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
+            CheckValue(l["value"], TValueType(class_name), name).Wait();
             return l;
         }
 
         internal JToken CheckEnum(JToken locals, string name, string class_name, string descr)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
-            Assert.True(val["isEnum"] != null && val["isEnum"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
-            Assert.Equal(descr, val["description"]?.Value<string>());
+            CheckValue(l["value"], TEnum(class_name, descr), name).Wait();
             return l;
         }
 
-        internal void CheckArray(JToken locals, string name, string class_name)
-        {
-            foreach (var l in locals)
-            {
-                if (name != l["name"]?.Value<string>())
-                    continue;
-
-                var val = l["value"];
-                Assert.Equal("object", val["type"]?.Value<string>());
-                Assert.Equal("array", val["subtype"]?.Value<string>());
-                Assert.Equal(class_name, val["className"]?.Value<string>());
-
-                //FIXME: elements?
-                return;
-            }
-            Assert.True(false, $"Could not find variable '{name}'");
-        }
+        internal void CheckArray(JToken locals, string name, string class_name, int length)
+           => CheckValue(
+                GetAndAssertObjectWithName(locals, name)["value"],
+                TArray(class_name, length), name).Wait();
 
         internal JToken GetAndAssertObjectWithName(JToken obj, string name)
         {

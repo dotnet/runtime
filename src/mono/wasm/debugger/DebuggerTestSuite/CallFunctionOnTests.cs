@@ -622,11 +622,11 @@ namespace DebuggerTests
 
                 var res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "Int" }));
                 Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "number", value = 5 }), "ptd.Int");
+                await CheckValue(res.Value["result"], TNumber(5), "ptd.Int");
 
                 res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "String" }));
                 Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = "foobar" }), "ptd.String");
+                await CheckValue(res.Value["result"], TString("foobar"), "ptd.String");
 
                 dt = new DateTime(3, 4, 5, 6, 7, 8);
                 res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "DT" }));

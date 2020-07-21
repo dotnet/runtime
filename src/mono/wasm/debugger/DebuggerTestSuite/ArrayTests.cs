@@ -223,8 +223,8 @@ namespace DebuggerTests
 
                 var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
                 Assert.Equal(4, locals.Count());
-                CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]");
-                CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]");
+                CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", array?.Length ?? 0);
+                CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", 0);
                 CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null : true);
                 CheckBool(locals, "call_other", test_prev_frame);
 

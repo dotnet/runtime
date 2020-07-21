@@ -372,14 +372,14 @@ namespace DebuggerTests
                     CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null : true);
 
-                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]");
+                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null : true);
 
                     // Unused locals
                     CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
                     CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null : true);
 
-                    CheckObject(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]");
+                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null : true);
                 }
             );
@@ -638,9 +638,11 @@ namespace DebuggerTests
                 CheckValueType(this_props, "SimpleStructProperty", "Math.SimpleStruct");
 
                 var ss_props = await GetObjectOnLocals(this_props, "SimpleStructProperty");
-                Assert.Equal(2, ss_props.Count());
-                CheckValueType(ss_props, "dt", "System.DateTime");
-                CheckValueType(ss_props, "gs", "Math.GenericStruct<System.DateTime>");
+                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
+                await CheckProps(ss_props, new {
+                    dt = TValueType("System.DateTime", dt.ToString()),
+                    gs = TValueType("Math.GenericStruct<System.DateTime>")
+                }, "ss_props");
 
                 await CheckDateTime(ss_props, "dt", new DateTime(2020, 1, 2, 3, 4, 5));
 
@@ -829,7 +831,7 @@ namespace DebuggerTests
                         CheckObject(locals, "this", "Math.NestedInMath");
                         //FIXME: check fields
                         CheckValueType(locals, "ss", "Math.SimpleStruct");
-                        CheckArray(locals, "ss_arr", "Math.SimpleStruct[]");
+                        CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", 0);
                         // TODO: struct fields
                     }
                 );
