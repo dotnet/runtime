@@ -722,24 +722,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static string EncodeHexString(byte[] sArray)
         {
-            return EncodeHexString(sArray, 0, (uint)sArray.Length);
-        }
-
-        internal static string EncodeHexString(byte[] sArray, uint start, uint end)
-        {
-            string result = null;
-            if (sArray != null)
-            {
-                char[] hexOrder = new char[(end - start) * 2];
-                for (uint i = start, j = 0; i < end; i++)
-                {
-                    int digit = sArray[i];
-                    hexOrder[j++] = HexConverter.ToCharUpper(digit >> 4);
-                    hexOrder[j++] = HexConverter.ToCharUpper(digit);
-                }
-                result = new string(hexOrder);
-            }
-            return result;
+            return HexConverter.ToString(sArray);
         }
 
         internal static byte[] DecodeHexString(string s)
@@ -750,22 +733,10 @@ namespace System.Security.Cryptography.Xml
             int i = 0;
             for (int index = 0; index < cbHex; index++)
             {
-                hex[index] = (byte)((HexToByte(hexString[i]) << 4) | HexToByte(hexString[i + 1]));
+                hex[index] = (byte)((HexConverter.FromChar(hexString[i]) << 4) | HexConverter.FromChar(hexString[i + 1]));
                 i += 2;
             }
             return hex;
-        }
-
-        internal static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         internal static bool IsSelfSigned(X509Chain chain)

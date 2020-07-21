@@ -229,11 +229,13 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(G<G<int>>), t);
         }
 
+#pragma warning disable SYSLIB0005 // Obsolete: GAC
         [Fact]
         public void GlobalAssemblyCache()
         {
             Assert.False(typeof(AssemblyTests).Assembly.GlobalAssemblyCache);
         }
+#pragma warning restore SYSLIB0005 // Obsolete: GAC
 
         [Fact]
         public void HostContext()

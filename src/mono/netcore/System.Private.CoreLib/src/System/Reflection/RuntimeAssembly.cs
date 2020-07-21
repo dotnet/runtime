@@ -107,6 +107,7 @@ namespace System.Reflection
 
         public override Module ManifestModule => GetManifestModuleInternal();
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -150,6 +151,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override string[] GetManifestResourceNames();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetExportedTypes();
 
@@ -252,6 +254,7 @@ namespace System.Reflection
             return AssemblyName.Create(_mono_assembly, CodeBase);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -358,6 +361,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)

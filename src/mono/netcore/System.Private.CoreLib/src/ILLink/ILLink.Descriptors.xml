@@ -142,11 +142,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- debugger-agent.c: create_event_list -->
-		<type fullname="System.Diagnostics.DebuggerNonUserCodeAttribute"/>
-		<type fullname="System.Diagnostics.DebuggerHiddenAttribute"/>
-		<type fullname="System.Diagnostics.DebuggerStepThroughAttribute"/>
-
 		<!-- exception.c (mono_get_exception_divide_by_zero) -->
 		<type fullname="System.DivideByZeroException">
 			<!-- mono_exception_from_name -->

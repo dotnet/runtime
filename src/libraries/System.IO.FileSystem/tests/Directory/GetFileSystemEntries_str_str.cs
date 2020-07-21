@@ -682,7 +682,7 @@ namespace System.IO.Tests
         {
             string testDir1Str = GetTestFileName();
             DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-            DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
+            testDir.CreateSubdirectory(testDir1Str);
 
             using (File.Create(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())))
             using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))

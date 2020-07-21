@@ -740,9 +740,11 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPermissionSet()
         {
+#pragma warning disable SYSLIB0003 // Obsolete: CAS
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
             }).Dispose();
+#pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
         [Theory]

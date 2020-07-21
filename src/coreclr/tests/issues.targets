@@ -5,9 +5,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracecontrol/tracecontrol/*">
             <Issue>https://github.com/dotnet/runtime/issues/11204</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/gcdump/*">
-            <Issue>https://github.com/dotnet/runtime/issues/39361</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">
             <Issue>timeout</Issue>
         </ExcludeList>
@@ -23,9 +20,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/35798</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
-            <Issue>https://github.com/dotnet/runtime/issues/38847</Issue>
         </ExcludeList>
     </ItemGroup>
 

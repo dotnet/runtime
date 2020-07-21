@@ -66,7 +66,12 @@ namespace System.Globalization.Tests
             try
             {
                 dtfi.Calendar = calendar;
-                Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
+
+                if (PlatformDetection.IsNotBrowser)
+                {
+                    // Browser's ICU doesn't contain NativeCalendarName,
+                    Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
+                }
             }
             catch
             {
