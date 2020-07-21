@@ -103,21 +103,21 @@ namespace System.Net.Test.Common
 
         public Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            return EstablishConnectionAsync(null, settingsEntries);
+            return EstablishConnectionAsync(null, null, settingsEntries);
         }
 
-        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(TimeSpan? timeout, params SettingsEntry[] settingsEntries)
+        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
         {
-            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(timeout, settingsEntries).ConfigureAwait(false);
+            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(timeout, ackTimeout, settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
         public Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
         {
-            return EstablishConnectionGetSettingsAsync(null, settingsEntries);
+            return EstablishConnectionGetSettingsAsync(null, null, settingsEntries);
         }
 
-        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(TimeSpan? timeout, params SettingsEntry[] settingsEntries)
+        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
         {
             Http2LoopbackConnection connection = await AcceptConnectionAsync(timeout).ConfigureAwait(false);
 
@@ -144,7 +144,7 @@ namespace System.Net.Test.Common
             await connection.WriteFrameAsync(settingsAck).ConfigureAwait(false);
 
             // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            await connection.ExpectSettingsAckAsync();
+            await connection.ExpectSettingsAckAsync((int) (ackTimeout?.TotalMilliseconds ?? 5000));
 
             return (connection, clientSettingsFrame);
         }
