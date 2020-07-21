@@ -400,6 +400,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_NoPathDefined_CookieAddedWithDefaultPath()
         {
+            if (PlatformDetection.IsNetFramework)
+            {
+                // CookieContainer does not follow RFC6265 on .NET Framework,
+                // therefore WinHttpHandler is not expected to function correctly
+                return;
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
                 Uri requestUrl = new Uri(serverUrl, "path/sub");
@@ -428,6 +435,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_CookiePathDoesNotMatchRequestPath_CookieAccepted()
         {
+            if (PlatformDetection.IsNetFramework)
+            {
+                // CookieContainer does not follow RFC6265 on .NET Framework,
+                // therefore WinHttpHandler is not expected to function correctly
+                return;
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
             {
                 Uri requestUrl = new Uri(serverUrl, "original");
@@ -458,6 +472,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_Redirect_CookiesArePreserved()
         {
+            if (PlatformDetection.IsNetFramework)
+            {
+                // CookieContainer does not follow RFC6265 on .NET Framework,
+                // therefore WinHttpHandler is not expected to function correctly
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
 
             string loginPath = "/login/user";
