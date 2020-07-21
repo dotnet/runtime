@@ -13,6 +13,7 @@ namespace Mono.Linker.Dataflow
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
+		readonly TypeHierarchyCache _hierarchyInfo = new TypeHierarchyCache ();
 
 		public FlowAnnotations (LinkContext context)
 		{
@@ -373,15 +374,11 @@ namespace Mono.Linker.Dataflow
 			return true;
 		}
 
-		static bool IsTypeInterestingForDataflow (TypeReference typeReference)
+		bool IsTypeInterestingForDataflow (TypeReference typeReference)
 		{
-			// We will accept any System.Type* as interesting to enable testing
-			// It's necessary to be able to implement a custom "Type" type in tests to validate
-			// the correct propagation of the annotations on "this" parameter. And tests can't really
-			// override System.Type - as it creates too many issues.
-			// It also covers TypeBuilder and RuntimeType.
 			return typeReference.MetadataType == MetadataType.String ||
-				(typeReference.Name.Contains ("Type") && typeReference.Namespace.StartsWith ("System"));
+				_hierarchyInfo.IsSystemType (typeReference) ||
+				_hierarchyInfo.IsSystemReflectionIReflect (typeReference);
 		}
 
 		internal void ValidateMethodAnnotationsAreSame (MethodDefinition method, MethodDefinition baseMethod)
