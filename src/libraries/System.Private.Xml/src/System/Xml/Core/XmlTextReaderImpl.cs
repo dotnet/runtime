@@ -556,7 +556,7 @@ namespace System.Xml
         // "innerXml" of an XmlDecl is. This internal function is required by DOM. When(if) we handle/allow
         // all nodetypes in InnerXml then we should support them as part of fragment constructor as well.
         // Until then, this internal function will have to do.
-        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext context)
+        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
             InitStringInput((context == null) ? string.Empty : context.BaseURI, Encoding.Unicode, string.Concat("<?xml ", xmlFragment, "?>"));
@@ -9252,7 +9252,7 @@ namespace System.Xml
         // Validation support
         //
 
-        internal IValidationEventHandling ValidationEventHandling
+        internal IValidationEventHandling? ValidationEventHandling
         {
             set
             {

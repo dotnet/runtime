@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Diagnostics;
@@ -27,7 +28,7 @@ namespace System.Xml
 
         private partial struct Namespace
         {
-            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter rawWriter)
+            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
@@ -63,38 +64,38 @@ namespace System.Xml
                 BufferChunk bufChunk;
                 for (int i = _firstItem; i <= _lastItem; i++)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
-                            await writer.WriteEntityRefAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteEntityRefAsync((string)item.data!).ConfigureAwait(false);
                             break;
                         case ItemType.CharEntity:
-                            await writer.WriteCharEntityAsync((char)item.data).ConfigureAwait(false);
+                            await writer.WriteCharEntityAsync((char)item.data!).ConfigureAwait(false);
                             break;
                         case ItemType.SurrogateCharEntity:
-                            char[] chars = (char[])item.data;
+                            char[] chars = (char[])item.data!;
                             await writer.WriteSurrogateCharEntityAsync(chars[0], chars[1]).ConfigureAwait(false);
                             break;
                         case ItemType.Whitespace:
-                            await writer.WriteWhitespaceAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteWhitespaceAsync((string)item.data!).ConfigureAwait(false);
                             break;
                         case ItemType.String:
-                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data!).ConfigureAwait(false);
                             break;
                         case ItemType.StringChars:
-                            bufChunk = (BufferChunk)item.data;
+                            bufChunk = (BufferChunk)item.data!;
                             await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
                             break;
                         case ItemType.Raw:
-                            await writer.WriteRawAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteRawAsync((string)item.data!).ConfigureAwait(false);
                             break;
                         case ItemType.RawChars:
-                            bufChunk = (BufferChunk)item.data;
+                            bufChunk = (BufferChunk)item.data!;
                             await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
                             break;
                         case ItemType.ValueString:
-                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data!).ConfigureAwait(false);
                             break;
                         default:
                             Debug.Fail("Unexpected ItemType value.");

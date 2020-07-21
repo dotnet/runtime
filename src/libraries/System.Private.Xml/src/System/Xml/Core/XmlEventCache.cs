@@ -151,7 +151,7 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.PI:
-                            writer.WriteProcessingInstruction(page[idxEvent].String1!, page[idxEvent].String2);
+                            writer.WriteProcessingInstruction(page[idxEvent].String1!, page[idxEvent].String2!);
                             break;
 
                         case XmlEventType.Whitespace:

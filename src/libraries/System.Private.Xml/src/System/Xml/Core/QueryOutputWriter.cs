@@ -31,7 +31,7 @@ namespace System.Xml
         private readonly bool _checkWellFormedDoc;
         private bool _hasDocElem;
         private bool _inAttr;
-        private readonly string _systemId, _publicId;
+        private readonly string? _systemId, _publicId;
         private int _depth;
 
         public QueryOutputWriter(XmlRawWriter writer, XmlWriterSettings settings)
@@ -259,7 +259,7 @@ namespace System.Xml
             _wrapped.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string? text)
+        public override void WriteProcessingInstruction(string name, string text)
         {
             EndCDataSection();
             _wrapped.WriteProcessingInstruction(name, text);

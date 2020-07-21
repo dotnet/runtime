@@ -29,7 +29,7 @@ namespace System.Xml
         private readonly BitStack? _bitsCData;
         private readonly XmlQualifiedName? _qnameCData;
         private bool _outputDocType, _inAttr;
-        private readonly string _systemId, _publicId;
+        private readonly string? _systemId, _publicId;
 
         public QueryOutputWriterV1(XmlWriter writer, XmlWriterSettings settings)
         {
@@ -217,7 +217,7 @@ namespace System.Xml
             _wrapped.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string? text)
+        public override void WriteProcessingInstruction(string name, string text)
         {
             EndCDataSection();
             _wrapped.WriteProcessingInstruction(name, text);

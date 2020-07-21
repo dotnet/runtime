@@ -153,7 +153,7 @@ namespace System.Xml
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public abstract void WriteProcessingInstruction(string name, string? text);
+        public abstract void WriteProcessingInstruction(string name, string text);
 
         // Writes out an entity reference as follows: "&"+name+";".
 

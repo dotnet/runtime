@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml
 {
     using System;
@@ -17,12 +18,12 @@ namespace System.Xml
     /// </summary>
     internal class XmlAutoDetectWriter : XmlRawWriter, IRemovableWriter
     {
-        private XmlRawWriter _wrapped;
-        private OnRemoveWriter _onRemove;
+        private XmlRawWriter? _wrapped;
+        private OnRemoveWriter? _onRemove;
         private readonly XmlWriterSettings _writerSettings;
         private readonly XmlEventCache _eventCache;           // Cache up events until first StartElement is encountered
-        private readonly TextWriter _textWriter;
-        private readonly Stream _strm;
+        private readonly TextWriter? _textWriter;
+        private readonly Stream? _strm;
 
         //-----------------------------------------------
         // Constructors
@@ -59,7 +60,7 @@ namespace System.Xml
         /// <summary>
         /// This writer will raise this event once it has determined whether to replace itself with the Html or Xml writer.
         /// </summary>
-        public OnRemoveWriter OnRemoveWriterEvent
+        public OnRemoveWriter? OnRemoveWriterEvent
         {
             get { return _onRemove; }
             set { _onRemove = value; }
@@ -75,29 +76,30 @@ namespace System.Xml
             get { return _writerSettings; }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteDocType(name, pubid, sysid, subset);
+            _wrapped!.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             if (_wrapped == null)
             {
                 // This is the first time WriteStartElement has been called, so create the Xml or Html writer
-                if (ns.Length == 0 && IsHtmlTag(localName))
+                if (ns!.Length == 0 && IsHtmlTag(localName))
                     CreateWrappedWriter(XmlOutputMethod.Html);
                 else
                     CreateWrappedWriter(XmlOutputMethod.Xml);
             }
-            _wrapped.WriteStartElement(prefix, localName, ns);
+
+            _wrapped!.WriteStartElement(prefix, localName, ns);
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteStartAttribute(prefix, localName, ns);
+            _wrapped!.WriteStartAttribute(prefix, localName, ns);
         }
 
         public override void WriteEndAttribute()
@@ -106,15 +108,15 @@ namespace System.Xml
             _wrapped.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             if (TextBlockCreatesWriter(text))
-                _wrapped.WriteCData(text);
+                _wrapped!.WriteCData(text);
             else
                 _eventCache.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             if (_wrapped == null)
                 _eventCache.WriteComment(text);
@@ -130,7 +132,7 @@ namespace System.Xml
                 _wrapped.WriteProcessingInstruction(name, text);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             if (_wrapped == null)
                 _eventCache.WriteWhitespace(ws);
@@ -138,10 +140,10 @@ namespace System.Xml
                 _wrapped.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             if (TextBlockCreatesWriter(text))
-                _wrapped.WriteString(text);
+                _wrapped!.WriteString(text);
             else
                 _eventCache.WriteString(text);
         }
@@ -159,7 +161,7 @@ namespace System.Xml
         public override void WriteRaw(string data)
         {
             if (TextBlockCreatesWriter(data))
-                _wrapped.WriteRaw(data);
+                _wrapped!.WriteRaw(data);
             else
                 _eventCache.WriteRaw(data);
         }
@@ -167,112 +169,112 @@ namespace System.Xml
         public override void WriteEntityRef(string name)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteEntityRef(name);
+            _wrapped!.WriteEntityRef(name);
         }
 
         public override void WriteCharEntity(char ch)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteCharEntity(ch);
+            _wrapped!.WriteCharEntity(ch);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteSurrogateCharEntity(lowChar, highChar);
+            _wrapped!.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteBase64(buffer, index, count);
+            _wrapped!.WriteBase64(buffer, index, count);
         }
 
         public override void WriteBinHex(byte[] buffer, int index, int count)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteBinHex(buffer, index, count);
+            _wrapped!.WriteBinHex(buffer, index, count);
         }
 
         public override void Close()
         {
             // Flush any cached events to an Xml writer
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.Close();
+            _wrapped!.Close();
         }
 
         public override void Flush()
         {
             // Flush any cached events to an Xml writer
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.Flush();
+            _wrapped!.Flush();
         }
 
         public override void WriteValue(object value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(bool value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(DateTime value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(DateTimeOffset value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(double value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(float value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(decimal value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(int value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         public override void WriteValue(long value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteValue(value);
+            _wrapped!.WriteValue(value);
         }
 
         //-----------------------------------------------
         // XmlRawWriter interface
         //-----------------------------------------------
 
-        internal override IXmlNamespaceResolver NamespaceResolver
+        internal override IXmlNamespaceResolver? NamespaceResolver
         {
             get
             {
@@ -293,14 +295,14 @@ namespace System.Xml
         {
             // Forces xml writer to be created
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteXmlDeclaration(standalone);
+            _wrapped!.WriteXmlDeclaration(standalone);
         }
 
         internal override void WriteXmlDeclaration(string xmldecl)
         {
             // Forces xml writer to be created
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteXmlDeclaration(xmldecl);
+            _wrapped!.WriteXmlDeclaration(xmldecl);
         }
 
         internal override void StartElementContent()
@@ -324,26 +326,26 @@ namespace System.Xml
         internal override void WriteNamespaceDeclaration(string prefix, string ns)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteNamespaceDeclaration(prefix, ns);
+            _wrapped!.WriteNamespaceDeclaration(prefix, ns);
         }
 
         internal override bool SupportsNamespaceDeclarationInChunks
         {
             get
             {
-                return _wrapped.SupportsNamespaceDeclarationInChunks;
+                return _wrapped!.SupportsNamespaceDeclarationInChunks;
             }
         }
 
         internal override void WriteStartNamespaceDeclaration(string prefix)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped.WriteStartNamespaceDeclaration(prefix);
+            _wrapped!.WriteStartNamespaceDeclaration(prefix);
         }
 
         internal override void WriteEndNamespaceDeclaration()
         {
-            _wrapped.WriteEndNamespaceDeclaration();
+            _wrapped!.WriteEndNamespaceDeclaration();
         }
 
         //-----------------------------------------------
@@ -387,7 +389,7 @@ namespace System.Xml
         /// force the creation of a wrapped writer.  Otherwise, create a wrapped writer if one has not yet been
         /// created and return true.
         /// </summary>
-        private bool TextBlockCreatesWriter(string textBlock)
+        private bool TextBlockCreatesWriter(string? textBlock)
         {
             if (_wrapped == null)
             {
@@ -422,9 +424,9 @@ namespace System.Xml
             _writerSettings.ReadOnly = true;
 
             if (_textWriter != null)
-                _wrapped = ((XmlWellFormedWriter)XmlWriter.Create(_textWriter, _writerSettings)).RawWriter;
+                _wrapped = ((XmlWellFormedWriter)XmlWriter.Create(_textWriter, _writerSettings)).RawWriter!;
             else
-                _wrapped = ((XmlWellFormedWriter)XmlWriter.Create(_strm, _writerSettings)).RawWriter;
+                _wrapped = ((XmlWellFormedWriter)XmlWriter.Create(_strm!, _writerSettings)).RawWriter!;
 
             // Send cached events to the new writer
             _eventCache.EndEvents();

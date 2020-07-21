@@ -269,7 +269,7 @@ namespace System.Xml
             _freeFloatingDtd = false;
         }
 
-        private void InitializeFreeFloatingDtd(string baseUri, string docTypeName, string publicId, string systemId, string internalSubset, IDtdParserAdapter adapter)
+        private void InitializeFreeFloatingDtd(string baseUri, string docTypeName, string? publicId, string? systemId, string? internalSubset, IDtdParserAdapter adapter)
         {
             Initialize(adapter);
 
@@ -340,7 +340,7 @@ namespace System.Xml
             return _schemaInfo;
         }
 
-        IDtdInfo IDtdParser.ParseFreeFloatingDtd(string baseUri, string docTypeName, string publicId, string systemId, string internalSubset, IDtdParserAdapter adapter)
+        IDtdInfo IDtdParser.ParseFreeFloatingDtd(string baseUri, string docTypeName, string? publicId, string? systemId, string? internalSubset, IDtdParserAdapter adapter)
         {
             InitializeFreeFloatingDtd(baseUri, docTypeName, publicId, systemId, internalSubset, adapter);
             Parse(false);
