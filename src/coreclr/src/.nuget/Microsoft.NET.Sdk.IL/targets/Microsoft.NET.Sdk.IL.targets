@@ -13,7 +13,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);GenerateVersionFile</PrepareForBuildDependsOn>
     <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
     <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
     <Language>IL</Language>
@@ -147,7 +146,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="GenerateVersionFile">
    <PropertyGroup>
-      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$(IncludePath)version.h</VersionFilePath>
+      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)', 'version', 'version.h'))</VersionFilePath>
       <_DotnetVersion>$(AssemblyVersion.Replace('.', ':'))</_DotnetVersion>
       <_VersionFileContents>
 <![CDATA[
