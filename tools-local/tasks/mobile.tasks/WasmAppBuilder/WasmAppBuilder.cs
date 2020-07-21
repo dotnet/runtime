@@ -39,31 +39,33 @@ public class WasmAppBuilder : Task
     {
         public string assembly_root { get; set; } = "managed";
         public int enable_debugging { get; set; } = 0;
-        public List<object> assets { get; } = new List<object>();
-        public List<string> remote_sources { get; } = new List<string>();
+        public List<AssetEntry> assets { get; } = new List<AssetEntry>();
+        public List<string>? remote_sources { get; set; }
     }
 
-    private class Entry {
-        public string behavior { get; set; }
-        public string name { get; set; }
+    private class AssetEntry {
+        protected AssetEntry (string name, string behavior)
+        {
+            this.name = name;
+            this.behavior = behavior;
+        }
+        public string behavior { get; init; }
+        public string name { get; init; }
     }
 
-    private class AssemblyEntry : Entry
+    private class AssemblyEntry : AssetEntry
     {
-        public AssemblyEntry()
-            => behavior = "assembly";
+        public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
-    private class VfsEntry : Entry {
-        public VfsEntry() 
-            => behavior = "vfs";
-        public string virtual_path { get; set; }
+    private class VfsEntry : AssetEntry {
+        public VfsEntry(string name) : base(name, "vfs") {}
+        public string? virtual_path { get; set; }
     }
 
-    private class IcuData : Entry {
-        public IcuData()
-            => behavior = "icu";
-        public bool load_remote { get; set; } = false;
+    private class IcuData : AssetEntry {
+        public IcuData() : base("icudt.data", "icu") {}
+        public bool? load_remote { get; set; }
     }
 
     public override bool Execute ()
@@ -99,20 +101,19 @@ public class WasmAppBuilder : Task
             }
         }
 
+        var config = new WasmAppConfig ();
+
         // Create app
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(Path.Join(AppDir, "managed"));
+        Directory.CreateDirectory(Path.Join(AppDir, config.assembly_root));
         foreach (var assembly in _assemblies!.Values)
-            File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
+            File.Copy(assembly.Location, Path.Join(AppDir, config.assembly_root, Path.GetFileName(assembly.Location)), true);
         foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        var config = new WasmAppConfig ();
-
-
         foreach (var assembly in _assemblies.Values)
-            config.assets.Add(new AssemblyEntry { behavior = "assembly", name = Path.GetFileName(assembly.Location)});
+            config.assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
 
         if (FilesToIncludeInFileSystem != null)
         {
@@ -135,28 +136,26 @@ public class WasmAppBuilder : Task
 
                 File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
 
-                var asset = new VfsEntry  {
-                    name = $"supportFiles/{generatedFileName}",
+                var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
                     virtual_path = targetPath
                 };
                 config.assets.Add(asset);
             }
         }
 
-        var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
+        config.assets.Add(new IcuData { load_remote = RemoteSources?.Length > 0 });
+        config.assets.Add(new VfsEntry ("dotnet.timezones.blat") { virtual_path = "/usr/share/zoneinfo/"});
 
-        config.assets.Add(new IcuData { name = "icudt.dat", load_remote = enableRemote });
-        config.assets.Add(new VfsEntry { name = "dotnet.timezones.blat", virtual_path = "/usr/share/zoneinfo/"});
-
-        if (enableRemote) {
-                foreach (var source in RemoteSources!)
-                config.remote_sources.Add(source.ItemSpec);
+        if (RemoteSources?.Length > 0) {
+            config.remote_sources = new List<string>();
+            foreach (var source in RemoteSources)
+                if (source != null && source.ItemSpec != null)
+                    config.remote_sources?.Add(source.ItemSpec);
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
-
             sw.Write($"config = {json};");
         }
 
