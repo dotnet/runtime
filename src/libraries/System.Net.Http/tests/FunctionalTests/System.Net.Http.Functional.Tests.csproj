@@ -116,6 +116,8 @@
              Link="Common\System\Net\Configuration.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs"
              Link="Common\System\Net\Configuration.Sockets.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"

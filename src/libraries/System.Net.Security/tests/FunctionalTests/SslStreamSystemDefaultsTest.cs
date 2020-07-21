@@ -4,7 +4,6 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 using System.Threading.Tasks;
@@ -63,17 +62,16 @@ namespace System.Net.Security.Tests
                 }
                 catch (AggregateException)
                 {
-                    // The default configuration on Linux does not enable any TLS 1.0 or TLS 1.1 ciphersuites, so if either side specified
-                    // explicit protocols which do not contain TLS 1.2 or higher, ignore the exception.
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    {
-                        bool clientOldProtocols = (clientProtocols.GetValueOrDefault() & NegotiatedCipherSuiteTest.PreTls12Protocols) != 0;
-                        bool serverOldProtocols = (serverProtocols.GetValueOrDefault() & NegotiatedCipherSuiteTest.PreTls12Protocols) != 0;
+                    SslProtocols clientEffective = clientProtocols.GetValueOrDefault();
+                    SslProtocols serverEffective = serverProtocols.GetValueOrDefault();
 
-                        if (clientOldProtocols || serverOldProtocols)
-                        {
-                            return;
-                        }
+                    // The default configuration on Linux does not enable any TLS 1.0 or TLS 1.1 ciphersuites,
+                    // so if either side specified explicit protocols without one of them being known to work,
+                    // ignore the failure.
+                    if (clientEffective != 0 && (clientEffective & SslProtocolSupport.SupportedSslProtocols) == 0 ||
+                        serverEffective != 0 && (serverEffective & SslProtocolSupport.SupportedSslProtocols) == 0)
+                    {
+                        return;
                     }
 
                     throw;

@@ -84,15 +84,11 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (AggregateException)
                     {
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        // If the local environment isn't known to support the requested protocols
+                        // then it's OK if things failed here.
+                        if (acceptedProtocol != 0 && (acceptedProtocol & SslProtocolSupport.SupportedSslProtocols) == 0)
                         {
-                            // If the Linux system isn't permitting TLS 1.2
-                            // (or better, but we don't have a TLS 1.3-only test currently), then the protocol
-                            // might have been effectively disabled via config.
-                            if (acceptedProtocol != 0 && (acceptedProtocol & SslProtocols.Tls12) == 0)
-                            {
-                                return;
-                            }
+                            return;
                         }
 
                         throw;

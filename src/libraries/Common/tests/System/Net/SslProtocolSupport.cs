@@ -16,33 +16,42 @@ namespace System.Net.Test.Common
 #endif
             SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 
-        public static SslProtocols SupportedSslProtocols
-        {
-            get
-            {
-                SslProtocols supported = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+        public static SslProtocols SupportedSslProtocols { get; } = DetermineSupportedProtocols();
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    // The default ciphersuite configuration on Linux effectively disables TLS 1.0/TLS 1.1
-                    supported = SslProtocols.Tls12;
-                }
+        private static SslProtocols DetermineSupportedProtocols()
+        {
+            SslProtocols supported = 0;
 
 #pragma warning disable 0618 // SSL2/3 are deprecated
-                if (PlatformDetection.SupportsSsl3)
-                {
-                    supported |= SslProtocols.Ssl3;
-                }
-#pragma warning restore 0618
-#if !NETSTANDARD2_0
-                // TLS 1.3 is new
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1))
-                {
-                    supported |= SslProtocols.Tls13;
-                }
-#endif
-                return supported;
+            if (PlatformDetection.SupportsSsl3)
+            {
+                supported |= SslProtocols.Ssl3;
             }
+#pragma warning restore 0618
+
+            if (PlatformDetection.SupportsTls10)
+            {
+                supported |= SslProtocols.Tls;
+            }
+
+            if (PlatformDetection.SupportsTls11)
+            {
+                supported |= SslProtocols.Tls11;
+            }
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                supported |= SslProtocols.Tls12;
+            }
+
+#if !NETSTANDARD2_0
+            // TLS 1.3 is new
+            if (PlatformDetection.SupportsTls13)
+            {
+                supported |= SslProtocols.Tls13;
+            }
+#endif
+            return supported;
         }
 
         public class SupportedSslProtocolsTestData : IEnumerable<object[]>
