@@ -199,6 +199,9 @@ void ProcessDiagnosticsProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
     case ProcessCommandId::GetProcessInfo:
         ProcessDiagnosticsProtocolHelper::GetProcessInfo(message, pStream);
         break;
+    case ProcessCommandId::ResumeRuntime:
+        ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(message, pStream);
+        break;
 
     default:
         STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", message.GetHeader().CommandSet);
