@@ -47,6 +47,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             int startIndex = -1;
             int length = 0;
+            int escapeCode;
             ConsoleColor? foreground = null;
             ConsoleColor? background = null;
             var span = message.AsSpan();
@@ -59,12 +60,10 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     if (span[i + 3] == 'm')
                     {
-#if NETCOREAPP
-                        if (ushort.TryParse(span.Slice(i + 2, length: 1), out ushort escapeCode))
-#else
-                        if (ushort.TryParse(span.Slice(i + 2, length: 1).ToString(), out ushort escapeCode))
-#endif
+                        // Example: \x1B[1m
+                        if ((uint)((int)span[i + 2] - (int)'0') <= (uint)('9' - '0'))
                         {
+                            escapeCode = (int)(span[i + 2] - '0');
                             if (startIndex != -1)
                             {
                                 _onParseWrite(message, startIndex, length, background, foreground);
@@ -79,12 +78,10 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                     else if (span.Length >= i + 5 && span[i + 4] == 'm')
                     {
-#if NETCOREAPP
-                        if (ushort.TryParse(span.Slice(i + 2, length: 2), out ushort escapeCode))
-#else
-                        if (ushort.TryParse(span.Slice(i + 2, length: 2).ToString(), out ushort escapeCode))
-#endif
+                        // Example: \x1B[40m
+                        if ((uint)((int)span[i + 2] - (int)'0') <= (uint)('9' - '0') && (uint)((int)span[i + 3] - (int)'0') <= (uint)('9' - '0'))
                         {
+                            escapeCode = (int) (span[i + 2] - '0') * 10 + (int)(span[i + 3] - '0') ;
                             if (startIndex != -1)
                             {
                                 _onParseWrite(message, startIndex, length, background, foreground);
