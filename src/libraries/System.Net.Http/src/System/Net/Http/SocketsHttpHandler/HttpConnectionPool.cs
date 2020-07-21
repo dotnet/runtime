@@ -289,6 +289,7 @@ namespace System.Net.Http
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
@@ -347,7 +348,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (_http3Enabled && (request.Version.Major >= 3 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
                 HttpAuthority? authority = _http3Authority;
                 if (authority != null)
@@ -361,9 +362,9 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3));
             }
 
-            if (_http2Enabled && (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher) &&
+            if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
-               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel))
+               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
             }
@@ -1174,7 +1175,7 @@ namespace System.Net.Http
                 Socket? socket = (stream as NetworkStream)?.Socket;
 
                 TransportContext? transportContext = null;
-                if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
+                if (IsSecure)
                 {
                     SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream!, cancellationToken).ConfigureAwait(false);
                     stream = sslStream;

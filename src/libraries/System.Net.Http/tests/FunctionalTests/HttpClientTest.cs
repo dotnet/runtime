@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using static System.Net.Test.Common.Configuration.Http;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1013,12 +1014,12 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, HttpVersion.Version11 };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version11 };
-                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
                 if (QuicConnection.IsQuicSupported)
                 {
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, HttpVersion.Version30 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
                 }
 
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
@@ -1031,12 +1032,12 @@ namespace System.Net.Http.Functional.Tests
                 {
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version20 };
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, HttpVersion.Version30 };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
                 }
 
                 if (QuicConnection.IsQuicSupported)
                 {
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
                     yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
                     yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
@@ -1051,11 +1052,12 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
-        public async Task SendAsync_CorrectVersionSelected(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
+        public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             // Loopback servers can serve only the exact same version as requested.
             if (expectedResult is Version expectedVersion && expectedVersion != serverVersion)
             {
+                _output.WriteLine($"Skipping test: Loopback servers can serve only the exact same version as requested.");
                 return;
             }
 
@@ -1095,6 +1097,48 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (Exception) { } // Eat errors from client disconnect.
                 }, options: new GenericLoopbackOptions(){ UseSsl = useSsl });
+        }
+
+        [OuterLoop("Uses external server")]
+        [Theory]
+        [MemberData(nameof(VersionSelectionMemberData))]
+        public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
+        {
+            RemoteServer remoteServer = null;
+            if (serverVersion == HttpVersion.Version11)
+            {
+                remoteServer = useSsl ? RemoteSecureHttp11Server : RemoteHttp11Server;
+            }
+            if (serverVersion == HttpVersion.Version30)
+            {
+                remoteServer = useSsl ? RemoteHttp2Server : null;
+            }
+            // No remote server that could serve the requested version.
+            if (remoteServer == null)
+            {
+                _output.WriteLine($"Skipping test: No remote server that could serve the requested version.");
+                return;
+            }
+
+
+            var request = new HttpRequestMessage(HttpMethod.Get, remoteServer.EchoUri)
+            {
+                Version = requestVersion,
+                VersionPolicy = versionPolicy
+            };
+
+            using HttpClient client = CreateHttpClient();
+            if (expectedResult is Type type)
+            {
+                Exception exception = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                Assert.IsType(type, exception);
+                _output.WriteLine(exception.ToString());
+            }
+            else
+            {
+                HttpResponseMessage response = await client.SendAsync(request);
+                Assert.Equal(expectedResult, response.Version);
+            }
         }
 
         [Fact]
