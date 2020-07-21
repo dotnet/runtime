@@ -143,5 +143,33 @@ namespace System.Text.Json
             }
 #endif
         }
+
+        internal void WriteNumberValueAsString(float value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatSingleLength];
+            bool result = TryFormatSingle(value, utf8Number, out int bytesWritten);
+            Debug.Assert(result);
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesWritten));
+        }
+
+        internal void WriteFloatingPointConstant(float value)
+        {
+            if (float.IsNaN(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.NaNValue);
+            }
+            else if (float.IsPositiveInfinity(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.PositiveInfinityValue);
+            }
+            else if (float.IsNegativeInfinity(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.NegativeInfinityValue);
+            }
+            else
+            {
+                WriteNumberValue(value);
+            }
+        }
     }
 }
