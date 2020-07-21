@@ -1,6 +1,6 @@
 ﻿<linker>
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.EmbeddedLinkAttributes">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
       <field name="_typeWithPublicParameterlessConstructor">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
           <argument>PublicParameterlessConstructor</argument>
