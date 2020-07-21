@@ -1564,27 +1564,38 @@ namespace System.Net.Http
                     return;
                 }
 
-                int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
-
-                if (invalidatedIndex >= 0)
+                if (TryRemoveHttp2Connection(connection, localHttp2Connections, out Http2Connection[] newHttp2Connections))
                 {
-                    Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
-
-                    if (invalidatedIndex > 0)
-                    {
-                        Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
-                    }
-
-                    if (invalidatedIndex < localHttp2Connections.Length - 1)
-                    {
-                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
-                    }
-
                     _http2Connections = newHttp2Connections;
                     // Wake up all waiting requests to create a new connection that will handle them.
                     _releasedStreamSlots?.Release(int.MaxValue);
                 }
             }
+        }
+
+        private static bool TryRemoveHttp2Connection(Http2Connection connection, Http2Connection[] localHttp2Connections, out Http2Connection[] newHttp2Connections)
+        {
+            int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
+
+            if (invalidatedIndex >= 0)
+            {
+                newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
+
+                if (invalidatedIndex > 0)
+                {
+                    Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
+                }
+
+                if (invalidatedIndex < localHttp2Connections.Length - 1)
+                {
+                    Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
+                }
+
+                return true;
+            }
+
+            newHttp2Connections = localHttp2Connections;
+            return false;
         }
 
         public void InvalidateHttp3Connection(Http3Connection connection)
@@ -1616,12 +1627,11 @@ namespace System.Net.Http
 
                     if (_http2Connections != null)
                     {
-                        IReadOnlyList<Http2Connection> localHttp2Connections = _http2Connections;
-                        if (localHttp2Connections != null)
+                        if (_http2Connections != null)
                         {
-                            for (int i = 0; i < localHttp2Connections.Count; i++)
+                            for (int i = 0; i < _http2Connections.Length; i++)
                             {
-                                localHttp2Connections[i].Dispose();
+                                _http2Connections[i].Dispose();
                             }
                             _http2Connections = null;
                         }
@@ -1668,11 +1678,12 @@ namespace System.Net.Http
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
                 long nowTicks = Environment.TickCount64;
-                IReadOnlyList<Http2Connection>? localHttp2Connections = _http2Connections;
+                // Copy the reference to a local variable to simplify the removal logic below.
+                Http2Connection[]? localHttp2Connections = _http2Connections;
 
                 if (localHttp2Connections != null)
                 {
-                    for (int i = 0; i < localHttp2Connections.Count; i++)
+                    for (int i = 0; i < localHttp2Connections.Length; i++)
                     {
                         Http2Connection http2Connection = localHttp2Connections[i];
                         if (http2Connection != null)
@@ -1680,11 +1691,17 @@ namespace System.Net.Http
                             if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                             {
                                 http2Connection.Dispose();
+                                if (_http2Connections != null)
+                                {
+                                    if (TryRemoveHttp2Connection(http2Connection, _http2Connections, out Http2Connection[] newHttp2Connections))
+                                    {
+                                        // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
+                                        _http2Connections = newHttp2Connections;
+                                    }
+                                }
                             }
                         }
                     }
-                    // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
-                    _http2Connections = null;
                 }
 
                 // Find the first item which needs to be removed.

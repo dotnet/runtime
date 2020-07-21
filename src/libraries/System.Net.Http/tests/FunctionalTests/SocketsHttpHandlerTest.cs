@@ -2227,7 +2227,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static async Task<Http2LoopbackConnection> GetConnection(Http2LoopbackServer server, uint maxConcurrentStreams) =>
-            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
+            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(30), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
