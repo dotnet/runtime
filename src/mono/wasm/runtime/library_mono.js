@@ -189,13 +189,13 @@ var MonoSupportLib = {
 
 				var value = res[i].value;
 				if (this._async_method_objectId != 0) {
-			//Async methods are special in the way that local variables can be lifted to generated class fields
-			//value of "this" comes here either
+					//Async methods are special in the way that local variables can be lifted to generated class fields
+					//value of "this" comes here either
 					if (res_name !== undefined && res_name.indexOf ('>') > 0) {
 						// For async methods, we get the names too, so use that
 						// ALTHOUGH, the name wouldn't have `<>` for method args
 						res [i].name = res_name.substring (1, res_name.indexOf ('>'));
-			}
+					}
 
 					if (value.isValueType)
 						value.objectId = `dotnet:valuetype:${this._async_method_objectId}:${res [i].fieldOffset}`;
@@ -248,7 +248,7 @@ var MonoSupportLib = {
 					prop_value.objectId = this._get_updated_ptr_id (prop_value.objectId, {
 						varName: `[${i}]`
 					});
-			}
+				}
 			}
 
 			this.var_info = [];
@@ -362,40 +362,40 @@ var MonoSupportLib = {
 		},
 
 		_get_cfo_res_details: function (objectId, args) {
-					if (!(objectId in this._call_function_res_cache))
-						throw new Error(`Could not find any object with id ${objectId}`);
+			if (!(objectId in this._call_function_res_cache))
+				throw new Error(`Could not find any object with id ${objectId}`);
 
-					var real_obj = this._call_function_res_cache [objectId];
+			var real_obj = this._call_function_res_cache [objectId];
 
 			var descriptors = Object.getOwnPropertyDescriptors (real_obj);
-					if (args.accessorPropertiesOnly) {
+			if (args.accessorPropertiesOnly) {
 				Object.keys (descriptors).forEach (k => {
 					if (descriptors [k].get === undefined)
 						Reflect.deleteProperty (descriptors, k);
 				});
-					}
+			}
 
 			var res_details = [];
-					Object.keys (descriptors).forEach (k => {
-						var new_obj;
-						var prop_desc = descriptors [k];
-						if (typeof prop_desc.value == "object") {
-							// convert `{value: { type='object', ... }}`
-							// to      `{ name: 'foo', value: { type='object', ... }}
+			Object.keys (descriptors).forEach (k => {
+				var new_obj;
+				var prop_desc = descriptors [k];
+				if (typeof prop_desc.value == "object") {
+					// convert `{value: { type='object', ... }}`
+					// to      `{ name: 'foo', value: { type='object', ... }}
 					new_obj = Object.assign ({ name: k }, prop_desc);
 				} else if (prop_desc.value !== undefined) {
-							// This is needed for values that were not added by us,
-							// thus are like { value: 5 }
-							// instead of    { value: { type = 'number', value: 5 }}
-							//
-							// This can happen, for eg., when `length` gets added for arrays
-							// or `__proto__`.
-							new_obj = {
-								name: k,
-								// merge/add `type` and `description` to `d.value`
-								value: Object.assign ({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
-														prop_desc)
-							};
+					// This is needed for values that were not added by us,
+					// thus are like { value: 5 }
+					// instead of    { value: { type = 'number', value: 5 }}
+					//
+					// This can happen, for eg., when `length` gets added for arrays
+					// or `__proto__`.
+					new_obj = {
+						name: k,
+						// merge/add `type` and `description` to `d.value`
+						value: Object.assign ({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
+												prop_desc)
+					};
 				} else if (prop_desc.get !== undefined) {
 					// The real_obj has the actual getter. We are just returning a placeholder
 					// If the caller tries to run function on the cfo_res object,
@@ -414,7 +414,7 @@ var MonoSupportLib = {
 				}
 
 				res_details.push (new_obj);
-					});
+			});
 
 			return { __value_as_json_string__: JSON.stringify (res_details) };
 		},
@@ -452,7 +452,7 @@ var MonoSupportLib = {
 					throw new Error (`Bug: no varName found for the pointer. objectId: ${objectId}`);
 
 				res [0].name = `*${ptr_args.varName}`;
-				}
+			}
 
 			res = this._post_process_details (res);
 			this.var_info = [];
@@ -565,7 +565,7 @@ var MonoSupportLib = {
 				proxy = this._call_function_res_cache [objId];
 			} else if (!objId.startsWith ('dotnet:cfo_res:')) {
 				proxy = this._create_proxy_from_object_id (objId);
-					}
+			}
 
 			var fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 			var fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
@@ -1249,8 +1249,8 @@ var MonoSupportLib = {
 				if (value.klass_addr == 0 || value.ptr_addr == 0 || fixed_value_str.startsWith ('(void*')) {
 					// null or void*, which we can't deref
 					MONO.var_info.push({
-					value: {
-						type: "symbol",
+						value: {
+							type: "symbol",
 							value: fixed_value_str,
 							description: fixed_value_str
 						}
