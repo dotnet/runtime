@@ -9,6 +9,10 @@ var MonoSupportLib = {
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+
+		/** @type {object.<string, object>} */
+		_id_table: {},
+
 		pump_message: function () {
 			if (!this.mono_background_exec)
 				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
@@ -142,21 +146,38 @@ var MonoSupportLib = {
 			return final_var_list;
 		},
 
-		// Given `dotnet:object:foo:bar`,
-		// returns [ 'dotnet', 'object', 'foo:bar']
-		_split_object_id: function (id, delimiter = ':', count = 3) {
-			if (id === undefined || id == "")
-				return [];
+		/** Given `dotnet:object:foo:bar`,
+		 * returns { scheme:'object', value: 'foo:bar' }
+		 *
+		 * Given `dotnet:pointer:{ b: 3 }`
+		 * returns { scheme:'object', value: '{b:3}`, o: {b:3}
+		 *
+		 * @param  {string} idStr
+		 * @param  {boolean} [throwOnError=false]
+		 *
+		 * @returns {(object|undefined)}
+		 */
+		_split_object_id: function (idStr, throwOnError = false) {
+			if (idStr === undefined || idStr == "" || !idStr.startsWith ('dotnet:')) {
+				if (throwOnError)
+					throw new Error (`Invalid id: ${idStr}`);
 
-			if (delimiter === undefined) delimiter = ':';
-			if (count === undefined) count = 3;
+				return undefined;
+			}
 
-			var var_arr = id.split (delimiter);
-			var result = var_arr.splice (0, count - 1);
+			const [, scheme, ...rest] = idStr.split(':');
+			let res = {
+				scheme,
+				value: rest.join (':'),
+				idStr
+			};
 
-			if (var_arr.length > 0)
-				result.push (var_arr.join (delimiter));
-			return result;
+			try {
+				res.o = JSON.parse(res.value);
+				// eslint-disable-next-line no-empty
+			} catch (e) { console.log(e); }
+
+			return res;
 		},
 
 		//
@@ -240,7 +261,7 @@ var MonoSupportLib = {
 				if (prop_value.isValueType) {
 					res [i].value.objectId = `dotnet:array:${objId}:${i}`;
 				} else if (prop_value.objectId !== undefined && prop_value.objectId.startsWith("dotnet:pointer")) {
-					prop_value.objectId = this._get_updated_ptr_id (prop_value.objectId, {
+					this._update_id_props (prop_value.objectId, {
 						varName: `[${i}]`
 					});
 				}
@@ -278,8 +299,13 @@ var MonoSupportLib = {
 			return details;
 		},
 
-		_next_value_type_id: function () {
-			return ++this._next_value_type_id_var;
+		/**
+		 * Gets the next id number to use for generating ids
+		 *
+		 * @returns {number}
+		 */
+		_next_id: function () {
+			return ++this._next_id_var;
 		},
 
 		_extract_and_cache_value_types: function (var_list) {
@@ -292,30 +318,25 @@ var MonoSupportLib = {
 					continue;
 
 				if (value.objectId !== undefined && value.objectId.startsWith ("dotnet:pointer:")) {
-					var ptr_args = this._get_ptr_args (value.objectId);
-					if (ptr_args.varName === undefined) {
-						// It might have been already set in some cases, like arrays
-						// where the name would be `0`, but we want `[0]` for pointers,
-						// so the deref would look like `*[0]`
-						value.objectId = this._get_updated_ptr_id (value.objectId, {
-							varName: var_list [i].name
-						});
-					}
+					let ptr_args = this._get_id_props (value.objectId);
+					if (ptr_args === undefined)
+						throw new Error (`Bug: Expected to find an entry for pointer id: ${value.objectId}`);
+
+					// It might have been already set in some cases, like arrays
+					// where the name would be `0`, but we want `[0]` for pointers,
+					// so the deref would look like `*[0]`
+					ptr_args.varName = ptr_args.varName || var_list [i].name;
 				}
 
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
 
 				// Generate objectId for expanded valuetypes
-
-				var objectId = value.objectId;
-				if (objectId == undefined)
-					objectId = `dotnet:valuetype:${this._next_value_type_id ()}`;
-				value.objectId = objectId;
+				value.objectId = value.objectId || `dotnet:valuetype:${this._next_id ()}`;
 
 				this._extract_and_cache_value_types (value.members);
 
-				this._value_types_cache [objectId] = value.members;
+				this._id_table [value.objectId] = value.members;
 				delete value.members;
 			}
 
@@ -323,12 +344,12 @@ var MonoSupportLib = {
 		},
 
 		_get_details_for_value_type: function (objectId, fetchDetailsFn) {
-			if (objectId in this._value_types_cache)
-				return this._value_types_cache[objectId];
+			if (objectId in this._id_table)
+				return this._id_table[objectId];
 
 			this._post_process_details (fetchDetailsFn());
-			if (objectId in this._value_types_cache)
-				return this._value_types_cache[objectId];
+			if (objectId in this._id_table)
+				return this._id_table[objectId];
 
 			// return error
 			throw new Error (`Could not get details for ${objectId}`);
@@ -414,26 +435,58 @@ var MonoSupportLib = {
 			return { __value_as_json_string__: JSON.stringify (res_details) };
 		},
 
-		_get_ptr_args: function (objectId) {
-			var parts = this._split_object_id (objectId);
-			if (parts.length != 3)
-				throw new Error (`Bug: Unexpected objectId format for a pointer, expected 3 parts: ${objectId}`);
-			return JSON.parse (parts [2]);
+		/**
+		 * Generates a new id, and a corresponding entry for associated properties
+		 *    like `dotnet:pointer:{ a: 4 }`
+		 * The third segment of that `{a:4}` is the idObj parameter
+		 *
+		 * @param  {string} scheme second part of `dotnet:pointer:..`
+		 * @param  {object} [props={}] Properties for the generated id
+		 * @param  {object} [idObj={}] The third segment of the objectId
+		 * @returns {string} new generated objectId
+		 */
+		_new_id: function (scheme, props = {}, idObj = {}) {
+			if (typeof idObj !== 'object')
+				throw new Error (`Expected an object argument for 'id_o', but got ${typeof idObj}`);
+
+			if (Object.entries (idObj).length == 0) {
+				// We want to generate a new id, only if it doesn't have other
+				// attributes that it can use to uniquely identify.
+				// Eg, we don't do this for `dotnet:valuetype:{containerId:4, fieldOffset: 24}`
+				idObj.num = this._next_id ();
+			}
+
+			const idStr = `dotnet:${scheme}:${JSON.stringify (idObj)}`;
+			this._id_table [idStr] = props;
+
+			return idStr;
 		},
 
-		_get_updated_ptr_id: function (objectId, new_args) {
-			var old_args = {};
-			if (typeof (objectId) === 'string' && objectId.length)
-				old_args = this._get_ptr_args (objectId);
+		/**
+		 * @param  {string} objectId
+		 * @returns {object}
+		 */
+		_get_id_props: function (objectId) {
+			return this._id_table [objectId];
+		},
 
-			return `dotnet:pointer:${JSON.stringify ( Object.assign (old_args, new_args) )}`;
+		/**
+		 * @param  {string} objectId
+		 * @param  {object} add_props
+		 */
+		_update_id_props: function (objectId, add_props) {
+			let props = this._get_id_props (objectId);
+			this._id_table [objectId] = Object.assign (props, add_props);
 		},
 
 		_get_deref_ptr_value: function (objectId) {
 			if (!this.mono_wasm_get_deref_ptr_value_info)
 				this.mono_wasm_get_deref_ptr_value_info = Module.cwrap("mono_wasm_get_deref_ptr_value", null, ['number', 'number']);
 
-			var ptr_args = this._get_ptr_args (objectId);
+			const ptr_args = this._get_id_props (objectId);
+			if (ptr_args === undefined)
+				throw new Error (`Unknown pointer id: ${objectId}`);
+
 			if (ptr_args.ptr_addr == 0 || ptr_args.klass_addr == 0)
 				throw new Error (`Both ptr_addr and klass_addr need to be non-zero, to dereference a pointer. objectId: ${objectId}`);
 
@@ -595,14 +648,14 @@ var MonoSupportLib = {
 		},
 
 		_clear_per_step_state: function () {
-			this._next_value_type_id_var = 0;
-			this._value_types_cache = {};
+			this._next_id_var = 0;
+			this._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
 			this._clear_per_step_state ();
 		},
-		
+
 		mono_wasm_start_single_stepping: function (kind) {
 			console.log (">> mono_wasm_start_single_stepping " + kind);
 			if (!this.mono_wasm_setup_single_step)
@@ -655,7 +708,7 @@ var MonoSupportLib = {
 		},
 
 		// Set environment variable NAME to VALUE
-		// Should be called before mono_load_runtime_and_bcl () in most cases 
+		// Should be called before mono_load_runtime_and_bcl () in most cases
 		mono_wasm_setenv: function (name, value) {
 			if (!this.wasm_setenv)
 				this.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
@@ -1288,7 +1341,7 @@ var MonoSupportLib = {
 							type: "object",
 							className: fixed_value_str,
 							description: fixed_value_str,
-							objectId: this._get_updated_ptr_id ('', value)
+							objectId: this._new_id ('pointer', value)
 						}
 					});
 				}
