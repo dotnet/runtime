@@ -2973,7 +2973,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
             assert(amIndxReg != REG_NA);
         }
 
-        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA)); // At least one should be set.
+        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA) || (indir->Offset() != 0)); // At least one should be set.
         id->idAddr()->iiaAddrMode.amBaseReg = amBaseReg;
         id->idAddr()->iiaAddrMode.amIndxReg = amIndxReg;
         id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
