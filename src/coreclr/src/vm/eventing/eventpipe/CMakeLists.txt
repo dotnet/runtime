@@ -35,5 +35,5 @@ add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)
 
 if (NOT CLR_CMAKE_TARGET_WIN32)
-  _install(TARGETS eventpipe_obj DESTINATION lib)
+  _install(FILES $<TARGET_OBJECTS:eventpipe_obj> DESTINATION lib)
 endif()
