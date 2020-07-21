@@ -86,10 +86,6 @@ namespace Microsoft.Extensions.Logging.Console
 
             // scope information
             WriteScopeInformation(textWriter, scopeProvider, singleLine);
-            if (singleLine)
-            {
-                textWriter.Write(' ');
-            }
             WriteMessage(textWriter, message, singleLine);
 
             // Example:
@@ -112,6 +108,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (singleLine)
                 {
+                    textWriter.Write(' ');
                     WriteReplacing(textWriter, Environment.NewLine, " ", message);
                 }
                 else
