@@ -595,7 +595,6 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
-      liveRuntimeBuildConfig: release
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
