@@ -39,8 +39,8 @@ public class WasmAppBuilder : Task
     {
         public string assembly_root { get; set; } = "managed";
         public int enable_debugging { get; set; } = 0;
-        public List<AssetEntry> assets { get; } = new List<AssetEntry>();
-        public List<string>? remote_sources { get; set; }
+        public List<object> assets { get; } = new List<object>();
+        public List<string> remote_sources { get; set; } = new List<string>();
     }
 
     private class AssetEntry {
@@ -65,7 +65,7 @@ public class WasmAppBuilder : Task
 
     private class IcuData : AssetEntry {
         public IcuData() : base("icudt.data", "icu") {}
-        public bool? load_remote { get; set; }
+        public bool load_remote { get; set; }
     }
 
     public override bool Execute ()
@@ -147,10 +147,9 @@ public class WasmAppBuilder : Task
         config.assets.Add(new VfsEntry ("dotnet.timezones.blat") { virtual_path = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {
-            config.remote_sources = new List<string>();
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
-                    config.remote_sources?.Add(source.ItemSpec);
+                    config.remote_sources.Add(source.ItemSpec);
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
