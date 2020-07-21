@@ -42,8 +42,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
@@ -1185,8 +1184,11 @@ invoke_getter_on_object (guint64 objectId, const char *name)
 }
 
 static gboolean 
-describe_array_values (guint64 objectId)
+describe_array_values (guint64 objectId, int startIdx, int count, gboolean expandValueType)
 {
+	if (count == 0)
+		return TRUE;
+
 	int esize;
 	gpointer elem;
 	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
@@ -1198,37 +1200,38 @@ describe_array_values (guint64 objectId)
 	if (!obj) {
 		return FALSE;
 	}
-	esize = mono_array_element_size (obj->vtable->klass);
-	for (int i = 0; i < arr->max_length; i++) {
+
+	MonoClass *klass = mono_object_class (obj);
+	MonoTypeEnum type = m_class_get_byval_arg (klass)->type;
+	if (type != MONO_TYPE_SZARRAY && type != MONO_TYPE_ARRAY) {
+		DEBUG_PRINTF (1, "describe_array_values: object is not an array. type: 0x%x\n", type);
+		return FALSE;
+	}
+
+	int len = arr->max_length;
+	if (len == 0 && startIdx == 0 && count <= 0) {
+		// Nothing to do
+		return TRUE;
+	}
+
+	if (startIdx < 0 || (len > 0 && startIdx >= len)) {
+		DEBUG_PRINTF (1, "describe_array_values: invalid startIdx (%d) for array of length %d\n", startIdx, len);
+		return FALSE;
+	}
+
+	if (count > 0 && (startIdx + count) > len) {
+		DEBUG_PRINTF (1, "describe_array_values: invalid count (%d) for startIdx: %d, and array of length %d\n", count, startIdx, len);
+		return FALSE;
+	}
+
+	esize = mono_array_element_size (klass);
+	int endIdx = count < 0 ? len : startIdx + count;
+
+	for (int i = startIdx; i < endIdx; i ++) {
 		mono_wasm_add_array_item(i);
 		elem = (gpointer*)((char*)arr->vector + (i * esize));
-		describe_value (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem, FALSE);
+		describe_value (m_class_get_byval_arg (m_class_get_element_class (klass)), elem, expandValueType);
 	}
-	return TRUE;
-}
-
-/* Expands valuetypes */
-static gboolean
-describe_array_value_expanded (guint64 objectId, guint64 idx)
-{
-	int esize;
-	gpointer elem;
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
-	if (!ref) {
-		return FALSE;
-	}
-	MonoArray *arr = (MonoArray *)mono_gchandle_get_target_internal (ref->handle);
-	MonoObject *obj = &arr->obj;
-	if (!obj) {
-		return FALSE;
-	}
-	if (idx >= arr->max_length)
-		return FALSE;
-
-	esize = mono_array_element_size (obj->vtable->klass);
-	elem = (gpointer*)((char*)arr->vector + (idx * esize));
-	describe_value (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem, TRUE);
-
 	return TRUE;
 }
 
@@ -1366,19 +1369,11 @@ mono_wasm_get_object_properties (int object_id, gboolean expand_value_types)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_get_array_values (int object_id)
+mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types)
 {
-	DEBUG_PRINTF (2, "getting array values %d\n", object_id);
+	DEBUG_PRINTF (2, "getting array values %d, startIdx: %d, count: %d, expandValueType: %d\n", object_id, start_idx, count, expand_value_types);
 
-	describe_array_values(object_id);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_get_array_value_expanded (int object_id, int idx)
-{
-	DEBUG_PRINTF (2, "getting array value %d for idx %d\n", object_id, idx);
-
-	describe_array_value_expanded (object_id, idx);
+	describe_array_values (object_id, start_idx, count, expand_value_types);
 }
 
 EMSCRIPTEN_KEEPALIVE void
