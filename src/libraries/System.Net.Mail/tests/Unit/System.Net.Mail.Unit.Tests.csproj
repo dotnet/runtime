@@ -92,6 +92,14 @@
              Link="ProductionCode\SmtpDateTime.cs" />
     <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs"
              Link="ProductionCode\MultiAsyncResult.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\ByteEncoder.cs"
+             Link="ProductionCode\ByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\Base64Encoder.cs"
+             Link="ProductionCode\Base64Encoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\IByteEncoder.cs"
+             Link="ProductionCode\IByteEncoder.cs" />
+    <Compile Include="..\..\src\System\Net\Mime\QEncoder.cs"
+             Link="ProductionCode\QEncoder.cs" />
     <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs"
              Link="ProductionCode\TrackingStringDictionary.cs" />
     <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs"
@@ -253,5 +261,7 @@
              Link="Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
   </ItemGroup>
 </Project>

@@ -364,23 +364,28 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Theory]
-        [InlineData(null, null, 0, 0)]
-        [InlineData(null, "", 0, 0)]
-        [InlineData("", null, 0, 0)]
-        [InlineData(null, "a", -1, -1)]
-        [InlineData("a", null, 1, 1)]
-        [InlineData("", "a", -97, -1)]
-        [InlineData("a", "", 97, 1)]
-        [InlineData("a", "a", 0, 0)]
-        [InlineData("a", "b", -1, -1)]
-        [InlineData("b", "a", 1, 1)]
-        [InlineData("a", "ABC", 32, -1)]
-        [InlineData("ABC", "a", -32, 1)]
-        [InlineData("abc", "ABC", 32, 0)]
+        [MemberData(nameof(StrCmp_TestData))]
         public void StrCmp(string left, string right, int expectedBinaryCompare, int expectedTextCompare)
         {
             Assert.Equal(expectedBinaryCompare, StringType.StrCmp(left, right, TextCompare: false));
             Assert.Equal(expectedTextCompare, StringType.StrCmp(left, right, TextCompare: true));
+        }
+
+        public static IEnumerable<object[]> StrCmp_TestData()
+        {
+            yield return new object[] { null, null, 0, 0 };
+            yield return new object[] { null, "", 0, 0 };
+            yield return new object[] { "", null, 0, 0 };
+            yield return new object[] { null, "a", -1, -1 };
+            yield return new object[] { "a", null, 1, 1 };
+            yield return new object[] { "", "a", -97, -1 };
+            yield return new object[] { "a", "", 97, 1 };
+            yield return new object[] { "a", "a", 0, 0 };
+            yield return new object[] { "a", "b", -1, -1 };
+            yield return new object[] { "b", "a", 1, 1 };
+            yield return new object[] { "a", "ABC", 32, PlatformDetection.IsInvariantGlobalization ? -2 : -1 };
+            yield return new object[] { "ABC", "a", -32, PlatformDetection.IsInvariantGlobalization ? 2 : 1 };
+            yield return new object[] { "abc", "ABC", 32, 0 };
         }
 
         [Theory]

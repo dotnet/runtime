@@ -33,11 +33,16 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public virtual IEnumerable<MethodInfo> GetDeclaredMethods(string name)
         {
-            foreach (MethodInfo method in GetMethods(TypeInfo.DeclaredOnlyLookup))
+            foreach (MethodInfo method in GetDeclaredOnlyMethods(this))
             {
                 if (method.Name == name)
                     yield return method;
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                Justification = "The yield return state machine doesn't propagate annotations")]
+            static MethodInfo[] GetDeclaredOnlyMethods(
+                Type type) => type.GetMethods(TypeInfo.DeclaredOnlyLookup);
         }
 
         public virtual IEnumerable<ConstructorInfo> DeclaredConstructors
@@ -75,10 +80,15 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
             get
             {
-                foreach (Type t in GetNestedTypes(TypeInfo.DeclaredOnlyLookup))
+                foreach (Type t in GetDeclaredOnlyNestedTypes(this))
                 {
                     yield return t.GetTypeInfo();
                 }
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                    Justification = "The yield return state machine doesn't propagate annotations")]
+                static Type[] GetDeclaredOnlyNestedTypes(
+                    Type type) => type.GetNestedTypes(TypeInfo.DeclaredOnlyLookup);
             }
         }
 

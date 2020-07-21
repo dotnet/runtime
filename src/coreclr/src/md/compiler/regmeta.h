@@ -148,7 +148,11 @@ class RegMeta :
     , public IMetaDataInfo
 
 #ifdef FEATURE_METADATA_EMIT
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     , public IMetaDataEmit2
+#else
+    , public IMetaDataEmit3
+#endif
     , public IMetaDataAssemblyEmit
 #endif
 
@@ -1104,6 +1108,47 @@ public:
         DWORD        reserved,                // [IN] For future use (e.g. non-type parameters)
         mdToken      rtkConstraints[]);     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//*****************************************************************************
+// IMetaDataEmit3 methods
+//*****************************************************************************
+    STDMETHODIMP GetReferencedTypeSysTables(// S_OK or error.
+        ULONG64      *refTables,            // [OUT] Bit vector of referenced type system metadata tables.
+        ULONG        refTableRows[],        // [OUT] Array of number of rows for each referenced type system table.
+        const ULONG  maxTableRowsSize,      // [IN]  Max size of the rows array.
+        ULONG        *tableRowsSize);       // [OUT] Actual size of the rows array.
+
+    STDMETHODIMP DefinePdbStream(           // S_OK or error.
+        PORT_PDB_STREAM* pdbStream);        // [IN] Portable pdb stream data.
+
+    STDMETHODIMP DefineDocument(            // S_OK or error.
+        char        *docName,               // [IN] Document name (string will be tokenized).
+        GUID        *hashAlg,               // [IN] Hash algorithm GUID.
+        BYTE        *hashVal,               // [IN] Hash value.
+        ULONG       hashValSize,            // [IN] Hash value size.
+        GUID        *lang,                  // [IN] Language GUID.
+        mdDocument  *docMdToken);           // [OUT] Token of the defined document.
+
+    STDMETHODIMP DefineSequencePoints(      // S_OK or error.
+        ULONG       docRid,                 // [IN] Document RID.
+        BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
+        ULONG       sequencePtsBlobSize);   // [IN] Sequence point blob size.
+
+    STDMETHODIMP DefineLocalScope(          // S_OK or error.
+        ULONG       methodDefRid,           // [IN] Method RID.
+        ULONG       importScopeRid,         // [IN] Import scope RID.
+        ULONG       firstLocalVarRid,       // [IN] First local variable RID (of the continous run).
+        ULONG       firstLocalConstRid,     // [IN] First local constant RID (of the continous run).
+        ULONG       startOffset,            // [IN] Start offset of the scope.
+        ULONG       length);                // [IN] Scope length.
+
+    STDMETHODIMP DefineLocalVariable(       // S_OK or error.
+        USHORT      attribute,              // [IN] Variable attribute.
+        USHORT      index,                  // [IN] Variable index (slot).
+        char        *name,                  // [IN] Variable name.
+        mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 //*****************************************************************************
 // IMetaDataAssemblyEmit
 //*****************************************************************************
@@ -1254,6 +1299,13 @@ public:
 
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode);
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    STDMETHODIMP GetPathSeparator(          // S_OK or error.
+        char        *path,                  // [IN] Path string to search.
+        char        *separator,             // [OUT] Separator used in path string, NULL if none.
+        ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
+#endif
 
 //*****************************************************************************
 // IMetaDataHelper
@@ -1560,6 +1612,10 @@ public:
         DWORD       dwReOpenFlags);         // [in] Size of the data pointed to by pData.
 
     HRESULT CreateNewMD();
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    HRESULT CreateNewPortablePdbMD();
+#endif
 
     HRESULT OpenExistingMD(
         LPCWSTR     szDatabase,             // Name of database.
@@ -1924,6 +1980,9 @@ protected:
 #undef MiniMdTable
 #define MiniMdTable(x) HRESULT Validate##x(RID rid);
     MiniMdTables()
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables()
+#endif
 
     // Validate a record in a generic sense using Meta-Meta data.
     STDMETHODIMP ValidateRecord(ULONG ixTbl, ULONG ulRow);

@@ -8,7 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Odbc.cs" />
-    <Compile Include="System.Data.Odbc.ODBC32.cs" Condition="!$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />

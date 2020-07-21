@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -63,7 +62,14 @@ namespace System.Text.Json.Serialization.Converters
 
             var info = (JsonParameterInfo<TArg>)jsonParameterInfo;
             var converter = (JsonConverter<TArg>)jsonParameterInfo.ConverterBase;
-            return converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out arg!);
+
+            bool success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out TArg value);
+
+            arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
+                ? (TArg)info.DefaultValue! // Use default value specified on parameter, if any.
+                : value!;
+
+            return success;
         }
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)

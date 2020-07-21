@@ -176,9 +176,9 @@ private:
     GenTree* AddrGen(ssize_t addr);
     GenTree* AddrGen(void* addr);
 
-    GenTree* Ind(GenTree* tree)
+    GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
+        return comp->gtNewOperNode(GT_IND, type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)

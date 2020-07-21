@@ -187,6 +187,10 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
+
+        const bool fCloseSuccess = ::close(clientSocket) == 0;
+        if (!fCloseSuccess && callback != nullptr)
+            callback(strerror(errno), errno);
         return nullptr;
     }
 
@@ -223,12 +227,11 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
     // Check results
     if (retval < 0)
     {
-        for (uint32_t i = 0; i < nHandles; i++)
-        {
-            if ((pollfds[i].revents & POLLERR) && callback != nullptr)
-                callback(strerror(errno), errno);
-            rgIpcPollHandles[i].revents = (uint8_t)PollEvents::ERR;
-        }
+        //     If poll() returns with an error, including one due to an interrupted call, the fds
+        //  array will be unmodified and the global variable errno will be set to indicate the error.
+        // - POLL(2)
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
         delete[] pollfds;
         return -1;
     }
@@ -261,7 +264,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                 delete[] pollfds;
                 return -1;
             }
-            else if (pollfds[i].revents & POLLIN)
+            else if (pollfds[i].revents & (POLLIN|POLLPRI))
             {
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::SIGNALED;
                 break;

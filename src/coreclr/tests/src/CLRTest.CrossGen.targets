@@ -72,54 +72,67 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
     fi
 
-    __OutputFile="$PWD/"
+    if [ ! -z ${LargeVersionBubble+x} ]%3B then
+        ExtraCrossGen2Args+=" --inputbubble"
+    fi
+
+    __cg2ExitCode=0
+
+   OneFileCrossgen2() {
+      __OutputFile=$1
+
+      __ResponseFile="$__OutputFile.rsp"
+      rm $__ResponseFile
+
+      __Command=$_DebuggerFullPath
+      # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+      if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+          __Command+=" $__TestDotNetCmd"
+      else
+          __Command+=" dotnet"
+      fi
+      __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+      __Command+=" @$__ResponseFile"
+      __Command+=" $ExtraCrossGen2Args"
+
+      echo $2 >> $__ResponseFile
+
+      echo -o:$__OutputFile>>$__ResponseFile
+      echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
+      echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+      echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+      echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+      echo -O>>$__ResponseFile
+
+      echo "Response file: $__ResponseFile"
+      cat $__ResponseFile
+      echo "Running CrossGen2: $__Command"
+      $__Command
+      __cg2ExitCode=$?
+  }
+
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        __OutputFile+="composite-r2r.dll"
+        ExtraCrossGen2Args+= --composite
+        OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL/*.dll"
     else
-        __OutputFile+="$(MSBuildProjectName).dll"
+        ExtraCrossGen2Args+= -r:$PWD/IL/*.dll
+      for dllFile in $PWD/IL/*.dll
+      do
+        echo $dllFile
+        bareFileName="${dllFile##*/}"
+        OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
+        if [ $__cg2ExitCode -ne 0 ]; then
+          break
+        fi
+      done
     fi
 
-    __ResponseFile="$__OutputFile.rsp"
-    rm $__ResponseFile
-
-    __Command=$_DebuggerFullPath
-    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-        __Command+=" $__TestDotNetCmd"
-    else
-        __Command+=" dotnet"
-    fi
-    __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
-    __Command+=" @$__ResponseFile"
-    __Command+=" $ExtraCrossGen2Args"
-
-    if [ ! -z ${CompositeBuildMode+x} ]%3B then
-      echo --composite>>$__ResponseFile
-      echo $PWD/IL/*.dll>>$__ResponseFile
-    else
-      echo --inputbubble>>$__ResponseFile
-      echo $PWD/IL/$(MSBuildProjectName).dll>>$__ResponseFile
-      echo -r:$PWD/IL/*.dll>>$__ResponseFile
-    fi
-
-    echo -o:$__OutputFile>>$__ResponseFile
-    echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
-    echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
-    echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
-    echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
-    echo -O>>$__ResponseFile
-
-    echo "Response file: $__ResponseFile"
-    cat $__ResponseFile
-    echo "Running CrossGen2: $__Command"
-    $__Command
-    __cg2ExitCode=$?
-    if [ $__cg2ExitCode -ne 0 ]
-    then
+    if [ $__cg2ExitCode -ne 0 ]; then
       echo Crossgen2 failed with exitcode: $__cg2ExitCode
       ReleaseLock
       exit 1
     fi
+
 
     ReleaseLock
 fi
@@ -161,7 +174,7 @@ if defined RunCrossGen (
 )
 REM CrossGen2 Script
 if defined RunCrossGen2 (
-    if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
+    if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     call :TakeLock
     set CrossGen2Status=0
     if not exist "IL" (
@@ -169,16 +182,33 @@ if defined RunCrossGen2 (
         if defined CompositeBuildMode (
           copy *.dll IL\
         ) else (
-          copy $(MSBuildProjectName).dll IL\
+          copy *.dll IL\
         )
     )
 
     if defined CompositeBuildMode (
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
         set __OutputFile=!scriptPath!\composite-r2r.dll
+        rem In composite mode, treat all dll's in the test folder as rooting inputs
+        set __InputFile=!scriptPath!IL\*.dll
+        call :CompileOneFileCrossgen2
+        IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
-        set __OutputFile=!scriptPath!\$(MSBuildProjectName).dll
+        for %%I in (!scriptPath!\*.dll) do (
+            set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL\*.dll
+            set __OutputFile=!scriptPath!\%%~nI.dll
+            set __InputFile=!scriptPath!IL\%%~nI.dll
+            call :CompileOneFileCrossgen2
+            IF NOT !CrossGen2Status!==0 (
+              IF NOT !CrossGen2Status!==2 goto :DoneCrossgen2Operations
+            )
+            rem Normalize return code 2, no valid input files, to success code
+            set CrossGen2Status=0
+        )
     )
 
+    goto :DoneCrossgen2Operations
+:CompileOneFileCrossgen2
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile!
 
@@ -192,17 +222,7 @@ if defined RunCrossGen2 (
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
-
-    if defined CompositeBuildMode (
-        echo --composite>>!__ResponseFile!
-        rem In composite mode, treat all dll's in the test folder as rooting inputs
-        echo !scriptPath!IL\*.dll>>!__ResponseFile!
-    ) else (
-        echo --inputbubble>>!__ResponseFile!
-        echo !scriptPath!IL\$(MSBuildProjectName).dll>>!__ResponseFile!
-        echo -r:!scriptPath!IL\*.dll>>!__ResponseFile!
-    )
-
+    echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo -O>>!__ResponseFile!
@@ -217,6 +237,9 @@ if defined RunCrossGen2 (
     echo "!__Command!"
     call !__Command!
     set CrossGen2Status=!ERRORLEVEL!
+    Exit /b 0
+
+:DoneCrossgen2Operations
     call :ReleaseLock
     IF NOT !CrossGen2Status!==0 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!

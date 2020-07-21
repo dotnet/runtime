@@ -16,6 +16,14 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
+        public new abstract class X64 : Avx.X64
+        {
+            internal X64() { }
+
+            public static new bool IsSupported { get => IsSupported; }
+        }
+
         /// <summary>
         /// __m256i _mm256_abs_epi8 (__m256i a)
         ///   VPABSB ymm, ymm/m256

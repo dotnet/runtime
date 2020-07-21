@@ -32,11 +32,11 @@ namespace System.Data.SqlTypes
         }
 
         // Creates a new SqlTypeException with its message string set to message.
-        public SqlTypeException(string message) : this(message, null)
+        public SqlTypeException(string? message) : this(message, null)
         {
         }
 
-        public SqlTypeException(string message, Exception e) : base(message, e)
+        public SqlTypeException(string? message, Exception? e) : base(message, e)
         {
             HResult = HResults.SqlType;
         }
@@ -45,15 +45,15 @@ namespace System.Data.SqlTypes
         {
         }
 
-        private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo si, StreamingContext sc)
+        private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo? si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
             {
-                string message = si.GetString("SqlTypeExceptionMessage");
+                string? message = si.GetString("SqlTypeExceptionMessage");
                 SqlTypeException fakeValue = new SqlTypeException(message);
                 fakeValue.GetObjectData(si, sc);
             }
-            return si;
+            return si!;
         }
     }
 
@@ -67,11 +67,11 @@ namespace System.Data.SqlTypes
         }
 
         // Creates a new NullValueException with its message string set to message.
-        public SqlNullValueException(string message) : this(message, null)
+        public SqlNullValueException(string? message) : this(message, null)
         {
         }
 
-        public SqlNullValueException(string message, Exception e) : base(message, e)
+        public SqlNullValueException(string? message, Exception? e) : base(message, e)
         {
             HResult = HResults.SqlNullValue;
         }
@@ -84,11 +84,11 @@ namespace System.Data.SqlTypes
         {
             if ((null != si) && (1 == si.MemberCount))
             {
-                string message = si.GetString("SqlNullValueExceptionMessage");
+                string? message = si.GetString("SqlNullValueExceptionMessage");
                 SqlNullValueException fakeValue = new SqlNullValueException(message);
                 fakeValue.GetObjectData(si, sc);
             }
-            return si;
+            return si!;
         }
     }
 
@@ -102,11 +102,11 @@ namespace System.Data.SqlTypes
         }
 
         // Creates a new SqlTruncateException with its message string set to message.
-        public SqlTruncateException(string message) : this(message, null)
+        public SqlTruncateException(string? message) : this(message, null)
         {
         }
 
-        public SqlTruncateException(string message, Exception e) : base(message, e)
+        public SqlTruncateException(string? message, Exception? e) : base(message, e)
         {
             HResult = HResults.SqlTruncate;
         }
@@ -119,11 +119,11 @@ namespace System.Data.SqlTypes
         {
             if ((null != si) && (1 == si.MemberCount))
             {
-                string message = si.GetString("SqlTruncateExceptionMessage");
+                string? message = si.GetString("SqlTruncateExceptionMessage");
                 SqlTruncateException fakeValue = new SqlTruncateException(message);
                 fakeValue.GetObjectData(si, sc);
             }
-            return si;
+            return si!;
         }
     }
 
@@ -137,11 +137,11 @@ namespace System.Data.SqlTypes
         }
 
         // Creates a new NullValueException with its message string set to message.
-        public SqlNotFilledException(string message) : this(message, null)
+        public SqlNotFilledException(string? message) : this(message, null)
         {
         }
 
-        public SqlNotFilledException(string message, Exception e) : base(message, e)
+        public SqlNotFilledException(string? message, Exception? e) : base(message, e)
         {
             HResult = HResults.SqlNullValue;
         }
@@ -161,11 +161,11 @@ namespace System.Data.SqlTypes
         }
 
         // Creates a new NullValueException with its message string set to message.
-        public SqlAlreadyFilledException(string message) : this(message, null)
+        public SqlAlreadyFilledException(string? message) : this(message, null)
         {
         }
 
-        public SqlAlreadyFilledException(string message, Exception e) : base(message, e)
+        public SqlAlreadyFilledException(string? message, Exception? e) : base(message, e)
         {
             HResult = HResults.SqlNullValue;
         }

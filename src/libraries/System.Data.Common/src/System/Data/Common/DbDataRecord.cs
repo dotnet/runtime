@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 
 namespace System.Data.Common
@@ -69,6 +68,7 @@ namespace System.Data.Common
         // ICustomTypeDescriptor
         //
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
 

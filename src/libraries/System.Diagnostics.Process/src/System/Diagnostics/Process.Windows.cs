@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -46,6 +47,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process? Start(string fileName, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
@@ -57,6 +59,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process? Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
@@ -365,12 +368,6 @@ namespace System.Diagnostics
                         throw new Win32Exception();
                 }
             }
-        }
-
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return unchecked((int)Interop.Kernel32.GetCurrentProcessId());
         }
 
         /// <summary>

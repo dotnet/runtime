@@ -21,7 +21,7 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
-        internal Half ReadHalf()
+        public Half ReadHalf()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
             ReadOnlySpan<byte> buffer = GetRemainingBytes();

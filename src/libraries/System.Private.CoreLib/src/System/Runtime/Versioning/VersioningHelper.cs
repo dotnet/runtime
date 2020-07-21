@@ -50,7 +50,7 @@ namespace System.Runtime.Versioning
             {
                 safeName.Append(separator);
                 safeName.Append('p');
-                safeName.Append(GetCurrentProcessId());
+                safeName.Append(Environment.ProcessId);
             }
             if ((requires & SxSRequirements.CLRInstanceID) != 0)
             {

@@ -29,10 +29,17 @@ namespace System.Net.Security.Tests
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
+        public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
+        {
+            (Stream clientStream, Stream serverStream) = GetConnectedStreams();
+            return (new SslStream(clientStream), new SslStream(serverStream));
+        }
+
         public static (Stream ClientStream, Stream ServerStream) GetConnectedStreams()
         {
             if (Capability.SecurityForceSocketStreams())
             {
+                // DOTNET_TEST_NET_SECURITY_FORCE_SOCKET_STREAMS is set.
                 return GetConnectedTcpStreams();
             }
 

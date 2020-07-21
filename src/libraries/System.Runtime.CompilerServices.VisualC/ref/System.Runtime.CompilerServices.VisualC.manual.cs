@@ -36,12 +36,12 @@ namespace System.Runtime.CompilerServices
         {
         }
     }
-    [System.AttributeUsage(System.AttributeTargets.All)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     internal sealed class DecoratedNameAttribute : System.Attribute
     {
         public DecoratedNameAttribute(string decoratedName) {}
     }
-    [AttributeUsage(AttributeTargets.Class |
+    [AttributeUsageAttribute(AttributeTargets.Class |
                     AttributeTargets.Constructor |
                     AttributeTargets.Method |
                     AttributeTargets.Field |

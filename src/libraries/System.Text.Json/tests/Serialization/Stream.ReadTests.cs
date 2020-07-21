@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync(new MemoryStream(), (Type)null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static async Task ReadSimpleObjectAsync()
         {
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_json + " /* Multi\r\nLine Comment */\t");

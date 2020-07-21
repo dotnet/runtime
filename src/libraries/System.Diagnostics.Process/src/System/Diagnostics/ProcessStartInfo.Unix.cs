@@ -3,6 +3,7 @@
 
 using System;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -13,18 +14,21 @@ namespace System.Diagnostics
     {
         private const bool CaseSensitiveEnvironmentVariables = true;
 
+        [MinimumOSPlatform("windows7.0")]
         public string PasswordInClearText
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(PasswordInClearText))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(PasswordInClearText))); }
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public string Domain
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Domain))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Domain))); }
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public bool LoadUserProfile
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(LoadUserProfile))); }
@@ -36,6 +40,7 @@ namespace System.Diagnostics
         public string[] Verbs => Array.Empty<string>();
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public SecureString Password
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }

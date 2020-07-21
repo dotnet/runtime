@@ -34,6 +34,8 @@ namespace System.Net.Security
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
 
+    public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
+
     // Internal versions of the above delegates.
     internal delegate bool RemoteCertValidationCallback(string? host, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
     internal delegate X509Certificate LocalCertSelectionCallback(string targetHost, X509CertificateCollection localCertificates, X509Certificate2? remoteCertificate, string[] acceptableIssuers);
@@ -109,7 +111,7 @@ namespace System.Net.Security
 
             _innerStream = innerStream;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SslStreamCtor(this, innerStream);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -451,6 +453,12 @@ namespace System.Net.Security
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
             return ProcessAuthentication(true, true, cancellationToken)!;
+        }
+
+        public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
+        {
+            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state));
+            return ProcessAuthentication(isAsync: true, isApm: false, cancellationToken)!;
         }
 
         public virtual Task ShutdownAsync()

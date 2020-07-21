@@ -372,8 +372,12 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		g_string_append_c (str, '[');
 		if (rank == 1)
 			g_string_append_c (str, '*');
-		for (i = 1; i < rank; i++)
-			g_string_append_c (str, ',');
+		else if (rank > 64)
+			// Only taken in an error path, runtime will not load arrays of more than 32 dimensions
+			g_string_append_printf (str, "%d", rank);
+		else
+			for (i = 1; i < rank; i++)
+				g_string_append_c (str, ',');
 		g_string_append_c (str, ']');
 		
 		mono_type_name_check_byref (type, str);
@@ -3444,7 +3448,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
  *
  * This function works exactly like mono_class_from_name but it will abort if the class is not found.
  * This function should be used by the runtime for critical types to which there's no way to recover but crash
- * If they are missing. Thing of System.Object or System.String.
+ * if they are missing. For example, System.Object or System.String.
  */
 MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name)

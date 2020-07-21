@@ -236,7 +236,7 @@ namespace System.IO.IsolatedStorage
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            return _fs.FlushAsync();
+            return _fs.FlushAsync(cancellationToken);
         }
 
         public override void SetLength(long value)

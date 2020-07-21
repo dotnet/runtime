@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -192,6 +193,7 @@ namespace System.Net.Sockets
             }
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public void AllowNatTraversal(bool allowed)
         {
             _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
@@ -224,7 +226,7 @@ namespace System.Net.Sockets
         {
             if (disposing)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
                 // The only resource we need to free is the network stream, since this
                 // is based on the client socket, closing the stream will cause us

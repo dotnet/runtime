@@ -16,6 +16,14 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            internal Arm64() { }
+
+            public static new bool IsSupported { get => IsSupported; }
+        }
+
         /// <summary>
         /// uint8x16_t vaesdq_u8 (uint8x16_t data, uint8x16_t key)
         ///   A32: AESD.8 Qd, Qm

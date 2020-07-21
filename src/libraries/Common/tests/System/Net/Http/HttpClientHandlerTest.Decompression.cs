@@ -64,6 +64,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version) =>
+            new HttpRequestMessage(method, uri) { Version = version };
+
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData))]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(
@@ -162,11 +165,17 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                using (HttpResponseMessage response = await client.GetAsync(uri))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion)))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string responseContent = await response.Content.ReadAsStringAsync();
@@ -184,10 +193,16 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
-            using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion), HttpCompletionOption.ResponseHeadersRead))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -236,7 +251,7 @@ namespace System.Net.Http.Functional.Tests
                         client.DefaultRequestHeaders.Add("Accept-Encoding", manualAcceptEncodingHeaderValues);
                     }
 
-                    Task<HttpResponseMessage> clientTask = client.GetAsync(url);
+                    Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, url, UseVersion));
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TaskTimeoutExtensions.WhenAllOrAnyFailed(new Task[] { clientTask, serverTask });
 

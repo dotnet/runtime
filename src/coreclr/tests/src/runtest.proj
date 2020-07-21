@@ -348,6 +348,37 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
+  <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <ItemGroup>
+      <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+    </PropertyGroup>
+    <ItemGroup>
+      <AotEnvVar Include="MONO_ENV_OPTIONS=--aot=llvm,llvm-path='$(MonoLlvmPath)'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <AotEnvVars>@(AotEnvVar)</AotEnvVars>
+    </PropertyGroup>
+    <ItemGroup>
+      <AotProject Include="../../../mono/msbuild/aot-compile.proj">
+        <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
+      </AotProject>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(AotProject)"
+      Targets="AotCompile"
+      Condition="@(TestDlls->Count()) &gt; 0"
+      BuildInParallel="true"
+      />
+  </Target>
+
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
   </Target>
@@ -373,6 +404,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="MonoAotCompileTests"
+             Properties=""
+             Condition=" '$(MonoAotCompile)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"

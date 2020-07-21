@@ -55,7 +55,7 @@ namespace System.Net.Http
                 if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
                 {
                     // Connect completing asynchronously. Enable it to be canceled and wait for it.
-                    using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), saea))
+                    using (cancellationToken.UnsafeRegister(static s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), saea))
                     {
                         await saea.Builder.Task.ConfigureAwait(false);
                     }
@@ -92,18 +92,18 @@ namespace System.Net.Http
             try
             {
                 socket.NoDelay = true;
-                using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
+                using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
                 {
                     socket.Connect(new DnsEndPoint(host, port));
                 }
+
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch (Exception e)
             {
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
-
-            return new NetworkStream(socket, ownsSocket: true);
         }
 
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
@@ -186,7 +186,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    using (cancellationToken.UnsafeRegister(s => ((Stream)s!).Dispose(), stream))
+                    using (cancellationToken.UnsafeRegister(static s => ((Stream)s!).Dispose(), stream))
                     {
                         sslStream.AuthenticateAsClient(sslOptions);
                     }

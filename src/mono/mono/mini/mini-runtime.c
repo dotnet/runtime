@@ -133,7 +133,7 @@ gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_fast_math = FALSE;
 
-// Lists of whitelisted and blacklisted CPU features 
+// Lists of allowlisted and blocklisted CPU features 
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
 
 #ifdef DISABLE_SIMD
@@ -2014,7 +2014,7 @@ mono_enable_jit_dump (void)
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
-			//This informs perf of the presence of the jitdump file and support for the feature.​
+			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
 		
@@ -4540,7 +4540,7 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_init ();
 #endif
 
@@ -4887,6 +4887,8 @@ register_icalls (void)
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_throw_method_access, mono_icall_sig_void_ptr_ptr, FALSE);
 	register_icall (mono_throw_bad_image, mono_icall_sig_void, FALSE);
+	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
+	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
@@ -4984,7 +4986,8 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
-#ifdef ENABLE_PERFTRACING
+	mini_get_interp_callbacks ()->cleanup ();
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_shutdown ();
 #endif
 }

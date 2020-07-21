@@ -208,15 +208,7 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const GUID JITEEVersionIdentifier = { /* 7af97117-55be-4c76-afb2-e26261cb140e */
+constexpr GUID JITEEVersionIdentifier = { /* 7af97117-55be-4c76-afb2-e26261cb140e */
     0x7af97117,
     0x55be,
     0x4c76,

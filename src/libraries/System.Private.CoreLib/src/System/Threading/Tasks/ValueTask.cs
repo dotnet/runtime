@@ -231,7 +231,7 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource source))
@@ -623,7 +623,7 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task<TResult>
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource<TResult> source))

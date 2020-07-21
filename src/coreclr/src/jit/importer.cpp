@@ -893,8 +893,10 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
                 // ABI handling of this argument.
                 // Note that this can happen, for example, if we have a SIMD intrinsic that returns a SIMD type
                 // with a different baseType than we've seen.
+                // We also need to ensure an OBJ node if we have a FIELD node that might be transformed to LCL_FLD
+                // or a plain GT_IND.
                 // TODO-Cleanup: Consider whether we can eliminate all of these cases.
-                if (gtGetStructHandleIfPresent(temp) != structType)
+                if ((gtGetStructHandleIfPresent(temp) != structType) || temp->OperIs(GT_FIELD))
                 {
                     forceNormalization = true;
                 }
@@ -1666,9 +1668,12 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_FIELD:
-            // Wrap it in a GT_OBJ.
+            // Wrap it in a GT_OBJ, if needed.
             structVal->gtType = structType;
-            structVal         = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            if ((structType == TYP_STRUCT) || forceNormalization)
+            {
+                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            }
             break;
 
         case GT_LCL_VAR:
@@ -6921,14 +6926,27 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
 
     for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        // We should not be passing gc typed args to an unmanaged call.
         GenTree* arg = argUse.GetNode();
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
+
+        // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(arg->TypeGet()))
         {
-            assert(!"*** invalid IL: gc type passed to unmanaged call");
+            // Tolerate byrefs by retyping to native int.
+            //
+            // This is needed or we'll generate inconsistent GC info
+            // for this arg at the call site (gc info says byref,
+            // pinvoke sig says native int).
+            //
+            if (arg->TypeGet() == TYP_BYREF)
+            {
+                arg->ChangeType(TYP_I_IMPL);
+            }
+            else
+            {
+                assert(!"*** invalid IL: gc ref passed to unmanaged call");
+            }
         }
-
-        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -8559,7 +8577,7 @@ DONE:
 
         if (canTailCall &&
             !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, callRetTyp,
-                                          callInfo->sig.retTypeClass))
+                                          sig->retTypeClass))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -12521,7 +12539,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1  = impPopStack().val;
                 type = op1->TypeGet();
 
-                // brfalse and brtrue is only allowed on I4, refs, and byrefs.
+                // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
+                //
+                // We've historically been a bit more permissive, so here we allow
+                // any type that gtNewZeroConNode can handle.
+                if (!varTypeIsArithmetic(type) && !varTypeIsGC(type))
+                {
+                    BADCODE("invalid type for brtrue/brfalse");
+                }
+
                 if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
                 {
                     block->bbJumpKind = BBJ_NONE;
@@ -12548,12 +12574,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    /* We'll compare against an equally-sized integer 0 */
-                    /* For small types, we always compare against int   */
+                    // We'll compare against an equally-sized integer 0
+                    // For small types, we always compare against int
                     op2 = gtNewZeroConNode(genActualType(op1->gtType));
 
-                    /* Create the comparison operator and try to fold it */
-
+                    // Create the comparison operator and try to fold it
                     oper = (opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S) ? GT_NE : GT_EQ;
                     op1  = gtNewOperNode(oper, TYP_INT, op1, op2);
                 }

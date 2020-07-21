@@ -34,6 +34,7 @@ namespace System.Net.Http
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object> Properties { get { throw null; } }
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }

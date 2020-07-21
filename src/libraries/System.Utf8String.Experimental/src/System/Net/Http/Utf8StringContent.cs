@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public sealed class Utf8StringContent : HttpContent
+    public sealed partial class Utf8StringContent : HttpContent
     {
         private const string DefaultMediaType = "text/plain";
 
@@ -41,8 +41,8 @@ namespace System.Net.Http
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new Utf8StringStream(_content));
 
-#if NETSTANDARD2_0
-        protected async override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             ReadOnlyMemory<byte> buffer = _content.AsMemoryBytes();
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))

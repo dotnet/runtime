@@ -7,6 +7,7 @@ parameters:
   helixQueuesTemplate: ''
   platform: ''
   jobParameters: {}
+  variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
@@ -84,6 +85,9 @@ jobs:
           value: Mono
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
+      
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}

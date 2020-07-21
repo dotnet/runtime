@@ -639,11 +639,6 @@ sgen_workers_assert_gray_queue_is_empty (int generation)
 {
 }
 
-void
-sgen_workers_foreach (int generation, SgenWorkerCallback callback)
-{
-}
-
 SgenObjectOperations*
 sgen_workers_get_idle_func_object_ops (WorkerData *worker)
 {
@@ -682,11 +677,6 @@ sgen_workers_join (int generation)
 
 void
 sgen_workers_set_num_active_workers (int generation, int num_workers)
-{
-}
-
-void
-sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback callback)
 {
 }
 

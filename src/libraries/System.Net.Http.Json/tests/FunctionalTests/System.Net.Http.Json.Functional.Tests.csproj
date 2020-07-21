@@ -8,6 +8,9 @@
     <Compile Include="JsonContentTests.cs" />
     <Compile Include="TestClasses.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="JsonContentTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
              Link="Common\System\Net\Capability.Security.cs" />

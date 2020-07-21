@@ -24,6 +24,7 @@ public partial class CancelKeyPressTests
         HandlerInvokedForSignal(SIGINT);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/38998", TestPlatforms.OSX)]
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnMono("Mono doesn't call CancelKeyPress for SIGQUIT.")]
     public void HandlerInvokedForSigQuit()
@@ -60,7 +61,7 @@ public partial class CancelKeyPressTests
             };
 
             // Generate CancelKeyPress
-            Assert.Equal(0, kill(Process.GetCurrentProcess().Id, SIGINT));
+            Assert.Equal(0, kill(Environment.ProcessId, SIGINT));
             // Wait till we block CancelKeyPress
             Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
 
@@ -100,7 +101,7 @@ public partial class CancelKeyPressTests
             try
             {
                 int signalInner = int.Parse(signalStr);
-                Assert.Equal(0, kill(Process.GetCurrentProcess().Id, signalInner));
+                Assert.Equal(0, kill(Environment.ProcessId, signalInner));
                 Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
                 Assert.Equal(
                     signalInner == SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak,
