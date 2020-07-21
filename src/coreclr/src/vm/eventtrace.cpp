@@ -3156,7 +3156,7 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
 // The number of type load operations
 // NOTE: This isn't the count of types loaded, as some types may have multiple type loads
 //       occur to them as they transition up type loader levels
-UINT32 s_TypeLoadOps = 0;
+LONG s_TypeLoadOps = 0;
 
 UINT32 ETW::TypeSystemLog::TypeLoadBegin()
 {
@@ -3165,7 +3165,7 @@ UINT32 ETW::TypeSystemLog::TypeLoadBegin()
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    UINT32 typeLoad = InterlockedIncrement(&s_TypeLoadOps);
+    UINT32 typeLoad = (UINT32)InterlockedIncrement(&s_TypeLoadOps);
 
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStart))
     {
