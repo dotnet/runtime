@@ -81,5 +81,10 @@ namespace System.Text.Json.Serialization
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
         internal virtual void Initialize(JsonSerializerOptions options) { }
+
+        /// <summary>
+        /// Creates the instance and assigns it to state.Current.ReturnValue.
+        /// </summary>
+        internal virtual void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options) { }
     }
 }
