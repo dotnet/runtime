@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static bool IsDigit(char c) => (uint)((int)c - (int)'0') <= (uint)('9' - '0');
+        private static bool IsDigit(char c) => (uint)(c - '0') <= ('9' - '0');
 
         internal const string DefaultForegroundColor = "\x1B[39m\x1B[22m"; // reset to default foreground color
         internal const string DefaultBackgroundColor = "\x1B[49m"; // reset to the background color
