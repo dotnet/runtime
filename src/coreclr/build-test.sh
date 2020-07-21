@@ -131,7 +131,6 @@ generate_layout()
     mkdir -p "$CORE_ROOT"
 
     chmod +x "$__BinDir"/corerun
-    chmod +x "$__CrossgenExe"
 
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
@@ -149,6 +148,7 @@ generate_layout()
 
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
+        chmod +x "$__CrossgenExe"
         if [[ "$__SkipCrossgenFramework" == 0 ]]; then
             precompile_coreroot_fx
         fi

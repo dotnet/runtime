@@ -87,6 +87,11 @@ namespace System.Text.Unicode
                     Vector128<ushort> vectorA800 = Vector128.Create((ushort)0xA800);
                     Vector128<short> vector8800 = Vector128.Create(unchecked((short)0x8800));
                     Vector128<ushort> vectorZero = Vector128<ushort>.Zero;
+
+                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
+                        Vector128.Create(0x80402010_08040201).AsByte() :
+                        Vector128.Create(0x01020408_10204080).AsByte();
+
                     do
                     {
                         Vector128<ushort> utf16Data;
@@ -127,7 +132,7 @@ namespace System.Text.Unicode
                         uint debugMask;
                         if (AdvSimd.Arm64.IsSupported)
                         {
-                            debugMask = GetNonAsciiBytes(charIsNonAscii.AsByte());
+                            debugMask = GetNonAsciiBytes(charIsNonAscii.AsByte(), bitMask128);
                         }
                         else
                         {
@@ -145,7 +150,7 @@ namespace System.Text.Unicode
                         if (AdvSimd.IsSupported)
                         {
                             charIsThreeByteUtf8Encoded = AdvSimd.Subtract(vectorZero, AdvSimd.ShiftRightLogical(utf16Data, 11));
-                            mask = GetNonAsciiBytes(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
+                            mask = GetNonAsciiBytes(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte(), bitMask128);
                         }
                         else
                         {
@@ -185,7 +190,7 @@ namespace System.Text.Unicode
                         if (AdvSimd.Arm64.IsSupported)
                         {
                             utf16Data = AdvSimd.Add(utf16Data, vectorA800);
-                            mask = GetNonAsciiBytes(AdvSimd.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte());
+                            mask = GetNonAsciiBytes(AdvSimd.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte(), bitMask128);
                         }
                         else
                         {
@@ -219,7 +224,7 @@ namespace System.Text.Unicode
                             uint mask2;
                             if (AdvSimd.Arm64.IsSupported)
                             {
-                                mask2 = GetNonAsciiBytes(AdvSimd.ShiftRightLogical(utf16Data, 3).AsByte());
+                                mask2 = GetNonAsciiBytes(AdvSimd.ShiftRightLogical(utf16Data, 3).AsByte(), bitMask128);
                             }
                             else
                             {
@@ -480,17 +485,13 @@ namespace System.Text.Unicode
             return pInputBuffer;
         }
 
-        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                                Vector128.Create(0x80402010_08040201).AsByte() :
-                                                Vector128.Create(0x01020408_10204080).AsByte();
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint GetNonAsciiBytes(Vector128<byte> value)
+        private static uint GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_bitMask128);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitMask128);
 
             // self-pairwise add until all flags have moved to the first two bytes of the vector
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);

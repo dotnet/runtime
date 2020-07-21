@@ -98,6 +98,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/39398", RuntimeTestModes.TailcallStress)]
         public void Add_TakeFromAnotherThread_ExpectedItemsTaken()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();

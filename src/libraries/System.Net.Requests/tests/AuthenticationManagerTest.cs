@@ -14,8 +14,10 @@ namespace System.Net.Tests
         [Fact]
         public void Authenticate_NotSupported()
         {
+#pragma warning disable SYSLIB0009 // The methods are obsolete
             Assert.Throws<PlatformNotSupportedException>(() => AuthenticationManager.Authenticate(null, null, null));
             Assert.Throws<PlatformNotSupportedException>(() => AuthenticationManager.PreAuthenticate(null, null));
+#pragma warning restore SYSLIB0009
         }
 
         [Fact]

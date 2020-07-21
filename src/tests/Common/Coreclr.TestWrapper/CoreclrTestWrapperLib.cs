@@ -333,6 +333,7 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
 
+                DateTime startTime = DateTime.Now;
                 process.Start();
 
                 var cts = new CancellationTokenSource();
@@ -348,14 +349,21 @@ namespace CoreclrTestLib
                 else
                 {
                     // Timed out.
+
+                    DateTime endTime = DateTime.Now;
+
                     try
                     {
                         cts.Cancel();
                     }
                     catch {}
 
-                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
-                    errorWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
+                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                            startTime.ToString(), endTime.ToString());
+                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                            startTime.ToString(), endTime.ToString());
 
                     if (collectCrashDumps)
                     {

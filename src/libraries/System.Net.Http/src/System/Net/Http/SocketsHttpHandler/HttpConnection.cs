@@ -457,7 +457,7 @@ namespace System.Net.Http
                         // Then kick off the request.  The TCS' result indicates whether content should be sent or not.
                         allowExpect100ToContinue = new TaskCompletionSource<bool>();
                         var expect100Timer = new Timer(
-                            s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
+                            static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
@@ -755,7 +755,7 @@ namespace System.Net.Http
             //   request and prioritize that over other exceptions, wrapping the actual exception as an inner of an OCE.
             // - A weak reference to this HttpConnection is stored in the cancellation token, to prevent the token from
             //   artificially keeping this connection alive.
-            return cancellationToken.Register(s =>
+            return cancellationToken.Register(static s =>
             {
                 var weakThisRef = (WeakReference<HttpConnection>)s!;
                 if (weakThisRef.TryGetTarget(out HttpConnection? strongThisRef))

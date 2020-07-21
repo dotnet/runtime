@@ -325,7 +325,7 @@ namespace System.Text.Json
             return GetAttributeThatCanHaveMultiple(attributeType, classType, memberInfo, attributes);
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType)
+        internal static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType)
         {
             object[] attributes = classType.GetCustomAttributes(attributeType, inherit: false);
             return GetAttributeThatCanHaveMultiple(attributeType, classType, null, attributes);

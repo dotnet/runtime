@@ -28,7 +28,6 @@ namespace System.IO.Tests
         [Fact]
         public void NullParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentNullException>(() => Write(null, "Text"));
             Assert.Throws<ArgumentNullException>(() => Read(null));
         }
@@ -58,7 +57,6 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentException>(() => Write(string.Empty, "Text"));
             Assert.Throws<ArgumentException>(() => Read(""));
         }
