@@ -830,10 +830,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (m_readyToRunCodeDisabled)
         goto done;
 
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStarted))
-    {
-        ETW::MethodLog::GetR2RGetEntryPointStarted(pMD);
-    }
+    ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
     if (pMD->HasClassOrMethodInstantiation())
@@ -937,10 +934,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 done:
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
-    {
-        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
-    }
+    ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
     return pEntryPoint;
 }
 

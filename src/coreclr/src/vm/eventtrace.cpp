@@ -3169,13 +3169,9 @@ UINT32 ETW::TypeSystemLog::TypeLoadBegin()
 
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStart))
     {
-        EX_TRY
-        {
-            FireEtwTypeLoadStart(
-                typeLoad,
-                GetClrInstanceId());
-
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        FireEtwTypeLoadStart(
+            typeLoad,
+            GetClrInstanceId());
     }
 
     return typeLoad;
@@ -5369,22 +5365,18 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
     }
 }
 
-VOID ETW::MethodLog::GetR2RGetEntryPointStarted(MethodDesc *pMethodDesc)
+VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
 {
     CONTRACTL{
         NOTHROW;
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStarted))
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStart))
     {
-        EX_TRY
-        {
-                FireEtwR2RGetEntryPointStarted(
-                    (UINT64)pMethodDesc,
-                    GetClrInstanceId());
-
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        FireEtwR2RGetEntryPointStart(
+            (UINT64)pMethodDesc,
+            GetClrInstanceId());
     }
 }
 

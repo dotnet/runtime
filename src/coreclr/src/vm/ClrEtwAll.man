@@ -2011,14 +2011,14 @@
                         </UserData>
                     </template>
 
-                    <template tid="R2RGetEntryPointStarted">
+                    <template tid="R2RGetEntryPointStart">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
-                            <R2RGetEntryPointStarted xmlns="myNs">
+                            <R2RGetEntryPointStart xmlns="myNs">
                                 <MethodID> %1 </MethodID>
                                 <ClrInstanceID> %2 </ClrInstanceID>
-                            </R2RGetEntryPointStarted>
+                            </R2RGetEntryPointStart>
                         </UserData>
                     </template>
 
@@ -3426,10 +3426,10 @@
                            task="CLRMethod"
                            symbol="R2RGetEntryPoint" message="$(string.RuntimePublisher.R2RGetEntryPointEventMessage)"/>
 
-                    <event value="160" version="0" level="win:Informational" template="R2RGetEntryPointStarted"
+                    <event value="160" version="0" level="win:Informational" template="R2RGetEntryPointStart"
                            keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
                            task="CLRMethod"
-                           symbol="R2RGetEntryPointStarted" message="$(string.RuntimePublisher.R2RGetEntryPointStartedEventMessage)"/>
+                           symbol="R2RGetEntryPointStart" message="$(string.RuntimePublisher.R2RGetEntryPointStartEventMessage)"/>
 
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnload"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
@@ -6981,7 +6981,7 @@
                 <string id="RuntimePublisher.MethodLoad_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.MethodLoad_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
                 <string id="RuntimePublisher.R2RGetEntryPointEventMessage" value="MethodID=%1;%nMethodName=%2;%nEntryPoint=%3;%nClrInstanceID=%4" />
-                <string id="RuntimePublisher.R2RGetEntryPointStartedEventMessage" value="MethodID=%1;%nClrInstanceID=%2" />
+                <string id="RuntimePublisher.R2RGetEntryPointStartEventMessage" value="MethodID=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.MethodLoadVerboseEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />
