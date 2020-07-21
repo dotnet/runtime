@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Quic;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
@@ -999,6 +1000,101 @@ namespace System.Net.Http.Functional.Tests
                         catch { }
                     });
                 }); 
+        }
+
+        public static IEnumerable<object[]> VersionSelectionMemberData()
+        {
+            var serverOptions = new GenericLoopbackOptions();
+            // Either we support SSL (ALPN), or we're testing only clear text.
+            foreach (var useSsl in BoolValues.Where(b => serverOptions.UseSsl || !b))
+            {
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
+                if (QuicConnection.IsQuicSupported)
+                {
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, HttpVersion.Version30 };
+                }
+
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
+                yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
+                if (QuicConnection.IsQuicSupported)
+                {
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version20 };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, HttpVersion.Version30 };
+                }
+
+                if (QuicConnection.IsQuicSupported)
+                {
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(VersionSelectionMemberData))]
+        public async Task SendAsync_CorrectVersionSelected(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
+        {
+            // Loopback servers can serve only the exact same version as requested.
+            if (expectedResult is Version expectedVersion && expectedVersion != serverVersion)
+            {
+                return;
+            }
+
+            LoopbackServerFactory factory = GetFactoryForVersion(serverVersion);
+            await factory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                    {
+                        Version = requestVersion,
+                        VersionPolicy = versionPolicy
+                    };
+                    
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    if (useSsl)
+                    {
+                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                    }
+                    using HttpClient client = CreateHttpClient(handler);
+                    if (expectedResult is Type type)
+                    {
+                        Exception exception = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                        Assert.IsType(type, exception);
+                        _output.WriteLine(exception.ToString());
+                    }
+                    else
+                    {
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        Assert.Equal(expectedResult, response.Version);
+                    }
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
+                    catch (Exception) { } // Eat errors from client disconnect.
+                }, options: new GenericLoopbackOptions(){ UseSsl = useSsl });
         }
 
         [Fact]
