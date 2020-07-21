@@ -98,7 +98,6 @@ namespace MockInterop01
     [TypeLibImportClass(typeof(object))]
     public interface IBar
     {
-        [AllowReversePInvokeCalls()]
         object DoSomething(params string[] ary);
         [ComRegisterFunction()]
         object Register([MarshalAs(UnmanagedType.IDispatch), Optional, DefaultParameterValue(null)] ref object o);

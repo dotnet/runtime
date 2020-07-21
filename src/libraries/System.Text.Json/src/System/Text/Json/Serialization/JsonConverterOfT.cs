@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -69,11 +68,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool CanBeNull { get; }
 
-        /// <summary>
-        /// Is the converter built-in.
-        /// </summary>
-        internal bool IsInternalConverter { get; set; }
-
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -131,7 +125,14 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options);
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
                 }
                 else
 #endif
@@ -140,7 +141,15 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options);
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
+
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
@@ -309,7 +318,15 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                Write(writer, value, options);
+                if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                {
+                    WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
+                }
+                else
+                {
+                    Write(writer, value, options);
+                }
+
                 VerifyWrite(originalPropertyDepth, writer);
                 return true;
             }
@@ -452,5 +469,11 @@ namespace System.Text.Json.Serialization
 
         internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
             => WriteWithQuotes(writer, (T)value, options, ref state);
+
+        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
     }
 }

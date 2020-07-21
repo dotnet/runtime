@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int currentFieldRid;
                 if (compressedFieldRef)
                 {
-                    currentFieldRid = metadataBlob.ReadInt16();
+                    currentFieldRid = metadataBlob.ReadUInt16();
                 }
                 else
                 {
