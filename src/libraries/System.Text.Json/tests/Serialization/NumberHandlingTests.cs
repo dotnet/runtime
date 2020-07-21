@@ -8,10 +8,8 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -400,8 +398,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        public static void DictionariesRoundTripTest()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        public static void DictionariesRoundTrip()
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
             RunAllDictionariessRoundTripTest(JsonNumberTestData.Floats);
@@ -421,7 +419,6 @@ namespace System.Text.Json.Serialization.Tests
 
                 jsonBuilder_NumbersAsStrings.Append($"{jsonWithNumberAsString}:");
                 jsonBuilder_NumbersAsStrings.Append($"{jsonWithNumberAsString},");
-
             }
 
             jsonBuilder_NumbersAsStrings.Remove(jsonBuilder_NumbersAsStrings.Length - 1, 1);
@@ -514,7 +511,6 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-
         [Fact]
         public static void Number_AsObjectWithParameterizedCtor_PropHasAttribute()
         {
@@ -594,43 +590,35 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public static void FloatingPointConstants_Fail()
+        [Theory]
+        [InlineData("naN")]
+        [InlineData("Nan")]
+        [InlineData("NAN")]
+        [InlineData("+Infinity")]
+        [InlineData("+infinity")]
+        [InlineData("infinity")]
+        [InlineData("infinitY")]
+        [InlineData("INFINITY")]
+        [InlineData("+INFINITY")]
+        [InlineData("-infinity")]
+        [InlineData("-infinitY")]
+        [InlineData("-INFINITY")]
+        [InlineData(" NaN")]
+        [InlineData(" Infinity")]
+        [InlineData(" -Infinity")]
+        [InlineData("NaN ")]
+        [InlineData("Infinity ")]
+        [InlineData("-Infinity ")]
+        [InlineData("a-Infinity")]
+        [InlineData("NaNa")]
+        [InlineData("Infinitya")]
+        [InlineData("-Infinitya")]
+        public static void FloatingPointConstants_Fail(string testString)
         {
-            // Invalid values
-            PerformFloatingPointSerialization("naN");
-            PerformFloatingPointSerialization("Nan");
-            PerformFloatingPointSerialization("NAN");
-
-            PerformFloatingPointSerialization("+Infinity");
-            PerformFloatingPointSerialization("+infinity");
-            PerformFloatingPointSerialization("infinity");
-            PerformFloatingPointSerialization("infinitY");
-            PerformFloatingPointSerialization("INFINITY");
-            PerformFloatingPointSerialization("+INFINITY");
-
-            PerformFloatingPointSerialization("-infinity");
-            PerformFloatingPointSerialization("-infinitY");
-            PerformFloatingPointSerialization("-INFINITY");
-
-            PerformFloatingPointSerialization(" NaN");
-            PerformFloatingPointSerialization(" Infinity");
-            PerformFloatingPointSerialization(" -Infinity");
-            PerformFloatingPointSerialization("NaN ");
-            PerformFloatingPointSerialization("Infinity ");
-            PerformFloatingPointSerialization("-Infinity ");
-            PerformFloatingPointSerialization("a-Infinity");
-            PerformFloatingPointSerialization("NaNa");
-            PerformFloatingPointSerialization("Infinitya");
-            PerformFloatingPointSerialization("-Infinitya");
-
-            static void PerformFloatingPointSerialization(string testString)
-            {
-                string testStringAsJson = $@"""{testString}""";
-                string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
-                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
-                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr));
-            }
+            string testStringAsJson = $@"""{testString}""";
+            string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr));
         }
 
         [Fact]
@@ -643,6 +631,17 @@ namespace System.Text.Json.Serialization.Tests
             double @double = 1;
             // Not written as "1"
             Assert.Equal("1", JsonSerializer.Serialize(@double, s_optionsAllowFloatConstants));
+        }
+
+        [Theory]
+        [InlineData("NaN")]
+        [InlineData("Infinity")]
+        [InlineData("-Infinity")]
+        public static void Unquoted_FloatingPointConstants_Read_Fail(string testString)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<float>(testString, s_optionsAllowFloatConstants));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<double?>(testString, s_optionReadFromStr));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<double>(testString, s_optionReadFromStrAllowFloatConstants));
         }
 
         private struct StructWithNumbers
@@ -822,9 +821,9 @@ namespace System.Text.Json.Serialization.Tests
                 else
                 {
                     Assert.Equal(JsonTokenType.String, reader.TokenType);
-                    //#if BUILDING_INBOX_LIBRARY
-                    //                    Assert.True(reader.ValueSpan.Contains((byte)'\\'));
-                    //#else
+#if BUILDING_INBOX_LIBRARY
+                    Assert.True(reader.ValueSpan.Contains((byte)'\\'));
+#else
                     bool foundBackSlash = false;
                     foreach (byte val in reader.ValueSpan)
                     {
@@ -836,7 +835,7 @@ namespace System.Text.Json.Serialization.Tests
                     }
 
                     Assert.True(foundBackSlash, "Expected escape token.");
-                    //#endif
+#endif
                 }
             }
         }
@@ -1237,11 +1236,11 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""List"":[""1""]}";
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyCustomListWrapper>(json));
 
-            var obj1 = new MyCustomListWrapper
+            var obj = new MyCustomListWrapper
             {
                 List = new MyCustomList { 1 }
             };
-            Assert.Equal(@"{""List"":[1]}", JsonSerializer.Serialize(obj1));
+            Assert.Equal(@"{""List"":[1]}", JsonSerializer.Serialize(obj));
         }
 
         public class MyCustomListWrapper
@@ -1300,6 +1299,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(typeof(ClassWith_NumberHandlingOn_Property_WithCustomConverter).ToString(), exAsStr);
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_NumberHandlingOn_Property_WithCustomConverter()));
+            exAsStr = ex.ToString();
             Assert.Contains(typeof(ConverterForInt32).ToString(), exAsStr);
             Assert.Contains(typeof(ClassWith_NumberHandlingOn_Property_WithCustomConverter).ToString(), exAsStr);
         }

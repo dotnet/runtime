@@ -5,6 +5,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class SByteConverter : JsonConverter<sbyte>
     {
+        public SByteConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override sbyte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetSByte();
@@ -47,7 +52,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue(value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }

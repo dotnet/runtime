@@ -5,6 +5,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class UInt16Converter : JsonConverter<ushort>
     {
+        public UInt16Converter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override ushort Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetUInt16();
@@ -49,7 +54,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue((long)value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }

@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization.Converters
         public NullableConverter(JsonConverter<T> converter)
         {
             _converter = converter;
+            IsInternalConverterForNumberType = converter.IsInternalConverterForNumberType;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -69,7 +70,5 @@ namespace System.Text.Json.Serialization.Converters
                 _converter.WriteNumberWithCustomHandling(writer, value.Value, handling);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => _converter.IsInternalConverterForNumberType;
     }
 }

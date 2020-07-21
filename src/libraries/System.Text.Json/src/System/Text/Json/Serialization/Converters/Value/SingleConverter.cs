@@ -5,6 +5,12 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class SingleConverter : JsonConverter<float>
     {
+
+        public SingleConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetSingle();
@@ -57,7 +63,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue(value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }

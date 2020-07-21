@@ -427,7 +427,7 @@ namespace System.Text.Json
                 && span.Length == bytesConsumed)
             {
                 // NETCOREAPP implementation of the TryParse method above permits case-insenstive variants of the
-                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implmentation.
+                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implementation.
                 // The following logic reconciles the two implementations to enforce consistent behavior.
                 if (!float.IsNaN(value) && !float.IsPositiveInfinity(value) && !float.IsNegativeInfinity(value))
                 {
@@ -487,7 +487,7 @@ namespace System.Text.Json
                 && span.Length == bytesConsumed)
             {
                 // NETCOREAPP implmentation of the TryParse method above permits case-insenstive variants of the
-                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implmentation.
+                // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implementation.
                 // The following logic reconciles the two implementations to enforce consistent behavior.
                 if (!double.IsNaN(value) && !double.IsPositiveInfinity(value) && !double.IsNegativeInfinity(value))
                 {

@@ -23,10 +23,9 @@ namespace System.Text.Json.Serialization
         /// </summary>
         WriteAsString = 0x2,
         /// <summary>
-        /// Floating-point constants represented as <see cref="JsonTokenType.String"/>
-        /// tokens such as "NaN", "Infinity", "-Infinity", can be read when reading,
-        /// and such CLR values such as <see cref="float.NaN"/>, <see cref="double.PositiveInfinity"/>,
-        /// <see cref="float.NegativeInfinity"/> will be written as their corresponding JSON string representations.
+        /// The "NaN", "Infinity", and "-Infinity" <see cref="JsonTokenType.String"/> tokens can be read as floating-point constants,
+        /// and the <see cref="float.NaN"/>, <see cref="double.PositiveInfinity"/>, and <see cref="float.NegativeInfinity"/>
+        /// values will be written as their corresponding JSON string representations.
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }

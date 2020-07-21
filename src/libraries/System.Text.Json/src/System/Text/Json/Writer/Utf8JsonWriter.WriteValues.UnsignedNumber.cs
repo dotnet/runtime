@@ -109,9 +109,6 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
-        internal void WriteNumberValueAsString(uint value)
-            => WriteNumberValueAsString((ulong)value);
-
         internal void WriteNumberValueAsString(ulong value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatUInt64Length];

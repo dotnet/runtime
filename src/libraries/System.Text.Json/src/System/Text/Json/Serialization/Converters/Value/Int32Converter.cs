@@ -5,6 +5,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class Int32Converter : JsonConverter<int>
     {
+        public Int32Converter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetInt32();
@@ -49,7 +54,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue((long)value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }

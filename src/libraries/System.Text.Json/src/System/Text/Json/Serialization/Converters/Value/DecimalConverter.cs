@@ -5,6 +5,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class DecimalConverter : JsonConverter<decimal>
     {
+        public DecimalConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetDecimal();
@@ -47,7 +52,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue(value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }

@@ -5,6 +5,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ByteConverter : JsonConverter<byte>
     {
+        public ByteConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override byte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetByte();
@@ -46,7 +51,5 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteNumberValue(value);
             }
         }
-
-        internal override bool IsInternalConverterForNumberType => true;
     }
 }
