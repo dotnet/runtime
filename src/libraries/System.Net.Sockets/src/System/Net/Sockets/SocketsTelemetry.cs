@@ -118,7 +118,7 @@ namespace System.Net.Sockets
 
                 _connectionEstablishedCounter ??= new PollingCounter("connections-established", this, () => Interlocked.Read(ref _connectionEstablished))
                 {
-                    DisplayName = "Bytes Received",
+                    DisplayName = "Connections Established",
                 };
                 _bytesReceivedCounter ??= new PollingCounter("bytes-received", this, () => Interlocked.Read(ref _bytesReceived))
                 {
