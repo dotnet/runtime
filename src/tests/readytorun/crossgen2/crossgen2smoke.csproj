@@ -5,6 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
 
+    <!-- Disable for GCStress due to timeout test failures: https://github.com/dotnet/runtime/issues/33949 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+
     <!-- ilasm round-trip testing doesn't make sense for this test -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     

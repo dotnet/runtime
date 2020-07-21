@@ -977,7 +977,7 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
             if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
                 && span.Length == bytesConsumed)
