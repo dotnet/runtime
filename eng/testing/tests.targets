@@ -50,6 +50,7 @@
     <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
+    <RemoveDir Condition="'$(TargetOS)' == 'Browser'" Directories="$(BundleDir)" />
   </Target>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
