@@ -50,6 +50,13 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
+        /// Add the default console log formatter named 'simple' to the factory with default properties.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder) =>
+            builder.AddFormatterWithName(ConsoleFormatterNames.Simple);
+
+        /// <summary>
         /// Add and configure a console log formatter named 'simple' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
