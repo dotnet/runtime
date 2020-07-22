@@ -19346,6 +19346,13 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     return genRegNumFromMask(tempRegMask);
 }
 
+//------------------------------------------------------------------------
+// GetLclOffs: if `this` is a field or a field address it returns offset
+// of the field inside the struct, for not a field it returns 0.
+//
+// Return Value:
+//    The offset value.
+//
 uint16_t GenTreeLclVarCommon::GetLclOffs() const
 {
     if (OperIsLocalField())

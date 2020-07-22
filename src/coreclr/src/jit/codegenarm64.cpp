@@ -4699,7 +4699,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
+    // Need an additional integer register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != addr->GetRegNum());
 
@@ -4789,7 +4789,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     }
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
+    // Need an additional integer register to extract upper 4 bytes from data.
     regNumber tmpReg = lclVar->GetSingleTempReg();
 
     // store lower 8 bytes
