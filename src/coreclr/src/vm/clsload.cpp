@@ -3616,7 +3616,10 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
 
 #if defined(FEATURE_EVENT_TRACE)
-    ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
+    }
 #endif
 
     return typeHnd;

@@ -934,7 +934,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 done:
-    ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
+    {
+        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
+    }
     return pEntryPoint;
 }
 
