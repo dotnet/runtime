@@ -41,7 +41,6 @@
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>
-      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
       <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
@@ -50,6 +49,8 @@
     <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
+    <!-- delete the BundleDir and PublishDir in CI builds to save disk space on build agents since they're no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BundleDir);$(PublishDir)" />
   </Target>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
