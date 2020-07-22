@@ -328,4 +328,10 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <LibrariesPretrimmedArtifactsPath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</LibrariesPretrimmedArtifactsPath>
+    <LibrariesTrimmedArtifactsPath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/entire_runtimepack_trimmed</LibrariesTrimmedArtifactsPath>
+  </PropertyGroup>
+
 </Project>

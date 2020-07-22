@@ -14,6 +14,7 @@
                                 $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
                                 $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
                        Exclude="@(NonNetCoreAppProject)" />
+    <ILLinkSharedFrameworkProject Include="illink-sharedframework.proj" />
     <ManualShimProject Include="shims\manual\*.csproj" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and
@@ -25,7 +26,8 @@
     <ProjectReference Include="@(NetCoreAppProject)" />
 
     <!-- Restore only and build before/after. -->
-    <ProjectReference Include="@(NonNetCoreAppProject);
+    <ProjectReference Include="@(ILLinkSharedFrameworkProject);
+                               @(NonNetCoreAppProject);
                                @(ManualShimProject);
                                @(ApiCompatProject)"
                       Condition="'$(MSBuildRestoreSessionId)' != ''" />
@@ -47,6 +49,14 @@
     <MSBuild Targets="Build"
              Projects="@(ManualShimProject)"
              Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+  <Target Name="ILLinkSharedFramework"
+          AfterTargets="Build">
+    <MSBuild Targets="Build"
+             Projects="@(ILLinkSharedFrameworkProject)"
+             Properties="$(TraversalGlobalProperties)"
+    />
   </Target>
 
   <Target Name="RunApiCompat"

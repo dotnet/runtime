@@ -34,6 +34,7 @@
 
   <!-- Honor the generic RuntimeConfiguration property. -->
   <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' AND ('$(Configuration)' == 'Debug' OR '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>

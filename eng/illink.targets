@@ -56,18 +56,18 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFrameworks Include="$(BuildSettings)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(BuildSettings)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</RuntimePath>
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
+      <RuntimePath>$(LibrariesPretrimmedArtifactsPath)</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
@@ -184,6 +184,16 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Binplacing for pre-trimming that is used when running the linker
+       on the entire runtime pack to observe warnings from verbose output.
+  -->
+  <ItemGroup>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
+      <RuntimePath>$(LibrariesPretrimmedArtifactsPath)</RuntimePath>
+      <ItemName>PreTrimmedItem</ItemName>
+    </BinPlaceTargetFrameworks>
+  </ItemGroup>
+
   <!-- ILLinkTrimAssembly
        Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly"
@@ -217,17 +227,18 @@
       <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
-           IL2006:  The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
-                    'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'
-           IL2008:  Could not find type A specified in resource B
-           IL2009:  Could not find method A in type B specified in resource C
-           IL2012:  Could not find field A in type B specified in resource C
-           IL2025:  Duplicate preserve of A in B
-           IL2026:  Calling A which has B can break functionality when trimming application code. The target method might be removed.
-           IL2035:  Unresolved assembly A in DynamicDependencyAttribute on B
-           IL2041:  The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
+           IL2006: The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
+                   'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'
+           IL2008: Could not find type A specified in resource B
+           IL2009: Could not find method A in type B specified in resource C
+           IL2012: Could not find field A in type B specified in resource C
+           IL2025: Duplicate preserve of A in B
+           IL2026: Calling A which has B can break functionality when trimming application code. The target method might be removed.
+           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
+           IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
+                   cannot be guaranteed after trimming. Interfaces and interface members might be removed.
       -->
-      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2008;IL2009;IL2012;IL2025;IL2026;IL2035;IL2041</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2008;IL2009;IL2012;IL2025;IL2026;IL2035;IL2050</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -312,7 +323,7 @@
   <!-- Similar to _CheckForCompileOutputs and runs in the same places,
        always set these even if compile didn't run. -->
   <Target Name="_CheckForILLinkTrimAssemblyOutputs"
-          BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
+          BeforeTargets="BinPlace;CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>
       <PreTrimmedItem Condition="Exists('$(ILLinkTrimInputAssembly)')" Include="$(ILLinkTrimInputAssembly)" />
