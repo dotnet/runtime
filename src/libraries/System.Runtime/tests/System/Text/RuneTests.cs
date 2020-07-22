@@ -57,6 +57,26 @@ namespace System.Text.Tests
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [InlineData('0', '0', '0')]
+        [InlineData('a', 'A', 'a')]
+        [InlineData('i', 'I', 'i')]
+        [InlineData('z', 'Z', 'z')]
+        [InlineData('A', 'A', 'a')]
+        [InlineData('I', 'I', 'i')]
+        [InlineData('Z', 'Z', 'z')]
+        [InlineData('\u00DF', '\u00DF', '\u00DF')] // U+00DF LATIN SMALL LETTER SHARP S
+        [InlineData('\u0130', '\u0130', '\u0130')] // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
+        [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
+        [InlineData(0x10400, 0x10400, 0x10428)] // U+10400 DESERET CAPITAL LETTER LONG I
+        [InlineData(0x10428, 0x10400, 0x10428)] // U+10428 DESERET SMALL LETTER LONG I
+        public static void ICU_Casing_Invariant(int original, int upper, int lower)
+        {
+            var rune = new Rune(original);
+            Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
+            Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
+        }
+
         [Theory]
         [MemberData(nameof(GeneralTestData_BmpCodePoints_NoSurrogates))]
         public static void Ctor_Cast_Char_Valid(GeneralTestData testData)
