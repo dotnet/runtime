@@ -3297,7 +3297,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
                     if (memBase->OperIs(GT_LCL_FLD_ADDR))
                     {
-                        assert(!"don't expect GT_LCL_FLD_ADDR");
                         offset = memBase->AsLclFld()->GetLclOffs();
                     }
                     else
