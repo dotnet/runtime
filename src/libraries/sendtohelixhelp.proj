@@ -173,7 +173,7 @@
       </XHarnessApkToTest>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Android'">
+    <ItemGroup Condition="'$(TargetOS)' != 'Android'">
       <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
