@@ -2064,7 +2064,7 @@ namespace System.Net.Http.Functional.Tests
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
-            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(5);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 server.AllowMultipleConnections = true;
