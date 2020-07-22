@@ -450,7 +450,7 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (methodAttribs & CORINFO_FLG_JIT_INTRINSIC)
     {
         // Skip generating hardware intrinsic method bodies.
