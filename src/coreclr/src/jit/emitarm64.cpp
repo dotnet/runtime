@@ -13396,11 +13396,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
-                unsigned             offset  = 0;
-                if (addr->OperIs(GT_LCL_FLD_ADDR))
-                {
-                    offset = varNode->AsLclFld()->GetLclOffs();
-                }
+                unsigned             offset  = varNode->GetLclOffs();
                 if (emitInsIsStore(ins))
                 {
                     emitIns_S_R(ins, attr, dataReg, lclNum, offset);

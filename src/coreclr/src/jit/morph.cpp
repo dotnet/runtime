@@ -4602,7 +4602,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             assert(varNum < lvaCount);
             LclVarDsc* varDsc = &lvaTable[varNum];
 
-            unsigned baseOffset = argValue->OperIs(GT_LCL_FLD) ? argValue->AsLclFld()->GetLclOffs() : 0;
+            unsigned baseOffset = varNode->GetLclOffs();
             unsigned lastOffset = baseOffset + structSize;
 
             // The allocated size of our LocalVar must be at least as big as lastOffset

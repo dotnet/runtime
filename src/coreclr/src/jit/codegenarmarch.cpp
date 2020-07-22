@@ -1959,11 +1959,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     regNumber srcReg;
@@ -2095,11 +2091,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     unsigned  srcLclNum      = BAD_VAR_NUM;
@@ -2112,11 +2104,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-
-        if (src->OperIs(GT_LCL_FLD))
-        {
-            srcOffset = src->AsLclFld()->GetLclOffs();
-        }
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -2136,11 +2124,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-
-            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
-            {
-                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
     }
 
