@@ -278,18 +278,10 @@ namespace System.Net.Http
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
         /// <summary>
-        /// Represents a method that specifies the <see cref="Encoding"/> to use when interpreting header values.
-        /// </summary>
-        /// <param name="headerName">Name of the header to specify the <see cref="Encoding"/> for.</param>
-        /// <param name="request">The <see cref="HttpRequestMessage"/> we are enoding/decoding the headers for.</param>
-        /// <returns><see cref="Encoding"/> to use or <see langword="null"/> to use the default behavior.</returns>
-        public delegate Encoding? HeaderEncodingSelector(string headerName, HttpRequestMessage request);
-
-        /// <summary>
         /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
         /// or <see langword="null"/> to use the default behavior.
         /// </summary>
-        public HeaderEncodingSelector? RequestHeaderEncodingSelector
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
         {
             get => _settings._requestHeaderEncodingSelector;
             set
@@ -303,7 +295,7 @@ namespace System.Net.Http
         /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
         /// or <see langword="null"/> to use the default behavior.
         /// </summary>
-        public HeaderEncodingSelector? ResponseHeaderEncodingSelector
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
         {
             get => _settings._responseHeaderEncodingSelector;
             set

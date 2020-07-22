@@ -593,7 +593,7 @@ namespace System.Net.Http
                 return;
             }
 
-            SocketsHttpHandler.HeaderEncodingSelector? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {

@@ -130,15 +130,13 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
-        public delegate Encoding? HeaderEncodingSelector(string headerName, HttpRequestMessage request);
-
-        public HeaderEncodingSelector? RequestHeaderEncodingSelector
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        public HeaderEncodingSelector? ResponseHeaderEncodingSelector
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

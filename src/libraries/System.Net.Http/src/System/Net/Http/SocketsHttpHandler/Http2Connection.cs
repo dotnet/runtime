@@ -1029,7 +1029,7 @@ namespace System.Net.Http
                 return;
             }
 
-            SocketsHttpHandler.HeaderEncodingSelector? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)

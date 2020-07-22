@@ -43,8 +43,8 @@ namespace System.Net.Http
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
-        internal SocketsHttpHandler.HeaderEncodingSelector? _requestHeaderEncodingSelector;
-        internal SocketsHttpHandler.HeaderEncodingSelector? _responseHeaderEncodingSelector;
+        internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
+        internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
 
         internal Version _maxHttpVersion;
 
