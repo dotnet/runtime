@@ -168,35 +168,30 @@ precompile_coreroot_fx()
     local outputDir="$overlayDir"/out
 
     # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll
-
-    # Collect reference assemblies for Crossgen2
-    local crossgen2References=""
+    rm "$overlayDir"/*.ni.dll 2>/dev/null
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         compilerName=Crossgen2
 
         mkdir "$outputDir"
-
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-
-        for reference in "$overlayDir"/*.dll; do
-            crossgen2References+=" -r:${reference}"
-        done
     fi
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
     local totalPrecompiled=0
     local failedToPrecompile=0
-    local compositeCommandLine="${__DotNetCli}"
-    compositeCommandLine+=" $__Crossgen2Dll"
-    compositeCommandLine+=" --composite"
-    compositeCommandLine+=" -O"
-    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
-    compositeCommandLine+=" --targetarch ${__BuildArch}"
+    local compositeOutputFile=$outputDir/framework-r2r.dll
+    local compositeResponseFile=$compositeOutputFile.rsp
+    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        rm $compositeResponseFile 2>/dev/null
+        echo --composite>>$compositeResponseFile
+        echo -O>>$compositeResponseFile
+        echo --out:$compositeOutputFile>>$compositeResponseFile
+        echo --targetarch:${__BuildArch}>>$compositeResponseFile
+    fi
+
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -207,18 +202,32 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__CompositeBuildMode" != 0 ]]; then
-            compositeCommandLine+=" $filename"
+            echo $filename>>$compositeResponseFile
             continue
         fi
 
         local commandLine=""
+        local responseFile="$overlayDir/$(basename $filename).rsp"
+
+        rm $responseFile 2>/dev/null
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
+            commandLine="$__CrossgenExe @$responseFile"
+            echo /Platform_Assemblies_Paths>>$responseFile
+            echo $overlayDir>>$responseFile
+            echo $filename>>$responseFile
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $__Crossgen2Dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename --targetarch ${__BuildArch}"
+            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
+            echo -O>>$responseFile
+            echo --inputbubble>>$responseFile
+            echo --out:$outputDir/$(basename $filename)>>$responseFile
+            echo --targetarch:${__BuildArch}>>$responseFile
+            echo $filename>>$responseFile
+            for reference in $overlayDir/*.dll; do
+                echo -r:$reference>>$responseFile
+            done
         fi
 
         echo Precompiling "$filename"
@@ -245,6 +254,8 @@ precompile_coreroot_fx()
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         # Compile the entire framework in composite build mode
+        echo "Response file: $compositeResponseFile"
+        cat $compositeResponseFile
         echo "Compiling composite R2R framework: $compositeCommandLine"
         $compositeCommandLine
         local exitCode="$?"
