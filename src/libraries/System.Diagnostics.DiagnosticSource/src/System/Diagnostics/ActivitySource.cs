@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -71,10 +72,19 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
         /// </summary>
+        /// <param name="kind">The <see cref="ActivityKind"/></param>
+        /// <param name="name">The operation name of the Activity</param>
+        /// <returns>The created <see cref="Activity"/> object or null if there is no any event listener.</returns>
+        public Activity? StartActivity(ActivityKind kind, [CallerMemberName] string name = "")
+            => StartActivity(name, kind, default, null, null, null, default);
+
+        /// <summary>
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
+        /// </summary>
         /// <param name="name">The operation name of the Activity</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any event listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind = ActivityKind.Internal)
+        public Activity? StartActivity([CallerMemberName] string name = "", ActivityKind kind = ActivityKind.Internal)
             => StartActivity(name, kind, default, null, null, null, default);
 
         /// <summary>
