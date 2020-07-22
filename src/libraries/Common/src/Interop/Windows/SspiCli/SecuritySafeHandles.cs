@@ -257,40 +257,24 @@ namespace System.Net.Security
         public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
-            ref Interop.SspiCli.SCHANNEL_CRED authdata,
+            Interop.SspiCli.SCHANNEL_CRED* authdata,
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
             long timeStamp;
 
-            // If there is a certificate, wrap it into an array.
-            // Not threadsafe.
-            IntPtr copiedPtr = authdata.paCred;
-            try
-            {
-                IntPtr certArrayPtr = new IntPtr(&copiedPtr);
-                if (copiedPtr != IntPtr.Zero)
-                {
-                    authdata.paCred = certArrayPtr;
-                }
+            outCredential = new SafeFreeCredential_SECURITY();
 
-                outCredential = new SafeFreeCredential_SECURITY();
-
-                errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                                 null,
                                 package,
                                 (int)intent,
                                 null,
-                                ref authdata,
+                                authdata,
                                 null,
                                 null,
                                 ref outCredential._handle,
                                 out timeStamp);
-            }
-            finally
-            {
-                authdata.paCred = copiedPtr;
-            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
