@@ -81,11 +81,13 @@ namespace System.Net.Http.Functional.Tests
             // TLS 1.0-1.3 are enabled by the system default protocols (when they're enabled at all).
             // SSL 2,3 are only available with explicit configuration, so they don't return with false.
 
+#if !NET472
             if (PlatformDetection.SupportsTls13)
             {
                 yield return new object[] { SslProtocols.Tls13, false };
                 yield return new object[] { SslProtocols.Tls13, true };
             }
+#endif
 
             if (PlatformDetection.SupportsTls12)
             {
