@@ -6938,14 +6938,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
                 {
                     assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    if (memBase->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = memBase->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = memBase->AsLclVarCommon()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(memBase->GetRegNum() == REG_NA);

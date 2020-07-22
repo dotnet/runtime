@@ -3046,11 +3046,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        unsigned             offset  = 0;
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            offset = varNode->AsLclFld()->GetLclOffs();
-        }
+        unsigned             offset  = varNode->GetLclOffs();
         emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
@@ -3295,14 +3291,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                 {
                     assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    if (memBase->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = memBase->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = memBase->AsLclVarCommon()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());

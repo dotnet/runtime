@@ -473,14 +473,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -711,14 +704,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -883,14 +869,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -1017,14 +996,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
