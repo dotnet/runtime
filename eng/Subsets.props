@@ -210,7 +210,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+installer.managed+'))">
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\pack-managed.proj" />
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="installer" />
   </ItemGroup>
 
