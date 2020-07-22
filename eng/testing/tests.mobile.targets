@@ -126,16 +126,7 @@
     </AppleAppBuilderTask>
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
-
-    <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
-          SkipUnchangedFiles="true"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
-
+    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"
