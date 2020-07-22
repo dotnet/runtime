@@ -1,6 +1,6 @@
 If you need to tag folks on an issue or PR, you will generally want to tag the owners (not the lead).
 
-Note: Editing this file doesn't update the mapping used by the `@msftbot` issue notification bot to tag owners, contact `@danmosemsft` for that.
+Note: Editing this file doesn't update the mapping used by the `@msftbot` issue notification bot to tag owners. To update those notifications, contact any one of `@danmosemsft`, `@jeffschw`, `@ericstj`, or `@karelz`. If you're a community member interested in these notifications, you won't appear in this table but we can add you too - just let us know.
 
 | Area                                           | Lead          | Owners (area experts to tag in PR's and issues)     | Description                                                                                                                                                                                                                                                                               |
 |------------------------------------------------|---------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
