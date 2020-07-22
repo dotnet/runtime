@@ -16,7 +16,7 @@
   <ItemGroup Condition="'$(ArchiveTests)' != 'true'">
     <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" />
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
       with the one used in libraries to have a consistent set of dependency versions. Additionally this works
@@ -31,4 +31,18 @@
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
   </ItemGroup>
+
+  <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
+  <Choose>
+    <When Condition="'$(ArchiveTests)' != 'true'">
+      <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+        <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
+        <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+        <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
+        <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
+      </ItemGroup>
+    </When>
+  </Choose>
 </Project>
