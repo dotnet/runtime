@@ -467,11 +467,14 @@ namespace System.Net.Http.HPack
             // |  String Data (Length octets)  |
             // +-------------------------------+
 
-            if (destination.Length > value.Length)
+            if (destination.Length != 0)
             {
                 destination[0] = 0; // TODO: Use Huffman encoding
 
-                int encodedStringLength = valueEncoding is null || valueEncoding.IsSingleByte ? value.Length : valueEncoding.GetByteCount(value);
+                int encodedStringLength = valueEncoding is null || ReferenceEquals(valueEncoding, Encoding.Latin1)
+                    ? value.Length
+                    : valueEncoding.GetByteCount(value);
+
                 if (IntegerEncoder.Encode(encodedStringLength, 7, destination, out int integerLength))
                 {
                     Debug.Assert(integerLength >= 1);
@@ -541,7 +544,7 @@ namespace System.Net.Http.HPack
                 int valueLength;
 
                 // Calculate length of all parts and separators.
-                if (valueEncoding is null || valueEncoding.IsSingleByte)
+                if (valueEncoding is null || ReferenceEquals(valueEncoding, Encoding.Latin1))
                 {
                     valueLength = checked((int)(values.Length - 1) * separator.Length);
                     foreach (string part in values)
@@ -567,29 +570,29 @@ namespace System.Net.Http.HPack
                     {
                         if (valueEncoding is null)
                         {
-                            for (int i = 0; i < values.Length; i++)
-                            {
-                                if (i != 0)
-                                {
-                                    EncodeValueStringPart(separator, destination);
-                                    destination = destination.Slice(separator.Length);
-                                }
+                            string value = values[0];
+                            EncodeValueStringPart(value, destination);
+                            destination = destination.Slice(value.Length);
 
-                                string value = values[i];
+                            for (int i = 1; i < values.Length; i++)
+                            {
+                                EncodeValueStringPart(separator, destination);
+                                destination = destination.Slice(separator.Length);
+
+                                value = values[i];
                                 EncodeValueStringPart(value, destination);
                                 destination = destination.Slice(value.Length);
                             }
                         }
                         else
                         {
-                            int written;
-                            for (int i = 0; i < values.Length; i++)
+                            int written = valueEncoding.GetBytes(values[0], destination);
+                            destination = destination.Slice(written);
+
+                            for (int i = 1; i < values.Length; i++)
                             {
-                                if (i != 0)
-                                {
-                                    written = valueEncoding.GetBytes(separator, destination);
-                                    destination = destination.Slice(written);
-                                }
+                                written = valueEncoding.GetBytes(separator, destination);
+                                destination = destination.Slice(written);
 
                                 written = valueEncoding.GetBytes(values[i], destination);
                                 destination = destination.Slice(written);

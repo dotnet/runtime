@@ -187,11 +187,14 @@ namespace System.Net.Http.QPack
 
         private static bool EncodeValueString(string s, Encoding? valueEncoding, Span<byte> buffer, out int length)
         {
-            if (buffer.Length > s.Length)
+            if (buffer.Length != 0)
             {
                 buffer[0] = 0;
 
-                int encodedStringLength = valueEncoding is null || valueEncoding.IsSingleByte ? s.Length : valueEncoding.GetByteCount(s);
+                int encodedStringLength = valueEncoding is null || ReferenceEquals(valueEncoding, Encoding.Latin1)
+                    ? s.Length
+                    : valueEncoding.GetByteCount(s);
+
                 if (IntegerEncoder.Encode(encodedStringLength, 7, buffer, out int nameLength))
                 {
                     buffer = buffer.Slice(nameLength);
@@ -242,7 +245,7 @@ namespace System.Net.Http.QPack
             {
                 Debug.Assert(separator != null);
                 int valueLength;
-                if (valueEncoding is null || valueEncoding.IsSingleByte)
+                if (valueEncoding is null || ReferenceEquals(valueEncoding, Encoding.Latin1))
                 {
                     valueLength = separator.Length * (values.Length - 1);
                     foreach (string part in values)
@@ -267,29 +270,29 @@ namespace System.Net.Http.QPack
                     {
                         if (valueEncoding is null)
                         {
-                            for (int i = 0; i < values.Length; i++)
-                            {
-                                if (i != 0)
-                                {
-                                    EncodeValueStringPart(separator, buffer);
-                                    buffer = buffer.Slice(separator.Length);
-                                }
+                            string value = values[0];
+                            EncodeValueStringPart(value, buffer);
+                            buffer = buffer.Slice(value.Length);
 
-                                string value = values[i];
+                            for (int i = 1; i < values.Length; i++)
+                            {
+                                EncodeValueStringPart(separator, buffer);
+                                buffer = buffer.Slice(separator.Length);
+
+                                value = values[i];
                                 EncodeValueStringPart(value, buffer);
                                 buffer = buffer.Slice(value.Length);
                             }
                         }
                         else
                         {
-                            int written;
-                            for (int i = 0; i < values.Length; i++)
+                            int written = valueEncoding.GetBytes(values[0], buffer);
+                            buffer = buffer.Slice(written);
+
+                            for (int i = 1; i < values.Length; i++)
                             {
-                                if (i != 0)
-                                {
-                                    written = valueEncoding.GetBytes(separator, buffer);
-                                    buffer = buffer.Slice(written);
-                                }
+                                written = valueEncoding.GetBytes(separator, buffer);
+                                buffer = buffer.Slice(written);
 
                                 written = valueEncoding.GetBytes(values[i], buffer);
                                 buffer = buffer.Slice(written);
