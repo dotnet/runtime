@@ -193,7 +193,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
              Link="Common\Interop\Unix\Interop.Unlink.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Unix.cs"
-             Link="Common\System\IO\DriveInfoInternal.Unix.cs" />
+             Link="Common\System\IO\DriveInfoInternal.Unix.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Browser.cs"
+             Link="Common\System\IO\DriveInfoInternal.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
