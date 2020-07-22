@@ -256,6 +256,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
@@ -312,6 +313,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     JsonPropertyInfo jsonPropertyInfo = propertyCacheArray![state.Current.EnumeratorIndex];
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {

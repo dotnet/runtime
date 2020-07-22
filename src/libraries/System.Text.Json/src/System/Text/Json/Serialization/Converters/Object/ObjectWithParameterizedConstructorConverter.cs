@@ -467,6 +467,9 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.JsonPropertyName = utf8PropertyName;
 
             state.Current.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
+
+            state.Current.NumberHandling = jsonParameterInfo?.NumberHandling;
+
             return jsonParameterInfo != null;
         }
 
