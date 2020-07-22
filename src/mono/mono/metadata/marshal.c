@@ -3979,9 +3979,13 @@ type_is_blittable (MonoType *type)
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VOID:
 		return TRUE;
-	default:
-		return m_class_is_blittable (mono_class_from_mono_type_internal (type));
+	default: {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_sizes (klass);
+		return m_class_is_blittable (klass);
+	}
 	}
 }
 

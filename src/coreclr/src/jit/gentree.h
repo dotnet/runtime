@@ -3180,6 +3180,8 @@ public:
         _gtSsaNum = SsaConfig::RESERVED_SSA_NUM;
     }
 
+    uint16_t GetLclOffs() const;
+
     unsigned GetSsaNum() const
     {
         return _gtSsaNum;
