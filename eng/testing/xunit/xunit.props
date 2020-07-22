@@ -31,18 +31,4 @@
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
   </ItemGroup>
-
-  <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
-  <Choose>
-    <When Condition="'$(ArchiveTests)' != 'true'">
-      <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-        <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
-        <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-        <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
-        <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>
