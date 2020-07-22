@@ -596,6 +596,7 @@ namespace System.Net.Sockets
             // the attempt socket will be closed anyways, so not updating the state is OK.
             // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
             // of the socket, as we manufactured it and the caller has no opportunity to do so.
+            SocketType? socketType = _currentSocket?.SocketType;
             Socket? currentSocket = _currentSocket;
             if (currentSocket != null)
             {
@@ -614,6 +615,8 @@ namespace System.Net.Sockets
                     FinishOperationSendPackets();
                     break;
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socketType, _completedOperation, bytesTransferred);
 
             Complete();
         }
@@ -665,6 +668,8 @@ namespace System.Net.Sockets
             _currentSocket = connectSocket;
             _connectSocket = connectSocket;
 
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(connectSocket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
+
             // Complete the operation and raise the event.
             ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
             Complete();
@@ -687,6 +692,7 @@ namespace System.Net.Sockets
                 LogBuffer(bytesTransferred);
             }
 
+            SocketType? socketType = _currentSocket?.SocketType;
             SocketError socketError = SocketError.Success;
             switch (_completedOperation)
             {
@@ -789,6 +795,8 @@ namespace System.Net.Sockets
                     break;
             }
 
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socketType, _completedOperation, bytesTransferred);
+
             Complete();
         }
 
@@ -820,6 +828,27 @@ namespace System.Net.Sockets
             else
             {
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
+
+        private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)
+        {
+            switch (operation)
+            {
+                case SocketAsyncOperation.Receive:
+                case SocketAsyncOperation.ReceiveFrom:
+                case SocketAsyncOperation.ReceiveMessageFrom:
+                case SocketAsyncOperation.Accept:
+                    SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                    if (socketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+                    break;
+                case SocketAsyncOperation.Send:
+                case SocketAsyncOperation.SendTo:
+                case SocketAsyncOperation.SendPackets:
+                case SocketAsyncOperation.Connect:
+                    SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                    if (socketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+                    break;
             }
         }
     }
