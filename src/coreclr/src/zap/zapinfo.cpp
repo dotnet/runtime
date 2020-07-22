@@ -2150,14 +2150,16 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // is because they often change the code they emit based on what ISAs are supported by the compiler,
         // but we don't know what the target machine will support.
         //
-        // Additionally, we make sure none of the hardware intrinsic method bodies (except ARM64) get pregenerated in crossgen
+        // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
 
-        // For Arm64, AdvSimd/ArmBase is the baseline that is suported and hence we do pregenerate the method bodies
-        // of ARM64 harware intrinsic.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
-#if !defined(TARGET_ARM64)
+
+#if defined(TARGET_ARM64)
+        // On Arm64 AdvSimd ISA is required by CoreCLR, so we can expand Vector64<T> and Vector128<T> methods.
+        fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic) && (strcmp(className, "Vector64`1") != 0) && (strcmp(className, "Vector128`1") != 0);
+#else
         fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 #endif 
 
