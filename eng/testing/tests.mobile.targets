@@ -22,6 +22,10 @@
     <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$APK --output-directory=$XHARNESS_OUT -v</RunScriptCommand>
+  </PropertyGroup>
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
