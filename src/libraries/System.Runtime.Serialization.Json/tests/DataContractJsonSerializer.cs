@@ -2559,7 +2559,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
         var jsonTypes = new JsonTypes();
@@ -2619,7 +2619,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(actual6 == dateTime);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
     public static void DCJS_VerifyDateTimeForDateTimeFormat()
     {
         var jsonTypes = new JsonTypes();

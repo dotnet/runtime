@@ -14,7 +14,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-zoneinfo --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
@@ -122,9 +122,16 @@
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
     <ItemGroup>
+      <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <WasmSatelliteAssemblies>
+        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
+      </WasmSatelliteAssemblies>
+    </ItemGroup>
+    <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true'" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <ExtraAssemblies Include="$(PublishDir)$(AssemblyName).dll" />
       <!-- we need to preserve these facades for BinaryFormatter tests -->
       <ExtraAssemblies Include="$(PublishDir)mscorlib.dll" />
@@ -140,7 +147,19 @@
       <ExtraAssemblies Include="$(PublishDir)System.Xml.dll" />
       <ExtraAssemblies Include="$(PublishDir)WindowsBase.dll" />
     </ItemGroup>
-
+    <!-- these tests load assemblies from the file system -->
+    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'">
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Private.CoreLib.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.MetadataLoadContext.Tests.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)mscorlib.dll" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.Metadata.Tests'">
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Metadata.Tests.dll" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.Tests'">
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Tests.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Tests.pdb" />
+    </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
@@ -149,7 +168,7 @@
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="@(ExtraAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      AssemblySearchPaths="@(AssemblySearchPaths)" />
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

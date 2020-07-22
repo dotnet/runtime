@@ -2164,7 +2164,7 @@ namespace System.Tests
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
         {

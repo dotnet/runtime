@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Composition.AttributedModel</AssemblyName>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Convention\AttributedModelProvider.cs" />
@@ -17,5 +18,8 @@
     <Compile Include="System\Composition\PartNotDiscoverableAttribute.cs" />
     <Compile Include="System\Composition\SharedAttribute.cs" />
     <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="mscorlib" />
   </ItemGroup>
 </Project>

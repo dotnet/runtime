@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
 using System.Net.Internals;
@@ -12,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -1934,6 +1936,7 @@ namespace System.Net.Sockets
             return realOptionLength;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public void SetIPProtectionLevel(IPProtectionLevel level)
         {
             if (level == IPProtectionLevel.Unspecified)
@@ -2071,6 +2074,8 @@ namespace System.Net.Sockets
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(remoteEP);
+
             if (CanUseConnectEx(remoteEP))
             {
                 return BeginConnectEx(remoteEP, flowContext, callback, state);
@@ -2320,6 +2325,8 @@ namespace System.Net.Sockets
             Exception? ex = castedAsyncResult.Result as Exception;
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
+
                 if (ex == null)
                 {
                     SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -2333,6 +2340,8 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 ExceptionDispatchInfo.Throw(ex);
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
         }
@@ -4121,11 +4130,15 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
         {
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(socketAddress);
+
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop(errorCode, null);
+
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 SocketException socketException = SocketExceptionFactory.CreateSocketException((int)errorCode, endPointSnapshot);
@@ -4133,6 +4146,8 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
                 throw socketException;
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (_rightEndPoint == null)
             {

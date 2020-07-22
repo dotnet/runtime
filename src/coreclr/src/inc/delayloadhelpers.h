@@ -49,7 +49,7 @@ namespace DelayLoad
 #define DELAY_LOADED_MODULE(DLL_NAME) \
     namespace DelayLoad { \
         namespace Modules { \
-            SELECTANY Module DLL_NAME = { L#DLL_NAME W(".dll"), nullptr, S_OK, false }; \
+            constexpr Module DLL_NAME = { L#DLL_NAME W(".dll"), nullptr, S_OK, false }; \
         } \
     }
 
@@ -104,7 +104,7 @@ namespace DelayLoad
     DELAY_LOADED_MODULE(DLL_NAME) \
     namespace DelayLoad { \
         namespace DLL_NAME { \
-            SELECTANY Function FUNC_NAME = { &Modules::##DLL_NAME, #FUNC_NAME, nullptr, S_OK, false }; \
+            constexpr Function FUNC_NAME = { &Modules::##DLL_NAME, #FUNC_NAME, nullptr, S_OK, false }; \
         } \
     }
 

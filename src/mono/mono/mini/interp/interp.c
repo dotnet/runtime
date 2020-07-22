@@ -1913,12 +1913,10 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
-		// This can happen on wasm !?
-		MonoException *thrown_exc = (MonoException*) mono_gchandle_get_target_internal (context->exc_gchandle);
-		if (exc)
-			*exc = (MonoObject*)thrown_exc;
-		else
-			mono_error_set_exception_instance (error, thrown_exc);
+		/*
+		 * This can happen on wasm where native frames cannot be skipped during EH.
+		 * EH processing will continue when control returns to the interpreter.
+		 */
 		return NULL;
 	}
 	return (MonoObject*)result.data.p;
@@ -2976,6 +2974,16 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			imethod->jit_entry = addr;
 			return addr;
 		}
+
+#ifdef ENABLE_NETCORE
+		/*
+		 * The runtime expects a function pointer unique to method and
+		 * the native caller expects a function pointer with the
+		 * right signature, so fail right away.
+		 */
+		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
+		return NULL;
+#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -5258,6 +5266,23 @@ call_newobj:
 
 			sp [-1].data.p = vt_sp;
 			vt_sp += MINT_VT_ALIGNMENT;
+			ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
+			gpointer ptr = sp [-2].data.p;
+			int len = sp [-1].data.i;
+			if (len < 0)
+				THROW_EX (mono_get_exception_argument_out_of_range ("length"), ip);
+			*(gpointer*)vt_sp = ptr;
+			*(gint32*)((gpointer*)vt_sp + 1) = len;
+			sp [-2].data.p = vt_sp;
+#if SIZEOF_VOID_P == 8
+			vt_sp += ALIGN_TO (12, MINT_VT_ALIGNMENT);
+#else
+			vt_sp += ALIGN_TO (8, MINT_VT_ALIGNMENT);
+#endif
+			sp--;
 			ip++;
 			MINT_IN_BREAK;
 		}

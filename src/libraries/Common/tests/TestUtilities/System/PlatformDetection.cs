@@ -74,9 +74,9 @@ namespace System
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
-        public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
 #else
-        public static bool IsReflectionEmitSupported = true;
+        public static bool IsReflectionEmitSupported => true;
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => true;
@@ -125,6 +125,9 @@ namespace System
 
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
+        // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+        public static bool SupportsTls11 => !IsWindows7 && !IsDebian10;
+        public static bool SupportsTls12 => !IsWindows7;
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
 

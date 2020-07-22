@@ -87,11 +87,9 @@
     <ItemGroup>
       <_refPackLibFile Include="$(MicrosoftNetCoreAppRefPackRefDir)*.*">
         <TargetPath>ref/$(NetCoreAppCurrent)</TargetPath>
-        <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_refPackLibFile>
       <_runtimePackLibFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
         <TargetPath>runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)</TargetPath>
-        <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
       <_runtimePackNativeFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
@@ -104,6 +102,20 @@
       <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
       <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
       <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
+    </ItemGroup>
+
+    <!-- We need to set this metadata in a separate ItemGroup than when the Items are initially populated in order to
+    have access to the Extension metadata. -->
+    <ItemGroup>
+      <_refPackLibFile>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+      </_refPackLibFile>
+      <_runtimePackLibFiles>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+      </_runtimePackLibFiles>
+      <_runtimePackNativeFiles>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+      </_runtimePackNativeFiles>
     </ItemGroup>
 
     <CreateFrameworkListFile Files="@(_refPackLibFile)"

@@ -84,7 +84,7 @@ namespace System.Net.Http
 
         private void RegisterCancellation(CancellationToken cancellationToken)
         {
-            _registration = cancellationToken.UnsafeRegister(s =>
+            _registration = cancellationToken.UnsafeRegister(static s =>
             {
                 CancelableCreditWaiter thisRef = (CancelableCreditWaiter)s!;
                 lock (thisRef._syncObj)

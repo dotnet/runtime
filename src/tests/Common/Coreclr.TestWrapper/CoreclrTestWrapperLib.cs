@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,43 +16,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CoreclrTestLib
 {
-    static class DbgHelp
-    {
-        public enum MiniDumpType : int
-        {
-            MiniDumpNormal                          = 0x00000000,
-            MiniDumpWithDataSegs                    = 0x00000001,
-            MiniDumpWithFullMemory                  = 0x00000002,
-            MiniDumpWithHandleData                  = 0x00000004,
-            MiniDumpFilterMemory                    = 0x00000008,
-            MiniDumpScanMemory                      = 0x00000010,
-            MiniDumpWithUnloadedModules             = 0x00000020,
-            MiniDumpWithIndirectlyReferencedMemory  = 0x00000040,
-            MiniDumpFilterModulePaths               = 0x00000080,
-            MiniDumpWithProcessThreadData           = 0x00000100,
-            MiniDumpWithPrivateReadWriteMemory      = 0x00000200,
-            MiniDumpWithoutOptionalData             = 0x00000400,
-            MiniDumpWithFullMemoryInfo              = 0x00000800,
-            MiniDumpWithThreadInfo                  = 0x00001000,
-            MiniDumpWithCodeSegs                    = 0x00002000,
-            MiniDumpWithoutAuxiliaryState           = 0x00004000,
-            MiniDumpWithFullAuxiliaryState          = 0x00008000,
-            MiniDumpWithPrivateWriteCopyMemory      = 0x00010000,
-            MiniDumpIgnoreInaccessibleMemory        = 0x00020000,
-            MiniDumpWithTokenInformation            = 0x00040000,
-            MiniDumpWithModuleHeaders               = 0x00080000,
-            MiniDumpFilterTriage                    = 0x00100000,
-            MiniDumpValidTypeFlags                  = 0x001fffff
-        }
-
-        [DllImport("DbgHelp.dll", SetLastError = true)]
-        public static extern bool MiniDumpWriteDump(IntPtr handle, int processId, SafeFileHandle file, MiniDumpType dumpType, IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
-    }
-
     static class Kernel32
     {
         public const int MAX_PATH = 260;
         public const int ERROR_NO_MORE_FILES = 0x12;
+        public const long INVALID_HANDLE = -1;
 
         public enum Toolhelp32Flags : uint
         {
@@ -91,14 +60,6 @@ namespace CoreclrTestLib
         public static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry32W entry);
     }
 
-    static class libSystem
-    {
-        [DllImport(nameof(libSystem))]
-        public static extern int kill(int pid, int signal);
-
-        public const int SIGABRT = 0x6;
-    }
-
     static class libproc
     {
         [DllImport(nameof(libproc))]
@@ -112,189 +73,215 @@ namespace CoreclrTestLib
         }
     }
 
+    internal static class ProcessExtensions
+    {
+        public unsafe static IEnumerable<Process> GetChildren(this Process process)
+        {
+            var children = new List<Process>();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return Windows_GetChildren(process);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return Linux_GetChildren(process);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return MacOS_GetChildren(process);
+            }
+            return children;
+        }
+
+        private unsafe static IEnumerable<Process> Windows_GetChildren(Process process)
+        {
+            var children = new List<Process>();
+            IntPtr snapshot = Kernel32.CreateToolhelp32Snapshot(Kernel32.Toolhelp32Flags.TH32CS_SNAPPROCESS, 0);
+            if (snapshot != IntPtr.Zero && snapshot.ToInt64() != Kernel32.INVALID_HANDLE)
+            {
+                try
+                {
+                    children = new List<Process>();
+                    int ppid = process.Id;
+
+                    var processEntry = new Kernel32.ProcessEntry32W { Size = sizeof(Kernel32.ProcessEntry32W) };
+
+                    bool success = Kernel32.Process32FirstW(snapshot, ref processEntry);
+                    while (success)
+                    {
+                        if (processEntry.ParentProcessID == ppid)
+                        {
+                            try
+                            {
+                                children.Add(Process.GetProcessById(processEntry.ProcessID));
+                            }
+                            catch {}
+                        }
+
+                        success = Kernel32.Process32NextW(snapshot, ref processEntry);
+                    }
+
+                }
+                finally
+                {
+                    Kernel32.CloseHandle(snapshot);
+                }
+            }
+
+            return children;
+        }
+
+        private static IEnumerable<Process> Linux_GetChildren(Process process)
+        {
+            var children = new List<Process>();
+            List<int> childPids = null;
+
+            try
+            {
+                childPids = File.ReadAllText($"/proc/{process.Id}/task/{process.Id}/children")
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(pidString => int.Parse(pidString))
+                    .ToList();
+            }
+            catch (IOException e)
+            {
+                // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
+                // attempt to use pgrep then
+                var pgrepInfo = new ProcessStartInfo("pgrep");
+                pgrepInfo.RedirectStandardOutput = true;
+                pgrepInfo.Arguments = $"-P {process.Id}";
+
+                using Process pgrep = Process.Start(pgrepInfo);
+
+                string[] pidStrings = pgrep.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                pgrep.WaitForExit();
+
+                childPids = new List<int>();
+                foreach (var pidString in pidStrings)
+                    if (int.TryParse(pidString, out int childPid))
+                        childPids.Add(childPid);
+            }
+
+            foreach (var pid in childPids)
+            {
+                try
+                {
+                    children.Add(Process.GetProcessById(pid));
+                }
+                catch (ArgumentException)
+                {
+                    // Ignore failure to get process, the process may have exited
+                }
+            }
+
+            return children;
+        }
+
+        private static IEnumerable<Process> MacOS_GetChildren(Process process)
+        {
+            var children = new List<Process>();
+            if (libproc.ListChildPids(process.Id, out int[] childPids))
+            {
+                foreach (var childPid in childPids)
+                {
+                    children.Add(Process.GetProcessById(childPid));
+                }
+            }
+
+            return children;
+        }
+    }
+
     public class CoreclrTestWrapperLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
         
         // Default timeout set to 10 minutes
-        public const int DEFAULT_TIMEOUT = 1000 * 60*10;
+        public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
 
         static bool CollectCrashDump(Process process, string path)
         {
+            ProcessStartInfo createdumpInfo = null;
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            string createdumpPath = Path.Combine(coreRoot, "createdump");
+            string arguments = $"--name \"{path}\" {process.Id} --withheap";
+            Process createdump = new Process();
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                using (var crashDump = File.OpenWrite(path))
-                {
-                    var flags = DbgHelp.MiniDumpType.MiniDumpWithFullMemory | DbgHelp.MiniDumpType.MiniDumpIgnoreInaccessibleMemory;
-                    return DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                }
+                createdump.StartInfo.FileName = createdumpPath + ".exe";
+                createdump.StartInfo.Arguments = arguments;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-                ProcessStartInfo createdumpInfo = new ProcessStartInfo("sudo");
-                createdumpInfo.Arguments = $"{Path.Combine(coreRoot, "createdump")} --name \"{path}\" {process.Id} -h";
-                Process createdump = Process.Start(createdumpInfo);
-                return createdump.WaitForExit(DEFAULT_TIMEOUT) && createdump.ExitCode == 0;
+                createdump.StartInfo.FileName = "sudo";
+                createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+
+            createdump.StartInfo.UseShellExecute = false;
+            createdump.StartInfo.RedirectStandardOutput = true;
+            createdump.StartInfo.RedirectStandardError = true;
+
+            Console.WriteLine($"Invoking: {createdump.StartInfo.FileName} {createdump.StartInfo.Arguments}");
+            createdump.Start();
+
+            Task<string> copyOutput = createdump.StandardOutput.ReadToEndAsync();
+            Task<string> copyError = createdump.StandardError.ReadToEndAsync();
+            bool fSuccess = createdump.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+            if (fSuccess)
             {
-                int pid = process.Id;
-                Console.WriteLine($"Aborting process {pid} to generate dump");
-                int status = libSystem.kill(pid, libSystem.SIGABRT);
+                Task.WaitAll(copyError, copyOutput);
+                string output = copyOutput.Result;
+                string error = copyError.Result;
 
-                string defaultCoreDumpPath = $"/cores/core.{pid}";
-
-                if (status == 0 && File.Exists(defaultCoreDumpPath))
-                {
-                    Console.WriteLine($"Moving dump for {pid} to {path}.");
-                    File.Move(defaultCoreDumpPath, path, true);
-                }
-                else
-                {
-                    Console.WriteLine($"Unable to find OS-generated dump for {pid} at default path: {defaultCoreDumpPath}");
-                }
-                return true;
+                Console.WriteLine("createdump stdout:");
+                Console.WriteLine(output);
+                Console.WriteLine("createdump stderr:");
+                Console.WriteLine(error);
+            }
+            else
+            {
+                createdump.Kill(true);
             }
 
-            return false;
+            return fSuccess && createdump.ExitCode == 0;
         }
 
-        static unsafe bool TryFindChildProcessByName(Process process, string childName, out Process child)
+        // Finds all children processes starting with a process named childName
+        // The children are sorted in the order they should be dumped
+        static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
-            child = null;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return TryFindChildProcessByNameWindows(process, childName, out child);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return TryFindChildProcessByNameLinux(process, childName, out child);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return TryFindChildProcessByNameMacOS(process, childName, out child);
-            }
-            return false;
-        }
+            var children = new Stack<Process>();
+            Queue<Process> childrenToCheck = new Queue<Process>();
+            HashSet<int> seen = new HashSet<int>();
 
-        static unsafe bool TryFindChildProcessByNameWindows(Process process, string childName, out Process child)
-        {
-            IntPtr snapshot = Kernel32.CreateToolhelp32Snapshot(Kernel32.Toolhelp32Flags.TH32CS_SNAPPROCESS, 0);
-            if (snapshot == IntPtr.Zero)
+            seen.Add(process.Id);
+            foreach (var child in process.GetChildren())
+                childrenToCheck.Enqueue(child);
+
+            while (childrenToCheck.Count != 0)
             {
-                child = null;
-                return false;
-            }
+                Process child = childrenToCheck.Dequeue();
+                if (seen.Contains(child.Id))
+                    continue;
 
-            try
-            {
-                int ppid = process.Id;
+                seen.Add(child.Id);
 
-                var processEntry = new Kernel32.ProcessEntry32W { Size = sizeof(Kernel32.ProcessEntry32W) };
+                foreach (var grandchild in child.GetChildren())
+                    childrenToCheck.Enqueue(grandchild);
 
-                bool success = Kernel32.Process32FirstW(snapshot, ref processEntry);
-                while (success)
+                if (child.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (processEntry.ParentProcessID == ppid)
-                    {
-                        try
-                        {
-                            Process c = Process.GetProcessById(processEntry.ProcessID);
-                            if (c.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                child = c;
-                                return true;
-                            }
-                            c.Dispose();
-                        }
-                        catch {}
-                    }
-
-                    success = Kernel32.Process32NextW(snapshot, ref processEntry);
-                }
-
-                child = null;
-                return false;
-            }
-            finally
-            {
-                Kernel32.CloseHandle(snapshot);
-            }
-        }
-
-        static bool TryFindChildProcessByNameLinux(Process process, string childName, out Process child)
-        {
-            Queue<string> childrenFilesToCheck = new Queue<string>();
-
-            childrenFilesToCheck.Enqueue($"/proc/{process.Id}/task/{process.Id}/children");
-
-            while (childrenFilesToCheck.Count != 0)
-            {
-                string childrenFile = childrenFilesToCheck.Dequeue();
-
-                try
-                {
-                    string[] childrenPidAsStrings = File.ReadAllText(childrenFile).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var childPidAsString in childrenPidAsStrings)
-                    {
-                        int childPid = int.Parse(childPidAsString);
-                        Process childProcess = Process.GetProcessById(childPid);
-                        if (childProcess.ProcessName.Equals(childName, StringComparison.Ordinal))
-                        {
-                            child = childProcess;
-                            return true;
-                        }
-                        else
-                        {
-                            childrenFilesToCheck.Enqueue($"/proc/{childPid}/task/{childPid}/children");
-                        }
-                    }
-                }
-                catch (IOException)
-                {
-                    // Ignore failure to read process children data, the process may have exited.
+                    children.Push(child);
                 }
             }
 
-            child = null;
-            return false;
-        }
-
-        static bool TryFindChildProcessByNameMacOS(Process process, string childName, out Process child)
-        {
-            child = null;
-            Queue<int> childrenPidsToCheck = new Queue<int>();
-
-            childrenPidsToCheck.Enqueue(process.Id);
-
-            while (childrenPidsToCheck.Count != 0)
-            {
-                int pid = childrenPidsToCheck.Dequeue();
-                if (libproc.ListChildPids(pid, out int[] children))
-                {
-                    foreach (var childPid in children)
-                    {
-                        Process childProcess = Process.GetProcessById(childPid);
-                        if (childProcess.ProcessName.Equals(childName, StringComparison.Ordinal))
-                        {
-                            child = childProcess;
-                            return true;
-                        }
-                        else
-                        {
-                            childrenPidsToCheck.Enqueue(childPid);
-                        }
-                    }
-                }
-            }
-
-            child = null;
-            return false;
+            return children;
         }
 
         public int RunTest(string executable, string outputFile, string errorFile)
@@ -306,7 +293,7 @@ namespace CoreclrTestLib
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
-            int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT;
+            int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT_MS;
             bool collectCrashDumps = Environment.GetEnvironmentVariable(COLLECT_DUMPS_ENVIRONMENT_VAR) != null;
             string crashDumpFolder = Environment.GetEnvironmentVariable(CRASH_DUMP_FOLDER_ENVIRONMENT_VAR);
 
@@ -333,6 +320,7 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
 
+                DateTime startTime = DateTime.Now;
                 process.Start();
 
                 var cts = new CancellationTokenSource();
@@ -348,30 +336,44 @@ namespace CoreclrTestLib
                 else
                 {
                     // Timed out.
+
+                    DateTime endTime = DateTime.Now;
+
                     try
                     {
                         cts.Cancel();
                     }
                     catch {}
 
-                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
-                    errorWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
+                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                            startTime.ToString(), endTime.ToString());
+                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                            startTime.ToString(), endTime.ToString());
 
                     if (collectCrashDumps)
                     {
                         if (crashDumpFolder != null)
                         {
-                            Process childProcess;
-                            if (TryFindChildProcessByName(process, "corerun", out childProcess))
+                            foreach (var child in FindChildProcessesByName(process, "corerun"))
                             {
-                                string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", childProcess.Id));
-                                if (CollectCrashDump(childProcess, crashDumpPath))
+                                string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
+                                Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
+                                if (CollectCrashDump(child, crashDumpPath))
                                 {
-                                    Console.WriteLine("Collected crash dump {0}", crashDumpPath);
+                                    Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Failed to collect crash dump");
                                 }
                             }
                         }
                     }
+
+                    // kill the timed out processes after we've collected dumps
+                    process.Kill(entireProcessTree: true);
                 }
 
                outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -323,6 +324,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
             if (name == null)
@@ -443,6 +445,7 @@ namespace System.Security.Cryptography
             return retval;
         }
 
+        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);

@@ -237,9 +237,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void  Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-    void  Init(IStream* pStream, UINT64 uStreamAsmId,
-               DWORD dwModuleId, BOOL resourceFile);
+    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
 
     void VerifyIsILOrNIAssembly(BOOL fIL);
 

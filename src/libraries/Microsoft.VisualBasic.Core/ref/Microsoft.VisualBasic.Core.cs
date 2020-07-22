@@ -771,7 +771,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static decimal ToDecimal(string? Value) { throw null; }
         public static double ToDouble(object? Value) { throw null; }
         public static double ToDouble(string? Value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
         public static T ToGenericParameter<T>(object? Value) { throw null; }
         public static int ToInteger(object? Value) { throw null; }

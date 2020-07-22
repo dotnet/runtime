@@ -53,6 +53,8 @@
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
              Link="Common\System\IO\RowConfigReader.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LoggingTest.cs" />

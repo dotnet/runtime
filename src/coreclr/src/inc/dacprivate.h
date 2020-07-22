@@ -1028,6 +1028,8 @@ struct MSLAYOUT DacpJitCodeHeapInfo
             CLRDATA_ADDRESS currentAddr = 0;
         } HostData;
     };
+
+    DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
 
 #include "static_assert.h"

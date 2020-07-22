@@ -2782,7 +2782,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
@@ -11089,7 +11089,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeIsFloating(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
             break;
 
         case GT_IL_OFFSET:
@@ -15348,7 +15348,7 @@ GenTree* Compiler::gtNewTempAssign(
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
-    if (varTypeIsFloating(dstTyp) && (compFloatingPointUsed == false))
+    if (varTypeUsesFloatReg(dstTyp) && (compFloatingPointUsed == false))
     {
         compFloatingPointUsed = true;
     }
@@ -16365,11 +16365,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             *pLclVarTree                    = addrArgLcl;
             if (pIsEntire != nullptr)
             {
-                unsigned lclOffset = 0;
-                if (addrArg->OperIsLocalField())
-                {
-                    lclOffset = addrArg->AsLclFld()->GetLclOffs();
-                }
+                unsigned lclOffset = addrArgLcl->GetLclOffs();
 
                 if (lclOffset != 0)
                 {
@@ -19165,7 +19161,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType0));
+            noway_assert(varTypeUsesFloatReg(regType0));
             resultReg = REG_FLOATRET;
         }
     }
@@ -19186,9 +19182,9 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType1));
+            noway_assert(varTypeUsesFloatReg(regType1));
 
-            if (varTypeIsFloating(regType0))
+            if (varTypeUsesFloatReg(regType0))
             {
                 resultReg = REG_FLOATRET_1;
             }
@@ -19348,6 +19344,25 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     regMaskTP tempRegMask = genFindLowestBit(availableSet);
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
+}
+
+//------------------------------------------------------------------------
+// GetLclOffs: if `this` is a field or a field address it returns offset
+// of the field inside the struct, for not a field it returns 0.
+//
+// Return Value:
+//    The offset value.
+//
+uint16_t GenTreeLclVarCommon::GetLclOffs() const
+{
+    if (OperIsLocalField())
+    {
+        return AsLclFld()->GetLclOffs();
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 #ifdef TARGET_ARM

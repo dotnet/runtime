@@ -5657,9 +5657,11 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
+            IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
+                restrictedScope = TypeLimiter.EnterRestrictedScope(this);
                 RowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
@@ -5894,15 +5896,18 @@ namespace System.Data
             }
             finally
             {
+                restrictedScope?.Dispose();
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
         }
 
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
+            IDisposable? restrictedScope = null;
             RowDiffIdUsageSection rowDiffIdUsage = default;
             try
             {
+                restrictedScope = TypeLimiter.EnterRestrictedScope(this);
                 bool fSchemaFound = false;
                 bool fDataFound = false;
                 bool fIsXdr = false;
@@ -6188,6 +6193,7 @@ namespace System.Data
             }
             finally
             {
+                restrictedScope?.Dispose();
                 // prepare and cleanup rowDiffId hashtable
                 rowDiffIdUsage.Cleanup();
             }

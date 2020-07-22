@@ -9,7 +9,7 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetsBrowser)' == 'true'">--exclude-api-list ExcludeApiList.PNSE.Browser.txt</GeneratePlatformNotSupportedAdditionalParameters>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
@@ -323,6 +323,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
