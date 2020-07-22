@@ -41,7 +41,6 @@
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>
-      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
       <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
