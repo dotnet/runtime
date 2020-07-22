@@ -152,13 +152,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE);
 
     //====================================================================
-    // IUnknown Helpers
-    //====================================================================
-    static FCDECL3(HRESULT, QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv);
-    static FCDECL1(ULONG, AddRef, IUnknown* pUnk);
-    static FCDECL1(ULONG, Release, IUnknown* pUnk);
-
-    //====================================================================
     // These methods convert OLE variants to and from objects.
     //====================================================================
     static FCDECL2(void, GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
