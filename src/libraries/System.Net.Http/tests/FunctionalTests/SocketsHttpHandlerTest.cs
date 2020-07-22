@@ -2058,6 +2058,50 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
+        {
+            const int MaxConcurrentStreams = 2;
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            using SocketsHttpHandler handler = CreateHandler();
+            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                server.AllowMultipleConnections = true;
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                List<int> acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+
+                Assert.Equal(MaxConcurrentStreams, handledRequests1);
+
+                // Wait until the idle connection timeout expires.
+                await connection1.WaitForClientDisconnectAsync(false).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                Assert.True(connection1.IsInvalid);
+
+                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds);
+
+                Assert.Equal(MaxConcurrentStreams, handledRequests0);
+
+                //Fill all connection0's stream slots
+                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+
+                int handledRequests2 = (await HandleAllPendingRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+                //Make sure connection0 is still alive.
+                handledRequests0 = (await HandleAllPendingRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+
+                Assert.Equal(MaxConcurrentStreams, handledRequests2);
+                Assert.Equal(MaxConcurrentStreams, handledRequests0);
+            }
+        }
+
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
             foreach (Task<HttpResponseMessage> sendTask in sendTasks)
