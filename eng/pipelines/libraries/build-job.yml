@@ -99,7 +99,7 @@ jobs:
             displayName: Disk Usage after Build
 
         - ${{ if eq(parameters.runTests, false) }}:
-          - template: /eng/pipelines/libraries/prepare-publish-for-tests.yml
+          - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
             parameters:
               isOfficialBuild: ${{ parameters.isOfficialBuild }}
 

@@ -11,7 +11,7 @@ steps:
     displayName: Build native test components
 
   # Copy all build output into artifacts staging directory
-  - template: /eng/pipelines/libraries/prepare-publish-for-tests.yml
+  - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
 
   # Zip CoreCLR Build Output
   - template: /eng/pipelines/common/upload-artifact-step.yml
