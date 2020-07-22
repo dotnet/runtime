@@ -87,13 +87,13 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void BytesReceived(long count)
+        public void BytesReceived(int count)
         {
             Interlocked.Add(ref _bytesReceived, count);
         }
 
         [NonEvent]
-        public void BytesSent(long count)
+        public void BytesSent(int count)
         {
             Interlocked.Add(ref _bytesSent, count);
         }
