@@ -2496,12 +2496,6 @@ namespace Internal.JitInterface
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
 
-        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        {
-            ppIndirection = null;
-            return null;
-        }
-
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
         {

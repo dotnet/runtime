@@ -2,18 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Test.Console;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test

@@ -8,26 +8,6 @@ namespace System.Text
 {
     internal class BinHexEncoding : Encoding
     {
-        private static ReadOnlySpan<byte> Char2val => new byte[128] // rely on C# compiler optimization to eliminate allocation
-        {
-            /*    0-15 */
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*   16-31 */
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*   32-47 */
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*   48-63 */
-                              0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*   64-79 */
-                              0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*   80-95 */
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /*  96-111 */
-                              0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            /* 112-127 */
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        };
-
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
@@ -65,31 +45,10 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(bytes));
             if (charCount > 0)
             {
-                fixed (byte* _char2val = &Char2val[0])
+                if (!HexConverter.TryDecodeFromUtf16(chars.AsSpan(charIndex, charCount), bytes.AsSpan(byteIndex, byteCount), out int charsProcessed))
                 {
-                    fixed (byte* _bytes = &bytes[byteIndex])
-                    {
-                        fixed (char* _chars = &chars[charIndex])
-                        {
-                            char* pch = _chars;
-                            char* pchMax = _chars + charCount;
-                            byte* pb = _bytes;
-                            while (pch < pchMax)
-                            {
-                                char pch0 = pch[0];
-                                char pch1 = pch[1];
-                                if ((pch0 | pch1) >= 128)
-                                    throw new FormatException(SR.Format(SR.XmlInvalidBinHexSequence, new string(pch, 0, 2), charIndex + (int)(pch - _chars)));
-                                byte d1 = _char2val[pch0];
-                                byte d2 = _char2val[pch1];
-                                if ((d1 | d2) == 0xFF)
-                                    throw new FormatException(SR.Format(SR.XmlInvalidBinHexSequence, new string(pch, 0, 2), charIndex + (int)(pch - _chars)));
-                                pb[0] = (byte)((d1 << 4) + d2);
-                                pch += 2;
-                                pb++;
-                            }
-                        }
-                    }
+                    int error = charsProcessed + charIndex;
+                    throw new FormatException(SR.Format(SR.XmlInvalidBinHexSequence, new string(chars, error, 2), error));
                 }
             }
             return byteCount;
@@ -135,22 +94,7 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(chars));
             if (byteCount > 0)
             {
-                    fixed (byte* _bytes = &bytes[byteIndex])
-                    {
-                        fixed (char* _chars = &chars[charIndex])
-                        {
-                            char* pch = _chars;
-                            byte* pb = _bytes;
-                            byte* pbMax = _bytes + byteCount;
-                            while (pb < pbMax)
-                            {
-                                pch[0] = HexConverter.ToCharUpper(pb[0] >> 4);
-                                pch[1] = HexConverter.ToCharUpper(pb[0]);
-                                pb++;
-                                pch += 2;
-                            }
-                        }
-                    }
+                HexConverter.EncodeToUtf16(bytes.AsSpan(byteIndex, byteCount), chars.AsSpan(charIndex));
             }
             return charCount;
         }

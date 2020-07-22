@@ -1013,5 +1013,126 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{x"));
             await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{true"));
         }
+
+        [Fact]
+        public void AnonymousObject()
+        {
+            var obj = new { Prop = 5 };
+            Type objType = obj.GetType();
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            object newObj = JsonSerializer.Deserialize("{}", objType);
+            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
+
+            newObj = JsonSerializer.Deserialize(@"{""Prop"":5}", objType);
+            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
+        }
+
+        [Fact]
+        public void AnonymousObject_NamingPolicy()
+        {
+            const string Json = @"{""prop"":5}";
+
+            var obj = new { Prop = 5 };
+            Type objType = obj.GetType();
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            object newObj = JsonSerializer.Deserialize(Json, objType);
+            // Verify no match if no naming policy
+            Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            // Verify match with naming policy
+            Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
+        }
+
+        private record MyRecord(int Prop);
+
+        [Fact]
+        public void Record()
+        {
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+            MyRecord obj = JsonSerializer.Deserialize<MyRecord>("{}");
+            Assert.Equal(0, obj.Prop);
+
+            obj = JsonSerializer.Deserialize<MyRecord>(@"{""Prop"":5}");
+            Assert.Equal(5, obj.Prop);
+        }
+
+        private record AgeRecord(int age)
+        {
+            public string Age { get; set; } = age.ToString();
+        }
+
+        [Fact]
+        public void RecordWithSamePropertyNameDifferentTypes()
+        {
+            AgeRecord obj = JsonSerializer.Deserialize<AgeRecord>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
+
+        private record MyRecordWithUnboundCtorProperty(int IntProp1, int IntProp2)
+        {
+            public string StringProp { get; set; }
+        }
+
+        [Fact]
+        public void RecordWithAdditionalProperty()
+        {
+            MyRecordWithUnboundCtorProperty obj = JsonSerializer.Deserialize<MyRecordWithUnboundCtorProperty>(
+                @"{""IntProp1"":1,""IntProp2"":2,""StringProp"":""hello""}");
+
+            Assert.Equal(1, obj.IntProp1);
+            Assert.Equal(2, obj.IntProp2);
+
+            // StringProp is not bound to any constructor property.
+            Assert.Equal("hello", obj.StringProp);
+        }
+
+        [Fact]
+        public void Record_NamingPolicy()
+        {
+            const string Json = @"{""prop"":5}";
+
+            // 'Prop' property binds with a ctor arg called 'Prop'.
+
+            // Verify no match if no naming policy
+            MyRecord obj = JsonSerializer.Deserialize<MyRecord>(Json);
+            Assert.Equal(0, obj.Prop);
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            // Verify match with naming policy
+            obj = JsonSerializer.Deserialize<MyRecord>(Json, options);
+            Assert.Equal(5, obj.Prop);
+        }
+
+        private class AgePoco
+        {
+            public AgePoco(int age)
+            {
+                this.age = age;
+            }
+
+            public int age { get; set; }
+            public string Age { get; set; }
+        }
+
+        [Fact]
+        public void PocoWithSamePropertyNameDifferentTypes()
+        {
+            AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
+            Assert.Equal(1, obj.age);
+        }
     }
 }

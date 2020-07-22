@@ -1029,6 +1029,12 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
         }
 
+        [Fact]
+        public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
+        {
+            Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
+        }
+
         private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)
         {
             MemoryStream memoryStream = new MemoryStream();

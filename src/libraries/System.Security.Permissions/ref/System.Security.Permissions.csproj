@@ -7,8 +7,9 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <DefineConstants>$(DefineConstants);CAS_OBSOLETIONS</DefineConstants>
+  <!-- We conditionally apply net5.0+ obsoletions -->
+  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
+    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Permissions.cs" />

@@ -166,9 +166,10 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
             s_pollTimeoutInfinite :
             GetNextTimeout(pollTimeoutMs);
 
-        int32_t retval = IpcStream::DiagnosticsIpc::Poll(rgIpcPollHandles.Ptr(), (uint32_t)rgIpcPollHandles.Size(), pollTimeoutMs, callback);
         nPollAttempts++;
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
+        int32_t retval = IpcStream::DiagnosticsIpc::Poll(rgIpcPollHandles.Ptr(), (uint32_t)rgIpcPollHandles.Size(), pollTimeoutMs, callback);
+        bool fSawError = false;
 
         if (retval != 0)
         {
@@ -178,21 +179,32 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                 {
                     case IpcStream::DiagnosticsIpc::PollEvents::HANGUP:
                         ((ConnectionState*)(rgIpcPollHandles[i].pUserData))->Reset(callback);
-                        STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - HUP :: Poll attempt: %d, connection %d hung up.\n", nPollAttempts, i);
                         pollTimeoutMs = s_pollTimeoutMinMs;
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::SIGNALED:
                         if (pStream == nullptr) // only use first signaled stream; will get others on subsequent calls
                             pStream = ((ConnectionState*)(rgIpcPollHandles[i].pUserData))->GetConnectedStream(callback);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - SIG :: Poll attempt: %d, connection %d signalled.\n", nPollAttempts, i);
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::ERR:
-                        return nullptr;
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - ERR :: Poll attempt: %d, connection %d errored.\n", nPollAttempts, i);
+                        fSawError = true;
+                        break;
+                    case IpcStream::DiagnosticsIpc::PollEvents::NONE:
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - NON :: Poll attempt: %d, connection %d had no events.\n", nPollAttempts, i);
+                        break;
                     default:
-                        // TODO: Error handling
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - UNK :: Poll attempt: %d, connection %d had invalid PollEvent.\n", nPollAttempts, i);
+                        fSawError = true;
                         break;
                 }
             }
         }
+
+
+        if (pStream == nullptr && fSawError)
+            return nullptr;
 
         // clear the view
         while (rgIpcPollHandles.Size() > 0)

@@ -69,10 +69,7 @@ namespace System.Reflection
                     sb.Append("null");
                 else
                 {
-                    foreach (byte b in pkt)
-                    {
-                        sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-                    }
+                    sb.Append(HexConverter.ToString(pkt, HexConverter.Casing.Lower));
                 }
             }
 

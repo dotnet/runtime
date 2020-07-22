@@ -16365,11 +16365,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             *pLclVarTree                    = addrArgLcl;
             if (pIsEntire != nullptr)
             {
-                unsigned lclOffset = 0;
-                if (addrArg->OperIsLocalField())
-                {
-                    lclOffset = addrArg->AsLclFld()->GetLclOffs();
-                }
+                unsigned lclOffset = addrArgLcl->GetLclOffs();
 
                 if (lclOffset != 0)
                 {
@@ -19348,6 +19344,25 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     regMaskTP tempRegMask = genFindLowestBit(availableSet);
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
+}
+
+//------------------------------------------------------------------------
+// GetLclOffs: if `this` is a field or a field address it returns offset
+// of the field inside the struct, for not a field it returns 0.
+//
+// Return Value:
+//    The offset value.
+//
+uint16_t GenTreeLclVarCommon::GetLclOffs() const
+{
+    if (OperIsLocalField())
+    {
+        return AsLclFld()->GetLclOffs();
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 #ifdef TARGET_ARM

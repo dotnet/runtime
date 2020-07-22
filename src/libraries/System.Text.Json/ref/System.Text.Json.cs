@@ -244,6 +244,7 @@ namespace System.Text.Json
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
@@ -494,6 +495,15 @@ namespace System.Text.Json.Serialization
         Never = 0,
         Always = 1,
         WhenWritingDefault = 2,
+        WhenWritingNull = 3,
+    }
+    [System.FlagsAttribute]
+    public enum JsonNumberHandling
+    {
+        Strict = 0,
+        AllowReadingFromString = 1,
+        WriteAsString = 2,
+        AllowNamedFloatingPointLiterals = 4,
     }
     public abstract partial class JsonAttribute : System.Attribute
     {
@@ -531,6 +541,12 @@ namespace System.Text.Json.Serialization
         [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed partial class JsonNumberHandlingAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonNumberHandlingAttribute(System.Text.Json.Serialization.JsonNumberHandling handling) { }
+        public System.Text.Json.Serialization.JsonNumberHandling Handling { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple = false)]
     public sealed partial class JsonConstructorAttribute : System.Text.Json.Serialization.JsonAttribute

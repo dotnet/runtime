@@ -17,14 +17,13 @@ namespace System.Reflection.Internal
 
         public PinnedObject(object obj)
         {
+#if FEATURE_CER
             // Make sure the current thread isn't aborted in between allocating the handle and storing it.
-#if !NETSTANDARD1_1
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
-            {
-            }
+            { /* intentionally left blank */ }
             finally
+#endif
             {
                 _handle = GCHandle.Alloc(obj, GCHandleType.Pinned);
                 _isValid = 1;
@@ -33,8 +32,8 @@ namespace System.Reflection.Internal
 
         protected override void Release()
         {
+#if FEATURE_CER
             // Make sure the current thread isn't aborted in between zeroing the handle and freeing it.
-#if !NETSTANDARD1_1
             RuntimeHelpers.PrepareConstrainedRegions();
 #endif
             try

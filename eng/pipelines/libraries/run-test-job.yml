@@ -22,6 +22,7 @@ parameters:
   # stress modes that each test will be run with. This is the same usage as 'testGroup' in
   # eng/pipelines/common/templates/runtimes/run-test-job.yml.
   coreclrTestGroup: ''
+  dependsOn: []
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -40,6 +41,7 @@ jobs:
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
+      runTests: true
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
         name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
@@ -50,18 +52,21 @@ jobs:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       dependsOn:
-      - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+      - ${{ if ne(parameters.dependsOn[0], '') }}:
+        - ${{ parameters.dependsOn }}
+      - ${{ if eq(parameters.dependsOn[0], '') }}:
+        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          # tests are built as part of product build
+          - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration)) }}:
+            - ${{ format('libraries_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
+
         - ${{ parameters.variables }}
 
       steps:

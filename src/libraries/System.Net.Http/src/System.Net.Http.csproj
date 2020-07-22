@@ -683,6 +683,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime.InteropServices.JavaScript" Condition="'$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
@@ -720,8 +721,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SR.resx" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>

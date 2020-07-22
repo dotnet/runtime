@@ -25,6 +25,7 @@
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.timezones.blat" />
+      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)icudt.dat" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>

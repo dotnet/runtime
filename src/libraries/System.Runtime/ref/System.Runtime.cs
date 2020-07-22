@@ -124,6 +124,7 @@ namespace System
         public static long MonitoringSurvivedProcessMemorySize { get { throw null; } }
         public long MonitoringTotalAllocatedMemorySize { get { throw null; } }
         public System.TimeSpan MonitoringTotalProcessorTime { get { throw null; } }
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.PermissionSet PermissionSet { get { throw null; } }
         public string? RelativeSearchPath { get { throw null; } }
         public System.AppDomainSetup SetupInformation { get { throw null; } }
@@ -987,6 +988,11 @@ namespace System
         public static double ToDouble(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static double ToDouble(ulong value) { throw null; }
+        public static byte[] FromHexString(string s) { throw null; }
+        public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
+        public static string ToHexString(byte[] inArray) { throw null; }
+        public static string ToHexString(byte[] inArray, int offset, int length) { throw null; }
+        public static string ToHexString(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static short ToInt16(bool value) { throw null; }
         public static short ToInt16(byte value) { throw null; }
         public static short ToInt16(char value) { throw null; }
@@ -2629,7 +2635,9 @@ namespace System
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
+        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0010", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetLifetimeService() { throw null; }
+        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0010", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual object InitializeLifetimeService() { throw null; }
         protected System.MarshalByRefObject MemberwiseClone(bool cloneIdentity) { throw null; }
     }
@@ -7563,6 +7571,7 @@ namespace System.Reflection
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
+        [System.ObsoleteAttribute("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual bool GlobalAssemblyCache { get { throw null; } }
         public virtual long HostContext { get { throw null; } }
         public virtual string ImageRuntimeVersion { get { throw null; } }
@@ -8143,16 +8152,27 @@ namespace System.Reflection
     public partial interface IReflect
     {
         System.Type UnderlyingSystemType { get; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         System.Reflection.PropertyInfo? GetProperty(string name, System.Reflection.BindingFlags bindingAttr);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         System.Reflection.PropertyInfo? GetProperty(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers);
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
     }
     public partial interface IReflectableType
@@ -8689,28 +8709,44 @@ namespace System.Reflection
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         protected override System.Reflection.ConstructorInfo? GetConstructorImpl(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public override System.Reflection.ConstructorInfo[] GetConstructors(System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public override System.Type? GetElementType() { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public override System.Reflection.EventInfo? GetEvent(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public override System.Reflection.EventInfo[] GetEvents() { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public override System.Reflection.EventInfo[] GetEvents(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override System.Type? GetInterface(string name, bool ignoreCase) { throw null; }
         public override System.Reflection.InterfaceMapping GetInterfaceMap(System.Type interfaceType) { throw null; }
         public override System.Type[] GetInterfaces() { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public override System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public override System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         protected override System.Reflection.MethodInfo? GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public override System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type? GetNestedType(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         protected override System.Reflection.PropertyInfo? GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         protected override bool HasElementTypeImpl() { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
         protected override bool IsArrayImpl() { throw null; }
         public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
@@ -9364,6 +9400,7 @@ namespace System.Runtime.CompilerServices
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
         public static int GetHashCode(object? o) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("obj")]
@@ -9372,12 +9409,16 @@ namespace System.Runtime.CompilerServices
         public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
         public static bool IsReferenceOrContainsReferences<T>() { throw null; }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegions() { }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegionsNoOP() { }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareContractedDelegate(System.Delegate d) { }
         public static void PrepareDelegate(System.Delegate d) { }
         public static void PrepareMethod(System.RuntimeMethodHandle method) { }
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[]? instantiation) { }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ProbeForSufficientStack() { }
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
@@ -9510,12 +9551,14 @@ namespace System.Runtime.CompilerServices
 }
 namespace System.Runtime.ConstrainedExecution
 {
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum Cer
     {
         None = 0,
         MayFail = 1,
         Success = 2,
     }
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum Consistency
     {
         MayCorruptProcess = 0,
@@ -9528,11 +9571,13 @@ namespace System.Runtime.ConstrainedExecution
         protected CriticalFinalizerObject() { }
         ~CriticalFinalizerObject() { }
     }
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PrePrepareMethodAttribute : System.Attribute
     {
         public PrePrepareMethodAttribute() { }
     }
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ReliabilityContractAttribute : System.Attribute
     {
@@ -10000,6 +10045,7 @@ namespace System.Security
         public AllowPartiallyTrustedCallersAttribute() { }
         public System.Security.PartialTrustVisibilityLevel PartialTrustVisibilityLevel { get { throw null; } set { } }
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IPermission : System.Security.ISecurityEncodable
     {
         System.Security.IPermission Copy();
@@ -10013,6 +10059,7 @@ namespace System.Security
         void FromXml(System.Security.SecurityElement e);
         System.Security.SecurityElement? ToXml();
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IStackWalk
     {
         void Assert();
@@ -10025,6 +10072,7 @@ namespace System.Security
         VisibleToAllHosts = 0,
         NotVisibleByDefault = 1,
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk
     {
         public PermissionSet(System.Security.Permissions.PermissionState state) { }
@@ -10185,32 +10233,32 @@ namespace System.Security.Cryptography
 }
 namespace System.Security.Permissions
 {
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
     {
         protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum PermissionState
     {
         None = 0,
         Unrestricted = 1,
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum SecurityAction
     {
         Demand = 2,
         Assert = 3,
-        [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         Deny = 4,
         PermitOnly = 5,
         LinkDemand = 6,
         InheritanceDemand = 7,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestMinimum = 8,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestOptional = 9,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestRefuse = 10,
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public abstract partial class SecurityAttribute : System.Attribute
     {
@@ -10219,6 +10267,7 @@ namespace System.Security.Permissions
         public bool Unrestricted { get { throw null; } set { } }
         public abstract System.Security.IPermission? CreatePermission();
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -10240,6 +10289,7 @@ namespace System.Security.Permissions
         public bool UnmanagedCode { get { throw null; } set { } }
         public override System.Security.IPermission? CreatePermission() { throw null; }
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.FlagsAttribute]
     public enum SecurityPermissionFlag
     {
@@ -10482,7 +10532,7 @@ namespace System.Text
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
-        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "MSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Text.Encoding UTF7 { get { throw null; } }
         public static System.Text.Encoding UTF8 { get { throw null; } }
         public virtual string WebName { get { throw null; } }
@@ -10565,7 +10615,7 @@ namespace System.Text
         FormKC = 5,
         FormKD = 6,
     }
-    public readonly partial struct Rune : System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>
+    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
@@ -10630,6 +10680,7 @@ namespace System.Text
         public bool TryEncodeToUtf16(System.Span<char> destination, out int charsWritten) { throw null; }
         public bool TryEncodeToUtf8(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out System.Text.Rune value) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
     }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {

@@ -364,7 +364,7 @@ namespace System.Threading.Tasks
     internal sealed class SynchronizationContextAwaitTaskContinuation : AwaitTaskContinuation
     {
         /// <summary>SendOrPostCallback delegate to invoke the action.</summary>
-        private static readonly SendOrPostCallback s_postCallback = state =>
+        private static readonly SendOrPostCallback s_postCallback = static state =>
         {
             Debug.Assert(state is Action);
             ((Action)state)();
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks
 
                 // Create the continuation task task. If we're allowed to inline, try to do so.
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
-                Task task = CreateTask(state =>
+                Task task = CreateTask(static state =>
                 {
                     try
                     {
@@ -664,7 +664,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
-        private static readonly ContextCallback s_invokeContextCallback = (state) =>
+        private static readonly ContextCallback s_invokeContextCallback = static (state) =>
         {
             Debug.Assert(state is Action);
             ((Action)state)();

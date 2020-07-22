@@ -64,8 +64,6 @@ namespace System.IO.Tests
                     Assert.True(Directory.Exists(linkPath), "linkPath should exist");
 
                     // Set Current Directory to symlink
-                    string currentDir = Directory.GetCurrentDirectory();
-
                     Directory.SetCurrentDirectory(linkPath);
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {

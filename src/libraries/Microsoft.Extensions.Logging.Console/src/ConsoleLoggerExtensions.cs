@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -51,7 +50,14 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Add and configure a console log formatter named 'json' to the factory.
+        /// Add the default console log formatter named 'simple' to the factory with default properties.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder) =>
+            builder.AddFormatterWithName(ConsoleFormatterNames.Simple);
+
+        /// <summary>
+        /// Add and configure a console log formatter named 'simple' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>
@@ -59,6 +65,13 @@ namespace Microsoft.Extensions.Logging
         {
             return builder.AddConsoleWithFormatter<SimpleConsoleFormatterOptions>(ConsoleFormatterNames.Simple, configure);
         }
+
+        /// <summary>
+        /// Add a console log formatter named 'json' to the factory with default properties.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        public static ILoggingBuilder AddJsonConsole(this ILoggingBuilder builder) =>
+            builder.AddFormatterWithName(ConsoleFormatterNames.Json);
 
         /// <summary>
         /// Add and configure a console log formatter named 'json' to the factory.
@@ -80,6 +93,13 @@ namespace Microsoft.Extensions.Logging
             return builder.AddConsoleWithFormatter<ConsoleFormatterOptions>(ConsoleFormatterNames.Systemd, configure);
         }
 
+        /// <summary>
+        /// Add a console log formatter named 'systemd' to the factory with default properties.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder) =>
+            builder.AddFormatterWithName(ConsoleFormatterNames.Systemd);
+
         internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
@@ -87,11 +107,14 @@ namespace Microsoft.Extensions.Logging
             {
                 throw new ArgumentNullException(nameof(configure));
             }
-            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = name);
+            builder.AddFormatterWithName(name);
             builder.Services.Configure(configure);
 
             return builder;
         }
+
+        private static ILoggingBuilder AddFormatterWithName(this ILoggingBuilder builder, string name) =>
+            builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = name);
 
         /// <summary>
         /// Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
