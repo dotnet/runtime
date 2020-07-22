@@ -49,10 +49,12 @@ static void DetectCiphersuiteConfiguration()
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+    assert(ctx != NULL);
 
     // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
     SSL* ssl = SSL_new(ctx);
+    assert(ssl != NULL);
     int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -60,17 +62,23 @@ static void DetectCiphersuiteConfiguration()
     assert(rv);
 
     ssl = SSL_new(ctx);
+    assert(ssl != NULL);
     int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
-    // This shouldn't be true, but, just in case it is.
+    // It isn't expected that the default list and the "ALL" list have the same cardinality,
+    // but if that does happen (custom build, config, et cetera) then use the "RSA" list
+    // instead of the "ALL" list. Since the RSA list doesn't include legacy ciphersuites
+    // appropriate for ECDSA server certificates, it should be different than the ALL list.
     if (allCount == defaultCount)
     {
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
         assert(rv);
         ssl = SSL_new(ctx);
+        assert(ssl != NULL);
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
+        // If the implicit default, "ALL", and "RSA" all have the same cardinality, just fail.
         assert(allCount != defaultCount);
     }
 
@@ -82,6 +90,7 @@ static void DetectCiphersuiteConfiguration()
     else
     {
         ssl = SSL_new(ctx);
+        assert(ssl != NULL);
         int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
 
