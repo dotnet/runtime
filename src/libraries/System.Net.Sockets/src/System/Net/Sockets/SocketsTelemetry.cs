@@ -11,13 +11,13 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
-        private PollingCounter? _connectionEstablishedCounter;
+        private PollingCounter? _connectionsEstablishedCounter;
         private PollingCounter? _bytesReceivedCounter;
         private PollingCounter? _bytesSentCounter;
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
 
-        private long _connectionEstablished;
+        private long _connectionsEstablished;
         private long _bytesReceived;
         private long _bytesSent;
         private long _datagramsReceived;
@@ -26,7 +26,7 @@ namespace System.Net.Sockets
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string? address)
         {
-            Interlocked.Increment(ref _connectionEstablished);
+            Interlocked.Increment(ref _connectionsEstablished);
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 WriteEvent(eventId: 1, address ?? "");
@@ -116,7 +116,7 @@ namespace System.Net.Sockets
             {
                 // This is the convention for initializing counters in the RuntimeEventSource (lazily on the first enable command).
 
-                _connectionEstablishedCounter ??= new PollingCounter("connections-established", this, () => Interlocked.Read(ref _connectionEstablished))
+                _connectionsEstablishedCounter ??= new PollingCounter("connections-established", this, () => Interlocked.Read(ref _connectionsEstablished))
                 {
                     DisplayName = "Connections Established",
                 };
