@@ -342,6 +342,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange
