@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
     <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
+    <RunScriptCommands Include="APK=$EXECUTION_DIR/bin/$(TestProjectName).apk" Condition="'$(TargetOS)' == 'Android'"/>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -17,13 +19,8 @@
     <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
-  <ItemGroup>
-    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
-    <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$APK --output-directory=$XHARNESS_OUT -v</RunScriptCommand>
+    <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$APK --output-directory=$XHARNESS_OUT -v --</RunScriptCommand>
   </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->

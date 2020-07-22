@@ -4,8 +4,6 @@ EXECUTION_DIR=$(dirname $0)
 
 cd $EXECUTION_DIR
 
-APK=$EXECUTION_DIR/bin/$TEST_NAME.apk
-
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/androidtests.lock
 while true; do
