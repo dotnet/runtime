@@ -33,6 +33,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void NonExistentDirectory()
         {
             DirectoryInfo valid = Directory.CreateDirectory(GetTestFilePath());
@@ -173,6 +174,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void TrailingDirectorySeparators()
         {
             string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
@@ -200,6 +202,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void Path_Longer_Than_MaxLongPath_Throws_Exception()
         {
             string testDir = GetTestFilePath();

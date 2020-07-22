@@ -40,6 +40,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void FileShareWithoutWriteThrows()
         {
             string fileName = GetTestFilePath();

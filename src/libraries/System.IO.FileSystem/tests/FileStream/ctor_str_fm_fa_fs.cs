@@ -121,6 +121,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.Truncate)]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void NoTruncateOnFileShareViolation(FileMode fileMode)
         {
             string fileName = GetTestFilePath();

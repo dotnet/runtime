@@ -86,6 +86,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -119,7 +120,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if ((!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !RuntimeInformation.IsOSPlatform(OSPlatform.Browser))  && geteuid() == 0)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));

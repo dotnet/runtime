@@ -213,6 +213,7 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));

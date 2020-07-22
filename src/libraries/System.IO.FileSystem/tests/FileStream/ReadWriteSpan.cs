@@ -24,6 +24,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void EmptyFile_Read_Succeeds()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -47,6 +48,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void NonEmptyFile_Read_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -112,6 +114,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void NonEmptyWrite_WritesExpectedData()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))

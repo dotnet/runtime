@@ -13,7 +13,7 @@ namespace System.IO.Tests
     {
         // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
         // 32bit Unix has time_t up to ~ 2038.
-        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (RuntimeInformation.ProcessArchitecture != Architecture.Arm && RuntimeInformation.ProcessArchitecture != Architecture.X86 && !PlatformDetection.IsOSXLike);
+        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (RuntimeInformation.ProcessArchitecture != Architecture.Arm && RuntimeInformation.ProcessArchitecture != Architecture.X86 && !PlatformDetection.IsOSXLike && !PlatformDetection.IsBrowser);
 
         protected override string GetExistingItem()
         {
@@ -135,6 +135,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support nanosecond granularity.
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SetUptoNanoseconds()
         {
             string file = GetTestFilePath();

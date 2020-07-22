@@ -177,6 +177,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(10, 1024)]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public async Task AnonymousPipeViaFileStream_AllDataCopied(int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;

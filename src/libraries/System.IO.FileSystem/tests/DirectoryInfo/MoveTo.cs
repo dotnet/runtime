@@ -24,6 +24,7 @@ namespace System.IO.Tests
         #region UniversalTests
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void DirectoryPathUpdatesOnMove()
         {
             //NOTE: MoveTo adds a trailing separator character to the FullName of a DirectoryInfo

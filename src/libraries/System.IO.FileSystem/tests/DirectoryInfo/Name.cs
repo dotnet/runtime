@@ -8,6 +8,7 @@ namespace System.IO.Tests
     public class DirectoryInfo_Name : FileSystemTest
     {
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void CurrentDirectory()
         {
             var info = new DirectoryInfo(".");

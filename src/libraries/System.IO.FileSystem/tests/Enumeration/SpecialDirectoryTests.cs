@@ -56,6 +56,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SkippingHiddenFiles()
         {
             // Files that begin with periods are considered hidden on Unix

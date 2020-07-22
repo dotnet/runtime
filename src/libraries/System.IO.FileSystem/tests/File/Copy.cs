@@ -108,6 +108,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();

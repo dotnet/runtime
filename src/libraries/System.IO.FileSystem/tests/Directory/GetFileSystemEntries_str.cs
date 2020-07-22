@@ -175,6 +175,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void HiddenFilesAreReturned()
         {
             // Note that APIs that take EnumerationOptions do NOT find hidden files by default

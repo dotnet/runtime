@@ -68,6 +68,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void NotFoundErrorIsExpected()
         {
             // Make sure we're returning the native error as expected (and not the PAL error on Unix)
@@ -99,6 +100,7 @@ namespace System.IO.Tests
         }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -116,6 +118,7 @@ namespace System.IO.Tests
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

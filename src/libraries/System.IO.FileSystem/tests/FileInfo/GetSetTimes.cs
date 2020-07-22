@@ -104,6 +104,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -118,6 +119,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
@@ -160,6 +162,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();

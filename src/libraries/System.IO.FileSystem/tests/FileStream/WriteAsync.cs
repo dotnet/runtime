@@ -278,6 +278,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
