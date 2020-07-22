@@ -163,6 +163,7 @@
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\MonoPInvokeCallbackAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Array.Mono.cs" />
