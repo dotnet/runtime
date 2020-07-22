@@ -1109,7 +1109,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 remoteServer = useSsl ? RemoteSecureHttp11Server : RemoteHttp11Server;
             }
-            if (serverVersion == HttpVersion.Version30)
+            if (serverVersion == HttpVersion.Version20)
             {
                 remoteServer = useSsl ? RemoteHttp2Server : null;
             }

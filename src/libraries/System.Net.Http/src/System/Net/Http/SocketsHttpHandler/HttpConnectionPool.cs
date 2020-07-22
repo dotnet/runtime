@@ -347,11 +347,11 @@ namespace System.Net.Http
                 }
             }
 
-            // Either H3 explicitely requested or secured upgraded allowed.
+            // Either H3 explicitly requested or secured upgraded allowed.
             if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
                 HttpAuthority? authority = _http3Authority;
-                // H3 is explicitely requested, assume prenegotiated H3.
+                // H3 is explicitly requested, assume prenegotiated H3.
                 if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
                     authority = authority ?? _originAuthority;
