@@ -1786,41 +1786,41 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case 0x%x\n", target));
         trace->InitForUnmanaged(target);
     }
-    else if (pStubMD->IsStructMarshalStub())
+    else if (pStubMD->IsPInvokeStub())
     {
-        // There's no "target" for struct marshalling stubs
-        // so we have nowhere to tell the debugger to move the breakpoint.
-        return FALSE;
-    }
-    else
-    {
-        // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD
         MethodDesc *pMD = (MethodDesc *)arg;
-
-        if (pMD->IsNDirect())
+        _ASSERTE(pMD->IsNDirect());
+        target = (PCODE)((NDirectMethodDesc *)pMD)->GetNativeNDirectTarget();
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%x\n", target));
+        trace->InitForUnmanaged(target);
+    }
+#ifdef FEATURE_COMINTEROP
+    else if (pStubMD->IsCLRToCOMStub())
+    {
+        MethodDesc *pMD = (MethodDesc *)arg;
+        _ASSERTE(pMD->IsComPlusCall());
+        ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
+        _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+        if (pThis != NULL)
         {
-            target = (PCODE)((NDirectMethodDesc *)pMD)->GetNativeNDirectTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%x\n", target));
+            target = GetCOMTarget(pThis, pCMD->m_pComPlusCallInfo);
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case 0x%x\n", target));
             trace->InitForUnmanaged(target);
         }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            _ASSERTE(pMD->IsComPlusCall());
-            ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
-            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
-
-            if (pThis != NULL)
-            {
-                target = GetCOMTarget(pThis, pCMD->m_pComPlusCallInfo);
-
-                LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case 0x%x\n", target));
-                trace->InitForUnmanaged(target);
-            }
-        }
-#endif // FEATURE_COMINTEROP
     }
+#endif // FEATURE_COMINTEROP
+    else
+    {
+        // There are a couple cases where we end up here. The first one is where
+        // we just don't have a good destination to place our breakpoints (for example
+        // array and marshalling stubs). The other case is we have a stub we don't recognize
+        // so it's better to let the debugger step over the target rather than access potentially
+        // false information and end up in a bad state.
+        LOG((LF_CORDB, LL_INFO10000,
+                "ILSM::TraceManager: Stub at IP 0x%x has no known tracing target.\n", stubIP));
 
+        return FALSE;
+    }
     return TRUE;
 }
 #endif // !CROSSGEN_COMPILE
@@ -2501,4 +2501,3 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif
 
 #endif // #ifdef DACCESS_COMPILE
-
