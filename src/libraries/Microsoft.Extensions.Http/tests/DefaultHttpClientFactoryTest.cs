@@ -342,7 +342,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange
@@ -413,7 +413,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task Factory_CleanupCycle_DisposesLiveHandler()
         {
             // Arrange
