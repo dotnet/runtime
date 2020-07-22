@@ -15,6 +15,6 @@ namespace System.IO
         public long TotalFreeSpace => 0;
         public long TotalSize => 0;
 
-        private static string[] GetMountPoints() => Environment.GetLogicalDrives();
+        private static string[] GetMountPoints() => DriveInfoInternal.GetLogicalDrives();
     }
 }
