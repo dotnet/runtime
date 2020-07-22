@@ -396,9 +396,9 @@ namespace BINDER_SPACE
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(sCoreLibName, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
         {
-            sCoreLib.Set(systemDirectory);
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
+        sCoreLib.Set(systemDirectory);
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,

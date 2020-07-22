@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file is auto-generated from template file Helpers.tt
 // In order to make changes to this file, please update Helpers.tt
@@ -5304,43 +5303,163 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
 
-        public static sbyte ExtractVector(sbyte[] op1, sbyte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static sbyte Concat(sbyte[] op1, sbyte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static sbyte ConcatScalar(sbyte[] op1, sbyte[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static sbyte ExtractVector(sbyte[] op1, sbyte[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static sbyte Insert(sbyte[] op1, int op2, sbyte op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static byte ExtractVector(byte[] op1, byte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static byte Concat(byte[] op1, byte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static byte ConcatScalar(byte[] op1, byte[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static byte ExtractVector(byte[] op1, byte[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static byte Insert(byte[] op1, int op2, byte op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static short ExtractVector(short[] op1, short[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static short Concat(short[] op1, short[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static short ConcatScalar(short[] op1, short[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static short ExtractVector(short[] op1, short[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static short Insert(short[] op1, int op2, short op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static ushort ExtractVector(ushort[] op1, ushort[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static ushort Concat(ushort[] op1, ushort[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static ushort ConcatScalar(ushort[] op1, ushort[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static ushort ExtractVector(ushort[] op1, ushort[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static ushort Insert(ushort[] op1, int op2, ushort op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static int ExtractVector(int[] op1, int[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static int Concat(int[] op1, int[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static int ConcatScalar(int[] op1, int[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static int ExtractVector(int[] op1, int[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static int Insert(int[] op1, int op2, int op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static uint ExtractVector(uint[] op1, uint[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static uint Concat(uint[] op1, uint[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static uint ConcatScalar(uint[] op1, uint[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static uint ExtractVector(uint[] op1, uint[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static uint Insert(uint[] op1, int op2, uint op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static long ExtractVector(long[] op1, long[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static long Concat(long[] op1, long[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static long ConcatScalar(long[] op1, long[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static long ExtractVector(long[] op1, long[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static long Insert(long[] op1, int op2, long op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static ulong ExtractVector(ulong[] op1, ulong[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static ulong Concat(ulong[] op1, ulong[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static ulong ConcatScalar(ulong[] op1, ulong[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static ulong ExtractVector(ulong[] op1, ulong[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static ulong Insert(ulong[] op1, int op2, ulong op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static float ExtractVector(float[] op1, float[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static float Concat(float[] op1, float[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static float ConcatScalar(float[] op1, float[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static float ExtractVector(float[] op1, float[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static float Insert(float[] op1, int op2, float op3, int i) => (op2 != i) ? op1[i] : op3;
 
-        public static double ExtractVector(double[] op1, double[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static double Concat(double[] op1, double[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static double ConcatScalar(double[] op1, double[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static double ExtractVector(double[] op1, double[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
 

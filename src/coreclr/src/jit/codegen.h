@@ -92,7 +92,7 @@ private:
 
     inline RegState* regStateForType(var_types t)
     {
-        return varTypeIsFloating(t) ? &floatRegState : &intRegState;
+        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
     }
     inline RegState* regStateForReg(regNumber reg)
     {

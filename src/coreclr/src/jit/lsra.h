@@ -44,13 +44,7 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-#ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(type))
-    {
-        return FloatRegisterType;
-    }
-#endif // FEATURE_SIMD
-    return varTypeIsFloating(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
 }
 
 //------------------------------------------------------------------------

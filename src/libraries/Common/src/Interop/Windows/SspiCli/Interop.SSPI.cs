@@ -215,6 +215,92 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct SCH_CREDENTIALS
+        {
+            public const int CurrentVersion = 0x5;
+
+            public int dwVersion;
+            public int dwCredformat;
+            public int cCreds;
+
+            // This is pointer to arry of CERT_CONTEXT*
+            // We do not use it directly in .NET. Instead, we wrap returned OS pointer in safe handle.
+            public void* paCred;
+
+            public IntPtr hRootStore;               // == always null, OTHERWISE NOT RELIABLE
+            public int cMappers;
+            public IntPtr aphMappers;               // == always null, OTHERWISE NOT RELIABLE
+
+            public int dwSessionLifespan;
+            public SCH_CREDENTIALS.Flags dwFlags;
+            public int cTlsParameters;
+            public TLS_PARAMETERS* pTlsParameters;
+
+            [Flags]
+            public enum Flags
+            {
+                Zero = 0,
+                SCH_CRED_NO_SYSTEM_MAPPER = 0x02,
+                SCH_CRED_NO_SERVERNAME_CHECK = 0x04,
+                SCH_CRED_MANUAL_CRED_VALIDATION = 0x08,
+                SCH_CRED_NO_DEFAULT_CREDS = 0x10,
+                SCH_CRED_AUTO_CRED_VALIDATION = 0x20,
+                SCH_CRED_USE_DEFAULT_CREDS = 0x40,
+                SCH_DISABLE_RECONNECTS = 0x80,
+                SCH_CRED_REVOCATION_CHECK_END_CERT = 0x100,
+                SCH_CRED_REVOCATION_CHECK_CHAIN = 0x200,
+                SCH_CRED_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x400,
+                SCH_CRED_IGNORE_NO_REVOCATION_CHECK = 0x800,
+                SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x2000,
+                SCH_SEND_ROOT_CERT = 0x40000,
+                SCH_SEND_AUX_RECORD =   0x00200000,
+                SCH_USE_STRONG_CRYPTO = 0x00400000,
+                SCH_USE_PRESHAREDKEY_ONLY = 0x800000,
+                SCH_ALLOW_NULL_ENCRYPTION = 0x02000000,
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct TLS_PARAMETERS
+        {
+            public int cAlpnIds;                        // Valid for server applications only. Must be zero otherwise. Number of ALPN IDs in rgstrAlpnIds; set to 0 if applies to all.
+            public IntPtr rgstrAlpnIds;                 // Valid for server applications only. Must be NULL otherwise. Array of ALPN IDs that the following settings apply to; set to NULL if applies to all.
+            public uint grbitDisabledProtocols;         // List protocols you DO NOT want negotiated.
+            public int cDisabledCrypto;                 // Number of CRYPTO_SETTINGS structures; set to 0 if there are none.
+            public CRYPTO_SETTINGS* pDisabledCrypto;    // Array of CRYPTO_SETTINGS structures; set to NULL if there are none;
+            public TLS_PARAMETERS.Flags dwFlags;        // Optional flags to pass; set to 0 if there are none.
+
+            [Flags]
+            public enum Flags
+            {
+                Zero = 0,
+                TLS_PARAMS_OPTIONAL = 0x01,     // Valid for server applications only. Must be zero otherwise.
+                                                // TLS_PARAMETERS that will only be honored if they do not cause this server to terminate the handshake.
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct CRYPTO_SETTINGS
+        {
+            public TlsAlgorithmUsage eAlgorithmUsage;   // How this algorithm is being used.
+            public UNICODE_STRING* strCngAlgId;         // CNG algorithm identifier.
+            public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
+            public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
+            public int dwMinBitLength;                  // Blacklist key sizes less than this. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMaxBitLength;                  // Blacklist key sizes greater than this. Set to 0 if not defined or CNG algorithm implies bit length.
+
+            public enum TlsAlgorithmUsage
+            {
+                TlsParametersCngAlgUsageKeyExchange,    // Key exchange algorithm. RSA, ECHDE, DHE, etc.
+                TlsParametersCngAlgUsageSignature,      // Signature algorithm. RSA, DSA, ECDSA, etc.
+                TlsParametersCngAlgUsageCipher,         // Encryption algorithm. AES, DES, RC4, etc.
+                TlsParametersCngAlgUsageDigest,         // Digest of cipher suite. SHA1, SHA256, SHA384, etc.
+                TlsParametersCngAlgUsageCertSig         // Signature and/or hash used to sign certificate. RSA, DSA, ECDSA, SHA1, SHA256, etc.
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct SecBuffer
         {
             public int cbBuffer;
@@ -343,6 +429,20 @@ internal static partial class Interop
                   ref CredHandle handlePtr,
                   [Out] out long timeStamp
                   );
+
+        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe int AcquireCredentialsHandleW(
+          [In] string? principal,
+          [In] string moduleName,
+          [In] int usage,
+          [In] void* logonID,
+          [In] SCH_CREDENTIALS* authData,
+          [In] void* keyCallback,
+          [In] void* keyArgument,
+          ref CredHandle handlePtr,
+          [Out] out long timeStamp
+          );
+
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
         internal static extern unsafe int InitializeSecurityContextW(

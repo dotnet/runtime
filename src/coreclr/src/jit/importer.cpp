@@ -893,8 +893,10 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
                 // ABI handling of this argument.
                 // Note that this can happen, for example, if we have a SIMD intrinsic that returns a SIMD type
                 // with a different baseType than we've seen.
+                // We also need to ensure an OBJ node if we have a FIELD node that might be transformed to LCL_FLD
+                // or a plain GT_IND.
                 // TODO-Cleanup: Consider whether we can eliminate all of these cases.
-                if (gtGetStructHandleIfPresent(temp) != structType)
+                if ((gtGetStructHandleIfPresent(temp) != structType) || temp->OperIs(GT_FIELD))
                 {
                     forceNormalization = true;
                 }
@@ -1666,9 +1668,12 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_FIELD:
-            // Wrap it in a GT_OBJ.
+            // Wrap it in a GT_OBJ, if needed.
             structVal->gtType = structType;
-            structVal         = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            if ((structType == TYP_STRUCT) || forceNormalization)
+            {
+                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            }
             break;
 
         case GT_LCL_VAR:
@@ -12534,7 +12539,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1  = impPopStack().val;
                 type = op1->TypeGet();
 
-                // brfalse and brtrue is only allowed on I4, refs, and byrefs.
+                // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
+                //
+                // We've historically been a bit more permissive, so here we allow
+                // any type that gtNewZeroConNode can handle.
+                if (!varTypeIsArithmetic(type) && !varTypeIsGC(type))
+                {
+                    BADCODE("invalid type for brtrue/brfalse");
+                }
+
                 if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
                 {
                     block->bbJumpKind = BBJ_NONE;
@@ -12561,12 +12574,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    /* We'll compare against an equally-sized integer 0 */
-                    /* For small types, we always compare against int   */
+                    // We'll compare against an equally-sized integer 0
+                    // For small types, we always compare against int
                     op2 = gtNewZeroConNode(genActualType(op1->gtType));
 
-                    /* Create the comparison operator and try to fold it */
-
+                    // Create the comparison operator and try to fold it
                     oper = (opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S) ? GT_NE : GT_EQ;
                     op1  = gtNewOperNode(oper, TYP_INT, op1, op2);
                 }

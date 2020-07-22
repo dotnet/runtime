@@ -80,7 +80,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Same(value, ex.Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             using (var stream = new MemoryStream())

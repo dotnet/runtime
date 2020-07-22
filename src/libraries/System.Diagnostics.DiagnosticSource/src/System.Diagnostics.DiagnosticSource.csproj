@@ -35,6 +35,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
     <Compile Include="System\Diagnostics\ActivityCreationOptions.cs" />
     <Compile Include="System\Diagnostics\ActivityDataRequest.cs" />
