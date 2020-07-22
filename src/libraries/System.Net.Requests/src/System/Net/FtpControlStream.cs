@@ -499,7 +499,7 @@ namespace System.Net
                 if (domainUserName.Length == 0 && password.Length == 0)
                 {
                     domainUserName = "anonymous";
-                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Anonymous FTP credential in production code.")]
                     password = "anonymous@";
                 }
 
