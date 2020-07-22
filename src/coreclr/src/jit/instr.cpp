@@ -1023,14 +1023,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -1159,14 +1152,7 @@ void CodeGen::inst_RV_RV_TT(
                 {
                     assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    if (addr->OperIs(GT_LCL_FLD_ADDR))
-                    {
-                        offset = addr->AsLclFld()->GetLclOffs();
-                    }
-                    else
-                    {
-                        offset = 0;
-                    }
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
