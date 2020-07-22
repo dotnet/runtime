@@ -364,7 +364,7 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_ThrowsCookieException()
+        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_Success()
         {
             const string SchemePrefix = "http://";
             const string OriginalDomain = "contoso.com";
@@ -372,7 +372,8 @@ namespace System.Net.Primitives.Unit.Tests
             var container = new CookieContainer();
             var cookie = new Cookie(CookieName1, CookieValue1) { Version = 1, Domain = OriginalDomain };
             var uri = new Uri(SchemePrefix + OriginalDomain);
-            Assert.Throws<CookieException>(() => container.Add(uri, cookie));
+            container.Add(uri, cookie);
+            Assert.Equal(1, container.GetCookies(uri).Count);
         }
 
         [Fact]
@@ -760,6 +761,67 @@ namespace System.Net.Primitives.Unit.Tests
                 Cookie c2 = cc2[i];
                 Assert.Equal(c1.Name, c2.Name); // Primitive check for equality
                 Assert.Equal(c1.Value, c2.Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("http://localhost:5000", "localhost", null)]
+        [InlineData("http://localhost:5000", "localhost", 0)]
+        [InlineData("http://localhost:5000", "localhost", 1)]
+        [InlineData("http://localhost:5000", "localhost", 100)]
+        [InlineData("http://localhost:5000", ".localhost", null)]
+        [InlineData("http://localhost:5000", ".localhost", 0)]
+        [InlineData("http://localhost:5000", ".localhost", 1)]
+        [InlineData("http://localhost:5000", ".localhost", 100)]
+        [InlineData("http://example.com", "example.com", null)]
+        [InlineData("http://example.com", "example.com", 0)]
+        [InlineData("http://example.com", "example.com", 1)]
+        [InlineData("http://example.com", "example.com", 100)]
+        [InlineData("http://example.com", ".example.com", null)]
+        [InlineData("http://example.com", ".example.com", 0)]
+        [InlineData("http://example.com", ".example.com", 1)]
+        [InlineData("http://example.com", ".example.com", 100)]
+        [InlineData("http://test.example.com", "test.example.com", null)]
+        [InlineData("http://test.example.com", "test.example.com", 0)]
+        [InlineData("http://test.example.com", "test.example.com", 1)]
+        [InlineData("http://test.example.com", "test.example.com", 100)]
+        [InlineData("http://test.example.com", ".test.example.com", null)]
+        [InlineData("http://test.example.com", ".test.example.com", 0)]
+        [InlineData("http://test.example.com", ".test.example.com", 1)]
+        [InlineData("http://test.example.com", ".test.example.com", 100)]
+        public void SetCookies_DomainCheckIgnoresVersion(string url, string domain, int? version)
+        {
+            string cookie = $"my_cookie=my_value; Domain={domain}" + (version != null ? $"; Version = {version}" : "");
+            var uri = new Uri(url);
+            CookieContainer container = new CookieContainer();
+            container.SetCookies(uri, cookie);
+            Assert.Equal(1, container.GetCookies(uri).Count);
+            Assert.Equal(domain, container.GetCookies(uri)[0].Domain);
+        }
+
+        [Theory]
+        [InlineData("http://test.example.com", ".example.com", true)]
+        [InlineData("http://test.example.com", "example.com", true)]
+        [InlineData("http://test.example.com", "test.example.com", true)]
+        [InlineData("http://test.example.com", ".test.example.com", true)]
+        [InlineData("http://test.example.com", "other.example.com", false)]
+        [InlineData("http://test.example.com", ".other.example.com", false)]
+        [InlineData("http://test.example.com", "xample.com", false)]
+        [InlineData("http://test.example.com", ".xample.com", false)]
+        public void SetCookies_DomainCheckIgnoresAbsenceOfLeadingDot(string url, string domain, bool isAccepted)
+        {
+            string cookie = $"my_cookie=my_value; Domain={domain}";
+            var uri = new Uri(url);
+            CookieContainer container = new CookieContainer();
+            if (isAccepted)
+            {
+                container.SetCookies(uri, cookie);
+                Assert.Equal(1, container.GetCookies(uri).Count);
+                Assert.Equal(domain, container.GetCookies(uri)[0].Domain);
+            }
+            else
+            {
+                Assert.Throws<CookieException>(() => container.SetCookies(uri, cookie));
             }
         }
     }
