@@ -14,23 +14,25 @@ namespace wasm_test_driver
     {
         static void Main(string[] args)
         {
-	    // string testAssemblyFile = "test_assemblies.txt"; 
-	    string testAssemblFile;
-	    
-	    if (args.Length > 0) 
+	    string testAssemblyFile;
+
+	    foreach (string arg in args) 
 	    {
-	       testAssemblyFile = args[1];		
- 	    }
-	    else
-	    {
-	       testAssemblyFile = "/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt";
+		Console.WriteLine($"!! Arg: {arg}");
 	    }
+	    
+	    testAssemblyFile = args[0];
+	    string testRunnerPath = args[1];
+
+	    // testAssemblyFile = "/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt";
+            // "/Users/naricc/workspace/runtime-webassembly-ci/src/common/wasm-test-runner/bin/Release/publish/";
+	
 
 	    List<AssemblyName> benchmarkAssemblyNames = File.ReadAllLines(testAssemblyFile).Select( file => AssemblyName.GetAssemblyName(file)).ToList();
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo("sh");
 
-	    processStartInfo.WorkingDirectory = "/Users/naricc/workspace/runtime-webassembly-ci/src/common/wasm-test-runner/bin/Release/publish/";
+	    processStartInfo.WorkingDirectory = testRunnerPath;
 	    processStartInfo.UseShellExecute = true;
 
 	    foreach (AssemblyName assemblyName in benchmarkAssemblyNames)
