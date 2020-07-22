@@ -247,7 +247,6 @@
                             <opcode name="AssemblyUnload" message="$(string.RuntimePublisher.AssemblyUnloadOpcodeMessage)" symbol="CLR_ASSEMBLYUNLOAD_OPCODE" value="38"> </opcode>
                             <opcode name="AppDomainLoad" message="$(string.RuntimePublisher.AppDomainLoadOpcodeMessage)" symbol="CLR_APPDOMAINLOAD_OPCODE" value="41"> </opcode>
                             <opcode name="AppDomainUnload" message="$(string.RuntimePublisher.AppDomainUnloadOpcodeMessage)" symbol="CLR_APPDOMAINUNLOAD_OPCODE" value="42"> </opcode>
-                            <opcode name="TypeLoad" message="$(string.RuntimePublisher.TypeLoadOpcodeMessage)" symbol="CLR_TYPELOAD_OPCODE" value="46"> </opcode>
                         </opcodes>
                     </task>
 
@@ -404,7 +403,14 @@
                             <opcode name="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedOpcodeMessage)" symbol="CLR_BINDING_PATH_PROBED_OPCODE" value="15"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 33-->
+                    <task name="TypeLoad" symbol="CLR_TYPELOAD_TASK"
+                          value="33" eventGUID="{9DB1562B-512F-475D-8D4C-0C6D97C1E73C}"
+                          message="$(string.RuntimePublisher.TypeLoadTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+
+                <!--Next available ID is 34-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -3252,15 +3258,15 @@
 
                     <event value="73" version="0" level="win:Informational"  template="TypeLoadStart"
                            keywords="TypeDiagnosticKeyword"
-                           task="CLRLoader"
-                           opcode="TypeLoad"
+                           task="TypeLoad"
+                           opcode="win:Start"
                            symbol="TypeLoadStart"
                            message="$(string.RuntimePublisher.TypeLoadStartEventMessage)"/>
 
                     <event value="74" version="0" level="win:Informational"  template="TypeLoadStop"
                            keywords="TypeDiagnosticKeyword"
-                           task="CLRLoader"
-                           opcode="TypeLoad"
+                           task="TypeLoad"
+                           opcode="win:Stop"
                            symbol="TypeLoadStop"
                            message="$(string.RuntimePublisher.TypeLoadStopEventMessage)"/>
 
@@ -7214,6 +7220,7 @@
                 <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
+                <string id="RuntimePublisher.TypeLoadTaskMessage" value="TypeLoad" />
 
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7606,7 +7613,6 @@
                 <string id="RuntimePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="RuntimePublisher.BulkTypeOpcodeMessage" value="BulkType" />
                 <string id="RuntimePublisher.MethodDetailsOpcodeMessage" value="MethodDetails" />
-                <string id="RuntimePublisher.TypeLoadOpcodeMessage" value="TypeLoad" />
                 <string id="RuntimePublisher.MethodLoadOpcodeMessage" value="Load" />
                 <string id="RuntimePublisher.MethodUnloadOpcodeMessage" value="Unload" />
                 <string id="RuntimePublisher.MethodLoadVerboseOpcodeMessage" value="LoadVerbose" />
