@@ -70,6 +70,8 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' And '$(TargetFramework)' == '$(NetCoreAppCurrent)' ">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
     <Compile Include="System\IO\DriveInfo.Browser.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Browser.cs"
+             Link="Common\System\IO\DriveInfoInternal.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.FileSystem" />
