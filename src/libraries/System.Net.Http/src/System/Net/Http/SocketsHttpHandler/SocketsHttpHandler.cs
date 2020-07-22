@@ -273,19 +273,14 @@ namespace System.Net.Http
             }
         }
 
-        public int MaxHttp2ConnectionsPerServer
+        public bool EnableMultipleHttp2Connections
         {
-            get => _settings._maxHttp2ConnectionsPerServer;
+            get => _settings._enableMultipleHttp2Connections;
             set
             {
                 CheckDisposedOrStarted();
 
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                _settings._maxHttp2ConnectionsPerServer = value;
+                _settings._enableMultipleHttp2Connections = value;
             }
         }
 

@@ -330,8 +330,6 @@ namespace System.Net.Http
             }
         }
 
-        public bool ThrowOnStreamLimitReached => _http2Connections != null && _http2Connections.Length < _poolManager.Settings._maxHttp2ConnectionsPerServer;
-
         public bool EnableMultipleHttp2Connections => _poolManager.Settings.EnableMultipleHttp2Connections;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
@@ -488,7 +486,7 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
             // See if we have an HTTP2 connection
-            Http2Connection? http2Connection = GetHttp2ConnectionAcceptingNewStreams(request, true);
+            Http2Connection? http2Connection = GetExistingHttp2Connection();
 
             if (http2Connection != null)
             {
@@ -525,7 +523,7 @@ namespace System.Net.Http
                 {
                     if (_http2Connections != null)
                     {
-                        Http2Connection? existingConnection = GetHttp2ConnectionAcceptingNewStreams(request, false);
+                        Http2Connection? existingConnection = GetExistingHttp2Connection();
                         if (existingConnection != null)
                         {
                             return (existingConnection, false, null);
@@ -537,11 +535,6 @@ namespace System.Net.Http
                     // Someone beat us to it
 
                     return (currentHttp2Connections[0], false, null);
-                }
-
-                if (IsConnectionMaximumReached(currentHttp2Connections))
-                {
-                    return (PickRandomConnection(request, currentHttp2Connections!), false, null);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -654,16 +647,7 @@ namespace System.Net.Http
             return await GetHttpConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
         }
 
-        private bool IsConnectionMaximumReached(Http2Connection[]? currentHttp2Connections) => currentHttp2Connections != null && EnableMultipleHttp2Connections && currentHttp2Connections.Length == _poolManager.Settings._maxHttp2ConnectionsPerServer;
-
-        private Http2Connection PickRandomConnection(HttpRequestMessage request, Http2Connection[] currentHttp2Connections)
-        {
-            // All connections are busy so pick a random one to wait on it.
-            int randomIndex = request.GetHashCode() % _poolManager.Settings._maxHttp2ConnectionsPerServer;
-            return currentHttp2Connections[randomIndex];
-        }
-
-        private Http2Connection? GetHttp2ConnectionAcceptingNewStreams(HttpRequestMessage request, bool checkExpiration)
+        private Http2Connection? GetExistingHttp2Connection()
         {
             Http2Connection[]? localConnections = _http2Connections;
 
@@ -677,7 +661,7 @@ namespace System.Net.Http
                 Http2Connection http2Connection = localConnections[i];
 
                 TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                if (checkExpiration && http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
+                if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
                 {
                     // Connection expired.
                     http2Connection.Dispose();
@@ -687,13 +671,6 @@ namespace System.Net.Http
                 {
                     return http2Connection;
                 }
-            }
-
-            // Re-read _http2Connections because some connections could have been invalidated above.
-            localConnections = _http2Connections;
-            if (IsConnectionMaximumReached(localConnections))
-            {
-                return PickRandomConnection(request, localConnections!);
             }
 
             return null;

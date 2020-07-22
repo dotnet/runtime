@@ -1209,15 +1209,7 @@ namespace System.Net.Http
                 {
                     if (!_concurrentStreams.TryRequestCreditNoWait(1))
                     {
-                        // Maximum number of streams reached
-                        if (_pool.ThrowOnStreamLimitReached)
-                        {
-                            throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
-                        }
-                        else
-                        {
-                            await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
-                        }
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                     }
                 }
                 else
