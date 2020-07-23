@@ -11713,7 +11713,7 @@ EXTERN_C const IID IID_ICorDebugModule4;
     ICorDebugModule4 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetMapping(
+        virtual HRESULT STDMETHODCALLTYPE IsMappedLayout(
             /* [out] */ BOOL *pIsMapped) = 0;
 
     };
@@ -11737,7 +11737,7 @@ EXTERN_C const IID IID_ICorDebugModule4;
         ULONG ( STDMETHODCALLTYPE *Release )(
             ICorDebugModule4 * This);
 
-        HRESULT ( STDMETHODCALLTYPE *GetMapping )(
+        HRESULT ( STDMETHODCALLTYPE *IsMappedLayout )(
             ICorDebugModule4 * This,
             /* [out] */ BOOL *pIsMapped);
 
@@ -11764,8 +11764,8 @@ EXTERN_C const IID IID_ICorDebugModule4;
     ( (This)->lpVtbl -> Release(This) )
 
 
-#define ICorDebugModule4_GetMapping(This,pIsMapped)	\
-    ( (This)->lpVtbl -> GetMapping(This,pIsMapped) )
+#define ICorDebugModule4_IsMappedLayout(This,pIsMapped)	\
+    ( (This)->lpVtbl -> IsMappedLayout(This,pIsMapped) )
 
 #endif /* COBJMACROS */
 

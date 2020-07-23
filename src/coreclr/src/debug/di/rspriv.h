@@ -4238,7 +4238,7 @@ public:
     //-----------------------------------------------------------
     // ICorDebugModule4
     //-----------------------------------------------------------
-    COM_METHOD GetMapping(BOOL *isMapped);
+    COM_METHOD IsMappedLayout(BOOL *isMapped);
 
     //-----------------------------------------------------------
     // Internal members

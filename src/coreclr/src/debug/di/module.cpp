@@ -2756,7 +2756,7 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
     return hr;
 }
 
-HRESULT CordbModule::GetMapping(BOOL *isMapped)
+HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
 {
     VALIDATE_POINTER_TO_OBJECT(isMapped, BOOL*);
     FAIL_IF_NEUTERED(this);

@@ -5194,7 +5194,7 @@ interface ICorDebugModule4 : IUnknown
      *     S_OK in successful case.
      * Notes:
      */
-    HRESULT GetMapping([out] BOOL *pIsMapped);
+    HRESULT IsMappedLayout([out] BOOL *pIsMapped);
 }
 
 /*
