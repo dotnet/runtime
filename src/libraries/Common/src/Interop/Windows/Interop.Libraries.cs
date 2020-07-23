@@ -7,8 +7,6 @@ internal static partial class Interop
     {
         internal const string Advapi32 = "advapi32.dll";
         internal const string BCrypt = "BCrypt.dll";
-        internal const string CoreComm_L1_1_1 = "api-ms-win-core-comm-l1-1-1.dll";
-        internal const string CoreComm_L1_1_2 = "api-ms-win-core-comm-l1-1-2.dll";
         internal const string Crypt32 = "crypt32.dll";
         internal const string CryptUI = "cryptui.dll";
         internal const string Gdi32 = "gdi32.dll";
