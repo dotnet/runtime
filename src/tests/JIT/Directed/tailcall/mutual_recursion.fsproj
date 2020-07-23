@@ -3,12 +3,11 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
-    <DebugType>PdbOnly</DebugType>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mutual_recursion.fs" />
