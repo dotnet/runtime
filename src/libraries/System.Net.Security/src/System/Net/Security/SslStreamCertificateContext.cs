@@ -63,12 +63,9 @@ namespace System.Net.Security
                 chain.ChainElements[0].Certificate.Dispose();
 
                 // Dispose the last cert, if we didn't include it.
-                if (_trimChain == 1)
+                for (int i = count + 1; i < chain.ChainElements.Count; i++)
                 {
-                    for (int i = count + 1; i < chain.ChainElements.Count; i++)
-                    {
-                        chain.ChainElements[i].Certificate.Dispose();
-                    }
+                    chain.ChainElements[i].Certificate.Dispose();
                 }
             }
 

@@ -17,4 +17,5 @@ namespace System.Net.Security
         }
 
         internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null);
+    }
 }
