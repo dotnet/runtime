@@ -19,11 +19,6 @@
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
 
-  <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
-  </ItemGroup>
-
   <PropertyGroup>
     <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
 
@@ -96,7 +91,10 @@
 
   <Target Name="RunTests">
     <PropertyGroup>
-      <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+      <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
+      <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
+      <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>

@@ -183,21 +183,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AddFrameworkReference">
-    <ItemGroup>
-      <FrameworkReference Include="$(SharedFrameworkName)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="UpdateRuntimePack"
-          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
-    <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 </Project>
