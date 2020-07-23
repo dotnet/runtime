@@ -4729,6 +4729,7 @@ struct GenTreeQmark : public GenTreeOp
 struct GenTreeIntrinsic : public GenTreeOp
 {
     CorInfoIntrinsics     gtIntrinsicId;
+    NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -4736,15 +4737,31 @@ struct GenTreeIntrinsic : public GenTreeOp
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, op2), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     GenTree*              op2,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, op2)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4848,7 +4865,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
                                    // false otherwise
 
 #if DEBUGGABLE_GENTREE
@@ -4889,15 +4906,15 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
-    // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
+    // Note that HW Intrinsic instructions are a sub class of GenTreeOp which only supports two operands
+    // However there are HW Intrinsic instructions that have 3 or even 4 operands and this is
     // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
 
-    bool OperIsMemoryLoad() const;  // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
-    bool OperIsMemoryStore() const; // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
                                     // false otherwise
-    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
