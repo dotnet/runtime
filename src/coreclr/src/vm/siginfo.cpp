@@ -1288,7 +1288,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 pGenericTypeModule = pModule;
             }
 
-            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, level, pZapSigContext);
+            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, CLASS_LOAD_APPROXPARENTS, pZapSigContext);
 
             if (genericType.IsNull())
             {

@@ -2410,6 +2410,7 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                         compatibleSignatures = TRUE;
                         bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = true;
+                        bmtMetaData->fHasCovariantOverride = true;
                     }
                 }
 
@@ -5680,6 +5681,17 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
+                        if (bmtMetaData->fHasCovariantOverride)
+                            GetHalfBakedClass()->SetHasCovariantOverride();
+                        if (GetParentMethodTable() != NULL)
+                        {
+                            auto parentClass = GetParentMethodTable()->GetClass();
+                            if (parentClass->HasCovariantOverride())
+                                GetHalfBakedClass()->SetHasCovariantOverride();
+                            if (parentClass->HasVTableMethodImpl())
+                                GetHalfBakedClass()->SetHasVTableMethodImpl();
+                        }
+                        
                         MethodTable * pDeclMT = NULL;
                         MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
@@ -5784,6 +5796,7 @@ MethodTableBuilder::ProcessMethodImpls()
                             }
                             else
                             {
+                                GetHalfBakedClass()->SetHasVTableMethodImpl();
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
                             }
 

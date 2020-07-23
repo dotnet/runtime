@@ -2006,6 +2006,8 @@ private:
         MethodImplTokenPair *rgMethodImplTokens;
         Substitution *pMethodDeclSubsts;    // Used to interpret generic variables in the interface of the declaring type
 
+        bool fHasCovariantOverride;
+
         //-----------------------------------------------------------------------------------------
         inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
     };  // struct bmtMetaDataInfo
@@ -2282,7 +2284,8 @@ private:
     class DeclaredMethodIterator
     {
       private:
-        MethodTableBuilder &m_mtb;
+        int                 m_numDeclaredMethods;
+        bmtMDMethod       **m_declaredMethods;
         int                 m_idx; // not SLOT_INDEX?
 #ifdef _DEBUG
         bmtMDMethod *       m_debug_pMethod;
