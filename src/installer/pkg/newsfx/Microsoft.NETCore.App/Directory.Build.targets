@@ -2,6 +2,7 @@
   <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
+      <PlatformManifestFileEntry Include="mscordaccore_$(_longNameTargetArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
     </ItemGroup>
   </Target>
 
