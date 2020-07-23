@@ -1381,20 +1381,11 @@ namespace Mono.Linker.Steps
 
 			// Check type being used was not removed by the LinkerRemovableAttribute
 			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
-				bool shouldWarn = true;
-
-				// Don't warn about references from code which is not linked
-				//if (Annotations.GetAction (sourceLocationMember.DeclaringType.Module.Assembly) != AssemblyAction.Link)
-				//	shouldWarn = false;
-
 				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
 				// will call MarkType on the attribute type itself). 
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause 2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (shouldWarn && sourceLocationMember.DeclaringType == type)
-					shouldWarn = false;
-
-				if (shouldWarn)
+				if (sourceLocationMember.DeclaringType != type)
 					_context.LogWarning ($"Custom Attribute {type.GetDisplayName ()} is being referenced in code but the linker was " +
 						$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
 						$"either remove the linker attribute XML portion which removes the attribute instances, or to override this use " +
