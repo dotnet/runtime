@@ -1830,6 +1830,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	g_assert (skip >= 0);
 
+#ifndef TARGET_WASM
 	if (mono_llvm_only) {
 		GSList *l, *ips;
 		MonoDomain *frame_domain;
@@ -1859,7 +1860,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		/* No way to resolve generic instances */
 		actual_method = jmethod;
 		*native_offset = frame_ip - (guint8*)ji->code_start;
-	} else {
+	} else
+#endif
+	{
 		mono_arch_flush_register_windows ();
 		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
 
