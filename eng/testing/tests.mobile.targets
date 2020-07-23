@@ -133,6 +133,9 @@
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <ExtraAssemblies Include="$(PublishDir)$(AssemblyName).dll" />
+      <!-- We need these facades for some tests. -->
+      <ExtraAssemblies Include="$(PublishDir)mscorlib.dll" />
+      <ExtraAssemblies Include="$(PublishDir)System.Drawing.dll" />
     </ItemGroup>
     <!-- these tests load assemblies from the file system -->
     <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'">

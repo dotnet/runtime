@@ -81,7 +81,7 @@ int32_t GlobalizationNative_GetICUVersion(void)
 {
     // this method is only used from our tests
     // this way we ensure we're testing on the right mode
-    // even though we can call u_getVersion without loading since it is staticly linked.
+    // even though we can call u_getVersion without loading since it is statically linked.
     if (!isLoaded)
         return 0;
 
