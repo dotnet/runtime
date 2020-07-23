@@ -95,8 +95,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected void Update(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             // TODO-RZ: I would like to have unbound loop there, but until flow control is implemented, it might loop
             // indefinitely
             for (int i = 0; i < 2; i++)
@@ -123,8 +121,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver!);
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         protected void Update(ManagedQuicConnection connection)
@@ -148,7 +144,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             _reader.Reset(datagram);
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             var connection = FindConnection(_reader, sender);
             if (connection != null)
@@ -176,24 +171,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 UpdateTimeout(connection.GetNextTimerTimestamp());
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private void DoSignal()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             _signalWanted = false;
             OnSignal();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private void DoTimeout()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             long now = Timestamp.Now;
 
             // The timer might not fire exactly on time, so we need to make sure it is not just below the
@@ -204,8 +191,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // clear previous timeout
             _currentTimeout = long.MaxValue;
             OnTimeout(now);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         protected abstract void OnSignal();
@@ -217,7 +202,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private async Task BackgroundWorker()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             var token = _socketTaskCts.Token;
 
             Task<SocketReceiveFromResult>? socketReceiveTask = null;
@@ -278,9 +262,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     if (Timestamp.GetMilliseconds(now - lastAction) > asyncWaitThreshold)
                     {
                         // there has been no action for some time, stop consuming CPU and wait until an event wakes us
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
-
                         int timeoutLength = (int) Timestamp.GetMilliseconds(_currentTimeout - now);
                         Task timeoutTask = _currentTimeout != long.MaxValue
                             ? Task.Delay(timeoutLength, CancellationToken.None)
@@ -298,8 +279,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         }
 
                         await Task.WhenAny(timeoutTask, socketReceiveTask, signalTask).ConfigureAwait(false);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
                     }
                 }
             }
@@ -312,8 +291,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             _socket.Close();
             _socket.Dispose();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         /// <summary>

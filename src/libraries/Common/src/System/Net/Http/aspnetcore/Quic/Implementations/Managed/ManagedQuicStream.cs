@@ -66,7 +66,6 @@ namespace System.Net.Quic.Implementations.Managed
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
             CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
@@ -79,7 +78,6 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 _connection.OnStreamDataWritten(this);
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal void NotifyShutdownWriteCompleted()
@@ -97,15 +95,12 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotReadable();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             int result = InboundBuffer!.Deliver(buffer);
             if (result > 0)
             {
                 _connection.OnStreamDataRead(this, result);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
 
@@ -115,15 +110,12 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotReadable();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (result > 0)
             {
                 _connection.OnStreamDataRead(this, result);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
 
@@ -134,12 +126,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (InboundBuffer!.Error != null) return;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             InboundBuffer.RequestAbort(errorCode);
             _connection.OnStreamStateUpdated(this);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override void AbortWrite(long errorCode)
@@ -149,13 +137,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.Error != null) return;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             OutboundBuffer.RequestAbort(errorCode);
             _shutdownCompleted.TryCompleteException(new QuicStreamAbortedException("Stream was aborted", errorCode));
             _connection.OnStreamStateUpdated(this);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override bool CanWrite => OutboundBuffer != null;
@@ -166,8 +150,6 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfConnectionError();
             ThrowIfNotWritable();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             OutboundBuffer!.Enqueue(buffer);
 
             if (endStream)
@@ -180,7 +162,6 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 _connection.OnStreamDataWritten(this);
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -276,15 +257,12 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
                 OutboundBuffer!.FlushChunk();
                 _connection.OnStreamDataWritten(this);
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override void Flush()
@@ -293,10 +271,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             OutboundBuffer!.FlushChunk();
             _connection.OnStreamDataWritten(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override async Task FlushAsync(CancellationToken cancellationToken)
@@ -305,10 +281,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             _connection.OnStreamDataWritten(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override void Dispose()
@@ -317,8 +291,6 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 return;
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             if (CanWrite)
             {
@@ -335,7 +307,6 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             _disposed = true;
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override async ValueTask DisposeAsync()
@@ -346,7 +317,6 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             _disposed = true;
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
@@ -360,8 +330,6 @@ namespace System.Net.Quic.Implementations.Managed
                 InboundBuffer!.RequestAbort(0);
                 _connection.OnStreamStateUpdated(this);
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #endregion

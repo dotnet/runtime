@@ -601,22 +601,19 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndpoint.Address, _remoteEndpoint.Port);
 
-        internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfError();
 
-            if (Connected) return;
+            if (Connected) return new ValueTask();
 
             if (NetEventSource.IsEnabled) NetEventSource.NewClientConnection(this, SourceConnectionId!.Data, DestinationConnectionId!.Data);
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _socketContext.Ping();
             _socketContext.Start();
 
-            await _connectTcs.GetTask().ConfigureAwait(false);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return _connectTcs.GetTask();
         }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
@@ -657,12 +654,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfError();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            var stream = await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            return stream;
+            return await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         }
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol
@@ -674,13 +666,13 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
             if (_closeTcs.IsSet)
             {
-                return;
+                return new ValueTask();
             }
 
             if (!Connected)
@@ -688,17 +680,14 @@ namespace System.Net.Quic.Implementations.Managed
                 // abandon connection attempt
                 _connectTcs.TryCompleteException(new QuicConnectionAbortedException(errorCode));
                 _closeTcs.TryComplete();
-                return;
+                return new ValueTask();
             }
 
-            if (IsClosed) return;
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
+            if (IsClosed) return new ValueTask();
             _outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
             _socketContext.Ping();
 
-            await _closeTcs.GetTask().ConfigureAwait(false);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return _closeTcs.GetTask();
         }
 
         #endregion
