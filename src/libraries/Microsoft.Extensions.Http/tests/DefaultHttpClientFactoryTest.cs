@@ -341,8 +341,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange
@@ -412,8 +411,7 @@ namespace Microsoft.Extensions.Http
             return cleanupEntry;
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task Factory_CleanupCycle_DisposesLiveHandler()
         {
             // Arrange
