@@ -1091,7 +1091,7 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
     OBJECTREF *   arrObjRef      = NULL;
     size_t        cNumRefs       = 0;
     bool          bOnStack       = false;
-    MethodTable * pMT            = pBO->GetMethodTable();
+    MethodTable * pMT            = pBO->GetGCSafeMethodTable();
 
     ProfilerWalkHeapContext * pProfilerWalkHeapContext = (ProfilerWalkHeapContext *) pvContext;
 

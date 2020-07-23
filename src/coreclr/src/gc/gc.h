@@ -169,6 +169,11 @@ extern VOLATILE(int32_t) g_fSuspensionPending;
 
 ::IGCHandleManager*  CreateGCHandleManager();
 
+#ifndef BUILD_AS_STANDALONE
+// TODO, andrewau, Make sure it also work for standalone GC
+extern bool s_forcedGCInProgress;
+#endif
+
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
     class GCHeap;

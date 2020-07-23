@@ -1596,6 +1596,12 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
             DACNotify::DoGCNotification(gea);
         }
     }
+
+    DiagnosticsTriggerManager& diagnosticsTriggerManager = DiagnosticsTriggerManager::GetInstance();
+    diagnosticsTriggerManager.AnalyzeSurvivors();
+    
+    // TODO, andrewau, this should be part of AnalyzeSurvivors (how?)
+    GCProfileWalkHeap();
 }
 
 void GCToEEInterface::VerifySyncTableEntry()

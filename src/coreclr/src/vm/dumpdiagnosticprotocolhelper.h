@@ -17,6 +17,7 @@ enum class DumpCommandId : uint8_t
 {
     // reserved      = 0x00,
     GenerateCoreDump = 0x01,
+    GenerateCoreDumpV2 = 0x02,
     // future
 };
 
@@ -36,13 +37,34 @@ struct GenerateCoreDumpCommandPayload
     static const GenerateCoreDumpCommandPayload* TryParse(BYTE* lpBuffer, uint16_t& BufferSize);
 };
 
+struct GenerateCoreDumpCommandV2Payload
+{
+    NewArrayHolder<BYTE> incomingBuffer;
+
+    // The protocol buffer is defined as:
+    //   string - dumpName (UTF16)
+    //   int - dumpType
+    //   int - diagnostics
+    //   string - condition (UTF16)
+    //   string - identity (UTF16)
+    // returns
+    //   ulong - status
+    LPCWSTR dumpName;
+    uint32_t dumpType;
+    uint32_t diagnostics;
+    LPCWSTR condition;
+    LPCWSTR identity;
+    static const GenerateCoreDumpCommandV2Payload* TryParse(BYTE* lpBuffer, uint16_t& BufferSize);
+};
+
 class DumpDiagnosticProtocolHelper
 {
 public:
     // IPC event handlers.
     static void GenerateCoreDump(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream); // `dotnet-dump collect`
+    static void GenerateCoreDumpV2(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream); // `dotnet-dump collect`
     static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream);
-
+    static void GenerateCoreDumpImpl(LPCWSTR dumpName, uint32_t dumpType, uint32_t diagnostics, IpcStream* pStream);
 private:
     const static uint32_t IpcStreamReadBufferSize = 8192;
 };

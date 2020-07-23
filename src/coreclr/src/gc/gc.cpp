@@ -20636,7 +20636,15 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     {
 #ifdef HEAP_ANALYZE
         heap_analyze_enabled = FALSE;
+#ifndef BUILD_AS_STANDALONE
+        s_forcedGCInProgress = true;
+#endif
+        // TODO, andrewau, pass along the promoted byte count
         GCToEEInterface::AnalyzeSurvivorsFinished(condemned_gen_number);
+#ifndef BUILD_AS_STANDALONE
+        s_forcedGCInProgress = false;
+#endif
+        
 #endif // HEAP_ANALYZE
         GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
 

@@ -15,6 +15,7 @@
 
 #include "gctoclreventsink.h"
 #include "configuration.h"
+#include "diagnosticstriggermanager.h"
 
 // the method table for the WeakReference class
 extern MethodTable* pWeakReferenceMT;

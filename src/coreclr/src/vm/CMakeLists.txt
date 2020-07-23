@@ -319,6 +319,7 @@ set(VM_SOURCES_WKS
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
+    diagnosticstriggermanager.cpp
     diagnosticserver.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp

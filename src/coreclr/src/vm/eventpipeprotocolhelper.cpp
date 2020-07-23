@@ -8,6 +8,7 @@
 #include "eventpipesession.h"
 #include "diagnosticsipc.h"
 #include "diagnosticsprotocol.h"
+#include "diagnosticstriggermanager.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -255,6 +256,36 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
     }
 }
 
+class DumpHeapAction : public IDiagnosticsTriggerAction
+{
+public:
+    DumpHeapAction(EventPipeSession* pEventPipeSession, WCHAR* identity)
+    {
+        this->pEventPipeSession = pEventPipeSession;
+        this->identity = new WCHAR[wcslen(identity) + 1]; 
+        wcscpy(this->identity, identity);
+    }
+    ~DumpHeapAction()
+    {
+        delete[] this->identity;
+    }
+    virtual void Run()
+    {
+        this->pEventPipeSession->Resume();
+        // TODO, andrewau, call GCProfileWalkHeap() here, how?
+        DiagnosticsTriggerManager::GetInstance().UnregisterTrigger(this->identity);
+    }
+    virtual void Cancel()
+    {
+        // TODO, andrewau, do we need to do anything?
+        // It looks like EventPipe will handle the closing
+        // and the tool should handle the fact that the stream does not have the expected content
+    }
+private:
+    EventPipeSession* pEventPipeSession;
+    WCHAR* identity;
+};
+
 void EventPipeProtocolHelper::CollectTracing2(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
 {
     CONTRACTL
@@ -274,16 +305,16 @@ void EventPipeProtocolHelper::CollectTracing2(DiagnosticsIpc::IpcMessage& messag
         delete pStream;
         return;
     }
-
+    
     auto sessionId = EventPipe::Enable(
-        nullptr,                                        // strOutputPath (ignored in this scenario)
-        payload->circularBufferSizeInMB,                         // circularBufferSizeInMB
-        payload->providerConfigs.Ptr(),                          // pConfigs
-        static_cast<uint32_t>(payload->providerConfigs.Size()),  // numConfigs
-        EventPipeSessionType::IpcStream,                // EventPipeSessionType
-        payload->serializationFormat,                   // EventPipeSerializationFormat
-        payload->rundownRequested,                      // rundownRequested
-        pStream);                                       // IpcStream
+            nullptr,                                        // strOutputPath (ignored in this scenario)
+            payload->circularBufferSizeInMB,                         // circularBufferSizeInMB
+            payload->providerConfigs.Ptr(),                          // pConfigs
+            static_cast<uint32_t>(payload->providerConfigs.Size()),  // numConfigs
+            EventPipeSessionType::IpcStream,                // EventPipeSessionType
+            payload->serializationFormat,                   // EventPipeSerializationFormat
+            payload->rundownRequested,                      // rundownRequested
+            pStream);                                       // IpcStream
 
     if (sessionId == 0)
     {
@@ -293,6 +324,37 @@ void EventPipeProtocolHelper::CollectTracing2(DiagnosticsIpc::IpcMessage& messag
     }
     else
     {
+        // TODO, andrewau, this should check if there is a condition.
+        // the condition should come from the filter in the provider
+        // so that it will hopefully also work for ETW.
+        // If we want it to also work for ETW, then this is probably not
+        // the only or right place to hook. 
+        if (payload->rundownRequested)
+        {
+            WCHAR identity[100];
+            swprintf_s(identity, 100, L"%d", (int)sessionId);
+            EventPipeSession* pEventPipeSession = EventPipe::GetSession(sessionId);
+            pEventPipeSession->Pause();
+            DumpHeapAction* dumpHeapAction = new (nothrow) DumpHeapAction(pEventPipeSession, identity);
+            if (dumpHeapAction == nullptr)
+            {
+                // TODO, andrewau, the correct error code is OOM
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_BAD_ENCODING);
+                delete pStream;
+                return;
+            }
+            DiagnosticsTriggerManager& diagnosticsTriggerManager = DiagnosticsTriggerManager::GetInstance();
+            // TODO, andrewau, obtain the condition information from filter
+            // TODO, andrewau, the identity should be the session id
+            if (!diagnosticsTriggerManager.RegisterTrigger(L"when = ongcmarkcomplete, gen = 1, promoted_bytes_threshold = 1000", identity, dumpHeapAction))
+            {
+                // TODO, andrewau, the correct error code is unrecognized condition
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_BAD_ENCODING);
+                delete pStream;
+                return;
+            }
+        }
+
         DiagnosticsIpc::IpcMessage successResponse;
         if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, sessionId))
             successResponse.Send(pStream);

@@ -1463,7 +1463,7 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
         m_domain = domain;
     }
 
-    ULONGLONG th = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    ULONGLONG th = (ULONGLONG)obj->GetGCSafeTypeHandle().AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
     // We should have at least 512 characters remaining in the buffer here.
@@ -4378,6 +4378,10 @@ VOID EtwCallbackCommon(
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
+    // TODO, andrewau, this code need to stay.
+    // Right now it is commented out to avoid triggering gen 2 GC
+    // We should be able to avoid this by introducing another keyword here.
+    /*
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
         ((MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
     {
@@ -4395,6 +4399,7 @@ VOID EtwCallbackCommon(
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
+    */
     // TypeSystemLog needs a notification when certain keywords are modified, so
     // give it a hook here.
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)

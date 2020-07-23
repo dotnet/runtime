@@ -81,6 +81,7 @@ EventPipeSession::EventPipeSession(
 
     GetSystemTimeAsFileTime(&m_sessionStartTime);
     QueryPerformanceCounter(&m_sessionStartTimeStamp);
+    this->m_paused = false;
 }
 
 EventPipeSession::~EventPipeSession()
@@ -332,23 +333,29 @@ bool EventPipeSession::WriteEvent(
     }
     CONTRACTL_END;
 
+    if (this->m_paused)
+    {
+        // TODO, andrewau, it looks like the return value of this method is not consumed at all?
+        return true;
+    }
+
     // Filter events specific to "this" session based on precomputed flag on provider/events.
     if (event.IsEnabled(GetMask()))
     {
         if (m_synchronousCallback != nullptr)
         {
             m_synchronousCallback(event.GetProvider(),
-                                  event.GetEventID(),
-                                  event.GetEventVersion(),
-                                  event.GetMetadataLength(),
-                                  event.GetMetadata(),
-                                  payload.GetSize(),
-                                  payload.GetFlatData(),
-                                  pActivityId,
-                                  pRelatedActivityId,
-                                  pEventThread,
-                                  pStack == nullptr ? 0 : pStack->GetSize(),
-                                  pStack == nullptr ? nullptr : reinterpret_cast<UINT_PTR *>(pStack->GetPointer()));
+                                event.GetEventID(),
+                                event.GetEventVersion(),
+                                event.GetMetadataLength(),
+                                event.GetMetadata(),
+                                payload.GetSize(),
+                                payload.GetFlatData(),
+                                pActivityId,
+                                pRelatedActivityId,
+                                pEventThread,
+                                pStack == nullptr ? 0 : pStack->GetSize(),
+                                pStack == nullptr ? nullptr : reinterpret_cast<UINT_PTR *>(pStack->GetPointer()));
             return true;
         }
         else

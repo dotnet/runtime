@@ -96,6 +96,8 @@ private:
 
     void DisableIpcStreamingThread();
 
+    bool m_paused;
+
 public:
     EventPipeSession(
         uint32_t index,
@@ -110,6 +112,16 @@ public:
         EventPipeSessionSynchronousCallback callback = nullptr);
 
     ~EventPipeSession();
+
+    void Pause()
+    {
+        this->m_paused = true;
+    }
+
+    void Resume()
+    {
+        this->m_paused = false;
+    }
 
     uint64_t GetMask() const
     {
