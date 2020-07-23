@@ -47,7 +47,7 @@ namespace System.Net.Sockets
 
         // Keep track of the kind of endpoint used to do a non-blocking connect, so we can set
         // it to _rightEndPoint when we discover we're connected.
-        private EndPoint? _nonBlockingConnect_rightEndPoint;
+        private EndPoint? _nonBlockingConnectRightEndPoint;
 
         // These are constants initialized by constructor.
         private AddressFamily _addressFamily;
@@ -317,7 +317,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnect_rightEndPoint;
+                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -363,7 +363,7 @@ namespace System.Net.Sockets
                     {
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
-                        _rightEndPoint = _nonBlockingConnect_rightEndPoint;
+                        _rightEndPoint = _nonBlockingConnectRightEndPoint;
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -474,7 +474,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnect_rightEndPoint;
+                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -890,7 +890,7 @@ namespace System.Net.Sockets
 
             if (!Blocking)
             {
-                _nonBlockingConnect_rightEndPoint = remoteEP;
+                _nonBlockingConnectRightEndPoint = remoteEP;
                 _nonBlockingConnectInProgress = true;
             }
 
@@ -3675,7 +3675,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                // Save the old _rightEndPoint and prep new _rightEndPoint.
+                // Save the old RightEndPoint and prep new RightEndPoint.
                 EndPoint? oldEndPoint = _rightEndPoint;
                 if (_rightEndPoint == null)
                 {
