@@ -575,6 +575,12 @@ namespace System.Text.Json.Serialization
         public JsonPropertyNameAttribute(string name) { }
         public string Name { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
+    public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonSerializableAttribute() { }
+        public JsonSerializableAttribute(System.Type type) { }
+    }
     public sealed partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
         public JsonStringEnumConverter() { }

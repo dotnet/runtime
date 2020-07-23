@@ -5,6 +5,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+
+    <ProjectReference Include="..\src\System.Text.Json.csproj" />
     <ProjectReference Include="..\System.Text.Json.SourceGeneration\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
 
