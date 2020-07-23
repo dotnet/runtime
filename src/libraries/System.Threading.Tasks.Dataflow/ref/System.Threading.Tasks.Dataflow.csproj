@@ -1,13 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard1.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard1.1;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Tasks.Dataflow.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' Or '$(TargetFramework)' == 'netstandard1.1'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>

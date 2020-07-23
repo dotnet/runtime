@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+  <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
@@ -15,5 +15,9 @@
     <!-- <Compile Include="System\Runtime\InteropServices\JavaScript\MapTests.cs" /> -->
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Part of the shared framework but not exposed. -->
+    <ProjectReference Include="..\src\System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>

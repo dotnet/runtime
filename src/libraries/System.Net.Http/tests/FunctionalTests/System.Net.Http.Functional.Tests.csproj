@@ -282,11 +282,12 @@
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">
       <Link>SelectedSitesTest.txt</Link>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
   </ItemGroup>
 </Project>

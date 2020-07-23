@@ -3,6 +3,7 @@
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
+  <Import Project="NetCoreAppLibrary.props" />
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
@@ -10,14 +11,11 @@
 
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
-    <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
-    <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris</AdditionalBuildTargetFrameworks>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
@@ -40,10 +38,13 @@
          the build system to use browser/ios/android as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
 
-    <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
-    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-    <BuildTargetFramework Condition="'$(BuildAllProjects)' != 'true' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
-    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
+    <!-- Initialize BuildSettings from the individual properties. -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
+    <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
+    <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -142,11 +143,10 @@
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
-  <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
-    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(BuildTargetFramework)' == '$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
-    <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
+    <BuildingNETCoreAppVertical Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
+                                           '$(BuildAllConfigurations)' == 'true'">true</BuildingNETCoreAppVertical>
+    <BinPlaceTestSharedFramework Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceTestSharedFramework>
   </PropertyGroup>
 
   <!--
@@ -216,13 +216,7 @@
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
-    <NoStdLib>true</NoStdLib>
-    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
-    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
-    <!-- Don't reference implicit framework packages, all projects in this repo must be explicit -->
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
@@ -238,14 +232,7 @@
     <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
-  <!-- Set up some common paths -->
-  <PropertyGroup>
-    <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
-    <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
-    <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
-  </PropertyGroup>
-
-  <!-- Set up the default output and intermediate paths -->
+  <!-- Set up common paths -->
   <PropertyGroup>
     <!--
       Microsoft.NET.TargetFrameworkInference.targets appends the TargetFramework.
@@ -253,11 +240,8 @@
     -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
-    <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildSettings)'))</RuntimePath>
-    <BuildTargetFrameworkRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildTargetFrameworkRefPath>
-    <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
-    <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
-    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
+    <NetCoreAppCurrentRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetCoreAppCurrent)'))</NetCoreAppCurrentRefPath>
+    <NetCoreAppCurrentRuntimePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NetCoreAppCurrentRuntimePath>
 
     <!-- System.Private.CoreLib -->
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'src', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
@@ -280,6 +264,7 @@
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', '$(SharedFrameworkName)', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
@@ -292,7 +277,9 @@
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
+    <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
+    <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
   </PropertyGroup>
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
@@ -307,23 +294,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
-    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
-    <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
-
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
-
-    <TestHostRuntimePath Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</TestHostRuntimePath>
-    <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
-
-    <PlatformManifestFile Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">
-    <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
@@ -352,22 +322,6 @@
   <ItemGroup>
     <!-- Link to the testhost folder to probe additional assemblies. -->
     <CoverageIncludeDirectory Include="shared\Microsoft.NETCore.App\$(ProductVersion)" />
-  </ItemGroup>
-
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
-    <!-- Project references for non-test assemblies should never be copied to the output. -->
-    <ProjectReference>
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemDefinitionGroup>
-
-  <!--
-    The Utf8String package is experimental. We don't want tests to inadvertently take a dependency on this
-    feature unless they explicitly opt in to it. (Source projects explicitly reference their dependencies,
-    so they can't inadvertently take a dependency on it.)
-  -->
-  <ItemGroup Condition="('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and '$(IncludeUtf8StringAsmRef)' != 'true'">
-    <DefaultReferenceExclusions Include="System.Utf8String.Experimental" />
   </ItemGroup>
 
   <PropertyGroup>
