@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -249,6 +248,7 @@ namespace System.Collections.Generic
         public System.Collections.Generic.LinkedListNode<T>? Next { get { throw null; } }
         public System.Collections.Generic.LinkedListNode<T>? Previous { get { throw null; } }
         public T Value { get { throw null; } set { } }
+        public ref T ValueRef { get { throw null; } }
     }
     public partial class LinkedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -206,6 +205,93 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
             // Else rely on operation size.
             return (id->idOpSize() == EA_4BYTE);
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
+//                       the same values as if there were a compare to 0
+//
+// Arguments:
+//    reg - register of interest
+//    opSize - size of register
+//    needsOCFlags - additionally check the overflow and carry flags
+//
+// Return Value:
+//    true if the previous instruction set the flags for reg
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags)
+{
+    assert(reg != REG_NA);
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc* id  = emitLastIns;
+    insFormat  fmt = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    switch (id->idIns())
+    {
+        case INS_adc:
+        case INS_add:
+        case INS_dec:
+        case INS_dec_l:
+        case INS_inc:
+        case INS_inc_l:
+        case INS_neg:
+        case INS_shr_1:
+        case INS_shl_1:
+        case INS_sar_1:
+        case INS_sbb:
+        case INS_sub:
+        case INS_xadd:
+            if (needsOCFlags)
+            {
+                return false;
+            }
+            __fallthrough;
+        // these always set OC to 0
+        case INS_and:
+        case INS_or:
+        case INS_xor:
+            return id->idOpSize() == opSize;
 
         default:
             break;
@@ -3014,11 +3100,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        unsigned             offset  = 0;
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            offset = varNode->AsLclFld()->GetLclOffs();
-        }
+        unsigned             offset  = varNode->GetLclOffs();
         if (data->isContainedIntOrIImmed())
         {
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());

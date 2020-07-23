@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="System\DllNotFoundExceptionTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffsetTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BestFitMappingAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />

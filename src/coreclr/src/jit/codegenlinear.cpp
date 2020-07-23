@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -58,7 +57,7 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        noway_assert(!varTypeIsFloating(varDsc->TypeGet()));
+        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
 
         // Mark the register as holding the variable
         assert(varDsc->GetRegNum() != REG_STK);
@@ -1742,15 +1741,11 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         {
             // The OperLocalAddr is always contained.
             assert(srcAddr->isContained());
-            GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
+            const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
 
             // Generate LEA instruction to load the LclVar address in RSI.
             // Source is known to be on the stack. Use EA_PTRSIZE.
-            unsigned int offset = 0;
-            if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
-            {
-                offset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            unsigned int offset = lclNode->GetLclOffs();
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
         }
         else

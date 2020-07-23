@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -262,6 +261,87 @@ namespace System
         #endregion
 
         #region Public Static Methods
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
+            => GetName(typeof(TEnum), value);
+
+        public static string? GetName(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumName(value);
+        }
+
+        public static string[] GetNames<TEnum>() where TEnum : struct, Enum
+            => GetNames(typeof(TEnum));
+
+        public static string[] GetNames(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumNames();
+        }
+
+        internal static string[] InternalGetNames(RuntimeType enumType)
+        {
+            // Get all of the names
+            return GetEnumInfo(enumType, true).Names;
+        }
+
+        public static Type GetUnderlyingType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumUnderlyingType();
+        }
+
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
+            => (TEnum[])GetValues(typeof(TEnum));
+
+        public static Array GetValues(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumValues();
+        }
+
+        [Intrinsic]
+        public bool HasFlag(Enum flag)
+        {
+            if (flag is null)
+                throw new ArgumentNullException(nameof(flag));
+            if (!GetType().IsEquivalentTo(flag.GetType()))
+                throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
+
+            return InternalHasFlag(flag);
+        }
+
+        internal static ulong[] InternalGetValues(RuntimeType enumType)
+        {
+            // Get all of the values
+            return GetEnumInfo(enumType, false).Values;
+        }
+
+        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
+        {
+            RuntimeType enumType = (RuntimeType)typeof(TEnum);
+            ulong[] ulValues = Enum.InternalGetValues(enumType);
+            ulong ulValue = Enum.ToUInt64(value);
+
+            return Array.BinarySearch(ulValues, ulValue) >= 0;
+        }
+
+        public static bool IsDefined(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.IsEnumDefined(value);
+        }
+
         public static object Parse(Type enumType, string value) =>
             Parse(enumType, value, ignoreCase: false);
 
@@ -1032,67 +1112,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
-            return Convert.ToBoolean(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToBoolean(GetValue());
         }
 
         char IConvertible.ToChar(IFormatProvider? provider)
         {
-            return Convert.ToChar(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToChar(GetValue());
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
-            return Convert.ToSByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSByte(GetValue());
         }
 
         byte IConvertible.ToByte(IFormatProvider? provider)
         {
-            return Convert.ToByte(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToByte(GetValue());
         }
 
         short IConvertible.ToInt16(IFormatProvider? provider)
         {
-            return Convert.ToInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt16(GetValue());
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
-            return Convert.ToUInt16(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt16(GetValue());
         }
 
         int IConvertible.ToInt32(IFormatProvider? provider)
         {
-            return Convert.ToInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt32(GetValue());
         }
 
         uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
-            return Convert.ToUInt32(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt32(GetValue());
         }
 
         long IConvertible.ToInt64(IFormatProvider? provider)
         {
-            return Convert.ToInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToInt64(GetValue());
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
-            return Convert.ToUInt64(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToUInt64(GetValue());
         }
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToSingle(GetValue());
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDouble(GetValue());
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
-            return Convert.ToDecimal(GetValue(), CultureInfo.CurrentCulture);
+            return Convert.ToDecimal(GetValue());
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider)
@@ -1142,5 +1222,16 @@ namespace System
             InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1 : 0);
 
         #endregion
+
+        private static RuntimeType ValidateRuntimeType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            if (!(enumType is RuntimeType rtType))
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+            return rtType;
+        }
     }
 }

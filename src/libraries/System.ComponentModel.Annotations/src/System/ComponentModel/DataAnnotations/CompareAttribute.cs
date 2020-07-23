@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Linq;
@@ -46,7 +45,10 @@ namespace System.ComponentModel.DataAnnotations
                     OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
 
-                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+                string[] memberNames = validationContext.MemberName != null
+                   ? new[] { validationContext.MemberName }
+                   : null;
+                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
             }
 
             return null;

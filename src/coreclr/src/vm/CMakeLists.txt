@@ -379,6 +379,7 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
+    processdiagnosticsprotocolhelper.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -499,6 +500,7 @@ set(VM_HEADERS_WKS
     objectlist.h
     olevariant.h
     pendingload.h
+    processdiagnosticsprotocolhelper.h
     profdetach.h
     profilermetadataemitvalidator.h
     profilingenumerators.h
@@ -543,6 +545,20 @@ set(GC_SOURCES_WKS
     ../gc/gcload.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
+
+if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+  set ( GC_SOURCES_WKS
+    ${GC_SOURCES_WKS}
+    ../gc/vxsort/isa_detection.cpp
+    ../gc/vxsort/do_vxsort_avx2.cpp
+    ../gc/vxsort/do_vxsort_avx512.cpp
+    ../gc/vxsort/machine_traits.avx2.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
+    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
+)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 set(GC_HEADERS_WKS
     ${GC_HEADERS_DAC_AND_WKS_COMMON}

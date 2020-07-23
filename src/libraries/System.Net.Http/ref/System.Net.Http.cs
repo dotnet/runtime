@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -11,6 +10,7 @@ namespace System.Net.Http
     {
         public ByteArrayContent(byte[] content) { }
         public ByteArrayContent(byte[] content, int offset, int count) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -223,7 +223,7 @@ namespace System.Net.Http
     {
         public HttpResponseMessage() { }
         public HttpResponseMessage(System.Net.HttpStatusCode statusCode) { }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Net.Http.HttpContent Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpResponseHeaders Headers { get { throw null; } }
         public bool IsSuccessStatusCode { get { throw null; } }
@@ -252,6 +252,7 @@ namespace System.Net.Http
         public MultipartContent(string subtype) { }
         public MultipartContent(string subtype, string boundary) { }
         public virtual void Add(System.Net.Http.HttpContent content) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -274,6 +275,7 @@ namespace System.Net.Http
     public sealed partial class ReadOnlyMemoryContent : System.Net.Http.HttpContent
     {
         public ReadOnlyMemoryContent(System.ReadOnlyMemory<byte> content) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -313,6 +315,7 @@ namespace System.Net.Http
     {
         public StreamContent(System.IO.Stream content) { }
         public StreamContent(System.IO.Stream content, int bufferSize) { }
+        protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }

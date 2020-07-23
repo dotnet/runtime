@@ -42,7 +42,7 @@
 
   <PropertyGroup>
     <CrossHostArch></CrossHostArch>
-    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -59,7 +59,7 @@ namespace System.IO
                 finally
                 {
                     if (success)
-                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out _);
                 }
                 return userBytes;
             }
@@ -81,7 +81,7 @@ namespace System.IO
                 finally
                 {
                     if (success)
-                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out _);
                 }
                 return freeBytes;
             }
@@ -95,7 +95,7 @@ namespace System.IO
                 // or other various removable media drives.
                 long userBytes, totalBytes, freeBytes;
                 uint oldMode;
-                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
+                Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
@@ -104,7 +104,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
+                    Interop.Kernel32.SetThreadErrorMode(oldMode, out _);
                 }
                 return totalBytes;
             }
@@ -139,6 +139,7 @@ namespace System.IO
 
                 return new string(volumeName);
             }
+            [MinimumOSPlatform("windows7.0")]
             set
             {
                 uint oldMode;
@@ -158,7 +159,7 @@ namespace System.IO
                 finally
                 {
                     if (success)
-                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out _);
                 }
             }
         }

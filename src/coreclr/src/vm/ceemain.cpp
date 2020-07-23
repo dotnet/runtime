@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.CPP
 // ===========================================================================
@@ -485,13 +484,6 @@ void InitGSCookie()
     }
     CONTRACTL_END;
 
-#if defined(TARGET_OSX) && defined(CORECLR_EMBEDDED)
-    // OSX does not like the way we change section protection when running in a superhost bundle
-    // disabling this for now
-    // https://github.com/dotnet/runtime/issues/38184
-    return;
-#endif
-
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef TARGET_UNIX
@@ -685,6 +677,17 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#ifdef STRESS_LOG
+        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
+            unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
+            unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
+            unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
+            unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
+            g_pStressLog = &StressLog::theLog;
+        }
+#endif
+
 #ifdef FEATURE_PERFTRACING
         DiagnosticServer::Initialize();
         DiagnosticServer::PauseForDiagnosticsMonitor();
@@ -710,16 +713,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
 
-#ifdef STRESS_LOG
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
-            unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
-            unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
-            unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
-            unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
-            g_pStressLog = &StressLog::theLog;
-        }
-#endif
 
 #ifdef LOGGING
         InitializeLogging();

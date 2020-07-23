@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -82,22 +80,27 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [NonEvent]
-        public void ExpressionTreeGenerated(Type serviceType, Expression expression)
-        {
-            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
-            {
-                var visitor = new NodeCountingVisitor();
-                visitor.Visit(expression);
-                ExpressionTreeGenerated(serviceType.ToString(), visitor.NodeCount);
-            }
-        }
-
-        [NonEvent]
         public void DynamicMethodBuilt(Type serviceType, int methodSize)
         {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
                 DynamicMethodBuilt(serviceType.ToString(), methodSize);
+            }
+        }
+    }
+
+    internal static class DependencyInjectionEventSourceExtensions
+    {
+        // This is an extension method because this assembly is trimmed at a "type granular" level in Blazor,
+        // and the whole DependencyInjectionEventSource type can't be trimmed. So extracting this to a separate
+        // type allows for the System.Linq.Expressions usage to be trimmed by the ILLinker.
+        public static void ExpressionTreeGenerated(this DependencyInjectionEventSource source, Type serviceType, Expression expression)
+        {
+            if (source.IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                var visitor = new NodeCountingVisitor();
+                visitor.Visit(expression);
+                source.ExpressionTreeGenerated(serviceType.ToString(), visitor.NodeCount);
             }
         }
 

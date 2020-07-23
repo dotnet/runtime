@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1806,6 +1805,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39342", TestPlatforms.Browser)]
         public static void GetSystemTimeZones()
         {
             ReadOnlyCollection<TimeZoneInfo> timeZones = TimeZoneInfo.GetSystemTimeZones();
@@ -2165,7 +2165,7 @@ namespace System.Tests
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
         {

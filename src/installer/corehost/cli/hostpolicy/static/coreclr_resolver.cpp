@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <cassert>
 #include <error_codes.h>
@@ -43,7 +42,7 @@ extern "C"
 }
 
 
-#if defined(_WIN32)
+#if !defined(TARGET_LINUX)
 
 bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, coreclr_resolver_contract_t& coreclr_resolver_contract)
 {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /* ------------------------------------------------------------------------- *
  * DbgIPCEvents.h -- header file for private Debugger data shared by various
 //
@@ -985,7 +984,7 @@ struct MSLAYOUT IPCEventTypeNameMapping
             const char *            eventName;
 };
 
-extern const IPCEventTypeNameMapping DECLSPEC_SELECTANY DbgIPCEventTypeNames[] =
+constexpr IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
 {
     #define IPC_EVENT_TYPE0(type, val)  { type, #type },
     #define IPC_EVENT_TYPE1(type, val)  { type, #type },

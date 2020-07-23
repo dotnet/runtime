@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _SIMPLERHASHTABLE_H_
 #define _SIMPLERHASHTABLE_H_
@@ -69,8 +68,8 @@ public:
 class PrimeInfo
 {
 public:
-    PrimeInfo() : prime(0), magic(0), shift(0) {}
-    PrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s) {}
+    constexpr PrimeInfo() : prime(0), magic(0), shift(0) {}
+    constexpr PrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s) {}
     unsigned prime;
     unsigned magic;
     unsigned shift;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.IO;
@@ -3709,11 +3708,7 @@ namespace System.Xml
             }
 
             if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
-                 _xmlCharType.IsNameSingleChar(_ps.chars![_ps.charPos + 5])
-#if XML10_FIFTH_EDITION
-                 || xmlCharType.IsNCNameHighSurrogateChar( ps.chars[ps.charPos + 5] )
-#endif
-                )
+                 _xmlCharType.IsNameSingleChar(_ps.chars![_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
             }
@@ -3906,18 +3901,9 @@ namespace System.Xml
                     {
                         // version
                         case 0:
-#if XML10_FIFTH_EDITION
-                            //  VersionNum ::= '1.' [0-9]+   (starting with XML Fifth Edition)
-                            if (pos - ps.charPos >= 3 &&
-                                 ps.chars[ps.charPos] == '1' &&
-                                 ps.chars[ps.charPos + 1] == '.' &&
-                                 XmlCharType.IsOnlyDigits(ps.chars, ps.charPos + 2, pos - ps.charPos - 2))
-                            {
-#else
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
                             if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "1.0"))
                             {
-#endif
                                 if (!isTextDecl)
                                 {
                                     Debug.Assert(attr != null);
@@ -4023,14 +4009,6 @@ namespace System.Xml
         private bool ParseDocumentContent()
         {
             bool mangoQuirks = false;
-#if FEATURE_LEGACYNETCF
-            // In Mango the default XmlTextReader is instantiated
-            // with v1Compat flag set to true.  One of the effects
-            // of this settings is to eat any trailing nulls in the
-            // buffer and some apps depend on this behavior.
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                mangoQuirks = true;
-#endif
             while (true)
             {
                 bool needMoreChars = false;
@@ -4458,12 +4436,6 @@ namespace System.Xml
             {
                 pos++;
             }
-#if XML10_FIFTH_EDITION
-            else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos]))
-            {
-                pos += 2;
-            }
-#endif
             else
             {
                 goto ParseQNameSlow;
@@ -4477,12 +4449,6 @@ namespace System.Xml
                 {
                     pos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (pos < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos]))
-                {
-                    pos += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -4742,11 +4708,7 @@ namespace System.Xml
                     goto ReadData;
                 }
 
-                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
-#if XML10_FIFTH_EDITION
-                        || xmlCharType.IsNCNameHighSurrogateChar(chars[pos])
-#endif
-                    )
+                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':'))
                 {
                     ThrowTagMismatch(startTagNode);
                 }
@@ -4889,12 +4851,6 @@ namespace System.Xml
                 {
                     startNameCharSize = 1;
                 }
-#if XML10_FIFTH_EDITION
-                else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch1))
-                {
-                    startNameCharSize = 2;
-                }
-#endif
 
                 if (startNameCharSize == 0)
                 {
@@ -4967,12 +4923,6 @@ namespace System.Xml
                     {
                         pos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch2))
-                    {
-                        pos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -5004,12 +4954,6 @@ namespace System.Xml
                             pos++;
                             goto ContinueParseName;
                         }
-#if XML10_FIFTH_EDITION
-                        else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], chars[pos] ) ) {
-                            pos += 2;
-                            goto ContinueParseName;
-                        }
-#endif
                         // else fallback to full name parsing routine
                         pos = ParseQName(out colonPos);
                         chars = _ps.chars;
@@ -7432,15 +7376,10 @@ namespace System.Xml
                     badDigitExceptionString = SR.Xml_BadHexEntity;
                     while (true)
                     {
-                        char ch = chars[pos];
-                        if (ch >= '0' && ch <= '9')
-                            val = checked(val * 16 + ch - '0');
-                        else if (ch >= 'a' && ch <= 'f')
-                            val = checked(val * 16 + 10 + ch - 'a');
-                        else if (ch >= 'A' && ch <= 'F')
-                            val = checked(val * 16 + 10 + ch - 'A');
-                        else
+                        int ch = HexConverter.FromChar(chars[pos]);
+                        if (ch == 0xFF)
                             break;
+                        val = checked(val * 16 + ch);
                         pos++;
                     }
                     entityType = EntityType.CharacterHex;
@@ -7731,12 +7670,6 @@ namespace System.Xml
             {
                 pos++;
             }
-#if XML10_FIFTH_EDITION
-            else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos]))
-            {
-                pos += 2;
-            }
-#endif
             else
             {
                 if (pos + 1 >= _ps.charsUsed)
@@ -7761,11 +7694,6 @@ namespace System.Xml
                 {
                     pos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], chars[pos] ) ) {
-                    pos += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -7793,11 +7721,7 @@ namespace System.Xml
                 }
             }
             // end of buffer
-            else if (pos == _ps.charsUsed
-#if XML10_FIFTH_EDITION
-                || ( pos + 1 == ps.charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[pos] ) )
-#endif
-                )
+            else if (pos == _ps.charsUsed)
             {
                 if (ReadDataInName(ref pos))
                 {

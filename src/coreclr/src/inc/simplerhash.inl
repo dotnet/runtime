@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _SIMPLERHASHTABLE_INL_
 #define _SIMPLERHASHTABLE_INL_
@@ -304,7 +303,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Reallocate(unsigned newTable
 // 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
 //
 
-SELECTANY const PrimeInfo primeInfo[] =
+constexpr PrimeInfo primeInfo[] =
 {
     PrimeInfo(9,         0x38e38e39, 1),
     PrimeInfo(23,        0xb21642c9, 4),

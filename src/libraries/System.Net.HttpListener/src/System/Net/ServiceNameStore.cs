@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -158,7 +157,7 @@ namespace System.Net
                 {
                     addedAny = true;
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.Format(SR.net_log_listener_spn_add, spn, uriPrefix));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.Format(SR.net_log_listener_spn_add, spn, uriPrefix));
                 }
             }
 
@@ -166,7 +165,7 @@ namespace System.Net
             {
                 _serviceNameCollection = null;
             }
-            else if (NetEventSource.IsEnabled)
+            else if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(this, SR.Format(SR.net_log_listener_spn_not_add, uriPrefix));
             }
@@ -188,7 +187,7 @@ namespace System.Net
                 _serviceNameCollection = null; //invalidate (readonly) ServiceNameCollection
             }
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 if (needToRemove)
                 {

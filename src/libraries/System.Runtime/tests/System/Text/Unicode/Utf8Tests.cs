@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -65,12 +64,7 @@ namespace System.Text.Unicode.Tests
         {
             Assert.True(Regex.IsMatch(inputHex.ToString(), "^([0-9a-fA-F]{2})*$"), "Input must be an even number of hex characters.");
 
-            byte[] retVal = new byte[inputHex.Length / 2];
-            for (int i = 0; i < retVal.Length; i++)
-            {
-                retVal[i] = byte.Parse(inputHex.Slice(i * 2, 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
-            }
-            return retVal;
+            return Convert.FromHexString(inputHex);
         }
 
         // !! IMPORTANT !!

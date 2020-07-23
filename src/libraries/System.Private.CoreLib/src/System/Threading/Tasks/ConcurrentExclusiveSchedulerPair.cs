@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -198,7 +197,7 @@ namespace System.Threading.Tasks
             if (!cs.m_completionQueued)
             {
                 cs.m_completionQueued = true;
-                ThreadPool.QueueUserWorkItem(state =>
+                ThreadPool.QueueUserWorkItem(static state =>
                 {
                     Debug.Assert(state is ConcurrentExclusiveSchedulerPair);
                     var localThis = (ConcurrentExclusiveSchedulerPair)state;

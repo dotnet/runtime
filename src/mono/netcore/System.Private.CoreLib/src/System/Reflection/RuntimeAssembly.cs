@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -24,6 +26,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -104,6 +107,7 @@ namespace System.Reflection
 
         public override Module ManifestModule => GetManifestModuleInternal();
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -147,12 +151,14 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override string[] GetManifestResourceNames();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetExportedTypes();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetForwardedTypes()
         {
             Type[] topLevelTypes = GetTopLevelForwardedTypes();
@@ -172,6 +178,7 @@ namespace System.Reflection
             return forwardedTypes.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;
@@ -247,6 +254,7 @@ namespace System.Reflection
             return AssemblyName.Create(_mono_assembly, CodeBase);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -353,6 +361,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)

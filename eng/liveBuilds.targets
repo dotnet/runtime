@@ -190,7 +190,9 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
-        $(LibrariesNativeArtifactsPath)dotnet.wasm;"
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
+        $(LibrariesNativeArtifactsPath)icudt.dat;"
         IsNative="true" />
     </ItemGroup>
 

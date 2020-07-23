@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -30,12 +29,15 @@ namespace Internal.JitInterface
         public readonly MethodDesc Method;
         public readonly ModuleToken Token;
         public readonly TypeDesc ConstrainedType;
+        public readonly bool Unboxing;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing)
         {
+            Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
+            Unboxing = unboxing;
         }
 
         public override bool Equals(object obj)
@@ -51,7 +53,7 @@ namespace Internal.JitInterface
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType;
+            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType && Unboxing == methodWithToken.Unboxing;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -64,6 +66,8 @@ namespace Internal.JitInterface
             }
             sb.Append("; ");
             sb.Append(Token.ToString());
+            if (Unboxing)
+                sb.Append("; UNBOXING");
         }
 
         public int CompareTo(MethodWithToken other, TypeSystemComparer comparer)
@@ -85,7 +89,11 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            return Token.CompareTo(other.Token);
+            result = Token.CompareTo(other.Token);
+            if (result != 0)
+                return result;
+
+            return Unboxing.CompareTo(other.Unboxing);
         }
     }
 
@@ -140,8 +148,7 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
-
-        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
+        private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -219,8 +226,12 @@ namespace Internal.JitInterface
             {
                 if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
-                    CompileMethodInternal(methodCodeNodeNeedingCode);
-                    codeGotPublished = true;
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    if (methodIL != null)
+                    {
+                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                        codeGotPublished = true;
+                    }
                 }
             }
             finally
@@ -305,7 +316,7 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType);
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false);
                         }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
@@ -333,7 +344,9 @@ namespace Internal.JitInterface
 #endif
 
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
-            MethodWithToken targetMethod = new MethodWithToken(HandleToObject(pTargetMethod.hMethod), HandleToModuleToken(ref pTargetMethod), constrainedType: null);
+            MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
+            Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
+            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1554,8 +1567,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
-                                isUnboxingStub: false,
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
                         }
                     break;
@@ -1589,8 +1601,7 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType),
-                                isUnboxingStub,
+                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
                     }
@@ -1607,7 +1618,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1634,7 +1645,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType)));
+                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false)));
                     }
                     else
                     {
@@ -1865,14 +1876,15 @@ namespace Internal.JitInterface
                             MethodDesc md = HandleToObject(pResolvedToken.hMethod);
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
+                            bool unboxingStub = false;
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = getUnboxingThunk(md);
+                                unboxingStub = true;
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null));
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub));
                         }
                         break;
 
@@ -1892,7 +1904,7 @@ namespace Internal.JitInterface
 
         private MethodDesc getUnboxingThunk(MethodDesc method)
         {
-            return s_unboxingThunkFactory.GetUnboxingMethod(method);
+            return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
@@ -2017,6 +2029,12 @@ namespace Internal.JitInterface
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
         }
 
+        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
+        {
+            ppIndirection = (void*)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.IndirectTrapThreads));
+            return null;
+        }
+
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
@@ -2100,7 +2118,7 @@ namespace Internal.JitInterface
                 methodDesc = rawPInvoke.Target;
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false);
 
             if (ecmaMethod.IsSuppressGCTransition())
             {

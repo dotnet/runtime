@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -44,6 +44,7 @@ namespace System.Security.Cryptography
             {
                 return _use40bitSalt;
             }
+            [MinimumOSPlatform("windows7.0")]
             set
             {
                 _use40bitSalt = value;

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -28,6 +28,7 @@ namespace System.Threading
             CreateEventCore(initialState, mode, name, out createdNew);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static EventWaitHandle OpenExisting(string name)
         {
             switch (OpenExistingWorker(name, out EventWaitHandle? result))
@@ -44,6 +45,7 @@ namespace System.Threading
             }
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
             OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }

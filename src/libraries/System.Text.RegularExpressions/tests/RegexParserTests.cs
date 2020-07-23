@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -814,7 +813,7 @@ namespace System.Text.RegularExpressions.Tests
             Parse(pattern, options, error);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegexParseException_Serializes()
         {

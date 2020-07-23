@@ -20,6 +20,7 @@ parameters:
   testDisplayName: ''
   testScope: ''
   pool: ''
+  runTests: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -43,6 +44,7 @@ jobs:
         # rename this variable, due to collision with build-native.proj
         - _runtimeOSArg: ''
         - _finalFrameworkArg: ''
+        - _testModeArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _testScopeArg: ''
         - _extraHelixArguments: ''
@@ -73,7 +75,8 @@ jobs:
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
-          - _extraHelixArguments: /p:BuildAllConfigurations=true
+          - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
+          - _extraHelixArguments: /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
@@ -89,8 +92,7 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
-          # Download full product dependencies for mono or test
-          - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
+          - ${{ if eq(parameters.runTests, true) }}:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
@@ -106,7 +108,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
         # we need to override this value to support build-coreclr-and-libraries-job.yml
@@ -124,7 +126,7 @@ jobs:
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, ''))) }}:
+      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_runtimeDownloadPath)

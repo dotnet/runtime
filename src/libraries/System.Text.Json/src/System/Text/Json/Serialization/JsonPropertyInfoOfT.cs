@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,9 +25,10 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
+            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -36,37 +36,62 @@ namespace System.Text.Json
                 declaredPropertyType,
                 runtimePropertyType,
                 runtimeClassType,
-                propertyInfo,
+                memberInfo,
                 converter,
                 ignoreCondition,
+                parentTypeNumberHandling,
                 options);
 
-            if (propertyInfo != null)
+            switch (memberInfo)
             {
-                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                case PropertyInfo propertyInfo:
+                    {
+                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
 
-                MethodInfo? getMethod = propertyInfo.GetMethod;
-                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                }
+                        MethodInfo? getMethod = propertyInfo.GetMethod;
+                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        }
 
-                MethodInfo? setMethod = propertyInfo.SetMethod;
-                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                }
+                        MethodInfo? setMethod = propertyInfo.SetMethod;
+                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        }
+
+                        break;
+                    }
+
+                case FieldInfo fieldInfo:
+                    {
+                        Debug.Assert(fieldInfo.IsPublic);
+
+                        HasGetter = true;
+                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                        if (!fieldInfo.IsInitOnly)
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        IsForClassInfo = true;
+                        HasGetter = true;
+                        HasSetter = true;
+
+                        break;
+                    }
             }
-            else
-            {
-                IsForClassInfo = true;
-                HasGetter = true;
-                HasSetter = true;
-            }
 
-            GetPolicies(ignoreCondition);
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -98,7 +123,7 @@ namespace System.Text.Json
             T value = Get!(obj);
 
             // Since devirtualization only works in non-shared generics,
-            // the default comparer is uded only for value types for now.
+            // the default comparer is used only for value types for now.
             // For reference types there is a quick check for null.
             if (IgnoreDefaultValuesOnWrite && (
                 default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
@@ -186,13 +211,13 @@ namespace System.Text.Json
 
                 success = true;
             }
-            else if (Converter.CanUseDirectReadOrWrite)
+            else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    Set!(obj, fastvalue!);
+                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    Set!(obj, fastValue!);
                 }
 
                 success = true;
@@ -230,7 +255,7 @@ namespace System.Text.Json
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;

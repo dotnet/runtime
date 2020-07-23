@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Buffers;
@@ -41,6 +40,7 @@ namespace System.SpanTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39311", TestPlatforms.Browser)]
         public static void BinaryPrimitives_StaticWithSpanArgument()
         {
             Type type = typeof(BinaryPrimitives);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -18,6 +17,9 @@ namespace System
 }
 namespace System.Configuration
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class ConfigurationPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public ConfigurationPermission(System.Security.Permissions.PermissionState state) { }
@@ -29,6 +31,9 @@ namespace System.Configuration
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=false)]
     public sealed partial class ConfigurationPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -38,6 +43,9 @@ namespace System.Configuration
 }
 namespace System.Data.Common
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public abstract partial class DBDataPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         protected DBDataPermission() { }
@@ -57,6 +65,9 @@ namespace System.Data.Common
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public abstract partial class DBDataPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -73,6 +84,9 @@ namespace System.Data.Common
 }
 namespace System.Data.Odbc
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class OdbcPermission : System.Data.Common.DBDataPermission
     {
         public OdbcPermission() { }
@@ -81,6 +95,9 @@ namespace System.Data.Odbc
         public override void Add(string connectionString, string restrictions, System.Data.KeyRestrictionBehavior behavior) { }
         public override System.Security.IPermission Copy() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class OdbcPermissionAttribute : System.Data.Common.DBDataPermissionAttribute
     {
@@ -90,6 +107,9 @@ namespace System.Data.Odbc
 }
 namespace System.Data.OleDb
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class OleDbPermission : System.Data.Common.DBDataPermission
     {
         public OleDbPermission() { }
@@ -100,6 +120,9 @@ namespace System.Data.OleDb
         public string Provider { get { throw null; } set { } }
         public override System.Security.IPermission Copy() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class OleDbPermissionAttribute : System.Data.Common.DBDataPermissionAttribute
     {
@@ -112,6 +135,9 @@ namespace System.Data.OleDb
 }
 namespace System.Data.OracleClient
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class OraclePermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public OraclePermission(System.Security.Permissions.PermissionState state) { }
@@ -125,6 +151,9 @@ namespace System.Data.OracleClient
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class OraclePermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -142,6 +171,9 @@ namespace System.Data.OracleClient
 }
 namespace System.Data.SqlClient
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SqlClientPermission : System.Data.Common.DBDataPermission
     {
         public SqlClientPermission() { }
@@ -150,6 +182,9 @@ namespace System.Data.SqlClient
         public override void Add(string connectionString, string restrictions, System.Data.KeyRestrictionBehavior behavior) { }
         public override System.Security.IPermission Copy() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SqlClientPermissionAttribute : System.Data.Common.DBDataPermissionAttribute
     {
@@ -159,6 +194,9 @@ namespace System.Data.SqlClient
 }
 namespace System.Diagnostics
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class EventLogPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public EventLogPermission() { }
@@ -177,6 +215,9 @@ namespace System.Diagnostics
         Write = 16,
         Administer = 48,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class EventLogPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -208,6 +249,9 @@ namespace System.Diagnostics
         protected override void OnSet(int index, object oldValue, object newValue) { }
         public void Remove(System.Diagnostics.EventLogPermissionEntry value) { }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PerformanceCounterPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public PerformanceCounterPermission() { }
@@ -226,6 +270,9 @@ namespace System.Diagnostics
         Instrument = 3,
         Administer = 7,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class PerformanceCounterPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -262,6 +309,9 @@ namespace System.Diagnostics
 }
 namespace System.Drawing.Printing
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PrintingPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public PrintingPermission(System.Drawing.Printing.PrintingPermissionLevel printingLevel) { }
@@ -275,6 +325,9 @@ namespace System.Drawing.Printing
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true)]
     public sealed partial class PrintingPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -292,6 +345,9 @@ namespace System.Drawing.Printing
 }
 namespace System.Net
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class DnsPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public DnsPermission(System.Security.Permissions.PermissionState state) { }
@@ -303,6 +359,9 @@ namespace System.Net
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class DnsPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -324,6 +383,9 @@ namespace System.Net
         Connect = 64,
         Accept = 128,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SocketPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public const int AllPorts = -1;
@@ -340,6 +402,9 @@ namespace System.Net
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SocketPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -358,6 +423,9 @@ namespace System.Net
         Tcp = 2,
         All = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class WebPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public WebPermission() { }
@@ -376,6 +444,9 @@ namespace System.Net
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class WebPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -395,6 +466,9 @@ namespace System.Net.Mail
         Connect = 1,
         ConnectToUnrestrictedPort = 2,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SmtpPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public SmtpPermission(bool unrestricted) { }
@@ -410,6 +484,9 @@ namespace System.Net.Mail
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SmtpPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -427,6 +504,9 @@ namespace System.Net.NetworkInformation
         Read = 1,
         Ping = 4,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class NetworkInformationPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public NetworkInformationPermission(System.Net.NetworkInformation.NetworkInformationAccess access) { }
@@ -441,6 +521,9 @@ namespace System.Net.NetworkInformation
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class NetworkInformationPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -451,6 +534,9 @@ namespace System.Net.NetworkInformation
 }
 namespace System.Net.PeerToPeer
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PnrpPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public PnrpPermission(System.Security.Permissions.PermissionState state) { }
@@ -462,6 +548,9 @@ namespace System.Net.PeerToPeer
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PnrpPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -478,6 +567,9 @@ namespace System.Net.PeerToPeer
 }
 namespace System.Net.PeerToPeer.Collaboration
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PeerCollaborationPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public PeerCollaborationPermission(System.Security.Permissions.PermissionState state) { }
@@ -489,6 +581,9 @@ namespace System.Net.PeerToPeer.Collaboration
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PeerCollaborationPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -498,6 +593,9 @@ namespace System.Net.PeerToPeer.Collaboration
 }
 namespace System.Security
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public abstract partial class CodeAccessPermission : System.Security.IPermission, System.Security.ISecurityEncodable, System.Security.IStackWalk
     {
         protected CodeAccessPermission() { }
@@ -521,6 +619,9 @@ namespace System.Security
         public abstract System.Security.SecurityElement ToXml();
         public virtual System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public partial class HostProtectionException : System.SystemException
     {
         public HostProtectionException() { }
@@ -575,6 +676,9 @@ namespace System.Security
         void Deny();
         void PermitOnly();
     }
+#endif
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
     public sealed partial class NamedPermissionSet : System.Security.PermissionSet
     {
@@ -659,6 +763,9 @@ namespace System.Security
         CurrentAppDomain = 0,
         CurrentAssembly = 1,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public static partial class SecurityManager
     {
         [System.ObsoleteAttribute]
@@ -717,6 +824,9 @@ namespace System.Security
 }
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class DataProtectionPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public DataProtectionPermission(System.Security.Permissions.DataProtectionPermissionFlags flag) { }
@@ -730,6 +840,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class DataProtectionPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -741,6 +854,9 @@ namespace System.Security.Permissions
         public bool UnprotectMemory { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum DataProtectionPermissionFlags
     {
@@ -751,6 +867,9 @@ namespace System.Security.Permissions
         UnprotectMemory = 8,
         AllFlags = 15,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class EnvironmentPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public EnvironmentPermission(System.Security.Permissions.EnvironmentPermissionAccess flag, string pathList) { }
@@ -766,6 +885,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum EnvironmentPermissionAccess
     {
@@ -774,6 +896,9 @@ namespace System.Security.Permissions
         Write = 2,
         AllAccess = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class EnvironmentPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -783,6 +908,9 @@ namespace System.Security.Permissions
         public string Write { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class FileDialogPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public FileDialogPermission(System.Security.Permissions.FileDialogPermissionAccess access) { }
@@ -796,6 +924,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum FileDialogPermissionAccess
     {
@@ -804,6 +935,9 @@ namespace System.Security.Permissions
         Save = 2,
         OpenSave = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class FileDialogPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -812,6 +946,9 @@ namespace System.Security.Permissions
         public bool Save { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class FileIOPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public FileIOPermission(System.Security.Permissions.FileIOPermissionAccess access, System.Security.AccessControl.AccessControlActions actions, string path) { }
@@ -836,6 +973,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum FileIOPermissionAccess
     {
@@ -846,6 +986,9 @@ namespace System.Security.Permissions
         PathDiscovery = 8,
         AllAccess = 15,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class FileIOPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -863,6 +1006,9 @@ namespace System.Security.Permissions
         public string Write { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class GacIdentityPermission : System.Security.CodeAccessPermission
     {
         public GacIdentityPermission() { }
@@ -874,12 +1020,18 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class GacIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         public GacIdentityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class HostProtectionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -897,6 +1049,9 @@ namespace System.Security.Permissions
         public bool UI { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum HostProtectionResource
     {
@@ -912,6 +1067,9 @@ namespace System.Security.Permissions
         MayLeakOnAbort = 256,
         All = 511,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum IsolatedStorageContainment
     {
         None = 0,
@@ -927,6 +1085,9 @@ namespace System.Security.Permissions
         AdministerIsolatedStorageByUser = 112,
         UnrestrictedIsolatedStorage = 240,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class IsolatedStorageFilePermission : System.Security.Permissions.IsolatedStoragePermission
     {
         public IsolatedStorageFilePermission(System.Security.Permissions.PermissionState state) : base (default(System.Security.Permissions.PermissionState)) { }
@@ -936,12 +1097,18 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class IsolatedStorageFilePermissionAttribute : System.Security.Permissions.IsolatedStoragePermissionAttribute
     {
         public IsolatedStorageFilePermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public abstract partial class IsolatedStoragePermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         protected IsolatedStoragePermission(System.Security.Permissions.PermissionState state) { }
@@ -951,16 +1118,25 @@ namespace System.Security.Permissions
         public bool IsUnrestricted() { throw null; }
         public override System.Security.SecurityElement ToXml() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public abstract partial class IsolatedStoragePermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         protected IsolatedStoragePermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public System.Security.Permissions.IsolatedStorageContainment UsageAllowed { get { throw null; } set { } }
         public long UserQuota { get { throw null; } set { } }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public partial interface IUnrestrictedPermission
     {
         bool IsUnrestricted();
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class KeyContainerPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public KeyContainerPermission(System.Security.Permissions.KeyContainerPermissionFlags flags) { }
@@ -976,6 +1152,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class KeyContainerPermissionAccessEntry
     {
         public KeyContainerPermissionAccessEntry(System.Security.Cryptography.CspParameters parameters, System.Security.Permissions.KeyContainerPermissionFlags flags) { }
@@ -990,6 +1169,9 @@ namespace System.Security.Permissions
         public override bool Equals(object o) { throw null; }
         public override int GetHashCode() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class KeyContainerPermissionAccessEntryCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public KeyContainerPermissionAccessEntryCollection() { }
@@ -1006,6 +1188,9 @@ namespace System.Security.Permissions
         public void Remove(System.Security.Permissions.KeyContainerPermissionAccessEntry accessEntry) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class KeyContainerPermissionAccessEntryEnumerator : System.Collections.IEnumerator
     {
         public KeyContainerPermissionAccessEntryEnumerator() { }
@@ -1014,6 +1199,9 @@ namespace System.Security.Permissions
         public bool MoveNext() { throw null; }
         public void Reset() { }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class KeyContainerPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1026,6 +1214,9 @@ namespace System.Security.Permissions
         public int ProviderType { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum KeyContainerPermissionFlags
     {
         NoFlags = 0,
@@ -1040,6 +1231,9 @@ namespace System.Security.Permissions
         ChangeAcl = 8192,
         AllFlags = 13111,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class MediaPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public MediaPermission() { }
@@ -1059,6 +1253,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class MediaPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1068,6 +1265,9 @@ namespace System.Security.Permissions
         public System.Security.Permissions.MediaPermissionVideo Video { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum MediaPermissionAudio
     {
         NoAudio = 0,
@@ -1075,6 +1275,9 @@ namespace System.Security.Permissions
         SafeAudio = 2,
         AllAudio = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum MediaPermissionImage
     {
         NoImage = 0,
@@ -1082,6 +1285,9 @@ namespace System.Security.Permissions
         SafeImage = 2,
         AllImage = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum MediaPermissionVideo
     {
         NoVideo = 0,
@@ -1089,6 +1295,9 @@ namespace System.Security.Permissions
         SafeVideo = 2,
         AllVideo = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PermissionSetAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1108,6 +1317,9 @@ namespace System.Security.Permissions
         Unrestricted = 1,
     }
 #endif
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PrincipalPermission : System.Security.IPermission, System.Security.ISecurityEncodable, System.Security.Permissions.IUnrestrictedPermission
     {
         public PrincipalPermission(System.Security.Permissions.PermissionState state) { }
@@ -1125,11 +1337,14 @@ namespace System.Security.Permissions
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class PrincipalPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
-#if CAS_OBSOLETIONS
-        [System.ObsoleteAttribute("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", true, DiagnosticId = "MSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", true, DiagnosticId = "SYSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public PrincipalPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public bool Authenticated { get { throw null; } set { } }
@@ -1137,6 +1352,9 @@ namespace System.Security.Permissions
         public string Role { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class PublisherIdentityPermission : System.Security.CodeAccessPermission
     {
         public PublisherIdentityPermission(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }
@@ -1149,6 +1367,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PublisherIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1158,6 +1379,9 @@ namespace System.Security.Permissions
         public string X509Certificate { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class ReflectionPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public ReflectionPermission(System.Security.Permissions.PermissionState state) { }
@@ -1171,6 +1395,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class ReflectionPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1184,6 +1411,9 @@ namespace System.Security.Permissions
         public bool TypeInformation { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum ReflectionPermissionFlag
     {
@@ -1197,6 +1427,9 @@ namespace System.Security.Permissions
         AllFlags = 7,
         RestrictedMemberAccess = 8,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class RegistryPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public RegistryPermission(System.Security.Permissions.PermissionState state) { }
@@ -1214,6 +1447,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum RegistryPermissionAccess
     {
@@ -1223,6 +1459,9 @@ namespace System.Security.Permissions
         Create = 4,
         AllAccess = 7,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1237,6 +1476,9 @@ namespace System.Security.Permissions
         public string Write { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public abstract partial class ResourcePermissionBase : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public const string Any = "*";
@@ -1257,6 +1499,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public partial class ResourcePermissionBaseEntry
     {
         public ResourcePermissionBaseEntry() { }
@@ -1264,6 +1509,9 @@ namespace System.Security.Permissions
         public int PermissionAccess { get { throw null; } }
         public string[] PermissionAccessPath { get { throw null; } }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SecurityPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public SecurityPermission(System.Security.Permissions.PermissionState state) { }
@@ -1277,6 +1525,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SiteIdentityPermission : System.Security.CodeAccessPermission
     {
         public SiteIdentityPermission(System.Security.Permissions.PermissionState state) { }
@@ -1289,6 +1540,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SiteIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1296,6 +1550,9 @@ namespace System.Security.Permissions
         public string Site { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class StorePermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public StorePermission(System.Security.Permissions.PermissionState state) { }
@@ -1309,6 +1566,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class StorePermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1323,6 +1583,9 @@ namespace System.Security.Permissions
         public bool RemoveFromStore { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum StorePermissionFlags
     {
@@ -1336,6 +1599,9 @@ namespace System.Security.Permissions
         EnumerateCertificates = 128,
         AllFlags = 247,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class StrongNameIdentityPermission : System.Security.CodeAccessPermission
     {
         public StrongNameIdentityPermission(System.Security.Permissions.PermissionState state) { }
@@ -1350,6 +1616,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class StrongNameIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1359,6 +1628,9 @@ namespace System.Security.Permissions
         public string Version { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class StrongNamePublicKeyBlob
     {
         public StrongNamePublicKeyBlob(byte[] publicKey) { }
@@ -1366,6 +1638,9 @@ namespace System.Security.Permissions
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class TypeDescriptorPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public TypeDescriptorPermission(System.Security.Permissions.PermissionState state) { }
@@ -1379,6 +1654,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class TypeDescriptorPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1387,12 +1665,18 @@ namespace System.Security.Permissions
         public bool RestrictedRegistrationAccess { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.FlagsAttribute]
     public enum TypeDescriptorPermissionFlags
     {
         NoFlags = 0,
         RestrictedRegistrationAccess = 1,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class UIPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public UIPermission(System.Security.Permissions.PermissionState state) { }
@@ -1409,6 +1693,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class UIPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1417,12 +1704,18 @@ namespace System.Security.Permissions
         public System.Security.Permissions.UIPermissionWindow Window { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum UIPermissionClipboard
     {
         NoClipboard = 0,
         OwnClipboard = 1,
         AllClipboard = 2,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum UIPermissionWindow
     {
         NoWindows = 0,
@@ -1430,6 +1723,9 @@ namespace System.Security.Permissions
         SafeTopLevelWindows = 2,
         AllWindows = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class UrlIdentityPermission : System.Security.CodeAccessPermission
     {
         public UrlIdentityPermission(System.Security.Permissions.PermissionState state) { }
@@ -1442,6 +1738,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class UrlIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1449,6 +1748,9 @@ namespace System.Security.Permissions
         public string Url { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class WebBrowserPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public WebBrowserPermission() { }
@@ -1463,6 +1765,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class WebBrowserPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1470,12 +1775,18 @@ namespace System.Security.Permissions
         public System.Security.Permissions.WebBrowserPermissionLevel Level { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public enum WebBrowserPermissionLevel
     {
         None = 0,
         Safe = 1,
         Unrestricted = 2,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class ZoneIdentityPermission : System.Security.CodeAccessPermission
     {
         public ZoneIdentityPermission(System.Security.Permissions.PermissionState state) { }
@@ -1488,6 +1799,9 @@ namespace System.Security.Permissions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class ZoneIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1537,10 +1851,16 @@ namespace System.Security.Policy
     {
         public ApplicationTrust() { }
         public ApplicationTrust(System.ApplicationIdentity identity) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public ApplicationTrust(System.Security.PermissionSet defaultGrantSet, System.Collections.Generic.IEnumerable<System.Security.Policy.StrongName> fullTrustAssemblies) { }
         public System.ApplicationIdentity ApplicationIdentity { get { throw null; } set { } }
         public System.Security.Policy.PolicyStatement DefaultGrantSet { get { throw null; } set { } }
         public object ExtraInfo { get { throw null; } set { } }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Collections.Generic.IList<System.Security.Policy.StrongName> FullTrustAssemblies { get { throw null; } }
         public bool IsApplicationTrustedToRun { get { throw null; } set { } }
         public bool Persist { get { throw null; } set { } }
@@ -1659,6 +1979,9 @@ namespace System.Security.Policy
         protected EvidenceBase() { }
         public virtual System.Security.Policy.EvidenceBase Clone() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class FileCodeGroup : System.Security.Policy.CodeGroup
     {
         public FileCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Permissions.FileIOPermissionAccess access) : base (default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
@@ -1682,6 +2005,9 @@ namespace System.Security.Policy
         public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { throw null; }
         public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class GacInstalled : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public GacInstalled() { }
@@ -1734,6 +2060,9 @@ namespace System.Security.Policy
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public partial interface IIdentityPermissionFactory
     {
         System.Security.IPermission CreateIdentityPermission(System.Security.Policy.Evidence evidence);
@@ -1795,18 +2124,33 @@ namespace System.Security.Policy
         public void AddFullTrustAssembly(System.Security.Policy.StrongName sn) { }
         [System.ObsoleteAttribute]
         public void AddFullTrustAssembly(System.Security.Policy.StrongNameMembershipCondition snMC) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public void AddNamedPermissionSet(System.Security.NamedPermissionSet permSet) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Security.NamedPermissionSet ChangeNamedPermissionSet(string name, System.Security.PermissionSet pSet) { throw null; }
         [System.ObsoleteAttribute("AppDomain policy levels are obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static System.Security.Policy.PolicyLevel CreateAppDomainLevel() { throw null; }
         public void FromXml(System.Security.SecurityElement e) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Security.NamedPermissionSet GetNamedPermissionSet(string name) { throw null; }
         public void Recover() { }
         [System.ObsoleteAttribute]
         public void RemoveFullTrustAssembly(System.Security.Policy.StrongName sn) { }
         [System.ObsoleteAttribute]
         public void RemoveFullTrustAssembly(System.Security.Policy.StrongNameMembershipCondition snMC) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Security.NamedPermissionSet RemoveNamedPermissionSet(System.Security.NamedPermissionSet permSet) { throw null; }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Security.NamedPermissionSet RemoveNamedPermissionSet(string name) { throw null; }
         public void Reset() { }
         public System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { throw null; }
@@ -1815,10 +2159,19 @@ namespace System.Security.Policy
     }
     public sealed partial class PolicyStatement : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable
     {
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public PolicyStatement(System.Security.PermissionSet permSet) { }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public PolicyStatement(System.Security.PermissionSet permSet, System.Security.Policy.PolicyStatementAttribute attributes) { }
         public System.Security.Policy.PolicyStatementAttribute Attributes { get { throw null; } set { } }
         public string AttributeString { get { throw null; } }
+#if NET50_OBSOLETIONS
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public System.Security.PermissionSet PermissionSet { get { throw null; } set { } }
         public System.Security.Policy.PolicyStatement Copy() { throw null; }
         public override bool Equals(object o) { throw null; }
@@ -1836,6 +2189,9 @@ namespace System.Security.Policy
         LevelFinal = 2,
         All = 3,
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class Publisher : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public Publisher(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
@@ -1860,6 +2216,9 @@ namespace System.Security.Policy
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class Site : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public Site(string name) { }
@@ -1885,6 +2244,9 @@ namespace System.Security.Policy
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class StrongName : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public StrongName(System.Security.Permissions.StrongNamePublicKeyBlob blob, string name, System.Version version) { }
@@ -1897,6 +2259,9 @@ namespace System.Security.Policy
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class StrongNameMembershipCondition : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable, System.Security.Policy.IMembershipCondition
     {
         public StrongNameMembershipCondition(System.Security.Permissions.StrongNamePublicKeyBlob blob, string name, System.Version version) { }
@@ -1939,6 +2304,9 @@ namespace System.Security.Policy
         public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { throw null; }
         public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class Url : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public Url(string name) { }
@@ -1963,6 +2331,9 @@ namespace System.Security.Policy
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class Zone : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
         public Zone(System.Security.SecurityZone zone) { }
@@ -1991,6 +2362,9 @@ namespace System.Security.Policy
 }
 namespace System.ServiceProcess
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class ServiceControllerPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public ServiceControllerPermission() { }
@@ -2006,7 +2380,10 @@ namespace System.ServiceProcess
         Browse = 2,
         Control = 6,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public partial class ServiceControllerPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         public ServiceControllerPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
@@ -2043,6 +2420,9 @@ namespace System.ServiceProcess
 }
 namespace System.Transactions
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class DistributedTransactionPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public DistributedTransactionPermission(System.Security.Permissions.PermissionState state) { }
@@ -2054,6 +2434,9 @@ namespace System.Transactions
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true)]
     public sealed partial class DistributedTransactionPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -2064,6 +2447,9 @@ namespace System.Transactions
 }
 namespace System.Web
 {
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class AspNetHostingPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public AspNetHostingPermission(System.Security.Permissions.PermissionState state) { }
@@ -2077,6 +2463,9 @@ namespace System.Web
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
     }
+#if NET50_OBSOLETIONS
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=false)]
     public sealed partial class AspNetHostingPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {

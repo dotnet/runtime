@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ECallList.H
 //
 // This file contains definitions of FCall entrypoints
@@ -777,12 +776,10 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
     FCFuncElement("GetObjectForIUnknownNative", MarshalNative::GetObjectForIUnknownNative)
     FCFuncElement("GetUniqueObjectForIUnknownNative", MarshalNative::GetUniqueObjectForIUnknownNative)
-    FCFuncElement("AddRef", MarshalNative::AddRef)
     FCFuncElement("GetNativeVariantForObject", MarshalNative::GetNativeVariantForObject)
     FCFuncElement("GetObjectForNativeVariant", MarshalNative::GetObjectForNativeVariant)
     FCFuncElement("InternalFinalReleaseComObject", MarshalNative::FinalReleaseComObject)
     FCFuncElement("IsTypeVisibleFromCom", MarshalNative::IsTypeVisibleFromCom)
-    FCFuncElement("QueryInterface", MarshalNative::QueryInterface)
     FCFuncElement("CreateAggregatedObject", MarshalNative::CreateAggregatedObject)
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
     FCFuncElement("InternalCreateWrapperOfType", MarshalNative::InternalCreateWrapperOfType)
@@ -793,7 +790,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetIDispatchForObjectNative", MarshalNative::GetIDispatchForObjectNative)
     FCFuncElement("GetComInterfaceForObjectNative", MarshalNative::GetComInterfaceForObjectNative)
     FCFuncElement("InternalReleaseComObject", MarshalNative::ReleaseComObject)
-    FCFuncElement("Release", MarshalNative::Release)
     FCFuncElement("GetTypedObjectForIUnknown", MarshalNative::GetTypedObjectForIUnknown)
     FCFuncElement("ChangeWrapperHandleStrength", MarshalNative::ChangeWrapperHandleStrength)
     FCFuncElement("CleanupUnusedObjectsInCurrentContext", MarshalNative::CleanupUnusedObjectsInCurrentContext)
@@ -953,7 +949,6 @@ FCFuncStart(gMngdRefCustomMarshalerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
-    FCFuncElement("IsQCall", StubHelpers::IsQCall)
     FCFuncElement("InitDeclaringType", StubHelpers::InitDeclaringType)
     FCIntrinsic("GetNDirectTarget", StubHelpers::GetNDirectTarget, CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)

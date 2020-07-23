@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -45,7 +44,7 @@ namespace System.IO.Tests
         public void ValidPathExists_ReturnsTrue(string component)
         {
             string path = Path.Combine(TestDirectory, component);
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
             Assert.True(Exists(path));
         }
 
@@ -74,7 +73,7 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -178,7 +177,7 @@ namespace System.IO.Tests
         public void ValidExtendedPathExists_ReturnsTrue(string component)
         {
             string path = IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, "extended", component);
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
             Assert.True(Exists(path));
         }
 
@@ -199,7 +198,7 @@ namespace System.IO.Tests
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
             string path = IOInputs.ExtendedPrefix + GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -279,7 +278,7 @@ namespace System.IO.Tests
         {
             // Windows trims spaces
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path + component);
+            Directory.CreateDirectory(path + component);
             Assert.True(Exists(path), "can find without space");
             Assert.True(Exists(path + component), "can find with space");
         }

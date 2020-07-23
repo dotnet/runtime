@@ -47,6 +47,7 @@
     <Compile Include="RuntimeDeterminedTypesTests.cs" />
     <Compile Include="SignatureTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
+    <Compile Include="SyntheticVirtualOverrideTests.DiagnosticName.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="TypeNameParsingTests.cs" />
     <Compile Include="UniversalGenericFieldLayoutTests.cs" />
@@ -56,5 +57,6 @@
     <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
     <Compile Include="WellKnownTypeTests.cs" />
+    <Compile Include="ExceptionStringTests.cs" />
   </ItemGroup>
 </Project>
