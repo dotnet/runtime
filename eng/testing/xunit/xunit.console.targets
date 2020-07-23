@@ -37,6 +37,7 @@
                       Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <PackageReference Include="xunit.runner.console"
                       Version="$(XUnitVersion)"
+                      GeneratePathProperty="true"
                       Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
@@ -62,7 +63,9 @@
     <ItemGroup>
       <!-- Copy test runner to output directory -->
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\*"
-            Exclude="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.*exe.config;$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.x86.exe"
+            Exclude="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.*exe.config;
+                     $([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.x86.exe;
+                     $([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.abstractions.dll"
             Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(XunitConsole472Path)' != ''"
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
@@ -73,6 +76,14 @@
             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(XunitConsoleNetCore21AppPath)' != ''"
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
+    </ItemGroup>
+
+    <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
+    <ItemGroup Condition="'$(ArchiveTests)' != 'true'">
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
     </ItemGroup>
   </Target>
 </Project>

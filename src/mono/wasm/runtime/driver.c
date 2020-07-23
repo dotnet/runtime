@@ -11,6 +11,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/image.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -137,7 +138,7 @@ struct WasmAssembly_ {
 static WasmAssembly *assemblies;
 static int assembly_count;
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
 	int len = strlen (name);
@@ -146,7 +147,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
 		mono_register_symfile_for_assembly (new_name, data, size);
-		return;
+		return 1;
 	}
 	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
 	entry->assembly.name = strdup (name);
@@ -155,6 +156,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
+	return mono_has_pdb_checksum (data, size);
 }
 
 EMSCRIPTEN_KEEPALIVE void
