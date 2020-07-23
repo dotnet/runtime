@@ -2064,7 +2064,7 @@ namespace System.Net.Http.Functional.Tests
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
-            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(3);
+            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(5);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 server.AllowMultipleConnections = true;
@@ -2074,7 +2074,7 @@ namespace System.Net.Http.Functional.Tests
                 List<int> acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
 
                 List<Task<HttpResponseMessage>> connection1SendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, 6).ConfigureAwait(false);
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, 10).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, connection1SendTasks, MaxConcurrentStreams);
                 int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
 
@@ -2082,6 +2082,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Complete all the requests.
                 await Task.WhenAll(connection1SendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await VerifySendTasks(connection1SendTasks).ConfigureAwait(false);
                 connection1SendTasks.ForEach(t => t.Result.Dispose());
 
                 // Wait until the idle connection timeout expires.
@@ -2089,21 +2090,27 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.True(connection1.IsInvalid);
 
-                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds);
+                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
 
                 Assert.Equal(MaxConcurrentStreams, handledRequests0);
 
                 //Fill all connection0's stream slots
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
                 Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
                 int handledRequests2 = (await HandleAllPendingRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false)).Count;
                 //Make sure connection0 is still alive.
-                handledRequests0 = (await HandleAllPendingRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+                handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
 
                 Assert.Equal(MaxConcurrentStreams, handledRequests2);
                 Assert.Equal(MaxConcurrentStreams, handledRequests0);
+
+                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
         }
 
@@ -2133,7 +2140,7 @@ namespace System.Net.Http.Functional.Tests
             while (true)
             {
                 Task handleRequestTask = HandleAllPendingRequests(connection, 1);
-                await Task.WhenAll(warmUpTask, handleRequestTask).ConfigureAwait(false);
+                await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
                 if (settingAckReceived.IsCompleted)
                 {

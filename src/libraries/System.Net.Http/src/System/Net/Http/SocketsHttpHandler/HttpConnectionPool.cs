@@ -1414,36 +1414,24 @@ namespace System.Net.Http
                     return;
                 }
 
-                if (TryRemoveHttp2Connection(connection, localHttp2Connections, out Http2Connection[] newHttp2Connections))
+                int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
+                if (invalidatedIndex >= 0)
                 {
+                    Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
+
+                    if (invalidatedIndex > 0)
+                    {
+                        Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
+                    }
+
+                    if (invalidatedIndex < localHttp2Connections.Length - 1)
+                    {
+                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
+                    }
+
                     _http2Connections = newHttp2Connections;
                 }
             }
-        }
-
-        private static bool TryRemoveHttp2Connection(Http2Connection connection, Http2Connection[] localHttp2Connections, out Http2Connection[] newHttp2Connections)
-        {
-            int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
-
-            if (invalidatedIndex >= 0)
-            {
-                newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
-
-                if (invalidatedIndex > 0)
-                {
-                    Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
-                }
-
-                if (invalidatedIndex < localHttp2Connections.Length - 1)
-                {
-                    Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
-                }
-
-                return true;
-            }
-
-            newHttp2Connections = localHttp2Connections;
-            return false;
         }
 
         public void InvalidateHttp3Connection(Http3Connection connection)
@@ -1531,27 +1519,45 @@ namespace System.Net.Http
 
                 if (localHttp2Connections != null)
                 {
+                    Http2Connection[]? newHttp2Connections = null;
+                    int newIndex = 0;
                     for (int i = 0; i < localHttp2Connections.Length; i++)
                     {
                         Http2Connection http2Connection = localHttp2Connections[i];
-                        if (http2Connection != null)
+                        if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                         {
-                            if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                            http2Connection.Dispose();
+
+                            if (newHttp2Connections == null)
                             {
-                                http2Connection.Dispose();
-                                if (_http2Connections != null)
+                                newHttp2Connections = new Http2Connection[localHttp2Connections.Length];
+                                if (i > 0)
                                 {
-                                    if (TryRemoveHttp2Connection(http2Connection, _http2Connections, out Http2Connection[] newConnections))
-                                    {
-                                        // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
-                                        _http2Connections = newConnections.Length > 0 ? newConnections : null;
-                                    }
-                                    else
-                                    {
-                                        Debug.Fail("Failed to remove an expired HTTP/2 connection from the pool's collection.");
-                                    }
+                                    // Copy valid connections residing at the beggining of the current collection.
+                                    Array.Copy(localHttp2Connections, newHttp2Connections, i);
+                                    newIndex = i;
                                 }
                             }
+                        }
+                        else if (newHttp2Connections != null)
+                        {
+                            newHttp2Connections[newIndex] = localHttp2Connections[i];
+                            newIndex++;
+                        }
+                    }
+
+                    if (newHttp2Connections != null)
+                    {
+                        //Some connections have been removed, so _http2Connections must be replaced.
+                        if (newIndex > 0)
+                        {
+                            Array.Resize(ref newHttp2Connections, newIndex);
+                            _http2Connections = newHttp2Connections;
+                        }
+                        else
+                        {
+                            // All connections expired.
+                            _http2Connections = null;
                         }
                     }
                 }
