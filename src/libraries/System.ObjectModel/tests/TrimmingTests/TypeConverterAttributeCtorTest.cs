@@ -16,9 +16,9 @@ namespace TypeConverterAttributeTest
         static int Main(string[] args)
         {
             // Type-based TypeConverterAttribute ctor overload, ensure public parameterized ctor of TypeConverter type is preserved.
-            TypeDescriptor.AddAttributes(typeof(DayOfWeek), new TypeConverterAttribute(typeof(EnumConverter)));
+            TypeDescriptor.AddAttributes(typeof(DayOfWeek), new TypeConverterAttribute(typeof(MyDayOfWeekConverter)));
             var attribute = new DefaultValueAttribute(typeof(DayOfWeek), "Friday");
-            if ((DayOfWeek)attribute.Value != DayOfWeek.Friday)
+            if ((DayOfWeek)attribute.Value != DayOfWeek.Monday)
             {
                 return -1;
             }
@@ -32,6 +32,29 @@ namespace TypeConverterAttributeTest
             }
 
             return 100;
+        }
+    }
+
+    internal class MyDayOfWeekConverter : TypeConverter
+    {
+        private readonly Type _type;
+
+        public MyDayOfWeekConverter(Type type)
+        {
+            _type = type;
+        }
+
+        /// <summary>
+        /// Converts the specified value object to a DayOfWeek value.
+        /// </summary>
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            if (_type == typeof(DayOfWeek) && value is string str && str == "Friday")
+            {
+                return DayOfWeek.Monday;
+            }
+
+            throw new NotSupportedException();
         }
     }
 
