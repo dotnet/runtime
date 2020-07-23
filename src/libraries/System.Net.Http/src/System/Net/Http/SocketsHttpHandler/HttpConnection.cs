@@ -1228,10 +1228,15 @@ namespace System.Net.Http
             int offset = _writeOffset;
             int available = _writeBuffer.Length - offset;
 
-            if (encoding.IsSingleByte ? available >= s.Length : (ReferenceEquals(encoding, Encoding.UTF8) && available >= s.Length * 3))
+            // Fast-path Latin1 and UTF8 as the most common scenarios of non-default encoding
+            const int MaxUtf8BytesPerChar = 3;
+            bool sufficientBufferSpace = ReferenceEquals(encoding, Encoding.Latin1) ? available >= s.Length :
+                ReferenceEquals(encoding, Encoding.UTF8) ? available >= s.Length * MaxUtf8BytesPerChar :
+                available >= encoding.GetMaxByteCount(s.Length);
+
+            if (sufficientBufferSpace)
             {
                 int written = encoding.GetBytes(s, _writeBuffer.AsSpan(offset));
-                Debug.Assert(written == s.Length || (ReferenceEquals(encoding, Encoding.UTF8) && written <= s.Length * 3));
                 _writeOffset = offset + written;
                 return Task.CompletedTask;
             }
@@ -1242,21 +1247,10 @@ namespace System.Net.Http
 
         private async Task WriteStringWithEncodingAsyncSlow(string s, Encoding encoding, bool async)
         {
-            int length;
-
-            if (encoding.IsSingleByte)
-            {
-                length = s.Length;
-            }
-            else if (ReferenceEquals(encoding, Encoding.UTF8) && s.Length <= 1024)
-            {
-                // Avoid calculating the length if the rented array would be small anyway
-                length = s.Length * 3;
-            }
-            else
-            {
-                length = encoding.GetByteCount(s);
-            }
+            // Avoid calculating the length if the rented array would be small anyway
+            int length = s.Length <= 512
+                ? encoding.GetMaxByteCount(s.Length)
+                : encoding.GetByteCount(s);
 
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
             try
