@@ -232,8 +232,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// === Generic methods ===
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedWithNoAnnotations.GenericBaseWithDerivedWithout<T>()' " +
-				"don't match overridden generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithAnnotations.GenericBaseWithDerivedWithout<T>()'. " +
+				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithDerivedWithout<T>()' " +
+				"don't match overridden generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithDerivedWithout<T>()'. " +
 				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
 			public override void GenericBaseWithDerivedWithout<T> () { }
 

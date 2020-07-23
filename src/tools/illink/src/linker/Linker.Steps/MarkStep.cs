@@ -1394,11 +1394,17 @@ namespace Mono.Linker.Steps
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), type);
 
 			// Check type being used was not removed by the LinkerRemovableAttribute
-			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type))
-				_context.LogWarning ($"Custom Attribute {type.GetDisplayName ()} is being referenced in code but the linker was " +
-					$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
-					$"either remove the linker attribute XML portion which removes the attribute instances, or to override this use " +
-					$"the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).", 2045, sourceLocationMember);
+			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
+				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
+				// will call MarkType on the attribute type itself). 
+				// If for some reason we do keep the attribute type (could be because of previous reference which would cause 2045
+				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
+				if (sourceLocationMember.DeclaringType != type)
+					_context.LogWarning ($"Custom Attribute {type.GetDisplayName ()} is being referenced in code but the linker was " +
+						$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
+						$"either remove the linker attribute XML portion which removes the attribute instances, or to override this use " +
+						$"the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).", 2045, sourceLocationMember);
+			}
 
 			if (CheckProcessed (type))
 				return null;

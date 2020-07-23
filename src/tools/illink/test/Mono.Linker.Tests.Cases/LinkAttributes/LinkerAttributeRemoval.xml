@@ -10,18 +10,26 @@
     </type>
   </assembly>
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.TestRemoveAttribute">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestRemoveAttribute">
       <attribute internal="RemoveAttributeInstances"/>
       <attribute internal="InvalidInternal"/>
     </type>
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.LinkerAttributeRemoval">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkerAttributeRemoval">
       <method signature="methodWithCustomAttribute (System.String)">
         <attribute internal="RemoveAttributeInstances"/>
       </method>
     </type>
   </assembly>
   <assembly fullname="attribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.Dependencies.TestAttributeUsedFromCopyAssemblyAttribute">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeUsedFromCopyAssemblyAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeReferencedAsTypeFromCopyAssemblyAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
+  </assembly>
+  <assembly fullname="copyattribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.AttributeFromCopyAssemblyAttribute">
       <attribute internal="RemoveAttributeInstances"/>
     </type>
   </assembly>
