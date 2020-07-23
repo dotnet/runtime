@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>
-        /// <param name="sectionName">
+        /// <param name="configSectionPath">
         /// The name of the configuration section to bind from. If omitted, or
         /// <see langword="null"/> the name of the <paramref name="optionsBuilder"/>
         /// is used.
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="Bind{TOptions}(OptionsBuilder{TOptions}, IConfiguration, Action{BinderOptions})"/>
         public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(
             this OptionsBuilder<TOptions> optionsBuilder,
-            string sectionName = null,
+            string configSectionPath = null,
             Action<BinderOptions> configureBinder = null)
             where TOptions : class
         {
@@ -68,18 +68,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             optionsBuilder.Configure<IConfiguration>((opts, config) =>
             {
-                IConfiguration section = sectionName switch
-                {
-                    string nonEmptySectionName
-                    when !string.IsNullOrEmpty(nonEmptySectionName) =>
-                        config?.GetSection(nonEmptySectionName),
-                    null
-                    when optionsBuilder.Name is string builderName &&
-                    !(string.IsNullOrEmpty(builderName)) =>
-                        config?.GetSection(builderName),
-                    _ => config,
-                };
-                config?.Bind(opts, configureBinder);
+                IConfiguration section = null;
+                if (string.IsNullOrEmpty(configSectionPath))
+                    section = config?.GetSection(configSectionPath);
+                else if (!string.IsNullOrEmpty(optionsBuilder.Name))
+                    section = config?.GetSection(optionsBuilder.Name);
+                section ??= config;
+                section?.Bind(opts, configureBinder);
             });
             return optionsBuilder;
         }
