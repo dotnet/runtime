@@ -15,46 +15,10 @@ namespace TypeConverterAttributeTest
     {
         static int Main(string[] args)
         {
-            // Type-based TypeConverterAttribute ctor overload, ensure public parameterized ctor of TypeConverter type is preserved.
-            TypeDescriptor.AddAttributes(typeof(DayOfWeek), new TypeConverterAttribute(typeof(MyDayOfWeekConverter)));
-            var attribute = new DefaultValueAttribute(typeof(DayOfWeek), "Friday");
-            if ((DayOfWeek)attribute.Value != DayOfWeek.Monday)
-            {
-                return -1;
-            }
-
             // String-based TypeConverterAttribute ctor overload, ensure public parameterless ctor of TypeConverter type is preserved.
             TypeDescriptor.AddAttributes(typeof(string), new TypeConverterAttribute("TypeConverterAttributeTest.MyStringConverter, project, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"));
-            attribute = new DefaultValueAttribute(typeof(string), "Hello, world!");
-            if ((string)attribute.Value != "Hello, world!trivia")
-            {
-                return -1;
-            }
-
-            return 100;
-        }
-    }
-
-    internal class MyDayOfWeekConverter : TypeConverter
-    {
-        private readonly Type _type;
-
-        public MyDayOfWeekConverter(Type type)
-        {
-            _type = type;
-        }
-
-        /// <summary>
-        /// Converts the specified value object to a DayOfWeek value.
-        /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
-        {
-            if (_type == typeof(DayOfWeek) && value is string str && str == "Friday")
-            {
-                return DayOfWeek.Monday;
-            }
-
-            throw new NotSupportedException();
+            var attribute = new DefaultValueAttribute(typeof(string), "Hello, world!");
+            return (string)attribute.Value == "Hello, world!trivia" ? 100 : -1;
         }
     }
 
