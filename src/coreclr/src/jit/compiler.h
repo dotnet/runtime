@@ -4633,6 +4633,8 @@ public:
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
+    bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
+
     bool fgRemoveDeadStore(GenTree**        pTree,
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
