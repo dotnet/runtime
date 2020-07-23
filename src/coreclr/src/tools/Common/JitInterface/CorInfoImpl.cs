@@ -526,35 +526,35 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                void SetCallConv(CorInfoCallConv toSet)
-                {
-                    if (found)
-                        throw new NotSupportedException("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.");
-
-                    callConvLocal = toSet;
-                    found = true;
-                }
-
                 // Look for a recognized calling convention in metadata.
                 switch (defType.Name)
                 {
                     case "CallConvCdecl":
-                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_C);
+                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_C, ref callConvLocal);
                         break;
                     case "CallConvStdcall":
-                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_STDCALL);
+                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_STDCALL, ref callConvLocal);
                         break;
                     case "CallConvFastcall":
-                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_FASTCALL);
+                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_FASTCALL, ref callConvLocal);
                         break;
                     case "CallConvThiscall":
-                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_THISCALL);
+                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_THISCALL, ref callConvLocal);
                         break;
                 }
             }
 
             callConv = callConvLocal;
             return found;
+
+            void SetCallConvLocal(CorInfoCallConv value, ref CorInfoCallConv callConvLocal)
+            {
+                if (found)
+                    throw new NotSupportedException("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.");
+
+                callConvLocal = value;
+                found = true;
+            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
