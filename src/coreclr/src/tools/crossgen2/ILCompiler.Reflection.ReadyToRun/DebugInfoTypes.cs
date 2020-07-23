@@ -18,7 +18,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public uint StartOffset;
         public uint EndOffset;
-        // TODO: Eliminate this
         public uint VariableNumber;
         public Variable Variable { get; internal set; }
         public VarLoc VariableLocation;
@@ -28,7 +27,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         Parameter,
         Local,
-        // TODO: Special
     }
 
     public class Variable
