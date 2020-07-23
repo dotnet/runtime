@@ -58,15 +58,11 @@ public class MonoRunner extends Instrumentation
 
         Log.i("DOTNET", "initRuntime");
         int retcode = initRuntime(filesDir, cacheDir, docsDir);
-        runOnMainSync(new Runnable() {
-            public void run() {
-                Bundle result = new Bundle();
-                result.putInt("return-code", retcode);
-                // Xharness cli expects "test-results-path" with test results
-                result.putString("test-results-path", docsDir + "/testResults.xml");
-                finish(retcode, result);
-            }
-        });
+        Bundle result = new Bundle();
+        result.putInt("return-code", retcode);
+        // Xharness cli expects "test-results-path" with test results
+        result.putString("test-results-path", docsDir + "/testResults.xml");
+        finish(Activity.RESULT_OK, result);
     }
 
     static void unzipAssets(Context context, String toPath, String zipName) {
