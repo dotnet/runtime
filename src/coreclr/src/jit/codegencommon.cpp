@@ -6124,6 +6124,7 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegModified)
 //                                                       start zero initializing memory.
 //    initReg          - A scratch register (that gets set to zero on some platforms).
 //    pInitRegModified - Sets a flag that tells the callee whether or not the initReg register got zeroed.
+//                       'true' if this method sets initReg to non-zero value. Else 'false'.
 //
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified)
 {
@@ -7672,9 +7673,10 @@ void CodeGen::genFnProlog()
 
     /* Choose the register to use for zero initialization */
 
-    regNumber initReg         = REG_SCRATCH; // Unless we find a better register below
-    bool      initRegModified = true;
-    regMaskTP excludeMask     = intRegState.rsCalleeRegArgMaskLiveIn;
+    regNumber initReg    = REG_SCRATCH; // Unless we find a better register below
+    bool initRegModified = true; // Track if initReg holds non-zero value. If 'false' i.e. it holds zero value, then we
+                                 // skip zero initializing it again.
+    regMaskTP excludeMask = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP tempMask;
 
     // We should not use the special PINVOKE registers as the initReg

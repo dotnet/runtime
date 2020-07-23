@@ -4816,7 +4816,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 // Arguments:
 //     initReg          - register to use as scratch register
 //     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if 'initReg' is
-//                        not zero after this call.
+//                        set to a non-zero value.
 //
 // Return Value:
 //     None
