@@ -1093,7 +1093,7 @@ namespace System.Xml
             return null;
         }
 
-        internal static double ToXPathDouble(object o)
+        internal static double ToXPathDouble(object? o)
         {
             if (o is string str)
             {
