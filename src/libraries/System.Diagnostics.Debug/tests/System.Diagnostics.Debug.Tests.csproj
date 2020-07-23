@@ -3,15 +3,16 @@
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
-    <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
-    <ProjectReference Include="$(CoreLibProject)" Private="false" />
-    <ReferenceFromRuntime Include="System.Runtime" />
-    <ReferenceFromRuntime Include="System.Threading" />
+    <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
+    <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj;
+                               $(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj"
+                      SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugTests.cs" />

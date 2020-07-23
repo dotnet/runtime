@@ -29,4 +29,7 @@
     <Compile Include="CborRoundtripTests.cs" />
     <Compile Include="CoseKeyHelpers.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
+  </ItemGroup>
 </Project>

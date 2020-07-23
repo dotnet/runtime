@@ -7,8 +7,6 @@ once before you can iterate and work on a given library project.
 - Setup tools (currently done in restore in build.cmd/sh)
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)`
- - Netstandard Library - Copy to `bin\ref\netstandard2.0`
- - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
  - Build src\libraries\ref.proj which builds all references assembly projects. For reference assembly project information see [ref](#ref)
 - Build product
@@ -28,7 +26,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> netstandard2.1 | net5.0 | net472`
+- `$(BuildTargetFramework) -> Any .NETCoreApp, .NETStandard or .NETFramework TFM, e.g. net5.0`
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -60,21 +58,8 @@ Pure netstandard configuration:
 All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;net461-Windows_NT</TargetFrameworks>
 <PropertyGroup>
-```
-
-### Placeholder Target Frameworks
-Placeholder Target Framework can be added to the `<TargetFrameworks>` property to indicate the build system that the specific project is inbox in that framework and that Build Setting needs to be ignored.
-
-Placeholder target frameworks start with _ prefix.
-
-Example:
-When we have a project that has a `netstandard2.0` target framework that means that this project is compatible with any build setting. So if we do a vertical build for `net472` this project will be built as part of the vertical because `net472` is compatible with `netstandard2.0`. This means that in the runtime and testhost binaries the netstandard2.0 implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `net472` vertical we need to add a placeholder target framework:
-```
-<PropertyGroup>
-  <TargetFrameworks>netstandard2.0;_net472</TargetFrameworks>
-</PropertyGroup>
 ```
 
 ## Options for building
@@ -94,7 +79,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
+- .NET Framework latest -> `net48-Windows_NT`
 
 # Library project guidelines
 

@@ -3,7 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -55,7 +55,7 @@ jobs:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
           # tests are built as part of product build
           - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration)) }}:
