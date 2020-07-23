@@ -11,7 +11,6 @@ internal static partial class Interop
         internal const string CoreComm_L1_1_2 = "api-ms-win-core-comm-l1-1-2.dll";
         internal const string Crypt32 = "crypt32.dll";
         internal const string CryptUI = "cryptui.dll";
-        internal const string Error_L1 = "api-ms-win-core-winrt-error-l1-1-0.dll";
         internal const string Gdi32 = "gdi32.dll";
         internal const string HttpApi = "httpapi.dll";
         internal const string IpHlpApi = "iphlpapi.dll";
