@@ -45,7 +45,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                          if caller knows for certain the constant will fit.
 //
 // Return Value:
-//    returns true if the immediate was too large and tmpReg was used and modified.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genInstrWithConstant(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insFlags flags, regNumber tmpReg)
@@ -100,7 +101,8 @@ bool CodeGen::genInstrWithConstant(
 //    tmpReg                  - an available temporary register
 //
 // Return Value:
-//    true if `tmpReg` was used.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 {

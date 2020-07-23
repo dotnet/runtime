@@ -54,7 +54,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                          Default: false.
 //
 // Return Value:
-//    returns true if the immediate was too large and tmpReg was used and modified.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genInstrWithConstant(instruction ins,
                                    emitAttr    attr,
@@ -156,7 +157,10 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     // Even though INS_add is specified here, the encoder will choose either
     // an INS_add or an INS_sub and encode the immediate as a positive value
     //
-    if (genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true))
+    bool wasTempRegisterUsedForImm =
+        !genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true);
+
+    if (wasTempRegisterUsedForImm)
     {
         if (pTmpRegIsZero != nullptr)
         {
