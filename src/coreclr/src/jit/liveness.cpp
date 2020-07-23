@@ -2120,6 +2120,23 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             }
             break;
 
+            case GT_BLK:
+            case GT_OBJ:
+            case GT_DYN_BLK:
+            {
+                bool removed = fgTryRemoveNonLocal(node, &blockRange);
+                if (!removed && node->IsUnusedValue())
+                {
+                    // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
+                    node->ChangeType(TYP_BYTE);
+                    node->ChangeOper(GT_NULLCHECK);
+                    block->bbFlags |= BBF_HAS_NULLCHECK;
+                    optMethodFlags |= OMF_HAS_NULLCHECK;
+                    JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                }
+            }
+            break;
+
             default:
                 fgTryRemoveNonLocal(node, &blockRange);
                 break;
@@ -2138,14 +2155,14 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 // Return value:
 //    None
 //
-// Notes: local nodes are processed independently and not-expected in this funtion.
+// Notes: local nodes are processed independently and are not expected in this function.
 //
 bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 {
     assert(!node->OperIsLocal());
     if (!node->IsValue() || node->IsUnusedValue())
     {
-        // We are only interested in avoiding the removal of nodes with direct side-effects
+        // We are only interested in avoiding the removal of nodes with direct side effects
         // (as opposed to side effects of their children).
         // This default case should never include calls or assignments.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));

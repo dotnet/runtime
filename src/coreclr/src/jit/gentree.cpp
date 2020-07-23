@@ -15970,6 +15970,16 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
                 if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
                     m_sideEffects.Push(node);
+                    if (node->OperIsBlk() && !node->OperIsStoreBlk())
+                    {
+                        // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
+                        node->ChangeType(TYP_BYTE);
+                        node->ChangeOper(GT_NULLCHECK);
+
+                        m_compiler->compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+                        m_compiler->optMethodFlags |= OMF_HAS_NULLCHECK;
+                        JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    }
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 
