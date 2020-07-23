@@ -18,7 +18,20 @@ namespace ILCompiler.Reflection.ReadyToRun
         public uint StartOffset;
         public uint EndOffset;
         public uint VariableNumber;
+        public Variable Variable { get; internal set; }
         public VarLoc VariableLocation;
+    }
+
+    public enum VariableType
+    {
+        Parameter,
+        Local
+    }
+
+    public class Variable
+    {
+        public VariableType Type { get; internal set; }
+        public int Index { get; internal set; }
     }
 
     [Flags]
