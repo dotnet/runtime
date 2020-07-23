@@ -490,7 +490,7 @@ namespace System.Net.Http
 
             if (http2Connection != null)
             {
-                // Connection exist and it is still good to use.
+                // Connection exists and it is still good to use.
                 if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP2 connection.");
                 _usedSinceLastCleanup = true;
                 return (http2Connection, false, null);
