@@ -6,6 +6,7 @@
       Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
       product band to upgrade in place.
     -->
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
     <PlatformPackageType>ToolPack</PlatformPackageType>

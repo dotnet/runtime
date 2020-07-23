@@ -2,6 +2,7 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
     <GenerateArchive>false</GenerateArchive>
     <SharedFrameworkInstallerName>dotnet-host</SharedFrameworkInstallerName>

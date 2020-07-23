@@ -2,6 +2,7 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
     <SharedFrameworkArchiveName>dotnet-hostfxr-internal</SharedFrameworkArchiveName>
     <SharedFrameworkInstallerName>dotnet-hostfxr</SharedFrameworkInstallerName>
