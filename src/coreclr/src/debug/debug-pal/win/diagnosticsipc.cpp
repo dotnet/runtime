@@ -119,6 +119,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
                 _hPipe = INVALID_HANDLE_VALUE;
                 ::CloseHandle(_oOverlap.hEvent);
                 _oOverlap.hEvent = INVALID_HANDLE_VALUE;
+                memset(&_oOverlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
                 return false;
         }
     }
@@ -193,11 +194,15 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     return new IpcStream(hPipe, mode);
 }
 
-void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback)
+void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback callback)
 {
     // don't attempt cleanup on shutdown and let the OS handle it
     if (isShutdown)
+    {
+        if (callback != nullptr)
+            callback("Closing without cleaning underlying handles", 100);
         return;
+    }
 
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
@@ -205,15 +210,22 @@ void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback)
         {
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
+            if (fSuccessDisconnectNamedPipe != 0 && callback != nullptr)
+                callback("Failed to disconnect NamedPipe", ::GetLastError());
         }
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
+        if (fSuccessCloseHandle != 0 && callback != nullptr)
+            callback("Failed to close pipe handle", ::GetLastError());
     }
 
     if (_oOverlap.hEvent != INVALID_HANDLE_VALUE)
     {
-        ::CloseHandle(_oOverlap.hEvent);
+        const BOOL fSuccessCloseEvent = ::CloseHandle(_oOverlap.hEvent);
+        _ASSERTE(fSuccessCloseEvent != 0);
+        if (fSuccessCloseEvent != 0 && callback != nullptr)
+            callback("Failed to close overlap event handle", ::GetLastError());
     }
 }
 
@@ -230,7 +242,7 @@ IpcStream::~IpcStream()
     Close();
 }
 
-void IpcStream::Close(ErrorCallback)
+void IpcStream::Close(ErrorCallback callback)
 {
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
@@ -240,15 +252,22 @@ void IpcStream::Close(ErrorCallback)
         {
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
+            if (fSuccessDisconnectNamedPipe != 0 && callback != nullptr)
+                callback("Failed to disconnect NamedPipe", ::GetLastError());
         }
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
+        if (fSuccessCloseHandle != 0 && callback != nullptr)
+            callback("Failed to close pipe handle", ::GetLastError());
     }
 
     if (_oOverlap.hEvent != INVALID_HANDLE_VALUE)
     {
-        ::CloseHandle(_oOverlap.hEvent);
+        const BOOL fSuccessCloseEvent = ::CloseHandle(_oOverlap.hEvent);
+        _ASSERTE(fSuccessCloseEvent != 0);
+        if (fSuccessCloseEvent != 0 && callback != nullptr)
+            callback("Failed to close overlapped event handle", ::GetLastError());
     }
 }
 
@@ -264,6 +283,8 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
             // SERVER
             _ASSERTE(rgIpcPollHandles[i].pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER);
             pHandles[i] = rgIpcPollHandles[i].pIpc->_oOverlap.hEvent;
+            if (callback != nullptr)
+                callback("Added SERVER handle to pHandles", (uint32_t)pHandles[i]);
         }
         else
         {
@@ -289,6 +310,8 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                     {
                         case ERROR_IO_PENDING:
                             pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
+                            if (callback != nullptr)
+                                callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
                             break;
                         case ERROR_PIPE_NOT_CONNECTED:
                             // hangup
@@ -306,12 +329,15 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                 {
                     // there's already data to be read
                     pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
+                    if (callback != nullptr)
+                        callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
                 }
-                
             }
             else
             {
                 pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
+                if (callback != nullptr)
+                    callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
             }
         }
     }
