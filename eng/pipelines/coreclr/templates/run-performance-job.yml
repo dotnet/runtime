@@ -19,6 +19,7 @@ parameters:
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: ''                 # required -- project file to build helix workitems
+  testCategory: ''                # required -- test category 
 
 jobs:
 - template: xplat-pipeline-job.yml
