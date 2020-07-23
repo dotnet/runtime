@@ -508,6 +508,8 @@ namespace Internal.JitInterface
             if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
                 return false;
 
+            bool found = false;
+            CorInfoCallConv callConvLocal = callConv;
             foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
             {
                 if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
@@ -524,25 +526,35 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                // Take the first recognized calling convention in metadata.
+                void SetCallConv(CorInfoCallConv toSet)
+                {
+                    if (found)
+                        throw new NotSupportedException("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.");
+
+                    callConvLocal = toSet;
+                    found = true;
+                }
+
+                // Look for a recognized calling convention in metadata.
                 switch (defType.Name)
                 {
                     case "CallConvCdecl":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_C;
-                        return true;
+                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_C);
+                        break;
                     case "CallConvStdcall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_STDCALL;
-                        return true;
+                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_STDCALL);
+                        break;
                     case "CallConvFastcall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_FASTCALL;
-                        return true;
+                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_FASTCALL);
+                        break;
                     case "CallConvThiscall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_THISCALL;
-                        return true;
+                        SetCallConv(CorInfoCallConv.CORINFO_CALLCONV_THISCALL);
+                        break;
                 }
             }
 
-            return false;
+            callConv = callConvLocal;
+            return found;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)

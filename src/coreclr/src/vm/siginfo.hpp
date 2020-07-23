@@ -786,15 +786,18 @@ class MetaSig
         // Note: the order in the metadata is the reverse of that in IL.
         //
         // Returns:
-        //   E_FAIL - Signature had an invalid format
         //   S_OK - Calling convention was read from modopt
         //   S_FALSE - Calling convention was not read from modopt
+        //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
+        //   COR_E_NOTSUPPORTED - Signature is not supported (multiple
+        //                        calling conventions in modopts)
         //----------------------------------------------------------
         static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
             _In_ Module *pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
-            _Out_ CorUnmanagedCallingConvention *callConvOut);
+            _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ UINT *errorResID);
 
         static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
         {
