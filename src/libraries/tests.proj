@@ -20,7 +20,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Pony' and '$(RunDisabledAndroidTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(RunDisabledAndroidTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Invariant\Invariant.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
