@@ -60,6 +60,15 @@ namespace CoreclrTestLib
         public static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry32W entry);
     }
 
+    static class libSystem
+    {
+        [DllImport(nameof(libSystem))]
+        public static extern int kill(int pid, int signal);
+
+        public const int SIGABRT = 0x6;
+    }
+
+
     static class libproc
     {
         [DllImport(nameof(libproc))]
@@ -205,6 +214,33 @@ namespace CoreclrTestLib
 
         static bool CollectCrashDump(Process process, string path)
         {
+            // special case for macOS to collect a dump that contains native information.
+            // createdump (as of this commit) does not collect native information in the
+            // dumps it collects and therefore can't be debugged using lldb.  It collects
+            // elf dumps that contain all the managed information needed to light up
+            // `dotnet-dump analyze`, but that prevents mac LLDB from being able to debug
+            // them.  Conversely, dotnet-dump and lldb cannot get managed information from
+            // a mach based dump (what the ABORT produces).  Due to this, we collect both in
+            // case someone needs native or managed.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                int pid = process.Id;
+                Console.WriteLine($"Aborting process {pid} to generate dump");
+                int status = libSystem.kill(pid, libSystem.SIGABRT);
+
+                string defaultCoreDumpPath = $"/cores/core.{pid}";
+
+                if (status == 0 && File.Exists(defaultCoreDumpPath))
+                {
+                    Console.WriteLine($"Moving dump for {pid} to {path}.");
+                    File.Move(defaultCoreDumpPath, path + ".native", true);
+                }
+                else
+                {
+                    Console.WriteLine($"Unable to find OS-generated dump for {pid} at default path: {defaultCoreDumpPath}");
+                }
+            }
+
             ProcessStartInfo createdumpInfo = null;
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
