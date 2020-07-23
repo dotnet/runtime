@@ -310,15 +310,14 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-
-            if (HasValue && Length >= textLength)
+            if (HasValue)
             {
-                result = string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+                return this.AsSpan().StartsWith(text.AsSpan(), comparisonType);
             }
-
-            return result;
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -338,16 +337,14 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-            int comparisonLength = Offset + Length - textLength;
-
-            if (HasValue && comparisonLength > 0)
+            if (HasValue)
             {
-                result = string.Compare(Buffer, comparisonLength, text, 0, textLength, comparisonType) == 0;
+                return this.AsSpan().EndsWith(text.AsSpan(), comparisonType);
             }
-
-            return result;
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

@@ -259,6 +259,19 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void StringSegment_EndsWith_Slash()
+        {
+            // Arrange
+            var segment = new StringSegment("/");
+
+            // Act
+            var result = segment.EndsWith("/", StringComparison.Ordinal);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
         public void StringSegment_EndsWith_Invalid()
         {
             // Arrange
@@ -584,6 +597,32 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.Equal(expectedResult, result);
+        }
+
+        [Fact]
+        public void StringSegment_Equals_InvariantCultureIgnoreCase()
+        {
+            // Arrange
+            var segment = new StringSegment("xaex", 1, 2);
+
+            // Act
+            var result = segment.Equals("\u00C6", StringComparison.InvariantCultureIgnoreCase);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void StringSegment_Equals_InvariantCultureIgnoreCase_StringSegment()
+        {
+            // Arrange
+            var segment = new StringSegment("xaex", 1, 2);
+
+            // Act
+            var result = segment.Equals(new StringSegment("\u00C6"), StringComparison.InvariantCultureIgnoreCase);
+
+            // Assert
+            Assert.True(result);
         }
 
         [Fact]
