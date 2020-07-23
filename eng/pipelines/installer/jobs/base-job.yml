@@ -227,7 +227,6 @@ jobs:
       value: >-
         /p:PortableBuild=false
         /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
-        /p:InstallerSourceOSPlatformConfig=linux-x64.$(_BuildConfig)
 
     - name: DockerRunMSBuild
       value: >-
