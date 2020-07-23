@@ -283,8 +283,6 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
             // SERVER
             _ASSERTE(rgIpcPollHandles[i].pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER);
             pHandles[i] = rgIpcPollHandles[i].pIpc->_oOverlap.hEvent;
-            if (callback != nullptr)
-                callback("Added SERVER handle to pHandles", (uint32_t)pHandles[i]);
         }
         else
         {
@@ -310,8 +308,6 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                     {
                         case ERROR_IO_PENDING:
                             pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
-                            if (callback != nullptr)
-                                callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
                             break;
                         case ERROR_PIPE_NOT_CONNECTED:
                             // hangup
@@ -329,15 +325,11 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                 {
                     // there's already data to be read
                     pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
-                    if (callback != nullptr)
-                        callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
                 }
             }
             else
             {
                 pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
-                if (callback != nullptr)
-                    callback("Added CLIENT handle to pHandles", (uint32_t)pHandles[i]);
             }
         }
     }
