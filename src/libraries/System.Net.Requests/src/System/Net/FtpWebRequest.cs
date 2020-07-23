@@ -220,6 +220,7 @@ namespace System.Net
         private LazyAsyncResult? _readAsyncResult;
         private LazyAsyncResult? _requestCompleteAsyncResult;
 
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Anonymous FTP credential in production code.")]
         private static readonly NetworkCredential s_defaultFtpNetworkCredential = new NetworkCredential("anonymous", "anonymous@", string.Empty);
         private const int s_DefaultTimeout = 100000;  // 100 seconds
         private static readonly TimerThread.Queue s_DefaultTimerQueue = TimerThread.GetOrCreateQueue(s_DefaultTimeout);
