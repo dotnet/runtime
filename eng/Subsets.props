@@ -61,7 +61,7 @@
 
     <DefaultLibrariesSubsets>libs.depprojs+libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
-    <DefaultInstallerSubsets>corehost+newsfx+installer.managed+installer.pkgprojs+installer.tests</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets>corehost+newsfx+installer.managed+installer.pkgprojs</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">newsfx+installer.pkgprojs</DefaultInstallerSubsets>
   </PropertyGroup>
 
