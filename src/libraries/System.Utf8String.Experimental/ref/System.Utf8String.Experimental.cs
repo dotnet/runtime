@@ -90,12 +90,12 @@ namespace System
         public bool Contains(System.Text.Rune value, System.StringComparison comparison) { throw null; }
         public bool Contains(System.Utf8String value) { throw null; }
         public bool Contains(System.Utf8String value, System.StringComparison comparison) { throw null; }
-#if !NETSTANDARD2_0
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
         public static System.Utf8String Create<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
 #endif
         public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<byte> buffer) { throw null; }
         public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<char> buffer) { throw null; }
-#if !NETSTANDARD2_0
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
         public static System.Utf8String CreateRelaxed<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
 #endif
         public bool EndsWith(char value) { throw null; }
@@ -168,7 +168,7 @@ namespace System
         public bool TryFindLast(System.Utf8String value, out System.Range range) { throw null; }
         public bool TryFindLast(System.Utf8String value, System.StringComparison comparisonType, out System.Range range) { throw null; }
         public static System.Utf8String UnsafeCreateWithoutValidation(System.ReadOnlySpan<byte> utf8Contents) { throw null; }
-#if !NETSTANDARD2_0
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
         public static System.Utf8String UnsafeCreateWithoutValidation<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
 #endif
         public readonly partial struct ByteEnumerable : System.Collections.Generic.IEnumerable<byte>

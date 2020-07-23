@@ -43,19 +43,17 @@
 
   <!-- Overwrite the runner config file with the app local one. -->
   <Target Name="OverwriteDesktopTestRunnerConfigs"
-          Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and 
+                     '$(GenerateAppConfigurationFile)' == 'true' and
+                     '@(AppConfigWithTargetPath)' != ''"
           AfterTargets="CopyFilesToOutputDirectory">
-
     <ItemGroup>
-      <_testRunnerConfigSourceFile Include="$(TargetDir)$(TargetName).exe.config" />
       <_testRunnerConfigDestFile Include="$(TargetDir)xunit.console.exe.config" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_testRunnerConfigSourceFile)"
-          Condition="'@(_testRunnerConfigSourceFile)' != ''"
+    <Copy SourceFiles="@(AppConfigWithTargetPath)"
           DestinationFiles="@(_testRunnerConfigDestFile)"
           SkipUnchangedFiles="true" />
-
   </Target>
 
   <!-- ResolveAssemblyReferences is the target that populates ReferenceCopyLocalPaths which is what is copied to output directory. -->

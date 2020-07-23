@@ -18,7 +18,7 @@
   <!-- Helix auto-magically imports local *.props files. We're not going to import the Helix Sdk,
        so we need to import those files manually so we can reference the properties defined there.
   -->
-  <Import Project="$(MSBuildThisFileDirectory)/*.props" />
+  <Import Project="Directory.Build.props" />
 
   <Target Name="RunInParallelForEachScenario">
 
@@ -47,7 +47,7 @@
     <Message Importance="High" Text="TestHostRootPath: $(TestHostRootPath)" />
     <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
     <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
-    <Message Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
+    <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
     <!-- Re-invoke MSBuild on this project to create the correlation payload -->
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="Scenarios=$(_Scenarios)" />
@@ -80,7 +80,8 @@
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
+                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
   </PropertyGroup>
 
@@ -144,7 +145,9 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(TestPackages)' != 'true' and '$(TargetsMobile)' != 'true'">
+          Condition="'$(TestPackages)' != 'true' and
+                     '$(TargetsMobile)' != 'true' and
+                     '$(TestArchiveRuntimeFile)' != ''">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 
