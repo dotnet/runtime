@@ -2,14 +2,15 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeFunctions.cs" />
-    <Compile Include="TestCallingConventions.cs" />
+    <Compile Include="TestCallingConventionsNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
-    <ProjectReference Include="CallFunctionPointers.ilproj" />
+    <ProjectReference Include="CallFunctionPointersNotSupported.ilproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>
