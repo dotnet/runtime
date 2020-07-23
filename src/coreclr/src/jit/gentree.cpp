@@ -17471,7 +17471,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                             {
                                 CORINFO_FIELD_HANDLE fieldHnd = fieldSeq->m_fieldHnd;
                                 CorInfoType fieldCorType      = info.compCompHnd->getFieldType(fieldHnd, &structHnd);
-                                assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
+                                // With unsafe code and type casts
+                                // this can return a primitive type and have nullptr for structHnd
+                                // see runtime/issues/38541
                             }
                         }
                     }
