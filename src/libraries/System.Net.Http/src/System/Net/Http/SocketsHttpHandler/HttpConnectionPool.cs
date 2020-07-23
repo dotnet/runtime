@@ -512,29 +512,15 @@ namespace System.Net.Http
             Socket? socket = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
-            Http2Connection[]? lastHttp2Connections = _http2Connections;
 
             // Serialize creation attempt
             await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                Http2Connection[]? currentHttp2Connections = _http2Connections;
-                if (EnableMultipleHttp2Connections)
+                http2Connection = GetExistingHttp2Connection();
+                if (http2Connection != null)
                 {
-                    if (_http2Connections != null)
-                    {
-                        Http2Connection? existingConnection = GetExistingHttp2Connection();
-                        if (existingConnection != null)
-                        {
-                            return (existingConnection, false, null);
-                        }
-                    }
-                }
-                else if (!ReferenceEquals(currentHttp2Connections, lastHttp2Connections) && currentHttp2Connections != null)
-                {
-                    // Someone beat us to it
-
-                    return (currentHttp2Connections[0], false, null);
+                    return (http2Connection, false, null);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -1558,7 +1544,11 @@ namespace System.Net.Http
                                     if (TryRemoveHttp2Connection(http2Connection, _http2Connections, out Http2Connection[] newConnections))
                                     {
                                         // We can set _http2Connections directly while holding lock instead of calling InvalidateHttp2Connection().
-                                        _http2Connections = newConnections;
+                                        _http2Connections = newConnections.Length > 0 ? newConnections : null;
+                                    }
+                                    else
+                                    {
+                                        Debug.Fail("Failed to remove an expired HTTP/2 connection from the pool's collection.");
                                     }
                                 }
                             }
