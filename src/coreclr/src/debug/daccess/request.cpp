@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: request.cpp
 //
@@ -500,27 +499,8 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
         unsigned int i = 0;
         while ((heapList != NULL) && (i < count))
         {
-            // What type of CodeHeap pointer do we have?
             CodeHeap *codeHeap = heapList->pHeap;
-            TADDR ourVTablePtr = VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)codeHeap);
-            if (ourVTablePtr == LoaderCodeHeap::VPtrTargetVTable())
-            {
-                LoaderCodeHeap *loaderCodeHeap = PTR_LoaderCodeHeap(PTR_HOST_TO_TADDR(codeHeap));
-                codeHeaps[i].codeHeapType = CODEHEAP_LOADER;
-                codeHeaps[i].LoaderHeap =
-                    TO_CDADDR(PTR_HOST_MEMBER_TADDR(LoaderCodeHeap, loaderCodeHeap, m_LoaderHeap));
-            }
-            else if (ourVTablePtr == HostCodeHeap::VPtrTargetVTable())
-            {
-                HostCodeHeap *hostCodeHeap = PTR_HostCodeHeap(PTR_HOST_TO_TADDR(codeHeap));
-                codeHeaps[i].codeHeapType = CODEHEAP_HOST;
-                codeHeaps[i].HostData.baseAddr = PTR_CDADDR(hostCodeHeap->m_pBaseAddr);
-                codeHeaps[i].HostData.currentAddr = PTR_CDADDR(hostCodeHeap->m_pLastAvailableCommittedAddr);
-            }
-            else
-            {
-                codeHeaps[i].codeHeapType = CODEHEAP_UNKNOWN;
-            }
+            codeHeaps[i] = DACGetHeapInfoForCodeHeap(codeHeap);
             heapList = heapList->hpNext;
             i++;
         }
@@ -546,6 +526,33 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
 
     SOSDacLeave();
     return hr;
+}
+
+DacpJitCodeHeapInfo ClrDataAccess::DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr)
+{
+    DacpJitCodeHeapInfo jitCodeHeapInfo;
+
+    TADDR targetVtblPtrForHeapType = VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)heapAddr);
+    if (targetVtblPtrForHeapType == LoaderCodeHeap::VPtrTargetVTable())
+    {
+        LoaderCodeHeap *loaderCodeHeap = PTR_LoaderCodeHeap(PTR_HOST_TO_TADDR(heapAddr));
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_LOADER;
+        jitCodeHeapInfo.LoaderHeap =
+            TO_CDADDR(PTR_HOST_MEMBER_TADDR(LoaderCodeHeap, loaderCodeHeap, m_LoaderHeap));
+    }
+    else if (targetVtblPtrForHeapType == HostCodeHeap::VPtrTargetVTable())
+    {
+        HostCodeHeap *hostCodeHeap = PTR_HostCodeHeap(PTR_HOST_TO_TADDR(heapAddr));
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_HOST;
+        jitCodeHeapInfo.HostData.baseAddr = PTR_CDADDR(hostCodeHeap->m_pBaseAddr);
+        jitCodeHeapInfo.HostData.currentAddr = PTR_CDADDR(hostCodeHeap->m_pLastAvailableCommittedAddr);
+    }
+    else
+    {
+        jitCodeHeapInfo.codeHeapType = CODEHEAP_UNKNOWN;
+    }
+
+    return jitCodeHeapInfo;
 }
 
 HRESULT
@@ -4724,4 +4731,13 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
 
     SOSDacLeave();
     return hr;
+}
+
+HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
+{
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    return S_OK;
 }

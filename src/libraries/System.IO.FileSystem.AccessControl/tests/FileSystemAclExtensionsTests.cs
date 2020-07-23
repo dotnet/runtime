@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information
 
 using System.Collections.Generic;
 using System.Linq;
@@ -479,7 +478,7 @@ namespace System.IO
             string path = Path.Combine(directory.Path, "createMe");
 
             DirectorySecurity basicSecurity = new DirectorySecurity();
-            DirectoryInfo basicDirInfo = basicSecurity.CreateDirectory(path);
+            basicSecurity.CreateDirectory(path);
 
             Assert.True(Directory.Exists(path));
 
@@ -535,7 +534,7 @@ namespace System.IO
             using var directory = new TempDirectory();
             string path = Path.Combine(directory.Path, "createMe");
 
-            DirectoryInfo createdInfo = expectedSecurity.CreateDirectory(path);
+            expectedSecurity.CreateDirectory(path);
 
             Assert.True(Directory.Exists(path));
 

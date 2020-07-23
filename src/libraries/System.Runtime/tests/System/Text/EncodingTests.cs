@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +10,9 @@ namespace System.Text.Tests
 {
     public class EncodingTests
     {
-#pragma warning disable MSLIB0001 // UTF7Encoding is obsolete
+#pragma warning disable SYSLIB0001 // UTF7Encoding is obsolete
         private static UTF7Encoding _utf7Encoding = new UTF7Encoding();
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         public static IEnumerable<object[]> DisallowedEncodings()
         {

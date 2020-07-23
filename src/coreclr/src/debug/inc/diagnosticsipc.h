@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DIAGNOSTICS_IPC_H__
 #define __DIAGNOSTICS_IPC_H__
@@ -36,7 +35,7 @@ public:
 
         enum class PollEvents : uint8_t
         {
-            TIMEOUT  = 0x00, // implies timeout
+            NONE     = 0x00, // no events
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
             ERR      = 0x04  // other error

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,14 +39,7 @@ namespace System.Collections.Tests
         [Fact]
         public void DefaultInvariant_Compare()
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
+            var cultureNames = Helpers.TestCultureNames;
 
             var string1 = new string[] { "Apple", "abc", };
             var string2 = new string[] { "\u00C6ble", "ABC" };
@@ -68,8 +60,9 @@ namespace System.Collections.Tests
                 using (new ThreadCultureChange(culture, culture))
                 {
                     Comparer comp = Comparer.DefaultInvariant;
-                    Assert.Equal(1, comp.Compare(string1[0], string2[0]));
-                    Assert.Equal(-1, comp.Compare(string1[1], string2[1]));
+                    /* Comparing in invariant mode compars firstChar - secondChar (A(65) - \u00C6(198) */
+                    Assert.Equal(PlatformDetection.IsInvariantGlobalization ? -1 : 1, Math.Sign(comp.Compare(string1[0], string2[0])));
+                    Assert.Equal(PlatformDetection.IsInvariantGlobalization ? 1 : -1, Math.Sign(comp.Compare(string1[1], string2[1])));
                 }
             }
         }
@@ -87,6 +80,17 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> CompareTestData()
         {
+            yield return new object[] { "hello", "hello", 0 };
+            yield return new object[] { "HELLO", "HELLO", 0 };
+            yield return new object[] { "hello", "HELLO", PlatformDetection.IsInvariantGlobalization ? 1 : -1 };
+            yield return new object[] { "hello", "goodbye", 1 };
+            yield return new object[] { 1, 2, -1 };
+            yield return new object[] { 2, 1, 1 };
+            yield return new object[] { 1, 1, 0 };
+            yield return new object[] { 1, null, 1 };
+            yield return new object[] { null, 1, -1 };
+            yield return new object[] { null, null, 0 };
+
             yield return new object[] { new Foo(5), new Bar(5), 0 };
             yield return new object[] { new Bar(5), new Foo(5), 0 };
 
@@ -95,16 +99,6 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [InlineData("hello", "hello", 0)]
-        [InlineData("HELLO", "HELLO", 0)]
-        [InlineData("hello", "HELLO", -1)]
-        [InlineData("hello", "goodbye", 1)]
-        [InlineData(1, 2, -1)]
-        [InlineData(2, 1, 1)]
-        [InlineData(1, 1, 0)]
-        [InlineData(1, null, 1)]
-        [InlineData(null, 1, -1)]
-        [InlineData(null, null, 0)]
         [MemberData(nameof(CompareTestData))]
         public void Default_Compare(object a, object b, int expected)
         {

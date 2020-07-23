@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Globalization;
@@ -21,6 +20,7 @@ namespace System.Runtime.Serialization
             m_idGenerator = new ObjectIDGenerator();
         }
 
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public abstract object Deserialize(Stream serializationStream);
 
         protected virtual object? GetNext(out long objID)
@@ -60,6 +60,7 @@ namespace System.Runtime.Serialization
             return id;
         }
 
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public abstract void Serialize(Stream serializationStream, object graph);
 
         protected abstract void WriteArray(object obj, string name, Type memberType);

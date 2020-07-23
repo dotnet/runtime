@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -919,7 +918,6 @@ namespace System.Drawing
         }
 
         // This is called from AppDomain.ProcessExit and AppDomain.DomainUnload.
-        [PrePrepareMethod]
         private static void OnDomainUnload(object? sender, EventArgs e)
         {
             if (s_halftonePalette != IntPtr.Zero)

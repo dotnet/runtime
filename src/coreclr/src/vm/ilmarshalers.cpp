@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILMarshalers.cpp
 //
@@ -2375,20 +2374,14 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
-bool ILBlittablePtrMarshaler::CanUsePinnedLayoutClass()
+bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
     return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
 }
 
-void ILBlittablePtrMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit)
+void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!CanUsePinnedLayoutClass())
-    {
-        ILLayoutClassPtrMarshalerBase::EmitConvertSpaceAndContentsCLRToNativeTemp(pslILEmit);
-        return;
-    }
 
     ILCodeLabel* pSkipAddLabel = pslILEmit->NewCodeLabel();
     LocalDesc managedTypePinned = GetManagedType();

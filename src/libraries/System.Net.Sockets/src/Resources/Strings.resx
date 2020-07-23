@@ -262,4 +262,7 @@
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for {0}.</value>
   </data>
+  <data name="SystemNetSockets_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.Sockets is not supported on this platform.</value>
+  </data>
 </root>

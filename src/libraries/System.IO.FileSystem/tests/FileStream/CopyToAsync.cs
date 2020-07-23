@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -105,7 +104,7 @@ namespace System.IO.Tests
                 // If configured to expose the handle, do so.  This influences the stream's need to ensure the position is in sync.
                 if (exposeHandle)
                 {
-                    var ignored = src.SafeFileHandle;
+                    _ = src.SafeFileHandle;
                 }
 
                 // If configured to "preWrite", do a write before we start reading.

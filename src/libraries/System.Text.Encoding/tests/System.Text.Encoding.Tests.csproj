@@ -5,7 +5,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- Encoding.UTF7 and UTF7Encoding are obsolete, but we're the unit test project for it, so suppress warnings -->
-    <NoWarn>$(NoWarn),MSLIB0001</NoWarn>
+    <NoWarn>$(NoWarn),SYSLIB0001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />

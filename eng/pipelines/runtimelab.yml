@@ -6,7 +6,6 @@ trigger:
   batch: true
   branches:
     include:
-    - Utf8String
     - JsonCodeGen
   paths:
     include:
@@ -27,7 +26,6 @@ trigger:
 pr:
   branches:
     include:
-    - Utf8String
     - JsonCodeGen
   paths:
     include:
@@ -81,8 +79,10 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       testGroup: innerloop
-      buildArgs: -s clr+libs+installer -c $(_BuildConfig)
+      buildArgs: -s clr+libs+libs.tests+installer -c $(_BuildConfig) /p:ArchiveTests=true
       extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+      extraStepsParameters:
+        uploadTests: true
 
 #
 # Build with Release allConfigurations to produce packages
@@ -96,7 +96,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: All_Configurations
-      buildArgs: -s clr.corelib+libs -c $(_BuildConfig) -allConfigurations
+      buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
 
 #
 # CoreCLR Test builds using live libraries release build
@@ -115,32 +115,36 @@ jobs:
       - build_Linux_x64_Release_
 
 #
-# Libraries Test Build
+# CoreCLR Test executions using live libraries
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: Release
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: Checked
     platforms:
     - Linux_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      isOfficialBuild: false
-      liveRuntimeBuildConfig: Release
-      testScope: innerloop
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
       dependsOn:
-      - build_Linux_x64_Release_
+      - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: Release
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: Checked
     platforms:
     - Windows_NT_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      isOfficialBuild: false
-      liveRuntimeBuildConfig: Release
-      testScope: innerloop
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
       dependsOn:
+      - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
+      - build_Windows_NT_x64_Checked_
       - build_Windows_NT_x64_Release_
 
 #
@@ -161,7 +165,7 @@ jobs:
       dependsOnTestBuildConfiguration: Release
       dependsOnTestArchitecture: x64
       dependsOn:
-      - libraries_test_build_Linux_x64_Release
+      - build_Linux_x64_Release_
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -178,4 +182,4 @@ jobs:
       dependsOnTestBuildConfiguration: Release
       dependsOnTestArchitecture: x64
       dependsOn:
-      - libraries_test_build_Windows_NT_x64_Release
+      - build_Windows_NT_x64_Release_

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -527,9 +526,8 @@ namespace System.Collections.Generic
         private const int MaxArrayLength = 0X7FEFFFFF;
 
         // Ensures that the capacity of this sorted list is at least the given
-        // minimum value. If the current capacity of the list is less than
-        // min, the capacity is increased to twice the current capacity or
-        // to min, whichever is larger.
+        // minimum value. The capacity is increased to twice the current capacity
+        // or to min, whichever is larger.
         private void EnsureCapacity(int min)
         {
             int newCapacity = keys.Length == 0 ? DefaultCapacity : keys.Length * 2;

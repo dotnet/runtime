@@ -594,7 +594,8 @@ load_arg(TransformData *td, int n)
 
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_I;
-			interp_add_ins (td, MINT_LDARG_P0);
+			interp_add_ins (td, MINT_LDLOC_O);
+			td->last_ins->data [0] = 0;
 			klass = NULL;
 		} else {
 			PUSH_VT (td, size);
@@ -607,9 +608,10 @@ load_arg(TransformData *td, int n)
 			// Special case loading of the first ptr sized argument
 			if (mt != MINT_TYPE_O)
 				mt = MINT_TYPE_I;
-			interp_add_ins (td, MINT_LDARG_P0);
+			interp_add_ins (td, MINT_LDLOC_O);
+			td->last_ins->data [0] = 0;
 		} else {
-			interp_add_ins (td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
+			interp_add_ins (td, MINT_LDLOC_I1 + (mt - MINT_TYPE_I1));
 			td->last_ins->data [0] = n;
 			if (mt == MINT_TYPE_O)
 				klass = mono_class_from_mono_type_internal (type);
@@ -640,7 +642,7 @@ store_arg(TransformData *td, int n)
 		if (td->sp [-1].type == STACK_TYPE_VT)
 			POP_VT(td, size);
 	} else {
-		interp_add_ins (td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
+		interp_add_ins (td, MINT_STLOC_I1 + (mt - MINT_TYPE_I1));
 		td->last_ins->data [0] = n;
 	}
 	--td->sp;
@@ -837,6 +839,32 @@ interp_generate_bie_throw (TransformData *td)
 
 	interp_add_ins (td, MINT_ICALL_V_V);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
+static void
+interp_generate_not_supported_throw (TransformData *td)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_not_supported;
+
+	interp_add_ins (td, MINT_ICALL_V_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
+static void
+interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
+
+	char *msg = mono_mempool_strdup (td->rtm->domain->mp, mono_error_get_message (error_msg));
+
+	interp_add_ins (td, MINT_MONO_LDPTR);
+	td->last_ins->data [0] = get_data_item_index (td, msg);
+	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+
+	interp_add_ins (td, MINT_ICALL_P_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
+	td->sp -= 1;
 }
 
 /*
@@ -1348,20 +1376,15 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		/* emit call to managed conversion method */
 		return FALSE;
 	} else if (!strcmp (".cctor", tm)) {
-		/* white list */
 		return FALSE;
 	} else if (!strcmp ("Parse", tm)) {
-		/* white list */
 		return FALSE;
 	} else if (!strcmp ("ToString", tm)) {
-		/* white list */
 		return FALSE;
 	} else if (!strcmp ("GetHashCode", tm)) {
-		/* white list */
 		return FALSE;
 	} else if (!strcmp ("IsNaN", tm) || !strcmp ("IsInfinity", tm) || !strcmp ("IsNegativeInfinity", tm) || !strcmp ("IsPositiveInfinity", tm)) {
 		g_assert (type_index == 2); // nfloat only
-		/* white list */
 		return FALSE;
 	}
 
@@ -1479,6 +1502,40 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
+		if (!strcmp (tm, "Block"))
+			*op = MINT_INTRINS_MARVIN_BLOCK;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Text.Unicode") && !strcmp (klass_name, "Utf16Utility")) {
+		if (!strcmp (tm, "ConvertAllAsciiCharsInUInt32ToUppercase"))
+			*op = MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE;
+		else if (!strcmp (tm, "UInt32OrdinalIgnoreCaseAscii"))
+			*op = MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII;
+		else if (!strcmp (tm, "UInt64OrdinalIgnoreCaseAscii"))
+			*op = MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Text") && !strcmp (klass_name, "ASCIIUtility")) {
+		if (!strcmp (tm, "WidenAsciiToUtf16"))
+			*op = MINT_INTRINS_WIDEN_ASCII_TO_UTF16;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
+		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
+			ERROR_DECL(error);
+			MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, target_method->klass, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+			/* Don't use intrinsic if cctor not yet run */
+			if (!vtable->initialized)
+				return FALSE;
+			/* The cache is the first static field. Update this if bcl code changes */
+			MonoClassField *field = m_class_get_fields (target_method->klass);
+			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
+			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
+			td->last_ins->data [0] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (td->rtm->domain, mono_defaults.string_class, error));
+			SET_TYPE (td->sp - 1, STACK_TYPE_O, mono_defaults.string_class);
+			td->ip += 5;
+			return TRUE;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
 			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
 		gboolean is_float = strcmp (klass_name, "MathF") == 0;
@@ -2930,16 +2987,43 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 	} while (0)
 
 static void
-interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header, MonoError *error)
+interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *sig, MonoMethodHeader *header, MonoError *error)
 {
 	int i, offset, size, align;
+	int num_args = sig->hasthis + sig->param_count;
+	int num_il_locals = header->num_locals;
+	int num_locals = num_args + num_il_locals;
 
-	imethod->local_offsets = (guint32*)g_malloc (header->num_locals * sizeof(guint32));
-	td->locals = (InterpLocal*)g_malloc (header->num_locals * sizeof (InterpLocal));
-	td->locals_size = header->num_locals;
+	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
+	td->locals = (InterpLocal*)g_malloc (num_locals * sizeof (InterpLocal));
+	td->locals_size = num_locals;
 	td->locals_capacity = td->locals_size;
 	offset = 0;
-	for (i = 0; i < header->num_locals; ++i) {
+
+	g_assert (sizeof (stackval) == MINT_VT_ALIGNMENT);
+
+	/*
+	 * We will load arguments as if they are locals. Unlike normal locals, every argument
+	 * is stored in a stackval sized slot and valuetypes have special semantics since we
+	 * receive a pointer to the valuetype data rather than the data itself.
+	 */
+	for (i = 0; i < num_args; i++) {
+		MonoType *type;
+		if (sig->hasthis && i == 0)
+			type = m_class_get_byval_arg (td->method->klass);
+		else
+			type = mono_method_signature_internal (td->method)->params [i - sig->hasthis];
+		td->locals [i].offset = offset;
+		td->locals [i].flags = 0;
+		td->locals [i].indirects = 0;
+		td->locals [i].type = type;
+		td->locals [i].mt = mint_type (type);
+		offset += sizeof (stackval);
+	}
+
+	td->il_locals_offset = offset;
+	for (i = 0; i < num_il_locals; ++i) {
+		int index = num_args + i;
 		size = mono_type_size (header->locals [i], &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
 			if (mono_class_has_failure (header->locals [i]->data.klass)) {
@@ -2950,24 +3034,24 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		offset += align - 1;
 		offset &= ~(align - 1);
 		imethod->local_offsets [i] = offset;
-		td->locals [i].offset = offset;
-		td->locals [i].flags = 0;
-		td->locals [i].indirects = 0;
-		td->locals [i].type = header->locals [i];
-		td->locals [i].mt = mint_type (header->locals [i]);
+		td->locals [index].offset = offset;
+		td->locals [index].flags = 0;
+		td->locals [index].indirects = 0;
+		td->locals [index].type = header->locals [i];
+		td->locals [index].mt = mint_type (header->locals [i]);
 		offset += size;
 	}
-	offset = (offset + 7) & ~7;
+	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
+	td->il_locals_size = offset - td->il_locals_offset;
 
 	imethod->exvar_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
 	for (i = 0; i < header->num_clauses; i++) {
 		imethod->exvar_offsets [i] = offset;
 		offset += sizeof (MonoObject*);
 	}
-	offset = (offset + 7) & ~7;
+	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 
-	imethod->locals_size = offset;
-	g_assert (imethod->locals_size < 65536);
+	g_assert (offset < G_MAXUINT16);
 	td->total_locals_size = offset;
 }
 
@@ -2976,6 +3060,20 @@ mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imetho
 {
 	ERROR_DECL (error);
 	interp_method_compute_offsets (td, imethod, signature, header, error);
+}
+
+static gboolean
+type_has_references (MonoType *type)
+{
+	if (MONO_TYPE_IS_REFERENCE (type))
+		return TRUE;
+	if (MONO_TYPE_ISSTRUCT (type)) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (!m_class_is_inited (klass))
+			mono_class_init_internal (klass);
+		return m_class_has_references (klass);
+	}
+	return FALSE;
 }
 
 /* Return false is failure to init basic blocks due to being in inline method */
@@ -3308,6 +3406,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	InterpMethod *rtm = td->rtm;
 	MonoDomain *domain = rtm->domain;
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
+	int num_args = signature->hasthis + signature->param_count;
 	gboolean ret = TRUE;
 	gboolean emitted_funccall_seq_point = FALSE;
 	guint32 *arg_locals = NULL;
@@ -3428,8 +3527,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		 * before use. We also don't need this instruction if the init locals flag
 		 * is not set and there are no locals holding references.
 		 */
-		if (header->num_locals)
+		if (header->num_locals) {
 			interp_add_ins (td, MINT_INITLOCALS);
+			td->last_ins->data [0] = td->il_locals_offset;
+			td->last_ins->data [1] = td->il_locals_size;
+		}
 
 		guint16 enter_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
@@ -3588,7 +3690,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDLOC_3: {
 			int loc_n = *td->ip - CEE_LDLOC_0;
 			if (!inlining)
-				load_local (td, loc_n);
+				load_local (td, num_args + loc_n);
 			else
 				load_local (td, local_locals [loc_n]);
 			++td->ip;
@@ -3600,7 +3702,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_STLOC_3: {
 			int loc_n = *td->ip - CEE_STLOC_0;
 			if (!inlining)
-				store_local (td, loc_n);
+				store_local (td, num_args + loc_n);
 			else
 				store_local (td, local_locals [loc_n]);
 			++td->ip;
@@ -3621,7 +3723,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			if (!inlining) {
 				get_arg_type_exact (td, n, &mt);
-				interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+				if (mt == MINT_TYPE_VT) {
+					interp_add_ins (td, MINT_LDARGA_VT);
+				} else {
+					interp_add_ins (td, MINT_LDLOCA_S);
+					td->locals [n].indirects++;
+				}
 				td->last_ins->data [0] = n;
 			} else {
 				int loc_n = arg_locals [n];
@@ -3645,7 +3752,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDLOC_S: {
 			int loc_n = ((guint8 *)td->ip)[1];
 			if (!inlining)
-				load_local (td, loc_n);
+				load_local (td, num_args + loc_n);
 			else
 				load_local (td, local_locals [loc_n]);
 			td->ip += 2;
@@ -3654,7 +3761,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDLOCA_S: {
 			int loc_n = ((guint8 *)td->ip)[1];
 			interp_add_ins (td, MINT_LDLOCA_S);
-			if (inlining)
+			if (!inlining)
+				loc_n += num_args;
+			else
 				loc_n = local_locals [loc_n];
 			td->last_ins->data [0] = loc_n;
 			td->locals [loc_n].indirects++;
@@ -3665,7 +3774,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_STLOC_S: {
 			int loc_n = ((guint8 *)td->ip)[1];
 			if (!inlining)
-				store_local (td, loc_n);
+				store_local (td, num_args + loc_n);
 			else
 				store_local (td, local_locals [loc_n]);
 			td->ip += 2;
@@ -4634,6 +4743,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				PUSH_TYPE (td, stack_type [mint_type (m_class_get_byval_arg (klass))], klass);
 			} else {
+				gboolean can_inline = TRUE;
 				if (m_class_get_parent (klass) == mono_defaults.array_class) {
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 					td->last_ins->data [0] = get_data_item_index (td, m->klass);
@@ -4648,6 +4758,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* public ByReference(ref T value) */
 					g_assert (csignature->hasthis && csignature->param_count == 1);
 					interp_add_ins (td, MINT_INTRINS_BYREFERENCE_CTOR);
+				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
+						(!strcmp (m_class_get_name (m->klass), "Span`1") ||
+						!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
+						csignature->param_count == 2 &&
+						csignature->params [0]->type == MONO_TYPE_PTR &&
+						!type_has_references (mono_method_get_context (m)->class_inst->type_argv [0])) {
+					/* ctor frequently used with ReadOnlySpan over static arrays */
+					interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
@@ -4705,6 +4823,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
 					// Set the method to be executed as part of newobj instruction
 					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					can_inline = FALSE;
 				} else {
 					// Runtime (interp_exec_method_full in interp.c) inserts
 					// extra stack to hold this and return value, before call.
@@ -4714,8 +4833,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				}
 				goto_if_nok (error, exit);
-				/* The constructor was not inlined, abort inlining of current method */
-				INLINE_FAILURE;
+				if (!can_inline) {
+					/* The constructor was not inlined, abort inlining of current method */
+					INLINE_FAILURE;
+				}
 
 				td->sp -= csignature->param_count;
 				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
@@ -4732,7 +4853,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 				}
 				if ((vt_stack_used != 0 || vt_res_size != 0) &&
-						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR) {
+						td->last_ins->opcode != MINT_INTRINS_BYREFERENCE_CTOR &&
+						td->last_ins->opcode != MINT_INTRINS_SPAN_CTOR) {
 					/* FIXME Remove this once vtsp and sp are unified */
 					interp_add_ins (td, MINT_VTRESULT);
 					td->last_ins->data [0] = vt_res_size;
@@ -4915,7 +5037,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
 #ifndef DISABLE_REMOTING
-			if ((m_class_get_marshalbyref (klass) && !(signature->hasthis && td->last_ins->opcode == MINT_LDARG_P0)) ||
+			if ((m_class_get_marshalbyref (klass) && !(signature->hasthis && td->last_ins->opcode == MINT_LDLOC_O && td->last_ins->data [0] == 0)) ||
 					mono_class_is_contextbound (klass) ||
 					klass == mono_defaults.marshalbyrefobject_class) {
 				g_assert (!is_static);
@@ -6168,6 +6290,61 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (method->wrapper_type == MONO_WRAPPER_NONE && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					m = mono_marshal_get_synchronized_wrapper (m);
 
+				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
+						m->wrapper_type == MONO_WRAPPER_NONE &&
+						mono_method_has_unmanaged_callers_only_attribute (m))) {
+
+					if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+						interp_generate_not_supported_throw (td);
+						interp_add_ins (td, MINT_LDNULL);
+						td->ip += 5;
+						PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+						break;
+					}
+
+					MonoMethod *ctor_method;
+
+					const unsigned char *next_ip = td->ip + 5;
+					/* check for
+					 *    ldftn method_sig
+					 *    newobj Delegate::.ctor
+					 */
+					if (next_ip < end &&
+					    *next_ip == CEE_NEWOBJ &&
+					    ((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
+					    is_ok (error) &&
+					    m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
+					    !strcmp (ctor_method->name, ".ctor")) {
+						mono_error_set_not_supported (error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
+						goto exit;
+					}
+
+					MonoClass *delegate_klass = NULL;
+					MonoGCHandle target_handle = 0;
+					ERROR_DECL (wrapper_error);
+					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, wrapper_error);
+					if (!is_ok (wrapper_error)) {
+						/* Generate a call that will throw an exception if the
+						 * UnmanagedCallersOnly attribute is used incorrectly */
+						interp_generate_ipe_throw_with_msg (td, wrapper_error);
+						mono_error_cleanup (wrapper_error);
+						interp_add_ins (td, MINT_LDNULL);
+					} else {
+						/* push a pointer to a trampoline that calls m */
+						gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (m, TRUE, error);
+#if SIZEOF_VOID_P == 8
+						interp_add_ins (td, MINT_LDC_I8);
+						WRITE64_INS (td->last_ins, 0, &entry);
+#else
+						interp_add_ins (td, MINT_LDC_I4);
+						WRITE32_INS (td->last_ins, 0, &entry);
+#endif
+					}
+					td->ip += 5;
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+					break;
+				}
+
 				interp_add_ins (td, *td->ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
 				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				goto_if_nok (error, exit);
@@ -6189,7 +6366,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (!inlining) {
 					get_arg_type_exact (td, n, &mt);
-					interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+					if (mt == MINT_TYPE_VT) {
+						interp_add_ins (td, MINT_LDARGA_VT);
+					} else {
+						interp_add_ins (td, MINT_LDLOCA_S);
+						td->locals [n].indirects++;
+					}
 					td->last_ins->data [0] = n;
 				} else {
 					int loc_n = arg_locals [n];
@@ -6213,7 +6395,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_LDLOC: {
 				int loc_n = read16 (td->ip + 1);
 				if (!inlining)
-					load_local (td, loc_n);
+					load_local (td, num_args + loc_n);
 				else
 					load_local (td, local_locals [loc_n]);
 				td->ip += 3;
@@ -6222,7 +6404,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_LDLOCA: {
 				int loc_n = read16 (td->ip + 1);
 				interp_add_ins (td, MINT_LDLOCA_S);
-				if (inlining)
+				if (!inlining)
+					loc_n += num_args;
+				else
 					loc_n = local_locals [loc_n];
 				td->last_ins->data [0] = loc_n;
 				td->locals [loc_n].indirects++;
@@ -6233,7 +6417,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_STLOC: {
 				int loc_n = read16 (td->ip + 1);
 				if (!inlining)
-					store_local (td, loc_n);
+					store_local (td, num_args + loc_n);
 				else
 					store_local (td, local_locals [loc_n]);
 				td->ip += 3;
@@ -6755,18 +6939,6 @@ clear_stack_content_info_for_local (StackContentInfo *start, StackContentInfo *e
 	}
 }
 
-// The value of argument has changed. This means the contents of the stack where the
-// argument was loaded, no longer contain the value of the argument. Clear them.
-static void
-clear_stack_content_info_for_argument (StackContentInfo *start, StackContentInfo *end, int argument)
-{
-	StackContentInfo *si;
-	for (si = start; si < end; si++) {
-		if (si->val.type == STACK_VALUE_ARG && si->val.arg == argument)
-			si->val.type = STACK_VALUE_NONE;
-	}
-}
-
 // The value of local has changed. This means we can no longer assume that any other local
 // is a copy of this local.
 static void
@@ -7279,7 +7451,7 @@ retry:
 				} else {
 					locals [dest_local].type = STACK_VALUE_NONE;
 				}
-			} else if (sp->val.type == STACK_VALUE_NONE || sp->val.type == STACK_VALUE_ARG) {
+			} else if (sp->val.type == STACK_VALUE_NONE) {
 				locals [dest_local].type = STACK_VALUE_NONE;
 			} else {
 				g_assert (sp->val.type == STACK_VALUE_I4 || sp->val.type == STACK_VALUE_I8);
@@ -7348,15 +7520,6 @@ retry:
 			// propagated instruction, so we remove the top of stack dependency
 			sp [-1].ins = NULL;
 			sp++;
-		} else if (MINT_IS_LDARG (ins->opcode)) {
-			sp->ins = ins;
-			sp->val.type = STACK_VALUE_ARG;
-			sp->val.arg = ins->opcode == MINT_LDARG_P0 ? 0 : ins->data [0];
-			sp++;
-		} else if (MINT_IS_STARG (ins->opcode)) {
-			int dest_arg = ins->data [0];
-			sp--;
-			clear_stack_content_info_for_argument (stack, sp, dest_arg);
 		} else if (ins->opcode >= MINT_BOX && ins->opcode <= MINT_BOX_NULLABLE) {
 			int offset = ins->data [1];
 			// Clear the stack slot that is boxed
@@ -7465,17 +7628,6 @@ retry:
 					interp_clear_ins (td, src->ins);
 					mono_interp_stats.super_instructions++;
 					mono_interp_stats.killed_instructions++;
-				} else if (src->val.type == STACK_VALUE_ARG && (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)) {
-					int arg_index = src->val.arg;
-					int fld_offset = ins->data [0];
-					int mt = ins->opcode - MINT_STFLD_I1;
-					ins = interp_insert_ins (td, ins, MINT_STARGFLD_I1 + mt);
-					ins->data [0] = arg_index;
-					ins->data [1] = fld_offset;
-					interp_clear_ins (td, ins->prev);
-					interp_clear_ins (td, src->ins);
-					mono_interp_stats.super_instructions++;
-					mono_interp_stats.killed_instructions++;
 				}
 			}
 			sp -= 2;
@@ -7538,20 +7690,6 @@ interp_super_instructions (TransformData *td)
 				int mt = ins->opcode - MINT_LDFLD_I1;
 				ins = interp_insert_ins (td, ins, MINT_LDLOCFLD_I1 + mt);
 				ins->data [0] = loc_index;
-				ins->data [1] = fld_offset;
-				interp_clear_ins (td, ins->prev);
-				interp_clear_ins (td, prev1_ins);
-				prev1_ins = NULL;
-				mono_interp_stats.super_instructions++;
-				mono_interp_stats.killed_instructions++;
-			} else if (prev1_ins->opcode == MINT_LDARG_O || prev1_ins->opcode == MINT_LDARG_P0) {
-				int arg_index = 0;
-				int fld_offset = ins->data [0];
-				int mt = ins->opcode - MINT_LDFLD_I1;
-				if (prev1_ins->opcode == MINT_LDARG_O)
-					arg_index = prev1_ins->data [0];
-				ins = interp_insert_ins (td, ins, MINT_LDARGFLD_I1 + mt);
-				ins->data [0] = arg_index;
 				ins->data [1] = fld_offset;
 				interp_clear_ins (td, ins->prev);
 				interp_clear_ins (td, prev1_ins);

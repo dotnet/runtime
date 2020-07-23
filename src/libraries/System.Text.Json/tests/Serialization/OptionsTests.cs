@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -590,6 +589,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+                    options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                 }
                 else
                 {
@@ -636,6 +636,10 @@ namespace System.Text.Json.Serialization.Tests
                     else if (property.Name == "DefaultIgnoreCondition")
                     {
                         Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
+                    }
+                    else if (property.Name == "NumberHandling")
+                    {
+                        Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
                     }
                     else
                     {

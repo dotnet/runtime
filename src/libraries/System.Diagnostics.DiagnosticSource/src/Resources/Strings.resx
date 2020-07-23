@@ -153,4 +153,7 @@
   <data name="StartTimeNotUtc" xml:space="preserve">
     <value>"StartTime is not UTC"</value>
   </data>
+  <data name="KeyAlreadyExist" xml:space="preserve">
+    <value>"The collection already contains item with same key '{0}''"</value>
+  </data>
 </root>

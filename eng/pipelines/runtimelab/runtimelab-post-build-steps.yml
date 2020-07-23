@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  uploadTests: false
 
 steps:
   # Build coreclr native test output
@@ -10,7 +11,7 @@ steps:
     displayName: Build native test components
 
   # Copy all build output into artifacts staging directory
-  - template: /eng/pipelines/libraries/prepare-publish-for-tests.yml
+  - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
 
   # Zip CoreCLR Build Output
   - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -23,10 +24,22 @@ steps:
       artifactName: CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
       displayName: 'CoreCLR product build'
 
+  # Zip Test Build
+  - ${{ if eq(parameters.uploadTests, true) }}:
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+        includeRootFolder: true
+        archiveType: $(archiveType)
+        archiveExtension: $(archiveExtension)
+        tarCompression: $(tarCompression)
+        artifactName: libraries_test_assets_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+        displayName: Test Assets
+
   # Zip product native assets for use by Tests
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-      rootFolder: $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
+      rootFolder: $(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
       includeRootFolder: false
       archiveType: $(archiveType)
       tarCompression: $(tarCompression)

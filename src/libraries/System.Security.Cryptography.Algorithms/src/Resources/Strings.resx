@@ -348,7 +348,10 @@
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on Browser.</value>
+  <data name="SystemSecurityCryptographyAlgorithms_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.Algorithms is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
+    <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
 </root>

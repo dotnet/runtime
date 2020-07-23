@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using Internal.Cryptography.Pal;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = useMachineContext;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public X509Chain(IntPtr chainContext)
         {
             _pal = ChainPal.FromHandle(chainContext);

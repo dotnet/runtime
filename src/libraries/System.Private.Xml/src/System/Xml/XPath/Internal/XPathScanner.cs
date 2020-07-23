@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -52,22 +51,6 @@ namespace MS.Internal.Xml.XPath
                 return false;
             }
         }
-
-#if XML10_FIFTH_EDITION
-        private char PeekNextChar()
-        {
-            Debug.Assert(0 <= xpathExprIndex && xpathExprIndex <= xpathExpr.Length);
-            if (xpathExprIndex < xpathExpr.Length)
-            {
-                return xpathExpr[xpathExprIndex];
-            }
-            else
-            {
-                Debug.Assert(xpathExprIndex == xpathExpr.Length);
-                return '\0';
-            }
-        }
-#endif
 
         public LexKind Kind { get { return _kind; } }
 
@@ -212,11 +195,7 @@ namespace MS.Internal.Xml.XPath
                         _kind = LexKind.Number;
                         _numberValue = ScanNumber();
                     }
-                    else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
-#if XML10_FIFTH_EDITION
-                    || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
-#endif
-                    )
+                    else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar))
                     {
                         _kind = LexKind.Name;
                         _name = ScanName();
@@ -240,11 +219,7 @@ namespace MS.Internal.Xml.XPath
                                     NextChar();
                                     _name = "*";
                                 }
-                                else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
-#if XML10_FIFTH_EDITION
-                                || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
-#endif
-                                )
+                                else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar))
                                 {
                                     _name = ScanName();
                                 }
@@ -338,11 +313,7 @@ namespace MS.Internal.Xml.XPath
 
         private string ScanName()
         {
-            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
-#if XML10_FIFTH_EDITION
-                || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
-#endif
-                );
+            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar));
             int start = _xpathExprIndex - 1;
             int len = 0;
 
@@ -353,14 +324,6 @@ namespace MS.Internal.Xml.XPath
                     NextChar();
                     len++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(this.PeekNextChar(), this.CurerntChar))
-                {
-                    NextChar();
-                    NextChar();
-                    len += 2;
-                }
-#endif
                 else
                 {
                     break;

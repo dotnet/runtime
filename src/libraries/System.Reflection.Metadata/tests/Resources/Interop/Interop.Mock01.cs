@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -99,7 +98,6 @@ namespace MockInterop01
     [TypeLibImportClass(typeof(object))]
     public interface IBar
     {
-        [AllowReversePInvokeCalls()]
         object DoSomething(params string[] ary);
         [ComRegisterFunction()]
         object Register([MarshalAs(UnmanagedType.IDispatch), Optional, DefaultParameterValue(null)] ref object o);

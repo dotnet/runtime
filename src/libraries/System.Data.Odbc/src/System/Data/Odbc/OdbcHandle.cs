@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -22,8 +21,6 @@ namespace System.Data.Odbc
             bool mustRelease = false;
             ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
 
-            // using ConstrainedRegions to make the native ODBC call and AddRef the parent
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 // validate handleType
@@ -86,7 +83,7 @@ namespace System.Data.Odbc
             int cbActual;
             ODBC32.RetCode retcode;
             bool mustRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
+
             try
             {
                 // must addref before calling native so it won't be released just after

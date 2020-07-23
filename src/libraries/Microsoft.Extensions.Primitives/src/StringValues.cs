@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -305,7 +304,7 @@ namespace Microsoft.Extensions.Primitives
         /// Returns the zero-based index of the first occurrence of an item in the <see cref="StringValues" />.
         /// </summary>
         /// <param name="item">The string to locate in the <see cref="StringValues"></see>.</param>
-        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, –1.</returns>
+        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, -1.</returns>
         int IList<string>.IndexOf(string item)
         {
             return IndexOf(item);

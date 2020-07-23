@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.ImageAnimator.cs
 //
@@ -132,7 +132,9 @@ namespace System.Drawing
             if (ht.ContainsKey(image))
             {
                 AnimateEventArgs evtArgs = (AnimateEventArgs)ht[image]!;
+#pragma warning disable SYSLIB0006 // https://github.com/dotnet/runtime/issues/39405
                 evtArgs.RunThread!.Abort();
+#pragma warning restore SYSLIB0006
                 ht.Remove(image);
             }
         }

@@ -12,5 +12,8 @@
     <type fullname="System.LocalAppContextSwitches">
       <method signature="System.Boolean get_EnableUnsafeUTF7Encoding()" body="stub" value="false" feature="System.Text.Encoding.EnableUnsafeUTF7Encoding" featurevalue="false" />
     </type>
+    <type fullname="System.Resources.ResourceReader">
+      <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" feature="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" featurevalue="false" />
+    </type>
   </assembly>
 </linker>

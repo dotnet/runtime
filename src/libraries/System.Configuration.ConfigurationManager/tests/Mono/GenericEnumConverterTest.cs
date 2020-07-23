@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Configuration.GenericEnumConverterTest.cs - Unit tests
 // for System.Configuration.GenericEnumConverter.
@@ -49,9 +49,9 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        public void Ctor_TypeError()
+        public void Ctor_Object()
         {
-            GenericEnumConverter cv = new GenericEnumConverter(typeof(object));
+            Assert.NotNull(new GenericEnumConverter(typeof(object)));
         }
 
         [Fact]
