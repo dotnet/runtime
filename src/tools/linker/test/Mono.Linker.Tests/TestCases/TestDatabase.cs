@@ -198,6 +198,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("FeatureSettings");
 		}
 
+		public static IEnumerable<TestCaseData> LinkAttributesTests ()
+		{
+			return NUnitCasesBySuiteName ("LinkAttributes");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
