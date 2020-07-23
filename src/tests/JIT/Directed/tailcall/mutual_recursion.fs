@@ -235,7 +235,8 @@ type Driver() =
         runMethodWithTiming("FifthMethod", true, 10, DriverMethods.FifthMethod)
 
 #if (RELEASE)
-        runMethodWithTiming("SixthMethod", false, 10, DriverMethods.SixthMethod)
+        // Six method will only work on >.NET Core 3.1 and with SO in debug
+        runMethodWithTiming("SixthMethod", true, 10, DriverMethods.SixthMethod)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
