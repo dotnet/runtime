@@ -137,6 +137,4 @@
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
-
-  </ItemGroup>
 </Project>

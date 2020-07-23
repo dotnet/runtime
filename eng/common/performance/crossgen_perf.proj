@@ -77,6 +77,5 @@
       <Command>$(Python) %HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\crossgen2\test.py crossgen2 --composite %HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\crossgen2\framework-r2r.dll.rsp --core-root %HELIX_CORRELATION_PAYLOAD%\Core_Root</Command>	
       <Timeout>1:00</Timeout>  
     </HelixWorkItem>
-
   </ItemGroup>
 </Project>
