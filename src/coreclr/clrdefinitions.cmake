@@ -30,7 +30,6 @@ if (CLR_CMAKE_TARGET_UNIX)
 
   if(CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_XOPEN_SOURCE)
-    add_definitions(-DFEATURE_DATATARGET4)
   endif(CLR_CMAKE_TARGET_OSX)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)

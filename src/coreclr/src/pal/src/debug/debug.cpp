@@ -691,7 +691,7 @@ PAL_ReadProcessMemory(
         offset = 0;
     }
 #else
-    read = pread64(handle, buffer, size, address);
+    read = pread(handle, buffer, size, address);
     if (read == (size_t)-1)
     {
         return FALSE;
