@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -387,6 +388,23 @@ namespace System.Security.Cryptography.DeriveBytesTests
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
+            }
+        }
+
+        [Fact]
+        public static void GetBytes_ExceedCounterLimit()
+        {
+            FieldInfo blockField = typeof(Rfc2898DeriveBytes).GetField("_block", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(blockField);
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            {
+                // Set the internal block counter to be on the last possible block. This should succeed.
+                blockField.SetValue(deriveBytes, uint.MaxValue - 1);
+                deriveBytes.GetBytes(20); // Extract 20 bytes, a full block.
+
+                // Block should now be uint.MaxValue, which will overflow when writing.
+                Assert.Throws<CryptographicException>(() => deriveBytes.GetBytes(1));
             }
         }
 

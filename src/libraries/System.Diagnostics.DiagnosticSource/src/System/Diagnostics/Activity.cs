@@ -624,9 +624,9 @@ namespace System.Diagnostics
                     SetEndTime(GetUtcNow());
                 }
 
-                SetCurrent(Parent);
-
                 Source.NotifyActivityStop(this);
+
+                SetCurrent(Parent);
             }
         }
 
@@ -851,7 +851,7 @@ namespace System.Diagnostics
             ReadOnlySpan<char> spanIdSpan  = id.AsSpan(36, 16);
 
             if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
-                !ActivityTraceId.IsHexadecimalLowercaseChar(id[53]) || !ActivityTraceId.IsHexadecimalLowercaseChar(id[54]))
+                !HexConverter.IsHexLowerChar(id[53]) || !HexConverter.IsHexLowerChar(id[54]))
             {
                 return false;
             }
@@ -1183,7 +1183,7 @@ namespace System.Diagnostics
                 }
                 else if (_parentId != null && IsW3CId(_parentId))
                 {
-                    if (ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[53]) && ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[54]))
+                    if (HexConverter.IsHexLowerChar(_parentId[53]) && HexConverter.IsHexLowerChar(_parentId[54]))
                     {
                         _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
                     }
@@ -1584,15 +1584,14 @@ namespace System.Diagnostics
         }
         internal static byte HexByteFromChars(char char1, char char2)
         {
-            return (byte)(HexDigitToBinary(char1) * 16 + HexDigitToBinary(char2));
-        }
-        private static byte HexDigitToBinary(char c)
-        {
-            if ('0' <= c && c <= '9')
-                return (byte)(c - '0');
-            if ('a' <= c && c <= 'f')
-                return (byte)(c - ('a' - 10));
-            throw new ArgumentOutOfRangeException("idData");
+            int hi = HexConverter.FromLowerChar(char1);
+            int lo = HexConverter.FromLowerChar(char2);
+            if ((hi | lo) == 0xFF)
+            {
+                throw new ArgumentOutOfRangeException("idData");
+            }
+
+            return (byte)((hi << 4) | lo);
         }
 
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
@@ -1603,7 +1602,7 @@ namespace System.Diagnostics
             for (; i < idData.Length; i++)
             {
                 char c = idData[i];
-                if (!IsHexadecimalLowercaseChar(c))
+                if (!HexConverter.IsHexLowerChar(c))
                 {
                     return false;
                 }
@@ -1615,13 +1614,6 @@ namespace System.Diagnostics
             }
 
             return isNonZero;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsHexadecimalLowercaseChar(char c)
-        {
-            // Between 0 - 9 or lowercased between a - f
-            return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
         }
     }
 

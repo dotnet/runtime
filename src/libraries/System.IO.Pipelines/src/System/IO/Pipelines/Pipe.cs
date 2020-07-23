@@ -852,6 +852,10 @@ namespace System.IO.Pipelines
             finally
             {
                 cancellationTokenRegistration.Dispose();
+            }
+
+            if (result.IsCanceled)
+            {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 

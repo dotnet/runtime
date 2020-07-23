@@ -29,7 +29,7 @@ namespace System.Threading.Tasks
         }
 
         // static delegate for threads allocated to handle LongRunning tasks.
-        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s =>
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = static s =>
         {
             Debug.Assert(s is Task);
             ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);

@@ -6,6 +6,10 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0' ">
+    <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
+    <NoWarn>$(NoWarn);CS3019</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
@@ -24,17 +28,19 @@
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="System\Text\Encodings\Web\BitHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\AdvSimdHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IntrinsicAttribute.cs" Link="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
-             Link="System\Text\UnicodeDebug.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
-             Link="System\Text\UnicodeUtility.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

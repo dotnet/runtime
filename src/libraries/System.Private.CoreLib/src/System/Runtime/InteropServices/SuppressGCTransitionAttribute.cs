@@ -42,6 +42,9 @@ namespace System.Runtime.InteropServices
     /// In general, usage of this attribute is not recommended if debugging the P/Invoke is important, for example
     /// stepping through the native code or diagnosing an exception thrown from the native code.
     ///
+    /// The runtime may load the native library for method marked with this attribute in advance before the method is called for the first time.
+    /// Usage of this attribute is not recommended for platform neutral libraries with conditional platform specific code.
+    ///
     /// The P/Invoke method that this attribute is applied to must have all of the following properties:
     ///   * Native function always executes for a trivial amount of time (less than 1 microsecond).
     ///   * Native function does not perform a blocking syscall (e.g. any type of I/O).
@@ -55,7 +58,12 @@ namespace System.Runtime.InteropServices
     ///   * Data corruption.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class SuppressGCTransitionAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class SuppressGCTransitionAttribute : Attribute
     {
         public SuppressGCTransitionAttribute()
         {

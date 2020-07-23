@@ -142,6 +142,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -157,7 +158,8 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
             Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
+            if (PlatformDetection.IsNotBrowser) // see https://github.com/dotnet/runtime/issues/39650
+                Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
         }
 
         [Fact]
@@ -165,7 +167,8 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
             Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
+            if (PlatformDetection.IsNotBrowser) // see https://github.com/dotnet/runtime/issues/39650
+                Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -229,11 +232,13 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(G<G<int>>), t);
         }
 
+#pragma warning disable SYSLIB0005 // Obsolete: GAC
         [Fact]
         public void GlobalAssemblyCache()
         {
             Assert.False(typeof(AssemblyTests).Assembly.GlobalAssemblyCache);
         }
+#pragma warning restore SYSLIB0005 // Obsolete: GAC
 
         [Fact]
         public void HostContext()

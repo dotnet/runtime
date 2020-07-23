@@ -2644,7 +2644,7 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 #define ISOSDacInterface8_GetFinalizationFillPointersSvr(This,heapAddr,cFillPointers,pFinalizationFillPointers,pNeeded) \
     ( (This)->lpVtbl -> GetFinalizationFillPointersSvr(This,heapAddr,cFillPointers,pFinalizationFillPointers,pNeeded) )
 
-#define ISOSDacInterface8_GetAssemblyLoadContext(This,methodTable,assemblyLoadContext)	\
+#define ISOSDacInterface8_GetAssemblyLoadContext(This,methodTable,assemblyLoadContext) \
     ( (This)->lpVtbl -> GetAssemblyLoadContext(This,methodTable,assemblyLoadContext) )
 
 #endif /* COBJMACROS */
@@ -2658,6 +2658,93 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 #endif  /* __ISOSDacInterface8_INTERFACE_DEFINED__ */
 
 
+/* interface __MIDL_itf_sospriv_0000_0012 */
+/* [local] */ 
+
+#define SOS_BREAKING_CHANGE_VERSION 1
+
+
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0012_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0012_v0_0_s_ifspec;
+
+#ifndef __ISOSDacInterface9_INTERFACE_DEFINED__
+#define __ISOSDacInterface9_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface9 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface9;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")
+    ISOSDacInterface9 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion( 
+            int *pVersion) = 0;
+        
+    };
+    
+    
+#else  /* C style interface */
+
+    typedef struct ISOSDacInterface9Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface9 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface9 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface9 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetBreakingChangeVersion )( 
+            ISOSDacInterface9 * This,
+            int *pVersion);
+        
+        END_INTERFACE
+    } ISOSDacInterface9Vtbl;
+
+    interface ISOSDacInterface9
+    {
+        CONST_VTBL struct ISOSDacInterface9Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface9_QueryInterface(This,riid,ppvObject) \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface9_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface9_Release(This) \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface9_GetBreakingChangeVersion(This,pVersion) \
+    ( (This)->lpVtbl -> GetBreakingChangeVersion(This,pVersion) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+#endif  /* __ISOSDacInterface9_INTERFACE_DEFINED__ */
+
+
 /* Additional Prototypes for ALL interfaces */
 
 /* end of Additional Prototypes */
@@ -2667,5 +2754,4 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 #endif
 
 #endif
-
 

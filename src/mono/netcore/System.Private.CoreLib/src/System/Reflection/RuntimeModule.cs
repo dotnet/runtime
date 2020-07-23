@@ -200,6 +200,7 @@ namespace System.Reflection
             GetPEKind(_impl, out peKind, out machine);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
@@ -216,6 +217,7 @@ namespace System.Reflection
             return CustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         FieldInfo ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -234,6 +236,7 @@ namespace System.Reflection
                 return FieldInfo.GetFieldFromHandle(new RuntimeFieldHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         MemberInfo ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -252,6 +255,7 @@ namespace System.Reflection
                 return m;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         MethodBase ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -270,6 +274,7 @@ namespace System.Reflection
                 return RuntimeMethodInfo.GetMethodFromHandleNoGenericCheck(new RuntimeMethodHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         string ResolveString(int metadataToken)
@@ -288,6 +293,7 @@ namespace System.Reflection
                 return s;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -306,6 +312,7 @@ namespace System.Reflection
                 return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         byte[] ResolveSignature(int metadataToken)
@@ -324,6 +331,7 @@ namespace System.Reflection
                 return res;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type[] GetTypes()
         {

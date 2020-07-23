@@ -29,35 +29,35 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void ASCIIEncoding()
+        public void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying write method with ASCIIEncoding");
             VerifyWrite(new ASCIIEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(true));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void UTF8Encoding()
+        public void UTF8Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF8Encoding");
             VerifyWrite(new UTF8Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void UTF32Encoding()
+        public void UTF32Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF32Encoding");
             VerifyWrite(new UTF32Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void UnicodeEncoding()
+        public void UnicodeEncoding()
         {
             Debug.WriteLine("Verifying write method with UnicodeEncoding");
             VerifyWrite(new UnicodeEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
-        private void NullString()
+        public void NullString()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
@@ -75,7 +75,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void EmptyString()
+        public void EmptyString()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -92,7 +92,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void String_Null_Char()
+        public void String_Null_Char()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -110,7 +110,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void LargeString()
+        public void LargeString()
         {
             Debug.WriteLine("Verifying write method with a large string size");
             VerifyWrite(new UnicodeEncoding(), LARGE_STRING_SIZE, DEFAULT_NEW_LINE, 1);
@@ -118,7 +118,7 @@ namespace System.IO.Ports.Tests
 
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void StrContains_NewLine_RND()
+        public void StrContains_NewLine_RND()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -145,7 +145,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void StrContains_NewLine_CRLF()
+        public void StrContains_NewLine_CRLF()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -172,7 +172,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void StrContains_NewLine_null()
+        public void StrContains_NewLine_null()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -239,7 +239,6 @@ namespace System.IO.Ports.Tests
             int byteRead;
             int index = 0;
             int numNewLineBytes;
-            char[] newLineChars = com1.NewLine.ToCharArray();
             StringBuilder expectedStrBldr = new StringBuilder();
             string expectedString;
 

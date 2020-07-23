@@ -2,13 +2,13 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+    <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
     <!-- transport package not expected to be closure complete  -->
     <ExcludePackages Include="Microsoft.Extensions.Internal.Transport" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
-    <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
-    <PackageReports Condition="'@(TestPackages)' != ''" Include="@(TestPackages->'$(PackageReportDir)%(Identity).json')" />
+    <PackageReports Condition="'@(PackagesToTest)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
+    <PackageReports Condition="'@(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(PackageReportDir)%(Identity).json')" />
 
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
@@ -183,7 +183,7 @@
       <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(ArtifactsPackagesDir)</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
-      <TestRestoreCommand  Condition="'$(TestPackages)' != ''">$(TestRestoreCommand) /p:TestPackages=$(TestPackages)</TestRestoreCommand>
+      <TestRestoreCommand  Condition="'$(PackagesToTest)' != ''">$(TestRestoreCommand) /p:PackagesToTest=$(PackagesToTest)</TestRestoreCommand>
     </PropertyGroup>
 
     <Message Importance="High" Text="*** Restoring ***" />
@@ -200,7 +200,7 @@
       <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /warnaserror</TestBuildCommand>
-      <TestBuildCommand  Condition="'$(TestPackages)' != ''">$(TestBuildCommand) /p:TestPackages=$(TestPackages)</TestBuildCommand>
+      <TestBuildCommand  Condition="'$(PackagesToTest)' != ''">$(TestBuildCommand) /p:PackagesToTest=$(PackagesToTest)</TestBuildCommand>
     </PropertyGroup>
 
     <Message Importance="High" Text="*** Testing *** %(SupportedPackage.Identity)" />

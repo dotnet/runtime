@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -29,8 +31,51 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
-    Dictionary<string, Assembly>? _assemblies;
+    public ITaskItem[]? RemoteSources { get; set; }
+
+    SortedDictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
+
+    private class WasmAppConfig
+    {
+        [JsonPropertyName("assembly_root")]
+        public string AssemblyRoot { get; set; } = "managed";
+        [JsonPropertyName("enable_debugging")]
+        public int EnableDebugging { get; set; } = 0;
+        [JsonPropertyName("assets")]
+        public List<object> Assets { get; } = new List<object>();
+        [JsonPropertyName("remote_sources")]
+        public List<string> RemoteSources { get; set; } = new List<string>();
+    }
+
+    private class AssetEntry {
+        protected AssetEntry (string name, string behavior)
+        {
+            Name = name;
+            Behavior = behavior;
+        }
+        [JsonPropertyName("behavior")]
+        public string Behavior { get; init; }
+        [JsonPropertyName("name")]
+        public string Name { get; init; }
+    }
+
+    private class AssemblyEntry : AssetEntry
+    {
+        public AssemblyEntry(string name) : base(name, "assembly") {}
+    }
+
+    private class VfsEntry : AssetEntry {
+        public VfsEntry(string name) : base(name, "vfs") {}
+        [JsonPropertyName("virtual_path")]
+        public string? VirtualPath { get; set; }
+    }
+
+    private class IcuData : AssetEntry {
+        public IcuData(string name = "icudt.dat") : base(name, "icu") {}
+        [JsonPropertyName("load_remote")]
+        public bool LoadRemote { get; set; }
+    }
 
     public override bool Execute ()
     {
@@ -40,7 +85,7 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
 
         var paths = new List<string>();
-        _assemblies = new Dictionary<string, Assembly>();
+        _assemblies = new SortedDictionary<string, Assembly>();
 
         // Collect and load assemblies used by the app
         foreach (var v in AssemblySearchPaths!)
@@ -53,7 +98,7 @@ public class WasmAppBuilder : Task
         _resolver = new Resolver(paths);
         var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
-        var mainAssembly = mlc.LoadFromAssemblyPath (MainAssembly);
+        var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
         Add(mlc, mainAssembly);
 
         if (ExtraAssemblies != null)
@@ -65,21 +110,26 @@ public class WasmAppBuilder : Task
             }
         }
 
+        var config = new WasmAppConfig ();
+
         // Create app
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(Path.Join(AppDir, "managed"));
+        Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
         foreach (var assembly in _assemblies!.Values)
-            File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" })
+            File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        var filesToMap = new Dictionary<string, List<string>>();
+        foreach (var assembly in _assemblies.Values)
+            config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+
         if (FilesToIncludeInFileSystem != null)
         {
             string supportFilesDir = Path.Join(AppDir, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
 
+            var i = 0;
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -91,60 +141,30 @@ public class WasmAppBuilder : Task
                 // We normalize paths from `\` to `/` as MSBuild items could use `\`.
                 targetPath = targetPath.Replace('\\', '/');
 
-                string? directory = Path.GetDirectoryName(targetPath);
+                var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(Path.Join(supportFilesDir, directory));
-                }
-                else
-                {
-                    directory = "/";
-                }
+                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
 
-                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, targetPath), true);
-
-                if (filesToMap.TryGetValue(directory, out List<string>? files))
-                {
-                    files.Add(Path.GetFileName(targetPath));
-                }
-                else
-                {
-                    files = new List<string>();
-                    files.Add(Path.GetFileName(targetPath));
-                    filesToMap[directory] = files;
-                }
+                var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
+                    VirtualPath = targetPath
+                };
+                config.Assets.Add(asset);
             }
+        }
+
+        config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+        config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
+
+        if (RemoteSources?.Length > 0) {
+            foreach (var source in RemoteSources)
+                if (source != null && source.ItemSpec != null)
+                    config.RemoteSources.Add(source.ItemSpec);
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
-            sw.WriteLine("config = {");
-            sw.WriteLine("\tvfs_prefix: \"managed\",");
-            sw.WriteLine("\tdeploy_prefix: \"managed\",");
-            sw.WriteLine("\tenable_debugging: 0,");
-            sw.WriteLine("\tassembly_list: [");
-            foreach (var assembly in _assemblies.Values)
-            {
-                sw.Write("\t\t\"" + Path.GetFileName(assembly.Location) + "\"");
-                sw.WriteLine(",");
-            }
-            sw.WriteLine ("\t],");
-            sw.WriteLine("\tfiles_to_map: [");
-            foreach (KeyValuePair<string, List<string>> keyValuePair in filesToMap)
-            {
-                sw.WriteLine("\t{");
-                sw.WriteLine($"\t\tdirectory: \"{keyValuePair.Key}\",");
-                sw.WriteLine("\t\tfiles: [");
-                foreach (string file in keyValuePair.Value)
-                {
-                    sw.WriteLine($"\t\t\t\"{file}\",");
-                }
-                sw.WriteLine("\t\t],");
-                sw.WriteLine("\t},");
-            }
-            sw.WriteLine ("\t],");
-            sw.WriteLine ("}");
+            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
+            sw.Write($"config = {json};");
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))

@@ -129,11 +129,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-    
-    # Temporary workaround to: https://github.com/dotnet/runtime/issues/39238
-    - subset: testsproj
-      include:
-      - src/libraries/tests.proj
 
 #
 # Build CoreCLR checked
@@ -318,8 +313,8 @@ jobs:
     - Browser_wasm
     variables:
       # map dependencies variables to local variables
-      - name: testsProjContainsChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_testsproj.containsChange'] ]
+      - name: librariesContainsChange
+        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
@@ -338,10 +333,9 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        # update once: https://github.com/dotnet/runtime/issues/39238 is fixed
         condition: >-
           or(
-          eq(variables['testsProjContainsChange'], true),
+          eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
@@ -547,6 +541,11 @@ jobs:
     - Windows_NT_x64
     - FreeBSD_x64
     jobParameters:
+      testScope: innerloop
+      testBuildPlatforms:
+      - Linux_x64
+      - Windows_NT_x64
+      - OSX_x64
       liveRuntimeBuildConfig: release
 
 #
@@ -596,7 +595,6 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
-      liveRuntimeBuildConfig: release
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -633,30 +631,6 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-
-#
-# Libraries Test Build
-# Only when CoreCLR, Mono or Libraries is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Windows_NT_x64
-    jobParameters:
-      isOfficialBuild: false
-      liveRuntimeBuildConfig: release
-      testScope: innerloop
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
 
 #
 # Crossgen-comparison jobs
@@ -707,7 +681,6 @@ jobs:
     platforms:
     - Linux_arm
     - Windows_NT_x86
-    - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -875,7 +848,6 @@ jobs:
     platforms:
     - Windows_NT_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_arm
       - Windows_NT_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:

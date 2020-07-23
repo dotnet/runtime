@@ -204,80 +204,101 @@ namespace System.Tests
             Assert.Equal(expected, s.Contains(value, comparisionType));
         }
 
+        public static IEnumerable<object[]> Contains_String_StringComparison_TestData()
+        {
+            yield return new object[] { "Hello", "ello", StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", "ElLo", StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.CurrentCulture, false };
+            yield return new object[] { "", "", StringComparison.CurrentCulture, true };
+            yield return new object[] { "", "hello", StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", "", StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.CurrentCulture, false };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCulture, true };
+            
+            // CurrentCultureIgnoreCase
+            yield return new object[] { "Hello", "ello", StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "ElLo", StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "", "hello", StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", "", StringComparison.CurrentCultureIgnoreCase, true };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
+                yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
+            }
+            
+            // InvariantCulture
+            yield return new object[] { "Hello", "ello", StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", "ElLo", StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.InvariantCulture, false };
+            yield return new object[] { "", "", StringComparison.InvariantCulture, true };
+            yield return new object[] { "", "hello", StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", "", StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.InvariantCulture, false };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.InvariantCulture, true };
+            
+            // InvariantCultureIgnoreCase
+            yield return new object[] { "Hello", "ello", StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "ElLo", StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "", "hello", StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", "", StringComparison.InvariantCultureIgnoreCase, true };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
+                yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
+            }
+
+            // Ordinal
+            yield return new object[] { "Hello", "ello", StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", "ElLo", StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.Ordinal, false };
+            yield return new object[] { "", "", StringComparison.Ordinal, true };
+            yield return new object[] { "", "hello", StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", "", StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.Ordinal, false };
+            
+            // OrdinalIgnoreCase
+            yield return new object[] { "Hello", "ello", StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", "ELL", StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", "ElLo", StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", "Larger Hello", StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", "Goodbye", StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "", "", StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "", "hello", StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", "", StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false };
+        }
+
         [Theory]
-        // CurrentCulture
-        [InlineData("Hello", "ello", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "ELL", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "ElLo", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "Larger Hello", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.CurrentCulture, false)]
-        [InlineData("", "", StringComparison.CurrentCulture, true)]
-        [InlineData("", "hello", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.CurrentCulture, false)]
-        // CurrentCultureIgnoreCase
-        [InlineData("Hello", "ello", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "ELL", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "ElLo", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "Larger Hello", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("", "hello", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("Hello", "", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true)]
-        // InvariantCulture
-        [InlineData("Hello", "ello", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "ELL", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "ElLo", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "Larger Hello", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.InvariantCulture, false)]
-        [InlineData("", "", StringComparison.InvariantCulture, true)]
-        [InlineData("", "hello", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.InvariantCulture, false)]
-        // InvariantCultureIgnoreCase
-        [InlineData("Hello", "ello", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "ELL", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "ElLo", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "Larger Hello", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("", "hello", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true)]
-        // Ordinal
-        [InlineData("Hello", "ello", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "ELL", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "ElLo", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Larger Hello", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.Ordinal, false)]
-        [InlineData("", "", StringComparison.Ordinal, true)]
-        [InlineData("", "hello", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.Ordinal, false)]
-        // OrdinalIgnoreCase
-        [InlineData("Hello", "ello", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "ELL", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "ElLo", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "Larger Hello", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "Goodbye", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
+        [MemberData(nameof(Contains_String_StringComparison_TestData))]
         public static void Contains_String_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
             Assert.Equal(expected, s.AsSpan().Contains(value, comparisonType));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void Contains_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -593,7 +614,9 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.CurrentCulture, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.CurrentCulture, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.CurrentCulture, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCulture, "def" };
+
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCulture, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.CurrentCultureIgnoreCase, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.CurrentCultureIgnoreCase, "def" };
@@ -601,7 +624,9 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.CurrentCultureIgnoreCase, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.CurrentCultureIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.CurrentCultureIgnoreCase, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCultureIgnoreCase, "def" };
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCultureIgnoreCase, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.Ordinal, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.Ordinal, "abc" };
@@ -609,7 +634,9 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.Ordinal, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.Ordinal, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.Ordinal, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.OrdinalIgnoreCase, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.OrdinalIgnoreCase, "def" };
@@ -617,7 +644,10 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.OrdinalIgnoreCase, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.OrdinalIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.OrdinalIgnoreCase, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
+
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCulture, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.InvariantCulture, "abc" };
@@ -625,7 +655,10 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.InvariantCulture, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.InvariantCulture, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCulture, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCulture, "def" };
+
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCulture, "def" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCultureIgnoreCase, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.InvariantCultureIgnoreCase, "def" };
@@ -633,19 +666,24 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.InvariantCultureIgnoreCase, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.InvariantCultureIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCultureIgnoreCase, "ac" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
 
-            string turkishSource = "\u0069\u0130";
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
 
-            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.Ordinal, "a\u0130" };
-            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.OrdinalIgnoreCase, "a\u0130" };
-            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.Ordinal, "\u0069a" };
-            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.OrdinalIgnoreCase, "\u0069a" };
+                string turkishSource = "\u0069\u0130";
 
-            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCulture, "a\u0130" };
-            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCultureIgnoreCase, "a\u0130" };
-            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
-            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.Ordinal, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.OrdinalIgnoreCase, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.Ordinal, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.OrdinalIgnoreCase, "\u0069a" };
+
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCulture, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCultureIgnoreCase, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
+            }
         }
 
         [Theory]
@@ -655,7 +693,7 @@ namespace System.Tests
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -693,15 +731,18 @@ namespace System.Tests
             yield return new object[] { "abc", "abc", "def", true, CultureInfo.InvariantCulture, "def" };
             yield return new object[] { "abc", "ABC", "def", true, CultureInfo.InvariantCulture, "def" };
 
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, null, "def" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, null, "def" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
-            yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, null, "def" };
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, null, "def" };
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
+                yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
 
-            yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
-            yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
-            yield return new object[] { "\u0069\u0130", "\u0069", "a", false, CultureInfo.InvariantCulture, "a\u0130" };
-            yield return new object[] { "\u0069\u0130", "\u0069", "a", true, CultureInfo.InvariantCulture, "a\u0130" };
+                yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
+                yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+                yield return new object[] { "\u0069\u0130", "\u0069", "a", false, CultureInfo.InvariantCulture, "a\u0130" };
+                yield return new object[] { "\u0069\u0130", "\u0069", "a", true, CultureInfo.InvariantCulture, "a\u0130" };
+            }
         }
 
         [Theory]
@@ -729,7 +770,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", true, CultureInfo.CurrentCulture));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Replace_StringComparison_WeightlessOldValue_WithOrdinalComparison_Succeeds()
         {
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def"));
@@ -737,7 +778,7 @@ namespace System.Tests
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def", StringComparison.OrdinalIgnoreCase));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Replace_StringComparison_WeightlessOldValue_WithLinguisticComparison_TerminatesReplacement()
         {
             Assert.Equal("abc" + ZeroWidthJoiner + "def", ("abc" + ZeroWidthJoiner + "def").Replace(ZeroWidthJoiner, "xyz", StringComparison.CurrentCulture));
@@ -971,7 +1012,7 @@ namespace System.Tests
             Assert.Equal(expected, s.AsSpan().IndexOf(charArray, stringComparison));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void IndexOf_TurkishI_TurkishCulture_Char()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -1003,7 +1044,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void IndexOf_TurkishI_InvariantCulture_Char()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -1021,7 +1062,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void IndexOf_TurkishI_EnglishUSCulture_Char()
         {
             using (new ThreadCultureChange("en-US"))
@@ -1039,7 +1080,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void IndexOf_EquivalentDiacritics_EnglishUSCulture_Char()
         {
             string s = "Exhibit a\u0300\u00C0";
@@ -1065,7 +1106,7 @@ namespace System.Tests
             {
                 Assert.Equal(10, s.IndexOf(value));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(PlatformDetection.IsInvariantGlobalization ? 10 : 8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
             }
         }
 

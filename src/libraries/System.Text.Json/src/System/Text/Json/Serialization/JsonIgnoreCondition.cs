@@ -5,9 +5,10 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// When specified on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>,
-    /// <see cref="WhenWritingDefault"/> specifies that properties with default values are ignored during serialization.
+    /// determines when properties and fields across the type graph are ignored.
     /// When specified on <see cref="JsonIgnoreAttribute.Condition"/>, controls whether
-    /// a property is ignored during serialization and deserialization.
+    /// a property is ignored during serialization and deserialization. This option
+    /// overrides the setting on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>.
     /// </summary>
     public enum JsonIgnoreCondition
     {
@@ -21,7 +22,13 @@ namespace System.Text.Json.Serialization
         Always = 1,
         /// <summary>
         /// If the value is the default, the property is ignored during serialization.
+        /// This is applied to both reference and value-type properties and fields.
         /// </summary>
         WhenWritingDefault = 2,
+        /// <summary>
+        /// If the value is <see langword="null"/>, the property is ignored during serialization.
+        /// This is applied only to reference-type properties and fields.
+        /// </summary>
+        WhenWritingNull = 3,
     }
 }
