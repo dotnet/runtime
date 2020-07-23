@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
     <Nullable>enable</Nullable>
@@ -87,14 +85,10 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Diagnostics.DiagnosticSource" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="netstandard" />
   </ItemGroup>
 </Project>

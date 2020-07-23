@@ -1,15 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Xml.XDocument</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

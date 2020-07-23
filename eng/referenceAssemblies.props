@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup Condition="'$(BuildAllProjects)' == 'true' and
-                            !$(BuildTargetFramework.StartsWith('netstandard'))">
-    <AdditionalBuildTargetFrameworks Condition="!$(BuildTargetFramework.StartsWith('net45'))">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
-    <AdditionalBuildTargetFrameworks Condition="!$(BuildTargetFramework.StartsWith('netcoreapp2.0')) and
-                                                !$(BuildTargetFramework.StartsWith('net4'))">$(AdditionalBuildTargetFrameworks);netstandard2.1</AdditionalBuildTargetFrameworks>
+                            !$(BuildTargetFramework.StartsWith('netstandard')) and
+                            !$(BuildTargetFramework.StartsWith('net4'))">
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="!$(BuildTargetFramework.StartsWith('netcoreapp2.0'))">$(AdditionalBuildTargetFrameworks);netstandard2.1</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
