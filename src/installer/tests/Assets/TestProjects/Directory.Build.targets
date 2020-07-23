@@ -9,6 +9,7 @@
           BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+      <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
     </ItemGroup>
   </Target>
 

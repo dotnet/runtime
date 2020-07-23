@@ -17,9 +17,9 @@
       <SharedFrameworkPublishFiles Include="$(SharedFrameworkPublishDir)**" />
     </ItemGroup>
 
-    <Copy
-      SourceFiles="@(SharedFrameworkPublishFiles)"
-      DestinationFiles="@(SharedFrameworkPublishFiles->'$(TestsOutputDir)sharedFrameworkPublish/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <MSBuild Projects="$(InstallerProjectRoot)pkg\newsfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
+             Targets="PublishSharedFrameworkToDisk"
+             Properties="SharedFrameworkOutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
 
     <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
     <WriteLinesToFile
@@ -63,7 +63,7 @@
       the same as the package's version. Fetch this directly from the project to avoid guesswork.
     -->
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\newsfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
     </MSBuild>
@@ -102,21 +102,9 @@
   -->
   <Target Name="GetNETCoreAppRuntimePackVersion">
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\newsfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
-    </MSBuild>
-  </Target>
-
-  <!--
-    Fetch the package version of Microsoft.NETCore.App.Internal. The legacy App nupkg project
-    doesn't ship, so it never has a stable version.
-  -->
-  <Target Name="GetNETCoreAppInternalPackageVersion">
-    <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj"
-      Targets="ReturnProductVersion">
-      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppInternalPackageVersion" />
     </MSBuild>
   </Target>
 

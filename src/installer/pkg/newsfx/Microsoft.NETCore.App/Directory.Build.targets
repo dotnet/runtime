@@ -6,5 +6,7 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="ReturnProductVersion" Returns="$(Version)" />
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
