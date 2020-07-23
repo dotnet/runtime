@@ -24,6 +24,9 @@ c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
     "ECDHE-ECDSA-AES128-SHA256:" \
     "ECDHE-RSA-AES256-SHA384:" \
     "ECDHE-RSA-AES128-SHA256:" \
+    /* Temporary TLS 1.0/1.1 compat after this line */\
+    "ECDHE-ECDSA-AES256-SHA:" \
+    "ECDHE-RSA-AES256-SHA:" \
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 

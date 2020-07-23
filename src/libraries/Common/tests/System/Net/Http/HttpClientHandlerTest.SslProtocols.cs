@@ -78,46 +78,36 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> GetAsync_AllowedSSLVersion_Succeeds_MemberData()
         {
-            // TLS 1.0-1.3 are enabled by the system default protocols (when they're enabled at all).
-            // SSL 2,3 are only available with explicit configuration, so they don't return with false.
-
-#if !NET472
-            if (PlatformDetection.SupportsTls13)
+            // These protocols are all enabled by default, so we can connect with them both when
+            // explicitly specifying it in the client and when not.
+            foreach (SslProtocols protocol in new[] { SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12 })
             {
-                yield return new object[] { SslProtocols.Tls13, false };
-                yield return new object[] { SslProtocols.Tls13, true };
-            }
-#endif
-
-            if (PlatformDetection.SupportsTls12)
-            {
-                yield return new object[] { SslProtocols.Tls12, false };
-                yield return new object[] { SslProtocols.Tls12, true };
+                yield return new object[] { protocol, false };
+                yield return new object[] { protocol, true };
             }
 
-            if (PlatformDetection.SupportsTls11)
-            {
-                yield return new object[] { SslProtocols.Tls11, false };
-                yield return new object[] { SslProtocols.Tls11, true };
-            }
-
-            if (PlatformDetection.SupportsTls10)
-            {
-                yield return new object[] { SslProtocols.Tls, false };
-                yield return new object[] { SslProtocols.Tls, true };
-            }
-
+            // These protocols are disabled by default, so we can only connect with them explicitly.
+            // On certain platforms these are completely disabled and cannot be used at all.
 #pragma warning disable 0618
             if (PlatformDetection.SupportsSsl3)
             {
+#if !NETFRAMEWORK
                 yield return new object[] { SslProtocols.Ssl3, true };
+#endif
             }
-
-            if (PlatformDetection.SupportsSsl2)
+            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
             {
                 yield return new object[] { SslProtocols.Ssl2, true };
             }
 #pragma warning restore 0618
+            // These protocols are new, and might not be enabled everywhere yet
+            if (PlatformDetection.IsUbuntu1810OrHigher)
+            {
+#if !NETFRAMEWORK
+                yield return new object[] { SslProtocols.Tls13, false };
+                yield return new object[] { SslProtocols.Tls13, true };
+#endif
+            }
         }
 
         [Theory]
@@ -164,21 +154,9 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
 #pragma warning restore 0618
-
-            if (PlatformDetection.SupportsTls10)
-            {
-                yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
-            }
-
-            if (PlatformDetection.SupportsTls11)
-            {
-                yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
-            }
-
-            if (PlatformDetection.SupportsTls12)
-            {
-                yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
-            }
+            yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
+            yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
+            yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
         }
 
         // We have tests that validate with SslStream, but that's limited by what the current OS supports.

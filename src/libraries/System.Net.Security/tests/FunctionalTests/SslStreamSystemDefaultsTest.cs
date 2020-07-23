@@ -54,29 +54,9 @@ namespace System.Net.Security.Tests
                 string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
-                try
-                {
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                        AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
-                        AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
-                }
-                catch (AggregateException)
-                {
-                    SslProtocols clientEffective = clientProtocols.GetValueOrDefault();
-                    SslProtocols serverEffective = serverProtocols.GetValueOrDefault();
-
-                    // The default configuration on Linux does not enable any TLS 1.0 or TLS 1.1 ciphersuites,
-                    // so if either side specified explicit protocols without one of them being known to work,
-                    // ignore the failure.
-                    if (clientEffective != 0 && (clientEffective & SslProtocolSupport.SupportedSslProtocols) == 0 ||
-                        serverEffective != 0 && (serverEffective & SslProtocolSupport.SupportedSslProtocols) == 0)
-                    {
-                        return;
-                    }
-
-                    throw;
-                }
-
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
+                    AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
                 if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10 &&
 #pragma warning disable 0618
                     clientProtocols.GetValueOrDefault() != SslProtocols.Default &&

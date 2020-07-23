@@ -3,7 +3,6 @@
 
 using System.Net.Security;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -76,23 +75,9 @@ namespace System.Net.Http.Functional.Tests
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    try
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(
-                            server.AcceptConnectionSendResponseAndCloseAsync(),
-                            client.GetAsync(url));
-                    }
-                    catch (AggregateException)
-                    {
-                        // If the local environment isn't known to support the requested protocols
-                        // then it's OK if things failed here.
-                        if (acceptedProtocol != 0 && (acceptedProtocol & SslProtocolSupport.SupportedSslProtocols) == 0)
-                        {
-                            return;
-                        }
-
-                        throw;
-                    }
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
+                        client.GetAsync(url));
                 }, options);
             }
         }

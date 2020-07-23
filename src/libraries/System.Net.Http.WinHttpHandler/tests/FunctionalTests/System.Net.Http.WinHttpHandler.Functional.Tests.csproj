@@ -39,8 +39,6 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
-             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\StreamArrayExtensions.cs"
              Link="Common\System\Net\StreamArrayExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"

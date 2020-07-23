@@ -129,15 +129,7 @@ namespace System.Net.Security.Tests
                     Assert.NotNull(e.InnerException);
                     Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
                     Assert.NotNull(e.InnerException.InnerException);
-
-                    // unexpected message comes from the client offering up no ciphersuites, which is
-                    // a result of requesting TLS 1.1 with no enabled TLS 1.1 ciphersuites.
-                    //
-                    // If config permits TLS 1.1, then we expect the error to be about the lack of a common protocol.
-                    if (!e.InnerException.InnerException.Message.Contains("unexpected message"))
-                    {
-                        Assert.Contains("protocol", e.InnerException.InnerException.Message);
-                    }
+                    Assert.Contains("protocol", e.InnerException.InnerException.Message);
                 }
             }
 
