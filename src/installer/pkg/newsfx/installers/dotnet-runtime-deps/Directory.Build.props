@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
     <GenerateArchive>false</GenerateArchive>
     <SharedFrameworkInstallerName>dotnet-runtime-deps</SharedFrameworkInstallerName>
     <InstallerRuntimeIdentifiers>linux-$(TargetArchitecture)</InstallerRuntimeIdentifiers>

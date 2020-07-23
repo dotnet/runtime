@@ -127,7 +127,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset corehost+newsfx+installer.pkgprojs -ci
+        $(Build.SourcesDirectory)/build.sh -subset installer -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)

@@ -40,7 +40,8 @@
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(Version)" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" PackOnly="true" />
   </ItemGroup>
