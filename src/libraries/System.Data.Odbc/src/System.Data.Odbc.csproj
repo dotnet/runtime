@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;netstandard2.0;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -126,12 +125,16 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Data" />
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System.Data.Odbc.OdbcMetaData.xml">
+      <LogicalName>System.Data.Odbc.OdbcMetaData.xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="Microsoft.Win32.Registry" />
+  <ItemGroup>
+    <None Include="DatabaseSetupInstructions.md" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
+                        $(TargetFramework.StartsWith('netcoreapp2.0'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.Specialized" />
@@ -148,10 +151,9 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Text.Encoding.CodePages" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
@@ -160,18 +162,13 @@
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Timer" />
     <Reference Include="System.Transactions" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))">
     <Reference Include="System.Transactions.Local" />
+    <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\System.Data.Odbc.OdbcMetaData.xml">
-      <LogicalName>System.Data.Odbc.OdbcMetaData.xml</LogicalName>
-    </EmbeddedResource>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Reference Include="System.Text.Encoding.CodePages" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="DatabaseSetupInstructions.md" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp2.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
 </Project>

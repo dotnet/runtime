@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net48-Windows_NT</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
     <LangVersion>8.0</LangVersion>
@@ -141,5 +141,14 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
+    <Reference Include="System.DirectoryServices.Protocols" />
+    <Reference Include="System.Net.Http" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http.Json\src\System.Net.Http.Json.csproj" />
   </ItemGroup>
 </Project>

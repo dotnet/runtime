@@ -112,8 +112,8 @@ namespace Internal.Cryptography
         private readonly bool _encrypting;
 
         private static readonly CngProperty s_ECBMode =
-            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.UTF8.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB + "\0"), CngPropertyOptions.None);
+            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.Unicode.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB + "\0"), CngPropertyOptions.None);
         private static readonly CngProperty s_CBCMode =
-            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.UTF8.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC + "\0"), CngPropertyOptions.None);
+            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.Unicode.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC + "\0"), CngPropertyOptions.None);
     }
 }
