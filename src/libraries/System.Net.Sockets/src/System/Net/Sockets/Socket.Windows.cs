@@ -66,7 +66,7 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.Success)
             {
-                RightEndPoint = ep.Create(socketAddress);
+                _rightEndPoint = ep.Create(socketAddress);
             }
             else if (errorCode == SocketError.InvalidArgument)
             {
@@ -197,7 +197,7 @@ namespace System.Net.Sockets
 
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily)
         {
-            if (RightEndPoint != null)
+            if (_rightEndPoint != null)
             {
                 return;
             }
@@ -352,7 +352,7 @@ namespace System.Net.Sockets
             {
                 acceptSocket = new Socket(_addressFamily, _socketType, _protocolType);
             }
-            else if (acceptSocket.RightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+            else if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
             }
