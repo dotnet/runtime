@@ -22,7 +22,7 @@ parameters:
             
 
 steps:
-  - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 $(Build.SourcesDirectory)\eng\common\performance\{{parameters.ProjectFile}} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$env:BuildConfig\SendToHelix.binlog
+  - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 $(Build.SourcesDirectory)\eng\common\performance\{{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$env:BuildConfig\SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
       BuildConfig: $(_BuildConfig)
@@ -44,7 +44,7 @@ steps:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}
-  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/performance/{{parameters.ProjectFile}} /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
+  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/performance/{{ parameters.ProjectFile }} /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
     env:
       BuildConfig: $(_BuildConfig)
