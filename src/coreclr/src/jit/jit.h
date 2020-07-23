@@ -422,7 +422,7 @@ typedef ptrdiff_t ssize_t;
 
 /*****************************************************************************/
 
-#define DUMP_GC_TABLES DEBUG
+#define DUMP_GC_TABLES 1
 #define VERIFY_GC_TABLES 0
 #define REARRANGE_ADDS 1
 
