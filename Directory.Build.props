@@ -51,11 +51,13 @@
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AndroidAppBuilderDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmAppBuilderDir>
+    <WasmBundleTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmBundleTaskDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
   
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
+    <WasmBundleTaskTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBundleTaskDir)', 'WasmBundleTask.dll'))</WasmBundleTaskTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 

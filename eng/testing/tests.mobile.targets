@@ -171,6 +171,16 @@
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
   </Target>
 
+  <UsingTask TaskName="WasmBundleTask"
+             AssemblyFile="$(WasmBundleTaskTasksAssemblyPath)" />
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData">
+    <WasmBundleTask
+      InputDirectory="${BundleDir)obj/data/input"
+      OutputDirectory="${BundleDir)obj/data/output"
+      Type="timezone"
+      FileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
+  </Target>
+
   <Target Name="AddTestRunnersToPublishedFiles"
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
@@ -186,5 +196,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;BundleWasmTestData;ArchiveTests" />
 </Project>

@@ -11,6 +11,8 @@
   </ItemGroup>
 
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
+  <UsingTask TaskName="WasmBundleTask" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmBundleTask.dll'))"/>
+  
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
@@ -32,9 +34,20 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
+  <Target Name="BundleWasm" DependsOnTargets="CheckEnv">
+    <PropertyGroup>
+      <WasmBundleTaskPath>$(NativeBinDir)dotnet.timezones.blat</WasmBundleTaskPath>
+    </PropertyGroup>
+    <WasmBundleTask
+      InputDirectory="$(ArtifactsObjDir)wasm/data/input"
+      OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      Type="timezone"
+      FileName="$(WasmBundleTaskPath)" />
+  </Target>
+
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="BuildPInvokeTable">
+          DependsOnTargets="BuildPInvokeTable;BundleWasm">
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir) NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib"
           IgnoreStandardErrorWarningFormat="true" />
 
