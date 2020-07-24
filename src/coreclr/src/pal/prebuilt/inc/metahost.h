@@ -66,6 +66,13 @@ typedef interface ICLRDebuggingLibraryProvider2 ICLRDebuggingLibraryProvider2;
 #endif 	/* __ICLRDebuggingLibraryProvider2_FWD_DEFINED__ */
 
 
+#ifndef __ICLRDebuggingLibraryProvider3_FWD_DEFINED__
+#define __ICLRDebuggingLibraryProvider3_FWD_DEFINED__
+typedef interface ICLRDebuggingLibraryProvider3 ICLRDebuggingLibraryProvider3;
+
+#endif 	/* __ICLRDebuggingLibraryProvider3_FWD_DEFINED__ */
+
+
 #ifndef __ICLRDebugging_FWD_DEFINED__
 #define __ICLRDebugging_FWD_DEFINED__
 typedef interface ICLRDebugging ICLRDebugging;
@@ -95,6 +102,8 @@ extern "C"{
 /* [local] */ 
 
 #include <winapifamily.h>
+typedef BYTE *LPBYTE;
+
 STDAPI CLRCreateInstance(REFCLSID clsid, REFIID riid, /*iid_is(riid)*/ LPVOID *ppInterface);
 EXTERN_GUID(IID_ICLRMetaHost, 0xD332DB9E, 0xB9B3, 0x4125, 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x16);
 EXTERN_GUID(CLSID_CLRMetaHost, 0x9280188d, 0xe8e, 0x4867, 0xb3, 0xc, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);
@@ -466,6 +475,92 @@ EXTERN_C const IID IID_ICLRDebuggingLibraryProvider2;
 
 
 #endif 	/* __ICLRDebuggingLibraryProvider2_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICLRDebuggingLibraryProvider3_INTERFACE_DEFINED__
+#define __ICLRDebuggingLibraryProvider3_INTERFACE_DEFINED__
+
+/* interface ICLRDebuggingLibraryProvider3 */
+/* [object][local][helpstring][version][uuid] */ 
+
+
+EXTERN_C const IID IID_ICLRDebuggingLibraryProvider3;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("5C3BACDF-4024-488E-B413-DC0CAA8ABA73")
+    ICLRDebuggingLibraryProvider3 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE ProvideLibrary3( 
+            /* [in] */ const WCHAR *pwszFileName,
+            /* [in] */ ULONG32 inBuildIdSize,
+            /* [size_is][in] */ LPBYTE inBuildId,
+            /* [out] */ LPWSTR *ppResolvedModulePath) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICLRDebuggingLibraryProvider3Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICLRDebuggingLibraryProvider3 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICLRDebuggingLibraryProvider3 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICLRDebuggingLibraryProvider3 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ProvideLibrary3 )( 
+            ICLRDebuggingLibraryProvider3 * This,
+            /* [in] */ const WCHAR *pwszFileName,
+            /* [in] */ ULONG32 inBuildIdSize,
+            /* [size_is][in] */ LPBYTE inBuildId,
+            /* [out] */ LPWSTR *ppResolvedModulePath);
+        
+        END_INTERFACE
+    } ICLRDebuggingLibraryProvider3Vtbl;
+
+    interface ICLRDebuggingLibraryProvider3
+    {
+        CONST_VTBL struct ICLRDebuggingLibraryProvider3Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICLRDebuggingLibraryProvider3_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICLRDebuggingLibraryProvider3_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICLRDebuggingLibraryProvider3_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICLRDebuggingLibraryProvider3_ProvideLibrary3(This,pwszFileName,inBuildIdSize,inBuildId,ppResolvedModulePath)	\
+    ( (This)->lpVtbl -> ProvideLibrary3(This,pwszFileName,inBuildIdSize,inBuildId,ppResolvedModulePath) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICLRDebuggingLibraryProvider3_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICLRDebugging_INTERFACE_DEFINED__
