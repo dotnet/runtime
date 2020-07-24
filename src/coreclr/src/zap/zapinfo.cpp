@@ -2154,13 +2154,13 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
 
-        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic);
+        fTreatAsRegularMethodCall = fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic;
 
 #if defined(TARGET_ARM64)
         // On Arm64 AdvSimd ISA is required by CoreCLR, so we can expand Vector64<T> and Vector128<T> methods.
-        fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic) && (strcmp(className, "Vector64`1") != 0) && (strcmp(className, "Vector128`1") != 0);
+        fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic && (strcmp(className, "Vector64`1") != 0) && (strcmp(className, "Vector128`1") != 0);
 #else
-        fTreatAsRegularMethodCall |= (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+        fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
 #endif 
 
         if (fIsPlatformHWIntrinsic)
