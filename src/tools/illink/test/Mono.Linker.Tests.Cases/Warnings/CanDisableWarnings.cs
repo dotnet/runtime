@@ -4,10 +4,10 @@ using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.WarningSuppression
+namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[SkipKeptItemsValidation]
-	[SetupLinkerSubstitutionFile ("NoWarnSubstitutions.xml")]
+	[SetupLinkerSubstitutionFile ("CanDisableWarningsSubstitutions.xml")]
 	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--nowarn", "IL2006,IL2007;IL2008;IL2009,IL2010,ThisWillBeIgnored")]
 	[SetupLinkerArgument ("--nowarn", "IL2011,2012,0123")]

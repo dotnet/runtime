@@ -44,9 +44,11 @@ namespace Mono.Linker
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
-		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false)
 		{
-			if (!(code >= 1000 && code <= 2000))
+			if (isWarnAsError && !(code > 2000 && code <= 6000))
+				throw new ArgumentException ($"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+			else if (!isWarnAsError && !(code >= 1000 && code <= 2000))
 				throw new ArgumentException ($"The provided code '{code}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
 
 			return new MessageContainer (MessageCategory.Error, text, code, subcategory, origin);

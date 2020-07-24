@@ -437,6 +437,33 @@ namespace Mono.Linker
 						context.NoWarn.UnionWith (ParseWarnings (noWarnArgument));
 						continue;
 
+					case "--warnaserror":
+					case "--warnaserror+":
+						var warningList = GetNextStringValue ();
+						if (!string.IsNullOrEmpty (warningList)) {
+							foreach (var warning in ParseWarnings (warningList))
+								context.WarnAsError[warning] = true;
+
+						} else {
+							context.GeneralWarnAsError = true;
+							context.WarnAsError.Clear ();
+						}
+
+						continue;
+
+					case "--warnaserror-":
+						warningList = GetNextStringValue ();
+						if (!string.IsNullOrEmpty (warningList)) {
+							foreach (var warning in ParseWarnings (warningList))
+								context.WarnAsError[warning] = false;
+
+						} else {
+							context.GeneralWarnAsError = false;
+							context.WarnAsError.Clear ();
+						}
+
+						continue;
+
 					case "--version":
 						Version ();
 						return 1;
@@ -1029,13 +1056,15 @@ namespace Mono.Linker
 			Console.WriteLine ("  -l <name>,<name>    List of i18n assemblies to copy to the output directory. Defaults to 'all'");
 			Console.WriteLine ("                        Valid names are 'none', 'all', 'cjk', 'mideast', 'other', 'rare', 'west'");
 #endif
-			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
-			Console.WriteLine ("  --about             About the {0}", _linker);
-			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");
-			Console.WriteLine ("  --nowarn WARN-LIST  Disable specific warning messages");
-			Console.WriteLine ("  --version           Print the version number of the {0}", _linker);
-			Console.WriteLine ("  --help              Lists all linker options");
-			Console.WriteLine ("  @FILE               Read response file for more options");
+			Console.WriteLine ("  -out PATH                     Specify the output directory. Defaults to 'output'");
+			Console.WriteLine ("  --about                       About the {0}", _linker);
+			Console.WriteLine ("  --verbose                     Log messages indicating progress and warnings");
+			Console.WriteLine ("  --warnaserror[+|-]            Report all warnings as errors");
+			Console.WriteLine ("  --warnaserror[+|-] WARN-LIST  Report specific warnings as errors");
+			Console.WriteLine ("  --nowarn WARN-LIST            Disable specific warning messages");
+			Console.WriteLine ("  --version                     Print the version number of the {0}", _linker);
+			Console.WriteLine ("  --help                        Lists all linker options");
+			Console.WriteLine ("  @FILE                         Read response file for more options");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");

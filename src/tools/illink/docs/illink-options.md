@@ -147,6 +147,15 @@ control options listed below.
 | Substition  | ILLink.Substitutions.xml  |  --ignore-substitutions |
 | LinkAttributes  | ILLink.LinkAttributes.xml    |  --ignore-link-attributes |
 
+### Treat warnings as errors
+
+The `--warnasserror` (or `--warnaserror+`) option will make the linker report any warning
+messages as error messages instead. By default, the linker behaves as if the `--warnaserror-`
+option was used, which causes the linker to report warnings as usual.
+
+Optionally, you may specify a list of warnings that you'd like to be treated as errors. These
+warnings have to be prepended with `IL` and must be separated by either a comma or semicolon.
+
 ### Turning off warnings
 
 The `--nowarn` option prevents the linker from displaying one or more linker warnings by

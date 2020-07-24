@@ -181,8 +181,8 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
-		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.WarningSuppressionTests))]
-		public void WarningSuppressionTests (TestCase testCase)
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.WarningsTests))]
+		public void WarningsTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
