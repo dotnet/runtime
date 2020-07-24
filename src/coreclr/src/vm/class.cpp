@@ -1184,10 +1184,17 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         return;
 
     // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride())
+    if (pMT->GetClass()->HasCovariantOverride() && !pModule->GetReadyToRunInfo()->SkipTypeValidation())
     {
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
+            if (pMT->GetRestoredSlot(i) == pParentMT->GetRestoredSlot(i))
+            {
+                // The real check is that the MethodDesc's must not match, but a simple VTable check will
+                // work most of the time, and is far faster than the GetMethodDescForSlot method.
+                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                continue;
+            }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
 
@@ -1245,6 +1252,14 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
 
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
+            if (pMT->GetRestoredSlot(i) == pParentMT->GetRestoredSlot(i))
+            {
+                // The real check is that the MethodDesc's must not match, but a simple VTable check will
+                // work most of the time, and is far faster than the GetMethodDescForSlot method.
+                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                continue;
+            }
+
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
             if (pMD == pParentMD)

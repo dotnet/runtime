@@ -2284,11 +2284,11 @@ private:
     class DeclaredMethodIterator
     {
       private:
-        int                 m_numDeclaredMethods;
-        bmtMDMethod       **m_declaredMethods;
-        int                 m_idx; // not SLOT_INDEX?
+        const int            m_numDeclaredMethods;
+        bmtMDMethod ** const m_declaredMethods;
+        int                  m_idx; // not SLOT_INDEX?
 #ifdef _DEBUG
-        bmtMDMethod *       m_debug_pMethod;
+        bmtMDMethod *        m_debug_pMethod;
 #endif
 
       public:

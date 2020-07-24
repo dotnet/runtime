@@ -5590,6 +5590,19 @@ MethodTableBuilder::ProcessMethodImpls()
 {
     STANDARD_VM_CONTRACT;
 
+    if (bmtMetaData->fHasCovariantOverride)
+    {
+        GetHalfBakedClass()->SetHasCovariantOverride();
+    }
+    if (GetParentMethodTable() != NULL)
+    {
+        EEClass* parentClass = GetParentMethodTable()->GetClass();
+        if (parentClass->HasCovariantOverride())
+            GetHalfBakedClass()->SetHasCovariantOverride();
+        if (parentClass->HasVTableMethodImpl())
+            GetHalfBakedClass()->SetHasVTableMethodImpl();
+    }
+
     if (bmtMethod->dwNumberMethodImpls == 0)
         return;
 
@@ -5681,16 +5694,6 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
-                        if (bmtMetaData->fHasCovariantOverride)
-                            GetHalfBakedClass()->SetHasCovariantOverride();
-                        if (GetParentMethodTable() != NULL)
-                        {
-                            auto parentClass = GetParentMethodTable()->GetClass();
-                            if (parentClass->HasCovariantOverride())
-                                GetHalfBakedClass()->SetHasCovariantOverride();
-                            if (parentClass->HasVTableMethodImpl())
-                                GetHalfBakedClass()->SetHasVTableMethodImpl();
-                        }
                         
                         MethodTable * pDeclMT = NULL;
                         MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
