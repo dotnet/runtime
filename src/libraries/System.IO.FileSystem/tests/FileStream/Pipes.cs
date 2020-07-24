@@ -15,7 +15,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public async Task AnonymousPipeWriteViaFileStream(bool asyncWrites)
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.In))
@@ -71,7 +71,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public async Task AnonymousPipeReadViaFileStream(bool asyncReads)
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
