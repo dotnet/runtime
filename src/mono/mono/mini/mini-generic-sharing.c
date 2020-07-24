@@ -1170,6 +1170,8 @@ get_wrapper_shared_vtype (MonoType *t)
 	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
 		return NULL;
 	mono_class_setup_fields (klass);
+	if (mono_class_has_failure (klass))
+		return NULL;
 
 	int num_fields = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
