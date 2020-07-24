@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CborDocument.fs" />
+    <Compile Include="CborPropertyTestContext.fs" />
+    <Compile Include="CborDocumentSerializer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <ProjectReference Include="..\..\src\System.Formats.Cbor.csproj" />
+  </ItemGroup>
+</Project>
