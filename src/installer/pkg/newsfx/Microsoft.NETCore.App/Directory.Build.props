@@ -329,6 +329,22 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.x86.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
+    <!-- Mono-specific files -->
+    <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="llc" IsNative="true" />
+    <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
+    <PlatformManifestFileEntry Include="opt" IsNative="true" />
+    <!-- Mono WASM-specific files -->
+    <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Runtime.InteropServices.Javascript.dll" />
+    <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
   </ItemGroup>
 
   <ItemGroup>
