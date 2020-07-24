@@ -273,6 +273,10 @@ namespace System.Net.Http
             }
         }
 
+        public bool SupportsAutomaticDecompression => true;
+        public bool SupportsProxy => true;
+        public bool SupportsRedirectConfiguration => true;
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
