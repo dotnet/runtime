@@ -23,7 +23,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         endif()
 
         if(CLR_CMAKE_TARGET_OSX)
-            add_definitions(-DOSX_ICU_LIBRARY_PATH=\"/usr/lib/libicucore.dylib\")
+            add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
             add_definitions(-DU_DISABLE_RENAMING)
         else()
             find_library(ICUUC icuuc)
