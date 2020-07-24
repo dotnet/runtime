@@ -74,6 +74,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
+extern size_t OffsetWithinPage(off_t addr);
 
 #if HAVE_PROCFS_CTL
 #define CTL_ATTACH      "attach"
@@ -567,6 +568,7 @@ PAL_OpenProcessMemory(
     OUT DWORD* pHandle
 )
 {
+    ENTRY("PAL_OpenProcessMemory(pid=%d)\n", processId);
     _ASSERTE(pHandle != nullptr);
     *pHandle = UINT32_MAX;
 #ifdef __APPLE__
@@ -575,6 +577,7 @@ PAL_OpenProcessMemory(
     if (result != KERN_SUCCESS)
     {
         ERROR("task_for_pid(%d) FAILED %x %s\n", processId, result, mach_error_string(result));
+        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
         return FALSE;
     }
     *pHandle = port;
@@ -586,10 +589,12 @@ PAL_OpenProcessMemory(
     if (fd == -1)
     {
         ERROR("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
         return FALSE;
     }
     *pHandle = fd;
 #endif
+    LOGEXIT("PAL_OpenProcessMemory TRUE\n");
     return TRUE;
 }
 
@@ -612,6 +617,7 @@ PAL_CloseProcessMemory(
     IN DWORD handle
 )
 {
+    ENTRY("PAL_CloseProcessMemory(handle=%x)\n", handle);
     if (handle != UINT32_MAX)
     {
 #ifdef __APPLE__
@@ -624,6 +630,7 @@ PAL_CloseProcessMemory(
         close(handle);
 #endif
     }
+    LOGEXIT("PAL_CloseProcessMemory\n");
 }
 
 /*++
@@ -652,6 +659,7 @@ PAL_ReadProcessMemory(
     IN SIZE_T size,
     OUT SIZE_T* numberOfBytesRead)
 {
+    ENTRY("PAL_ReadProcessMemory(handle=%x, address=%p buffer=%p size=%d)\n", handle, (void*)address, buffer, size);
     _ASSERTE(handle != 0);
     _ASSERTE(numberOfBytesRead != nullptr);
     *numberOfBytesRead = 0;
@@ -663,29 +671,31 @@ PAL_ReadProcessMemory(
     // and the size be a multiple of the page size.  We can't differentiate
     // between the cases in which that's required and those in which it
     // isn't, so we do it all the time.
-    vm_address_t addressAligned = address & ~(PAGE_SIZE - 1);
-    size_t offset = (address & (PAGE_SIZE - 1));
-    char *data = (char*)alloca(PAGE_SIZE);
+    const size_t pageSize = GetVirtualPageSize();
+    vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
+    size_t offset = OffsetWithinPage(address);
+    char *data = (char*)alloca(pageSize);
     size_t bytesToRead;
 
     while (size > 0)
     {
         vm_size_t bytesRead;
         
-        bytesToRead = PAGE_SIZE - offset;
+        bytesToRead = pageSize - offset;
         if (bytesToRead > size)
         {
             bytesToRead = size;
         }
-        bytesRead = PAGE_SIZE;
-        kern_return_t result = ::vm_read_overwrite(task, addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
-        if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
+        bytesRead = pageSize;
+        kern_return_t result = ::vm_read_overwrite(task, addressAligned, pageSize, (vm_address_t)data, &bytesRead);
+        if (result != KERN_SUCCESS || bytesRead != pageSize)
         {
-            ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", PAGE_SIZE, (void*)addressAligned, result, mach_error_string(result));
+            ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", pageSize, (void*)addressAligned, result, mach_error_string(result));
+            LOGEXIT("PAL_ReadProcessMemory FALSE\n");
             return FALSE;
         }
         memcpy((LPSTR)buffer + read , data + offset, bytesToRead);
-        addressAligned = addressAligned + PAGE_SIZE;
+        addressAligned = addressAligned + pageSize;
         read += bytesToRead;
         size -= bytesToRead;
         offset = 0;
@@ -698,6 +708,7 @@ PAL_ReadProcessMemory(
     }
 #endif
     *numberOfBytesRead = read;
+    LOGEXIT("PAL_ReadProcessMemory TRUE bytes read: %d\n", read);
     return TRUE;
 }
 
