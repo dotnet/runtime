@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -162,8 +163,7 @@ namespace System.Xml
                             ValidateQName(base.reader.Name);
                             CheckCharacters(base.reader.Value);
 
-                            string str;
-                            str = base.reader.GetAttribute("SYSTEM");
+                            string? str = base.reader.GetAttribute("SYSTEM");
                             if (str != null)
                             {
                                 CheckCharacters(str);

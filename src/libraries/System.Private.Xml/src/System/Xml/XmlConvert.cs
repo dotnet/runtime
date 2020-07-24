@@ -1474,12 +1474,12 @@ namespace System.Xml
             return *((long*)&value);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType exceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType exceptionType)
         {
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
             if (data == null || data.Length == 0)
             {

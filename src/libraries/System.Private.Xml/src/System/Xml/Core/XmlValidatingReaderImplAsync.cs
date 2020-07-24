@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -63,7 +64,7 @@ namespace System.Xml
                     goto case ParsingFunction.Read;
                 case ParsingFunction.InReadBinaryContent:
                     _parsingFunction = ParsingFunction.Read;
-                    await _readBinaryHelper.FinishAsync().ConfigureAwait(false);
+                    await _readBinaryHelper!.FinishAsync().ConfigureAwait(false);
                     goto case ParsingFunction.Read;
                 default:
                     Debug.Fail($"Unexpected parsing function {_parsingFunction}");
@@ -88,7 +89,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -112,7 +113,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -136,7 +137,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -160,7 +161,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
