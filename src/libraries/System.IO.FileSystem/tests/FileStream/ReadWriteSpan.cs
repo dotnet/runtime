@@ -24,7 +24,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // PNSE: Cannot wait on monitors
         public void EmptyFile_Read_Succeeds()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
@@ -48,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // PNSE: Cannot wait on monitors
         public void NonEmptyFile_Read_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
@@ -114,7 +114,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // PNSE: Cannot wait on monitors
         public void NonEmptyWrite_WritesExpectedData()
         {
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
