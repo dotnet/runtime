@@ -86,11 +86,7 @@ jobs:
       archType: x64
       platform: Linux_musl_x64
       container:
-        # alpine coreclr cmake errors on newer builds
-        ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-          image: alpine-3.9-WithNode-0fc54a3-20200131134036
-        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-          image: alpine-3.9-WithNode-0fc54a3-20190918214015
+        image: alpine-3.9-WithNode-20200602002639-0fc54a3
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
