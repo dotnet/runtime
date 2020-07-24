@@ -48,6 +48,6 @@
 
   <ItemGroup Condition="'$(CborPropertyTests)' == 'True'">
     <ProjectReference Include="CborDocument\System.Formats.Cbor.Tests.DataModel.fsproj" />
-    <PackageReference Include="FsCheck.Xunit" Version="2.14.3" />
+    <PackageReference Include="FsCheck.Xunit" Version="$(FsCheckVersion)" />
   </ItemGroup>
 </Project>
