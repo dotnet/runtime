@@ -28,8 +28,8 @@ typedef enum
 	DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES = 0x1000,
 	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2, // search the assembly directory first regardless of platform, not passed on to LoadLibraryEx
 } DllImportSearchPath;
-static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
-                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
+//static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
+//                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
 
 // This lock may be taken within an ALC lock, and should never be the other way around.
 static MonoCoopMutex native_library_module_lock;
@@ -1574,7 +1574,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 	goto_if_nok (error, leave);
 
 	// FIXME: implement search flag defaults properly
-	module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : 0x2);
+	module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY);
 	if (!module)
 		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", lib_name);
 	goto_if_nok (error, leave);
