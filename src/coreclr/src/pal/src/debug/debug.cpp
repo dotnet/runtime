@@ -662,8 +662,8 @@ PAL_ReadProcessMemory(
     ENTRY("PAL_ReadProcessMemory(handle=%x, address=%p buffer=%p size=%d)\n", handle, (void*)address, buffer, size);
     _ASSERTE(handle != 0);
     _ASSERTE(numberOfBytesRead != nullptr);
-    size_t read = 0;
     BOOL result = TRUE;
+    size_t read = 0;
 #ifdef __APPLE__
     vm_map_t task = (vm_map_t)handle;
 
@@ -674,8 +674,15 @@ PAL_ReadProcessMemory(
     const size_t pageSize = GetVirtualPageSize();
     vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
     size_t offset = OffsetWithinPage(address);
-    char *data = (char*)malloc(pageSize);
     size_t bytesToRead;
+
+    char *data = (char*)malloc(pageSize);
+    if (data == nullptr)
+    {
+        ERROR("malloc(%d) FAILED\n", pageSize);
+        result = FALSE;
+        goto exit;
+    }
 
     while (size > 0)
     {
@@ -700,8 +707,12 @@ PAL_ReadProcessMemory(
         size -= bytesToRead;
         offset = 0;
     }
+
 exit:
-    free(data);
+    if (data != nullptr)
+    {
+        free(data);
+    }
 #else
     read = pread(handle, buffer, size, address);
     if (read == (size_t)-1)
