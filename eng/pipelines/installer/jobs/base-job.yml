@@ -222,17 +222,10 @@ jobs:
         $(OutputRidArg)
         /bl:msbuild.publish.binlog
 
-    # Tell the build to package up the bits from the portable build.
-    - name: PackagePortableBitsArgs
-      value: >-
-        /p:PortableBuild=false
-        /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
-
     - name: DockerRunMSBuild
       value: >-
         docker run
         -v $(Build.SourcesDirectory):/root/runtime
-        -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/runtime
         $(PreserveNuGetAuthDockerArgs)
 

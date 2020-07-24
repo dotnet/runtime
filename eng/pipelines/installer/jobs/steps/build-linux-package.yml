@@ -12,7 +12,6 @@ steps:
     $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
       --ci \
       ${{ parameters.subsetArg }} \
-      $(PackagePortableBitsArgs) \
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
       $(LiveOverridePathArgs) \
