@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml
 {
     using System.Xml.XPath;
@@ -10,14 +11,14 @@ namespace System.Xml
 
     internal class XPathNodeList : XmlNodeList
     {
-        private readonly List<XmlNode> _list;
+        private readonly List<XmlNode?> _list;
         private readonly XPathNodeIterator _nodeIterator;
         private bool _done;
 
         public XPathNodeList(XPathNodeIterator nodeIterator)
         {
             _nodeIterator = nodeIterator;
-            _list = new List<XmlNode>();
+            _list = new List<XmlNode?>();
             _done = false;
         }
 
@@ -62,7 +63,7 @@ namespace System.Xml
             return count;
         }
 
-        public override XmlNode Item(int index)
+        public override XmlNode? Item(int index)
         {
             if (_list.Count <= index)
             {
@@ -72,6 +73,7 @@ namespace System.Xml
             {
                 return null;
             }
+
             return _list[index];
         }
 
@@ -111,7 +113,7 @@ namespace System.Xml
             return _valid;
         }
 
-        public object Current
+        public object? Current
         {
             get
             {
@@ -119,6 +121,7 @@ namespace System.Xml
                 {
                     return _list[_index];
                 }
+
                 return null;
             }
         }
