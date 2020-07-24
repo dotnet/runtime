@@ -25,7 +25,6 @@ parameters:
     packagingArgs: /p:BuildRpmPackage=true
 
   isOfficialBuild: false
-  useOfficialAllConfigurations: false
   buildFullPlatformManifest: false
 
   liveRuntimeBuildConfig: ''
@@ -297,16 +296,6 @@ jobs:
     - name: LibrariesConfigurationArg
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
-  # Download allconfigurations bits to a separate location. It overlaps with the live libraries
-  # download and causes conflict when unzipping to the same location.
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - name: LibrariesDownloadPathAllConfigurations
-      value: 'artifacts/transport/librariesallconfigurations'
-    - name: LibrariesAllConfigurationsOverridePathArg
-      value: /p:LibrariesAllConfigurationsOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPathAllConfigurations)
-    - name: LibrariesArtifactNameAllConfigurations
-      value: libraries_bin_official_allconfigurations
-
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
@@ -324,8 +313,6 @@ jobs:
         parameters.osSubgroup,
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - libraries_build_allconfigurations_Windows_NT_x64_Release
 
   steps:
 
@@ -392,16 +379,6 @@ jobs:
         artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
         artifactName: '$(LibrariesArtifactName)'
         displayName: 'Libraries artifacts'
-        cleanUnpackFolder: false
-
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPathAllConfigurations)
-        # Always use '.zip' because AllConfigurations is built on Windows but used everywhere.
-        artifactFileName: '$(LibrariesArtifactNameAllConfigurations).zip'
-        artifactName: '$(LibrariesArtifactNameAllConfigurations)'
-        displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:

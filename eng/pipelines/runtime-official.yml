@@ -188,7 +188,6 @@ stages:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        useOfficialAllConfigurations: true
       platforms:
       - OSX_x64
       - Linux_x64
