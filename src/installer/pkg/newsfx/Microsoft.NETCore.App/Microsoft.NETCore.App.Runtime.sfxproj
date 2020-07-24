@@ -61,7 +61,8 @@
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/cross</TargetPath>
       </RuntimeFiles>
       <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="@(MonoIncludeFiles)">
+        Include="@(MonoIncludeFiles)"
+        ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
