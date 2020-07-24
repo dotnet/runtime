@@ -222,10 +222,10 @@
 		<type fullname="System.Int64">
 			<field name="m_value"/>
 		</type>
-
+    
 		<!-- domain.c: mono_defaults.int_class -->
 		<type fullname="System.IntPtr">
-			<field name="m_value"/>
+			<field name="_value"/>
 		</type>
 
 		<!-- exception.c (mono_get_exception_invalid_cast) -->
@@ -275,9 +275,6 @@
 
 		<!-- mono-mlist.c (managed list): used in threadpool.c and gc.c -->
 		<type fullname="Mono.MonoListItem" preserve="fields" />
-
-		<!-- domain.c: mono_defaults.type_class -->
-		<type fullname="System.MonoType" preserve="nothing" />
 
 		<!-- domain.c: mono_defaults.multicastdelegate_class -->
 		<type fullname="System.MulticastDelegate" preserve="fields" />
@@ -420,7 +417,7 @@
 			<!-- marshal.c (mono_marshal_get_synchronized_wrapper) -->
 			<method name="GetTypeFromHandle" />
 			<!-- sre.c (mono_reflection_type_get_underlying_system_type) -->
-			<method name="get_UnderlyingSystemType" feature="sre" />
+			<method name="get_UnderlyingSystemType" />
 		</type>
 
 		<!-- exception.c (mono_get_exception_type_initialization) -->
@@ -457,7 +454,7 @@
 
 		<!-- domain.c: mono_defaults.uint_class -->
 		<type fullname="System.UIntPtr">
-			<field name="m_value"/>
+			<field name="_value"/>
 		</type>
 
 		<!-- object.c: create_unhandled_exception_eventargs (assert) -->
@@ -520,10 +517,14 @@
 
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 
-		<type fullname="System.Reflection.EventInfo" preserve="fields">
-			<method name="AddEventFrame" />
-			<method name="StaticAddEventAdapterFrame" />
-		</type>
+    <!-- TODO: EventInfo has no fields in NetCore as it's an abstract class. Maybe we need RuntimeEventInfo fields
+         but those are already preserved below. -->
+		<!-- <type fullname="System.Reflection.EventInfo" > -->
+      <!-- TODO: There's a reference to these names in native code in security-core-clr.c around likne 735
+                 but the methods don't exist in the managed code. -->
+			<!--<method name="AddEventFrame" />
+			<method name="StaticAddEventAdapterFrame" />-->
+		<!--</type>-->
 
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
@@ -579,13 +580,15 @@
 		</type>
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<!-- reflection.c: ves_icall_get_parameter_info -->
-		<type fullname="System.Reflection.RuntimeParameterInfo" >
-			<!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
-			<field name="MemberImpl" />
-			<field name="PositionImpl" />
-			<!-- reflection.c add_parameter_object_to_array -->
-			<method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
-		</type>
+    <type fullname="System.Reflection.ParameterInfo" >
+      <!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
+      <field name="MemberImpl" />
+      <field name="PositionImpl" />
+    </type>
+    <type fullname="System.Reflection.RuntimeParameterInfo" >
+      <!-- reflection.c add_parameter_object_to_array -->
+      <method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
+    </type>
 
 		<!-- object.c: mono_field_get_value_object and mono_runtime_invoke_array -->
 		<type fullname="System.Reflection.Pointer" >
@@ -640,8 +643,6 @@
 		<!-- native-library.c: mono_class_get_native_library_class -->
 		<type fullname="System.Runtime.InteropServices.NativeLibrary">
 			<method name="MonoLoadLibraryCallbackStub" />
-			<method name="MonoResolveUnmanagedDll" />
-			<method name="MonoResolveUnmanagedDllUsingEvent" />
 		</type>
 
 		<!-- domain.c: mono_defaults.monitor_class -->
@@ -661,7 +662,8 @@
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
 		<type fullname="System.Threading.Thread" preserve="fields">
-			<method name="get_CurrentContext" />
+      <!-- TODO: Not sure what this was in Mono - doesn't exist in NetCore -->
+			<!--<method name="get_CurrentContext" />-->
 		</type>
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
@@ -684,7 +686,7 @@
 		</type>
 
 		<!-- mini-generic-sharing.c -->
-		<type fullname="Mono.ValueTuple" preserve="fields"/>
+		<!-- Mono.ValueTuple has no fields  <type fullname="Mono.ValueTuple" preserve="fields"/>-->
 		<type fullname="Mono.ValueTuple`1" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`2" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>
