@@ -3741,7 +3741,7 @@ protected:
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
-                              CorInfoIntrinsics     intrinsicID,
+                              NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -3937,9 +3937,9 @@ public:
     bool VarTypeIsMultiByteAndCanEnreg(
         var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
 
-    bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
-    bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
-    bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
+    bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
+    bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(GenTree* tree);
 
 private:
@@ -9079,7 +9079,7 @@ public:
         bool compIsVarArgs : 1;          // Does the method have varargs parameters?
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an instrinsic
+        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
         bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 

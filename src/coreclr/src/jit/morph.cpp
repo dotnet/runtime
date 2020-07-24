@@ -5890,7 +5890,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 
 #ifdef FEATURE_SIMD
-    // if this field belongs to simd struct, translate it to simd instrinsic.
+    // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
         GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
@@ -12166,7 +12166,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
 #ifdef TARGET_ARM
         case GT_INTRINSIC:
-            if (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Round)
+            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
             {
                 switch (tree->TypeGet())
                 {

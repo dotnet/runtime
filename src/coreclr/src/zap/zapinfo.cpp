@@ -2219,12 +2219,13 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         else if (strcmp(namespaceName, "System") == 0)
         {
-            if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
+            if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
             {
                 // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
                 // However, we don't know the ISAs the target machine supports so we should
                 // fallback to the method call implementation instead.
-                fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
+                fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0 || strcmp(methodName, "Ceiling") == 0 ||
+                    strcmp(methodName, "Floor") == 0;
             }
         }
         else if (strcmp(namespaceName, "System.Numerics") == 0)
@@ -3991,19 +3992,7 @@ void ZapInfo::expandRawHandleIntrinsic(
 CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                           bool * pMustExpand)
 {
-    CorInfoIntrinsics intrinsicID = m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if ((intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor))
-    {
-        // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
-        // However, we don't know the ISAs the target machine supports so we should
-        // fallback to the method call implementation instead.
-        intrinsicID = CORINFO_INTRINSIC_Illegal;
-    }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    return intrinsicID;
+    return m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
 bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
