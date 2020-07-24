@@ -437,7 +437,7 @@ jobs:
       # independent installers on this leg, but we need to do it somewhere.)
       - template: steps/build-linux-package.yml
         parameters:
-          distroRid: ${{ packageBuild.imageRid }}
+          packageType: ${{ packageBuild.packageType }}
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
           subsetArg: $(installersSubsetArg)
