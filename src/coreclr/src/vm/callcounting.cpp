@@ -815,8 +815,7 @@ void CallCountingManager::CompleteCallCounting()
     {
         CodeVersionManager *codeVersionManager = appDomain->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
         // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
@@ -947,8 +946,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
     bool scheduleTieringBackgroundWork = false;
     {
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
         struct AutoRestartEE

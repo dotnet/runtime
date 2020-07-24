@@ -4882,8 +4882,10 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot(
 {
     WRAPPER_NO_CONTRACT;
 
+    GCX_PREEMP();
+
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
     RecordAndBackpatchEntryPointSlot_Locked(
         mdLoaderAllocator,
