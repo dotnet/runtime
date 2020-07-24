@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Threading.Tasks.Parallel</RootNamespace>
-    <AssemblyName>System.Threading.Tasks.Parallel</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_TRACING</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

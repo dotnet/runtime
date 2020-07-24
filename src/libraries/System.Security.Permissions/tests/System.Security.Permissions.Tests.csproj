@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <!-- SYSLIB0003 is the obsoletion of CAS, but we still have unit tests for it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
   </PropertyGroup>
@@ -22,5 +22,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="XamlLoadPermissionTests.cs"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>
 </Project>
