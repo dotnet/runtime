@@ -37,6 +37,10 @@ import "mscoree.idl";
 
 cpp_quote("#include <winapifamily.h>")
 
+#if !DEFINITIONS_FROM_NON_IMPORTABLE_PLACES
+typedef BYTE *LPBYTE;
+#endif
+
 cpp_quote("STDAPI CLRCreateInstance(REFCLSID clsid, REFIID riid, /*iid_is(riid)*/ LPVOID *ppInterface);")
 
 // IID ICLRMetaHost : uuid(D332DB9E-B9B3-4125-8207-A14884F53216)
