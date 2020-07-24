@@ -1875,8 +1875,7 @@ void Compiler::fgUpdateChangedFlowGraph()
 
     fgComputePreds();
     fgComputeEnterBlocksSet();
-    fgComputeReachabilitySets();
-    fgComputeDoms();
+    fgComputeReachability();
 }
 
 /*****************************************************************************
