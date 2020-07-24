@@ -9,7 +9,7 @@ using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.Interop.PInvoke.Individual;
 using Mono.Linker.Tests.Cases.References.Individual;
 using Mono.Linker.Tests.Cases.Tracing.Individual;
-using Mono.Linker.Tests.Cases.WarningSuppression;
+using Mono.Linker.Tests.Cases.Warnings.WarningSuppression;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;

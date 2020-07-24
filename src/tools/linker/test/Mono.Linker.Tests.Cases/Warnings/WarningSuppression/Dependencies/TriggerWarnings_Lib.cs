@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace Mono.Linker.Tests.Cases.WarningSuppression.Dependencies
+namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression.Dependencies
 {
 	public class TriggerWarnings_Lib
 	{

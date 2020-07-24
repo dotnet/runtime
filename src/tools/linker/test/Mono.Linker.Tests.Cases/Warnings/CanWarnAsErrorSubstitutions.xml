@@ -3,8 +3,8 @@
 	<assembly fullname="NonExistentAssembly" />
 	<assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
 		<!-- IL2008 -->
-		<type fullname="Mono.Linker.Tests.Cases.WarningSuppression.CanDisableWarnings.NonExistentType" />
-		<type fullname="Mono.Linker.Tests.Cases.WarningSuppression.CanDisableWarnings/HelperClass">
+		<type fullname="Mono.Linker.Tests.Cases.Warnings.CanWarnAsError.NonExistentType" />
+		<type fullname="Mono.Linker.Tests.Cases.Warnings.CanWarnAsError/HelperClass">
 			<!-- IL2009 -->
 			<field name="NonExistentField" />
 			<!-- IL2010 -->

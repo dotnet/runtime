@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 [assembly: UnconditionalSuppressMessage ("Test", "IL2006:Suppress unrecognized reflection pattern warnings in this assembly")]
 
-namespace Mono.Linker.Tests.Cases.WarningSuppression
+namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]

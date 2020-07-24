@@ -5,11 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Text;
 
-[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.WarningSuppression.WarningsInType")]
-[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.WarningSuppression.WarningsInMembers.Method")]
-[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.WarningSuppression.WarningsInMembers.get_Property")]
+[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInType")]
+[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.Method")]
+[module: UnconditionalSuppressMessage ("Test", "IL2006", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.get_Property")]
 
-namespace Mono.Linker.Tests.Cases.WarningSuppression
+namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]

@@ -176,6 +176,10 @@ namespace Mono.Linker
 
 		public HashSet<uint> NoWarn { get; set; }
 
+		public Dictionary<uint, bool> WarnAsError { get; set; }
+
+		public bool GeneralWarnAsError { get; set; }
+
 		public bool OutputWarningSuppressions { get; set; }
 
 		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
@@ -232,6 +236,8 @@ namespace Mono.Linker
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
 			WarningSuppressionWriter = new WarningSuppressionWriter (this);
 			NoWarn = new HashSet<uint> ();
+			GeneralWarnAsError = false;
+			WarnAsError = new Dictionary<uint, bool> ();
 
 			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
@@ -531,6 +537,12 @@ namespace Mono.Linker
 			if (!LogMessages)
 				return;
 
+			if ((GeneralWarnAsError && (!WarnAsError.TryGetValue ((uint) code, out var warnAsError) || warnAsError)) ||
+				(!GeneralWarnAsError && (WarnAsError.TryGetValue ((uint) code, out warnAsError) && warnAsError))) {
+				LogError (text, code, subcategory, origin, isWarnAsError: true);
+				return;
+			}
+
 			var warning = MessageContainer.CreateWarningMessage (this, text, code, origin, subcategory);
 			LogMessage (warning);
 		}
@@ -569,12 +581,12 @@ namespace Mono.Linker
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
-		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false)
 		{
 			if (!LogMessages)
 				return;
 
-			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin);
+			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin, isWarnAsError);
 			LogMessage (error);
 		}
 
