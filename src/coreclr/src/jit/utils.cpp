@@ -767,11 +767,11 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
             }
             else if ((L'A' <= *p) && (*p <= L'F'))
             {
-                n = (*p++) - L'A';
+                n = (*p++) - L'A' + 10;
             }
             else if ((L'a' <= *p) && (*p <= L'f'))
             {
-                n = (*p++) - L'a';
+                n = (*p++) - L'a' + 10;
             }
 
             int j = 16 * i + n;
