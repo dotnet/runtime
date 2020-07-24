@@ -414,14 +414,6 @@ namespace System.Net
                     // Domain must start with '.' if set explicitly.
                     if (domain[0] != '.')
                     {
-                        if (!(variant == CookieVariant.Rfc2965 || variant == CookieVariant.Plain))
-                        {
-                            if (shouldThrow)
-                            {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, m_domain));
-                            }
-                            return false;
-                        }
                         domain = '.' + domain;
                     }
 

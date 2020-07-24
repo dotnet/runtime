@@ -2391,7 +2391,6 @@ FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
     return pMT->GetClass_NoLogging()->GetInternalCorElementType();
 }
 FCIMPLEND
-#include <optdefault.h>
 
 //*******************************************************************************
 struct TempEnumValue

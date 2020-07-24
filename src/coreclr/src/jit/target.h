@@ -31,12 +31,15 @@
 // with static const members of Target
 #if defined(TARGET_XARCH)
 #define REGMASK_BITS 32
+#define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
 #error Unsupported or unset target architecture
@@ -1997,9 +2000,13 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #ifdef TARGET_64BIT
 typedef unsigned __int64 target_size_t;
 typedef __int64          target_ssize_t;
-#else  // !TARGET_64BIT
+#define TARGET_SIGN_BIT (1ULL << 63)
+
+#else // !TARGET_64BIT
 typedef unsigned int target_size_t;
 typedef int          target_ssize_t;
+#define TARGET_SIGN_BIT (1ULL << 31)
+
 #endif // !TARGET_64BIT
 
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);

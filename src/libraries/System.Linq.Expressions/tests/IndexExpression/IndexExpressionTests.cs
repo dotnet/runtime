@@ -654,6 +654,7 @@ namespace System.Linq.Expressions.Tests
 
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39771", TestPlatforms.Browser)]
         public static void ConstrainedVirtualCall(bool useInterpreter)
         {
             // Virtual call via base declaration to valuetype.

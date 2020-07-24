@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
+  </PropertyGroup>
+
   <!--
     Subsets are already imported by Directory.Build.props.
     Reference the projects for traversal build. Ordering matters here.
@@ -35,7 +39,7 @@
 
   <Target Name="RestoreWithoutStaticGraph"
           BeforeTargets="Restore">
-    <MSBuild Projects="@(LibrariesRestoreProject);@(DepprojProjectToBuild);@(PkgprojProjectToBuild);@(BundleProjectToBuild)"
+    <MSBuild Projects="@(DepprojProjectToBuild);@(PkgprojProjectToBuild);@(BundleProjectToBuild)"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestoreUseStaticGraphEvaluation=false"
              Targets="Restore" />
   </Target>

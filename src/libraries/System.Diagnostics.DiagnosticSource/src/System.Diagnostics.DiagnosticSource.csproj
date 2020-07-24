@@ -4,8 +4,8 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;netstandard2.0</TargetFrameworks>
+    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -45,8 +45,6 @@
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -60,8 +58,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Runtime.Remoting" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
@@ -78,26 +74,24 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
+    <Compile Include="AssemblyInfo.netfx.cs" />
+    <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.AppContext" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Compile Include="AssemblyInfo.netfx.cs" />
-    <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>
