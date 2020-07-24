@@ -20,14 +20,16 @@ static char **pinvoke_search_directories;
 // sync with src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/DllImportSearchPath.cs
 typedef enum
 {
-	DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR = 0x0,
+	DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR = 0x0, // when no other flags are present, search the application directory and then call LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH
 	DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES = 0x100,
 	DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY = 0x200,
 	DLLIMPORTSEARCHPATH_USER_DIRECTORIES = 0x400,
 	DLLIMPORTSEARCHPATH_SYSTEM32 = 0x800,
 	DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES = 0x1000,
-	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2,
+	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2, // search the assembly directory first regardless of platform, not passed on to LoadLibraryEx
 } DllImportSearchPath;
+static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
+                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
 
 // This lock may be taken within an ALC lock, and should never be the other way around.
 static MonoCoopMutex native_library_module_lock;
@@ -531,7 +533,7 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 		g_free (mdirname);
 	}
 
-	// TODO: Add more search paths according to flags
+	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
 	return module;
 }
@@ -848,9 +850,7 @@ leave:
 }
 
 static int
-get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo);
-
-int get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
+get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 {
 	ERROR_DECL (error);
 	MonoCustomAttrEntry *attr = NULL;
@@ -1232,7 +1232,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	MonoImage *image = m_class_get_image (method->klass);
 #ifdef ENABLE_NETCORE
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
-	ERROR_DECL (error);
 	MonoCustomAttrInfo *cinfo;
 	int flags;
 #endif
@@ -1301,13 +1300,19 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 #ifndef HOST_WIN32
 retry_with_libcoreclr:
 #endif
-	cinfo = mono_custom_attrs_from_method_checked (method, error);
+	{
+		ERROR_DECL (local_error);
+		cinfo = mono_custom_attrs_from_method_checked (method, local_error);
+		mono_error_cleanup (local_error);
+	}
 	flags = get_dllimportsearchpath_flags (cinfo);
 	if (cinfo && !cinfo->cached)
 		mono_custom_attrs_free (cinfo);
 
 	if (flags < 0) {
-		cinfo = mono_custom_attrs_from_assembly_checked (m_class_get_image (method->klass)->assembly, TRUE, error);
+		ERROR_DECL (local_error);
+		cinfo = mono_custom_attrs_from_assembly_checked (m_class_get_image (method->klass)->assembly, TRUE, local_error);
+		mono_error_cleanup (local_error);
 		flags = get_dllimportsearchpath_flags (cinfo);
 		if (cinfo && !cinfo->cached)
 			mono_custom_attrs_free (cinfo);
