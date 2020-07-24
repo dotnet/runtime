@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.JavaScript
             #region IDisposable Support
             private bool _disposedValue; // To detect redundant calls
 
-            private void Dispose(bool disposing)
+            public void Dispose()
             {
                 if (!_disposedValue)
                 {
@@ -145,11 +145,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     _mapIterator = null;
                     _disposedValue = true;
                 }
-            }
-
-            public void Dispose()
-            {
-                Dispose(true);
             }
             #endregion
         }
@@ -219,20 +214,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 #region IDisposable Support
                 private bool _disposedValue; // To detect redundant calls
 
-                private void Dispose(bool disposing)
+                public void Dispose()
                 {
                     if (!_disposedValue)
                     {
-
                         _mapItemIterator?.Dispose();
                         _mapItemIterator = null;
                         _disposedValue = true;
                     }
-                }
-
-                public void Dispose()
-                {
-                    Dispose(true);
                 }
                 #endregion
             }
