@@ -367,9 +367,6 @@ typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type un
 
 #define MONO_HANDLE_CAST(type, value) (MONO_HANDLE_CAST_FOR (type) ((value).__raw))
 
-/* Simpler version if the handle is not used */
-#define MONO_HANDLE_PIN(object) MONO_HANDLE_NEW (MonoObject, (object))
-
 /*
  * Return the raw object reference stored in the handle.
  * The objref is valid while the handle is alive and
@@ -518,6 +515,9 @@ TYPED_HANDLE_DECL (MonoArray);
 TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
+
+/* Simpler version of MONO_HANDLE_NEW if the handle is not used */
+#define MONO_HANDLE_PIN(object) MONO_HANDLE_NEW (MonoObject, (object))
 
 // Structs cannot be cast to structs.
 // As well, a function is needed because an anonymous struct cannot be initialized in C.

@@ -645,7 +645,7 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 
 	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
 	return_val_if_nok (error, NULL);
-	MONO_HANDLE_PIN (params [0]);
+	MONO_HANDLE_PIN ((MonoObject*)params [0]);
 
 	params [1] = val;
 	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_typed_argument_class (), error);
