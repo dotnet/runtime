@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" PackOnly="true" />
   </ItemGroup>
