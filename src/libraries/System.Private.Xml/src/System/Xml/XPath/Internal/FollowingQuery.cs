@@ -38,7 +38,7 @@ namespace MS.Internal.Xml.XPath
                 XPathNavigator prev;
                 do
                 {
-                    prev = _input!.Clone();
+                    prev = _input.Clone();
                     _input = qyInput.Advance();
                 } while (prev.IsDescendant(_input));
                 _input = prev;

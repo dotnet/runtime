@@ -92,7 +92,7 @@ namespace MS.Internal.Xml.XPath
             SetContext((IXmlNamespaceResolver)nsManager);
         }
 
-        public override void SetContext(IXmlNamespaceResolver nsResolver)
+        public override void SetContext(IXmlNamespaceResolver? nsResolver)
         {
             XsltContext? xsltContext = nsResolver as XsltContext;
             if (xsltContext == null)

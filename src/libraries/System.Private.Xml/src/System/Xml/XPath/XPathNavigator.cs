@@ -14,6 +14,7 @@ using System.Text;
 using System.Xml;
 using MS.Internal.Xml.Cache;
 using MS.Internal.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.XPath
 {
@@ -948,7 +949,7 @@ namespace System.Xml.XPath
 
         public abstract bool IsSamePosition(XPathNavigator other);
 
-        public virtual bool IsDescendant(XPathNavigator? nav)
+        public virtual bool IsDescendant([NotNullWhen(true)] XPathNavigator? nav)
         {
             if (nav != null)
             {
@@ -1697,10 +1698,10 @@ namespace System.Xml.XPath
         {
             XPathNavigator navClone = Clone();
 
-            string? nullableLocalName = (localName != null) ? NameTable.Get(localName) : null;
+            string? atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
             while (MoveToPrevious())
             {
-                if (NodeType == XPathNodeType.Element && nullableLocalName == LocalName && namespaceURI == NamespaceURI)
+                if (NodeType == XPathNodeType.Element && atomizedLocalName == LocalName && namespaceURI == NamespaceURI)
                     return true;
             }
 

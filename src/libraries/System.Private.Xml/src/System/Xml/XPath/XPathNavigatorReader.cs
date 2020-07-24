@@ -1271,6 +1271,7 @@ namespace System.Xml.XPath
 
         public override string GetAttribute(string localName, string namespaceName)
         {
+            Debug.Fail("This shouldn't be called.");
             return null!;
         }
 
@@ -1281,6 +1282,7 @@ namespace System.Xml.XPath
 
         public override string GetNamespace(string name)
         {
+            Debug.Fail("This shouldn't be called.");
             return null!;
         }
 
