@@ -185,7 +185,7 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentNull(nameof(checksum));
             }
 
-            if (checksum.Length == 0)
+            if (checksum.IsEmpty)
             {
                 Throw.ArgumentEmptyArray(nameof(checksum));
             }

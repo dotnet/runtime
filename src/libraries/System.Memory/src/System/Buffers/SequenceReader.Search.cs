@@ -75,7 +75,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(sequence.Length > 0);
+            Debug.Assert(!sequence.IsEmpty);
             span = sequence.IsSingleSegment ? sequence.First.Span : sequence.ToArray();
             return true;
         }
@@ -436,7 +436,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(sequence.Length > 0);
+            Debug.Assert(!sequence.IsEmpty);
             span = sequence.IsSingleSegment ? sequence.First.Span : sequence.ToArray();
             return true;
         }

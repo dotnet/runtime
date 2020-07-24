@@ -81,7 +81,7 @@ namespace System.Reflection.TypeLoading.Ecma
             sb.Append(sig.ReturnType);
             sb.Append(' ');
             sb.Append(Name);
-            if (sig.ParameterTypes.Length != 0)
+            if (!sig.ParameterTypes.IsEmpty)
             {
                 sb.Append('[');
                 for (int i = 0; i < sig.ParameterTypes.Length; i++)

@@ -194,7 +194,7 @@ namespace System.Collections.Immutable
         public int LastIndexOf(T item)
         {
             var self = this;
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return -1;
             }
@@ -211,7 +211,7 @@ namespace System.Collections.Immutable
         public int LastIndexOf(T item, int startIndex)
         {
             var self = this;
-            if (self.Length == 0 && startIndex == 0)
+            if (self.IsEmpty && startIndex == 0)
             {
                 return -1;
             }
@@ -293,7 +293,7 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
 
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.Create(item);
             }
@@ -326,7 +326,7 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
             Requires.NotNull(items, nameof(items));
 
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.CreateRange(items);
             }
@@ -412,7 +412,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> Add(T item)
         {
             var self = this;
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.Create(item);
             }
