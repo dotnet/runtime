@@ -17,6 +17,7 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+    <RunScriptHost Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</RunScriptHost>
   </PropertyGroup>
 
   <PropertyGroup>
