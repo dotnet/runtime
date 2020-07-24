@@ -616,31 +616,31 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 
     // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
     //
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_ABS, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
 #ifdef TARGET_ARM64
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Ceiling:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintp, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Round:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 #endif // TARGET_ARM64
 
-        case CORINFO_INTRINSIC_Sqrt:
+        case NI_System_Math_Sqrt:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;

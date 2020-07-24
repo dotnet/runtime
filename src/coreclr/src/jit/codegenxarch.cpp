@@ -6781,7 +6781,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            assert(treeNode->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Abs);
+            assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
 
             // Abs(x) = set sign-bit to zero
             // Abs(f) = f & 0x7fffffff
@@ -6859,7 +6859,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 //    ii) treeNode oper is a GT_INTRINSIC
 //   iii) treeNode type is a floating point type
 //    iv) treeNode is not used from memory
-//     v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
+//     v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
 //    vi) caller of this routine needs to call genProduceReg()
 void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 {
@@ -6887,18 +6887,18 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
     unsigned ival = 0;
 
-    // v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    // v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Round:
             ival = 4;
             break;
 
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Ceiling:
             ival = 10;
             break;
 
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Floor:
             ival = 9;
             break;
 
@@ -7020,9 +7020,9 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 void CodeGen::genIntrinsic(GenTree* treeNode)
 {
     // Right now only Sqrt/Abs are treated as math intrinsics.
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Sqrt:
+        case NI_System_Math_Sqrt:
         {
             // Both operand and its result must be of the same floating point type.
             GenTree* srcNode = treeNode->AsOp()->gtOp1;
@@ -7034,13 +7034,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             break;
         }
 
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             genSSE2BitwiseOp(treeNode);
             break;
 
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             genSSE41RoundOp(treeNode->AsOp());
             break;
 

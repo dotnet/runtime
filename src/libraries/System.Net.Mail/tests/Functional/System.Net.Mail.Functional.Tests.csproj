@@ -31,7 +31,4 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Net.NetworkInformation" />
-  </ItemGroup>
 </Project>

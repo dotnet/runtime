@@ -4616,10 +4616,10 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
 {
     assert(node->OperIs(GT_INTRINSIC));
 
-    CorInfoIntrinsics intrinsicId = node->AsIntrinsic()->gtIntrinsicId;
+    NamedIntrinsic intrinsicName = node->AsIntrinsic()->gtIntrinsicName;
 
-    if (intrinsicId == CORINFO_INTRINSIC_Sqrt || intrinsicId == CORINFO_INTRINSIC_Round ||
-        intrinsicId == CORINFO_INTRINSIC_Ceiling || intrinsicId == CORINFO_INTRINSIC_Floor)
+    if (intrinsicName == NI_System_Math_Sqrt || intrinsicName == NI_System_Math_Round ||
+        intrinsicName == NI_System_Math_Ceiling || intrinsicName == NI_System_Math_Floor)
     {
         GenTree* op1 = node->gtGetOp1();
         if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())

@@ -364,7 +364,7 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_ThrowsCookieException()
+        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_Success()
         {
             const string SchemePrefix = "http://";
             const string OriginalDomain = "contoso.com";
@@ -372,7 +372,8 @@ namespace System.Net.Primitives.Unit.Tests
             var container = new CookieContainer();
             var cookie = new Cookie(CookieName1, CookieValue1) { Version = 1, Domain = OriginalDomain };
             var uri = new Uri(SchemePrefix + OriginalDomain);
-            Assert.Throws<CookieException>(() => container.Add(uri, cookie));
+            container.Add(uri, cookie);
+            Assert.Equal(1, container.GetCookies(uri).Count);
         }
 
         [Fact]
@@ -761,6 +762,81 @@ namespace System.Net.Primitives.Unit.Tests
                 Assert.Equal(c1.Name, c2.Name); // Primitive check for equality
                 Assert.Equal(c1.Value, c2.Value);
             }
+        }
+
+        public static IEnumerable<object[]> DomainCheckIgnoresVersionData()
+        {
+            string[] hosts = { "localhost", "example.com", "test.example.com" };
+            int?[] ports = { null, 5000 };
+            int?[] versions = { null, 0, 1, 100 };
+
+            foreach (string host in hosts)
+            {
+                foreach (int? port in ports)
+                {
+                    string url = $"http://{host}" + (port != null ? $":{port}" : "");
+                    string domainWithLeadingDot = "." + host;
+
+                    foreach (int? version in versions)
+                    {
+                        // domain with leading dot
+                        yield return new object[] { url, domainWithLeadingDot, version };
+
+                        // domain without leading dot
+                        yield return new object[] { url, host, version };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DomainCheckIgnoresVersionData))]
+        public void SetCookies_DomainCheckSuccess_IgnoresVersion(string url, string domain, int? version)
+        {
+            var uri = new Uri(url);
+
+            string cookie = $"my_cookie=my_value; Domain={domain}" + (version != null ? $"; Version = {version}" : "");
+            CookieContainer container = new CookieContainer();
+
+            container.SetCookies(uri, cookie);
+
+            CookieCollection acceptedCookies = container.GetCookies(uri);
+            Assert.Equal(1, acceptedCookies.Count);
+            Assert.Equal(domain, acceptedCookies[0].Domain);
+        }
+
+        [Theory]
+        [InlineData(".example.com")]
+        [InlineData("example.com")]
+        [InlineData(".test.example.com")]
+        [InlineData("test.example.com")]
+        public void SetCookies_DomainCheckSuccess_IgnoresAbsenceOfLeadingDot(string domain)
+        {
+            var uri = new Uri("http://test.example.com");
+
+            string cookie = $"my_cookie=my_value; Domain={domain}";
+            CookieContainer container = new CookieContainer();
+
+            container.SetCookies(uri, cookie);
+
+            CookieCollection acceptedCookies = container.GetCookies(uri);
+            Assert.Equal(1, acceptedCookies.Count);
+            Assert.Equal(domain, acceptedCookies[0].Domain);
+        }
+
+        [Theory]
+        [InlineData(".other.example.com")]
+        [InlineData("other.example.com")]
+        [InlineData(".xample.com")]
+        [InlineData("xample.com")]
+        public void SetCookies_DomainCheckFailure_IgnoresAbsenceOfLeadingDot(string domain)
+        {
+            var uri = new Uri("http://test.example.com");
+
+            string cookie = $"my_cookie=my_value; Domain={domain}";
+            CookieContainer container = new CookieContainer();
+
+            Assert.Throws<CookieException>(() => container.SetCookies(uri, cookie));
         }
     }
 }

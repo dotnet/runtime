@@ -1,7 +1,4 @@
 <Project InitialTargets="UpdateProjectReferencesWithAttributes">
-  <PropertyGroup>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
-  </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.targets" />
 
@@ -17,6 +14,22 @@
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == '' and '$(MSBuildProjectExtension)' != '.vbproj'">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <IsNETCoreAppSrc Condition="'$(IsNETCoreAppSrc)' == '' and
+                                '$(IsSourceProject)' == 'true' and
+                                $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
+    <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
+                                '$(IsReferenceAssembly)' == 'true' and
+                                $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
+                                !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+    <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
+    <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
+                                                   ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
+    <!-- Disable implicit assembly references for .NETCoreApp refs and sources. -->
+    <DisableImplicitAssemblyReferences Condition="'$(DisableImplicitAssemblyReferences)' == '' and
+                                                  '$(DisableImplicitFrameworkReferences)' != 'true' and
+                                                  '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                                  ('$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -41,21 +54,18 @@
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
-  <!-- Corefx-specific binplacing properties -->
+  <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
     <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
-    <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
-    <IsNetFxNETStandardRef Condition="'$(IsNetFxNETStandardRef)' == ''">$(IsNetFxNETStandard)</IsNetFxNETStandardRef>
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
-    <AllTargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;netstandard1.0;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp2.1;netcoreapp3.0;$(netcoreappCurrent);</AllTargetFrameworks>
   </PropertyGroup>
-    
+
   <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <!-- Microsoft.Extensions are not yet using the doc-file package -->
     <BinPlaceItem Include="$(DocumentationFile)" />
@@ -63,74 +73,52 @@
 
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(TargetOS)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
-      <NativePath>$(RuntimePath)</NativePath>
-      <RefPath>$(BuildTargetFrameworkRefPath)</RefPath>
-      <RuntimePath>$(RuntimePath)</RuntimePath>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
+                              Condition="'$(BinPlaceForTargetVertical)' == 'true'">
+      <NativePath>$(NetCoreAppCurrentRuntimePath)</NativePath>
+      <RefPath>$(NetCoreAppCurrentRefPath)</RefPath>
+      <RuntimePath>$(NetCoreAppCurrentRuntimePath)</RuntimePath>
     </BinPlaceTargetFrameworks>
+
     <!-- binplace to directories for packages -->
-    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <PackageFileNativePath>$(NETCoreAppPackageRuntimePath)</PackageFileNativePath>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
+                              Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+      <PackageFileNativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileNativePath>
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
-      <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <NativePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NativePath>
-      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(Configuration)</RefPath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
+      <PackageFileRuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
+      <NativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NativePath>
+      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(Configuration)</RefPath>
+      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
-      <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
+      <SetProperties Condition="'$(IsNETCoreAppSrc)' == 'true' and
+                                '$(BinPlaceRuntime)' == 'true' and
+                                '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Condition="'$(IsAspNetCoreApp)' == 'true'" Include="$(NetCoreAppCurrent)">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)"
+                              Condition="'$(IsAspNetCoreApp)' == 'true'">
       <RuntimePath>$(ASPNETCoreAppPackageRuntimePath)</RuntimePath>
       <RefPath>$(ASPNETCoreAppPackageRefPath)</RefPath>
     </BinPlaceTargetFrameworks>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <NativePath>$(NETCoreAppTestSharedFrameworkPath)</NativePath>
-      <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
-      <NativePath>$(TestHostRootPath)</NativePath>
-      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
+                              Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+      <NativePath >$(NETCoreAppTestSharedFrameworkPath)</NativePath>
+      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <!-- Microsoft.NetCore.App.Ref targeting pack -->
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
-    </BinPlaceTargetFrameworks>
-
-    <!-- Microsoft.NetCore.App.Runtime targeting pack -->
+    <!-- Microsoft.NetCore.App.Ref and Microsoft.NetCore.App.Runtime targeting packs -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <NativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</NativePath>
-      <RuntimePath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
-    </BinPlaceTargetFrameworks>
-
-    <!-- binplace targeting packs which may be different from Build TargetFramework -->
-    <BinPlaceTargetFrameworks Include="netstandard2.0">
-      <RefPath>$(NetStandard20RefPath)</RefPath>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="netstandard2.1">
-      <RefPath>$(NetStandard21RefPath)</RefPath>
-    </BinPlaceTargetFrameworks>
-    <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
-    <BinPlaceTargetFrameworks Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
-      <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
-    </BinPlaceTargetFrameworks>
-    <AllTargetFrameworkList Include="$(AllTargetFrameworks)"/>
-    <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
-    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(AllTargetFrameworkList)">
-      <RefPath>$(RefRootPath)%(Identity)/</RefPath>
-    </BinPlaceTargetFrameworks>
-    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical target frameworks. -->
-    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <NativePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(TargetArchitecture)</NativePath>
-      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
+      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
+      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
     <BinPlaceTargetFrameworks Include="@(AdditionalBinPlaceTargetFrameworks)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
@@ -141,9 +129,9 @@
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" />
   <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" Condition="'$(DisableProjectRestore)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
 
   <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -193,6 +181,7 @@
                                      '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
         <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
                                      '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
+        <Private>false</Private>
       </ProjectReference>
     </ItemGroup>
   </Target>
@@ -200,7 +189,9 @@
   <!-- Used for packaging -->
   <Target Name="IsNotNetCoreAppProject" Returns="@(IsNotNetCoreAppProjectResult)">
     <ItemGroup>
-      <IsNotNetCoreAppProjectResult Condition="'$(IsNetCoreApp)' != 'true'" Include="$(MSBuildProjectName)" Version="$(PackageVersion)" />
+      <IsNotNetCoreAppProjectResult Include="$(MSBuildProjectName)"
+                                    Version="$(PackageVersion)"
+                                    Condition="!$(NetCoreAppLibrary.Contains('$(MSBuildProjectName);'))" />
     </ItemGroup>
   </Target>
 
@@ -222,6 +213,19 @@
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
 
+  <!--
+    Do not clean binplace assets in the ref targeting pack to avoid incremental build failures
+    when the SDK tries to resolve the assets from the FrameworkList.
+  -->
+  <Target Name="RemoveTargetingPackIncrementalClean"
+          Condition="'@(AdditionalCleanDirectories)' != ''"
+          BeforeTargets="IncrementalCleanAdditionalDirectories;
+                         CleanAdditionalDirectories">
+    <ItemGroup>
+      <AdditionalCleanDirectories Remove="@(AdditionalCleanDirectories)" Condition="'%(Identity)' == '$(MicrosoftNetCoreAppRefPackRefDir)'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
     <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
@@ -233,7 +237,6 @@
 
   <PropertyGroup>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
   <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
@@ -253,7 +256,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreApp)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->

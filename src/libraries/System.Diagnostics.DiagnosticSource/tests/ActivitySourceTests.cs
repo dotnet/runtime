@@ -323,12 +323,15 @@ namespace System.Diagnostics.Tests
                 attributes.Add(new KeyValuePair<string, object>("tag2", "tagValue2"));
                 attributes.Add(new KeyValuePair<string, object>("tag3", "tagValue3"));
 
-                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
+                DateTimeOffset startTime = DateTimeOffset.UtcNow;
+
+                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links, startTime))
                 {
                     Assert.NotNull(activity);
                     Assert.Equal("a1", activity.OperationName);
                     Assert.Equal("a1", activity.DisplayName);
                     Assert.Equal(ActivityKind.Client, activity.Kind);
+                    Assert.Equal(startTime, activity.StartTimeUtc);
 
                     Assert.Equal(ctx.TraceId, activity.TraceId);
                     Assert.Equal(ctx.SpanId, activity.ParentSpanId);

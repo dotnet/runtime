@@ -86,6 +86,9 @@ FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primar
 
     _ASSERTE(handle != NULL);
 
+    // Avoid collision with MarshalNative::GCHandleInternalSet
+    FCUnique(0x12);
+
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     mgr->StoreObjectInHandle(handle, _primary);
 }
