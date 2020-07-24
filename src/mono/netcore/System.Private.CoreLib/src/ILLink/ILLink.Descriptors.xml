@@ -569,13 +569,8 @@
 			<!-- reflection.c mono_object_new_checked in add_parameter_object_to_array -->
 			<method signature="System.Void .ctor()" />
 		</type>
-		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<!-- reflection.c: ves_icall_get_parameter_info -->
-		<type fullname="System.Reflection.ParameterInfo" >
-			<!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
-			<field name="MemberImpl" />
-			<field name="PositionImpl" />
-		</type>
+		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<type fullname="System.Reflection.RuntimeParameterInfo" >
 			<!-- reflection.c add_parameter_object_to_array -->
 			<method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
