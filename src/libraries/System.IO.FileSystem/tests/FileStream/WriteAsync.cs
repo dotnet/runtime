@@ -277,8 +277,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // PNSE: Cannot wait on monitors
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Browser PNSE: Cannot wait on monitors
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
