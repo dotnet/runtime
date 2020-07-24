@@ -163,8 +163,10 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0)
+    // If there are no instructions in this IG, we can look back at
+    // the previous IG's instructions if this IG is an extension.
+    //
+    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
