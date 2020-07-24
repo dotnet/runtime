@@ -162,7 +162,7 @@ namespace System.Xml
         // Initializes a new instance of XmlValidatingReaderImpl class for parsing fragments with the specified string, fragment type and parser context
         // This constructor is used when creating XmlValidatingReaderImpl for V1 XmlValidatingReader
         // SxS: This method resolves an Uri but does not expose it to the caller. It's OK to suppress the SxS warning.
-        internal XmlValidatingReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        internal XmlValidatingReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(new XmlTextReader(xmlFragment, fragType, context))
         {
             if (_coreReader.BaseURI!.Length > 0)
@@ -180,7 +180,7 @@ namespace System.Xml
         // Initializes a new instance of XmlValidatingReaderImpl class for parsing fragments with the specified stream, fragment type and parser context
         // This constructor is used when creating XmlValidatingReaderImpl for V1 XmlValidatingReader
         // SxS: This method resolves an Uri but does not expose it to the caller. It's OK to suppress the SxS warning.
-        internal XmlValidatingReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        internal XmlValidatingReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(new XmlTextReader(xmlFragment, fragType, context))
         {
             if (_coreReader.BaseURI!.Length > 0)
@@ -462,7 +462,7 @@ namespace System.Xml
         }
 
         // Returns value of an attribute with the specified LocalName and NamespaceURI
-        public override string? GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _coreReader.GetAttribute(localName, namespaceURI);
         }
@@ -485,7 +485,7 @@ namespace System.Xml
         }
 
         // Moves to an attribute with the specified LocalName and NamespceURI
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             if (!_coreReader.MoveToAttribute(localName, namespaceURI))
             {

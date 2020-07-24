@@ -22,13 +22,13 @@ namespace System.Xml
         {
             int offset = FindNodeOffset(name);
             if (offset >= 0)
-                return (XmlNode?)nodes[offset];
+                return (XmlNode)nodes[offset];
 
             return null;
         }
 
         // Adds a XmlNode using its Name property
-        public virtual XmlNode? SetNamedItem(XmlNode node)
+        public virtual XmlNode? SetNamedItem(XmlNode? node)
         {
             if (node == null)
                 return null;
@@ -73,7 +73,7 @@ namespace System.Xml
                 return null;
             try
             {
-                return (XmlNode?)nodes[index];
+                return (XmlNode)nodes[index];
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -86,17 +86,17 @@ namespace System.Xml
         //
 
         // Retrieves a node specified by LocalName and NamespaceURI.
-        public virtual XmlNode? GetNamedItem(string localName, string namespaceURI)
+        public virtual XmlNode? GetNamedItem(string localName, string? namespaceURI)
         {
             int offset = FindNodeOffset(localName, namespaceURI);
             if (offset >= 0)
-                return (XmlNode?)nodes[offset];
+                return (XmlNode)nodes[offset];
 
             return null;
         }
 
         // Removes a node specified by local name and namespace URI.
-        public virtual XmlNode? RemoveNamedItem(string localName, string namespaceURI)
+        public virtual XmlNode? RemoveNamedItem(string localName, string? namespaceURI)
         {
             int offset = FindNodeOffset(localName, namespaceURI);
             if (offset >= 0)
@@ -117,7 +117,7 @@ namespace System.Xml
             int c = this.Count;
             for (int i = 0; i < c; i++)
             {
-                XmlNode node = (XmlNode)nodes[i]!;
+                XmlNode node = (XmlNode)nodes[i];
 
                 if (name == node.Name)
                     return i;
@@ -126,12 +126,12 @@ namespace System.Xml
             return -1;
         }
 
-        internal int FindNodeOffset(string localName, string namespaceURI)
+        internal int FindNodeOffset(string localName, string? namespaceURI)
         {
             int c = this.Count;
             for (int i = 0; i < c; i++)
             {
-                XmlNode node = (XmlNode)nodes[i]!;
+                XmlNode node = (XmlNode)nodes[i];
 
                 if (node.LocalName == localName && node.NamespaceURI == namespaceURI)
                     return i;
@@ -183,7 +183,7 @@ namespace System.Xml
 
         internal virtual XmlNode RemoveNodeAt(int i)
         {
-            XmlNode oldNode = (XmlNode)nodes[i]!;
+            XmlNode oldNode = (XmlNode)nodes[i];
 
             string? oldNodeValue = oldNode.Value;
             XmlNodeChangedEventArgs? args = parent.GetEventArgs(oldNode, parent, null, oldNodeValue, oldNodeValue, XmlNodeChangedAction.Remove);

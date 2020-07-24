@@ -814,7 +814,7 @@ namespace System.Xml
             {
                 for (int i = cAttrs - 1; i >= 0; --i)
                 {
-                    XmlAttribute attr = attrs[i]!;
+                    XmlAttribute attr = attrs[i];
                     if (attr.Prefix == _doc!.strXmlns)
                     {
                         string? nsUri = mgr.LookupNamespace(attr.LocalName);

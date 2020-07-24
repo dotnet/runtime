@@ -68,34 +68,34 @@ namespace System.Xml
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
-                            await writer.WriteEntityRefAsync((string)item.data!).ConfigureAwait(false);
+                            await writer.WriteEntityRefAsync((string)item.data).ConfigureAwait(false);
                             break;
                         case ItemType.CharEntity:
-                            await writer.WriteCharEntityAsync((char)item.data!).ConfigureAwait(false);
+                            await writer.WriteCharEntityAsync((char)item.data).ConfigureAwait(false);
                             break;
                         case ItemType.SurrogateCharEntity:
-                            char[] chars = (char[])item.data!;
+                            char[] chars = (char[])item.data;
                             await writer.WriteSurrogateCharEntityAsync(chars[0], chars[1]).ConfigureAwait(false);
                             break;
                         case ItemType.Whitespace:
-                            await writer.WriteWhitespaceAsync((string)item.data!).ConfigureAwait(false);
+                            await writer.WriteWhitespaceAsync((string)item.data).ConfigureAwait(false);
                             break;
                         case ItemType.String:
-                            await writer.WriteStringAsync((string)item.data!).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
                             break;
                         case ItemType.StringChars:
-                            bufChunk = (BufferChunk)item.data!;
+                            bufChunk = (BufferChunk)item.data;
                             await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
                             break;
                         case ItemType.Raw:
-                            await writer.WriteRawAsync((string)item.data!).ConfigureAwait(false);
+                            await writer.WriteRawAsync((string)item.data).ConfigureAwait(false);
                             break;
                         case ItemType.RawChars:
-                            bufChunk = (BufferChunk)item.data!;
+                            bufChunk = (BufferChunk)item.data;
                             await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
                             break;
                         case ItemType.ValueString:
-                            await writer.WriteStringAsync((string)item.data!).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
                             break;
                         default:
                             Debug.Fail("Unexpected ItemType value.");

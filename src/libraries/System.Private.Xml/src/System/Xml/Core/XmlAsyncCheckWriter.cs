@@ -123,7 +123,7 @@ namespace System.Xml
             _coreWriter.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             CheckAsync();
             _coreWriter.WriteProcessingInstruction(name, text);

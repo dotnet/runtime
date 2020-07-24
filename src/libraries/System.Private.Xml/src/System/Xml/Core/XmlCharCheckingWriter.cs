@@ -194,7 +194,7 @@ namespace System.Xml
             writer.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (_checkNames)
             {
@@ -215,7 +215,7 @@ namespace System.Xml
                 }
             }
 
-            writer.WriteProcessingInstruction(name, text!);
+            writer.WriteProcessingInstruction(name, text);
         }
 
         public override void WriteEntityRef(string name)

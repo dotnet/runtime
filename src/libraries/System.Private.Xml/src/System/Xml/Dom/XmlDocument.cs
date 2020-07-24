@@ -918,7 +918,7 @@ namespace System.Xml
 
         // Creates an XmlAttribute with the specified LocalName
         // and NamespaceURI.
-        public XmlAttribute CreateAttribute(string qualifiedName, string namespaceURI)
+        public XmlAttribute CreateAttribute(string qualifiedName, string? namespaceURI)
         {
             string prefix = string.Empty;
             string localName = string.Empty;
@@ -929,7 +929,7 @@ namespace System.Xml
 
         // Creates an XmlElement with the specified LocalName and
         // NamespaceURI.
-        public XmlElement CreateElement(string qualifiedName, string namespaceURI)
+        public XmlElement CreateElement(string qualifiedName, string? namespaceURI)
         {
             string prefix = string.Empty;
             string localName = string.Empty;
@@ -1048,8 +1048,8 @@ namespace System.Xml
             int cAttr = fromElem.Attributes!.Count;
             for (int iAttr = 0; iAttr < cAttr; iAttr++)
             {
-                if (fromElem.Attributes[iAttr]!.Specified)
-                    toElem.Attributes!.SetNamedItem(ImportNodeInternal(fromElem.Attributes[iAttr]!, true));
+                if (fromElem.Attributes[iAttr].Specified)
+                    toElem.Attributes!.SetNamedItem(ImportNodeInternal(fromElem.Attributes[iAttr], true));
             }
         }
 
@@ -1129,7 +1129,7 @@ namespace System.Xml
 
 
         // Creates a XmlNode with the specified XmlNodeType, Prefix, Name, and NamespaceURI.
-        public virtual XmlNode CreateNode(XmlNodeType type, string? prefix, string name, string namespaceURI)
+        public virtual XmlNode CreateNode(XmlNodeType type, string? prefix, string name, string? namespaceURI)
         {
             switch (type)
             {
@@ -1185,14 +1185,14 @@ namespace System.Xml
 
         // Creates an XmlNode with the specified node type, Name, and
         // NamespaceURI.
-        public virtual XmlNode CreateNode(string nodeTypeString, string name, string namespaceURI)
+        public virtual XmlNode CreateNode(string nodeTypeString, string name, string? namespaceURI)
         {
             return CreateNode(ConvertToNodeType(nodeTypeString), name, namespaceURI);
         }
 
         // Creates an XmlNode with the specified XmlNodeType, Name, and
         // NamespaceURI.
-        public virtual XmlNode CreateNode(XmlNodeType type, string name, string namespaceURI)
+        public virtual XmlNode CreateNode(XmlNodeType type, string name, string? namespaceURI)
         {
             return CreateNode(type, null, name, namespaceURI);
         }
@@ -1500,12 +1500,12 @@ namespace System.Xml
             }
         }
 
-        public void Validate(ValidationEventHandler validationEventHandler)
+        public void Validate(ValidationEventHandler? validationEventHandler)
         {
             Validate(validationEventHandler, this);
         }
 
-        public void Validate(ValidationEventHandler validationEventHandler, XmlNode nodeToValidate)
+        public void Validate(ValidationEventHandler? validationEventHandler, XmlNode nodeToValidate)
         {
             if (_schemas == null || _schemas.Count == 0)
             { //Should we error

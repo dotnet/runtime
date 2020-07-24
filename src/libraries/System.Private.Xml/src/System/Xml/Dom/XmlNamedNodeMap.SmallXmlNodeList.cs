@@ -4,6 +4,7 @@
 #nullable enable
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Xml
 {
@@ -34,14 +35,14 @@ namespace System.Xml
                 }
             }
 
-            public object? this[int index]
+            public object this[int index]
             {
                 get
                 {
                     if (_field == null)
                         throw new ArgumentOutOfRangeException(nameof(index));
 
-                    List<object?>? list = _field as List<object?>;
+                    List<object>? list = _field as List<object>;
                     if (list != null)
                         return list[index];
 
@@ -58,10 +59,11 @@ namespace System.Xml
                 {
                     if (value == null)
                     {
+                        Debug.Fail("Null was added to the collection which didn't expect it");
                         // If a single null value needs to be stored, then
                         // upgrade to an ArrayList
-                        List<object?> temp = new List<object?>();
-                        temp.Add(null);
+                        List<object> temp = new List<object>();
+                        temp.Add(null!);
                         _field = temp;
                     }
                     else
@@ -70,14 +72,14 @@ namespace System.Xml
                     return;
                 }
 
-                List<object?>? list = _field as List<object?>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     list.Add(value);
                 }
                 else
                 {
-                    list = new List<object?>();
+                    list = new List<object>();
                     list.Add(_field);
                     list.Add(value);
                     _field = list;
@@ -112,7 +114,7 @@ namespace System.Xml
                     return;
                 }
 
-                List<object?>? list = _field as List<object?>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     list.Insert(index, value);
@@ -121,14 +123,14 @@ namespace System.Xml
 
                 if (index == 0)
                 {
-                    list = new List<object?>();
+                    list = new List<object>();
                     list.Add(value);
                     list.Add(_field);
                     _field = list;
                 }
                 else if (index == 1)
                 {
-                    list = new List<object?>();
+                    list = new List<object>();
                     list.Add(_field);
                     list.Add(value);
                     _field = list;
@@ -141,15 +143,15 @@ namespace System.Xml
 
             private class SingleObjectEnumerator : IEnumerator
             {
-                private readonly object? _loneValue;
+                private readonly object _loneValue;
                 private int _position = -1;
 
-                public SingleObjectEnumerator(object? value)
+                public SingleObjectEnumerator(object value)
                 {
                     _loneValue = value;
                 }
 
-                public object? Current
+                public object Current
                 {
                     get
                     {
@@ -187,7 +189,7 @@ namespace System.Xml
                     return XmlDocument.EmptyEnumerator;
                 }
 
-                List<object?>? list = _field as List<object?>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     return list.GetEnumerator();

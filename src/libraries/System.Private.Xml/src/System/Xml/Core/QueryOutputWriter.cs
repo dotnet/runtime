@@ -259,7 +259,7 @@ namespace System.Xml
             _wrapped.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             EndCDataSection();
             _wrapped.WriteProcessingInstruction(name, text);

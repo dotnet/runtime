@@ -37,7 +37,7 @@ namespace System.Xml
             }
         }
 
-        protected internal XmlElement(string prefix, string localName, string namespaceURI, XmlDocument doc)
+        protected internal XmlElement(string prefix, string localName, string? namespaceURI, XmlDocument doc)
         : this(doc.AddXmlName(prefix, localName, namespaceURI, null), true, doc)
         {
         }
@@ -337,7 +337,7 @@ namespace System.Xml
         //
 
         // Returns the value for the attribute with the specified LocalName and NamespaceURI.
-        public virtual string GetAttribute(string localName, string namespaceURI)
+        public virtual string GetAttribute(string localName, string? namespaceURI)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr != null)
@@ -348,7 +348,7 @@ namespace System.Xml
 
         // Sets the value of the attribute with the specified name
         // and namespace.
-        public virtual string SetAttribute(string localName, string namespaceURI, string value)
+        public virtual string SetAttribute(string localName, string? namespaceURI, string value)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr == null)
@@ -366,13 +366,13 @@ namespace System.Xml
         }
 
         // Removes an attribute specified by LocalName and NamespaceURI.
-        public virtual void RemoveAttribute(string localName, string namespaceURI)
+        public virtual void RemoveAttribute(string localName, string? namespaceURI)
         {
             RemoveAttributeNode(localName, namespaceURI);
         }
 
         // Returns the XmlAttribute with the specified LocalName and NamespaceURI.
-        public virtual XmlAttribute? GetAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute? GetAttributeNode(string localName, string? namespaceURI)
         {
             if (HasAttributes)
                 return Attributes[localName, namespaceURI];
@@ -380,7 +380,7 @@ namespace System.Xml
         }
 
         // Adds the specified XmlAttribute.
-        public virtual XmlAttribute SetAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute SetAttributeNode(string localName, string? namespaceURI)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr == null)
@@ -393,7 +393,7 @@ namespace System.Xml
         }
 
         // Removes the XmlAttribute specified by LocalName and NamespaceURI.
-        public virtual XmlAttribute? RemoveAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute? RemoveAttributeNode(string localName, string? namespaceURI)
         {
             if (HasAttributes)
             {
@@ -420,7 +420,7 @@ namespace System.Xml
 
         // Determines whether the current node has the specified
         // attribute from the specified namespace.
-        public virtual bool HasAttribute(string localName, string namespaceURI)
+        public virtual bool HasAttribute(string localName, string? namespaceURI)
         {
             return GetAttributeNode(localName, namespaceURI) != null;
         }
@@ -515,7 +515,7 @@ namespace System.Xml
                 XmlAttributeCollection attrs = Attributes;
                 for (int i = 0; i < attrs.Count; i += 1)
                 {
-                    XmlAttribute attr = attrs[i]!;
+                    XmlAttribute attr = attrs[i];
                     attr.WriteTo(w);
                 }
             }

@@ -34,7 +34,7 @@ namespace System.Xml
         private XmlSchemaInfo? _schemaInfo;
 
         //Event Handler
-        private readonly ValidationEventHandler _eventHandler;
+        private readonly ValidationEventHandler? _eventHandler;
         private readonly ValidationEventHandler _internalEventHandler;
 
         //Store nodes
@@ -55,7 +55,7 @@ namespace System.Xml
         private readonly string _xsiType;
         private readonly string _xsiNil;
 
-        public DocumentSchemaValidator(XmlDocument ownerDocument, XmlSchemaSet schemas, ValidationEventHandler eventHandler)
+        public DocumentSchemaValidator(XmlDocument ownerDocument, XmlSchemaSet schemas, ValidationEventHandler? eventHandler)
         {
             _schemas = schemas;
             _eventHandler = eventHandler;
@@ -186,7 +186,7 @@ namespace System.Xml
                                 XmlAttributeCollection attrs = elem.Attributes;
                                 for (int i = 0; i < attrs.Count; i++)
                                 {
-                                    XmlAttribute attr = attrs[i]!;
+                                    XmlAttribute attr = attrs[i];
                                     if (Ref.Equal(attr.NamespaceURI, _document.strReservedXmlns))
                                     {
                                         if (attr.Prefix.Length == 0)
@@ -350,7 +350,7 @@ namespace System.Xml
             for (int i = 0; i < attributes.Count; i++)
             {
                 attr = attributes[i];
-                string objectNs = attr!.NamespaceURI;
+                string objectNs = attr.NamespaceURI;
                 string objectName = attr.LocalName;
                 Debug.Assert(_nameTable.Get(attr.NamespaceURI) != null);
                 Debug.Assert(_nameTable.Get(attr.LocalName) != null);
@@ -408,7 +408,7 @@ namespace System.Xml
             {
                 attr = attributes[i];
                 _currentNode = attr; //For nodeValueGetter to pick up the right attribute value
-                if (Ref.Equal(attr!.NamespaceURI, _nsXmlNs))
+                if (Ref.Equal(attr.NamespaceURI, _nsXmlNs))
                 { //Do not validate namespace decls
                     continue;
                 }
@@ -707,7 +707,7 @@ namespace System.Xml
             for (int i = 0; i < attributes.Count; i++)
             {
                 attr = attributes[i];
-                string objectNs = attr!.NamespaceURI;
+                string objectNs = attr.NamespaceURI;
                 string objectName = attr.LocalName;
                 Debug.Assert(_nameTable.Get(attr.NamespaceURI) != null);
                 Debug.Assert(_nameTable.Get(attr.LocalName) != null);

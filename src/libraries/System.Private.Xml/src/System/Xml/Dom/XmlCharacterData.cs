@@ -97,7 +97,7 @@ namespace System.Xml
 
         // Appends the specified string to the end of the character
         // data of the node.
-        public virtual void AppendData(string strData)
+        public virtual void AppendData(string? strData)
         {
             XmlNode? parent = ParentNode;
             int capacity = _data != null ? _data.Length : 0;
@@ -115,7 +115,7 @@ namespace System.Xml
         }
 
         // Insert the specified string at the specified character offset.
-        public virtual void InsertData(int offset, string strData)
+        public virtual void InsertData(int offset, string? strData)
         {
             XmlNode? parent = ParentNode;
             int capacity = _data != null ? _data.Length : 0;
@@ -160,7 +160,7 @@ namespace System.Xml
 
         // Replace the specified number of characters starting at the specified offset with the
         // specified string.
-        public virtual void ReplaceData(int offset, int count, string strData)
+        public virtual void ReplaceData(int offset, int count, string? strData)
         {
             int len = _data != null ? _data.Length : 0;
             if (len > 0)

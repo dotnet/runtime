@@ -6,6 +6,7 @@ namespace System.Xml
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
     using System.Xml;
@@ -79,7 +80,7 @@ namespace System.Xml
         public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteDocType(name, pubid, sysid, subset);
+            _wrapped.WriteDocType(name, pubid, sysid, subset);
         }
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
@@ -93,13 +94,13 @@ namespace System.Xml
                     CreateWrappedWriter(XmlOutputMethod.Xml);
             }
 
-            _wrapped!.WriteStartElement(prefix, localName, ns);
+            _wrapped.WriteStartElement(prefix, localName, ns);
         }
 
         public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteStartAttribute(prefix, localName, ns);
+            _wrapped.WriteStartAttribute(prefix, localName, ns);
         }
 
         public override void WriteEndAttribute()
@@ -111,7 +112,7 @@ namespace System.Xml
         public override void WriteCData(string? text)
         {
             if (TextBlockCreatesWriter(text))
-                _wrapped!.WriteCData(text);
+                _wrapped.WriteCData(text);
             else
                 _eventCache.WriteCData(text);
         }
@@ -124,7 +125,7 @@ namespace System.Xml
                 _wrapped.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (_wrapped == null)
                 _eventCache.WriteProcessingInstruction(name, text);
@@ -143,7 +144,7 @@ namespace System.Xml
         public override void WriteString(string? text)
         {
             if (TextBlockCreatesWriter(text))
-                _wrapped!.WriteString(text);
+                _wrapped.WriteString(text);
             else
                 _eventCache.WriteString(text);
         }
@@ -161,7 +162,7 @@ namespace System.Xml
         public override void WriteRaw(string data)
         {
             if (TextBlockCreatesWriter(data))
-                _wrapped!.WriteRaw(data);
+                _wrapped.WriteRaw(data);
             else
                 _eventCache.WriteRaw(data);
         }
@@ -169,105 +170,105 @@ namespace System.Xml
         public override void WriteEntityRef(string name)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteEntityRef(name);
+            _wrapped.WriteEntityRef(name);
         }
 
         public override void WriteCharEntity(char ch)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteCharEntity(ch);
+            _wrapped.WriteCharEntity(ch);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteSurrogateCharEntity(lowChar, highChar);
+            _wrapped.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteBase64(buffer, index, count);
+            _wrapped.WriteBase64(buffer, index, count);
         }
 
         public override void WriteBinHex(byte[] buffer, int index, int count)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteBinHex(buffer, index, count);
+            _wrapped.WriteBinHex(buffer, index, count);
         }
 
         public override void Close()
         {
             // Flush any cached events to an Xml writer
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.Close();
+            _wrapped.Close();
         }
 
         public override void Flush()
         {
             // Flush any cached events to an Xml writer
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.Flush();
+            _wrapped.Flush();
         }
 
         public override void WriteValue(object value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(string? value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(bool value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(DateTime value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(DateTimeOffset value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(double value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(float value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(decimal value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(int value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         public override void WriteValue(long value)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteValue(value);
+            _wrapped.WriteValue(value);
         }
 
         //-----------------------------------------------
@@ -295,14 +296,14 @@ namespace System.Xml
         {
             // Forces xml writer to be created
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteXmlDeclaration(standalone);
+            _wrapped.WriteXmlDeclaration(standalone);
         }
 
         internal override void WriteXmlDeclaration(string xmldecl)
         {
             // Forces xml writer to be created
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteXmlDeclaration(xmldecl);
+            _wrapped.WriteXmlDeclaration(xmldecl);
         }
 
         internal override void StartElementContent()
@@ -326,7 +327,7 @@ namespace System.Xml
         internal override void WriteNamespaceDeclaration(string prefix, string ns)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteNamespaceDeclaration(prefix, ns);
+            _wrapped.WriteNamespaceDeclaration(prefix, ns);
         }
 
         internal override bool SupportsNamespaceDeclarationInChunks
@@ -340,7 +341,7 @@ namespace System.Xml
         internal override void WriteStartNamespaceDeclaration(string prefix)
         {
             EnsureWrappedWriter(XmlOutputMethod.Xml);
-            _wrapped!.WriteStartNamespaceDeclaration(prefix);
+            _wrapped.WriteStartNamespaceDeclaration(prefix);
         }
 
         internal override void WriteEndNamespaceDeclaration()
@@ -378,6 +379,7 @@ namespace System.Xml
         /// <summary>
         /// If a wrapped writer has not yet been created, create one.
         /// </summary>
+        [MemberNotNull(nameof(_wrapped))]
         private void EnsureWrappedWriter(XmlOutputMethod outMethod)
         {
             if (_wrapped == null)
@@ -389,6 +391,7 @@ namespace System.Xml
         /// force the creation of a wrapped writer.  Otherwise, create a wrapped writer if one has not yet been
         /// created and return true.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(_wrapped))]
         private bool TextBlockCreatesWriter(string? textBlock)
         {
             if (_wrapped == null)
@@ -409,6 +412,7 @@ namespace System.Xml
         /// <summary>
         /// Create either the Html or Xml writer and send any cached events to it.
         /// </summary>
+        [MemberNotNull(nameof(_wrapped))]
         private void CreateWrappedWriter(XmlOutputMethod outMethod)
         {
             Debug.Assert(_wrapped == null);

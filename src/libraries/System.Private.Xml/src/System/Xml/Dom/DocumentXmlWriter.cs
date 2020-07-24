@@ -294,11 +294,11 @@ namespace System.Xml
             AddChild(node, _write);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             VerifyState(Method.WriteProcessingInstruction);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
-            XmlNode node = _document.CreateProcessingInstruction(name, text);
+            XmlNode node = _document.CreateProcessingInstruction(name, text!);
             AddChild(node, _write);
         }
 
@@ -440,7 +440,7 @@ namespace System.Xml
                 Debug.Assert(attr != null);
                 int offset = attrs.FindNodeOffsetNS(attr);
                 if (offset != -1
-                    && ((XmlAttribute)attrs.nodes[offset]!).Specified)
+                    && ((XmlAttribute)attrs.nodes[offset]).Specified)
                 {
                     throw new XmlException(SR.Xml_DupAttributeName, attr.Prefix.Length == 0 ? attr.LocalName : string.Concat(attr.Prefix, ":", attr.LocalName));
                 }

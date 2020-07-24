@@ -79,11 +79,11 @@ namespace System.Xml
         }
 
         // Gets the XmlDocument that contains this node.
-        public override XmlDocument? OwnerDocument
+        public override XmlDocument OwnerDocument
         {
             get
             {
-                return (XmlDocument?)parentNode;
+                return (XmlDocument)parentNode!;
             }
         }
 

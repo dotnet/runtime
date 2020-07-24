@@ -163,8 +163,7 @@ namespace System.Xml
                             ValidateQName(base.reader.Name);
                             CheckCharacters(base.reader.Value);
 
-                            string? str;
-                            str = base.reader.GetAttribute("SYSTEM");
+                            string? str = base.reader.GetAttribute("SYSTEM");
                             if (str != null)
                             {
                                 CheckCharacters(str);

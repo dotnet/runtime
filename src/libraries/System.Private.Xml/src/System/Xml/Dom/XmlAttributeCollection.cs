@@ -17,13 +17,13 @@ namespace System.Xml
 
         // Gets the attribute with the specified index.
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
-        public XmlAttribute? this[int i]
+        public XmlAttribute this[int i]
         {
             get
             {
                 try
                 {
-                    return (XmlAttribute?)nodes[i];
+                    return (XmlAttribute)nodes[i];
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -42,7 +42,7 @@ namespace System.Xml
 
                 for (int i = 0; i < nodes.Count; i++)
                 {
-                    XmlAttribute node = (XmlAttribute)nodes[i]!;
+                    XmlAttribute node = (XmlAttribute)nodes[i];
 
                     if (hash == node.LocalNameHash
                         && name == node.Name)
@@ -57,7 +57,7 @@ namespace System.Xml
 
         // Gets the attribute with the specified LocalName and NamespaceUri.
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
-        public XmlAttribute? this[string localName, string namespaceURI]
+        public XmlAttribute? this[string localName, string? namespaceURI]
         {
             get
             {
@@ -65,7 +65,7 @@ namespace System.Xml
 
                 for (int i = 0; i < nodes.Count; i++)
                 {
-                    XmlAttribute node = (XmlAttribute)nodes[i]!;
+                    XmlAttribute node = (XmlAttribute)nodes[i];
 
                     if (hash == node.LocalNameHash
                         && localName == node.LocalName
@@ -83,7 +83,7 @@ namespace System.Xml
         {
             for (int i = 0; i < nodes.Count; i++)
             {
-                XmlAttribute tmp = (XmlAttribute)nodes[i]!;
+                XmlAttribute tmp = (XmlAttribute)nodes[i];
 
                 if (tmp.LocalNameHash == node.LocalNameHash
                     && tmp.Name == node.Name
@@ -100,7 +100,7 @@ namespace System.Xml
         {
             for (int i = 0; i < nodes.Count; i++)
             {
-                XmlAttribute tmp = (XmlAttribute)nodes[i]!;
+                XmlAttribute tmp = (XmlAttribute)nodes[i];
                 if (tmp.LocalNameHash == node.LocalNameHash
                     && tmp.LocalName == node.LocalName
                     && tmp.NamespaceURI == node.NamespaceURI)
@@ -174,7 +174,7 @@ namespace System.Xml
         }
 
         // Inserts the specified attribute immediately before the specified reference attribute.
-        public XmlAttribute InsertBefore(XmlAttribute newNode, XmlAttribute refNode)
+        public XmlAttribute InsertBefore(XmlAttribute newNode, XmlAttribute? refNode)
         {
             if (newNode == refNode)
                 return newNode;
@@ -203,7 +203,7 @@ namespace System.Xml
         }
 
         // Inserts the specified attribute immediately after the specified reference attribute.
-        public XmlAttribute InsertAfter(XmlAttribute newNode, XmlAttribute refNode)
+        public XmlAttribute InsertAfter(XmlAttribute newNode, XmlAttribute? refNode)
         {
             if (newNode == refNode)
                 return newNode;
@@ -293,7 +293,7 @@ namespace System.Xml
         public void CopyTo(XmlAttribute[] array, int index)
         {
             for (int i = 0, max = Count; i < max; i++, index++)
-                array[index] = (XmlAttribute)(((XmlNode)nodes[i]!).CloneNode(true));
+                array[index] = (XmlAttribute)(((XmlNode)nodes[i]).CloneNode(true));
         }
 
         internal override XmlNode AddNode(XmlNode node)
@@ -374,7 +374,7 @@ namespace System.Xml
             int ind = FindNodeOffset(attr.LocalName, attr.NamespaceURI);
             if (ind != -1)
             {
-                XmlAttribute at = (XmlAttribute)nodes[ind]!;
+                XmlAttribute at = (XmlAttribute)nodes[ind];
                 base.RemoveNodeAt(ind);
                 RemoveParentFromElementIdAttrMap(at);
             }

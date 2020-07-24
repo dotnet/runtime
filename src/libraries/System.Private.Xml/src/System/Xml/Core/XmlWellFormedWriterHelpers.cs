@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -164,10 +165,15 @@ namespace System.Xml
             private class Item
             {
                 internal ItemType type;
-                internal object? data;
+                internal object data;
 
-                internal Item() { }
+                internal Item(ItemType type, object data)
+                {
+                    Set(type, data);
+                }
 
+                [MemberNotNull(nameof(type))]
+                [MemberNotNull(nameof(data))]
                 internal void Set(ItemType type, object data)
                 {
                     this.type = type;
@@ -350,34 +356,34 @@ namespace System.Xml
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
-                            writer.WriteEntityRef((string)item.data!);
+                            writer.WriteEntityRef((string)item.data);
                             break;
                         case ItemType.CharEntity:
-                            writer.WriteCharEntity((char)item.data!);
+                            writer.WriteCharEntity((char)item.data);
                             break;
                         case ItemType.SurrogateCharEntity:
-                            char[] chars = (char[])item.data!;
+                            char[] chars = (char[])item.data;
                             writer.WriteSurrogateCharEntity(chars[0], chars[1]);
                             break;
                         case ItemType.Whitespace:
-                            writer.WriteWhitespace((string)item.data!);
+                            writer.WriteWhitespace((string)item.data);
                             break;
                         case ItemType.String:
-                            writer.WriteString((string)item.data!);
+                            writer.WriteString((string)item.data);
                             break;
                         case ItemType.StringChars:
-                            bufChunk = (BufferChunk)item.data!;
+                            bufChunk = (BufferChunk)item.data;
                             writer.WriteChars(bufChunk.buffer, bufChunk.index, bufChunk.count);
                             break;
                         case ItemType.Raw:
-                            writer.WriteRaw((string)item.data!);
+                            writer.WriteRaw((string)item.data);
                             break;
                         case ItemType.RawChars:
-                            bufChunk = (BufferChunk)item.data!;
+                            bufChunk = (BufferChunk)item.data;
                             writer.WriteChars(bufChunk.buffer, bufChunk.index, bufChunk.count);
                             break;
                         case ItemType.ValueString:
-                            writer.WriteValue((string)item.data!);
+                            writer.WriteValue((string)item.data);
                             break;
                         default:
                             Debug.Fail("Unexpected ItemType value.");
@@ -419,7 +425,7 @@ namespace System.Xml
                         case ItemType.String:
                         case ItemType.Raw:
                         case ItemType.ValueString:
-                            item.data = XmlConvert.TrimStringStart((string)item.data!);
+                            item.data = XmlConvert.TrimStringStart((string)item.data);
                             if (((string)item.data).Length == 0)
                             {
                                 // no characters left -> move the firstItem index to exclude it from the Replay
@@ -428,7 +434,7 @@ namespace System.Xml
                             break;
                         case ItemType.StringChars:
                         case ItemType.RawChars:
-                            BufferChunk bufChunk = (BufferChunk)item.data!;
+                            BufferChunk bufChunk = (BufferChunk)item.data;
                             int endIndex = bufChunk.index + bufChunk.count;
                             while (bufChunk.index < endIndex && xmlCharType.IsWhiteSpace(bufChunk.buffer[bufChunk.index]))
                             {
@@ -460,7 +466,7 @@ namespace System.Xml
                         case ItemType.String:
                         case ItemType.Raw:
                         case ItemType.ValueString:
-                            item.data = XmlConvert.TrimStringEnd((string)item.data!);
+                            item.data = XmlConvert.TrimStringEnd((string)item.data);
                             if (((string)item.data).Length == 0)
                             {
                                 // no characters left -> move the lastItem index to exclude it from the Replay
@@ -469,7 +475,7 @@ namespace System.Xml
                             break;
                         case ItemType.StringChars:
                         case ItemType.RawChars:
-                            BufferChunk bufChunk = (BufferChunk)item.data!;
+                            BufferChunk bufChunk = (BufferChunk)item.data;
                             while (bufChunk.count > 0 && xmlCharType.IsWhiteSpace(bufChunk.buffer[bufChunk.index + bufChunk.count - 1]))
                             {
                                 bufChunk.count--;
@@ -523,10 +529,13 @@ namespace System.Xml
 
                 if (_items[newItemIndex] == null)
                 {
-                    _items[newItemIndex] = new Item();
+                    _items[newItemIndex] = new Item(type, data);
+                }
+                else
+                {
+                    _items[newItemIndex].Set(type, data);
                 }
 
-                _items[newItemIndex].Set(type, data);
                 _lastItem = newItemIndex;
             }
         }

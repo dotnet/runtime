@@ -490,7 +490,7 @@ namespace System.Xml
             };
         }
 
-        private string? GetAttributeFromElement(XmlElement elem, string name, string ns)
+        private string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name, ns);
             if (attr != null)
@@ -520,10 +520,10 @@ namespace System.Xml
             {
                 case XmlNodeType.Element:
                     CheckIndexCondition(attributeIndex);
-                    return ((XmlElement)_curNode).Attributes[attributeIndex]!.Value;
+                    return ((XmlElement)_curNode).Attributes[attributeIndex].Value;
                 case XmlNodeType.Attribute:
                     CheckIndexCondition(attributeIndex);
-                    return ((XmlElement)_elemNode!).Attributes[attributeIndex]!.Value;
+                    return ((XmlElement)_elemNode!).Attributes[attributeIndex].Value;
                 case XmlNodeType.XmlDeclaration:
                     {
                         CheckIndexCondition(attributeIndex);
@@ -719,7 +719,7 @@ namespace System.Xml
                     return false;
                 else
                 {
-                    _curNode = _elemNode.Attributes[++_attrIndex]!;
+                    _curNode = _elemNode.Attributes[++_attrIndex];
                     return true;
                 }
             }
@@ -729,7 +729,7 @@ namespace System.Xml
                 {
                     level++;
                     _elemNode = _curNode;
-                    _curNode = _curNode.Attributes[0]!;
+                    _curNode = _curNode.Attributes[0];
                     _attrIndex = 0;
                     return true;
                 }
@@ -942,7 +942,7 @@ namespace System.Xml
                         XmlAttributeCollection attrs = elem.Attributes;
                         for (int i = 0; i < attrs.Count; i++)
                         {
-                            XmlAttribute a = attrs[i]!;
+                            XmlAttribute a = attrs[i];
                             if (a.Value == namespaceName)
                             {
                                 if (a.Prefix.Length == 0 && a.LocalName == "xmlns")
@@ -994,7 +994,7 @@ namespace System.Xml
                         XmlAttributeCollection attrs = elem.Attributes;
                         for (int i = 0; i < attrs.Count; i++)
                         {
-                            XmlAttribute a = attrs[i]!;
+                            XmlAttribute a = attrs[i];
                             if (a.LocalName == "xmlns" && a.Prefix.Length == 0)
                             {
                                 if (!dict.ContainsKey(string.Empty))
@@ -1339,7 +1339,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified name and namespace.
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             //if not on Attribute, only element node could have attributes
             if (!IsInReadingStates())
@@ -1379,7 +1379,7 @@ namespace System.Xml
         }
 
         // Moves to the attribute with the specified name and namespace.
-        public override bool MoveToAttribute(string name, string namespaceURI)
+        public override bool MoveToAttribute(string name, string? namespaceURI)
         {
             if (!IsInReadingStates())
                 return false;

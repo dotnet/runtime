@@ -1098,7 +1098,7 @@ namespace System.Xml
                             {
                                 for (int iAttr = 0; iAttr < attrs.Count; iAttr++)
                                 {
-                                    XmlAttribute attr = attrs[iAttr]!;
+                                    XmlAttribute attr = attrs[iAttr];
                                     if (attr.Prefix.Length == 0)
                                     {
                                         if (Ref.Equal(attr.LocalName, doc.strXmlns))
@@ -1112,7 +1112,7 @@ namespace System.Xml
                             {
                                 for (int iAttr = 0; iAttr < attrs.Count; iAttr++)
                                 {
-                                    XmlAttribute attr = attrs[iAttr]!;
+                                    XmlAttribute attr = attrs[iAttr];
                                     if (Ref.Equal(attr.Prefix, doc.strXmlns))
                                     {
                                         if (Ref.Equal(attr.LocalName, pref))
@@ -1182,7 +1182,7 @@ namespace System.Xml
                             XmlAttributeCollection attrs = elem.Attributes;
                             for (int iAttr = 0; iAttr < attrs.Count; iAttr++)
                             {
-                                XmlAttribute attr = attrs[iAttr]!;
+                                XmlAttribute attr = attrs[iAttr];
                                 if (attr.Prefix.Length == 0)
                                 {
                                     if (Ref.Equal(attr.LocalName, doc.strXmlns))

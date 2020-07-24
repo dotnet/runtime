@@ -425,7 +425,7 @@ namespace System.Xml
             return _coreReader.GetAttribute(name);
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             CheckAsync();
             return _coreReader.GetAttribute(name, namespaceURI);
@@ -461,7 +461,7 @@ namespace System.Xml
             return _coreReader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             CheckAsync();
             return _coreReader.MoveToAttribute(name, ns);
