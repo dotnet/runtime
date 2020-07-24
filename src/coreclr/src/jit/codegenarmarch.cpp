@@ -815,11 +815,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // so update 'source' to point this GT_LCL_VAR_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
+                    assert(addrNode->isContained());
                     varNode  = addrNode->AsLclVarCommon();
                     addrNode = nullptr;
                 }
                 else // addrNode is used
                 {
+                    // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+                    // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+                    assert(!addrNode->isContained());
                     // Generate code to load the address that we need into a register
                     genConsumeAddress(addrNode);
                     addrReg = addrNode->GetRegNum();
@@ -1253,6 +1257,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         if (varNode != nullptr)
         {
+            assert(varNode->isContained());
             srcVarNum = varNode->GetLclNum();
             assert(srcVarNum < compiler->lvaCount);
 
@@ -1270,6 +1275,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         else // addrNode is used
         {
             assert(addrNode != nullptr);
+            // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+            // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+            assert(!addrNode->isContained());
 
             // Generate code to load the address that we need into a register
             genConsumeAddress(addrNode);
