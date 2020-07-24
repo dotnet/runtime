@@ -496,12 +496,22 @@ void ZapInfo::CompileMethod()
         m_pImage->m_stats->m_ilCodeSize += m_currentMethodInfo.ILCodeSize;
     }
 
-    CorJitResult res = CORJIT_SKIPPED;
+    CorJitResult res = CORJIT_SKIPPED;   // FAILED() returns true for this value
 
     BYTE *pCode;
     ULONG cCode;
+    bool  doNormalCompile = true;
 
 #ifdef ALLOW_SXS_JIT_NGEN
+
+    // Only retry the JIT compilation when we have a different JIT to run
+    // Often we see both COMPlus_AltJIT and COMPlus_AltJitNgen set
+    // which results in both JIT compilers set to the same altjit
+    //
+    doNormalCompile = (m_zapper->m_alternateJit != m_zapper->m_pJitCompiler);
+
+    // Compile this method using the AltJitNgen compiler
+    //
     if (m_zapper->m_alternateJit)
     {
         res = m_zapper->m_alternateJit->compileMethod( this,
@@ -509,23 +519,27 @@ void ZapInfo::CompileMethod()
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
                                                      &cCode);
-        if (FAILED(res))
+
+        // The above compileMethod call will typically return CORJIT_SKIPPED
+        if (doNormalCompile && FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
             ResetForJitRetry();
         }
     }
+
 #endif // ALLOW_SXS_JIT_NGEN
 
-    if (FAILED(res))
+    // Compile this method using the normal JIT compiler
+    //
+    if (doNormalCompile && FAILED(res))
     {
         ICorJitCompiler * pCompiler = m_zapper->m_pJitCompiler;
         res = pCompiler->compileMethod(this,
-                                    &m_currentMethodInfo,
-                                    CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                    &pCode,
-                                    &cCode);
-
+                                       &m_currentMethodInfo,
+                                       CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                                       &pCode,
+                                       &cCode);
         if (FAILED(res))
         {
             ThrowExceptionForJitResult(res);
