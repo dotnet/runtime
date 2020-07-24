@@ -986,7 +986,7 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.DateTime;
+            activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.UtcDateTime;
 
             activity.IsAllDataRequested = request == ActivityDataRequest.AllData || request == ActivityDataRequest.AllDataAndRecorded;
 
