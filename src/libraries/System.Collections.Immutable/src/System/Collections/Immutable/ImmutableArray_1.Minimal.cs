@@ -156,7 +156,7 @@ namespace System.Collections.Immutable
         public bool IsEmpty
         {
             [NonVersionable]
-            get { return this.Length == 0; }
+            get { return this.array!.Length == 0; }
         }
 
         /// <summary>
