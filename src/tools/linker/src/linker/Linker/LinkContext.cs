@@ -180,6 +180,8 @@ namespace Mono.Linker
 
 		public bool GeneralWarnAsError { get; set; }
 
+		public WarnVersion WarnVersion { get; set; }
+
 		public bool OutputWarningSuppressions { get; set; }
 
 		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
@@ -238,6 +240,7 @@ namespace Mono.Linker
 			NoWarn = new HashSet<uint> ();
 			GeneralWarnAsError = false;
 			WarnAsError = new Dictionary<uint, bool> ();
+			WarnVersion = WarnVersion.Latest;
 
 			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
@@ -502,6 +505,15 @@ namespace Mono.Linker
 				return;
 			}
 
+			// Note: message.Version is nullable. The comparison is false if it is null.
+			// Unversioned warnings are not controlled by WarnVersion.
+			// Error messages are guaranteed to only have a version if they were created for a warning due to warnaserror.
+			if ((message.Category == MessageCategory.Warning || message.Category == MessageCategory.Error) &&
+				message.Version > WarnVersion) {
+				// This warning was turned off by --warn.
+				return;
+			}
+
 			if (OutputWarningSuppressions && message.Category == MessageCategory.Warning && message.Origin?.MemberDefinition != null)
 				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.MemberDefinition);
 
@@ -527,33 +539,41 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
 			if (!LogMessages)
 				return;
 
+			var version = GetWarningVersion (code);
+
 			if ((GeneralWarnAsError && (!WarnAsError.TryGetValue ((uint) code, out var warnAsError) || warnAsError)) ||
 				(!GeneralWarnAsError && (WarnAsError.TryGetValue ((uint) code, out warnAsError) && warnAsError))) {
-				LogError (text, code, subcategory, origin, isWarnAsError: true);
+				LogError (text, code, subcategory, origin, isWarnAsError: true, version: version);
 				return;
 			}
 
-			var warning = MessageContainer.CreateWarningMessage (this, text, code, origin, subcategory);
+			var warning = MessageContainer.CreateWarningMessage (this, text, code, origin, subcategory, version);
 			LogMessage (warning);
 		}
 
 		/// <summary>
 		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, IMemberDefinition origin, int? ilOffset = null, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
@@ -562,11 +582,14 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, string origin, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -581,12 +604,12 @@ namespace Mono.Linker
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
-		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false)
+		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false, WarnVersion? version = null)
 		{
 			if (!LogMessages)
 				return;
 
-			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin, isWarnAsError);
+			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin, isWarnAsError, version);
 			LogMessage (error);
 		}
 
@@ -596,6 +619,12 @@ namespace Mono.Linker
 				return false;
 
 			return Suppressions.IsSuppressed (warningCode, origin, out _);
+		}
+
+		public static WarnVersion GetWarningVersion (int code)
+		{
+			// This should return an increasing WarnVersion for new warning waves.
+			return WarnVersion.ILLink5;
 		}
 	}
 
