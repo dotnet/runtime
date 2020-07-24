@@ -18090,7 +18090,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior)
         heap_segment* seg = find_segment (interior, FALSE);
         if (seg
 #ifdef FEATURE_CONSERVATIVE_GC
-            && (GCConfig::GetConservativeGC() || interior <= heap_segment_allocated(seg))
+            && (!GCConfig::GetConservativeGC() || interior <= heap_segment_allocated(seg))
 #endif
             )
         {
