@@ -20708,8 +20708,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MARK_LIST
 
     dprintf (3, ("Joining for sync block cache entry scanning"));
-    gc_t_join.join(this, gc_join_null_dead_syncblk);
-    if (gc_t_join.joined())
+    if (gc_t_join.r_join (this, gc_join_null_dead_syncblk))
 #endif //MULTIPLE_HEAPS
     {
         // scan for deleted entries in the syncblk cache
@@ -20717,6 +20716,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef MULTIPLE_HEAPS
 #if defined(MARK_LIST) && !defined(PARALLEL_MARK_LIST_SORT)
+        //oops, that won't work
+        assert (!"we only support parallel mark list sort now");
         //compact g_mark_list and sort it.
         combine_mark_lists();
 #endif //MARK_LIST && !PARALLEL_MARK_LIST_SORT
@@ -20802,7 +20803,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //SNOOP_STATS
 
         dprintf(3, ("Starting all threads for end of mark phase"));
-        gc_t_join.restart();
+        gc_t_join.r_restart();
 #else //MULTIPLE_HEAPS
 
         //decide on promotion
@@ -23338,6 +23339,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
     gc_t_join.join(this, gc_join_decide_on_compaction);
     if (gc_t_join.joined())
     {
+        // we used r_join at the end of the mark phase
+        // and need to reinitialize states for it here.
+        gc_t_join.r_init();
         //safe place to delete large heap segments
         if (condemned_gen_number == max_generation)
         {
