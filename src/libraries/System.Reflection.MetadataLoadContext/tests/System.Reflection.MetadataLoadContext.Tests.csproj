@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <!-- The GAC is obsolete, but there are unit tests still referencing it -->
     <NoWarn>$(NoWarn);SYSLIB0005</NoWarn>
   </PropertyGroup>
@@ -70,5 +70,8 @@
     <Compile Include="src\TestUtils\TestUtils.cs" />
     <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 </Project>

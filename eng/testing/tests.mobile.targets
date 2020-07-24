@@ -133,19 +133,9 @@
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <ExtraAssemblies Include="$(PublishDir)$(AssemblyName).dll" />
-      <!-- we need to preserve these facades for BinaryFormatter tests -->
+      <!-- We need these facades for some tests. -->
       <ExtraAssemblies Include="$(PublishDir)mscorlib.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.ComponentModel.DataAnnotations.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Configuration.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Core.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Data.dll" />
       <ExtraAssemblies Include="$(PublishDir)System.Drawing.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Numerics.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Runtime.Serialization.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Transactions.dll" />
-      <ExtraAssemblies Include="$(PublishDir)System.Xml.dll" />
-      <ExtraAssemblies Include="$(PublishDir)WindowsBase.dll" />
     </ItemGroup>
     <!-- these tests load assemblies from the file system -->
     <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'">
@@ -163,12 +153,13 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
+      InvariantGlobalization="$(InvariantGlobalization)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="@(ExtraAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+      AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -183,21 +174,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AddFrameworkReference">
-    <ItemGroup>
-      <FrameworkReference Include="$(SharedFrameworkName)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="UpdateRuntimePack"
-          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
-    <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 </Project>

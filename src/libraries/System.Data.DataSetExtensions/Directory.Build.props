@@ -4,6 +4,5 @@
     <!-- AssemblyVersion is frozen to that which originally shipped in 2.1 -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <IsNETCoreApp>true</IsNETCoreApp>
   </PropertyGroup>
 </Project>
