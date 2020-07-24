@@ -900,7 +900,7 @@ namespace System.Net.Http
                                 restoreFlow = true;
                             }
 
-                            _authorityExpireTimer = new Timer(o =>
+                            _authorityExpireTimer = new Timer(static o =>
                             {
                                 var wr = (WeakReference<HttpConnectionPool>)o!;
                                 if (wr.TryGetTarget(out HttpConnectionPool? @this))

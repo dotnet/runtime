@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -1935,6 +1936,7 @@ namespace System.Net.Sockets
             return realOptionLength;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public void SetIPProtectionLevel(IPProtectionLevel level)
         {
             if (level == IPProtectionLevel.Unspecified)

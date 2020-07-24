@@ -28,7 +28,6 @@ namespace System.Composition.UnitTests
         // This does not test the desired behaviour deterministically,
         // but is close enough to be repeatable at least on my machine :)
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SharedInstancesAreNotVisibleUntilActivationCompletes()
         {
             var c = CreateContainer(typeof(PausesDuringActivation));

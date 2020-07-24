@@ -62,6 +62,12 @@ namespace System.Reflection.Tests
             // Obtain this test class
             string thisAssemblyPath = typeof(MetadataLoadContextTests).Assembly.Location;
 
+            if (PlatformDetection.IsBrowser)
+            {
+                // prepends slash as Assembly.Location only contains the file name on browser (https://github.com/dotnet/runtime/issues/39650)
+                thisAssemblyPath = "/" + thisAssemblyPath;
+            }
+
             var resolver = new PathAssemblyResolver(new string[] { coreAssemblyPath, thisAssemblyPath });
             using (MetadataLoadContext lc = new MetadataLoadContext(resolver, TestUtils.GetNameOfCoreAssembly()))
             {

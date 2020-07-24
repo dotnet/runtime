@@ -2,41 +2,48 @@
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-    <NativeBinPlaceDependsOnTargets Condition="'$(TargetOS)' == 'Browser'">BuildWasmRuntimes</NativeBinPlaceDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinPlaceProject Include="Native\native-binplace.proj" />
+    <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
+             Exclude="@(ProjectExclusions)" />
+    <NonNetCoreAppProject Include="@(_allSrc)"
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+    <NetCoreAppProject Include="$(CoreLibProject);
+                                @(_allSrc);
+                                $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
+                                $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
+                       Exclude="@(NonNetCoreAppProject)" />
     <ManualShimProject Include="shims\manual\*.csproj" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
-  </ItemGroup>
-
-  <!-- Restore only and build before/after. -->
-  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Include="@(NativeBinPlaceProject)" />
-    <ProjectReference Include="@(ManualShimProject)" />
-    <ProjectReference Include="@(ApiCompatProject)" />
+                      Condition="'$(DotNetBuildFromSource)' != 'true' and
+                                 '$(BuildingNETCoreAppVertical)' == 'true' and
+                                 '$(RunApiCompat)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="@(NetCoreAppProject)" />
+
+    <!-- Restore only and build before/after. -->
+    <ProjectReference Include="@(NonNetCoreAppProject);
+                               @(ManualShimProject);
+                               @(ApiCompatProject)"
+                      Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(MonoProjectRoot)wasm\wasm.targets" />
-
-  <Target Name="NativeBinPlace"
-          AfterTargets="Build"
-          DependsOnTargets="$(NativeBinPlaceDependsOnTargets)">
+  <Target Name="BuildNonNetCoreAppProjects"
+          AfterTargets="Build">
     <MSBuild Targets="Build"
-             Projects="@(NativeBinPlaceProject)"
+             BuildInParallel="true"
+             Projects="@(NonNetCoreAppProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(MonoProjectRoot)wasm\wasm.targets" />
+
   <Target Name="BuildManualShims"
-          AfterTargets="Build">
+          AfterTargets="BuildNonNetCoreAppProjects"
+          Condition="'@(ManualShimProject)' != ''">
     <MSBuild Targets="Build"
              Projects="@(ManualShimProject)"
              Properties="$(TraversalGlobalProperties)" />

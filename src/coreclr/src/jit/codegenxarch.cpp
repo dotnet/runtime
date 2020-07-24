@@ -2694,11 +2694,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     regNumber srcIntReg = REG_NA;
@@ -2819,11 +2815,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 
     if (baseNode->OperIsLocalAddr())
     {
-        if (baseNode->gtOper == GT_LCL_FLD_ADDR)
-        {
-            offset += baseNode->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, baseNode->AsLclVarCommon()->GetLclNum(), offset);
+        const GenTreeLclVarCommon* lclVar = baseNode->AsLclVarCommon();
+        offset += lclVar->GetLclOffs();
+        emit->emitIns_R_S(ins, size, dst, lclVar->GetLclNum(), offset);
     }
     else
     {
@@ -2873,12 +2867,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     else
     {
         assert(dstAddr->OperIsLocalAddr());
-        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        const GenTreeLclVarCommon* lclVar = dstAddr->AsLclVarCommon();
+        dstLclNum                         = lclVar->GetLclNum();
+        dstOffset                         = lclVar->GetLclOffs();
     }
 
     unsigned  srcLclNum         = BAD_VAR_NUM;
@@ -2893,11 +2884,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-
-        if (src->OperIs(GT_LCL_FLD))
-        {
-            srcOffset = src->AsLclFld()->GetLclOffs();
-        }
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -2929,11 +2916,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-
-            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
-            {
-                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
     }
 
@@ -4812,10 +4795,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
-    assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
+    assert(!varTypeUsesFloatReg(type1) || varTypeUsesFloatReg(type2));
 
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
-    assert(!varTypeIsFloating(type1));
+    assert(!varTypeUsesFloatReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
     regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
@@ -4999,7 +4982,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 genConsumeReg(putArgRegNode);
 
                 // Validate the putArgRegNode has the right type.
-                assert(varTypeIsFloating(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
+                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
                 if (putArgRegNode->GetRegNum() != argReg)
                 {
                     inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), false), argReg, putArgRegNode->GetRegNum());
@@ -7080,9 +7063,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
-    const bool srcFltReg = varTypeIsFloating(srcType) || varTypeIsSIMD(srcType);
+    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
-    const bool dstFltReg = varTypeIsFloating(targetType) || varTypeIsSIMD(targetType);
+    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
     assert(dstFltReg == genIsValidFloatReg(targetReg));
     if (srcFltReg != dstFltReg)
     {
@@ -7833,7 +7816,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         else
 #endif // TARGET_X86
         {
-            assert((varTypeIsFloating(type) && genIsValidFloatReg(srcReg)) ||
+            assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
                    (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
             ins = ins_Store(type);
         }
@@ -7941,11 +7924,8 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         {
             assert(srcAddr->OperIsLocalAddr());
 
-            srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-            if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
-            {
-                srcLclOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcLclNum    = srcAddr->AsLclVarCommon()->GetLclNum();
+            srcLclOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
 
         for (int i = numSlots - 1; i >= 0; --i)

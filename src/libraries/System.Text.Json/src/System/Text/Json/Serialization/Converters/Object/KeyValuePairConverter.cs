@@ -86,6 +86,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(jsonParameterInfo != null);
             argState.ParameterIndex++;
             argState.JsonParameterInfo = jsonParameterInfo;
+            state.Current.NumberHandling = jsonParameterInfo.NumberHandling;
             return true;
         }
 

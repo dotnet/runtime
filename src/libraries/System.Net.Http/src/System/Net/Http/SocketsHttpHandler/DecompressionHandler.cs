@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -164,7 +165,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    originalStream = _originalContent.ReadAsStream();
+                    originalStream = _originalContent.ReadAsStream(cancellationToken);
                 }
                 return GetDecompressedStream(originalStream);
             }

@@ -226,8 +226,12 @@ namespace Internal.JitInterface
             {
                 if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
-                    CompileMethodInternal(methodCodeNodeNeedingCode);
-                    codeGotPublished = true;
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    if (methodIL != null)
+                    {
+                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                        codeGotPublished = true;
+                    }
                 }
             }
             finally
@@ -2023,6 +2027,12 @@ namespace Internal.JitInterface
         {
             *pCookieVal = IntPtr.Zero;
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
+        }
+
+        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
+        {
+            ppIndirection = (void*)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.IndirectTrapThreads));
+            return null;
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)

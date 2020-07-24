@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.NameResolution</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.NameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetsBrowser)' == 'true'">--exclude-api-list ExcludeApiList.PNSE.Browser.txt</GeneratePlatformNotSupportedAdditionalParameters>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" />
+    <Compile Include="System\Net\NameResolutionTelemetry.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -20,6 +20,8 @@
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
@@ -110,6 +112,7 @@
     <Compile Include="System\Net\Dns.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -120,7 +123,6 @@
     <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />

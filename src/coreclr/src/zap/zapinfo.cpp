@@ -1430,9 +1430,13 @@ LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     _ASSERTE(ppIndirection != NULL);
 
     *ppIndirection = NULL;
-    if (!IsReadyToRunCompilation())
+    if (IsReadyToRunCompilation())
     {
-        *ppIndirection = (LONG*)m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
+        *ppIndirection = m_pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_IndirectTrapThreads);
+    }
+    else
+    {
+        *ppIndirection = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
             offsetof(CORCOMPILE_EE_INFO_TABLE, addrOfCaptureThreadGlobal));
     }
 

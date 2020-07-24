@@ -140,6 +140,7 @@ namespace Internal.ReadyToRunConstants
         // Not a real helper - handle to current module passed to delay load helpers.
         Module                      = 0x01,
         GSCookie                    = 0x02,
+        IndirectTrapThreads         = 0x03,
 
         //
         // Delay load helpers

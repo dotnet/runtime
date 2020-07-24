@@ -701,14 +701,33 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsTypeVisibleFromCom(Type t);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int /* HRESULT */ QueryInterface(IntPtr /* IUnknown */ pUnk, ref Guid iid, out IntPtr ppv);
+        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int /* ULONG */ AddRef(IntPtr /* IUnknown */ pUnk);
+            fixed (Guid* pIID = &iid)
+            fixed (IntPtr* p = &ppv)
+            {
+                return ((delegate * stdcall <IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+            }
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk);
+        public static unsafe int AddRef(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+        }
+
+        public static unsafe int Release(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);

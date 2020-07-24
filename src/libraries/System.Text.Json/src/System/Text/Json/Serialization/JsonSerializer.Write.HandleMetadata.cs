@@ -28,7 +28,6 @@ namespace System.Text.Json
             }
             else
             {
-
                 string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
                 Debug.Assert(referenceId != null);
 
@@ -65,10 +64,10 @@ namespace System.Text.Json
             else
             {
                 string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+                Debug.Assert(referenceId != null);
 
                 if (alreadyExists)
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataRef, referenceId);
                     writer.WriteEndObject();
@@ -76,7 +75,6 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataId, referenceId);
                     writer.WriteStartArray(s_metadataValues);

@@ -3180,6 +3180,8 @@ public:
         _gtSsaNum = SsaConfig::RESERVED_SSA_NUM;
     }
 
+    uint16_t GetLclOffs() const;
+
     unsigned GetSsaNum() const
     {
         return _gtSsaNum;
@@ -7493,7 +7495,7 @@ inline bool GenTree::HasLastUse()
 //
 inline void GenTree::SetLastUse(int regIndex)
 {
-    unsigned int bitToSet = gtFlags |= GetLastUseBit(regIndex);
+    gtFlags |= GetLastUseBit(regIndex);
 }
 
 //-----------------------------------------------------------------------------------

@@ -16,9 +16,11 @@ internal partial class Interop
         internal delegate void CtrlCallback(CtrlCode ctrlCode);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForCtrl")]
+        [SuppressGCTransition]
         internal static extern void RegisterForCtrl(CtrlCallback handler);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnregisterForCtrl")]
+        [SuppressGCTransition]
         internal static extern void UnregisterForCtrl();
     }
 }

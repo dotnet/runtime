@@ -1,0 +1,185 @@
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    # Add Experiment branch here
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+pr:
+  branches:
+    include:
+    # Add Experiment branch here
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+#
+# Build with Debug config and Checked runtimeConfiguration
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Checked
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      buildArgs: -s clr+libs+installer -c debug -runtimeConfiguration Checked
+      extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+
+#
+# Build with Release config and Release runtimeConfiguration
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      buildArgs: -s clr+libs+libs.tests+installer -c $(_BuildConfig) /p:ArchiveTests=true
+      extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+      extraStepsParameters:
+        uploadTests: true
+
+#
+# Build with Release allConfigurations to produce packages
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: All_Configurations
+      buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
+
+#
+# CoreCLR Test builds using live libraries release build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: Checked
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
+      dependsOn:
+      - build_Linux_x64_Checked_
+      - build_Linux_x64_Release_
+
+#
+# CoreCLR Test executions using live libraries
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: Checked
+    platforms:
+    - Linux_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
+      dependsOn:
+      - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: Checked
+    platforms:
+    - Windows_NT_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
+      dependsOn:
+      - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
+      - build_Windows_NT_x64_Checked_
+      - build_Windows_NT_x64_Release_
+
+#
+# Libraries Release Test Execution against a release coreclr runtime
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isFullMatrix: false
+      isOfficialBuild: false
+      testScope: innerloop
+      liveRuntimeBuildConfig: Release
+      dependsOnTestBuildConfiguration: Release
+      dependsOnTestArchitecture: x64
+      dependsOn:
+      - build_Linux_x64_Release_
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: Release
+    platforms:
+    - Windows_NT_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isFullMatrix: false
+      isOfficialBuild: false
+      testScope: innerloop
+      liveRuntimeBuildConfig: Release
+      dependsOnTestBuildConfiguration: Release
+      dependsOnTestArchitecture: x64
+      dependsOn:
+      - build_Windows_NT_x64_Release_

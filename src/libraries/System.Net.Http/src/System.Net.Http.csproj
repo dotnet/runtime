@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
@@ -429,6 +427,8 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+            Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs"
@@ -664,6 +664,7 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -681,6 +682,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime.InteropServices.JavaScript" Condition="'$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
@@ -688,19 +690,21 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.OpenSsl" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
@@ -718,8 +722,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SR.resx" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="..\..\System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>

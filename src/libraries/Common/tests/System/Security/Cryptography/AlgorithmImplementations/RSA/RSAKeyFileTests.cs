@@ -763,6 +763,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBrjBIBgkqhkiG9w0BBQ0wOzAeBgkqhkiG9w0BBQwwEQQIKZEFT76zCFECAggA
 AgEQMBkGCCqGSIb3DQMCMA0CAToECE1Yyzk6++IPBIIBYDDvaYLkET8eudcYLQMf
@@ -788,6 +789,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         [Fact]
         public static void ReadEncryptedDiminishedDP_EmptyPassword()
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBgTAbBgkqhkiG9w0BBQMwDgQIJtjMez/9Gg4CAggABIIBYElq9UOOphEPU3b7
 G/mV8M1uEdjigidMPih3b9IIJhrjMAEix2IjS+brFL7KRQgucpZZoaFU1utvkUHg
@@ -812,6 +814,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
         [Fact]
         public static void ReadEncryptedDiminishedDP_EmptyPasswordBytes()
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBgTAbBgkqhkiG9w0BBQMwDgQIJtjMez/9Gg4CAggABIIBYElq9UOOphEPU3b7
 G/mV8M1uEdjigidMPih3b9IIJhrjMAEix2IjS+brFL7KRQgucpZZoaFU1utvkUHg
@@ -1246,6 +1249,79 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportEncryptedPkcs8PrivateKey(byteBased, encrypted, out _));
             }
+        }
+
+        [Fact]
+        public static void DecryptPkcs12PbeTooManyIterations()
+        {
+            // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
+            byte[] high3DesIterationKey = Convert.FromBase64String(@"
+MIIE8zAlBgoqhkiG9w0BDAEDMBcEELqdfpwjkWlJZnr3xs2n+qACAwknwQSCBMgnZse/OHib1lMC
+jBuUdjQCib5+HEBd2PwrjRw8k/i3kOsPeuDRsTMVvqumYpN6frYWLxRSbd3oe7n5D6bxpBrGuhfO
+d/98Ustg1BDXPSdJzOyCXjS4nm+pr5ZETXxM8HUISvmpC62mrBJue3JwHVXbpXFepMcy9ywfSfjg
+GhNzSYPQwHLFLVHVd3Dcb8mApgVf9aMJIjw9SeE9KQ6PeOk1LXQsoMFf3h/Sap/nuR4M9F/qa9u/
+SEtjptJRlRDecXhQLS7su6cjQ/3Z5PQObORlqF2RASOaEYRyrjjvQjH0+ZAIkQ6zyv1PrPpbeT9I
+U5Hzlu00hfNyAy3TfR50EqT2jP7D6ugFbvnHoDRx0e3STTgBrfFc1tbdLijnq/rxb4QNBIV70+Kw
+QL2mc8CdM/lP4hT4f1vdtgLdRF2gmxndZolveNc5nAheUwqNa8I16OzZnny9090KztJxhGWd57H8
+QCvz2mS6z7FANeyo9cTZilHwwErkLUgmoaQXnnrs46VwF8oeH9ZhLiO4W+OfNLm6QvB/e3/inUj/
+FZFxnTYCvSeRBTD5YhME+SnyGPbJiHOPJuSIwWXyRpZeg6wmMWfduEeGuThNNSf4Fxm0baFrC6CZ
+4+jT0CurP6L4NxLPBafWP7BcA2XCeVQGQd1GT9cX2I1NkRcU7Q2u7oxWKMJaj0OELC+lZTTv6y3Q
+x3I96z0Eddm1qfKQr9HQq+i8LXMwSxqNH+LOtdOEA3kqYq4GU6MdPr8Nx1TaGsiwLcz14GqPl3UQ
+5so2ZKHZZsa9NSer/fWVaOwmYc50JW3N4jJpDFRjKVFP5GSzLfdTwl9nduM4atu4D9KZthQCwNGC
+nEZ1nwGJywmO/XvLWopOMj0cUx2GQYOUV2Hfu93+MriiKjTFEnMcT7B/BOFRpgz4jg4S+6DcHwJh
+cpdIvViajQXM3WwpxnVzskAxYNTYGV0aI9ZjrGBD4vZXM1s9hTlAZc41EmTqZlJPNZ75OzKD9LJS
+Iot/jiWjJ03+WT8VVqw/mfTSy2apCE3pGGKdde6wlcR/N6JI1+lQahC+0j9yvUCZyqhiiVpcwaOa
+dsxxZMJ+DiilMuRXMJCxKvx5kBZTpjuKR/WnKzSE70wgB1ulJE0RkZTYjWSUSf54bHC2XRGZLtfU
+sXDcycjA33H+b0cxe25OZNJUTOoFJqji9RqBvzHuAVMXJvZESORMKbl6q47DbWwFvivfweUJNVO+
+3fzCcrCfAFLwI0j+KaoVr0Qrfedr7OhVEZ/v57aYidUSl2VIpLmpJTUKRnvZ0rlg/WBauwWH1X4M
+u7AExd+aHO8iv0gj+rTg5co0EcOu9i8cbAowg1ZZ1m6zXvHD7fZgE9iamBmklVOQwQXOJO7BCecn
+C0ezYU4Ii8uo0fXJOMWkIA7KLGaQxBrxygnFK3A0RKNos7OXiLdB8RGDqjUZyqLUb3z/YisQEX8f
+R40NElq8tzOa/TudOpNAqC8mgS25uTm7ws472gUE0z9uvcq1/MgkqE++xgmLAxGUN/l7EHSAmYKG
+i33DDR38LaRqG9ho3brf466OkNooBv4MpD5SA63yfooytxOgeuaqbuTzKP/OSRqJNab9wctA9nfJ
+gms2YM+honjUS1sXk1zdm/8=");
+
+            using (RSA key = RSAFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+            }
+        }
+
+        [Fact]
+        public static void ReadWriteRsa2048EncryptedPkcs8_Pbes2HighIterations()
+        {
+            // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
+            ReadBase64EncryptedPkcs8(@"
+MIIFNjBgBgkqhkiG9w0BBQ0wUzAyBgkqhkiG9w0BBQwwJQQQAx6OUUzmK+vwC7a+OwhXygIDCSfB
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBCoLaQQpG01FJnpQdIRq2ioBIIE0MPy/p2uwTnP
+mScPxFbrpBiPQHz5PKRjKLCN5JLArsppSz+XSHxfItFUSfBKEE7dYJrEXARmhA8e2roCrZkQnb9o
+TX551EivHZhqmd91p6WHYb3ZCDQ6la1JfiuV4aJiJOlG0bDAkzEaiM9m9LE3G0J3Z3ELX+mGEGKD
+W+Bz1a9jr204IJQc2VihTFe5t3mujV3X9UFZH3kqOCEreVVmmD64Ea2uDJ6dk3VgGhQ9QLjTDjc5
+OSjdfuyuA4gliK/7ibFubtmnVTDSbAm5Excy9tvJqVhejv/wRhfeYZ2rpv3tTLP58WKt25GEmyyV
+j86v3LB7DFnnBy4NkLCE55oVe64v/8StyEjEkMxz7Owz/ZW65EccPdk7JHZeBXPXNUdLxk1x40vW
+nSRzqhLckfggDwtTCk0kwGUNGBMqr2ezXKrSeO3Qj05dAUvFt9PvbnrVtSnOjFPwx0exiDMUxOFE
+Sz63M2tNNAJr43w60DXaIvMMoZ1kF1mwwL5GT+cs3Dn5KFHNLkZ5irIoHAkmKRHplI15Oqr+Ws2n
+MUtV9BjDjtYHlwp1s1oFpHr9hu8HHv7QIEvyZbyMdKfPv9PEaNJR0SRhkyave+vl9zHCBhP1H2wU
+4fESU1y+cJXZ5WUiJZ5C1wDYWyN5Q2z67Fd4OQXhRwHCeTCZPz3bykpadwlsihCNHrYybfLn61oz
+2CswZjBeQuhDmUKWaj87fsNvSEHaEGTDnyLGEzgNb1OuIrqGiT0DvjfRsVED4ZL6jlDKgAaJe+Uq
+EMt1UzKmAPeBA/IFOrNPw5B+rgKjVpsCdToX9I9b3cCvKhjxguuggpzkEOF4cdgR2MJk1mqdo7ck
+2fI2A5kJx9SuEVL6eKqxyFkPdBMmljKyhomAjdBAIKQ4xt2ojEip7Q9qhmWK3U3meOiIc3qrsM/K
+pGDiwH1CHc/0FbHAghiARawXAtzGGyfMXsZkUTAVnEqDfu5uw4pOlv+rm5GLWfLU8p73yc+kVfPR
+MdWZI6Ftct0FP/KEibc6VSaENoVRAk+XApadkeFaEUQzFzoU7RhN9FONmnCL8Ui76Kfi1kLAxYJo
+rXFQjatiLOAxV50uJSkE1ppmrU1YWHVyC3RkLLnQfq0Ypz9/x7W4PVDfCJQdnCCtOfHL5Qm8fL0l
+uE22Y+gPDzoM1BEKvSgmZWTlZrovXwL4u70/nPeaB1HAVUEzsoEMOSSWDkHuhmgiZHUgQwkvzNjA
+I3AJk0rl2tGBWdgsDtiiQamkXm0VwubTedIt2vj9h9kJYtUlvkCg7KfKxmTSJUynOyKfI1Mhx3vW
+fvni4lYc7KLUEkcNMqNu5AliaPEJQksNNkRiyX7wK5TvA+v9mlqm6Gg7GuJ2oa1DiFf8MUB9CgiJ
+pniangzMBkuSd+zvCAo9YAJoyrJoR2ibcWwo4wRSVwYsVF3bB4nB2w1GHQ6HAnPKHSjVDJZyoEh6
+TvoFEWjb86tn2BR+qMKqXNBVSrgF2pa06BIs0daHKimYKaU0bnuzE/T+pckJfI0VvWB/Z8jvE1Xy
+gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
+8/ojymwPxe641Pcfa4DsMgfleHnUOEbNZ4je",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    600_001),
+                TestData.RSA2048Params);
         }
 
         private static void ReadBase64EncryptedPkcs8(

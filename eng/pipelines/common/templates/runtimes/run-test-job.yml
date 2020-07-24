@@ -20,6 +20,7 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  dependsOn: []
 
 ### Test run job
 
@@ -47,15 +48,19 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
-    dependsOn:
-    - ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
-      - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-    - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
-      - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-    - ${{ if ne(parameters.stagedBuild, true) }}:
-      - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    ${{ if ne(parameters.dependsOn[0], '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    ${{ if eq(parameters.dependsOn[0], '') }}:
+      dependsOn:
+      - ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+      - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
