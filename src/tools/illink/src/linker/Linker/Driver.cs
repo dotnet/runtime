@@ -464,6 +464,18 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--warn":
+						string warnVersionArgument = null;
+						if (!GetStringParam (token, l => warnVersionArgument = l))
+							return -1;
+
+						if (!GetWarnVersion (warnVersionArgument, out WarnVersion version))
+							return -1;
+
+						context.WarnVersion = version;
+
+						continue;
+
 					case "--version":
 						Version ();
 						return 1;
@@ -937,6 +949,19 @@ namespace Mono.Linker
 			return assemblyAction;
 		}
 
+		bool GetWarnVersion (string text, out WarnVersion version)
+		{
+			if (int.TryParse (text, out int versionNum)) {
+				version = (WarnVersion) versionNum;
+				if (version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest)
+					return true;
+			}
+
+			context.LogError ($"Invalid warning version '{text}'", 1016);
+			version = 0;
+			return false;
+		}
+
 		static bool GetOptimizationName (string text, out CodeOptimizations optimization)
 		{
 			switch (text.ToLowerInvariant ()) {
@@ -1059,6 +1084,8 @@ namespace Mono.Linker
 			Console.WriteLine ("  -out PATH                     Specify the output directory. Defaults to 'output'");
 			Console.WriteLine ("  --about                       About the {0}", _linker);
 			Console.WriteLine ("  --verbose                     Log messages indicating progress and warnings");
+			Console.WriteLine ("  --warn VERSION                Only print out warnings with version <= VERSION. Defaults to '9999'");
+			Console.WriteLine ("                                  VERSION is an integer in the range 0-9999.");
 			Console.WriteLine ("  --warnaserror[+|-]            Report all warnings as errors");
 			Console.WriteLine ("  --warnaserror[+|-] WARN-LIST  Report specific warnings as errors");
 			Console.WriteLine ("  --nowarn WARN-LIST            Disable specific warning messages");

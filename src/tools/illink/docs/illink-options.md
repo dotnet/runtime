@@ -162,6 +162,12 @@ The `--nowarn` option prevents the linker from displaying one or more linker war
 specifying its warning codes. All warning codes must be prepended with `IL` and multiple
 warnings should be separated with a comma or semicolon.
 
+### Control warning versions
+
+The `--warn VERSION` option prevents the linker from displaying warnings newer than the specified
+version. Valid versions are in the range 0-9999, where 9999 will display all current and future
+warnings.
+
 ### Generating warning suppressions
 
 For each of the linked assemblies that triggered any warnings during the linking, the

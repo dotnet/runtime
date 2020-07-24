@@ -62,6 +62,12 @@ namespace ILLink.Tasks
 		public string NoWarn { get; set; }
 
 		/// <summary>
+		/// The warning version to use.
+		/// Maps to '--warn'.
+		/// </summary>
+		public string Warn { get; set; }
+
+		/// <summary>
 		///   A list of XML root descriptor files specifying linker
 		///   roots at a granular level. See the mono/linker
 		///   documentation for details about the format.
@@ -305,6 +311,9 @@ namespace ILLink.Tasks
 
 			if (NoWarn != null)
 				args.Append ("--nowarn ").AppendLine (Quote (NoWarn));
+
+			if (Warn != null)
+				args.Append ("--warn ").AppendLine (Quote (Warn));
 
 			// Add global optimization arguments
 			if (_beforeFieldInit is bool beforeFieldInit)

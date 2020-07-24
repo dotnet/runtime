@@ -285,10 +285,24 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				NoWarn = noWarn
 			};
-
 			using (var driver = task.CreateDriver ()) {
 				var actualUsedNoWarns = driver.Context.NoWarn;
-				Assert.Equal (actualUsedNoWarns.Count, validNoWarns);
+				Assert.Equal (validNoWarns, actualUsedNoWarns.Count);
+			}
+		}
+
+		[Theory]
+		[InlineData ("0", WarnVersion.ILLink0)]
+		[InlineData ("5", WarnVersion.ILLink5)]
+		[InlineData ("6", (WarnVersion) 6)]
+		[InlineData ("9999", WarnVersion.Latest)]
+		public void TestWarn (string warnArg, WarnVersion expectedVersion)
+		{
+			var task = new MockTask () {
+				Warn = warnArg
+			};
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (expectedVersion, driver.Context.WarnVersion);
 			}
 		}
 
