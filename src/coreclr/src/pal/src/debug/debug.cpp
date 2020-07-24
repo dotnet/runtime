@@ -662,8 +662,8 @@ PAL_ReadProcessMemory(
     ENTRY("PAL_ReadProcessMemory(handle=%x, address=%p buffer=%p size=%d)\n", handle, (void*)address, buffer, size);
     _ASSERTE(handle != 0);
     _ASSERTE(numberOfBytesRead != nullptr);
-    *numberOfBytesRead = 0;
     size_t read = 0;
+    BOOL result = TRUE;
 #ifdef __APPLE__
     vm_map_t task = (vm_map_t)handle;
 
@@ -674,7 +674,7 @@ PAL_ReadProcessMemory(
     const size_t pageSize = GetVirtualPageSize();
     vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
     size_t offset = OffsetWithinPage(address);
-    char *data = (char*)alloca(pageSize);
+    char *data = (char*)malloc(pageSize);
     size_t bytesToRead;
 
     while (size > 0)
@@ -691,8 +691,8 @@ PAL_ReadProcessMemory(
         if (result != KERN_SUCCESS || bytesRead != pageSize)
         {
             ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", pageSize, (void*)addressAligned, result, mach_error_string(result));
-            LOGEXIT("PAL_ReadProcessMemory FALSE\n");
-            return FALSE;
+            result = FALSE;
+            goto exit;
         }
         memcpy((LPSTR)buffer + read , data + offset, bytesToRead);
         addressAligned = addressAligned + pageSize;
@@ -700,16 +700,18 @@ PAL_ReadProcessMemory(
         size -= bytesToRead;
         offset = 0;
     }
+exit:
+    free(data);
 #else
     read = pread(handle, buffer, size, address);
     if (read == (size_t)-1)
     {
-        return FALSE;
+        result = FALSE;
     }
 #endif
     *numberOfBytesRead = read;
-    LOGEXIT("PAL_ReadProcessMemory TRUE bytes read: %d\n", read);
-    return TRUE;
+    LOGEXIT("PAL_ReadProcessMemory result=%d bytes read=%d\n", result, read);
+    return result;
 }
 
 /*++
