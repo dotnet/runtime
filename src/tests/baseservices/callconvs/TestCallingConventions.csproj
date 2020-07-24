@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="NativeFunctions.cs" />
     <Compile Include="TestCallingConventions.cs" />
   </ItemGroup>
   <ItemGroup>

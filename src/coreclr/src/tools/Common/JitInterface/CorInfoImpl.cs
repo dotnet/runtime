@@ -509,7 +509,6 @@ namespace Internal.JitInterface
                 return false;
 
             bool found = false;
-            CorInfoCallConv callConvLocal = callConv;
             foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
             {
                 if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
@@ -527,34 +526,27 @@ namespace Internal.JitInterface
                     continue;
 
                 // Look for a recognized calling convention in metadata.
-                switch (defType.Name)
+                CorInfoCallConv? callConvLocal = defType.Name switch
                 {
-                    case "CallConvCdecl":
-                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_C, ref callConvLocal);
-                        break;
-                    case "CallConvStdcall":
-                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_STDCALL, ref callConvLocal);
-                        break;
-                    case "CallConvFastcall":
-                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_FASTCALL, ref callConvLocal);
-                        break;
-                    case "CallConvThiscall":
-                        SetCallConvLocal(CorInfoCallConv.CORINFO_CALLCONV_THISCALL, ref callConvLocal);
-                        break;
+                    "CallConvCdecl"     => CorInfoCallConv.CORINFO_CALLCONV_C,
+                    "CallConvStdcall"   => CorInfoCallConv.CORINFO_CALLCONV_STDCALL,
+                    "CallConvFastcall"  => CorInfoCallConv.CORINFO_CALLCONV_FASTCALL,
+                    "CallConvThiscall"  => CorInfoCallConv.CORINFO_CALLCONV_THISCALL,
+                    _ => null
+                };
+
+                if (callConvLocal.HasValue)
+                {
+                    // Error if there are multiple recognized calling conventions
+                    if (found)
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
+ 
+                    callConv = callConvLocal.Value;
+                    found = true;
                 }
             }
 
-            callConv = callConvLocal;
             return found;
-
-            void SetCallConvLocal(CorInfoCallConv value, ref CorInfoCallConv callConvLocal)
-            {
-                if (found)
-                    throw new NotSupportedException("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.");
-
-                callConvLocal = value;
-                found = true;
-            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)

@@ -75,6 +75,15 @@
     ret
   }
 
+  .method public hidebysig static int32 CallUnmanagedIntInt_ModOptStdcall_ModOptCdecl(void* p, int32 b) cil managed
+  {
+    .maxstack 2
+    ldarg.1
+    ldarg.0
+    calli unmanaged int32 modopt([System.Runtime]System.Runtime.CompilerServices.CallConvStdcall) modopt([System.Runtime]System.Runtime.CompilerServices.CallConvCdecl) (int32)
+    ret
+  }
+
   .method public hidebysig static int32 CallUnmanagedIntInt_ModOptStdcall_ModOptUnknown(void* p, int32 b) cil managed
   {
     .maxstack 2
@@ -153,6 +162,15 @@
     ldarg.1
     ldarg.0
     calli unmanaged char modopt([System.Runtime]System.Runtime.CompilerServices.RuntimeFeature) (char)
+    ret
+  }
+
+  .method public hidebysig static char CallUnmanagedCharChar_ModOptStdcall_ModOptCdecl(void* p, char b) cil managed
+  {
+    .maxstack 2
+    ldarg.1
+    ldarg.0
+    calli unmanaged char modopt([System.Runtime]System.Runtime.CompilerServices.CallConvStdcall) modopt([System.Runtime]System.Runtime.CompilerServices.CallConvCdecl) (char)
     ret
   }
 

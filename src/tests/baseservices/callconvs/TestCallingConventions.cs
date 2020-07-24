@@ -2,12 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using TestLibrary;
 
 unsafe class Program
 {
+    class NativeFunctions
+    {
+        public const string Name = nameof(NativeFunctions);
+
+        public static string GetFileName()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return $"{Name}.dll";
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return $"lib{Name}.so";
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return $"lib{Name}.dylib";
+
+            throw new PlatformNotSupportedException();
+        }
+
+        public static string GetFullPath()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            string directory = Path.GetDirectoryName(assembly.Location);
+            return Path.Combine(directory, GetFileName());
+        }
+    }
+
     static void BlittableFunctionPointers()
     {
         Console.WriteLine($"Running {nameof(BlittableFunctionPointers)}...");
@@ -56,6 +84,15 @@ unsafe class Program
             Console.WriteLine($" -- unmanaged modopt unrecognized");
             int b = CallFunctionPointers.CallUnmanagedIntInt_ModOptUnknown(cbDefault, a);
             Assert.AreEqual(expected, b);
+        }
+
+        {
+            // Multiple modopts with calling conventions
+            Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(cdecl)");
+            var ex = Assert.Throws<InvalidProgramException>(
+                () => CallFunctionPointers.CallUnmanagedIntInt_ModOptStdcall_ModOptCdecl(cbCdecl, a),
+                "Multiple modopts with calling conventions should fail");
+            Assert.AreEqual("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
         }
 
         {
@@ -125,6 +162,15 @@ unsafe class Program
             Console.WriteLine($" -- unmanaged modopt(unrecognized)");
             var b = CallFunctionPointers.CallUnmanagedCharChar_ModOptUnknown(cbDefault, a);
             Assert.AreEqual(expected, b);
+        }
+
+        {
+            // Multiple modopts with calling conventions
+            Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(cdecl)");
+            var ex = Assert.Throws<InvalidProgramException>(
+                () => CallFunctionPointers.CallUnmanagedCharChar_ModOptStdcall_ModOptCdecl(cbCdecl, a),
+                "Multiple modopts with calling conventions should fail");
+            Assert.AreEqual("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
         }
 
         {

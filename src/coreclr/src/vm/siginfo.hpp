@@ -781,16 +781,13 @@ class MetaSig
 
         //----------------------------------------------------------
         // Gets the unmanaged calling convention by reading any modopts.
-        // If there are multiple modopts specifying recognized calling
-        // conventions, the first one that is found in the metadata wins.
-        // Note: the order in the metadata is the reverse of that in IL.
         //
         // Returns:
         //   S_OK - Calling convention was read from modopt
         //   S_FALSE - Calling convention was not read from modopt
         //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
-        //   COR_E_NOTSUPPORTED - Signature is not supported (multiple
-        //                        calling conventions in modopts)
+        //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
+        //                          than one calling convention specified)
         //----------------------------------------------------------
         static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
             _In_ Module *pModule,

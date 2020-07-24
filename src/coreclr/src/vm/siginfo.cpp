@@ -5333,7 +5333,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
                 if (found)
                 {
                     *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
-                    return COR_E_NOTSUPPORTED;
+                    return COR_E_INVALIDPROGRAM;
                 }
 
                 *callConvOut = callConv.value;
