@@ -49,7 +49,7 @@
 			<method signature="System.Void .ctor(System.String)" />
 			<!-- create_exception_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
- 		</type>
+		</type>
 
 		<!-- exception.c (mono_get_exception_argument_out_of_range) -->
 		<type fullname="System.ArgumentOutOfRangeException">
@@ -57,7 +57,7 @@
 			<method signature="System.Void .ctor()" />
 			<!-- create_exception_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
- 		</type>
+		</type>
 
 		<!-- exception.c (mono_get_exception_arithmetic) -->
 		<type fullname="System.ArithmeticException">
@@ -222,7 +222,7 @@
 		<type fullname="System.Int64">
 			<field name="m_value"/>
 		</type>
-    
+
 		<!-- domain.c: mono_defaults.int_class -->
 		<type fullname="System.IntPtr">
 			<field name="_value"/>
@@ -517,15 +517,6 @@
 
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 
-    <!-- TODO: EventInfo has no fields in NetCore as it's an abstract class. Maybe we need RuntimeEventInfo fields
-         but those are already preserved below. -->
-		<!-- <type fullname="System.Reflection.EventInfo" > -->
-      <!-- TODO: There's a reference to these names in native code in security-core-clr.c around likne 735
-                 but the methods don't exist in the managed code. -->
-			<!--<method name="AddEventFrame" />
-			<method name="StaticAddEventAdapterFrame" />-->
-		<!--</type>-->
-
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
 			<!-- reflection.c mono_object_new_checked in add_exception_handling_clause_to_array -->
@@ -580,22 +571,22 @@
 		</type>
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<!-- reflection.c: ves_icall_get_parameter_info -->
-    <type fullname="System.Reflection.ParameterInfo" >
-      <!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
-      <field name="MemberImpl" />
-      <field name="PositionImpl" />
-    </type>
-    <type fullname="System.Reflection.RuntimeParameterInfo" >
-      <!-- reflection.c add_parameter_object_to_array -->
-      <method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
-    </type>
+		<type fullname="System.Reflection.ParameterInfo" >
+			<!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
+			<field name="MemberImpl" />
+			<field name="PositionImpl" />
+		</type>
+		<type fullname="System.Reflection.RuntimeParameterInfo" >
+			<!-- reflection.c add_parameter_object_to_array -->
+			<method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
+		</type>
 
 		<!-- object.c: mono_field_get_value_object and mono_runtime_invoke_array -->
 		<type fullname="System.Reflection.Pointer" >
 			<method name="Box" />
 		</type>
 
- 		<!-- exception.c (mono_get_exception_reflection_type_load) -->
+		<!-- exception.c (mono_get_exception_reflection_type_load) -->
 		<type fullname="System.Reflection.ReflectionTypeLoadException">
 			<method signature="System.Void .ctor(System.Type[],System.Exception[])" />
 		</type>
@@ -661,10 +652,7 @@
 
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread" preserve="fields">
-      <!-- TODO: Not sure what this was in Mono - doesn't exist in NetCore -->
-			<!--<method name="get_CurrentContext" />-->
-		</type>
+		<type fullname="System.Threading.Thread" preserve="fields" />
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->
@@ -686,7 +674,7 @@
 		</type>
 
 		<!-- mini-generic-sharing.c -->
-		<!-- Mono.ValueTuple has no fields  <type fullname="Mono.ValueTuple" preserve="fields"/>-->
+		<type fullname="Mono.ValueTuple" required="true"/>
 		<type fullname="Mono.ValueTuple`1" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`2" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>
