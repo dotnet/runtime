@@ -107,14 +107,14 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public virtual Task WriteCDataAsync(string text)
+        public virtual Task WriteCDataAsync(string? text)
         {
             throw new NotImplementedException();
         }
 
         // Writes out a comment <!--...-->; containing the specified text.
 
-        public virtual Task WriteCommentAsync(string text)
+        public virtual Task WriteCommentAsync(string? text)
         {
             throw new NotImplementedException();
         }
@@ -142,14 +142,14 @@ namespace System.Xml
 
         // Writes out the given whitespace.
 
-        public virtual Task WriteWhitespaceAsync(string ws)
+        public virtual Task WriteWhitespaceAsync(string? ws)
         {
             throw new NotImplementedException();
         }
 
         // Writes out the specified text content.
 
-        public virtual Task WriteStringAsync(string text)
+        public virtual Task WriteStringAsync(string? text)
         {
             throw new NotImplementedException();
         }

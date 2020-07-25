@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netstandard2.0-Windows_NT;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netstandard2.0-Windows_NT;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -74,14 +73,8 @@
     <Compile Include="System\ServiceProcess\SessionChangeReason.cs" />
     <Compile Include="System\ServiceProcess\TimeoutException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Diagnostics.EventLog" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.ServiceProcess" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or ($(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true')">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and
+                        '$(TargetsWindows)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
@@ -97,5 +90,15 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netstandard2.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

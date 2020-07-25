@@ -108,5 +108,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

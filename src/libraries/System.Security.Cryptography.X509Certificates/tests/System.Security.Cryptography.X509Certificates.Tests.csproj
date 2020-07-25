@@ -116,6 +116,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
   </ItemGroup>
 </Project>

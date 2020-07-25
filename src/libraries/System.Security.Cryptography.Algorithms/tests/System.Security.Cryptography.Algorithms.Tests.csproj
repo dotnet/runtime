@@ -225,4 +225,8 @@
     <Compile Include="AesGcmTests.cs" />
     <Compile Include="HKDFTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
+  </ItemGroup>
 </Project>

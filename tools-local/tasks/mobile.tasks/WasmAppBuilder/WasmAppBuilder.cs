@@ -32,6 +32,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
+    public bool InvariantGlobalization { get; set; }
 
     SortedDictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
@@ -117,7 +118,15 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
+
+        List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
+
+        if (!InvariantGlobalization)
+        {
+            nativeAssets.Add("icudt.dat");
+        }
+
+        foreach (var f in nativeAssets)
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
@@ -152,7 +161,9 @@ public class WasmAppBuilder : Task
             }
         }
 
-        config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+        if (!InvariantGlobalization)
+            config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+            
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {

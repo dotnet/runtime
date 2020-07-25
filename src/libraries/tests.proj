@@ -25,19 +25,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\TestWithConfigSwitches\System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
 
-    <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for these two it has "System.Globalization.Invariant": true) -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Invariant\Invariant.Tests.csproj" />
+    <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
 
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\PalTests\System.Net.Primitives.Pal.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel\tests\System.ObjectModel.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple\tests\System.ValueTuple.Tests.csproj" />
   </ItemGroup>
 

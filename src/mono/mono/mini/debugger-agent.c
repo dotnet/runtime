@@ -5287,26 +5287,6 @@ debugger_agent_debug_log_is_enabled (void)
 }
 
 static void
-debugger_agent_unhandled_exception (MonoException *exc)
-{
-	int suspend_policy;
-	GSList *events;
-	EventInfo ei;
-
-	if (!inited)
-		return;
-
-	memset (&ei, 0, sizeof (ei));
-	ei.exc = (MonoObject*)exc;
-
-	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, NULL, &ei, &suspend_policy);
-	mono_loader_unlock ();
-
-	process_event (EVENT_KIND_EXCEPTION, &ei, 0, NULL, events, suspend_policy);
-}
-
-static void
 debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 									  MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
@@ -10420,7 +10400,6 @@ mono_debugger_agent_init (void)
 	cbs.single_step_from_context = debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
 	cbs.free_domain_info = debugger_agent_free_domain_info;
-	cbs.unhandled_exception = debugger_agent_unhandled_exception;
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
 	cbs.end_exception_filter = debugger_agent_end_exception_filter;

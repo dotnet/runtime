@@ -1,48 +1,50 @@
 <Project>
 
-  <UsingTask TaskName="PInvokeTableGenerator"
-    AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
-
-  <PropertyGroup>
-    <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-
-    <WasmPInvokeModules Include="libSystem.Native"/>
-    <WasmPInvokeModules Include="libSystem.IO.Compression.Native"/>
-    <WasmPInvokeModules Include="libSystem.Globalization.Native"/>
-    <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-$(Configuration)\System.Runtime.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.FileSystem.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Sockets.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Net.Primitives.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Security.Cryptography.Algorithms\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Security.Cryptography.Algorithms.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.Compression\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.IO.Compression.dll"/>
-    <!--<WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.Compression.Brotli\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.Compression.Brotli.dll"/>-->
-  </ItemGroup>
-
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
+  <ItemGroup>
+    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
   <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmPInvokeModule Include="libSystem.Native" />
+      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <!-- Include CoreLib via the CollectedBuildOutput as it isn't binplaced into the runtime pack at this time. -->
+      <WasmPInvokeAssembly Include="@(CollectedBuildOutput)"
+                           Condition="'%(CollectedBuildOutput.MSBuildSourceProjectFile)' == '$(CoreLibProject)'" />
+      <WasmPInvokeAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+    </ItemGroup>
+
     <MakeDir Directories="$(ArtifactsObjDir)wasm"/>
-    <PInvokeTableGenerator
-      Modules="@(WasmPInvokeModules)"
-      Assemblies="@(WasmPInvokeAssemblies)"
-      OutputPath="$(WasmPInvokeTablePath)"
-      />
+    <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
+                           Assemblies="@(WasmPInvokeAssembly)"
+                           OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
+  <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
+          AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable">
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir) NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir) NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet.wasm;
+                       $(NativeBinDir)dotnet.timezones.blat;
+                       $(NativeBinDir)icudt.dat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

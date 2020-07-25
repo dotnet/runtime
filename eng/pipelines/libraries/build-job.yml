@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   crossrootfsDir: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -65,7 +65,7 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'Browser') }}:
           - EMSDK_PATH: /usr/local/emscripten
 
-        # Tests only run for 'allConfiguration' and 'net472' build-jobs
+        # Tests only run for 'allConfiguration' and 'net48' build-jobs
         # If platform is in testBuildPlatforms we build tests as well.
         - ${{ if or(eq(parameters.runTests, true), containsValue(parameters.testBuildPlatforms, parameters.platform)) }}:
           - _subset: libs+libs.tests

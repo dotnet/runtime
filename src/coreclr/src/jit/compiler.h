@@ -3741,7 +3741,7 @@ protected:
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
-                              CorInfoIntrinsics     intrinsicID,
+                              NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -3937,9 +3937,9 @@ public:
     bool VarTypeIsMultiByteAndCanEnreg(
         var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
 
-    bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
-    bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
-    bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
+    bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
+    bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(GenTree* tree);
 
 private:
@@ -6326,11 +6326,12 @@ protected:
 
     struct CSEdsc
     {
-        CSEdsc* csdNextInBucket; // used by the hash table
-
-        unsigned csdHashKey; // the orginal hashkey
-
-        unsigned csdIndex; // 1..optCSECandidateCount
+        CSEdsc*  csdNextInBucket;  // used by the hash table
+        size_t   csdHashKey;       // the orginal hashkey
+        ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
+        ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
+                                   // assignment
+        unsigned csdIndex;         // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6359,6 +6360,7 @@ protected:
 
         ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
                                    // number, this will reflect it; otherwise, NoVN.
+                                   // not used for shared const CSE's
     };
 
     static const size_t s_optCSEhashSize;
@@ -6405,6 +6407,16 @@ protected:
 #ifdef DEBUG
     void optEnsureClearCSEInfo();
 #endif // DEBUG
+
+    static bool Is_Shared_Const_CSE(size_t key)
+    {
+        return ((key & TARGET_SIGN_BIT) != 0);
+    }
+
+    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    {
+        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+    }
 
 #endif // FEATURE_ANYCSE
 
@@ -8190,7 +8202,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return TYP_SIMD32;
+            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
         }
         else
         {
@@ -8231,7 +8243,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -8261,7 +8273,7 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -9067,7 +9079,7 @@ public:
         bool compIsVarArgs : 1;          // Does the method have varargs parameters?
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an instrinsic
+        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
         bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
