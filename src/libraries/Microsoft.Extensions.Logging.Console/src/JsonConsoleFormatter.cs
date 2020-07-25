@@ -45,8 +45,8 @@ namespace Microsoft.Extensions.Logging.Console
                     var timestampFormat = FormatterOptions.TimestampFormat;
                     if (timestampFormat != null)
                     {
-                        var dateTime = FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
-                        timestamp = dateTime.ToString(timestampFormat);
+                        DateTimeOffset dateTimeOffset = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+                        timestamp = dateTimeOffset.ToString(timestampFormat);
                     }
                     writer.WriteString("Timestamp", timestamp);
                     writer.WriteNumber(nameof(logEntry.EventId), eventId);
