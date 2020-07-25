@@ -1,11 +1,14 @@
 # Create an experiment
 
-Experiments should be contained within a branch in the repository. Instead of using forks of the `dotnet/runtimelab` repository to house experiments, keep branches in the official repository which helps with community visibility. Once an experiment branch is pushed up, remember to submit a PR to update the [README.MD](README.MD#Active%20Experimental%20Projects) in the [main branch][main_branch_link] with the name of the branch and a brief description of the experiment.
+Experiments should be contained within a branch in the dotnet/runtimelab repository. Keeping all experiments branches in one repository helps with community visibility.
 
-Things to consider:
+## Steps to setup a new experiment
 
-- Experiments often involve updates to the [runtime](https://github.com/dotnet/runtime). Instead of branching off of the [main branch][main_branch_link] consider branching from the [official runtime branch](https://github.com/dotnet/runtimelab/tree/runtime-master). Including the entire runtime permits a self contained experiment that is easy for the community to try out.
-
-<!-- common links -->
-
-[main_branch_link]: https://github.com/dotnet/runtimelab/tree/master
+- Pick a good name for your experiment and create branch for it in dotnet/runtimelab.
+   - If the experiment is expected to require changes of .NET runtime itself, it should be branched off of [dotnet/runtimelab:runtime-master](https://github.com/dotnet/runtimelab/tree/runtime-master) that is a manually maitained mirror of [dotnet/runtime:master](https://github.com/dotnet/runtime/tree/master).
+   - Otherwise, the experiment should be branched off of [dotnet/runtimelab:master](https://github.com/dotnet/runtimelab/tree/master) to get the required boilerplate such as LICENSE.TXT.
+- Submit a PR to update the [README.MD](https://github.com/dotnet/runtimelab/blob/master/README.md#active-experimental-projects) with the name of your branch and a brief description of the experiment. Example: [#19](https://github.com/dotnet/runtimelab/pull/19/files)
+- Create label `area-<your experiment name>` for tagging issues. The label should use color `#d4c5f9`. 
+- If your experiment is branched from dotnet/runtime:
+   - Enable CI builds by editing `eng/pipelines/runtimelab.yml` in your branch. Example: [#25](https://github.com/dotnet/runtimelab/pull/25/files)
+   - To avoid spurious github notifications for merges from upstream, delete `.github/CODEOWNERS` from your branch or replace it with setting specific to your experiment. Example: [#26](https://github.com/dotnet/runtimelab/pull/26/files)
