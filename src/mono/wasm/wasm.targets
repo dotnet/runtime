@@ -20,13 +20,16 @@
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
       <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-      <!-- Include CoreLib via the CollectedBuildOutput as it isn't binplaced into the runtime pack at this time. -->
-      <WasmPInvokeAssembly Include="@(CollectedBuildOutput)"
-                           Condition="'%(CollectedBuildOutput.MSBuildSourceProjectFile)' == '$(CoreLibProject)'" />
       <WasmPInvokeAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
     </ItemGroup>
+    
+    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
+    </MSBuild>
 
-    <MakeDir Directories="$(ArtifactsObjDir)wasm"/>
+    <MakeDir Directories="$(ArtifactsObjDir)wasm" />
     <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
                            Assemblies="@(WasmPInvokeAssembly)"
                            OutputPath="$(WasmPInvokeTablePath)" />
