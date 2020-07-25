@@ -923,12 +923,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Arrays/TypeParameters/MultiDim/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/38260</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/32725</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/32725</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
         </ExcludeList>
@@ -952,9 +946,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/SimpleSIMDProgram/*">
             <Issue>https://github.com/dotnet/runtime/issues/35724</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/**/*">
-            <Issue>https://github.com/dotnet/runtime/issues/32725</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>

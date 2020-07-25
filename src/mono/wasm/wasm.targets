@@ -32,6 +32,7 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
+  <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable">

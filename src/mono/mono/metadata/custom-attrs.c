@@ -489,6 +489,7 @@ MONO_RESTORE_WARNING
 	case MONO_TYPE_SZARRAY: {
 		MonoArray *arr;
 		guint32 i, alen, basetype;
+
 		if (!bcheck_blob (p, 3, boundp, error))
 			return NULL;
 		alen = read32 (p);
@@ -497,8 +498,10 @@ MONO_RESTORE_WARNING
 			*end = p;
 			return NULL;
 		}
+
 		arr = mono_array_new_checked (mono_domain_get(), tklass, alen, error);
 		return_val_if_nok (error, NULL);
+
 		basetype = m_class_get_byval_arg (tklass)->type;
 		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
 			basetype = mono_class_enum_basetype_internal (tklass)->type;
@@ -569,7 +572,10 @@ MONO_RESTORE_WARNING
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_SZARRAY: {
+			HANDLE_FUNCTION_ENTER ();
+			MONO_HANDLE_NEW (MonoArray, arr);
+
 			for (i = 0; i < alen; i++) {
 				MonoObject *item = NULL;
 				load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
@@ -577,13 +583,16 @@ MONO_RESTORE_WARNING
 					return NULL;
 				mono_array_setref_internal (arr, i, item);
 			}
+			HANDLE_FUNCTION_RETURN ();
 			break;
+		}
 		default:
 			g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
 		}
 		*end = p;
 		g_assert (out_obj);
 		*out_obj = (MonoObject*)arr;
+
 		return NULL;
 	}
 	default:
@@ -618,12 +627,14 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 }
 
 static MonoObject*
-create_cattr_typed_arg (MonoType *t, MonoObjectHandleOut res_h, MonoObject *val, MonoError *error)
+create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 {
 	MonoObject *retval;
 	void *params [2], *unboxed;
 
 	error_init (error);
+
+	HANDLE_FUNCTION_ENTER ();
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, ctor)
 
@@ -634,28 +645,32 @@ create_cattr_typed_arg (MonoType *t, MonoObjectHandleOut res_h, MonoObject *val,
 
 	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
 	return_val_if_nok (error, NULL);
+	MONO_HANDLE_PIN ((MonoObject*)params [0]);
 
 	params [1] = val;
 	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_typed_argument_class (), error);
 	return_val_if_nok (error, NULL);
-	/* This will keep retval pinned during the runtime invoke */
-	MONO_HANDLE_ASSIGN_RAW (res_h, retval);
+	MONO_HANDLE_PIN (retval);
 
 	unboxed = mono_object_unbox_internal (retval);
 
 	mono_runtime_invoke_checked (ctor, unboxed, params, error);
 	return_val_if_nok (error, NULL);
 
+	HANDLE_FUNCTION_RETURN ();
+
 	return retval;
 }
 
 static MonoObject*
-create_cattr_named_arg (void *minfo, MonoObjectHandleOut res_h, MonoObject *typedarg, MonoError *error)
+create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 {
 	MonoObject *retval;
 	void *unboxed, *params [2];
 
 	error_init (error);
+
+	HANDLE_FUNCTION_ENTER ();
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, ctor)
 
@@ -668,13 +683,14 @@ create_cattr_named_arg (void *minfo, MonoObjectHandleOut res_h, MonoObject *type
 	params [1] = typedarg;
 	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_named_argument_class (), error);
 	return_val_if_nok (error, NULL);
-	/* This will keep retval pinned during the runtime invoke */
-	MONO_HANDLE_ASSIGN_RAW (res_h, retval);
+	MONO_HANDLE_PIN (retval);
 
 	unboxed = mono_object_unbox_internal (retval);
 
 	mono_runtime_invoke_checked (ctor, unboxed, params, error);
 	return_val_if_nok (error, NULL);
+
+	HANDLE_FUNCTION_RETURN ();
 
 	return retval;
 }
@@ -1352,7 +1368,7 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 	MonoReflectionMethod *ref_method = MONO_HANDLE_RAW (ref_method_h);
 	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
 	MonoMethodSignature *sig;
-	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h, arg_h;
+	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h;
 	int i;
 
 	if (len == 0)
@@ -1362,7 +1378,6 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 	namedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	typedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	minfo_h = MONO_HANDLE_NEW (MonoObject, NULL);
-	arg_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	image = assembly->assembly->image;
 	method = ref_method->method;
@@ -1394,7 +1409,7 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		t = sig->params [i];
 		if (t->type == MONO_TYPE_OBJECT && obj)
 			t = m_class_get_byval_arg (obj->vtable->klass);
-		typedarg = create_cattr_typed_arg (t, arg_h, obj, error);
+		typedarg = create_cattr_typed_arg (t, obj, error);
 		goto_if_nok (error, leave);
 		mono_array_setref_internal (typed_args, i, typedarg);
 	}
@@ -1416,13 +1431,13 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
 
 #if ENABLE_NETCORE
-		namedarg = create_cattr_named_arg (minfo, arg_h, obj, error);
+		namedarg = create_cattr_named_arg (minfo, obj, error);
 		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #else
-		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, arg_h, obj, error);
+		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
 		MONO_HANDLE_ASSIGN_RAW (typedarg_h, typedarg);
 		goto_if_nok (error, leave);
-		namedarg = create_cattr_named_arg (minfo, arg_h, typedarg, error);
+		namedarg = create_cattr_named_arg (minfo, typedarg, error);
 		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #endif
 		goto_if_nok (error, leave);
