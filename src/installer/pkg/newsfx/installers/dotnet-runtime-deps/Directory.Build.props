@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <PlatformPackageType>ToolPack</PlatformPackageType>
+    <PackageBrandNameSuffix>Runtime Dependencies</PackageBrandNameSuffix>
     <GenerateArchive>false</GenerateArchive>
     <SharedFrameworkInstallerName>dotnet-runtime-deps</SharedFrameworkInstallerName>
     <InstallerRuntimeIdentifiers>linux-$(TargetArchitecture)</InstallerRuntimeIdentifiers>
