@@ -38,6 +38,7 @@
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
+    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
@@ -55,7 +56,7 @@
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -82,13 +83,31 @@
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(TestPackages)' != 'true'">
+      <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%"</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+        <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
@@ -126,19 +145,6 @@
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
-    <!--
-      For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
-      We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
-      so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
-    -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>

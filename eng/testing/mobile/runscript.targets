@@ -1,0 +1,74 @@
+<Project>
+  <PropertyGroup>
+    <!-- Implicit test build support when invoking the Test target on the project directly. -->
+    <TestDependsOn Condition="'$(TestNoBuild)' != 'true' and
+                              '$(VSTestNoBuild)' != 'true' and
+                              '$(BuildAllProjects)' != 'true'">Build</TestDependsOn>
+    <TestDependsOn>$(TestDependsOn);RunTests</TestDependsOn>
+  </PropertyGroup>
+
+  <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
+    <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
+
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <Target Name="GenerateRunScript">
+    <PropertyGroup>
+      <!-- Escape potential user input. -->
+      <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
+    </PropertyGroup>
+
+    <GenerateRunScript RunCommands="$(RunScriptCommand)"
+                       TemplatePath="$(RunScriptInputPath)"
+                       OutputPath="$(RunScriptOutputPath)" />
+
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+  </Target>
+
+  <Target Name="RunTests"
+          DependsOnTargets="GenerateRunScript">
+    <PropertyGroup>
+      <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
+      <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
+      <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
+    </PropertyGroup>
+
+    <!-- Invoke the run script with the test host as the runtime path. -->
+    <Exec Command="$(RunTestsCommand)"
+          ContinueOnError="true"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
+      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
+      <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
+      <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
+    </PropertyGroup>
+
+    <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
+  </Target>
+
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
+  <!-- Overwrite the VSTest target to allow dotnet test to work with it. -->
+  <Target Name="VSTest" DependsOnTargets="Test" />
+</Project>

@@ -1,22 +1,17 @@
 <Project>
+  <!-- Run target (F5) support. -->
   <PropertyGroup>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
+  </PropertyGroup>
 
-    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <RunCommand>$(DotNetTool)</RunCommand>
+    <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
 
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
-    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-
-    <RunScriptHostDir Condition="'$(TargetOS)' == 'Windows_NT'">%RUNTIME_PATH%\</RunScriptHostDir>
-    <RunScriptHostDir Condition="'$(TargetOS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
-
-    <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
-    <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <RunCommand>$(DevEnvDir)Extensions\TestPlatform\vstest.console.exe</RunCommand>
+    <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -48,80 +43,8 @@
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BundleDir);$(PublishDir)" />
   </Target>
 
-  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateRunScript">
-    <PropertyGroup>
-      <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
-      <RunScriptCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-
-      <!-- Escape potential user input. -->
-      <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
-    </PropertyGroup>
-
-    <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
-    <PropertyGroup Condition="'$(TestDebugger)' != ''">
-      <RunScriptCommand Condition="!$(TestDebugger.Contains('devenv'))">$(TestDebugger) $(RunScriptCommand)</RunScriptCommand>
-      <RunScriptCommand Condition=" $(TestDebugger.Contains('devenv'))">$(TestDebugger) /debugexe $(RunScriptCommand)</RunScriptCommand>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!--
-        If the PreExecutionTestScript property is set, then it should be set to the full path to a script that will be directly incorporated
-        into the generated runtests script, immediately before the test is run. This can be used to set a number of JIT stress modes,
-        for example. It is intended that this be as late as possible in the generated script, as close as possible to the running of the
-        test. That is why this doesn't appear higher in this file. The idea is that if the included script alters managed code behavior, such as
-        setting various JIT stress modes, we don't want those changes to affect any other managed code invocation (such as test infrastructure
-        written in managed code).
-      -->
-      <RunScriptCommands Condition="'$(PreExecutionTestScript)' != ''" Include="$([System.IO.File]::ReadAllText('$(PreExecutionTestScript)'))" />
-
-      <RunScriptCommands Include="$(RunScriptCommand)" />
-
-      <!-- Do not put anything between this and the GenerateRunScript invocation. -->
-      <RunScriptCommands Include="@(PostRunScriptCommands)" />
-    </ItemGroup>
-
-    <GenerateRunScript RunCommands="@(RunScriptCommands)"
-                       TemplatePath="$(RunScriptInputPath)"
-                       OutputPath="$(RunScriptOutputPath)" />
-
-    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
-  </Target>
-
-  <Target Name="RunTests">
-    <PropertyGroup>
-      <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
-      <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
-      <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
-    </PropertyGroup>
-
-    <!-- Invoke the run script with the test host as the runtime path. -->
-    <Exec Command="$(RunTestsCommand)"
-          ContinueOnError="true"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true">
-      <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
-    </Exec>
-
-    <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
-      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
-      <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
-      <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
-    </PropertyGroup>
-
-    <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
-  </Target>
-
-  <Import Project="$(MSBuildThisFileDirectory)tests.mobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)mobile\tests.targets" Condition="'$(TargetsMobile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
-
-  <!-- Main test targets -->
-  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
   
   <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

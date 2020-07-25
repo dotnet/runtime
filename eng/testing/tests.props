@@ -2,11 +2,23 @@
   <PropertyGroup>
     <TestProjectName Condition="'$(TestProjectName)' == ''">$(MSBuildProjectName)</TestProjectName>
     <TestFramework Condition="'$(TestFramework)' == ''">xunit</TestFramework>
-    <!-- Implicit test build support when invoking the Test target on the project directly. -->
-    <TestDependsOn Condition="'$(TestNoBuild)' != 'true' and '$(BuildAllProjects)' != 'true'">Build</TestDependsOn>
-    <TestDependsOn>$(TestDependsOn);GenerateRunScript;RunTests</TestDependsOn>
     <VSTestNoLogo>true</VSTestNoLogo>
+    <!-- Microsoft.Net.Test.Sdk brings a lot of satellite assemblies in. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Condition="'$(IncludeRemoteExecutor)' == 'true'" Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
+    <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <!--
+      Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
+      with the one used in libraries to have a consistent set of dependency versions. Additionally this works
+      around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
+    -->
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- Default and user defined categories -->
@@ -19,23 +31,6 @@
     <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
-    <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
-    <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
-    <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
-    <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(MobileRunnersDirSuffix)'))</WasmTestRunnerDir>
-
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-  </PropertyGroup>
-
-  <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
-  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
-    <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-    <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-  </ItemGroup>
 
   <!--
     Unit/Functional/Integration test support.

@@ -32,7 +32,7 @@
   </LoggerRunSettings>
   <DataCollectionRunSettings>
     <DataCollectors>
-      <DataCollector friendlyName="XPlat code coverage" enabled="$$COVERAGE_ENABLED$$">
+      <DataCollector friendlyName="XPlat code coverage" enabled="false">
         <Configuration>
           <Include>$$COVERAGE_INCLUDE$$</Include>
           <ExcludeByFile>$$COVERAGE_EXCLUDEBYFILE$$</ExcludeByFile>
@@ -43,7 +43,12 @@
           <IncludeTestAssembly>false</IncludeTestAssembly>
         </Configuration>
       </DataCollector>
-      <DataCollector friendlyName="blame" enabled="true" />
+      <DataCollector friendlyName="blame" enabled="True">
+        <Configuration>
+          <CollectDump DumpType="Full" />
+          <CollectDumpOnTestSessionHang TestTimeout="10min" HangDumpType="Full" />
+        </Configuration>
+      </DataCollector>
     </DataCollectors>
   </DataCollectionRunSettings>
 </RunSettings>

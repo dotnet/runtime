@@ -31,7 +31,6 @@
       <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)')
                                                       .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
                                                       .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')
-                                                      .Replace('$$COVERAGE_ENABLED$$', '$([MSBuild]::ValueOrDefault('$(Coverage)', 'false'))')
                                                       .Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)')
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
