@@ -47,7 +47,11 @@ namespace MS.Internal.Xml.XPath
             }
 
             Debug.Assert(_variable != null);
-            return ProcessResult(_variable.Evaluate(xsltContext));
+            object? retVal = ProcessResult(_variable.Evaluate(xsltContext));
+
+            // ProcessResult may return null when the input value is XmlNode and here doesn't seem to be the case.
+            Debug.Assert(retVal != null);
+            return retVal;
         }
 
         public override XPathResultType StaticType

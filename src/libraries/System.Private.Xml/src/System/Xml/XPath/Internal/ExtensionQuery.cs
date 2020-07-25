@@ -78,7 +78,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        protected object ProcessResult(object value)
+        protected object? ProcessResult(object? value)
         {
             if (value is string) return value;
             if (value is double) return value;
@@ -109,6 +109,7 @@ namespace MS.Internal.Xml.XPath
             IXPathNavigable? navigable = value as IXPathNavigable;
             if (navigable != null)
             {
+                // This may be null if navigable is typeof(XmlNode).
                 return navigable.CreateNavigator();
             }
 

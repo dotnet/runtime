@@ -456,7 +456,7 @@ namespace System.Xml.XPath
             return null;
         }
 
-        public override string? GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             if (null == localName)
                 throw new ArgumentNullException(nameof(localName));
@@ -555,7 +555,7 @@ namespace System.Xml.XPath
         }
 
 
-        public override bool MoveToAttribute(string localName, string namespaceName)
+        public override bool MoveToAttribute(string localName, string? namespaceName)
         {
             if (null == localName)
                 throw new ArgumentNullException(nameof(localName));
