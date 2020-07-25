@@ -41,14 +41,12 @@ namespace Microsoft.Extensions.Logging.Console
                 using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
                 {
                     writer.WriteStartObject();
-                    string timestamp = null;
                     var timestampFormat = FormatterOptions.TimestampFormat;
                     if (timestampFormat != null)
                     {
                         DateTimeOffset dateTimeOffset = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
-                        timestamp = dateTimeOffset.ToString(timestampFormat);
+                        writer.WriteString("Timestamp", dateTimeOffset.ToString(timestampFormat));
                     }
-                    writer.WriteString("Timestamp", timestamp);
                     writer.WriteNumber(nameof(logEntry.EventId), eventId);
                     writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
                     writer.WriteString(nameof(logEntry.Category), category);
@@ -77,12 +75,18 @@ namespace Microsoft.Extensions.Logging.Console
                         writer.WriteEndObject();
                     }
 
-                    if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateDictionary)
+                    if (logEntry.State != null)
                     {
-                        foreach (KeyValuePair<string, object> item in stateDictionary)
+                        writer.WriteStartObject(nameof(logEntry.State));
+                        writer.WriteString("Message", logEntry.State.ToString());
+                        if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateProperties)
                         {
-                            writer.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
+                            foreach (KeyValuePair<string, object> item in stateProperties)
+                            {
+                                writer.WriteString(item.Key, ToInvariantString(item.Value));
+                            }
                         }
+                        writer.WriteEndObject();
                     }
                     WriteScopeInformation(writer, scopeProvider);
                     writer.WriteEndObject();
@@ -115,25 +119,29 @@ namespace Microsoft.Extensions.Logging.Console
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                int numScopes = 0;
-                writer.WriteStartObject("Scopes");
+                writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IReadOnlyCollection<KeyValuePair<string, object>> scopeDictionary)
+                    if (scope is IReadOnlyCollection<KeyValuePair<string, object>> scopes)
                     {
-                        foreach (KeyValuePair<string, object> item in scopeDictionary)
+                        state.WriteStartObject();
+                        state.WriteString("Message", scope.ToString());
+                        foreach (KeyValuePair<string, object> item in scopes)
                         {
-                            state.WriteString(item.Key, Convert.ToString(item.Value, CultureInfo.InvariantCulture));
+                            state.WriteString(item.Key, ToInvariantString(item.Value));
                         }
+                        state.WriteEndObject();
                     }
                     else
                     {
-                        state.WriteString(numScopes++.ToString(), scope.ToString());
+                        state.WriteStringValue(ToInvariantString(scope));
                     }
                 }, writer);
-                writer.WriteEndObject();
+                writer.WriteEndArray();
             }
         }
+
+        private static string ToInvariantString(object obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
 
         internal JsonConsoleFormatterOptions FormatterOptions { get; set; }
 
