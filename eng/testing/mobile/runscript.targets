@@ -26,7 +26,8 @@
   </PropertyGroup>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateRunScript">
+  <Target Name="GenerateRunScript"
+          BeforeTargets="ArchiveTests">
     <PropertyGroup>
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
