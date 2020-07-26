@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -11,13 +12,16 @@ namespace System.Net.Mail.Tests
         private const string DisplayNameWithUnicode = "DisplayNameWith\u00C9\u00C0\u0106\u0100\u0109\u0105\u00E4Unicode";
         private const string DisplayNameWithNoUnicode = "testDisplayName";
 
-        [Fact]
-        public void MailAddress_WithUnicodeDisplayAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
+        [Theory]
+        [InlineData(Address, DisplayNameWithUnicode)]
+        [InlineData(Address, DisplayNameWithNoUnicode)]
+        public void MailAddress_WithDisplayNameAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets(string address, string displayName)
         {
-            MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithUnicode);
-            Assert.Equal(_mailAddress.DisplayName, DisplayNameWithUnicode);
+            var mailAddress = new MailAddress(address, displayName);
 
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
+            Assert.Equal(mailAddress.DisplayName, displayName);
+            Assert.Equal(address, mailAddress.Address);
+            Assert.Equal($"\"{displayName}\" <{address}>", mailAddress.ToString());
         }
 
         [Theory]
@@ -58,50 +62,29 @@ namespace System.Net.Mail.Tests
 
 
         [Fact]
-        public void MailAddress_WithNoDisplayName_AndOnlyAddress_ToStringShouldOutputAddressOnlyWithNoAngleBrackets()
+        public void MailAddress_WithAddressOnly_ToStringShouldOutputAddressOnlyWithNoAngleBrackets()
         {
-            MailAddress _mailAddress = new MailAddress(Address);
-            Assert.Equal(Address, _mailAddress.ToString());
+            var mailAddress = new MailAddress(Address);
+            Assert.Equal(Address, mailAddress.ToString());
         }
 
-        [Fact]
-        public void MailAddress_WithNoUnicodeDisplayAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
+        private static IEnumerable<object[]> GetMailAddressDisplayNames()
         {
-            MailAddress _mailAddress = new MailAddress(Address, DisplayNameWithNoUnicode);
-            Assert.Equal(_mailAddress.DisplayName, DisplayNameWithNoUnicode);
-
-            Assert.Equal(Address, _mailAddress.Address);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithNoUnicode, Address), _mailAddress.ToString());
+            yield return new object[] { Address, DisplayNameWithNoUnicode, $"\"{DisplayNameWithNoUnicode}\" <{Address}>" };
+            yield return new object[] { Address, DisplayNameWithUnicode, $"\"{DisplayNameWithUnicode}\" <{Address}>" };
+            yield return new object[] { Address, DisplayNameWithNoUnicode, $"{DisplayNameWithNoUnicode} <{Address}>" };
+            yield return new object[] { Address, DisplayNameWithUnicode, $"{DisplayNameWithUnicode} <{Address}>" };
         }
 
-        [Fact]
-        public void MailAddress_WithNoUnicodeDisplayAndMailAddress_ConstructorShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
+        [Theory]
+        [MemberData(nameof(GetMailAddressDisplayNames))]
+        public void MailAddress_WithDisplayNamAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets(string address, string displayName, string displayAndAddress)
         {
-            MailAddress _mailAddress = new MailAddress(string.Format("\"{0}\" <{1}>", DisplayNameWithNoUnicode, Address));
-            Assert.Equal(_mailAddress.DisplayName, DisplayNameWithNoUnicode);
+            var mailAddress = new MailAddress(displayAndAddress);
+            Assert.Equal(displayName, mailAddress.DisplayName);
 
-            Assert.Equal(Address, _mailAddress.Address);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithNoUnicode, Address), _mailAddress.ToString());
-        }
-
-        [Fact]
-        public void MailAddress_WithUnicodeDisplayAndMailAddress_ConstructorShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
-        {
-            MailAddress _mailAddress = new MailAddress(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address));
-            Assert.Equal(DisplayNameWithUnicode, _mailAddress.DisplayName);
-
-            Assert.Equal(Address, _mailAddress.Address);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
-        }
-
-        [Fact]
-        public void MailAddress_WithNonQuotedUnicodeDisplayAndMailAddress_ConstructorShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
-        {
-            MailAddress _mailAddress = new MailAddress(string.Format("{0} <{1}>", DisplayNameWithUnicode, Address));
-            Assert.Equal(DisplayNameWithUnicode, _mailAddress.DisplayName);
-
-            Assert.Equal(Address, _mailAddress.Address);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", DisplayNameWithUnicode, Address), _mailAddress.ToString());
+            Assert.Equal(address, mailAddress.Address);
+            Assert.Equal($"\"{displayName}\" <{address}>", mailAddress.ToString());
         }
     }
 }
