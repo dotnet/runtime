@@ -29,19 +29,10 @@ You may need to do this for both x64 and x86 versions.
 Any application that crashes should now automatically start a WinDBG session.
 
 ## Debugging tests
-To run a single test from command line:
-
-* Locate the test binary folder based on the CSPROJ name.
-
-For example: `src\System.Net.Sockets\tests\Functional\System.Net.Sockets.Tests.csproj` will build and output binaries at  `bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0`.
-
-* Execute the test
-
-Assuming that your repo is at `C:\corefx`:
+Assuming that your repo is at `C:\runtime`:
 
 ```
-cd C:\corefx\bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0
-C:\corefx\bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0\CoreRun.exe xunit.console.dll System.Net.Sockets.Tests.dll -xml testResults.xml -notrait category=nonwindowstests -notrait category=OuterLoop -notrait category=failing
+dotnet test C:\runtime\src\libraries\System.Net.Sockets\tests
 ```
 
 * If the test crashes or encounters a `Debugger.Launch()` method call, WinDBG will automatically start and attach to the `CoreRun.exe` process
@@ -52,7 +43,7 @@ The following commands will properly configure the debugging extension and fix s
 .symfix
 .srcfix
 .reload
-!load C:\corefx\packages\runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\<version>\tools\sos
+!load C:\runtime\coreclr\runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\<version>\tools\sos
 ```
 
 _Important_: Pass in the correct path to your SOS extension discovered during the Prerequisites, step 2.
@@ -168,6 +159,3 @@ Helper scripts are available at https://github.com/dotnet/runtime/tree/master/sr
 * `*System.Threading.Tasks.TplEventSource {2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5}`: Provides an event source for tracing TPL information.
 * `*System.Threading.Tasks.Parallel.EventSource`: Provides an event source for tracing TPL information.
 * `*System.Threading.Tasks.Dataflow.DataflowEventSource {16F53577-E41D-43D4-B47E-C17025BF4025}`: Provides an event source for tracing Dataflow information.
-
-## Notes
-* You can find the test invocation command-line by looking at the logs generated after the `dotnet build /t:test` within the test folder.

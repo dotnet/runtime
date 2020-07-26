@@ -20,8 +20,8 @@ dotnet/AspNetCore code paths:
 - `PS D:\github\dotnet\src\libraries\System.Net.Http\src> dotnet build`
 
 ### Running dotnet/runtime tests:
-- `PS D:\github\runtime\src\libraries\Common\tests> dotnet build /t:test`
-- `PS D:\github\runtime\src\libraries\System.Net.Http\tests\UnitTests> dotnet build /t:test`
+- `PS D:\github\runtime\src\libraries\Common\tests> dotnet test`
+- `PS D:\github\runtime\src\libraries\System.Net.Http\tests\UnitTests> dotnet test`
 
 ## Building dotnet/AspNetCore code:
 - https://github.com/dotnet/AspNetCore/blob/master/docs/BuildFromSource.md

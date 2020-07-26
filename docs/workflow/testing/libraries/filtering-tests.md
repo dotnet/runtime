@@ -5,13 +5,13 @@ The tests can be filtered based on xunit trait attributes defined in [`Microsoft
 #### OuterLoopAttribute
 
 ```cs
-[OuterLoop()]
+[OuterLoop]
 ```
-Tests marked as `OuterLoop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet build` but can be enabled manually by adding the `-testscope outerloop` switch or `/p:TestScope=outerloop` e.g.
+Tests marked as `OuterLoop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet test` but can be enabled manually by adding the `-testscope outerloop` switch or `/p:TestScope=outerloop` e.g.
 
 ```cmd
 build -test -testscope outerloop
-cd src/System.Text.RegularExpressions/tests && dotnet build /t:Test /p:TestScope=outerloop
+dotnet test src/System.Text.RegularExpressions/tests /p:TestScope=outerloop
 ```
 
 #### PlatformSpecificAttribute
@@ -22,17 +22,13 @@ cd src/System.Text.RegularExpressions/tests && dotnet build /t:Test /p:TestScope
 Use this attribute on test methods to specify that this test may only be run on the specified platforms. This attribute returns the following categories based on platform
 - `nonwindowstests` for tests that don't run on Windows
 - `nonlinuxtests` for tests that don't run on Linux
-- `nonosxtests` for tests that don't run on OS X
+- `nonosxtests` for tests that don't run on macOS
 
 **[Available Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs)**
 
 When running tests by building a test project, tests that don't apply to the `TargetOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux
-```
-To run all Linux-compatible tests that are failing:
-```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux /p:WithCategories=failing
+dotnet test <csproj_file> /p:TargetOS=Linux
 ```
 
 #### ActiveIssueAttribute
@@ -148,9 +144,11 @@ _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
 ```cmd
-dotnet build <csproj_file> /t:Test /p:TargetOS=Windows_NT
+dotnet test <csproj_file> /p:TargetOS=Windows_NT
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
+dotnet test <csproj_file> /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
 ```
+
+Note: The `TargetOS` property can usually be omitted as it defaults to the OS.

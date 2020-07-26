@@ -34,9 +34,9 @@ This runs the tests and generates the full code coverage report. The resulting i
 
     artifacts\coverage\index.htm
 
-You can also build and test with code coverage for a particular test project rather than for the whole repo with the `/p:Coverage=true` property:
+You can also build and test with code coverage for a particular test project rather than for the whole repo with the `--collect:"XPlat Code Coverage"` switch:
 
-    dotnet build /t:Test /p:Coverage=true
+    dotnet test --collect:"XPlat Code Coverage"
 
 The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
 
@@ -44,7 +44,7 @@ The results for this one library will then be available in this index.htm file, 
 
 For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
-    dotnet build src\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
+    dotnet test src\System.Diagnostics.Debug\tests --collect:"XPlat Code Coverage"
 
 And then once the run completes:
 

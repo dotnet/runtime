@@ -23,7 +23,7 @@ cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet build & popd & dotnet build /t:test
+pushd ..\src & dotnet build & popd & dotnet test
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -43,7 +43,7 @@ cd src/libraries/System.Text.RegularExpressions
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:test
+pushd ../src & dotnet build & popd & dotnet test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.

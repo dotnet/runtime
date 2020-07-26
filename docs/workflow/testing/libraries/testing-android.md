@@ -71,7 +71,7 @@ Make sure an emulator is booted (see `AVD Manager`) or a device is plugged in an
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
+./dotnet.sh test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
 ```
 
 ### Test App Design

@@ -1,4 +1,5 @@
 <Project>
+  <!-- Tests shouldn't be invoked in parallel for multiple target frameworks. -->
   <Target Name="Test" DependsOnTargets="GetProjectWithBestTargetFrameworks">    
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="Test">

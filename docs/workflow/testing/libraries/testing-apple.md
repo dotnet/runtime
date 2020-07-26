@@ -19,7 +19,7 @@ In order to run the tests on a device you need to specify `DevTeamProvisioning` 
 ### Running individual test suites
 - The following shows how to run tests for a specific library:
 ```
-./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=iOS /p:TargetArchitecture=x64
+./dotnet.sh test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=iOS /p:TargetArchitecture=x64
 ```
 
 ### Test App Design

@@ -35,14 +35,14 @@ and even run tests one by one for each library:
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+./dotnet.sh test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm -c Release
 ```
 
 ### Running tests using different JavaScript engines
 It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` property:
 
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey
+./dotnet.sh test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm -c Release /p:JSEngine=SpiderMonkey
 ```
 
 At the moment supported values are:

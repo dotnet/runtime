@@ -13,7 +13,7 @@
 
 function BuildAndTestBinary
 {
-    $output = (msbuild /t:test /p:OuterLoop=true)
+    $output = (dotnet test /p:OuterLoop=true)
     if ($lastexitcode -ne 0)
     {
         throw "Build/test failed."

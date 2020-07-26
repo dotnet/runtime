@@ -135,14 +135,14 @@ build-tasks:
 	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmBuildTasks
 
 run-tests-v8-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) test $(TOP)/src/libraries/$*/tests/ /p:TargetOS=Browser /p:TargetArchitecture=wasm -c $(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)
 run-tests-sm-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=SpiderMonkey $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) test $(TOP)/src/libraries/$*/tests/ /p:TargetOS=Browser /p:TargetArchitecture=wasm -c $(CONFIG) /p:JSEngine=SpiderMonkey $(MSBUILD_ARGS)
 run-tests-jsc-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=JavaScriptCore $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) test $(TOP)/src/libraries/$*/tests/ /p:TargetOS=Browser /p:TargetArchitecture=wasm -c $(CONFIG) /p:JSEngine=JavaScriptCore $(MSBUILD_ARGS)
 
 run-tests-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) test $(TOP)/src/libraries/$*/tests/ /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 build-debugger-test-app: 
 	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests
