@@ -78,12 +78,11 @@ namespace System.ComponentModel.Design
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         // Assemblies loaded in memory return empty string from Location.
-                        // The code below throws an exception if this happens.
-                        // Catching exceptions here is not a bad thing.
-                        if (asm.Location == string.Empty)
+                        string location = asm.Location;
+                        if (location == string.Empty)
                             continue;
 
-                        string fileName = new FileInfo(asm.Location).Name;
+                        string fileName = new FileInfo(location).Name;
 
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
                         if (s == null)
@@ -100,40 +99,42 @@ namespace System.ComponentModel.Design
                         }
                     }
                 }
-                // Location is not supported by emitted assemblies and this will throw an exception
-                // down below.
-                else if (!resourceAssembly.IsDynamic && resourceAssembly.Location != string.Empty)
+                else
                 {
-                    string fileName = Path.GetFileName(resourceAssembly.Location);
-                    string licResourceName = fileName + ".licenses";
-
-                    // First try the filename
-                    Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
-                    if (s == null)
+                    string location = resourceAssembly.Location;
+                    if (location != string.Empty)
                     {
-                        string resolvedName = null;
-                        CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
-                        string shortAssemblyName = resourceAssembly.GetName().Name;
-                        // If the assembly has been renamed, we try our best to find a good match in the available resources
-                        // by looking at the assembly name (which doesn't change even after a file rename) + ".exe.licenses" or + ".dll.licenses"
-                        foreach (string existingName in resourceAssembly.GetManifestResourceNames())
+                        string fileName = Path.GetFileName(location);
+                        string licResourceName = fileName + ".licenses";
+
+                        // First try the filename
+                        Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
+                        if (s == null)
                         {
-                            if (comparer.Compare(existingName, licResourceName, CompareOptions.IgnoreCase) == 0 ||
-                             comparer.Compare(existingName, shortAssemblyName + ".exe.licenses", CompareOptions.IgnoreCase) == 0 ||
-                             comparer.Compare(existingName, shortAssemblyName + ".dll.licenses", CompareOptions.IgnoreCase) == 0)
+                            string resolvedName = null;
+                            CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
+                            string shortAssemblyName = resourceAssembly.GetName().Name;
+                            // If the assembly has been renamed, we try our best to find a good match in the available resources
+                            // by looking at the assembly name (which doesn't change even after a file rename) + ".exe.licenses" or + ".dll.licenses"
+                            foreach (string existingName in resourceAssembly.GetManifestResourceNames())
                             {
-                                resolvedName = existingName;
-                                break;
+                                if (comparer.Compare(existingName, licResourceName, CompareOptions.IgnoreCase) == 0 ||
+                                 comparer.Compare(existingName, shortAssemblyName + ".exe.licenses", CompareOptions.IgnoreCase) == 0 ||
+                                 comparer.Compare(existingName, shortAssemblyName + ".dll.licenses", CompareOptions.IgnoreCase) == 0)
+                                {
+                                    resolvedName = existingName;
+                                    break;
+                                }
+                            }
+                            if (resolvedName != null)
+                            {
+                                s = resourceAssembly.GetManifestResourceStream(resolvedName);
                             }
                         }
-                        if (resolvedName != null)
+                        if (s != null)
                         {
-                            s = resourceAssembly.GetManifestResourceStream(resolvedName);
+                            DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                         }
-                    }
-                    if (s != null)
-                    {
-                        DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                     }
                 }
             }
