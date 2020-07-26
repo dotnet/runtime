@@ -2276,7 +2276,7 @@ namespace System.Data.OleDb
             using (OleDbDataReader dataReader = new OleDbDataReader(_connection, _command, int.MinValue, 0))
             {
                 dataReader.InitializeIRowset(rowset, ChapterHandle.DB_NULL_HCHAPTER, IntPtr.Zero);
-                // TODO: BuildSchemaTableInfo asserts that rowset isn't null, but doesn't do anything with it
+                // TODO-NULLABLE: BuildSchemaTableInfo asserts that rowset isn't null, but doesn't do anything with it
                 dataReader.BuildSchemaTableInfo(rowset!, true, false);
 
                 hiddenColumns = GetPropertyValue(ODB.DBPROP_HIDDENCOLUMNS);
