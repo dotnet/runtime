@@ -1,8 +1,8 @@
 <Project>
-  <Target Name="VSTest" DependsOnTargets="GetProjectWithBestTargetFrameworks">
-    <!-- Tests shouldn't be invoked in parallel for multiple target frameworks. -->
+  <Target Name="VSTest"
+          DependsOnTargets="GetProjectWithBestTargetFrameworks">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
-             Targets="VSTest">
-    </MSBuild>
+             Targets="VSTest"
+             BuildInParallel="$(BuildAllProjects)" />
   </Target>
 </Project>
