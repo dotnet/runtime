@@ -52,6 +52,7 @@
     <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(TestPackages)' == 'true'">packaging-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
@@ -61,7 +62,6 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
 
-    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
@@ -156,6 +156,11 @@
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
       </PropertyGroup>
       <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+        <!--
+          For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
+          We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
+          so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
+        -->
         <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
