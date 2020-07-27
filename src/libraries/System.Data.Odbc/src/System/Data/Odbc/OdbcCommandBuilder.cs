@@ -14,12 +14,12 @@ namespace System.Data.Odbc
             GC.SuppressFinalize(this);
         }
 
-        public OdbcCommandBuilder(OdbcDataAdapter adapter) : this()
+        public OdbcCommandBuilder(OdbcDataAdapter? adapter) : this()
         {
             DataAdapter = adapter;
         }
 
-        public new OdbcDataAdapter DataAdapter
+        public new OdbcDataAdapter? DataAdapter
         {
             get
             {
@@ -123,7 +123,7 @@ namespace System.Data.Odbc
                 throw ADP.CommandTextRequired(ADP.DeriveParameters);
             }
 
-            OdbcConnection connection = command.Connection;
+            OdbcConnection? connection = command.Connection;
 
             if (null == connection)
             {
@@ -166,7 +166,7 @@ namespace System.Data.Odbc
 
             // following call ensures that the command has a statement handle allocated
             CMDWrapper cmdWrapper = command.GetStatementHandle();
-            OdbcStatementHandle hstmt = cmdWrapper.StatementHandle;
+            OdbcStatementHandle hstmt = cmdWrapper.StatementHandle!;
             int cColsAffected;
 
             // maps an enforced 4-part qualified string as follows
@@ -176,7 +176,7 @@ namespace System.Data.Odbc
             // parts[3] = ProcedureName
             //
             string quote = connection.QuoteChar(ADP.DeriveParameters);
-            string[] parts = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quote, quote, '.', 4, true, SR.ODBC_ODBCCommandText, false);
+            string?[] parts = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quote, quote, '.', 4, true, SR.ODBC_ODBCCommandText, false);
             if (null == parts[3])
             { // match Everett behavior, if the commandtext is nothing but whitespace set the command text to the whitespace
                 parts[3] = command.CommandText;
@@ -251,7 +251,7 @@ namespace System.Data.Odbc
             return QuoteIdentifier(unquotedIdentifier, null /* use DataAdapter.SelectCommand.Connection if available */);
         }
 
-        public string QuoteIdentifier(string unquotedIdentifier, OdbcConnection connection)
+        public string QuoteIdentifier(string unquotedIdentifier, OdbcConnection? connection)
         {
             ADP.CheckArgumentNull(unquotedIdentifier, nameof(unquotedIdentifier));
 
@@ -306,11 +306,11 @@ namespace System.Data.Odbc
             return UnquoteIdentifier(quotedIdentifier, null /* use DataAdapter.SelectCommand.Connection if available */);
         }
 
-        public string UnquoteIdentifier(string quotedIdentifier, OdbcConnection connection)
+        public string UnquoteIdentifier(string quotedIdentifier, OdbcConnection? connection)
         {
             ADP.CheckArgumentNull(quotedIdentifier, nameof(quotedIdentifier));
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
@@ -330,7 +330,7 @@ namespace System.Data.Odbc
                 quoteSuffix = quotePrefix;
             }
 
-            string unquotedIdentifier;
+            string? unquotedIdentifier;
             // by the ODBC spec "If the data source does not support quoted identifiers, a blank is returned."
             // So if a blank is returned the string is returned unchanged. Otherwise the returned string is used
             // to unquote the string
@@ -344,7 +344,7 @@ namespace System.Data.Odbc
             {
                 unquotedIdentifier = quotedIdentifier;
             }
-            return unquotedIdentifier;
+            return unquotedIdentifier!;
         }
     }
 }
