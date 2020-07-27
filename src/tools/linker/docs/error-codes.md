@@ -267,3 +267,7 @@ the error code. For example:
 #### `IL2049`: Unrecognized internal attribute 'attribute'
 
 - The internal attribute name 'attribute' being used in the xml is not supported by the linker, check the spelling and the supported internal attributes.
+
+#### `IL2050`: Correctness of COM interop cannot be guaranteed
+
+- P/invoke method 'method' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.

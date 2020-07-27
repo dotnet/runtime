@@ -362,5 +362,17 @@ namespace Mono.Linker
 			var type = typeof (T);
 			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
 		}
+
+		public static bool IsSubclassOf (this TypeReference type, string ns, string name)
+		{
+			TypeDefinition baseType = type.Resolve ();
+			while (baseType != null) {
+				if (baseType.IsTypeOf (ns, name))
+					return true;
+				baseType = baseType.BaseType?.Resolve ();
+			}
+
+			return false;
+		}
 	}
 }
