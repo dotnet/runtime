@@ -20691,7 +20691,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     if (gc_t_join.joined())
     {
         dprintf(3, ("Starting all gc thread for weak pointer deletion"));
-        syncblock_scan_p = FALSE;
+        syncblock_scan_p = 0;
         gc_t_join.restart();
     }
 #endif //MULTIPLE_HEAPS
@@ -20707,7 +20707,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     sort_mark_list();
 //    printf("sort_mark_list took %u cycles\n", GetCycleCount32() - start);
     // first thread to finish sorting will scan the sync syncblk cache
-    if (!syncblock_scan_p && Interlocked::Increment(&syncblock_scan_p))
+    if (syncblock_scan_p == 0 && Interlocked::Increment(&syncblock_scan_p) == 1)
     {
         // scan for deleted entries in the syncblk cache
         GCScan::GcWeakPtrScanBySingleThread(condemned_gen_number, max_generation, &sc);
