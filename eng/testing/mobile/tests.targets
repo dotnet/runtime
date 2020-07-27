@@ -1,6 +1,6 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)runscript.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)outerbuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 
   <PropertyGroup>
     <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
