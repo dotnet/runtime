@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/standard</Uri>
       <Sha>cfe95a23647c7de1fe1a349343115bd7720d6949</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20370.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="5.0.0-preview.8.20373.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>797c523dd8d75096319f3591958f703b8d74d04b</Sha>
+      <Sha>75440631a7eb7f89da35d5a509d1d5f2eaab7f96</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -86,7 +86,7 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-preview-20200716-03">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-preview-20200720-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
       <Sha>069d8bd6357e2dbc260a35016ddbefe5dfec4102</Sha>
     </Dependency>
@@ -182,9 +182,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20366.2">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="5.0.0-preview.3.20374.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>f7c8a2a9e5aa47718169140db23c42f3439e6660</Sha>
+      <Sha>8224c7254fc4aa5da70bb7d2e0d1c55bca1e19bf</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20352.3">
       <Uri>https://github.com/dotnet/xharness</Uri>
