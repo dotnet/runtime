@@ -32,7 +32,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple\tests\System.ValueTuple.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
