@@ -26,7 +26,6 @@ set(UTILCODE_COMMON_SOURCES
   arraylist.cpp
   bitvector.cpp
   comex.cpp
-  delayloadhelpers.cpp
   guidfromname.cpp
   memorypool.cpp
   iallocator.cpp
