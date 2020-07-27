@@ -515,7 +515,7 @@ namespace System.Data.Common
                     count = 0;
                     for (int i = 0; i < restrictions.Length; ++i)
                     {
-                        if (restrictions[i] is { } restriction)
+                        if (restrictions[i] is string restriction)
                         {
                             tmp[count++] = restriction;
                         }

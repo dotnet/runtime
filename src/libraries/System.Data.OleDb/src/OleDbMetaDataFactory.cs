@@ -415,7 +415,7 @@ namespace System.Data.OleDb
                 DataRow newRow = dataTypesTable.NewRow();
                 for (int i = 0; i < sourceColumns.Length; i++)
                 {
-                    if ((sourceColumns[i] is { } sourceColumn) && (targetColumns[i] is { } targetColumn))
+                    if ((sourceColumns[i] is DataColumn sourceColumn) && (targetColumns[i] is DataColumn targetColumn))
                     {
                         newRow[targetColumn] = sourceRow[sourceColumn];
                     }

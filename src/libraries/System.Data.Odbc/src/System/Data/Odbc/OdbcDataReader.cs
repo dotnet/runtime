@@ -2129,7 +2129,7 @@ namespace System.Data.Odbc
                             metaInfos[i].baseColumnName = GetDescFieldStr(i, ODBC32.SQL_DESC.BASE_COLUMN_NAME, ODBC32.HANDLER.IGNORE);
                         }
                     }
-                    if ((metaInfos[i].baseTableName is { } baseTableName) && !(qrytables!.Contains(baseTableName)))
+                    if ((metaInfos[i].baseTableName is string baseTableName) && !(qrytables!.Contains(baseTableName)))
                     {
                         qrytables.Add(baseTableName);
                     }

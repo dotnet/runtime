@@ -1659,7 +1659,7 @@ namespace System.Data.Common
                 DataRow row = batchCommands[i]._row;
                 Debug.Assert(null != row, "null dataRow?");
 
-                if (batchCommands[i]._errors is { } commandErrors)
+                if (batchCommands[i]._errors is Exception commandErrors)
                 { // will exist if 0 == RecordsAffected
                     string rowMsg = commandErrors.Message;
                     if (string.IsNullOrEmpty(rowMsg))

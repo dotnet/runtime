@@ -764,7 +764,7 @@ namespace System.Data.OleDb
             {
                 for (int i = 0; i < bindings.Length; ++i)
                 {
-                    if (bindings[i] is { } binding)
+                    if (bindings[i] is Bindings binding)
                     {
                         binding.Dispose();
                     }
