@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)]
     public class ActivityTests : IDisposable
     {
         [Fact]
