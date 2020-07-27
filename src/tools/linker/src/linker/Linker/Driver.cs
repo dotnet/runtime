@@ -777,7 +777,7 @@ namespace Mono.Linker
 
 			value = Unquote (value);
 			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			HashSet<uint> noWarnCodes = new HashSet<uint> ();
+			HashSet<uint> warningCodes = new HashSet<uint> ();
 			foreach (string id in values) {
 				if (!id.StartsWith ("IL", StringComparison.Ordinal))
 					continue;
@@ -785,10 +785,10 @@ namespace Mono.Linker
 				var warningCode = id.Substring (2);
 				if (ushort.TryParse (warningCode, out ushort code)
 					&& code > 2000 && code <= 6000)
-					noWarnCodes.Add (code);
+					warningCodes.Add (code);
 			}
 
-			return noWarnCodes;
+			return warningCodes;
 		}
 
 		private static Assembly GetCustomAssembly (string arg)
