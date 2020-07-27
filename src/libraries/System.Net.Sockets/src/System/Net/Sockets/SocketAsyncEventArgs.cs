@@ -599,7 +599,6 @@ namespace System.Net.Sockets
             // the attempt socket will be closed anyways, so not updating the state is OK.
             // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
             // of the socket, as we manufactured it and the caller has no opportunity to do so.
-            SocketType? socketType = _currentSocket?.SocketType;
             Socket? currentSocket = _currentSocket;
             if (currentSocket != null)
             {
@@ -619,7 +618,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socketType, _completedOperation, bytesTransferred);
+            // Don't log transfered byte count in case of a failure.
 
             Complete();
         }
@@ -695,7 +694,6 @@ namespace System.Net.Sockets
                 LogBuffer(bytesTransferred);
             }
 
-            SocketType? socketType = _currentSocket?.SocketType;
             SocketError socketError = SocketError.Success;
             switch (_completedOperation)
             {
@@ -802,7 +800,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socketType, _completedOperation, bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
 
             Complete();
         }
