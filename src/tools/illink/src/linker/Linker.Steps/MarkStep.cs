@@ -2580,13 +2580,30 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition returnTypeDefinition = method.ReturnType.Resolve ();
 
+			bool didWarnAboutCom = false;
+
 			const bool includeStaticFields = false;
-			if (returnTypeDefinition != null && !returnTypeDefinition.IsImport) {
-				MarkDefaultConstructor (returnTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), method);
-				MarkFields (returnTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
+			if (returnTypeDefinition != null) {
+				if (!returnTypeDefinition.IsImport) {
+					// What we keep here is correct most of the time, but not every time. Fine for now.
+					MarkDefaultConstructor (returnTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), method);
+					MarkFields (returnTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
+				}
+
+				// Best-effort attempt to find COM marshalling.
+				// It might seem reasonable to allow out parameters, but once we get a foreign object back (an RCW), it's going to look
+				// like a regular managed class/interface, but every method invocation that takes a class/interface implies COM
+				// marshalling. We can't detect that once we have an RCW.
+				if (method.IsPInvokeImpl) {
+					if (IsComInterop (method.MethodReturnType, method.ReturnType) && !didWarnAboutCom) {
+						_context.LogWarning ($"P/invoke method '{method.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.", 2050, method);
+						didWarnAboutCom = true;
+					}
+				}
 			}
 
 			if (method.HasThis && !method.DeclaringType.IsImport) {
+				// This is probably Mono-specific. One can't have InternalCall or P/invoke instance methods in CoreCLR or .NET.
 				MarkFields (method.DeclaringType, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
 			}
 
@@ -2596,13 +2613,83 @@ namespace Mono.Linker.Steps
 					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
 				}
 				TypeDefinition paramTypeDefinition = paramTypeReference?.Resolve ();
-				if (paramTypeDefinition != null && !paramTypeDefinition.IsImport) {
-					MarkFields (paramTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
-					if (pd.ParameterType.IsByReference) {
-						MarkDefaultConstructor (paramTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), method);
+				if (paramTypeDefinition != null) {
+					if (!paramTypeDefinition.IsImport) {
+						// What we keep here is correct most of the time, but not every time. Fine for now.
+						MarkFields (paramTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method));
+						if (pd.ParameterType.IsByReference) {
+							MarkDefaultConstructor (paramTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), method);
+						}
+					}
+
+					// Best-effort attempt to find COM marshalling.
+					// It might seem reasonable to allow out parameters, but once we get a foreign object back (an RCW), it's going to look
+					// like a regular managed class/interface, but every method invocation that takes a class/interface implies COM
+					// marshalling. We can't detect that once we have an RCW.
+					if (method.IsPInvokeImpl) {
+						if (IsComInterop (pd, paramTypeReference) && !didWarnAboutCom) {
+							_context.LogWarning ($"P/invoke method '{method.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.", 2050, method);
+							didWarnAboutCom = true;
+						}
 					}
 				}
 			}
+		}
+
+		private bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType)
+		{
+			// This is best effort. One can likely find ways how to get COM without triggering these alarms.
+			// AsAny marshalling of a struct with an object-typed field would be one, for example.
+
+			// This logic roughly corresponds to MarshalInfo::MarshalInfo in CoreCLR,
+			// not trying to handle invalid cases and distinctions that are not interesting wrt
+			// "is this COM?" question.
+
+			NativeType nativeType = NativeType.None;
+			if (marshalInfoProvider.HasMarshalInfo) {
+				nativeType = marshalInfoProvider.MarshalInfo.NativeType;
+			}
+
+			if (nativeType == NativeType.IUnknown || nativeType == NativeType.IDispatch || nativeType == NativeType.IntF) {
+				// This is COM by definition
+				return true;
+			}
+
+			if (nativeType == NativeType.None) {
+				if (parameterType.IsTypeOf ("System", "Array")) {
+					// System.Array marshals as IUnknown by default
+					return true;
+				} else if (parameterType.IsTypeOf ("System", "String") ||
+					parameterType.IsTypeOf ("System.Text", "StringBuilder")) {
+					// String and StringBuilder are special cased by interop
+					return false;
+				}
+
+				var parameterTypeDef = parameterType.Resolve ();
+				if (parameterTypeDef != null) {
+					if (parameterTypeDef.IsValueType) {
+						// Value types don't marshal as COM
+						return false;
+					} else if (parameterTypeDef.IsInterface) {
+						// Interface types marshal as COM by default
+						return true;
+					} else if (parameterTypeDef.IsMulticastDelegate ()) {
+						// Delegates are special cased by interop
+						return false;
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle")) {
+						// Subclasses of CriticalHandle are special cased by interop
+						return false;
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle")) {
+						// Subclasses of SafeHandle are special cased by interop
+						return false;
+					} else if (!parameterTypeDef.IsSequentialLayout && !parameterTypeDef.IsExplicitLayout) {
+						// Rest of classes that don't have layout marshal as COM
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 		protected virtual bool ShouldParseMethodBody (MethodDefinition method)
