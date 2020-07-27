@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
@@ -56,34 +57,39 @@ namespace MS.Internal.Xml.XPath
                 type2 = typeTmp;
             }
 
+            cmpXslt? cmp;
+
             if (op == Operator.Op.EQ || op == Operator.Op.NE)
             {
-                return s_CompXsltE[type1][type2](op, val1, val2);
+                cmp = s_CompXsltE[type1][type2];
             }
             else
             {
-                return s_CompXsltO[type1][type2](op, val1, val2);
+                cmp = s_CompXsltO[type1][type2];
             }
+
+            Debug.Assert(cmp != null);
+            return cmp(op, val1, val2);
         }
 
         private delegate bool cmpXslt(Operator.Op op, object val1, object val2);
 
         //                  Number,                       String,                        Boolean,                     NodeSet,                      Navigator
-        private static readonly cmpXslt[][] s_CompXsltE =
+        private static readonly cmpXslt?[][] s_CompXsltE =
         {
-            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null,                        null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringE ), new cmpXslt(cmpQueryBoolE ), new cmpXslt(cmpQueryQueryE ), null                    },
-            new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringE   ), new cmpXslt(cmpRtfBoolE   ), new cmpXslt(cmpRtfQueryE   ), new cmpXslt(cmpRtfRtfE) },
+            new cmpXslt?[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null,                        null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringE ), new cmpXslt(cmpQueryBoolE ), new cmpXslt(cmpQueryQueryE ), null                    },
+            new cmpXslt?[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringE   ), new cmpXslt(cmpRtfBoolE   ), new cmpXslt(cmpRtfQueryE   ), new cmpXslt(cmpRtfRtfE) },
         };
-        private static readonly cmpXslt[][] s_CompXsltO =
+        private static readonly cmpXslt?[][] s_CompXsltO =
         {
-            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null,                        null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null,                         null                    },
-            new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringO ), new cmpXslt(cmpQueryBoolO ), new cmpXslt(cmpQueryQueryO ), null                    },
-            new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringO   ), new cmpXslt(cmpRtfBoolO   ), new cmpXslt(cmpRtfQueryO   ), new cmpXslt(cmpRtfRtfO) },
+            new cmpXslt?[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null,                        null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null,                         null                    },
+            new cmpXslt?[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringO ), new cmpXslt(cmpQueryBoolO ), new cmpXslt(cmpQueryQueryO ), null                    },
+            new cmpXslt?[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringO   ), new cmpXslt(cmpRtfBoolO   ), new cmpXslt(cmpRtfQueryO   ), new cmpXslt(cmpRtfRtfO) },
         };
 
         /*cmpXslt:*/
@@ -408,7 +414,7 @@ namespace MS.Internal.Xml.XPath
         private struct NodeSet
         {
             private readonly Query _opnd;
-            private XPathNavigator _current;
+            private XPathNavigator? _current;
 
             public NodeSet(object opnd)
             {
@@ -426,7 +432,7 @@ namespace MS.Internal.Xml.XPath
                 _opnd.Reset();
             }
 
-            public string Value { get { return _current.Value; } }
+            public string Value { get { return _current!.Value; } }
         }
 
         private static string Rtf(object o) { return ((XPathNavigator)o).Value; }

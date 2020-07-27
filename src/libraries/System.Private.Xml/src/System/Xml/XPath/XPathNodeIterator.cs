@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 
@@ -15,7 +16,7 @@ namespace System.Xml.XPath
 
         public abstract XPathNodeIterator Clone();
         public abstract bool MoveNext();
-        public abstract XPathNavigator Current { get; }
+        public abstract XPathNavigator? Current { get; }
         public abstract int CurrentPosition { get; }
         public virtual int Count
         {
@@ -35,7 +36,7 @@ namespace System.Xml.XPath
             return new Enumerator(this);
         }
 
-        private object debuggerDisplayProxy { get { return Current == null ? null : (object)new XPathNavigator.DebuggerDisplayProxy(Current); } }
+        private object? debuggerDisplayProxy { get { return Current == null ? null : (object)new XPathNavigator.DebuggerDisplayProxy(Current); } }
 
         /// <summary>
         /// Implementation of a resetable enumerator that is linked to the XPathNodeIterator used to create it.
@@ -43,7 +44,7 @@ namespace System.Xml.XPath
         private class Enumerator : IEnumerator
         {
             private readonly XPathNodeIterator _original;     // Keep original XPathNodeIterator in case Reset() is called
-            private XPathNodeIterator _current;
+            private XPathNodeIterator? _current;
             private bool _iterationStarted;
 
             public Enumerator(XPathNodeIterator original)
@@ -63,6 +64,7 @@ namespace System.Xml.XPath
                         if (_current == null)
                             throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
 
+                        Debug.Assert(_current.Current != null);
                         return _current.Current.Clone();
                     }
 
