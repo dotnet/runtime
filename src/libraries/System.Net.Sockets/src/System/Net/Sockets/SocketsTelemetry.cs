@@ -11,13 +11,15 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
-        private PollingCounter? _connectionsEstablishedCounter;
+        private PollingCounter? _outgoingConnectionsEstablishedCounter;
+        private PollingCounter? _incomingConnectionsEstablishedCounter;
         private PollingCounter? _bytesReceivedCounter;
         private PollingCounter? _bytesSentCounter;
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
 
-        private long _connectionsEstablished;
+        private long _outgoingConnectionsEstablished;
+        private long _incomingConnectionsEstablished;
         private long _bytesReceived;
         private long _bytesSent;
         private long _datagramsReceived;
@@ -26,7 +28,7 @@ namespace System.Net.Sockets
         [Event(1, Level = EventLevel.Informational)]
         public void ConnectStart(string? address)
         {
-            Interlocked.Increment(ref _connectionsEstablished);
+            Interlocked.Increment(ref _outgoingConnectionsEstablished);
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 WriteEvent(eventId: 1, address ?? "");
@@ -60,6 +62,34 @@ namespace System.Net.Sockets
             }
         }
 
+        [Event(5, Level = EventLevel.Informational)]
+        public void AcceptStart(string? address)
+        {
+            Interlocked.Increment(ref _incomingConnectionsEstablished);
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 5, address ?? "");
+            }
+        }
+
+        [Event(6, Level = EventLevel.Informational)]
+        public void AcceptStop()
+        {
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 6);
+            }
+        }
+
+        [Event(7, Level = EventLevel.Error)]
+        public void AcceptFailed(SocketError error, string? exceptionMessage)
+        {
+            if (IsEnabled(EventLevel.Error, EventKeywords.All))
+            {
+                WriteEvent(eventId: 7, (int)error, exceptionMessage ?? string.Empty);
+            }
+        }
+
         [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
@@ -84,6 +114,25 @@ namespace System.Net.Sockets
         {
             ConnectFailed(error, exceptionMessage);
             ConnectStop();
+        }
+
+        [NonEvent]
+        public void AcceptStart(Internals.SocketAddress address)
+        {
+            AcceptStart(address.ToString());
+        }
+
+        [NonEvent]
+        public void AcceptStart(EndPoint address)
+        {
+            AcceptStart(address.ToString());
+        }
+
+        [NonEvent]
+        public void AcceptFailedAndStop(SocketError error, string? exceptionMessage)
+        {
+            AcceptFailed(error, exceptionMessage);
+            AcceptStop();
         }
 
         [NonEvent]
@@ -116,9 +165,13 @@ namespace System.Net.Sockets
             {
                 // This is the convention for initializing counters in the RuntimeEventSource (lazily on the first enable command).
 
-                _connectionsEstablishedCounter ??= new PollingCounter("connections-established", this, () => Interlocked.Read(ref _connectionsEstablished))
+                _outgoingConnectionsEstablishedCounter ??= new PollingCounter("outgoing-connections-established", this, () => Interlocked.Read(ref _outgoingConnectionsEstablished))
                 {
-                    DisplayName = "Connections Established",
+                    DisplayName = "Outgoing Connections Established",
+                };
+                _incomingConnectionsEstablishedCounter ??= new PollingCounter("incoming-connections-established", this, () => Interlocked.Read(ref _incomingConnectionsEstablished))
+                {
+                    DisplayName = "Incoming Connections Established",
                 };
                 _bytesReceivedCounter ??= new PollingCounter("bytes-received", this, () => Interlocked.Read(ref _bytesReceived))
                 {

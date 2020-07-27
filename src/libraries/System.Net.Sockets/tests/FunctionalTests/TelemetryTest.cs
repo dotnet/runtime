@@ -75,7 +75,8 @@ namespace System.Net.Sockets.Tests
                         .GroupBy(d => (string)d["Name"], d => (double)d["Mean"], (k, v) => new { Name = k, Value = v.Sum() })
                         .ToDictionary(p => p.Name, p => p.Value);
 
-                    VerifyEventCounter("connections-established", eventCounters);
+                    VerifyEventCounter("incoming-connections-established", eventCounters);
+                    VerifyEventCounter("outgoing-connections-established", eventCounters);
                     VerifyEventCounter("bytes-received", eventCounters);
                     VerifyEventCounter("bytes-sent", eventCounters);
                     VerifyEventCounter("datagrams-received", eventCounters);

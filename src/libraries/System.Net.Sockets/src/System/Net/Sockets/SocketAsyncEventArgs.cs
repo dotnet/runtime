@@ -547,6 +547,8 @@ namespace System.Net.Sockets
                     _acceptBuffer = new byte[_acceptAddressBufferCount];
                 }
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(_currentSocket!._rightEndPoint!);
         }
 
         internal void StartOperationConnect(MultipleConnectAsync? multipleConnect, bool userSocket)
@@ -587,9 +589,10 @@ namespace System.Net.Sockets
         {
             SetResults(socketError, bytesTransferred, flags);
 
-            if (SocketsTelemetry.Log.IsEnabled() && _multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect)
+            if (SocketsTelemetry.Log.IsEnabled())
             {
-                SocketsTelemetry.Log.ConnectFailedAndStop(socketError, null);
+                if (_multipleConnect == null && _completedOperation == SocketAsyncOperation.Connect) SocketsTelemetry.Log.ConnectFailedAndStop(socketError, null);
+                if (_completedOperation == SocketAsyncOperation.Accept) SocketsTelemetry.Log.AcceptFailedAndStop(socketError, null);
             }
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
@@ -714,9 +717,13 @@ namespace System.Net.Sockets
                             }
                             catch (ObjectDisposedException) { }
                         }
+
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStop();
                     }
                     else
                     {
+                        if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptFailedAndStop(socketError, null);
+
                         SetResults(socketError, bytesTransferred, flags);
                         _acceptSocket = null;
                         _currentSocket.UpdateStatusAfterSocketError(socketError);
