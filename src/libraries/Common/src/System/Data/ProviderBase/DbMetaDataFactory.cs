@@ -278,7 +278,7 @@ namespace System.Data.ProviderBase
                             exactCollectionName = candidateCollectionName;
                             haveExactMatch = true;
                         }
-                        else
+                        else if (haveExactMatch == false)
                         {
                             // have an inexact match - ok only if it is the only one
                             if (exactCollectionName != null)
