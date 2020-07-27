@@ -35,14 +35,12 @@ while true; do
         sleep 5
     fi
 done
+
 # Restart the simulator to make sure it is tied to the right user session
 xcode_version=11.4
 xcode_path="/Applications/Xcode${xcode_version/./}.app"
 simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
-pid=`ps aux | grep "$simulator_app" | grep -v grep | tr -s ' ' | cut -d ' ' -f 2`
-if [ ! -z "$pid" ]; then
-    sudo kill "$pid"
-fi
+sudo pkill -9 -f "$simulator_app"
 open -a "$simulator_app"
 export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
@@ -54,6 +52,9 @@ dotnet xharness ios test \
 
 _exitCode=$?
 
-echo "Xharness artifacts: `ls -lh $XHARNESS_OUT`"
+echo "XHarness artifacts: `ls -lh $XHARNESS_OUT`"
+
+# Kill the simulator after we're done
+sudo pkill -9 -f "$simulator_app"
 
 exit $_exitCode
