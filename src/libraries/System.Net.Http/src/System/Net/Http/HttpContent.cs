@@ -155,7 +155,7 @@ namespace System.Net.Http
         public Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsString());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsString());
         }
 
         private string ReadBufferedContentAsString()
@@ -240,7 +240,7 @@ namespace System.Net.Http
         public Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsByteArray());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsByteArray());
         }
 
         internal byte[] ReadBufferedContentAsByteArray()
@@ -457,7 +457,7 @@ namespace System.Net.Http
             // We're only comfortable disposing of the HttpContent instance like this because LoadIntoBuffer is internal and
             // we're only using it on content instances we get back from a handler's Send call that haven't been given out to the user yet.
             // If we were to ever make LoadIntoBuffer public, we'd need to rethink this.
-            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((HttpContent)s!).Dispose(), this);
+            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(static s => ((HttpContent)s!).Dispose(), this);
 
             try
             {

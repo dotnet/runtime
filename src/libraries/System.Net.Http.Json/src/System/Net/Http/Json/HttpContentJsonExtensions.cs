@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public static class HttpContentJsonExtensions
+    public static partial class HttpContentJsonExtensions
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -32,16 +32,12 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-#if NETCOREAPP
-                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
-#else
-                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
-#endif
+                contentStream = GetTranscodingStream(contentStream, sourceEncoding);
             }
 
             using (contentStream)
@@ -52,16 +48,12 @@ namespace System.Net.Http.Json
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-#if NETCOREAPP
-                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
-#else
-                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
-#endif
+                contentStream = GetTranscodingStream(contentStream, sourceEncoding);
             }
 
             using (contentStream)

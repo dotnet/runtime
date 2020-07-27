@@ -33,6 +33,7 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
+        private JsonNumberHandling _numberHandling;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -74,6 +75,7 @@ namespace System.Text.Json
             _referenceHandler = options._referenceHandler;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
+            _numberHandling = options._numberHandling;
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
@@ -220,7 +222,6 @@ namespace System.Text.Json
 
                 if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 
@@ -260,6 +261,27 @@ namespace System.Text.Json
                 }
 
                 _defaultIgnoreCondition = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies how number types should be handled when serializing or deserializing.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public JsonNumberHandling NumberHandling
+        {
+            get => _numberHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                _numberHandling = value;
             }
         }
 

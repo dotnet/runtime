@@ -794,6 +794,8 @@ namespace System.Reflection.Emit
 
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Reflection emitted types have all of their members")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public
         TypeInfo? CreateTypeInfo()
@@ -985,6 +987,7 @@ namespace System.Reflection.Emit
                 }
         */
         [ComVisible(true)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (is_created)
@@ -1040,6 +1043,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             check_created();
@@ -1056,6 +1060,7 @@ namespace System.Reflection.Emit
             return GetEvents(DefaultBindingFlags);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             if (is_created)
@@ -1063,12 +1068,14 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             check_created();
             return created!.GetField(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             check_created();
@@ -1098,6 +1105,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type,
                                                 BindingFlags bindingAttr)
         {
@@ -1105,6 +1113,7 @@ namespace System.Reflection.Emit
             return created!.GetMember(name, type, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             check_created();
@@ -1206,6 +1215,7 @@ namespace System.Reflection.Emit
             return result.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             check_created();
@@ -1213,6 +1223,7 @@ namespace System.Reflection.Emit
             return GetMethodsByName(null, bindingAttr, false, this);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr,
                                  Binder? binder,
                                  CallingConventions callConvention,
@@ -1226,6 +1237,7 @@ namespace System.Reflection.Emit
             return created!.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             check_created();
@@ -1254,6 +1266,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             if (!is_created)
@@ -1284,12 +1297,14 @@ namespace System.Reflection.Emit
             return result.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             check_created();
             return created!.GetProperties(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw not_supported();
@@ -1304,6 +1319,7 @@ namespace System.Reflection.Emit
             return created!.HasElementType;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             check_created();
@@ -1821,6 +1837,8 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             /*FIXME I would expect the same checks of GetMethod here*/

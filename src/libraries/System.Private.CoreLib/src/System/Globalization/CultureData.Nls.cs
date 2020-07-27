@@ -117,7 +117,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
             }
 
             if (context.cultureName != null)
@@ -338,7 +338,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumLocaleData context = ref Unsafe.As<byte, EnumLocaleData>(ref *(byte*)contextHandle);
@@ -361,7 +361,7 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)contextHandle);
@@ -383,7 +383,7 @@ namespace System.Globalization
         }
 
         // EnumTimeFormatsEx callback itself.
-        // [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
@@ -404,7 +404,7 @@ namespace System.Globalization
             data.strings = new List<string>();
 
             // Now call the enumeration API. Work is done by our callback function
-            Interop.Kernel32.EnumTimeFormatsEx(EnumTimeCallback, localeName, dwFlags, Unsafe.AsPointer(ref data));
+            Interop.Kernel32.EnumTimeFormatsEx(&EnumTimeCallback, localeName, dwFlags, Unsafe.AsPointer(ref data));
 
             if (data.strings.Count > 0)
             {
@@ -490,7 +490,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), IntPtr.Zero);
             }
 
             CultureInfo[] cultures = new CultureInfo[context.strings.Count];
@@ -518,7 +518,7 @@ namespace System.Globalization
 
                 unsafe
                 {
-                    Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                    Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), IntPtr.Zero);
                 }
 
                 for (int i = 0; i < context.strings.Count; i++)

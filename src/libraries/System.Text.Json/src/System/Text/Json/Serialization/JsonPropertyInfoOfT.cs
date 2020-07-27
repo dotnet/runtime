@@ -28,6 +28,7 @@ namespace System.Text.Json
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
+            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -38,6 +39,7 @@ namespace System.Text.Json
                 memberInfo,
                 converter,
                 ignoreCondition,
+                parentTypeNumberHandling,
                 options);
 
             switch (memberInfo)
@@ -89,7 +91,7 @@ namespace System.Text.Json
                     }
             }
 
-            GetPolicies(ignoreCondition);
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -121,7 +123,7 @@ namespace System.Text.Json
             T value = Get!(obj);
 
             // Since devirtualization only works in non-shared generics,
-            // the default comparer is uded only for value types for now.
+            // the default comparer is used only for value types for now.
             // For reference types there is a quick check for null.
             if (IgnoreDefaultValuesOnWrite && (
                 default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
@@ -209,13 +211,13 @@ namespace System.Text.Json
 
                 success = true;
             }
-            else if (Converter.CanUseDirectReadOrWrite)
+            else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    Set!(obj, fastvalue!);
+                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    Set!(obj, fastValue!);
                 }
 
                 success = true;
@@ -253,7 +255,7 @@ namespace System.Text.Json
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;

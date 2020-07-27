@@ -2431,8 +2431,8 @@ namespace System.Data
                 {
                     if (foreign.Table == foreign.RelatedTable)
                     {
-                        if (foreign.Clone(clone) is { } clonedConstraint &&
-                            clone.Constraints.FindConstraint(clonedConstraint) is { } oldConstraint)
+                        if (foreign.Clone(clone) is ForeignKeyConstraint clonedConstraint &&
+                            clone.Constraints.FindConstraint(clonedConstraint) is Constraint oldConstraint)
                         {
                             oldConstraint.ConstraintName = Constraints[j].ConstraintName;
                         }
@@ -2440,8 +2440,8 @@ namespace System.Data
                 }
                 else if (unique != null)
                 {
-                    if (unique.Clone(clone) is { } clonedConstraint &&
-                        clone.Constraints.FindConstraint(clonedConstraint) is { } oldConstraint)
+                    if (unique.Clone(clone) is UniqueConstraint clonedConstraint &&
+                        clone.Constraints.FindConstraint(clonedConstraint) is Constraint oldConstraint)
                     {
                         oldConstraint.ConstraintName = Constraints[j].ConstraintName;
                         foreach (object key in clonedConstraint.ExtendedProperties.Keys)
@@ -2462,7 +2462,7 @@ namespace System.Data
                     if (foreign != null)
                     {
                         if (foreign.Table == foreign.RelatedTable &&
-                            foreign.Clone(clone) is { } newforeign)
+                            foreign.Clone(clone) is ForeignKeyConstraint newforeign)
                         {
                             // we cant make sure that we recieve a cloned FKC,since it depends if table and relatedtable be the same
                             clone.Constraints.Add(newforeign);
@@ -3375,7 +3375,7 @@ namespace System.Data
             {
                 for (int i = 0; i < value.Length; i++)
                 {
-                    if (value[i] is { } v)
+                    if (value[i] is object v)
                     {
                         _columnCollection[i][record] = v;
                     }
@@ -5657,9 +5657,11 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
+            IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
+                restrictedScope = TypeLimiter.EnterRestrictedScope(this);
                 RowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
@@ -5894,15 +5896,18 @@ namespace System.Data
             }
             finally
             {
+                restrictedScope?.Dispose();
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
         }
 
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
+            IDisposable? restrictedScope = null;
             RowDiffIdUsageSection rowDiffIdUsage = default;
             try
             {
+                restrictedScope = TypeLimiter.EnterRestrictedScope(this);
                 bool fSchemaFound = false;
                 bool fDataFound = false;
                 bool fIsXdr = false;
@@ -6188,6 +6193,7 @@ namespace System.Data
             }
             finally
             {
+                restrictedScope?.Dispose();
                 // prepare and cleanup rowDiffId hashtable
                 rowDiffIdUsage.Cleanup();
             }

@@ -457,7 +457,7 @@ init_passes_and_options ()
 	// FIXME: find optimal mono specific order of passes
 	// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
 	// the following order is based on a stripped version of "OPT -O2"
-	const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks -sroa -instcombine" NO_CALL_FRAME_OPT;
+	const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -sroa -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks -sroa -instcombine" NO_CALL_FRAME_OPT;
 	const char *opts = g_getenv ("MONO_LLVM_OPT");
 	if (opts == NULL)
 		opts = default_opts;

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -30,7 +32,7 @@ namespace System.ComponentModel
         /// class, using the specified type as the data converter for the object this attribute
         /// is bound to.
         /// </summary>
-        public TypeConverterAttribute(Type type)
+        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             if (type == null)
             {
@@ -45,7 +47,7 @@ namespace System.ComponentModel
         /// class, using the specified type name as the data converter for the object this attribute
         /// is bound to.
         /// </summary>
-        public TypeConverterAttribute(string typeName)
+        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
             if (typeName == null)
             {
@@ -59,6 +61,7 @@ namespace System.ComponentModel
         /// Gets the fully qualified type name of the <see cref='System.Type'/> to use as a
         /// converter for the object this attribute is bound to.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ConverterTypeName { get; }
 
         public override bool Equals(object? obj)

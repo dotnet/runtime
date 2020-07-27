@@ -89,7 +89,7 @@ namespace Microsoft.AspNetCore.Testing
         {
             Asserter.TestRan = true;
         }
-#elif NET472
+#elif NETFRAMEWORK
         [ConditionalTheory]
         [FrameworkSkipCondition(RuntimeFrameworks.CoreCLR)]
         [MemberData(nameof(GetInts))]

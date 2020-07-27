@@ -1375,6 +1375,14 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
         if (!pOtherMT->IsArray() || GetRank() != pOtherMT->GetRank())
             return FALSE;
 
+        if (IsMultiDimArray() != pOtherMT->IsMultiDimArray())
+        {
+            // A non-multidimensional array is not equivalent to an SzArray.
+            // This case is handling the case of a Rank 1 multidimensional array
+            // when compared to a normal array.
+            return FALSE;
+        }
+
         // arrays of structures have their own unshared MTs and will take this path
         return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
     }

@@ -268,6 +268,16 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFileBuilder);
         }
 
+        /// <summary>
+        /// Add a symbol to the symbol map which defines the area of the binary between the two emitted symbols.
+        /// This allows relocations (both position and size) to regions of the image. Both nodes must be in the
+        /// same section and firstNode must be emitted before secondNode.
+        /// </summary>
+        public void AddSymbolForRange(ISymbolNode symbol, ISymbolNode firstNode, ISymbolNode secondNode)
+        {
+            _sectionBuilder.AddSymbolForRange(symbol, firstNode, secondNode);
+        }
+
         public int GetSymbolFilePosition(ISymbolNode symbol)
         {
             return _sectionBuilder.GetSymbolFilePosition(symbol);
@@ -497,7 +507,7 @@ namespace ILCompiler.PEWriter
                 RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
                 builder.ExceptionTable = new DirectoryEntry(
                     relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                    size: runtimeFunctionsTable.TableSize);
+                    size: runtimeFunctionsTable.TableSizeExcludingSentinel);
             }
     
             return builder;

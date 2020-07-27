@@ -3598,6 +3598,10 @@ dbg_path_get_basename (const char *filename)
 	return g_strdup (&r[1]);
 }
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE(hidden_klass, "System.Diagnostics", "DebuggerHiddenAttribute")
+GENERATE_TRY_GET_CLASS_WITH_CACHE(step_through_klass, "System.Diagnostics", "DebuggerStepThroughAttribute")
+GENERATE_TRY_GET_CLASS_WITH_CACHE(non_user_klass, "System.Diagnostics", "DebuggerNonUserCodeAttribute")
+
 static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
 {
@@ -3607,27 +3611,19 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	if (ji->dbg_attrs_inited)
 		return;
 
-	MONO_STATIC_POINTER_INIT (MonoClass, hidden_klass)
-		hidden_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, hidden_klass)
-
-
-	MONO_STATIC_POINTER_INIT (MonoClass, step_through_klass)
-		step_through_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, step_through_klass)
-
-	MONO_STATIC_POINTER_INIT (MonoClass, non_user_klass)
-		non_user_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, non_user_klass)
+	// NOTE: The following Debugger attributes may not exist if they are trimmed away by the ILLinker
+	MonoClass *hidden_klass = mono_class_try_get_hidden_klass_class ();
+	MonoClass *step_through_klass = mono_class_try_get_step_through_klass_class ();
+	MonoClass *non_user_klass = mono_class_try_get_non_user_klass_class ();
 
 	ainfo = mono_custom_attrs_from_method_checked (jinfo_get_method (ji), error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error? */
 	if (ainfo) {
-		if (mono_custom_attrs_has_attr (ainfo, hidden_klass))
+		if (hidden_klass && mono_custom_attrs_has_attr (ainfo, hidden_klass))
 			ji->dbg_hidden = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+		if (step_through_klass && mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+		if (non_user_klass && mono_custom_attrs_has_attr (ainfo, non_user_klass))
 			ji->dbg_non_user_code = TRUE;
 		mono_custom_attrs_free (ainfo);
 	}
@@ -3635,9 +3631,9 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	ainfo = mono_custom_attrs_from_class_checked (jinfo_get_method (ji)->klass, error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error? */
 	if (ainfo) {
-		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+		if (step_through_klass && mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+		if (non_user_klass && mono_custom_attrs_has_attr (ainfo, non_user_klass))
 			ji->dbg_non_user_code = TRUE;
 		mono_custom_attrs_free (ainfo);
 	}
@@ -5288,26 +5284,6 @@ debugger_agent_debug_log_is_enabled (void)
 {
 	/* Treat this as true even if there is no event request for EVENT_KIND_USER_LOG */
 	return agent_config.enabled;
-}
-
-static void
-debugger_agent_unhandled_exception (MonoException *exc)
-{
-	int suspend_policy;
-	GSList *events;
-	EventInfo ei;
-
-	if (!inited)
-		return;
-
-	memset (&ei, 0, sizeof (ei));
-	ei.exc = (MonoObject*)exc;
-
-	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, NULL, &ei, &suspend_policy);
-	mono_loader_unlock ();
-
-	process_event (EVENT_KIND_EXCEPTION, &ei, 0, NULL, events, suspend_policy);
 }
 
 static void
@@ -10424,7 +10400,6 @@ mono_debugger_agent_init (void)
 	cbs.single_step_from_context = debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
 	cbs.free_domain_info = debugger_agent_free_domain_info;
-	cbs.unhandled_exception = debugger_agent_unhandled_exception;
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
 	cbs.end_exception_filter = debugger_agent_end_exception_filter;

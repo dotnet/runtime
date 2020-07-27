@@ -48,6 +48,14 @@ namespace System.Diagnostics
         public GetRequestedData<ActivityContext>? GetRequestedDataUsingContext { get; set; }
 
         /// <summary>
+        /// Determine if the listener automatically generates a new trace Id before sampling when there is no parent context.
+        /// </summary>
+        /// <remarks>
+        /// If this property is set to true and caused generating a new trace Id, the created <see cref="Activity"/> object from such call will have the same generated trace Id.
+        /// </remarks>
+        public bool AutoGenerateRootContextTraceId { get; set;}
+
+        /// <summary>
         /// Dispose will unregister this <see cref="ActivityListener"/> object from listeneing to <see cref="Activity"/> events.
         /// </summary>
         public void Dispose() => ActivitySource.DetachListener(this);

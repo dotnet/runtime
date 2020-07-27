@@ -465,10 +465,10 @@ CEEInfo::ConvToJitSig(
         SigTypeContext::InitTypeContext(contextType, &typeContext);
     }
 
-    _ASSERTE(CORINFO_CALLCONV_DEFAULT == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    _ASSERTE(CORINFO_CALLCONV_VARARG == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_VARARG);
-    _ASSERTE(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
-    _ASSERTE(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
+    static_assert_no_msg(CORINFO_CALLCONV_DEFAULT == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    static_assert_no_msg(CORINFO_CALLCONV_VARARG == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_VARARG);
+    static_assert_no_msg(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
+    static_assert_no_msg(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
 
     TypeHandle typeHnd = TypeHandle();
 
@@ -505,6 +505,25 @@ CEEInfo::ConvToJitSig(
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
 #endif // defined(TARGET_UNIX) || defined(TARGET_ARM)
+
+        // Unmanaged calling convention indicates modopt should be read
+        if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
+        {
+            static_assert_no_msg(CORINFO_CALLCONV_C == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_C);
+            static_assert_no_msg(CORINFO_CALLCONV_STDCALL == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL);
+            static_assert_no_msg(CORINFO_CALLCONV_THISCALL == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL);
+            static_assert_no_msg(CORINFO_CALLCONV_FASTCALL == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL);
+
+            CorUnmanagedCallingConvention callConvMaybe;
+            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(module, pSig, cbSig, &callConvMaybe))
+            {
+                sigRet->callConv = (CorInfoCallConv)callConvMaybe;
+            }
+            else
+            {
+                sigRet->callConv = (CorInfoCallConv)MetaSig::GetDefaultUnmanagedCallingConvention();
+            }
+        }
 
         // Skip number of type arguments
         if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -566,10 +585,7 @@ CEEInfo::ConvToJitSig(
         sigRet->args = (CORINFO_ARG_LIST_HANDLE)sig.GetPtr();
     }
 
-    if (sigRet->callConv == CORINFO_CALLCONV_UNMANAGED)
-    {
-        COMPlusThrowHR(E_NOTIMPL);
-    }
+    _ASSERTE(sigRet->callConv != CORINFO_CALLCONV_UNMANAGED);
 
     // Set computed flags
     sigRet->flags = sigRetFlags;
@@ -13707,6 +13723,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 case READYTORUN_HELPER_GSCookie:
                     result = (size_t)GetProcessGSCookie();
+                    break;
+
+                case READYTORUN_HELPER_IndirectTrapThreads:
+                    result = (size_t)&g_TrapReturningThreads;
                     break;
 
                 case READYTORUN_HELPER_DelayLoad_MethodCall:

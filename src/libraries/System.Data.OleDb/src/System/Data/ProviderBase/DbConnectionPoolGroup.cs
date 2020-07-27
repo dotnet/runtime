@@ -33,8 +33,8 @@ namespace System.Data.ProviderBase
 
         private int _state;          // see PoolGroupState* below
 
-        private DbConnectionPoolGroupProviderInfo _providerInfo;
-        private DbMetaDataFactory _metaDataFactory;
+        private DbConnectionPoolGroupProviderInfo? _providerInfo;
+        private DbMetaDataFactory? _metaDataFactory;
 
         // always lock this before changing _state, we don't want to move out of the 'Disabled' state
         // PoolGroupStateUninitialized = 0;
@@ -49,7 +49,7 @@ namespace System.Data.ProviderBase
 
             _connectionOptions = connectionOptions;
             _poolKey = key;
-            _poolGroupOptions = poolGroupOptions;
+            _poolGroupOptions = poolGroupOptions!;
 
             // always lock this object before changing state
             // HybridDictionary does not create any sub-objects until add
@@ -75,7 +75,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal DbConnectionPoolGroupProviderInfo ProviderInfo
+        internal DbConnectionPoolGroupProviderInfo? ProviderInfo
         {
             get
             {
@@ -86,7 +86,7 @@ namespace System.Data.ProviderBase
                 _providerInfo = value;
                 if (null != value)
                 {
-                    _providerInfo.PoolGroup = this;
+                    _providerInfo!.PoolGroup = this;
                 }
             }
         }
@@ -107,7 +107,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal DbMetaDataFactory MetaDataFactory
+        internal DbMetaDataFactory? MetaDataFactory
         {
             get
             {
@@ -126,7 +126,7 @@ namespace System.Data.ProviderBase
             // will return the number of connections in the group after clearing has finished
 
             // First, note the old collection and create a new collection to be used
-            ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool> oldPoolCollection = null;
+            ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool>? oldPoolCollection = null;
             lock (this)
             {
                 if (_poolCollection.Count > 0)
@@ -162,7 +162,7 @@ namespace System.Data.ProviderBase
             return _poolCollection.Count;
         }
 
-        internal DbConnectionPool GetConnectionPool(DbConnectionFactory connectionFactory)
+        internal DbConnectionPool? GetConnectionPool(DbConnectionFactory connectionFactory)
         {
             // When this method returns null it indicates that the connection
             // factory should not use pooling.
@@ -171,12 +171,12 @@ namespace System.Data.ProviderBase
             // many of the APIs we require.
             // PoolGroupOptions will only be null when we're not supposed to pool
             // connections.
-            DbConnectionPool pool = null;
+            DbConnectionPool? pool = null;
             if (null != _poolGroupOptions)
             {
                 Debug.Assert(ADP.IsWindowsNT, "should not be pooling on Win9x");
 
-                DbConnectionPoolIdentity currentIdentity = DbConnectionPoolIdentity.NoIdentity;
+                DbConnectionPoolIdentity? currentIdentity = DbConnectionPoolIdentity.NoIdentity;
                 if (_poolGroupOptions.PoolByIdentity)
                 {
                     // if we're pooling by identity (because integrated security is

@@ -1,24 +1,91 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
   <ItemGroup>
-    <GeneratedShimProject Include="shims\generated\*.csproj" />
+    <_allRef Include="$(MSBuildThisFileDirectory)*\ref\*.csproj"
+             Exclude="@(ProjectExclusions)" />
+    <NonNetCoreAppProject Include="@(_allRef)"
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\ref\%(Identity).csproj')" />
+    <NetCoreAppProject Include="@(_allRef)"
+                       Exclude="@(NonNetCoreAppProject)" />
+    <GeneratedShimProject Include="shims\generated\*.csproj"
+                          Condition="'$(BuildingNETCoreAppVertical)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="@(NetCoreAppProject)" />
+
     <!-- Restore only and build later. -->
-    <ProjectReference Include="@(GeneratedShimProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+    <ProjectReference Include="@(NonNetCoreAppProject);
+                               @(GeneratedShimProject)"
+                      Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
   <Target Name="BuildGeneratedShims"
-          AfterTargets="Build">
+          AfterTargets="Build"
+          Condition="'@(GeneratedShimProject)' != ''">
     <MSBuild Targets="Build"
              Projects="@(GeneratedShimProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
+  <Target Name="GetRefPackFiles">
+    <ItemGroup>
+      <RefPackLibFile Include="$(MicrosoftNetCoreAppRefPackRefDir)*.*">
+        <TargetPath>ref/$(NetCoreAppCurrent)</TargetPath>
+        <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
+      </RefPackLibFile>
+    </ItemGroup>
+    <!-- We need to set this metadata in a separate ItemGroup than when the Items are initially populated in order to
+    have access to the Extension metadata. -->
+    <ItemGroup>
+      <RefPackLibFile>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+      </RefPackLibFile>
+    </ItemGroup>
+  </Target>
+
+  <!-- Generate the ref pack's FrameworkList.xml -->
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <Target Name="GenerateFrameworkListFile"
+          DependsOnTargets="GetRefPackFiles"
+          AfterTargets="BuildGeneratedShims"
+          Inputs="@(RefPackLibFile)"
+          Outputs="$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml"
+          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+    <ItemGroup>
+      <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+    </ItemGroup>
+
+    <CreateFrameworkListFile Files="@(RefPackLibFile)"
+                             TargetFile="$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml"
+                             TargetFilePrefixes="ref/;runtimes/"
+                             RootAttributes="@(FrameworkListRootAttribute)" />
+  </Target>
+
+  <Target Name="BuildNonNetCoreAppProjects"
+          AfterTargets="GenerateFrameworkListFile">
+    <MSBuild Targets="Build"
+             BuildInParallel="true"
+             Projects="@(NonNetCoreAppProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+  <!-- Build generated shims with the full reference closure, including OOB assemblies. -->
+  <Target Name="RebuildGeneratedShims"
+          AfterTargets="BuildNonNetCoreAppProjects"
+          Condition="'@(GeneratedShimProject)' != ''">
+    <MSBuild Targets="Build"
+             Projects="@(GeneratedShimProject)"
+             Properties="$(TraversalGlobalProperties);_Incremental=true" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 </Project>

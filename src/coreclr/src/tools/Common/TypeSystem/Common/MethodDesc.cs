@@ -48,6 +48,9 @@ namespace Internal.TypeSystem
         internal TypeDesc[] _parameters;
         internal EmbeddedSignatureData[] _embeddedSignatureData;
 
+        // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
+        public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
+
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
             _flags = flags;

@@ -264,6 +264,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate that multiple accessors over the same map share data appropriately.
         /// </summary>
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
         public void ViewsShareData()
         {
             const int MapLength = 256;
