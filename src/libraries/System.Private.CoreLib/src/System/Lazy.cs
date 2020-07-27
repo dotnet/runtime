@@ -508,7 +508,7 @@ namespace System
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and
     /// to ensure that the Lazy&lt;T&gt; does not become initialized if it was not already.</summary>
-    internal sealed class LazyDebugView<T>
+    internal sealed class LazyDebugView<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
     {
         // The Lazy object being viewed.
         private readonly Lazy<T> _lazy;
