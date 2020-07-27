@@ -37,17 +37,17 @@ while true; do
 done
 
 # Restart the simulator to make sure it is tied to the right user session
-xcode_version=11.4
-xcode_path="/Applications/Xcode${xcode_version/./}.app"
-simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
-sudo pkill -9 -f "$simulator_app"
-open -a "$simulator_app"
+XCODE_VERSION=11.4
+XCODE_PATH="/Applications/Xcode${XCODE_VERSION/./}.app"
+SIMULATOR_APP="$XCODE_PATH/Contents/Developer/Applications/Simulator.app"
+sudo pkill -9 -f "$SIMULATOR_APP"
+open -a "$SIMULATOR_APP"
 export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-dotnet xharness ios test \
-    --targets="$TARGET" \
-    --app="$APP_BUNDLE" \
-    --xcode="/Applications/Xcode114.app" \
+dotnet xharness ios test  \
+    --targets="$TARGET"   \
+    --app="$APP_BUNDLE"   \
+    --xcode="$XCODE_PATH" \
     --output-directory=$XHARNESS_OUT
 
 _exitCode=$?
@@ -55,6 +55,6 @@ _exitCode=$?
 echo "XHarness artifacts: `ls -lh $XHARNESS_OUT`"
 
 # Kill the simulator after we're done
-sudo pkill -9 -f "$simulator_app"
+sudo pkill -9 -f "$SIMULATOR_APP"
 
 exit $_exitCode
