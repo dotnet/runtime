@@ -6,7 +6,6 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace System.Net.Http
 {
