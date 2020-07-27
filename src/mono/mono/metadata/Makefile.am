@@ -143,35 +143,30 @@ libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @
 if ENABLE_NETCORE
 if HAVE_SYS_ICU
 
-# symlink ICU sources to top_builddir so automake puts intermediates into the target-specific folder
-LOCAL_ICU_SHIM_PATH := $(top_builddir)/icushim
-
-$(LOCAL_ICU_SHIM_PATH):
-	$(MKDIR_P) $@
-
-$(LOCAL_ICU_SHIM_PATH)/%.c: @ICU_SHIM_PATH@/%.c | $(LOCAL_ICU_SHIM_PATH)
+# symlink ICU sources to a local dir so automake puts intermediates into the target-specific folder
+icushim/%.c: @ICU_SHIM_PATH@/%.c
 	$(LN_S) $^ $@
 
 shim_libraries = libmonoruntime-shimglobalization.la
 
 nodist_libmonoruntime_shimglobalization_la_SOURCES = \
-									$(LOCAL_ICU_SHIM_PATH)/pal_calendarData.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_casing.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_collation.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_idna.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_locale.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_localeNumberData.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_localeStringData.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_normalization.c \
-									$(LOCAL_ICU_SHIM_PATH)/pal_timeZoneInfo.c \
-									$(LOCAL_ICU_SHIM_PATH)/entrypoints.c
+									icushim/pal_calendarData.c \
+									icushim/pal_casing.c \
+									icushim/pal_collation.c \
+									icushim/pal_idna.c \
+									icushim/pal_locale.c \
+									icushim/pal_localeNumberData.c \
+									icushim/pal_localeStringData.c \
+									icushim/pal_normalization.c \
+									icushim/pal_timeZoneInfo.c \
+									icushim/entrypoints.c
 
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 
 if STATIC_ICU
-nodist_libmonoruntime_shimglobalization_la_SOURCES += $(LOCAL_ICU_SHIM_PATH)/pal_icushim_static.c
+nodist_libmonoruntime_shimglobalization_la_SOURCES += icushim/pal_icushim_static.c
 else
-nodist_libmonoruntime_shimglobalization_la_SOURCES += $(LOCAL_ICU_SHIM_PATH)/pal_icushim.c
+nodist_libmonoruntime_shimglobalization_la_SOURCES += icushim/pal_icushim.c
 endif # STATIC_ICU
 
 endif # HAVE_SYS_ICU
