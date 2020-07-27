@@ -1165,7 +1165,7 @@ namespace System.Xml.XPath
             return SelectSingleNode(XPathExpression.Compile(xpath));
         }
 
-        public virtual XPathNavigator? SelectSingleNode(string xpath, IXmlNamespaceResolver resolver)
+        public virtual XPathNavigator? SelectSingleNode(string xpath, IXmlNamespaceResolver? resolver)
         {
             return SelectSingleNode(XPathExpression.Compile(xpath, resolver));
         }
