@@ -28,6 +28,9 @@
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
+      <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
+      <RunSettingsFileContent Condition="'$(MonoEnvOptions)' != ''">$(RunSettingsFileContent.Replace('$$MONO_ENV_OPTIONS$$', '<MONO_ENV_OPTIONS>$(MonoEnvOptions)</MONO_ENV_OPTIONS>'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(MonoEnvOptions)' == ''">$(RunSettingsFileContent.Replace('$$MONO_ENV_OPTIONS$$', ''))</RunSettingsFileContent>
       <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)')
                                                       .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
                                                       .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')

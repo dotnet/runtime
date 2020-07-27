@@ -19,7 +19,7 @@
     <TestCaseFilter>$$TESTCASEFILTER$$</TestCaseFilter>
     <DotNetHostPath>$$DOTNETHOSTPATH$$</DotNetHostPath>
     <EnvironmentVariables>
-      <MONO_ENV_OPTIONS>$$MONO_ENV_OPTIONS$$</MONO_ENV_OPTIONS>
+      $$MONO_ENV_OPTIONS$$
     </EnvironmentVariables>
   </RunConfiguration>
   <LoggerRunSettings>
