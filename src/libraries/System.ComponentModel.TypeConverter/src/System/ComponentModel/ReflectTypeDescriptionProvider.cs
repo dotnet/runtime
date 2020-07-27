@@ -1365,11 +1365,8 @@ namespace System.ComponentModel
 
                 if (type != null)
                 {
-                    if (type.GetConstructor(s_typeConstructor) == null)
+                    if (ConverterConstructorFuncs.TryGetValue(type, out Func<object> ctorFunc))
                     {
-                        bool success = ConverterConstructorFuncs.TryGetValue(type, out Func<object> ctorFunc);
-                        Debug.Assert(success && ctorFunc != null);
-
                         hashEntry = ctorFunc();
                         table[callingType] = hashEntry;
                     }
