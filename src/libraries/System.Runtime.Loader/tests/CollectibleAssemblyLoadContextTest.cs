@@ -106,6 +106,20 @@ namespace System.Runtime.Loader.Tests
 
         class CollectibleWithOneAssemblyLoadedTest : TestBase
         {
+            string _assemblyPath;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Execute()
+            {
+                _assemblyPath = _testClassTypes[0].Assembly.Location;
+            }
+
+            public void DeleteAssemblyFile()
+            {
+                // ResourceAssemblyLoadContext outputs each loaded assembly to TEMP, so we
+                // can delete an unloaded assembly file without affecting other loads
+                File.Delete(_assemblyPath);
+            }
         }
 
         [Fact]
@@ -117,9 +131,11 @@ namespace System.Runtime.Loader.Tests
 
             var test = new CollectibleWithOneAssemblyLoadedTest();
             test.CreateContextAndLoadAssembly();
+            test.Execute();
             test.UnloadAndClearContext();
 
             test.CheckContextUnloaded();
+            test.DeleteAssemblyFile();
         }
 
         class CollectibleWithOneAssemblyLoadedWithStaticTest : TestBase
