@@ -13,7 +13,7 @@
 
   <Target Name="BuildNativeUnix"
           BeforeTargets="Build"
-          Condition="'$(TargetOS)' != 'Windows_NT'">
+          Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'">
     <PropertyGroup>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
