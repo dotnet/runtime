@@ -107,7 +107,7 @@ namespace System.Xml
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             return WriteStringAsync(text);
         }
@@ -126,7 +126,7 @@ namespace System.Xml
         }
 
         // Forward call to WriteString(string).
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             return WriteStringAsync(ws);
         }

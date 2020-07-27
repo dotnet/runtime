@@ -2366,8 +2366,15 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			result = MONO_FIRST_PASS_CALLBACK_TO_NATIVE;
 		}
-				
-				
+
+#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
+		//ignore the try catch in the .. icall_wrapper call
+		if (method->wrapper_type == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+			*ctx = new_ctx;
+			continue;
+		}
+#endif
+
 		for (i = clause_index_start; i < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;

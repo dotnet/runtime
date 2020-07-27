@@ -133,11 +133,14 @@ inline BOOL MethodDesc::IsQCall()
 FORCEINLINE DWORD MethodDesc::IsGenericComPlusCall()
 {
     LIMITED_METHOD_CONTRACT;
-    return (mcInstantiated == GetClassification() && AsInstantiatedMethodDesc()->IMD_HasComPlusCallInfo());
+    return m_wFlags & mdcHasComPlusCallInfo;
 }
+
 inline void MethodDesc::SetupGenericComPlusCall()
 {
     LIMITED_METHOD_CONTRACT;
+    m_wFlags |= mdcHasComPlusCallInfo;
+
     AsInstantiatedMethodDesc()->IMD_SetupGenericComPlusCall();
 }
 #endif // FEATURE_COMINTEROP

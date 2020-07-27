@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
-    <TargetFrameworks>$(NetFrameworkCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>net461-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -69,9 +68,5 @@
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\TraceLoggingMetadataCollector.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\TraceLoggingTypeInfo.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\TypeAnalysis.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
   </ItemGroup>
 </Project>

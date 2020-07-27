@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri)
                 {
-                    Credentials = new NetworkCredential("rightusername", "rightpassword")
+                    Credentials = new NetworkCredential("user", "password")
                 };
 
                 const string content = "This is a test";

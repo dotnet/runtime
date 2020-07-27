@@ -1,67 +1,56 @@
 <Project>
   <PropertyGroup>
-    <ContractDependencyPaths>$(RefPath)</ContractDependencyPaths>
-    <FrameworkPathOverride>$(RefPath)</FrameworkPathOverride>
-    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
     <!-- Disable RAR from transitively discovering dependencies for References -->
     <_FindDependencies>false</_FindDependencies>
-    <!--
-      We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder
-      that exists to skip the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644).
-      Need to set these after the common targets import.
-      -->
-    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)</_FullFrameworkReferenceAssemblyPaths>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(IncludeDefaultReferences)' == ''">
-    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</IncludeDefaultReferences>
-    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.vbproj'">true</IncludeDefaultReferences>
   </PropertyGroup>
 
-  <Target Name="SetupDefaultReferences">
-    <ItemGroup Condition="'$(IncludeDefaultReferences)' == 'true'">
-      <!-- netstandard is a default reference whenever building for NETStandard or building an implementation assembly -->
-      <DefaultReference Condition="('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(IsReferenceAssembly)' != 'true') and Exists('$(RefPath)netstandard.dll')" Include="netstandard" />
-    </ItemGroup>
-  </Target>
-  <Target Name="UpdateReferenceItems" DependsOnTargets="SetupDefaultReferences" BeforeTargets="AddReferencesDynamically">
+  <!-- netstandard is a default reference whenever building an implementation assembly for .NETCoreApp. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                        '$(IsSourceProject)' == 'true'">
+    <Reference Include="netstandard"
+               Private="false" />
+  </ItemGroup>
+
+   <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
+  <ItemGroup Condition="'@(ProjectReference)' != '' and
+                         @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
+    <ProjectReference Update="@(ProjectReference)"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Project references shouldn't be copied to the output for non test apps. -->
+  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+    <ProjectReference>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+
+  <!-- Filter out transitive P2Ps which should be excluded. -->
+  <Target Name="FilterTransitiveProjectReferences"
+          AfterTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
+                     '@(DefaultReferenceExclusion)' != ''">
     <ItemGroup>
-      <Reference Include="@(DefaultReference)" />
-    </ItemGroup>
-    <ItemGroup>
-      <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to output -->
-      <Reference Condition="'%(Reference.Extension)' != '.dll'">
-        <Private>false</Private>
-      </Reference>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="AddDefaultTestReferences" BeforeTargets="SetupDefaultReferences" Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
-    <ItemGroup>
-      <DefaultReferenceExclusions Include="@(ReferenceFromRuntime)"/>
-
-      <!-- Reference everything in the targeting pack directory -->
-      <DefaultReferenceDirs Include="$(RefPath)" />
-      <DefaultReferenceItems Include="%(DefaultReferenceDirs.Identity)/*.dll" />
-
-      <DefaultReferenceExclusions>
-        <RefDir>%(DefaultReferenceDirs.Identity)</RefDir>
-      </DefaultReferenceExclusions>
-      <_defaultReferenceExclusionsFullPath Include="%(DefaultReferenceExclusions.RefDir)%(DefaultReferenceExclusions.Identity).dll" />
-
-      <!-- Ensure conflict resolution can see these references. -->
-      <Reference Include="%(DefaultReferenceItems.FullPath)" Private="false" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="RemoveConflictResolutionAssetsForTests"
-          AfterTargets="_HandlePackageFileConflicts"
-          DependsOnTargets="AddDefaultTestReferences"
-          Condition="'@(_defaultReferenceExclusionsFullPath)' != ''">
-    <ItemGroup>
-      <Reference Remove="@(_defaultReferenceExclusionsFullPath)" />
+      <_transitiveProjectReferenceWithExclusion Include="@(ProjectReference)">
+        <Exclusion>%(DefaultReferenceExclusion.Identity)</Exclusion>
+      </_transitiveProjectReferenceWithExclusion>
+      <ProjectReference Remove="@(_transitiveProjectReferenceWithExclusion)"
+                        Condition="'%(_transitiveProjectReferenceWithExclusion.NuGetPackageId)' == '%(_transitiveProjectReferenceWithExclusion.Exclusion)'" />
     </ItemGroup>
   </Target>
 
-  <Target Name="AddReferencesDynamically" BeforeTargets="PrepareForBuild" />
+  <!-- Make shared framework assemblies not app-local (non private). -->
+  <Target Name="UpdateProjectReferencesWithPrivateAttribute"
+          AfterTargets="AssignProjectConfiguration"
+          BeforeTargets="PrepareProjectReferences"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
+                     '@(ProjectReferenceWithConfiguration)' != ''">
+    <ItemGroup>
+      <ProjectReferenceWithConfiguration PrivateAssets="all"
+                                         Private="false"
+                                         Condition="$(NetCoreAppLibrary.Contains('$([System.IO.Path]::GetFileNameWithoutExtension('%(MSBuildSourceProjectFile)'));'))" />
+    </ItemGroup>
+  </Target>
+
 </Project>

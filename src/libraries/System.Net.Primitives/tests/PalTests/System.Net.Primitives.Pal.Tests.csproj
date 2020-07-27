@@ -11,7 +11,7 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Primitives" />
+    <DefaultReferenceExclusion Include="System.Net.Primitives" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs"
@@ -85,8 +85,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
-             Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
@@ -97,21 +95,31 @@
              Link="ProductionCode\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.GetDomainName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.HostEntry.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
-             Link="ProductionCode\Common\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs" />
+             Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetDomainName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.HostEntry.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
+             Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"
+             Link="ProductionCode\Common\System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs" />
   </ItemGroup>
 </Project>
