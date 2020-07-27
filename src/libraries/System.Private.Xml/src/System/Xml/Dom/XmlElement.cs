@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Xml.Schema;
 using System.Xml.XPath;
@@ -14,8 +15,8 @@ namespace System.Xml
     public class XmlElement : XmlLinkedNode
     {
         private XmlName _name;
-        private XmlAttributeCollection _attributes;
-        private XmlLinkedNode _lastChild; // == this for empty elements otherwise it is the last child
+        private XmlAttributeCollection? _attributes;
+        private XmlLinkedNode? _lastChild; // == this for empty elements otherwise it is the last child
 
         internal XmlElement(XmlName name, bool empty, XmlDocument doc) : base(doc)
         {
@@ -28,6 +29,7 @@ namespace System.Xml
             }
             if (name.LocalName.Length == 0)
                 throw new ArgumentException(SR.Xdom_Empty_LocalName);
+
             _name = name;
             if (empty)
             {
@@ -35,7 +37,7 @@ namespace System.Xml
             }
         }
 
-        protected internal XmlElement(string prefix, string localName, string namespaceURI, XmlDocument doc)
+        protected internal XmlElement(string prefix, string localName, string? namespaceURI, XmlDocument doc)
         : this(doc.AddXmlName(prefix, localName, namespaceURI, null), true, doc)
         {
         }
@@ -63,7 +65,7 @@ namespace System.Xml
                 foreach (XmlAttribute attr in Attributes)
                 {
                     XmlAttribute newAttr = (XmlAttribute)(attr.CloneNode(true));
-                    XmlUnspecifiedAttribute unspecAttr = newAttr as XmlUnspecifiedAttribute;
+                    XmlUnspecifiedAttribute? unspecAttr = newAttr as XmlUnspecifiedAttribute;
                     if (unspecAttr != null && attr.Specified == false)
                     {
                         unspecAttr.SetSpecified(false);
@@ -71,6 +73,7 @@ namespace System.Xml
                     element.Attributes.InternalAppendAttribute(newAttr);
                 }
             }
+
             if (deep)
                 element.CopyChildren(doc, this, deep);
 
@@ -108,7 +111,7 @@ namespace System.Xml
             get { return XmlNodeType.Element; }
         }
 
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get
             {
@@ -133,7 +136,7 @@ namespace System.Xml
         //the function is provided only at Load time to speed up Load process
         internal override XmlNode AppendChildForLoad(XmlNode newChild, XmlDocument doc)
         {
-            XmlNodeChangedEventArgs args = doc.GetInsertEventArgsForLoad(newChild, this);
+            XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(newChild, this);
 
             if (args != null)
                 doc.BeforeEvent(args);
@@ -198,13 +201,12 @@ namespace System.Xml
             }
         }
 
-        internal override XmlLinkedNode LastNode
+        internal override XmlLinkedNode? LastNode
         {
             get
             {
                 return _lastChild == this ? null : _lastChild;
             }
-
             set
             {
                 _lastChild = value;
@@ -267,9 +269,10 @@ namespace System.Xml
         // Returns the value for the attribute with the specified name.
         public virtual string GetAttribute(string name)
         {
-            XmlAttribute attr = GetAttributeNode(name);
+            XmlAttribute? attr = GetAttributeNode(name);
             if (attr != null)
                 return attr.Value;
+
             return string.Empty;
         }
 
@@ -277,7 +280,7 @@ namespace System.Xml
         // with the specified name.
         public virtual void SetAttribute(string name, string value)
         {
-            XmlAttribute attr = GetAttributeNode(name);
+            XmlAttribute? attr = GetAttributeNode(name);
             if (attr == null)
             {
                 attr = OwnerDocument.CreateAttribute(name);
@@ -298,7 +301,7 @@ namespace System.Xml
         }
 
         // Returns the XmlAttribute with the specified name.
-        public virtual XmlAttribute GetAttributeNode(string name)
+        public virtual XmlAttribute? GetAttributeNode(string name)
         {
             if (HasAttributes)
                 return Attributes[name];
@@ -310,14 +313,15 @@ namespace System.Xml
         {
             if (newAttr.OwnerElement != null)
                 throw new InvalidOperationException(SR.Xdom_Attr_InUse);
+
             return (XmlAttribute)Attributes.SetNamedItem(newAttr);
         }
 
         // Removes the specified XmlAttribute.
-        public virtual XmlAttribute RemoveAttributeNode(XmlAttribute oldAttr)
+        public virtual XmlAttribute? RemoveAttributeNode(XmlAttribute oldAttr)
         {
             if (HasAttributes)
-                return (XmlAttribute)Attributes.Remove(oldAttr);
+                return (XmlAttribute?)Attributes.Remove(oldAttr);
             return null;
         }
 
@@ -333,19 +337,20 @@ namespace System.Xml
         //
 
         // Returns the value for the attribute with the specified LocalName and NamespaceURI.
-        public virtual string GetAttribute(string localName, string namespaceURI)
+        public virtual string GetAttribute(string localName, string? namespaceURI)
         {
-            XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
+            XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr != null)
                 return attr.Value;
+
             return string.Empty;
         }
 
         // Sets the value of the attribute with the specified name
         // and namespace.
-        public virtual string SetAttribute(string localName, string namespaceURI, string value)
+        public virtual string SetAttribute(string localName, string? namespaceURI, string value)
         {
-            XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
+            XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr == null)
             {
                 attr = OwnerDocument.CreateAttribute(string.Empty, localName, namespaceURI);
@@ -361,13 +366,13 @@ namespace System.Xml
         }
 
         // Removes an attribute specified by LocalName and NamespaceURI.
-        public virtual void RemoveAttribute(string localName, string namespaceURI)
+        public virtual void RemoveAttribute(string localName, string? namespaceURI)
         {
             RemoveAttributeNode(localName, namespaceURI);
         }
 
         // Returns the XmlAttribute with the specified LocalName and NamespaceURI.
-        public virtual XmlAttribute GetAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute? GetAttributeNode(string localName, string? namespaceURI)
         {
             if (HasAttributes)
                 return Attributes[localName, namespaceURI];
@@ -375,26 +380,28 @@ namespace System.Xml
         }
 
         // Adds the specified XmlAttribute.
-        public virtual XmlAttribute SetAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute SetAttributeNode(string localName, string? namespaceURI)
         {
-            XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
+            XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr == null)
             {
                 attr = OwnerDocument.CreateAttribute(string.Empty, localName, namespaceURI);
                 Attributes.InternalAppendAttribute(attr);
             }
+
             return attr;
         }
 
         // Removes the XmlAttribute specified by LocalName and NamespaceURI.
-        public virtual XmlAttribute RemoveAttributeNode(string localName, string namespaceURI)
+        public virtual XmlAttribute? RemoveAttributeNode(string localName, string? namespaceURI)
         {
             if (HasAttributes)
             {
-                XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
+                XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
                 Attributes.Remove(attr);
                 return attr;
             }
+
             return null;
         }
 
@@ -413,7 +420,7 @@ namespace System.Xml
 
         // Determines whether the current node has the specified
         // attribute from the specified namespace.
-        public virtual bool HasAttribute(string localName, string namespaceURI)
+        public virtual bool HasAttribute(string localName, string? namespaceURI)
         {
             return GetAttributeNode(localName, namespaceURI) != null;
         }
@@ -444,10 +451,11 @@ namespace System.Xml
         }
 
         // This method is copied from System.Xml.Linq.ElementWriter.WriteElement but adapted to DOM
-        private static void WriteElementTo(XmlWriter writer, XmlElement e)
+        private static void WriteElementTo(XmlWriter writer, XmlElement el)
         {
+            XmlElement? e = el;
             XmlNode root = e;
-            XmlNode n = e;
+            XmlNode? n = e;
             while (true)
             {
                 e = n as XmlElement;
@@ -480,15 +488,18 @@ namespace System.Xml
                     // Use virtual dispatch (might recurse)
                     n.WriteTo(writer);
                 }
+
                 // Go back to the parent after writing the last child
-                while (n != root && n == n.ParentNode.LastChild)
+                while (n != root && n == n.ParentNode!.LastChild)
                 {
                     n = n.ParentNode;
                     Debug.Assert(n != null);
                     writer.WriteFullEndElement();
                 }
+
                 if (n == root)
                     break;
+
                 n = n.NextSibling;
                 Debug.Assert(n != null);
             }
@@ -513,17 +524,18 @@ namespace System.Xml
         // Saves all the children of the node to the specified XmlWriter.
         public override void WriteContentTo(XmlWriter w)
         {
-            for (XmlNode node = FirstChild; node != null; node = node.NextSibling)
+            for (XmlNode? node = FirstChild; node != null; node = node.NextSibling)
             {
                 node.WriteTo(w);
             }
         }
 
         // Removes the attribute node with the specified index from the attribute collection.
-        public virtual XmlNode RemoveAttributeAt(int i)
+        public virtual XmlNode? RemoveAttributeAt(int i)
         {
             if (HasAttributes)
-                return _attributes.RemoveAt(i);
+                return _attributes!.RemoveAt(i);
+
             return null;
         }
 
@@ -532,7 +544,7 @@ namespace System.Xml
         {
             if (HasAttributes)
             {
-                _attributes.RemoveAll();
+                _attributes!.RemoveAll();
             }
         }
 
@@ -585,7 +597,7 @@ namespace System.Xml
             }
             set
             {
-                XmlLinkedNode linkedNode = LastNode;
+                XmlLinkedNode? linkedNode = LastNode;
                 if (linkedNode != null && //there is one child
                     linkedNode.NodeType == XmlNodeType.Text && //which is text node
                     linkedNode.next == linkedNode) // and it is the only child
@@ -601,18 +613,19 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode NextSibling
+        public override XmlNode? NextSibling
         {
             get
             {
                 if (this.parentNode != null
                     && this.parentNode.LastNode != this)
                     return next;
+
                 return null;
             }
         }
 
-        internal override void SetParent(XmlNode node)
+        internal override void SetParent(XmlNode? node)
         {
             this.parentNode = node;
         }
@@ -621,13 +634,15 @@ namespace System.Xml
 
         internal override string XPLocalName { get { return LocalName; } }
 
-        internal override string GetXPAttribute(string localName, string ns)
+        internal override string? GetXPAttribute(string localName, string ns)
         {
             if (ns == OwnerDocument.strReservedXmlns)
                 return null;
-            XmlAttribute attr = GetAttributeNode(localName, ns);
+
+            XmlAttribute? attr = GetAttributeNode(localName, ns);
             if (attr != null)
                 return attr.Value;
+
             return string.Empty;
         }
     }

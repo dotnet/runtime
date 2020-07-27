@@ -91,7 +91,7 @@ The WebAssembly implementation files are built and made available in the artifac
 
 For Linux and MacOSX:
 ```bash
-./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
+./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:BuildWasmRuntimes 
 ```
 
 __Note__: A `Debug` build sets the following environment variables by default.  When built from the command line this way the `Configuration` value is case sensitive.

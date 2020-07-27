@@ -1764,6 +1764,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+    info.compMethodHashPrivate = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
     //
@@ -5286,10 +5290,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if FUNC_INFO_LOGGING
     LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();

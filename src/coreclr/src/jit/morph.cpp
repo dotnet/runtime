@@ -2707,6 +2707,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
+#ifdef TARGET_ARM
+        // Issue #xxxx : Don't attempt to CSE this constant on ARM32
+        //
+        // This constant has specific register requirements, and LSRA doesn't currently correctly
+        // handle them when the value is in a CSE'd local.
+        indirectCellAddress->SetDoNotCSE();
+#endif // TARGET_ARM
 
         // Push the stub address onto the list of arguments.
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
@@ -5883,7 +5890,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 
 #ifdef FEATURE_SIMD
-    // if this field belongs to simd struct, translate it to simd instrinsic.
+    // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
         GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
@@ -12159,7 +12166,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
 #ifdef TARGET_ARM
         case GT_INTRINSIC:
-            if (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Round)
+            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
             {
                 switch (tree->TypeGet())
                 {

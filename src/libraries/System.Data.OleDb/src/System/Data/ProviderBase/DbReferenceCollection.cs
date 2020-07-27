@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Data.ProviderBase
@@ -51,7 +52,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            public object Target
+            public object? Target
             {
                 get
                 {
@@ -132,6 +133,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [return: MaybeNull]
         internal T FindItem<T>(int tag, Func<T, bool> filterMethod) where T : class
         {
             bool lockObtained = false;
@@ -150,11 +152,11 @@ namespace System.Data.ProviderBase
                             {
                                 // NOTE: Check if the returned value is null twice may seem wasteful, but this if for performance
                                 // Since checking for null twice is cheaper than calling both HasTarget and Target OR always attempting to typecast
-                                object value = _items[counter].Target;
+                                object? value = _items[counter].Target;
                                 if (value != null)
                                 {
                                     // Make sure the item has the correct type and passes the filtering
-                                    T tempItem = value as T;
+                                    T? tempItem = value as T;
                                     if ((tempItem != null) && (filterMethod(tempItem)))
                                     {
                                         return tempItem;
@@ -191,7 +193,7 @@ namespace System.Data.ProviderBase
                         {
                             for (int index = 0; index <= _lastItemIndex; ++index)
                             {
-                                object value = _items[index].Target; // checks tag & gets target
+                                object? value = _items[index].Target; // checks tag & gets target
                                 if (null != value)
                                 {
                                     NotifyItem(message, _items[index].Tag, value);
