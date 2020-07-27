@@ -3636,12 +3636,7 @@ template class JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId>;
 #if defined(DEBUG) || DUMP_GC_TABLES
 
 // This is a copy of GcStackSlotBaseNames from gcinfotypes.h so we can compile in to non-DEBUG builds.
-const char* const JitGcStackSlotBaseNames[] =
-{
-    "caller.sp",
-    "sp",
-    "frame",
-};
+const char* const JitGcStackSlotBaseNames[] = {"caller.sp", "sp", "frame"};
 
 static const char* const GcSlotFlagsNames[] = {"",
                                                "(byref) ",
@@ -3660,7 +3655,7 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG( || JitConfig.JitGCInfoLogging() != 0 ))
+        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -3842,7 +3837,7 @@ public:
 
 #define GCENCODER_WITH_LOGGING(withLog, realEncoder) GcInfoEncoder* withLog = realEncoder;
 
-#endif // !(defined(DEBUG) || DUMP_GC_TABLES) 
+#endif // !(defined(DEBUG) || DUMP_GC_TABLES)
 
 void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize)
 {
