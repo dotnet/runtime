@@ -32,6 +32,7 @@
                                                       .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
                                                       .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')
                                                       .Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)')
+                                                      .Replace('$$MONO_ENV_OPTIONS$$', '$(MonoEnvOptions)')
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
                                                       .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
