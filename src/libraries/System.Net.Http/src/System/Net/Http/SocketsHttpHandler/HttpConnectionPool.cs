@@ -1463,14 +1463,11 @@ namespace System.Net.Http
 
                     if (_http2Connections != null)
                     {
-                        if (_http2Connections != null)
+                        for (int i = 0; i < _http2Connections.Length; i++)
                         {
-                            for (int i = 0; i < _http2Connections.Length; i++)
-                            {
-                                _http2Connections[i].Dispose();
-                            }
-                            _http2Connections = null;
+                            _http2Connections[i].Dispose();
                         }
+                        _http2Connections = null;
                     }
 
                     if (_authorityExpireTimer != null)
