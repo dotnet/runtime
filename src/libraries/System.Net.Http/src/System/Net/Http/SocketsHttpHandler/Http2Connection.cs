@@ -1473,7 +1473,7 @@ namespace System.Net.Http
 
             // Check idle timeout when there are not pending requests for a while.
             if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
-                (_httpStreams.Count == 0) &&
+                (_httpStreams.Count == 0) && (_idleSinceTickCount > 0) &&
                 ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");

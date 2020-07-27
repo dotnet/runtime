@@ -2072,9 +2072,10 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
                 List<int> acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+                Assert.Equal(MaxConcurrentStreams, acceptedStreamIds.Count);
 
                 List<Task<HttpResponseMessage>> connection1SendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, 10).ConfigureAwait(false);
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 10).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, connection1SendTasks, MaxConcurrentStreams);
                 int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
 
@@ -2087,25 +2088,28 @@ namespace System.Net.Http.Functional.Tests
 
                 // Wait until the idle connection timeout expires.
                 await connection1.WaitForClientDisconnectAsync(false).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                // Client connection might be still alive, so send an extra request which will either land on the shutting down connection or on a new one.
+                try
+                {
+                    await client.GetAsync(server.Address).TimeoutAfter(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Suppress all exceptions.
+                }
 
                 Assert.True(connection1.IsInvalid);
+                Assert.False(connection0.IsInvalid);
 
-                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 5, expectedWarpUpTasks:2).ConfigureAwait(false);
 
-                Assert.Equal(MaxConcurrentStreams, handledRequests0);
-
-                //Fill all connection0's stream slots
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
-
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
                 int handledRequests2 = (await HandleAllPendingRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false)).Count;
-                //Make sure connection0 is still alive.
-                handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
-
                 Assert.Equal(MaxConcurrentStreams, handledRequests2);
+
+                //Make sure connection0 is still alive.
+                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
                 Assert.Equal(MaxConcurrentStreams, handledRequests0);
 
                 await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
@@ -2131,17 +2135,18 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarpUpTasks = 1)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
-            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
             {
-                Task handleRequestTask = HandleAllPendingRequests(connection, 1);
+                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarpUpTasks);
                 await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
+                warmUpTask.Result.Dispose();
                 if (settingAckReceived.IsCompleted)
                 {
                     break;
@@ -2161,7 +2166,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static async Task<Http2LoopbackConnection> GetConnection(Http2LoopbackServer server, uint maxConcurrentStreams, int readTimeout) =>
-            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(readTimeout), TimeSpan.FromSeconds(30), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
+            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(readTimeout), TimeSpan.FromSeconds(10), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
