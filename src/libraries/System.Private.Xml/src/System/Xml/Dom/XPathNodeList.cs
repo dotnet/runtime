@@ -34,7 +34,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode GetNode(XPathNavigator n)
+        private XmlNode? GetNode(XPathNavigator n)
         {
             IHasXmlNode iHasNode = (IHasXmlNode)n;
             return iHasNode.GetNode();
@@ -47,7 +47,8 @@ namespace System.Xml
             {
                 if (_nodeIterator.MoveNext())
                 {
-                    XmlNode n = GetNode(_nodeIterator.Current);
+                    Debug.Assert(_nodeIterator.Current != null);
+                    XmlNode? n = GetNode(_nodeIterator.Current);
                     if (n != null)
                     {
                         _list.Add(n);
