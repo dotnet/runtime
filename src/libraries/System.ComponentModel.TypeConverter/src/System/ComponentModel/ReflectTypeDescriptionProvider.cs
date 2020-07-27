@@ -39,6 +39,7 @@ namespace System.ComponentModel
         //
         private static Hashtable s_editorTables;
         private static Hashtable s_intrinsicTypeConverters;
+        private static Dictionary<Type, Func<object>> s_converterConstructorFuncs;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
@@ -133,6 +134,42 @@ namespace System.ComponentModel
             [typeof(Enum)] = typeof(EnumConverter),
             [s_intrinsicNullableKey] = typeof(NullableConverter),
             [s_intrinsicReferenceKey] = typeof(ReferenceConverter),
+        });
+
+        /// <summary>
+        /// This is a table we create for parameterless constructor funcs for intrinsic-type converters.
+        /// Converters that take Types in their constructors are not cached.
+        /// </summary>
+        private static Dictionary<Type, Func<object>> ConverterConstructorFuncs => LazyInitializer.EnsureInitialized(ref s_converterConstructorFuncs, () => new Dictionary<Type, Func<object>>()
+        {
+            // Add the intrinsics
+            //
+            [typeof(BooleanConverter)] = () => new BooleanConverter(),
+            [typeof(ByteConverter)] = () => new ByteConverter(),
+            [typeof(SByteConverter)] = () => new SByteConverter(),
+            [typeof(CharConverter)] = () => new CharConverter(),
+            [typeof(DoubleConverter)] = () => new DoubleConverter(),
+            [typeof(StringConverter)] = () => new StringConverter(),
+            [typeof(Int32Converter)] = () => new Int32Converter(),
+            [typeof(Int16Converter)] = () => new Int16Converter(),
+            [typeof(Int64Converter)] = () => new Int64Converter(),
+            [typeof(SingleConverter)] = () => new SingleConverter(),
+            [typeof(UInt16Converter)] = () => new UInt16Converter(),
+            [typeof(UInt32Converter)] = () => new UInt32Converter(),
+            [typeof(UInt64Converter)] = () => new UInt64Converter(),
+            [typeof(TypeConverter)] = () => new TypeConverter(),
+            [typeof(CultureInfoConverter)] = () => new CultureInfoConverter(),
+            [typeof(DateTimeConverter)] = () => new DateTimeConverter(),
+            [typeof(DateTimeOffsetConverter)] = () => new DateTimeOffsetConverter(),
+            [typeof(DecimalConverter)] = () => new DecimalConverter(),
+            [typeof(TimeSpanConverter)] = () => new TimeSpanConverter(),
+            [typeof(GuidConverter)] = () => new GuidConverter(),
+            [typeof(UriTypeConverter)] = () => new UriTypeConverter(),
+            [typeof(VersionConverter)] = () => new VersionConverter(),
+            // Special cases for things that are not bound to a specific type
+            //
+            [typeof(ArrayConverter)] = () => new ArrayConverter(),
+            [typeof(CollectionConverter)] = () => new CollectionConverter(),
         });
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
@@ -1328,10 +1365,26 @@ namespace System.ComponentModel
 
                 if (type != null)
                 {
-                    hashEntry = CreateInstance(type, callingType);
                     if (type.GetConstructor(s_typeConstructor) == null)
                     {
+                        bool success = ConverterConstructorFuncs.TryGetValue(type, out Func<object> ctorFunc);
+                        Debug.Assert(success && ctorFunc != null);
+
+                        hashEntry = ctorFunc();
                         table[callingType] = hashEntry;
+                    }
+                    else if (type == typeof(EnumConverter))
+                    {
+                        hashEntry = new EnumConverter(callingType);
+                    }
+                    else if (type == typeof(NullableConverter))
+                    {
+                        hashEntry = new NullableConverter(callingType);
+                    }
+                    else
+                    {
+                        Debug.Assert(type == typeof(ReferenceConverter));
+                        hashEntry = new ReferenceConverter(callingType);
                     }
                 }
             }
