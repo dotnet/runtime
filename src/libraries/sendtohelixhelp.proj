@@ -150,9 +150,9 @@
   <Choose>
     <When Condition="'$(HelixCommand)' == ''">
       <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
-        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings %HELIX_WORKITEM_ROOT%\.runsettings</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%\dotnet.exe"</HelixCommand>
-        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings $HELIX_WORKITEM_ROOT/.runsettings</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
       </PropertyGroup>
       <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
