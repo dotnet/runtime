@@ -169,6 +169,10 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\SocketConnection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\TaskSocketAsyncEventArgs.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\DnsEndPointWithProperties.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionFactory.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
@@ -661,6 +665,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpConnectionFactory.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -672,7 +677,9 @@
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Connections" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
