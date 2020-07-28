@@ -5267,7 +5267,8 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ Module *pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
-    _Out_ CorUnmanagedCallingConvention *callConvOut)
+    _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ UINT *errorResID)
 {
     CONTRACTL
     {
@@ -5276,6 +5277,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(callConvOut != NULL);
+        PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END
 
@@ -5285,13 +5287,17 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _ASSERTE(pWalk <= pSig + cSig);
 
     *callConvOut = (CorUnmanagedCallingConvention)0;
+    bool found = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
 
         pWalk++;
         if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
-            return E_FAIL; // Bad formatting
+        {
+            *errorResID = BFA_BAD_SIGNATURE;
+            return COR_E_BADIMAGEFORMAT; // Bad formatting
+        }
 
         mdToken tk;
         pWalk += CorSigUncompressToken(pWalk, &tk);
@@ -5320,16 +5326,23 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
         for (const auto &callConv : knownCallConvs)
         {
-            // Take the first recognized calling convention in metadata.
+            // Look for a recognized calling convention in metadata.
             if (::strcmp(typeName, callConv.name) == 0)
             {
+                // Error if there are multiple recognized calling conventions
+                if (found)
+                {
+                    *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+                    return COR_E_INVALIDPROGRAM;
+                }
+
                 *callConvOut = callConv.value;
-                return S_OK;
+                found = true;
             }
         }
     }
 
-    return S_FALSE;
+    return found ? S_OK : S_FALSE;
 }
 
 //---------------------------------------------------------------------------------------
