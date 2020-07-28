@@ -1,0 +1,6 @@
+parameters:
+steps:
+  - script: dotnet --info
+    displayName: display dotnet info
+  - script: dir /s $(Build.SourcesDirectory)/artifacts
+    displayName: print build artifacts
