@@ -372,7 +372,7 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 #endif
 #else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 	if (enable_debugging) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
