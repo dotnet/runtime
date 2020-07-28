@@ -76,6 +76,8 @@ void json_parser_t::realloc_buffer(size_t size)
 
 bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
 {
+    assert(data != nullptr);
+
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
 #ifdef _WIN32
     // Can't use in-situ parsing on Windows, as JSON data is encoded in
@@ -133,7 +135,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     pal::ifstream_t file{ path };
     if (!file.good())
     {
-        trace::error(_X("Cannot use file for resource [%s]: %s"), path.c_str(), pal::strerror(errno));
+        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno));
         return false;
     }
 
@@ -142,7 +144,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     auto stream_size = file.tellg();
     if (stream_size == -1)
     {
-        trace::error(_X("Failed to get size of resource [%s]"), path.c_str());
+        trace::error(_X("Failed to get size of file [%s]"), path.c_str());
         return false;
     }
 
