@@ -33,7 +33,7 @@ struct HardCodedMetaSig
 // Use the Binder objects to avoid doing unnecessary name lookup
 // (esp. in the prejit case)
 //
-// E.g. MscorlibBinder::GetClass(CLASS__APP_DOMAIN);
+// E.g. CoreLibBinder::GetClass(CLASS__APP_DOMAIN);
 //
 
 // BinderClassIDs are of the form CLASS__XXX
@@ -117,7 +117,7 @@ struct MscorlibFieldDescription
     PTR_CSTR name;
 };
 
-class MscorlibBinder
+class CoreLibBinder
 {
   public:
 #ifdef DACCESS_COMPILE
@@ -134,7 +134,7 @@ class MscorlibBinder
     //
     // Retrieve structures from ID.
     //
-    // Note that none of the MscorlibBinder methods trigger static
+    // Note that none of the CoreLibBinder methods trigger static
     // constructors. The JITed code takes care of triggering them.
     //
     static PTR_MethodTable GetClass(BinderClassID id);
@@ -330,9 +330,9 @@ private:
 // Global bound modules:
 //
 
-GVAL_DECL(MscorlibBinder, g_Mscorlib);
+GVAL_DECL(CoreLibBinder, g_Mscorlib);
 
-FORCEINLINE PTR_MethodTable MscorlibBinder::GetClass(BinderClassID id)
+FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
 {
     CONTRACTL
     {
@@ -355,7 +355,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetClass(BinderClassID id)
     return pMT;
 }
 
-FORCEINLINE MethodDesc * MscorlibBinder::GetMethod(BinderMethodID id)
+FORCEINLINE MethodDesc * CoreLibBinder::GetMethod(BinderMethodID id)
 {
     CONTRACTL
     {
@@ -377,7 +377,7 @@ FORCEINLINE MethodDesc * MscorlibBinder::GetMethod(BinderMethodID id)
     return pMD;
 }
 
-FORCEINLINE FieldDesc * MscorlibBinder::GetField(BinderFieldID id)
+FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
 {
     CONTRACTL
     {
@@ -399,7 +399,7 @@ FORCEINLINE FieldDesc * MscorlibBinder::GetField(BinderFieldID id)
     return pFD;
 }
 
-FORCEINLINE PTR_MethodTable MscorlibBinder::GetExistingClass(BinderClassID id)
+FORCEINLINE PTR_MethodTable CoreLibBinder::GetExistingClass(BinderClassID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PTR_MethodTable pMT = (&g_Mscorlib)->m_pClasses[id];
@@ -407,7 +407,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetExistingClass(BinderClassID id)
     return pMT;
 }
 
-FORCEINLINE MethodDesc * MscorlibBinder::GetExistingMethod(BinderMethodID id)
+FORCEINLINE MethodDesc * CoreLibBinder::GetExistingMethod(BinderMethodID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     MethodDesc * pMD = (&g_Mscorlib)->m_pMethods[id];
@@ -415,7 +415,7 @@ FORCEINLINE MethodDesc * MscorlibBinder::GetExistingMethod(BinderMethodID id)
     return pMD;
 }
 
-FORCEINLINE FieldDesc * MscorlibBinder::GetExistingField(BinderFieldID id)
+FORCEINLINE FieldDesc * CoreLibBinder::GetExistingField(BinderFieldID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     FieldDesc * pFD = (&g_Mscorlib)->m_pFields[id];
@@ -423,7 +423,7 @@ FORCEINLINE FieldDesc * MscorlibBinder::GetExistingField(BinderFieldID id)
     return pFD;
 }
 
-FORCEINLINE PTR_MethodTable MscorlibBinder::GetClassIfExist(BinderClassID id)
+FORCEINLINE PTR_MethodTable CoreLibBinder::GetClassIfExist(BinderClassID id)
 {
     CONTRACTL
     {
@@ -444,7 +444,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetClassIfExist(BinderClassID id)
 }
 
 
-FORCEINLINE PTR_Module MscorlibBinder::GetModule()
+FORCEINLINE PTR_Module CoreLibBinder::GetModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PTR_Module pModule = (&g_Mscorlib)->m_pModule;
@@ -452,7 +452,7 @@ FORCEINLINE PTR_Module MscorlibBinder::GetModule()
     return pModule;
 }
 
-FORCEINLINE LPCUTF8 MscorlibBinder::GetClassNameSpace(BinderClassID id)
+FORCEINLINE LPCUTF8 CoreLibBinder::GetClassNameSpace(BinderClassID id)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -461,7 +461,7 @@ FORCEINLINE LPCUTF8 MscorlibBinder::GetClassNameSpace(BinderClassID id)
     return (&g_Mscorlib)->m_classDescriptions[id].nameSpace;
 }
 
-FORCEINLINE LPCUTF8 MscorlibBinder::GetClassName(BinderClassID id)
+FORCEINLINE LPCUTF8 CoreLibBinder::GetClassName(BinderClassID id)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -470,7 +470,7 @@ FORCEINLINE LPCUTF8 MscorlibBinder::GetClassName(BinderClassID id)
     return (&g_Mscorlib)->m_classDescriptions[id].name;
 }
 
-FORCEINLINE LPCUTF8 MscorlibBinder::GetMethodName(BinderMethodID id)
+FORCEINLINE LPCUTF8 CoreLibBinder::GetMethodName(BinderMethodID id)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -479,7 +479,7 @@ FORCEINLINE LPCUTF8 MscorlibBinder::GetMethodName(BinderMethodID id)
     return (&g_Mscorlib)->m_methodDescriptions[id-1].name;
 }
 
-FORCEINLINE LPHARDCODEDMETASIG MscorlibBinder::GetMethodSig(BinderMethodID id)
+FORCEINLINE LPHARDCODEDMETASIG CoreLibBinder::GetMethodSig(BinderMethodID id)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -488,7 +488,7 @@ FORCEINLINE LPHARDCODEDMETASIG MscorlibBinder::GetMethodSig(BinderMethodID id)
     return (&g_Mscorlib)->m_methodDescriptions[id-1].sig;
 }
 
-FORCEINLINE LPCUTF8 MscorlibBinder::GetFieldName(BinderFieldID id)
+FORCEINLINE LPCUTF8 CoreLibBinder::GetFieldName(BinderFieldID id)
 {
     LIMITED_METHOD_CONTRACT;
 

@@ -138,9 +138,9 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
     if (pLoaderModule == NULL)
     {
-        CONSISTENCY_CHECK(MscorlibBinder::GetModule() && MscorlibBinder::GetModule()->IsSystem());
+        CONSISTENCY_CHECK(CoreLibBinder::GetModule() && CoreLibBinder::GetModule()->IsSystem());
 
-        pLoaderModule = MscorlibBinder::GetModule();
+        pLoaderModule = CoreLibBinder::GetModule();
     }
 
     if (FALSE)
@@ -3282,7 +3282,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // let <Type>* type have a method table
             // System.UIntPtr's method table is used for types like int*, void *, string * etc.
             if (kind == ELEMENT_TYPE_PTR)
-                templateMT = MscorlibBinder::GetElementType(ELEMENT_TYPE_U);
+                templateMT = CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
             else
                 templateMT = NULL;
 

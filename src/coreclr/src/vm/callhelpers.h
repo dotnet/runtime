@@ -159,7 +159,7 @@ public:
     // static methods must pass null
     MethodDescCallSite(BinderMethodID id, OBJECTREF* porProtectedThis = NULL) :
         m_pMD(
-            MscorlibBinder::GetMethod(id)
+            CoreLibBinder::GetMethod(id)
             ),
         m_methodSig(id),
         m_argIt(&m_methodSig)
@@ -179,7 +179,7 @@ public:
     // static methods must pass null
     MethodDescCallSite(BinderMethodID id, OBJECTHANDLE hThis) :
         m_pMD(
-            MscorlibBinder::GetMethod(id)
+            CoreLibBinder::GetMethod(id)
             ),
         m_methodSig(id),
         m_argIt(&m_methodSig)
@@ -558,14 +558,14 @@ enum DispatchCallSimpleFlags
         PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
         if ( __pSlot == NULL )                              \
         {                                                   \
-            MethodDesc *pMeth = MscorlibBinder::GetMethod(id);   \
+            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);   \
             _ASSERTE(pMeth);                                \
             __pSlot = pMeth->GetMultiCallableAddrOfCode();  \
             VolatileStore(&s_pAddr##id, __pSlot);           \
         }
 
 #define PREPARE_VIRTUAL_CALLSITE(id, objref)                \
-        MethodDesc *__pMeth = MscorlibBinder::GetMethod(id);     \
+        MethodDesc *__pMeth = CoreLibBinder::GetMethod(id);     \
         PCODE __pSlot = __pMeth->GetCallTarget(&objref);
 
 #define PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pMD, objref)                \
@@ -590,7 +590,7 @@ enum DispatchCallSimpleFlags
         WORD __slot = VolatileLoad(&s_slot##id);                                 \
         if (__slot == MethodTable::NO_SLOT)                                      \
         {                                                                        \
-            MethodDesc *pMeth = MscorlibBinder::GetMethod(id);                        \
+            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);                        \
             _ASSERTE(pMeth);                                                     \
             __slot = pMeth->GetSlot();                                           \
             VolatileStore(&s_slot##id, __slot);                                  \

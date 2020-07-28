@@ -4871,15 +4871,15 @@ MethodTableBuilder::ValidateMethods()
 
     Signature sig;
 
-    sig = MscorlibBinder::GetSignature(&gsig_SM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_SM_RetVoid);
 
-    MethodSignature cctorSig(MscorlibBinder::GetModule(),
+    MethodSignature cctorSig(CoreLibBinder::GetModule(),
                              COR_CCTOR_METHOD_NAME,
                              sig.GetRawSig(), sig.GetRawSigLen());
 
-    sig = MscorlibBinder::GetSignature(&gsig_IM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_IM_RetVoid);
 
-    MethodSignature defaultCtorSig(MscorlibBinder::GetModule(),
+    MethodSignature defaultCtorSig(CoreLibBinder::GetModule(),
                                    COR_CTOR_METHOD_NAME,
                                    sig.GetRawSig(), sig.GetRawSigLen());
 

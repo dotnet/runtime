@@ -1485,7 +1485,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
     // 2. Emit the method body
-    mdToken tokRawData = pCode->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
@@ -3384,7 +3384,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
                     ctorData.pArg3 = NULL;
                 }
 

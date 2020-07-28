@@ -423,7 +423,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     if ((m_context.usMajorVersion != (USHORT) -1) &&
         (m_context.usMinorVersion != (USHORT) -1)) {
 
-        MethodTable* pVersion = MscorlibBinder::GetClass(CLASS__VERSION);
+        MethodTable* pVersion = CoreLibBinder::GetClass(CLASS__VERSION);
 
         // version
         gc.Version = AllocateObject(pVersion);
@@ -495,7 +495,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     // cultureinfo
     if (m_context.szLocale) {
 
-        MethodTable* pCI = MscorlibBinder::GetClass(CLASS__CULTURE_INFO);
+        MethodTable* pCI = CoreLibBinder::GetClass(CLASS__CULTURE_INFO);
         gc.CultureInfo = AllocateObject(pCI);
 
         gc.Locale = StringObject::NewString(m_context.szLocale);

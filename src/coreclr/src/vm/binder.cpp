@@ -28,13 +28,13 @@
 //
 // Retrieve structures from ID.
 //
-NOINLINE PTR_MethodTable MscorlibBinder::LookupClass(BinderClassID id)
+NOINLINE PTR_MethodTable CoreLibBinder::LookupClass(BinderClassID id)
 {
     WRAPPER_NO_CONTRACT;
     return (&g_Mscorlib)->LookupClassLocal(id);
 }
 
-PTR_MethodTable MscorlibBinder::GetClassLocal(BinderClassID id)
+PTR_MethodTable CoreLibBinder::GetClassLocal(BinderClassID id)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -44,7 +44,7 @@ PTR_MethodTable MscorlibBinder::GetClassLocal(BinderClassID id)
     return pMT;
 }
 
-PTR_MethodTable MscorlibBinder::LookupClassLocal(BinderClassID id)
+PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
 {
     CONTRACTL
     {
@@ -76,13 +76,13 @@ PTR_MethodTable MscorlibBinder::LookupClassLocal(BinderClassID id)
     return pMT;
 }
 
-NOINLINE MethodDesc * MscorlibBinder::LookupMethod(BinderMethodID id)
+NOINLINE MethodDesc * CoreLibBinder::LookupMethod(BinderMethodID id)
 {
     WRAPPER_NO_CONTRACT;
     return (&g_Mscorlib)->LookupMethodLocal(id);
 }
 
-MethodDesc * MscorlibBinder::GetMethodLocal(BinderMethodID id)
+MethodDesc * CoreLibBinder::GetMethodLocal(BinderMethodID id)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -92,7 +92,7 @@ MethodDesc * MscorlibBinder::GetMethodLocal(BinderMethodID id)
     return pMD;
 }
 
-MethodDesc * MscorlibBinder::LookupMethodLocal(BinderMethodID id)
+MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
 {
     CONTRACTL
     {
@@ -136,13 +136,13 @@ MethodDesc * MscorlibBinder::LookupMethodLocal(BinderMethodID id)
 #endif
 }
 
-NOINLINE FieldDesc * MscorlibBinder::LookupField(BinderFieldID id)
+NOINLINE FieldDesc * CoreLibBinder::LookupField(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
     return (&g_Mscorlib)->LookupFieldLocal(id);
 }
 
-FieldDesc * MscorlibBinder::GetFieldLocal(BinderFieldID id)
+FieldDesc * CoreLibBinder::GetFieldLocal(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -152,7 +152,7 @@ FieldDesc * MscorlibBinder::GetFieldLocal(BinderFieldID id)
     return pFD;
 }
 
-FieldDesc * MscorlibBinder::LookupFieldLocal(BinderFieldID id)
+FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
 {
     CONTRACTL
     {
@@ -182,7 +182,7 @@ FieldDesc * MscorlibBinder::LookupFieldLocal(BinderFieldID id)
     return pFD;
 }
 
-NOINLINE PTR_MethodTable MscorlibBinder::LookupClassIfExist(BinderClassID id)
+NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
 {
     CONTRACTL
     {
@@ -218,7 +218,7 @@ NOINLINE PTR_MethodTable MscorlibBinder::LookupClassIfExist(BinderClassID id)
     return pMT;
 }
 
-Signature MscorlibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
+Signature CoreLibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
 {
     CONTRACTL
     {
@@ -248,7 +248,7 @@ Signature MscorlibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     return (&g_Mscorlib)->GetSignatureLocal(pHardcodedSig);
 }
 
-Signature MscorlibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
+Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
 {
     CONTRACTL
     {
@@ -267,7 +267,7 @@ Signature MscorlibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
 }
 
 // Get the metasig, do a one-time conversion if necessary
-Signature MscorlibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
+Signature CoreLibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
 {
     CONTRACTL
     {
@@ -311,7 +311,7 @@ Signature MscorlibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
 
 #ifndef DACCESS_COMPILE
 
-bool MscorlibBinder::ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder)
+bool CoreLibBinder::ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder)
 {
     bool bSomethingResolved = false;
 
@@ -389,7 +389,7 @@ Again:
 // Resolve type references in the hardcoded metasig.
 // Returns a new signature with type refences resolved.
 //------------------------------------------------------------------
-void MscorlibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder)
+void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder)
 {
     CONTRACTL
     {
@@ -427,7 +427,7 @@ void MscorlibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSig
     _ASSERTE(bSomethingResolved);
 }
 
-const BYTE* MscorlibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, const BYTE* pSig)
+const BYTE* CoreLibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, const BYTE* pSig)
 {
     CONTRACTL
     {
@@ -469,7 +469,7 @@ const BYTE* MscorlibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, c
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef _DEBUG
-void MscorlibBinder::TriggerGCUnderStress()
+void CoreLibBinder::TriggerGCUnderStress()
 {
     CONTRACTL
     {
@@ -498,7 +498,7 @@ void MscorlibBinder::TriggerGCUnderStress()
 }
 #endif // _DEBUG
 
-DWORD MscorlibBinder::GetFieldOffset(BinderFieldID id)
+DWORD CoreLibBinder::GetFieldOffset(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -507,10 +507,10 @@ DWORD MscorlibBinder::GetFieldOffset(BinderFieldID id)
 
 #ifndef DACCESS_COMPILE
 
-CrstStatic MscorlibBinder::s_SigConvertCrst;
+CrstStatic CoreLibBinder::s_SigConvertCrst;
 
 /*static*/
-void MscorlibBinder::Startup()
+void CoreLibBinder::Startup()
 {
     WRAPPER_NO_CONTRACT
     s_SigConvertCrst.Init(CrstSigConvert);
@@ -521,7 +521,7 @@ void MscorlibBinder::Startup()
 // NoClass is used to suppress check for unmanaged and managed size match
 #define NoClass char[USHRT_MAX]
 
-const MscorlibBinder::OffsetAndSizeCheck MscorlibBinder::OffsetsAndSizes[] =
+const CoreLibBinder::OffsetAndSizeCheck CoreLibBinder::OffsetsAndSizes[] =
 {
     #define DEFINE_CLASS_U(nameSpace, stringName, unmanagedType) \
         { PTR_CSTR((TADDR) g_ ## nameSpace ## NS ), PTR_CUTF8((TADDR) # stringName), sizeof(unmanagedType), 0, 0, 0 },
@@ -534,7 +534,7 @@ const MscorlibBinder::OffsetAndSizeCheck MscorlibBinder::OffsetsAndSizes[] =
 //
 // check the basic consistency between mscorlib and mscorwks
 //
-void MscorlibBinder::Check()
+void CoreLibBinder::Check()
 {
     STANDARD_VM_CONTRACT;
 
@@ -881,7 +881,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 //  - verifies that all references from mscorwks to mscorlib are present
 //  - limited detection of mismatches between managed and unmanaged fcall signatures
 //
-void MscorlibBinder::CheckExtended()
+void CoreLibBinder::CheckExtended()
 {
     STANDARD_VM_CONTRACT;
 
@@ -899,9 +899,9 @@ void MscorlibBinder::CheckExtended()
         bool fError = false;
         EX_TRY
         {
-            if (MscorlibBinder::GetClassName(cID) != NULL) // Allow for CorSigElement entries with no classes
+            if (CoreLibBinder::GetClassName(cID) != NULL) // Allow for CorSigElement entries with no classes
             {
-                if (NULL == MscorlibBinder::GetClass(cID))
+                if (NULL == CoreLibBinder::GetClass(cID))
                 {
                     fError = true;
                 }
@@ -915,17 +915,17 @@ void MscorlibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects type to exist:  %s.%s\n", MscorlibBinder::GetClassNameSpace(cID), MscorlibBinder::GetClassName(cID));
+            printf("CheckExtended: VM expects type to exist:  %s.%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID));
         }
     }
 
-    for (BinderMethodID mID = (BinderMethodID) 1; mID < (BinderMethodID) MscorlibBinder::m_cMethods; mID = (BinderMethodID) (mID + 1))
+    for (BinderMethodID mID = (BinderMethodID) 1; mID < (BinderMethodID) CoreLibBinder::m_cMethods; mID = (BinderMethodID) (mID + 1))
     {
         bool fError = false;
         BinderClassID cID = m_methodDescriptions[mID-1].classID;
         EX_TRY
         {
-            if (NULL == MscorlibBinder::GetMethod(mID))
+            if (NULL == CoreLibBinder::GetMethod(mID))
             {
                 fError = true;
             }
@@ -938,17 +938,17 @@ void MscorlibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects method to exist:  %s.%s::%s\n", MscorlibBinder::GetClassNameSpace(cID), MscorlibBinder::GetClassName(cID), MscorlibBinder::GetMethodName(mID));
+            printf("CheckExtended: VM expects method to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetMethodName(mID));
         }
     }
 
-    for (BinderFieldID fID = (BinderFieldID) 1; fID < (BinderFieldID) MscorlibBinder::m_cFields; fID = (BinderFieldID) (fID + 1))
+    for (BinderFieldID fID = (BinderFieldID) 1; fID < (BinderFieldID) CoreLibBinder::m_cFields; fID = (BinderFieldID) (fID + 1))
     {
         bool fError = false;
         BinderClassID cID = m_fieldDescriptions[fID-1].classID;
         EX_TRY
         {
-            if (NULL == MscorlibBinder::GetField(fID))
+            if (NULL == CoreLibBinder::GetField(fID))
             {
                 fError = true;
             }
@@ -961,7 +961,7 @@ void MscorlibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects field to exist:  %s.%s::%s\n", MscorlibBinder::GetClassNameSpace(cID), MscorlibBinder::GetClassName(cID), MscorlibBinder::GetFieldName(fID));
+            printf("CheckExtended: VM expects field to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetFieldName(fID));
         }
     }
 
@@ -971,7 +971,7 @@ void MscorlibBinder::CheckExtended()
     SetSHash<DWORD> usedECallIds;
 
     HRESULT hr = S_OK;
-    Module *pModule = MscorlibBinder::m_pModule;
+    Module *pModule = CoreLibBinder::m_pModule;
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
     HENUMInternal hEnum;
@@ -1099,7 +1099,7 @@ void MscorlibBinder::CheckExtended()
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond) _ASSERTE(cond)
 #include "asmconstants.h"
 
-    _ASSERTE(sizeof(VARIANT) == MscorlibBinder::GetClass(CLASS__NATIVEVARIANT)->GetNativeSize());
+    _ASSERTE(sizeof(VARIANT) == CoreLibBinder::GetClass(CLASS__NATIVEVARIANT)->GetNativeSize());
 
     printf("CheckExtended: completed without exception.\n");
 
@@ -1132,11 +1132,11 @@ namespace CrossGenMscorlib
 };
 #endif
 
-void MscorlibBinder::AttachModule(Module * pModule)
+void CoreLibBinder::AttachModule(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    MscorlibBinder * pGlobalBinder = &g_Mscorlib;
+    CoreLibBinder * pGlobalBinder = &g_Mscorlib;
 
     pGlobalBinder->SetDescriptions(pModule,
         c_rgMscorlibClassDescriptions,  c_nMscorlibClassDescriptions,
@@ -1144,10 +1144,10 @@ void MscorlibBinder::AttachModule(Module * pModule)
         c_rgMscorlibFieldDescriptions,  c_nMscorlibFieldDescriptions);
 
 #if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
-    MscorlibBinder * pPersistedBinder = pModule->m_pBinder;
+    CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
 
     if (pPersistedBinder != NULL
-        // Do not use persisted binder for profiling native images. See comment in code:MscorlibBinder::Fixup.
+        // Do not use persisted binder for profiling native images. See comment in code:CoreLibBinder::Fixup.
         && !(pModule->GetNativeImage()->GetNativeVersionInfo()->wConfigFlags  & CORCOMPILE_CONFIG_PROFILING))
     {
         pGlobalBinder->m_pClasses = pPersistedBinder->m_pClasses;
@@ -1162,9 +1162,9 @@ void MscorlibBinder::AttachModule(Module * pModule)
     pGlobalBinder->AllocateTables();
 
 #ifdef CROSSGEN_COMPILE
-    MscorlibBinder * pTargetBinder = (MscorlibBinder *)(void *)
+    CoreLibBinder * pTargetBinder = (CoreLibBinder *)(void *)
         pModule->GetAssembly()->GetLowFrequencyHeap()
-            ->AllocMem(S_SIZE_T(sizeof(MscorlibBinder)));
+            ->AllocMem(S_SIZE_T(sizeof(CoreLibBinder)));
 
     pTargetBinder->SetDescriptions(pModule,
         CrossGenMscorlib::c_rgMscorlibClassDescriptions,  CrossGenMscorlib::c_nMscorlibClassDescriptions,
@@ -1179,7 +1179,7 @@ void MscorlibBinder::AttachModule(Module * pModule)
 #endif
 }
 
-void MscorlibBinder::SetDescriptions(Module * pModule,
+void CoreLibBinder::SetDescriptions(Module * pModule,
     const MscorlibClassDescription * pClassDescriptions, USHORT nClasses,
     const MscorlibMethodDescription * pMethodDescriptions, USHORT nMethods,
     const MscorlibFieldDescription * pFieldDescriptions, USHORT nFields)
@@ -1198,7 +1198,7 @@ void MscorlibBinder::SetDescriptions(Module * pModule,
     m_cFields = nFields;
 }
 
-void MscorlibBinder::AllocateTables()
+void CoreLibBinder::AllocateTables()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1220,7 +1220,7 @@ void MscorlibBinder::AllocateTables()
     // ZeroMemory(m_pFields, m_cFieldRIDs * sizeof(*m_pFields));
 }
 
-PTR_MethodTable MscorlibBinder::LoadPrimitiveType(CorElementType et)
+PTR_MethodTable CoreLibBinder::LoadPrimitiveType(CorElementType et)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1242,7 +1242,7 @@ PTR_MethodTable MscorlibBinder::LoadPrimitiveType(CorElementType et)
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void MscorlibBinder::BindAll()
+void CoreLibBinder::BindAll()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1259,11 +1259,11 @@ void MscorlibBinder::BindAll()
         GetFieldLocal(fID);
 }
 
-void MscorlibBinder::Save(DataImage *image)
+void CoreLibBinder::Save(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
 
-    image->StoreStructure(this, sizeof(MscorlibBinder),
+    image->StoreStructure(this, sizeof(CoreLibBinder),
                           DataImage::ITEM_BINDER);
 
     image->StoreStructure(m_pClasses, m_cClasses * sizeof(*m_pClasses),
@@ -1276,15 +1276,15 @@ void MscorlibBinder::Save(DataImage *image)
                           DataImage::ITEM_BINDER_ITEMS);
 }
 
-void MscorlibBinder::Fixup(DataImage *image)
+void CoreLibBinder::Fixup(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
 
-    image->FixupPointerField(this, offsetof(MscorlibBinder, m_pModule));
+    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pModule));
 
     int i;
 
-    image->FixupPointerField(this, offsetof(MscorlibBinder, m_pClasses));
+    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pClasses));
     for (i = 1; i < m_cClasses; i++)
     {
 #if _DEBUG
@@ -1304,7 +1304,7 @@ void MscorlibBinder::Fixup(DataImage *image)
         image->FixupPointerField(m_pClasses, i * sizeof(m_pClasses[0]));
     }
 
-    image->FixupPointerField(this, offsetof(MscorlibBinder, m_pMethods));
+    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pMethods));
     for (i = 1; i < m_cMethods; i++)
     {
 #if _DEBUG
@@ -1318,15 +1318,15 @@ void MscorlibBinder::Fixup(DataImage *image)
         image->FixupPointerField(m_pMethods, i * sizeof(m_pMethods[0]));
     }
 
-    image->FixupPointerField(this, offsetof(MscorlibBinder, m_pFields));
+    image->FixupPointerField(this, offsetof(CoreLibBinder, m_pFields));
     for (i = 1; i < m_cFields; i++)
     {
         image->FixupPointerField(m_pFields, i * sizeof(m_pFields[0]));
     }
 
-    image->ZeroPointerField(this, offsetof(MscorlibBinder, m_classDescriptions));
-    image->ZeroPointerField(this, offsetof(MscorlibBinder, m_methodDescriptions));
-    image->ZeroPointerField(this, offsetof(MscorlibBinder, m_fieldDescriptions));
+    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_classDescriptions));
+    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_methodDescriptions));
+    image->ZeroPointerField(this, offsetof(CoreLibBinder, m_fieldDescriptions));
 }
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
@@ -1335,7 +1335,7 @@ void MscorlibBinder::Fixup(DataImage *image)
 #ifdef DACCESS_COMPILE
 
 void
-MscorlibBinder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+CoreLibBinder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
@@ -1362,4 +1362,4 @@ MscorlibBinder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-GVAL_IMPL(MscorlibBinder, g_Mscorlib);
+GVAL_IMPL(CoreLibBinder, g_Mscorlib);

@@ -1634,7 +1634,7 @@ void CEECompileInfo::EncodeGenericSignature(
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pInfoModule = MscorlibBinder::GetModule();
+    Module * pInfoModule = CoreLibBinder::GetModule();
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
@@ -4819,7 +4819,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericComparer`1"));
         return;
@@ -4829,7 +4829,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableComparer`1"));
             inst = nullableInst;
@@ -4874,7 +4874,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectEqualityComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericEqualityComparer`1"));
         return;
@@ -4884,7 +4884,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableEqualityComparer`1"));
             inst = nullableInst;
@@ -5012,7 +5012,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
             // For IList<T>, ICollection<T>, IEnumerable<T>, IReadOnlyCollection<T> & IReadOnlyList<T>, include SZArrayHelper's
             // generic methods (or at least the relevant ones) in the ngen image in
             // case someone casts a T[] to an IList<T> (or ICollection<T> or IEnumerable<T>, etc).
-            if (MscorlibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
+            if (CoreLibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
             {
 #ifdef FEATURE_FULL_NGEN
                 if (pMT->GetNumGenericArgs() != 1 || !pMT->IsInterface()) {
@@ -5098,7 +5098,7 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
     }
 #endif
 
-    MethodTable* pExactMT = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
+    MethodTable* pExactMT = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
     // Subtract one from the non-generic IEnumerable that the generic IEnumerable<T>
     // inherits from.
@@ -5114,7 +5114,7 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
         if (SZArrayHelperMethodIDs[i] > LastMethodOnGenericArrayInterfaces[inheritanceDepth])
             continue;
 
-        MethodDesc * pPrimaryMD = MscorlibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
+        MethodDesc * pPrimaryMD = CoreLibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
 
         MethodDesc * pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pPrimaryMD,
                                            pExactMT, false, Instantiation(&elemTypeHnd, 1), false);

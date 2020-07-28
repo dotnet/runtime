@@ -91,7 +91,7 @@ SAFEHANDLE TypeName::GetSafeHandle()
 
     GCPROTECT_BEGIN(objSafeHandle);
 
-    objSafeHandle = (SAFEHANDLE)AllocateObject(MscorlibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
+    objSafeHandle = (SAFEHANDLE)AllocateObject(CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
 
     MethodDescCallSite strCtor(METHOD__SAFE_TYPENAMEPARSER_HANDLE__CTOR);
 
@@ -226,7 +226,7 @@ void QCALLTYPE TypeName::QGetTypeArguments(TypeName * pTypeName, QCall::ObjectHa
 
         GCPROTECT_BEGIN(pReturnArguments);
 
-        pReturnArguments = (PTRARRAYREF)AllocateObjectArray(count, MscorlibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
+        pReturnArguments = (PTRARRAYREF)AllocateObjectArray(count, CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
 
         for (COUNT_T i = 0; i < count; i++)
         {

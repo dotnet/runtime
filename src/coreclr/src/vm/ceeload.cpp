@@ -1592,7 +1592,7 @@ PTR_Module Module::ComputePreferredZapModuleHelper(
     }
 
     // The initial value of pCurrentPZM is the pDefinitionModule or mscorlib
-    Module* pCurrentPZM = (pDefinitionModule != NULL) ? pDefinitionModule : MscorlibBinder::GetModule();
+    Module* pCurrentPZM = (pDefinitionModule != NULL) ? pDefinitionModule : CoreLibBinder::GetModule();
     bool preferredZapModuleBasedOnValueType = false;
 
     for (DWORD i = 0; i < totalArgs; i++)

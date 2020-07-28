@@ -423,11 +423,11 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
         if (GetFile()->IsDynamic())
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE_BUILDER));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
         }
         else
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
         }
         refClass->SetModule(m_pModule);
 
@@ -1226,12 +1226,12 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
             // This is unnecessary because the managed InternalAssemblyBuilder object
             // should have already been created at the time of DefineDynamicAssembly
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
+            pMT = CoreLibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
         }
         else
         {
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+            pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
         }
 
         // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should

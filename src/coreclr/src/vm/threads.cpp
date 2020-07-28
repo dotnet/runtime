@@ -1992,7 +1992,7 @@ void Thread::HandleThreadStartupFailure()
 
     GCPROTECT_BEGIN(args);
 
-    MethodTable *pMT = MscorlibBinder::GetException(kThreadStartException);
+    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
     args.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
@@ -8591,7 +8591,7 @@ OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
 
     _ASSERTE(this == GetThread());
 
-    MethodTable* pMT = MscorlibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
+    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
     m_DeserializationTracker = CreateGlobalStrongHandle(AllocateObject(pMT));
 
     _ASSERTE(m_DeserializationTracker != NULL);

@@ -118,7 +118,7 @@ void ECall::PopulateManagedStringConstructors()
     _ASSERTE(g_pStringClass != NULL);
     for (int i = 0; i < NumberOfStringConstructors; i++)
     {
-        MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));
+        MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
 
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
@@ -130,7 +130,7 @@ void ECall::PopulateManagedStringConstructors()
     _ASSERTE(g_pUtf8StringClass != NULL);
     for (int i = 0; i < NumberOfUtf8StringConstructors; i++)
     {
-        MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
+        MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
 
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
@@ -148,7 +148,7 @@ void ECall::PopulateManagedCastHelpers()
 
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
+    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
     // array cast uses the "ANY" helper
@@ -158,16 +158,16 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
     // array cast uses the "ANY" helper
@@ -177,20 +177,20 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" handler
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
@@ -203,14 +203,14 @@ void ECall::PopulateManagedCastHelpers()
     //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
     //      see: https://github.com/dotnet/runtime/issues/5857
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
     pMD->DoPrestub(NULL);
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
     SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
     pMD->DoPrestub(NULL);
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
@@ -344,11 +344,11 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
 
         if (cur->HasSignature())
         {
-            Signature sig = MscorlibBinder::GetTargetSignature(cur->m_pMethodSig);
+            Signature sig = CoreLibBinder::GetTargetSignature(cur->m_pMethodSig);
 
             //@GENERICS: none of these methods belong to generic classes so there is no instantiation info to pass in
             if (!MetaSig::CompareMethodSigs(pMethodSig, cbMethodSigLen, pModule, NULL,
-                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL, FALSE))
+                                            sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL, FALSE))
             {
                 continue;
             }
@@ -461,7 +461,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
         // that this is 1:M between the FCall and the pMDs.
-        return GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+        return GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
     }
 
     // COM imported classes have special constructors

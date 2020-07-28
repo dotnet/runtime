@@ -824,7 +824,7 @@ void EEStartupHelper()
 
         AccessCheckOptions::Startup();
 
-        MscorlibBinder::Startup();
+        CoreLibBinder::Startup();
 
         Stub::Init();
         StubLinkerCPU::Init();

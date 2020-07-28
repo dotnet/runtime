@@ -1597,8 +1597,8 @@ private:
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
     // Pointer to binder, if we have one
-    friend class MscorlibBinder;
-    PTR_MscorlibBinder      m_pBinder;
+    friend class CoreLibBinder;
+    PTR_CoreLibBinder      m_pBinder;
 
 public:
     BOOL IsCollectible()

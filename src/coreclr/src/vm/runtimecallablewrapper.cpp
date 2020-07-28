@@ -2260,7 +2260,7 @@ static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderCla
     }
     CONTRACTL_END;
 
-    MethodTable* pMT_MscorlibClass = MscorlibBinder::GetClassIfExist(classId);
+    MethodTable* pMT_MscorlibClass = CoreLibBinder::GetClassIfExist(classId);
     if (pMT_MscorlibClass == NULL)
         return false;
 
@@ -2542,7 +2542,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
 
         // If the requested interface is IEnumerable then we need to check to see if the
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
+        if (pItfMT == CoreLibBinder::GetClass(CLASS__IENUMERABLE))
         {
             SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)
@@ -2824,7 +2824,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
         }
-        else if (thCastTo == TypeHandle(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
+        else if (thCastTo == TypeHandle(CoreLibBinder::GetClass(CLASS__IENUMERABLE)))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
