@@ -565,9 +565,9 @@ MethodTableBuilder::LoadApproxInterfaceMap()
             bmtGenerics->Debug_GetTypicalMethodTable()->Debug_HasInjectedInterfaceDuplicates();
 
         if (GetModule() == g_pObjectClass->GetModule())
-        {   // mscorlib has some weird hardcoded information about interfaces (e.g.
+        {   // CoreLib has some weird hardcoded information about interfaces (e.g.
             // code:CEEPreloader::ApplyTypeDependencyForSZArrayHelper), so we don't inject duplicates into
-            // mscorlib types
+            // CoreLib types
             bmtInterface->dbg_fShouldInjectInterfaceDuplicates = FALSE;
         }
     }
@@ -1350,7 +1350,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     ));
 #endif // _DEBUG
 
-    // If this is mscorlib, then don't perform some sanity checks on the layout
+    // If this is CoreLib, then don't perform some sanity checks on the layout
     bmtProp->fNoSanityChecks = pModule->IsSystem() ||
 #ifdef FEATURE_READYTORUN
         // No sanity checks for ready-to-run compiled images if possible
@@ -3004,7 +3004,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             //@GENERICS:
             // Generic methods or methods in generic classes
-            // may not be part of a COM Import class, PInvoke, internal call outside mscorlib.
+            // may not be part of a COM Import class, PInvoke, internal call outside CoreLib.
             if ((bmtGenerics->GetNumGenericArgs() != 0 || numGenericMethodArgs != 0) &&
                 (
 #ifdef FEATURE_COMINTEROP
@@ -3514,7 +3514,7 @@ VOID    MethodTableBuilder::AllocateWorkingSlotTables()
         // This is broken because
         // (a) g_pObjectClass->FindMethod("Equals", &gsig_IM_Obj_RetBool); will return
         //      the EqualsValue method
-        // (b) When mscorlib has been preloaded (and thus the munge already done
+        // (b) When CoreLib has been preloaded (and thus the munge already done
         //      ahead of time), we cannot easily find both methods
         //      to compute EqualsAddr & EqualsSlot
         //
@@ -4871,15 +4871,15 @@ MethodTableBuilder::ValidateMethods()
 
     Signature sig;
 
-    sig = MscorlibBinder::GetSignature(&gsig_SM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_SM_RetVoid);
 
-    MethodSignature cctorSig(MscorlibBinder::GetModule(),
+    MethodSignature cctorSig(CoreLibBinder::GetModule(),
                              COR_CCTOR_METHOD_NAME,
                              sig.GetRawSig(), sig.GetRawSigLen());
 
-    sig = MscorlibBinder::GetSignature(&gsig_IM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_IM_RetVoid);
 
-    MethodSignature defaultCtorSig(MscorlibBinder::GetModule(),
+    MethodSignature defaultCtorSig(CoreLibBinder::GetModule(),
                                    COR_CTOR_METHOD_NAME,
                                    sig.GetRawSig(), sig.GetRawSigLen());
 
@@ -10396,7 +10396,6 @@ MethodTableBuilder::SetupMethodTable2(
 
     if (GetModule()->IsSystem())
     {
-        // we are in mscorlib
         CheckForSystemTypes();
     }
 
@@ -11041,7 +11040,7 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
     IMDInternalImport *pMDImport = pModule->GetMDImport();
 
     // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in mscorlib.dll so checking for that first
+    // standard interfaces live in CoreLib so checking for that first
     // makes the strcmp that comes afterwards acceptable.
     if (pModule->IsSystem())
     {

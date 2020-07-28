@@ -977,11 +977,11 @@ Dictionary::PopulateEntry(
 
         Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
 
-        zapSigContext = ZapSig::Context(MscorlibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
+        zapSigContext = ZapSig::Context(CoreLibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
         pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
     }
 
-    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : MscorlibBinder::GetModule();
+    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
 
     if (pMT != NULL)
     {
