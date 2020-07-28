@@ -798,10 +798,7 @@ namespace System.Net.Http
                 catch
                 {
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
-                    lock (SyncObj)
-                    {
-                        ExpireAltSvcAuthority();
-                    }
+                    BlocklistAuthority(authority);
                     throw;
                 }
 
@@ -1067,7 +1064,6 @@ namespace System.Net.Http
         internal void BlocklistAuthority(HttpAuthority badAuthority)
         {
             Debug.Assert(badAuthority != null);
-            Debug.Assert(badAuthority != _originAuthority);
 
             HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
 
