@@ -379,6 +379,7 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
+    processdiagnosticsprotocolhelper.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -499,6 +500,7 @@ set(VM_HEADERS_WKS
     objectlist.h
     olevariant.h
     pendingload.h
+    processdiagnosticsprotocolhelper.h
     profdetach.h
     profilermetadataemitvalidator.h
     profilingenumerators.h

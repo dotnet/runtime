@@ -4272,6 +4272,30 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
     IfFailThrow(pStrFilename->AssignCopy(convert.GetUnicode()));
 }
 
+HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DDBII::IMM - TADDR 0x%x\n", pModule));
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_FALSE;
+    PTR_Module pTargetModule = pModule.GetDacPtr();
+
+    EX_TRY
+    {
+        PTR_PEFile pPEFile = pTargetModule->GetFile();
+        _ASSERTE(pPEFile != NULL);
+
+        if (pPEFile->HasLoadedIL())
+        {
+            *isModuleMapped = pPEFile->GetLoadedIL()->IsMapped();
+            hr = S_OK;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 // Helper to intialize a TargetBuffer from a MemoryRange
 //
 // Arguments:

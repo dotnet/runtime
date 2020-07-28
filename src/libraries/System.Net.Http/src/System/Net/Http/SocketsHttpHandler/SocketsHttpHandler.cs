@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Connections;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -271,6 +272,48 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _settings._expect100ContinueTimeout = value;
+            }
+        }
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get => _settings._enableMultipleHttp2Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp2Connections = value;
+            }
+        }
+
+        internal bool SupportsAutomaticDecompression => true;
+        internal bool SupportsProxy => true;
+        internal bool SupportsRedirectConfiguration => true;
+
+        /// <summary>
+        /// When non-null, a custom factory used to open new TCP connections.
+        /// When null, a <see cref="SocketsHttpConnectionFactory"/> will be used.
+        /// </summary>
+        public ConnectionFactory? ConnectionFactory
+        {
+            get => _settings._connectionFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectionFactory = value;
+            }
+        }
+
+        /// <summary>
+        /// When non-null, a connection filter that is applied prior to any TLS encryption.
+        /// </summary>
+        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        {
+            get => _settings._plaintextFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextFilter = value;
             }
         }
 

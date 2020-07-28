@@ -5497,9 +5497,9 @@ is_supported_tailcall (MonoCompile *cfg, const guint8 *ip, MonoMethod *method, M
 		// http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
 		//
 		// 1. Non-generic non-static methods of reference types have access to the
-		//    RGCTX via the “this” argument (this->vtable->rgctx).
+		//    RGCTX via the "this" argument (this->vtable->rgctx).
 		// 2. a Non-generic static methods of reference types and b. non-generic methods
-		//    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
+		//    of value types need to be passed a pointer to the caller's class's VTable in the MONO_ARCH_RGCTX_REG register.
 		// 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 		//
 		// That is what vtable_arg is here (always?).

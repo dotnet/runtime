@@ -7,6 +7,7 @@
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
+#include "processdiagnosticsprotocolhelper.h"
 #include "diagnosticsprotocol.h"
 
 #ifdef TARGET_UNIX
@@ -75,16 +76,16 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 
             switch ((DiagnosticsIpc::DiagnosticServerCommandSet)message.GetHeader().CommandSet)
             {
-            case DiagnosticsIpc::DiagnosticServerCommandSet::Server:
-                DiagnosticServerProtocolHelper::HandleIpcMessage(message, pStream);
-                break;
-
             case DiagnosticsIpc::DiagnosticServerCommandSet::EventPipe:
                 EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
+                break;
+
+            case DiagnosticsIpc::DiagnosticServerCommandSet::Process:
+                ProcessDiagnosticsProtocolHelper::HandleIpcMessage(message,pStream);
                 break;
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -289,51 +290,6 @@ void DiagnosticServer::ResumeRuntimeStartup()
     LIMITED_METHOD_CONTRACT;
     if (s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid())
         s_ResumeRuntimeStartupEvent->Set();
-}
-
-void DiagnosticServerProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pStream != nullptr);
-    }
-    CONTRACTL_END;
-
-    switch ((DiagnosticsIpc::DiagnosticServerCommandId)message.GetHeader().CommandId)
-    {
-    case DiagnosticsIpc::DiagnosticServerCommandId::ResumeRuntime:
-        DiagnosticServerProtocolHelper::ResumeRuntimeStartup(message, pStream);
-        break;
-
-    default:
-        STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", message.GetHeader().CommandSet);
-        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_COMMAND);
-        delete pStream;
-        break;
-    }
-}
-
-void DiagnosticServerProtocolHelper::ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pStream != nullptr);
-    }
-    CONTRACTL_END;
-
-    // no payload
-    DiagnosticServer::ResumeRuntimeStartup();
-    HRESULT res = S_OK;
-
-    DiagnosticsIpc::IpcMessage successResponse;
-    if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, res))
-        successResponse.Send(pStream);
 }
 
 #endif // FEATURE_PERFTRACING

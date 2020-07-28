@@ -1460,9 +1460,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			}
 		}
 
+		mono_codeman_enable_write ();
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
 		}
+		mono_codeman_disable_write ();
 
 		target = jump_table;
 		break;
@@ -1754,6 +1756,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 		patch_info.type = MONO_PATCH_INFO_METHOD_JUMP;
 		patch_info.data.method = method;
 
+		mono_codeman_enable_write ();
+
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
 			mono_arch_patch_code_new (NULL, domain, (guint8 *)tmp->data, &patch_info, addr);
@@ -1766,6 +1770,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 			mono_error_assert_ok (error);
 		}
 #endif
+
+		mono_codeman_disable_write ();
 	}
 }
 
@@ -2014,7 +2020,7 @@ mono_enable_jit_dump (void)
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
-			//This informs perf of the presence of the jitdump file and support for the feature.​
+			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
 		
@@ -4540,7 +4546,7 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_init ();
 #endif
 
@@ -4639,11 +4645,6 @@ register_icalls (void)
 				mono_runtime_install_handlers);
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
 				mono_runtime_cleanup_handlers);
-
-#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
-	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
-							mini_get_dbg_callbacks ()->unhandled_exception);
-#endif
 
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
@@ -4987,7 +4988,7 @@ mini_cleanup (MonoDomain *domain)
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
 	mini_get_interp_callbacks ()->cleanup ();
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_shutdown ();
 #endif
 }

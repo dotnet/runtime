@@ -331,10 +331,8 @@ namespace System.Net.Http
                 {
                     if (_connection.Pool.Settings._expect100ContinueTimeout != Timeout.InfiniteTimeSpan)
                     {
-                        timer = new Timer(o =>
-                        {
-                            ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true);
-                        }, this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
+                        timer = new Timer(static o => ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true),
+                            this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                     }
 
                     if (!await _expect100ContinueCompletionSource.Task.ConfigureAwait(false))

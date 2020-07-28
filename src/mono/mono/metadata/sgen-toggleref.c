@@ -19,6 +19,7 @@
 #include "sgen-toggleref.h"
 #include "sgen/sgen-client.h"
 
+#ifndef DISABLE_SGEN_TOGGLEREF
 
 /*only one of the two can be non null at a given time*/
 typedef struct {
@@ -233,5 +234,19 @@ sgen_register_test_toggleref_callback (void)
 {
 	toggleref_callback = test_toggleref_callback;
 }
+
+#else
+
+void
+mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
+{
+}
+
+void
+mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
+{
+}
+
+#endif
 
 #endif

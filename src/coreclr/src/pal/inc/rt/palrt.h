@@ -223,7 +223,6 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define THIS                void
 
 #define DECLSPEC_NOVTABLE
-#define DECLSPEC_SELECTANY  __attribute__((weak))
 
 #define DECLARE_INTERFACE(iface)    interface DECLSPEC_NOVTABLE iface
 #define DECLARE_INTERFACE_(iface, baseiface)    interface DECLSPEC_NOVTABLE iface : public baseiface

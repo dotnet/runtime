@@ -77,13 +77,13 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(TestPackages)' == 'true'">
+  <ItemGroup Condition="'$(TestPackages)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TestPackages)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
@@ -91,7 +91,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HelixCommand)' == '' and '$(MonoEnvOptions)' != ''">
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
@@ -136,7 +136,9 @@
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
     <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -155,14 +157,15 @@
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
-    <Message Importance="High" Text="Using HelixCorrelationPayload: $(HelixCorrelationPayload)" />
+    <Message Condition="'$(HelixCorrelationPayload)' != ''" Importance="High" Text="Using HelixCorrelationPayload: $(HelixCorrelationPayload)" />
     <Message Importance="High" Text="Using HelixCommand: $(HelixCommand)" />
     <Message Importance="High" Text="Using HelixType: $(HelixType)" />
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
     <ItemGroup>
-      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
+      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
+                               Condition="'$(TargetOS)' != 'Browser' or '$(HelixCorrelationPayload)' != ''" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 

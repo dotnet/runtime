@@ -1875,8 +1875,7 @@ void Compiler::fgUpdateChangedFlowGraph()
 
     fgComputePreds();
     fgComputeEnterBlocksSet();
-    fgComputeReachabilitySets();
-    fgComputeDoms();
+    fgComputeReachability();
 }
 
 /*****************************************************************************
@@ -3650,6 +3649,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             case BBJ_SWITCH:
             case BBJ_NONE:
             case BBJ_THROW:
+            case BBJ_CALLFINALLY:
                 break;
             default:
                 assert(!"Unexpected block kind");
@@ -3696,6 +3696,18 @@ PhaseStatus Compiler::fgInsertGCPolls()
 #endif // DEBUG
 
             // We don't want to deal with all the outgoing edges of a switch block.
+            pollType = GCPOLL_CALL;
+        }
+        else if ((block->bbFlags & BBF_COLD) != 0)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
+            }
+#endif // DEBUG
+
+            // We don't want to split a cold block.
             pollType = GCPOLL_CALL;
         }
 
@@ -4058,9 +4070,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if (block->bbJumpKind == BBJ_ALWAYS)
+        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
+            (block->bbJumpKind == BBJ_NONE))
         {
-            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
         else
@@ -4138,9 +4152,12 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1))) == 0);
-        top->bbFlags = originalFlags & (~BBF_SPLIT_LOST | BBF_GC_SAFE_POINT);
-        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
+                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
+                                         BBF_RETLESS_CALL))) == 0);
+        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
+                                            BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
@@ -4265,6 +4282,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 __fallthrough;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
                 fgReplacePred(bottom->bbJumpDest, top, bottom);
                 break;
             case BBJ_SWITCH:
@@ -15335,16 +15353,16 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);
 
-        if (fgStmtListThreaded)
-        {
-            gtSetStmtInfo(stmt);
-            fgSetStmtSeq(stmt);
-        }
-
         // cloneExpr doesn't handle everything.
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */

@@ -74,29 +74,20 @@
 //    Make sure that the define is registered in the list of defines and the debugger reading code knows how to dynamically
 //    adjust for it (See VerifyLayouts.h comment item (b) and (c))
 //
-// 2) If your type names use characters that aren't valid identifiers (such as the '<' and '>' chars in templates)
-//    then you need to provide an escaped name. There are variations of the macros above to do that:
-//    BEGIN_TYPE_ESCAPED(typeName, escaptedTypeName, firstFieldOffset)
-//    FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize)
-//    ALIGN_FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize, fieldAlign)
-//    END_TYPE_ESCAPED(typeName, escapedTypeName, typeAlignment)
+// 2) If your type names use characters that aren't valid identifiers (such as the '<', '>' and ',' chars in templates)
+//    then you need to provide an escaped name. Use the USING_ALIAS macros to do that:
+//    USING_ALIAS(escapedTypeName, typeName)
 //
 //    If CFoo above had instead been CFoo<ULONG> we would write:
-//    BEGIN_TYPE_ESCAPED(CFoo<ULONG>, CFoo__ULONG__, 0)
-//    FIELD_ESCAPED(CFoo<ULONG>, CFoo__ULONG__, m_ptrField, sizeof(void*))
-//    END_TYPE_ESCAPED(CFoo<ULONG>, CFoo__ULONG__, sizeof(void*))
+//    USING_ALIAS(CFoo__ULONG__, CFoo<ULONG>)
+//    BEGIN_TYPE(CFoo__ULONG__, 0)
+//    FIELD(CFoo__ULONG__, m_ptrField, sizeof(void*))
+//    END_TYPE(CFoo__ULONG__, sizeof(void*))
 //
 //    The escapedTypeName is relatively arbitrary, but convention is to replace the illegal characters with double underscore
 //    The name does show up in build error messages, so it should close to the real name for people to understand
 //
-// 3) If your type name has commas in it (such as in a list of template arguments) the macros could interpret it as seperate
-//    arguments (no good). To fix this use the IGNORE_COMMAS() macro to escape any typeNames with commas. If CFoo above had
-//    been CFoo<ULONG,INT> you could rewrite the defines as:
-//    BEGIN_TYPE_ESCAPED(IGNORE_COMMAS(CFoo<ULONG,INT>), CFoo__ULONG__INT__, 0)
-//    FIELD_ESCAPED(IGNORE_COMMAS(CFoo<ULONG,INT>), CFoo__ULONG__INT__, m_ptrField, sizeof(void*))
-//    END_TYPE_ESCAPED(IGNORE_COMMAS(CFoo<ULONG,INT>), CFoo__ULONG__INT__, sizeof(void*))
-//
-//  4) If you have a bitfield in your type, the offsetof macro can't be used which will break the static asserts.
+//  3) If you have a bitfield in your type, the offsetof macro can't be used which will break the static asserts.
 //     There is a special BITFIELD macro that can work around it:
 //     BITFIELD(typeName, fieldName, expectedFieldOffset, fieldSize, fieldAlign)
 //
@@ -167,11 +158,12 @@ FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFS, 4)
 FIELD(CLiteWeightStgdbRW, m_pStgIO, sizeof(void*))
 END_TYPE(CLiteWeightStgdbRW, 8)
 
-BEGIN_TYPE_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, 0)
-ALIGN_FIELD_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, m_MiniMd, sizeof(CMiniMdRW), sizeof(void*))
-FIELD_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, m_pvMd, sizeof(void*))
-FIELD_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, m_cbMd, 4)
-END_TYPE_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, sizeof(void*))
+USING_ALIAS(CLiteWeightStgdb__CMiniMdRW__, CLiteWeightStgdb<CMiniMdRW>)
+BEGIN_TYPE(CLiteWeightStgdb__CMiniMdRW__, 0)
+ALIGN_FIELD(CLiteWeightStgdb__CMiniMdRW__, m_MiniMd, sizeof(CMiniMdRW), sizeof(void*))
+FIELD(CLiteWeightStgdb__CMiniMdRW__, m_pvMd, sizeof(void*))
+FIELD(CLiteWeightStgdb__CMiniMdRW__, m_cbMd, 4)
+END_TYPE(CLiteWeightStgdb__CMiniMdRW__, sizeof(void*))
 
 BEGIN_TYPE(CMiniMdRW, sizeof(CMiniMdTemplate<CMiniMdRW>))
 FIELD(CMiniMdRW, m_pMemberRefHash, sizeof(void*))
@@ -273,22 +265,24 @@ FIELD(CGuidPoolHash, m_Pool, sizeof(void*))
 END_TYPE(CGuidPoolHash, sizeof(void*))
 
 
-BEGIN_TYPE_ESCAPED(MetaData::HotHeap, MetaData__HotHeap, 0)
-FIELD_ESCAPED(MetaData::HotHeap, MetaData__HotHeap, m_pHotHeapHeader, sizeof(void*))
-END_TYPE_ESCAPED(MetaData::HotHeap, MetaData__HotHeap, sizeof(void*))
+USING_ALIAS(MetaData__HotHeap, MetaData::HotHeap)
+BEGIN_TYPE(MetaData__HotHeap, 0)
+FIELD(MetaData__HotHeap, m_pHotHeapHeader, sizeof(void*))
+END_TYPE(MetaData__HotHeap, sizeof(void*))
 
 
 BEGIN_TYPE(StgPoolReadOnly, sizeof(StgPoolSeg) + sizeof(void*))                   //vtable pointer
 ALIGN_FIELD(StgPoolReadOnly, m_HotHeap, sizeof(MetaData::HotHeap), sizeof(void*))
 END_TYPE(StgPoolReadOnly, sizeof(void*))
 
-BEGIN_TYPE_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, 0)
-FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_table, sizeof(void*))
-FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableSize, 4)
-FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableCount, 4)
-FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableOccupied, 4)
-FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableMax, 4)
-END_TYPE_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, sizeof(void*))
+USING_ALIAS(MapSHash__ULONG__ULONG, MapSHash<ULONG, ULONG>) // Create a using alias to avoid commas in the type name
+BEGIN_TYPE(MapSHash__ULONG__ULONG, 0)
+FIELD(MapSHash__ULONG__ULONG, m_table, sizeof(void*))
+FIELD(MapSHash__ULONG__ULONG, m_tableSize, 4)
+FIELD(MapSHash__ULONG__ULONG, m_tableCount, 4)
+FIELD(MapSHash__ULONG__ULONG, m_tableOccupied, 4)
+FIELD(MapSHash__ULONG__ULONG, m_tableMax, 4)
+END_TYPE(MapSHash__ULONG__ULONG, sizeof(void*))
 
 
 BEGIN_TYPE(StgPoolSeg, 0)
@@ -298,15 +292,15 @@ FIELD(StgPoolSeg, m_cbSegSize, 4)
 FIELD(StgPoolSeg, m_cbSegNext, 4)
 END_TYPE(StgPoolSeg, sizeof(void*))
 
-
-BEGIN_TYPE_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, sizeof(void*))         // vtable pointer
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_rgData, sizeof(void*))
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_iBuckets, 4)
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_iSize, 4)
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_iCount, 4)
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_iMaxChain, 4)
-FIELD_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, m_iFree, 4)
-END_TYPE_ESCAPED(CChainedHash<STRINGHASH>, CCHainedHash_STRINGHASH, sizeof(void*))
+USING_ALIAS(CCHainedHash_STRINGHASH, CChainedHash<STRINGHASH>)
+BEGIN_TYPE(CCHainedHash_STRINGHASH, sizeof(void*))         // vtable pointer
+FIELD(CCHainedHash_STRINGHASH, m_rgData, sizeof(void*))
+FIELD(CCHainedHash_STRINGHASH, m_iBuckets, 4)
+FIELD(CCHainedHash_STRINGHASH, m_iSize, 4)
+FIELD(CCHainedHash_STRINGHASH, m_iCount, 4)
+FIELD(CCHainedHash_STRINGHASH, m_iMaxChain, 4)
+FIELD(CCHainedHash_STRINGHASH, m_iFree, 4)
+END_TYPE(CCHainedHash_STRINGHASH, sizeof(void*))
 
 
 BEGIN_TYPE(CMiniColDef, 0)

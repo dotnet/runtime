@@ -524,6 +524,7 @@ namespace System.Reflection.Emit
 
         #region Module Overrides
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             lock (SyncRoot)
@@ -558,16 +559,19 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             lock (SyncRoot)
@@ -677,31 +681,37 @@ namespace System.Reflection.Emit
 
         public override string FullyQualifiedName => _moduleData._moduleName;
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
         {
             return InternalModule.ResolveSignature(metadataToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return InternalModule.ResolveMethod(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return InternalModule.ResolveField(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return InternalModule.ResolveType(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return InternalModule.ResolveMember(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override string ResolveString(int metadataToken)
         {
             return InternalModule.ResolveString(metadataToken);
@@ -720,21 +730,25 @@ namespace System.Reflection.Emit
 
         public override bool IsResource() => InternalModule.IsResource();
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             return InternalModule.GetFields(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return InternalModule.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             return InternalModule.GetMethods(bindingFlags);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {

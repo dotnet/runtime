@@ -7,14 +7,6 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        // needs to be kept in sync with TimeZoneDisplayNameType in System.Globalization.Native
-        internal enum TimeZoneDisplayNameType
-        {
-            Generic = 0,
-            Standard = 1,
-            DaylightSavings = 2,
-        }
-
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName")]
         internal static extern unsafe ResultCode GetTimeZoneDisplayName(
             string localeName,

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
 
@@ -14,12 +16,13 @@ namespace MS.Internal.Xml.XPath
         public override object Evaluate(XPathNodeIterator context)
         {
             object argVal = base.Evaluate(context);
+            Debug.Assert(context.Current != null);
             XPathNavigator contextNode = context.Current.Clone();
 
             switch (GetXPathType(argVal))
             {
                 case XPathResultType.NodeSet:
-                    XPathNavigator temp;
+                    XPathNavigator? temp;
                     while ((temp = input.Advance()) != null)
                     {
                         ProcessIds(contextNode, temp.Value);
@@ -53,13 +56,13 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator context)
+        public override XPathNavigator? MatchNode(XPathNavigator? context)
         {
-            Evaluate(new XPathSingletonIterator(context, /*moved:*/true));
-            XPathNavigator result;
+            Evaluate(new XPathSingletonIterator(context!, /*moved:*/true));
+            XPathNavigator? result;
             while ((result = Advance()) != null)
             {
-                if (result.IsSamePosition(context))
+                if (result.IsSamePosition(context!))
                 {
                     return context;
                 }

@@ -4,6 +4,7 @@
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using Internal.Cryptography.Pal;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -23,6 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = useMachineContext;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public X509Chain(IntPtr chainContext)
         {
             _pal = ChainPal.FromHandle(chainContext);

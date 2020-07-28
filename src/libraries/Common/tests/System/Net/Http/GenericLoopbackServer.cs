@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.IO;
+using System.Net.Sockets;
 
 namespace System.Net.Test.Common
 {
@@ -16,6 +18,8 @@ namespace System.Net.Test.Common
     {
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
+
+        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null);
 
         public abstract Version Version { get; }
 
@@ -57,6 +61,8 @@ namespace System.Net.Test.Common
     public abstract class GenericLoopbackConnection : IDisposable
     {
         public abstract void Dispose();
+
+        public abstract Task InitializeConnectionAsync();
 
         /// <summary>Read request Headers and optionally request body as well.</summary>
         public abstract Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true);

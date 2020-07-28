@@ -87,7 +87,7 @@ namespace System.Data
             }
 
             // It is an error if we find an equivalent constraint already in collection
-            if (FindConstraint(constraint) is { } matchedConstraint)
+            if (FindConstraint(constraint) is Constraint matchedConstraint)
             {
                 throw ExceptionBuilder.DuplicateConstraint(matchedConstraint.ConstraintName);
             }

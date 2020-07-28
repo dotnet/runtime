@@ -145,6 +145,8 @@ namespace System.Net.Http
 
             public int StreamId { get; private set; }
 
+            public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
+
             public HttpResponseMessage GetAndClearResponse()
             {
                 // Once SendAsync completes, the Http2Stream should no longer hold onto the response message.
@@ -300,8 +302,8 @@ namespace System.Net.Http
                 // We await the created Timer's disposal so that we ensure any work associated with it has quiesced prior to this method
                 // returning, just in case this object is pooled and potentially reused for another operation in the future.
                 TaskCompletionSource<bool> waiter = _expect100ContinueWaiter!;
-                using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSource<bool>)s!).TrySetResult(false), waiter))
-                await using (new Timer(s =>
+                using (cancellationToken.UnsafeRegister(static s => ((TaskCompletionSource<bool>)s!).TrySetResult(false), waiter))
+                await using (new Timer(static s =>
                 {
                     var thisRef = (Http2Stream)s!;
                     if (NetEventSource.Log.IsEnabled()) thisRef.Trace($"100-Continue timer expired.");
@@ -1151,7 +1153,7 @@ namespace System.Net.Http
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
-                cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
+                cancellationToken.UnsafeRegister(static s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
 
             // This object is itself usable as a backing source for ValueTask.  Since there's only ever one awaiter
             // for this object's state transitions at a time, we allow the object to be awaited directly. All functionality
@@ -1193,7 +1195,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
                 {
                     var thisRef = (Http2Stream)s!;
 

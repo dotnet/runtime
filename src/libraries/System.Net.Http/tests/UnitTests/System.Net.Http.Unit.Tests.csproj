@@ -8,8 +8,8 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Http" />
-    <DefaultReferenceExclusions Include="System.Net.Mail" />
+    <DefaultReferenceExclusion Include="System.Net.Http" />
+    <DefaultReferenceExclusion Include="System.Net.Mail" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs"

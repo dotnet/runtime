@@ -29,11 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ReferenceFromRuntime Include="dotnet-Microsoft.XmlSerializer.Generator">
-      <!-- Copy this to our test output directory and run from there.
-           This is required so that we can stage the application with a custom runtimeconfig that lets it run on the test shared framework. -->
-      <Private>true</Private>
-    </ReferenceFromRuntime>
+    <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
   </ItemGroup>
 
   <!-- This target runs before binplacing as it needs to provide a test assembly to binplace, and depends on CopyFilesToOutputDirectory

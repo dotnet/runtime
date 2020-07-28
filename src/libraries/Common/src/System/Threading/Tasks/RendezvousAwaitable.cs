@@ -14,7 +14,7 @@ namespace System.Threading.Tasks
     internal class RendezvousAwaitable<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>Sentinel object indicating that the operation has completed prior to OnCompleted being called.</summary>
-        private static readonly Action s_completionSentinel = () => Debug.Fail("Completion sentinel should never be invoked");
+        private static readonly Action s_completionSentinel = static () => Debug.Fail("Completion sentinel should never be invoked");
 
         /// <summary>
         /// The continuation to invoke when the operation completes, or <see cref="s_completionSentinel"/> if the operation

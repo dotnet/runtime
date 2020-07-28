@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection
 {
 #if CORERT
@@ -108,6 +110,8 @@ namespace System.Reflection
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryResolve(this SignatureType signatureType, Type[] genericMethodParameters)
         {
             if (signatureType.IsSZArray)

@@ -8347,6 +8347,8 @@ void gc_heap::sort_mark_list()
 {
     if (settings.condemned_generation >= max_generation)
     {
+        // fake a mark list overflow so merge_mark_lists knows to quit early
+        mark_list_index = mark_list_end + 1;
         return;
     }
 
@@ -8397,7 +8399,7 @@ void gc_heap::sort_mark_list()
         high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
     }
 
-    // give up if this is not an ephemeral GC or the mark list size is unreasonably large
+    // give up if the mark list size is unreasonably large
     if (total_mark_list_size > (total_ephemeral_size / 256))
     {
         mark_list_index = mark_list_end + 1;

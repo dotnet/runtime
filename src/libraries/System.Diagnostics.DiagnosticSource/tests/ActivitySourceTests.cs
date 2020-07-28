@@ -323,12 +323,15 @@ namespace System.Diagnostics.Tests
                 attributes.Add(new KeyValuePair<string, object>("tag2", "tagValue2"));
                 attributes.Add(new KeyValuePair<string, object>("tag3", "tagValue3"));
 
-                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
+                DateTimeOffset startTime = DateTimeOffset.UtcNow;
+
+                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links, startTime))
                 {
                     Assert.NotNull(activity);
                     Assert.Equal("a1", activity.OperationName);
                     Assert.Equal("a1", activity.DisplayName);
                     Assert.Equal(ActivityKind.Client, activity.Kind);
+                    Assert.Equal(startTime, activity.StartTimeUtc);
 
                     Assert.Equal(ctx.TraceId, activity.TraceId);
                     Assert.Equal(ctx.SpanId, activity.ParentSpanId);
@@ -529,6 +532,35 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(ctx.TraceId, activity.TraceId);
                 Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
                 Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestEventNotificationOrder()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                Activity parent = Activity.Current;
+                Activity child = null;
+
+                using ActivitySource aSource = new ActivitySource("EventNotificationOrder");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "EventNotificationOrder";
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.ActivityStopped = a => Assert.Equal(child, Activity.Current);
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (child = aSource.StartActivity("a1"))
+                {
+                    Assert.NotNull(child);
+                    // by the end of this block, the stop event notification will fire and ActivityListener.ActivityStopped will get called.
+                    // assert there that the created activity is still set as Current activity.
+                }
+
+                // Now the Current should be restored back.
+                Assert.Equal(parent, Activity.Current);
             }).Dispose();
         }
 

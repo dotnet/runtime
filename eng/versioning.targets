@@ -22,6 +22,13 @@
     </AssemblyMetadata>
   </ItemGroup>
 
+  <!-- Adds MinimumOSPlatform attribute for Windows Specific libraries -->
+  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
+    <AssemblyAttribute Include="System.Runtime.Versioning.MinimumOSPlatform">
+        <_Parameter1>$(MinimiumSupportedWindowsPlatform)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
           Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
 
