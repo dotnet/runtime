@@ -401,19 +401,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         byte[] valueBytes = valueEncoding.GetBytes(string.Join(", ", values));
                         Assert.Single(requestData.Headers,
-                            h => h.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && Contains(h.Raw, valueBytes));
-                    }
-
-                    static bool Contains(byte[] bytes, byte[] subsequence)
-                    {
-                        for (int i = 0; i <= bytes.Length - subsequence.Length; i++)
-                        {
-                            if (bytes[i] == subsequence[0] && bytes.AsSpan(i, subsequence.Length).SequenceEqual(subsequence))
-                            {
-                                return true;
-                            }
-                        }
-                        return false;
+                            h => h.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && h.Raw.AsSpan().IndexOf(valueBytes) != -1);
                     }
                 });
         }
