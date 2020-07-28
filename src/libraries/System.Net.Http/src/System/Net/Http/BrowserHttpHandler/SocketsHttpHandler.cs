@@ -131,5 +131,11 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }

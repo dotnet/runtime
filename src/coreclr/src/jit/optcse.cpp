@@ -401,10 +401,27 @@ void Compiler::optValnumCSE_Init()
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    unsigned key;
+    size_t   key;
     unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
+    bool     isIntConstHash       = false;
+    bool     enableSharedConstCSE = false;
+    int      configValue          = JitConfig.JitConstCSE();
+
+#if defined(TARGET_ARM64)
+    // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
+    if ((configValue != CONST_CSE_ENABLE_ARM64_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
+    {
+        enableSharedConstCSE = true;
+    }
+#endif // TARGET_ARM64
+
+    // All Platforms - also allow to combine with nearby offsets, when config is 3
+    if (configValue == CONST_CSE_ENABLE_ALL)
+    {
+        enableSharedConstCSE = true;
+    }
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -446,11 +463,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = (unsigned)vnLib; // include the exc set in the hash key
+            key = vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = (unsigned)vnLibNorm;
+            key = vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -459,14 +476,36 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         assert(vnLibNorm == vnStore->VNNormalValue(vnOp2Lib));
     }
-    else // Not a GT_COMMA
+    else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
-        key = (unsigned)vnLibNorm;
+        assert(vnStore->IsVNConstant(vnLibNorm));
+        key = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
+
+        // We don't shared small offset constants when we require a reloc
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
+        {
+            // Make constants that have the same upper bits use the same key
+
+            // Shift the key right by CSE_CONST_SHARED_LOW_BITS bits, this sets the upper bits to zero
+            key >>= CSE_CONST_SHARED_LOW_BITS;
+        }
+        assert((key & TARGET_SIGN_BIT) == 0);
+
+        // We use the sign bit of 'key' as the flag
+        // that we are hashing constants (with a shared offset)
+        key |= TARGET_SIGN_BIT;
+    }
+    else // Not a GT_COMMA or a GT_CNS_INT
+    {
+        key = vnLibNorm;
     }
 
     // Compute the hash value for the expression
 
-    hash = key;
+    hash = (unsigned)key;
+#ifdef TARGET_64BIT
+    hash ^= (unsigned)(key >> 32);
+#endif
     hash *= (unsigned)(s_optCSEhashSize + 1);
     hash >>= 7;
 
@@ -480,6 +519,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     {
         if (hashDsc->csdHashKey == key)
         {
+            // Check for mismatched types on GT_CNS_INT nodes
+            if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
+            {
+                continue;
+            }
+
             treeStmtLst* newElem;
 
             /* Have we started the list of matching nodes? */
@@ -585,6 +630,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
             hashDsc->csdHashKey        = key;
+            hashDsc->csdConstDefValue  = 0;
+            hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
@@ -645,8 +692,17 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nCSE candidate #%02u, vn=", CSEindex);
-            vnPrint(key, 0);
+            printf("\nCSE candidate #%02u, key=", CSEindex);
+            if (!Compiler::Is_Shared_Const_CSE(key))
+            {
+                vnPrint((unsigned)key, 0);
+            }
+            else
+            {
+                size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
+                printf("K_%p", dspPtr(kVal));
+            }
+
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
             gtDispTree(tree);
         }
@@ -665,6 +721,29 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 unsigned Compiler::optValnumCSE_Locate()
 {
     // Locate CSE candidates and assign them indices
+
+    bool enableConstCSE = true;
+
+    int configValue = JitConfig.JitConstCSE();
+
+    // all platforms - disable CSE of constant values when config is 1
+    if (configValue == CONST_CSE_DISABLE_ALL)
+    {
+        enableConstCSE = false;
+    }
+
+#if !defined(TARGET_ARM64)
+    // non-ARM64 platforms - disable by default
+    //
+    enableConstCSE = false;
+
+    // Check for the two enable cases for all platforms
+    //
+    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#endif
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -691,6 +770,16 @@ unsigned Compiler::optValnumCSE_Locate()
                     optCseUpdateCheckedBoundMap(tree);
                 }
 
+                // Don't allow CSE of constants if it is disabled
+                //
+                if (tree->IsIntegralConst())
+                {
+                    if (!enableConstCSE)
+                    {
+                        continue;
+                    }
+                }
+
                 if (!optIsCSEcandidate(tree))
                 {
                     continue;
@@ -701,15 +790,17 @@ unsigned Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                // Don't CSE constant values, instead let the Value Number
-                // based Assertion Prop phase handle them.  Here, unlike
-                // the rest of optCSE, we use the conservative value number
+                // We want to CSE simple constant leaf nodes, but we don't want to
+                // CSE non-leaf trees that compute CSE constant values.
+                // Instead we let the Value Number based Assertion Prop phase handle them.
+                //
+                // Here, unlike the rest of optCSE, we use the conservative value number
                 // rather than the liberal one, since the conservative one
                 // is what the Value Number based Assertion Prop will use
                 // and the point is to avoid optimizing cases that it will
                 // handle.
                 //
-                if (vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
+                if (!tree->OperIsLeaf() && vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
                 {
                     continue;
                 }
@@ -1428,23 +1519,28 @@ void Compiler::optValnumCSE_Availablity()
                             }
                         }
 
-                        // Record or update the value of desc->defConservNormVN
+                        // For shared const CSE we don't set/use the defConservNormVN
                         //
-                        ValueNum theConservNormVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                        if (!Is_Shared_Const_CSE(desc->csdHashKey))
+                        {
+                            // Record or update the value of desc->defConservNormVN
+                            //
+                            ValueNum theConservNormVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
 
-                        // Is defConservNormVN still set to the uninit marker value of VNForNull() ?
-                        if (desc->defConservNormVN == vnStore->VNForNull())
-                        {
-                            // This is the first def that we have visited, set defConservNormVN
-                            desc->defConservNormVN = theConservNormVN;
-                        }
-                        else
-                        {
-                            // Check to see if all defs have the same conservative normal VN
-                            if (theConservNormVN != desc->defConservNormVN)
+                            // Is defConservNormVN still set to the uninit marker value of VNForNull() ?
+                            if (desc->defConservNormVN == vnStore->VNForNull())
                             {
-                                // This candidate has defs with differing conservative normal VNs, mark it with NoVN
-                                desc->defConservNormVN = ValueNumStore::NoVN; // record the marker for differing VNs
+                                // This is the first def that we have visited, set defConservNormVN
+                                desc->defConservNormVN = theConservNormVN;
+                            }
+                            else
+                            {
+                                // Check to see if all defs have the same conservative normal VN
+                                if (theConservNormVN != desc->defConservNormVN)
+                                {
+                                    // This candidate has defs with differing conservative normal VNs, mark it with NoVN
+                                    desc->defConservNormVN = ValueNumStore::NoVN; // record the marker for differing VNs
+                                }
                             }
                         }
 
@@ -1894,9 +1990,19 @@ public:
                     cost = dsc->csdTree->GetCostEx();
                 }
 
-                printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
-                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
-                       dsc->csdLiveAcrossCall ? ", call" : "      ");
+                if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
+                {
+                    printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ",
+                           dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                           dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
+                else
+                {
+                    size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
+                    printf("CSE #%02u, {K_%p} useCnt=%d: [def=%3u, use=%3u, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                           dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                           dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
 
                 m_pCompiler->gtDispTree(expr, nullptr, nullptr, true);
             }
@@ -2660,8 +2766,7 @@ public:
         //
         //  Later we will unmark any nested CSE's for the CSE uses.
         //
-        Compiler::CSEdsc*      dsc = successfulCandidate->CseDsc();
-        Compiler::treeStmtLst* lst;
+        Compiler::CSEdsc* dsc = successfulCandidate->CseDsc();
 
         // If there's just a single def for the CSE, we'll put this
         // CSE into SSA form on the fly. We won't need any PHIs.
@@ -2678,53 +2783,122 @@ public:
             cseSsaNum               = m_pCompiler->lvaTable[cseLclVarNum].lvPerSsaData.AllocSsaNum(allocator);
         }
 
-#ifdef DEBUG
         // Verify that all of the ValueNumbers in this list are correct as
         // Morph will change them when it performs a mutating operation.
         //
-        ValueNum firstVN = ValueNumStore::NoVN;
-        ValueNum currVN;
-        bool     allSame = true;
+        bool                   setRefCnt      = true;
+        bool                   allSame        = true;
+        bool                   isSharedConst  = Compiler::Is_Shared_Const_CSE(dsc->csdHashKey);
+        ValueNum               bestVN         = ValueNumStore::NoVN;
+        bool                   bestIsDef      = false;
+        ssize_t                bestConstValue = 0;
+        Compiler::treeStmtLst* lst            = dsc->csdTreeList;
 
-        lst = dsc->csdTreeList;
         while (lst != nullptr)
         {
             // Ignore this node if the gtCSEnum value has been cleared
             if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
             {
                 // We used the liberal Value numbers when building the set of CSE
-                currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
                 assert(currVN != ValueNumStore::NoVN);
+                ssize_t curConstValue = isSharedConst ? m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN) : 0;
 
-                if (firstVN == ValueNumStore::NoVN)
+                GenTree* exp   = lst->tslTree;
+                bool     isDef = IS_CSE_DEF(exp->gtCSEnum);
+
+                if (bestVN == ValueNumStore::NoVN)
                 {
-                    firstVN = currVN;
+                    // first entry
+                    // set bestVN
+                    bestVN = currVN;
+
+                    if (isSharedConst)
+                    {
+                        // set bestConstValue and bestIsDef
+                        bestConstValue = curConstValue;
+                        bestIsDef      = isDef;
+                    }
                 }
-                else if (currVN != firstVN)
+                else if (currVN != bestVN)
                 {
+                    assert(isSharedConst); // Must be true when we have differing VNs
+
+                    // subsequent entry
+                    // clear allSame and check for a lower constant
                     allSame = false;
-                    break;
+
+                    ssize_t diff = curConstValue - bestConstValue;
+
+                    // The ARM64 ldr addressing modes allow for a subtraction of up to 255
+                    // so we will allow the diff to be up to -255 before replacing a CSE def
+                    // This will minimize the number of extra subtract instructions.
+                    //
+                    if ((bestIsDef && (diff < -255)) || (!bestIsDef && (diff < 0)))
+                    {
+                        // set new bestVN, bestConstValue and bestIsDef
+                        bestVN         = currVN;
+                        bestConstValue = curConstValue;
+                        bestIsDef      = isDef;
+                    }
+                }
+
+                BasicBlock*          blk       = lst->tslBlock;
+                BasicBlock::weight_t curWeight = blk->getBBWeight(m_pCompiler);
+
+                if (setRefCnt)
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCnt(1);
+                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(curWeight);
+                    setRefCnt = false;
+                }
+                else
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
+                }
+
+                // A CSE Def references the LclVar twice
+                //
+                if (isDef)
+                {
+                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
                 }
             }
             lst = lst->tslNext;
         }
-        if (!allSame)
+
+        dsc->csdConstDefValue = bestConstValue;
+        dsc->csdConstDefVN    = bestVN;
+
+#ifdef DEBUG
+        if (m_pCompiler->verbose)
         {
-            lst                = dsc->csdTreeList;
-            GenTree* firstTree = lst->tslTree;
-            printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
-                   GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
-            while (lst != nullptr)
+            if (!allSame)
             {
-                if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+                if (isSharedConst)
                 {
-                    currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
-                    printf("0x%x(%s " FMT_VN ") ", lst->tslTree, IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def",
-                           currVN);
+                    printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
+                           dsc->csdConstDefVN, dspPtr(dsc->csdConstDefValue));
                 }
-                lst = lst->tslNext;
+                else // !isSharedConst
+                {
+                    lst                = dsc->csdTreeList;
+                    GenTree* firstTree = lst->tslTree;
+                    printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
+                           GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
+                    while (lst != nullptr)
+                    {
+                        if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+                        {
+                            ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                            printf("0x%x(%s " FMT_VN ") ", lst->tslTree,
+                                   IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def", currVN);
+                        }
+                        lst = lst->tslNext;
+                    }
+                    printf("\n");
+                }
             }
-            printf("\n");
         }
 #endif // DEBUG
 
@@ -2762,7 +2936,8 @@ public:
 
             // The cseLclVarType must be a compatible with expTyp
             //
-            noway_assert(IsCompatibleType(cseLclVarTyp, expTyp));
+            ValueNumStore* vnStore = m_pCompiler->vnStore;
+            noway_assert(IsCompatibleType(cseLclVarTyp, expTyp) || (dsc->csdConstDefVN != vnStore->VNForNull()));
 
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
@@ -2790,63 +2965,86 @@ public:
                 // We will replace the CSE ref with a new tree
                 // this is typically just a simple use of the new CSE LclVar
                 //
-                ValueNumStore* vnStore = m_pCompiler->vnStore;
-                cse                    = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
 
-                // Assign the ssa num for the use. Note it may be the reserved num.
-                cse->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+                // Create a reference to the CSE temp
+                GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+                cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
+
+                // Assign the ssa num for the lclvar use. Note it may be the reserved num.
+                cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                cse = cseLclVar;
+                if (isSharedConst)
+                {
+                    ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta    = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
+                        cse                = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
+                        cse->SetDoNotCSE();
+                    }
+                }
 
                 // assign the proper ValueNumber, A CSE use discards any exceptions
                 cse->gtVNPair = vnStore->VNPNormalPair(exp->gtVNPair);
 
-                ValueNum theConservativeVN = successfulCandidate->CseDsc()->defConservNormVN;
-
-                if (theConservativeVN != ValueNumStore::NoVN)
+                // shared const CSE has the correct value number assigned
+                // and both liberal and conservative are identical
+                // and they do not use theConservativeVN
+                //
+                if (!isSharedConst)
                 {
-                    // All defs of this CSE share the same normal conservative VN, and we are rewriting this
-                    // use to fetch the same value with no reload, so we can safely propagate that
-                    // conservative VN to this use.  This can help range check elimination later on.
-                    cse->gtVNPair.SetConservative(theConservativeVN);
+                    ValueNum theConservativeVN = successfulCandidate->CseDsc()->defConservNormVN;
 
-                    // If the old VN was flagged as a checked bound, propagate that to the new VN
-                    // to make sure assertion prop will pay attention to this VN.
-                    ValueNum oldVN = exp->gtVNPair.GetConservative();
-                    if (!vnStore->IsVNConstant(theConservativeVN) && vnStore->IsVNCheckedBound(oldVN))
+                    if (theConservativeVN != ValueNumStore::NoVN)
                     {
-                        vnStore->SetVNIsCheckedBound(theConservativeVN);
-                    }
+                        // All defs of this CSE share the same normal conservative VN, and we are rewriting this
+                        // use to fetch the same value with no reload, so we can safely propagate that
+                        // conservative VN to this use.  This can help range check elimination later on.
+                        cse->gtVNPair.SetConservative(theConservativeVN);
 
-                    GenTree* cmp;
-                    if ((m_pCompiler->optCseCheckedBoundMap != nullptr) &&
-                        (m_pCompiler->optCseCheckedBoundMap->Lookup(exp, &cmp)))
-                    {
-                        // Propagate the new value number to this compare node as well, since
-                        // subsequent range check elimination will try to correlate it with
-                        // the other appearances that are getting CSEd.
-
-                        ValueNum oldCmpVN = cmp->gtVNPair.GetConservative();
-                        ValueNum newCmpArgVN;
-
-                        ValueNumStore::CompareCheckedBoundArithInfo info;
-                        if (vnStore->IsVNCompareCheckedBound(oldCmpVN))
+                        // If the old VN was flagged as a checked bound, propagate that to the new VN
+                        // to make sure assertion prop will pay attention to this VN.
+                        ValueNum oldVN = exp->gtVNPair.GetConservative();
+                        if (!vnStore->IsVNConstant(theConservativeVN) && vnStore->IsVNCheckedBound(oldVN))
                         {
-                            // Comparison is against the bound directly.
-
-                            newCmpArgVN = theConservativeVN;
-                            vnStore->GetCompareCheckedBound(oldCmpVN, &info);
+                            vnStore->SetVNIsCheckedBound(theConservativeVN);
                         }
-                        else
+
+                        GenTree* cmp;
+                        if ((m_pCompiler->optCseCheckedBoundMap != nullptr) &&
+                            (m_pCompiler->optCseCheckedBoundMap->Lookup(exp, &cmp)))
                         {
-                            // Comparison is against the bound +/- some offset.
+                            // Propagate the new value number to this compare node as well, since
+                            // subsequent range check elimination will try to correlate it with
+                            // the other appearances that are getting CSEd.
 
-                            assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
-                            vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+                            ValueNum oldCmpVN = cmp->gtVNPair.GetConservative();
+                            ValueNum newCmpArgVN;
+
+                            ValueNumStore::CompareCheckedBoundArithInfo info;
+                            if (vnStore->IsVNCompareCheckedBound(oldCmpVN))
+                            {
+                                // Comparison is against the bound directly.
+
+                                newCmpArgVN = theConservativeVN;
+                                vnStore->GetCompareCheckedBound(oldCmpVN, &info);
+                            }
+                            else
+                            {
+                                // Comparison is against the bound +/- some offset.
+
+                                assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
+                                vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
+                                newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
+                                                                 info.arrOp, theConservativeVN);
+                            }
+                            ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
+                                                                   info.cmpOp, newCmpArgVN);
+                            cmp->gtVNPair.SetConservative(newCmpVN);
                         }
-                        ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
-                                                               info.cmpOp, newCmpArgVN);
-                        cmp->gtVNPair.SetConservative(newCmpVN);
                     }
                 }
 #ifdef DEBUG
@@ -2878,10 +3076,9 @@ public:
                     }
 #endif
 
-                    GenTree*       cseVal         = cse;
-                    GenTree*       curSideEff     = sideEffList;
-                    ValueNumStore* vnStore        = m_pCompiler->vnStore;
-                    ValueNumPair   exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
+                    GenTree*     cseVal         = cse;
+                    GenTree*     curSideEff     = sideEffList;
+                    ValueNumPair exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
 
                     while ((curSideEff->OperGet() == GT_COMMA) || (curSideEff->OperGet() == GT_ASG))
                     {
@@ -2936,6 +3133,17 @@ public:
                 exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
                 GenTree* val = exp;
+                if (isSharedConst)
+                {
+                    ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta    = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        val = m_pCompiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
+                        val->gtVNPair.SetBoth(dsc->csdConstDefVN);
+                    }
+                }
 
                 /* Create an assignment of the value to the temp */
                 GenTree* asg     = m_pCompiler->gtNewTempAssign(cseLclVarNum, val);
@@ -2977,18 +3185,36 @@ public:
                 }
 
                 /* Create a reference to the CSE temp */
-                GenTree* ref  = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
-                ref->gtVNPair = val->gtVNPair; // The new 'ref' is the same as 'val'
+                GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+                cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
 
-                // Assign the ssa num for the ref use. Note it may be the reserved num.
-                ref->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+                // Assign the ssa num for the lclvar use. Note it may be the reserved num.
+                cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                GenTree* cseUse = cseLclVar;
+                if (isSharedConst)
+                {
+                    ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+                    ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+                    ssize_t  delta    = curValue - dsc->csdConstDefValue;
+                    if (delta != 0)
+                    {
+                        GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
+                        cseUse             = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
+                        cseUse->SetDoNotCSE();
+                    }
+                }
+                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
 
                 /* Create a comma node for the CSE assignment */
-                cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, ref);
-                cse->gtVNPair = ref->gtVNPair; // The comma's value is the same as 'val'
-                                               // as the assignment to the CSE LclVar
-                                               // cannot add any new exceptions
+                cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);
+                cse->gtVNPair = cseUse->gtVNPair; // The comma's value is the same as 'val'
+                                                  // as the assignment to the CSE LclVar
+                                                  // cannot add any new exceptions
             }
+
+            cse->CopyReg(exp);  // The cse inheirits any reg num property from the orginal exp node
+            exp->ClearRegNum(); // The exp node (for a CSE def) no longer has a register requirement
 
             // Walk the statement 'stmt' and find the pointer
             // in the tree is pointing to 'exp'
@@ -3069,9 +3295,19 @@ public:
 #ifdef DEBUG
             if (m_pCompiler->verbose)
             {
-                printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
-                       dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(), candidate.UseCount(),
-                       candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
+                if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
+                {
+                    printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3u, use=%3u, cost=%3u%s]\n",
+                           candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
+                           candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
+                else
+                {
+                    size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
+                    printf("\nConsidering CSE #%02u {K_%p} [def=%3u, use=%3u, cost=%3u%s]\n", candidate.CseIndex(),
+                           dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                           dsc->csdLiveAcrossCall ? ", call" : "      ");
+                }
                 printf("CSE Expression : \n");
                 m_pCompiler->gtDispTree(candidate.Expr());
                 printf("\n");
@@ -3306,8 +3542,11 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
             return (tree->AsOp()->gtOp1->gtOper != GT_ARR_ELEM);
 
-        case GT_CNS_INT:
         case GT_CNS_LNG:
+#ifndef TARGET_64BIT
+            return false; // Don't CSE 64-bit constants on 32-bit platforms
+#endif
+        case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
             return true; // We reach here only when CSE_CONSTS is enabled

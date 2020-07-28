@@ -74,7 +74,12 @@ namespace System.Net.Test.Common
             _connections.RemoveAll((c) => c.IsInvalid);
         }
 
-        public async Task<Http2LoopbackConnection> AcceptConnectionAsync()
+        public Task<Http2LoopbackConnection> AcceptConnectionAsync()
+        {
+            return AcceptConnectionAsync(null);
+        }
+
+        public async Task<Http2LoopbackConnection> AcceptConnectionAsync(TimeSpan? timeout)
         {
             RemoveInvalidConnections();
 
@@ -85,7 +90,7 @@ namespace System.Net.Test.Common
 
             Socket connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
 
-            Http2LoopbackConnection connection = new Http2LoopbackConnection(connectionSocket, _options);
+            Http2LoopbackConnection connection = timeout != null ? new Http2LoopbackConnection(connectionSocket, _options, timeout.Value) : new Http2LoopbackConnection(connectionSocket, _options);
             _connections.Add(connection);
 
             return connection;
@@ -96,15 +101,25 @@ namespace System.Net.Test.Common
             return await EstablishConnectionAsync();
         }
 
-        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
+        public Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(settingsEntries).ConfigureAwait(false);
+            return EstablishConnectionAsync(null, null, settingsEntries);
+        }
+
+        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
+        {
+            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(timeout, ackTimeout, settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
-        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
+        public Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
         {
-            Http2LoopbackConnection connection = await AcceptConnectionAsync().ConfigureAwait(false);
+            return EstablishConnectionGetSettingsAsync(null, null, settingsEntries);
+        }
+
+        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
+        {
+            Http2LoopbackConnection connection = await AcceptConnectionAsync(timeout).ConfigureAwait(false);
 
             // Receive the initial client settings frame.
             Frame receivedFrame = await connection.ReadFrameAsync(Timeout).ConfigureAwait(false);
@@ -129,7 +144,7 @@ namespace System.Net.Test.Common
             await connection.WriteFrameAsync(settingsAck).ConfigureAwait(false);
 
             // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            await connection.ExpectSettingsAckAsync();
+            await connection.ExpectSettingsAckAsync((int) (ackTimeout?.TotalMilliseconds ?? 5000));
 
             return (connection, clientSettingsFrame);
         }

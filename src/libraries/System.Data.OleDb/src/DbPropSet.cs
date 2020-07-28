@@ -14,7 +14,7 @@ namespace System.Data.OleDb
         private readonly int propertySetCount;
 
         // stores the exception with last error.HRESULT from IDBProperties.GetProperties
-        private Exception lastErrorFromProvider;
+        private Exception? lastErrorFromProvider;
 
         private DBPropSet() : base(IntPtr.Zero, true)
         {
@@ -42,7 +42,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DBPropSet(UnsafeNativeMethods.IDBProperties properties, PropertyIDSet propidset, out OleDbHResult hr) : this()
+        internal DBPropSet(UnsafeNativeMethods.IDBProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
             Debug.Assert(null != properties, "null IDBProperties");
 
@@ -60,7 +60,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DBPropSet(UnsafeNativeMethods.IRowsetInfo properties, PropertyIDSet propidset, out OleDbHResult hr) : this()
+        internal DBPropSet(UnsafeNativeMethods.IRowsetInfo properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
             Debug.Assert(null != properties, "null IRowsetInfo");
 
@@ -78,7 +78,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DBPropSet(UnsafeNativeMethods.ICommandProperties properties, PropertyIDSet propidset, out OleDbHResult hr) : this()
+        internal DBPropSet(UnsafeNativeMethods.ICommandProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
             Debug.Assert(null != properties, "null ICommandProperties");
 
@@ -99,7 +99,7 @@ namespace System.Data.OleDb
         private void SetLastErrorInfo(OleDbHResult lastErrorHr)
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
-            UnsafeNativeMethods.IErrorInfo errorInfo = null;
+            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
             string message = string.Empty;
 
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
@@ -172,7 +172,7 @@ namespace System.Data.OleDb
             }
 
             tagDBPROPSET propset = new tagDBPROPSET();
-            ItagDBPROP[] properties = null;
+            ItagDBPROP[]? properties = null;
 
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();

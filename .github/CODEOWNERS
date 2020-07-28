@@ -7,6 +7,12 @@
 /src/libraries/System.Buffers/                                      @ahsonkhan
 /src/libraries/System.Memory/                                       @ahsonkhan
 
+# CoreCLR Code Owners
+
+/src/coreclr/src/inc/corinfo.h @dotnet/jit-contrib
+/src/coreclr/src/inc/corjit.h @dotnet/jit-contrib
+/src/coreclr/src/jit/ @dotnet/jit-contrib
+
 # Mono Code Owners
 
 /src/mono @marek-safar

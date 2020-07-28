@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -1887,6 +1889,70 @@ namespace System.Text.Json.Serialization.Tests
         public override string ConvertName(string name)
         {
             return string.Concat(name.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString())).ToLower();
+        }
+    }
+
+    public static class CollectionTestTypes
+    {
+        public static IEnumerable<Type> EnumerableTypes<TElement>()
+        {
+            yield return typeof(TElement[]); // ArrayConverter
+            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
+            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
+            yield return typeof(WrapperForIEnumerable); // IEnumerableConverter
+            yield return typeof(WrapperForIReadOnlyCollectionOfT<TElement>); // IEnumerableOfTConverter
+            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
+            yield return typeof(WrapperForIList); // IListConverter
+            yield return typeof(Collection<TElement>); // IListOfTConverter
+            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
+            yield return typeof(HashSet<TElement>); // ISetOfTConverter
+            yield return typeof(List<TElement>); // ListOfTConverter
+            yield return typeof(Queue<TElement>); // QueueOfTConverter
+        }
+
+        public static IEnumerable<Type> DeserializableGenericEnumerableTypes<TElement>()
+        {
+            yield return typeof(TElement[]); // ArrayConverter
+            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
+            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
+            yield return typeof(IEnumerable<TElement>); // IEnumerableConverter
+            yield return typeof(Collection<TElement>); // IListOfTConverter
+            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
+            yield return typeof(HashSet<TElement>); // ISetOfTConverter
+            yield return typeof(List<TElement>); // ListOfTConverter
+            yield return typeof(Queue<TElement>); // QueueOfTConverter
+        }
+
+        public static IEnumerable<Type> DeserializableNonGenericEnumerableTypes()
+        {
+            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
+            yield return typeof(WrapperForIList); // IListConverter
+        }
+
+        public static IEnumerable<Type> DictionaryTypes<TElement>()
+        {
+            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
+            yield return typeof(Hashtable); // IDictionaryConverter
+            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
+            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
+            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
+            yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
+        }
+
+        public static IEnumerable<Type> DeserializableDictionaryTypes<TElement>()
+        {
+            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
+            yield return typeof(Hashtable); // IDictionaryConverter
+            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
+            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
+            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
+            yield return typeof(IReadOnlyDictionary<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
+        }
+
+        public static IEnumerable<Type> DeserializableNonDictionaryTypes<TElement>()
+        {
+            yield return typeof(Hashtable); // IDictionaryConverter
+            yield return typeof(SortedList); // IDictionaryConverter
         }
     }
 }

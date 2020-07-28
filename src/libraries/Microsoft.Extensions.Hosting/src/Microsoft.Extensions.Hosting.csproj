@@ -1,58 +1,43 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
-    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Hosting.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration" />
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Binder" />
-    <Reference Include="Microsoft.Extensions.Configuration.CommandLine" />
-    <Reference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
-    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Json" />
-    <Reference Include="Microsoft.Extensions.Configuration.UserSecrets" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <Reference Include="Microsoft.Extensions.FileProviders.Physical" />
-    <Reference Include="Microsoft.Extensions.Logging" />
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Logging.Console" />
-    <Reference Include="Microsoft.Extensions.Logging.Configuration" />
-    <Reference Include="Microsoft.Extensions.Logging.Debug" />
-    <Reference Include="Microsoft.Extensions.Logging.EventSource" />
-    <Reference Include="Microsoft.Extensions.Logging.EventLog" />
-    <Reference Include="Microsoft.Extensions.Options" />
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.CommandLine\src\Microsoft.Extensions.Configuration.CommandLine.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.EnvironmentVariables\src\Microsoft.Extensions.Configuration.EnvironmentVariables.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.FileExtensions\src\Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Json\src\Microsoft.Extensions.Configuration.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.UserSecrets\src\Microsoft.Extensions.Configuration.UserSecrets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Physical\src\Microsoft.Extensions.FileProviders.Physical.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting.Abstractions\src\Microsoft.Extensions.Hosting.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\src\Microsoft.Extensions.Logging.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Configuration\src\Microsoft.Extensions.Logging.Configuration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Console\src\Microsoft.Extensions.Logging.Console.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Debug\src\Microsoft.Extensions.Logging.Debug.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.EventLog\src\Microsoft.Extensions.Logging.EventLog.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.EventSource\src\Microsoft.Extensions.Logging.EventSource.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.Console" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
     <Reference Include="System.Runtime" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>

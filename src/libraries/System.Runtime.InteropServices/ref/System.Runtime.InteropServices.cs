@@ -91,6 +91,7 @@ namespace System.Runtime.CompilerServices
 }
 namespace System.Runtime.InteropServices
 {
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class AllowReversePInvokeCallsAttribute : System.Attribute
     {

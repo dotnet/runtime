@@ -1004,6 +1004,7 @@ namespace System.Net.Http.Functional.Tests
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorization.")]
                 $"Authorization: Bearer 63123a47139a49829bcd8d03005ca9d7{newline}" +
                 $"Allow: {fold}GET, HEAD{newline}" +
                 $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +

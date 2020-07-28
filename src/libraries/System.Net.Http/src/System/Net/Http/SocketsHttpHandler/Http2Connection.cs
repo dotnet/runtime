@@ -114,11 +114,14 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
+            _idleSinceTickCount = Environment.TickCount64;
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
         }
 
         private object SyncObject => _httpStreams;
+
+        public bool CanAddNewStream => _concurrentStreams.IsCreditAvailable;
 
         public async ValueTask SetupAsync()
         {
@@ -1203,7 +1206,17 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                if (_pool.EnableMultipleHttp2Connections)
+                {
+                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    {
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
+                    }
+                }
+                else
+                {
+                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (ObjectDisposedException)
             {

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.Security</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
@@ -345,6 +344,7 @@
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.OSX.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -361,15 +361,14 @@
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.OpenSsl" />
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
 </Project>

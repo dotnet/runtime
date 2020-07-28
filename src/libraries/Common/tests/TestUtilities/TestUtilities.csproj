@@ -5,7 +5,7 @@
       This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
       and instead use runtime checks.
     -->
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\AdminHelpers.cs" />
@@ -62,5 +62,14 @@
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
+    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibrary20Version)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>
