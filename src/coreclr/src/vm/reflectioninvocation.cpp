@@ -2646,7 +2646,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalEquals, Object *pRefThis, Object* p
 }
 FCIMPLEND
 
-// preform (this & flags) != flags
+// perform (this & flags) == flags
 FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* pRefFlags)
 {
     FCALL_CONTRACT;
