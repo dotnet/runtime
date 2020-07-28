@@ -431,11 +431,6 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
         AssemblySpec corelib;
         corelib.InitializeSpec(SystemDomain::SystemFile());
         GetAppDomain()->BindAssemblySpec(&corelib,TRUE);
-
-        if (!IsReadyToRunCompilation() && !SystemDomain::SystemFile()->HasNativeImage())
-        {
-            return NGEN_E_SYS_ASM_NI_MISSING;
-        }
     }
 
     if (IsReadyToRunCompilation() && !pModule->GetFile()->IsILOnly())

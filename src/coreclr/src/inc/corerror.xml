@@ -2201,12 +2201,6 @@
 	<Comment> File is PE32 </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131f06">
-	<SymbolicName>NGEN_E_SYS_ASM_NI_MISSING</SymbolicName>
-	<Message>"NGen cannot proceed because System.Private.CoreLib.dll does not have a native image"</Message>
-	<Comment>Compiling any assembly other than System.Private.CoreLib in the absence of System.Private.CoreLib.ni.dll is not allowed.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131fff">
 	<SymbolicName>CLDB_E_INTERNALERROR</SymbolicName>
 </HRESULT>
