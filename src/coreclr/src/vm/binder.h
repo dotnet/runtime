@@ -45,7 +45,7 @@ enum BinderClassID
 #undef TYPEINFO
 
 #define DEFINE_CLASS(i,n,s)         CLASS__ ## i,
-#include "mscorlib.h"
+#include "corelib.h"
 
     CLASS__CORELIB_COUNT,
 
@@ -80,9 +80,9 @@ enum BinderMethodID : int
     METHOD__NIL = 0,
 
 #define DEFINE_METHOD(c,i,s,g)      METHOD__ ## c ## __ ## i,
-#include "mscorlib.h"
+#include "corelib.h"
 
-    METHOD__MSCORLIB_COUNT,
+    METHOD__CORELIB_COUNT,
 };
 
 // BinderFieldIDs are of the form FIELD__XXX__YYY,
@@ -93,9 +93,9 @@ enum BinderFieldID
     FIELD__NIL = 0,
 
 #define DEFINE_FIELD(c,i,s)                 FIELD__ ## c ## __ ## i,
-#include "mscorlib.h"
+#include "corelib.h"
 
-    FIELD__MSCORLIB_COUNT,
+    FIELD__CORELIB_COUNT,
 };
 
 struct CoreLibClassDescription
@@ -189,7 +189,7 @@ class CoreLibBinder
     static MethodTable *GetException(RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        _ASSERTE(kind < kLastException);
         BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return GetClass(id);
     }
@@ -197,7 +197,7 @@ class CoreLibBinder
     static BOOL IsException(MethodTable *pMT, RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        _ASSERTE(kind < kLastException);
         BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return dac_cast<TADDR>(GetClassIfExist(id)) == dac_cast<TADDR>(pMT);
     }
@@ -205,7 +205,7 @@ class CoreLibBinder
     static LPCUTF8 GetExceptionName(RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        _ASSERTE(kind < kLastException);
         BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return GetClassName(id);
     }

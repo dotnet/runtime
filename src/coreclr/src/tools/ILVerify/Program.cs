@@ -145,7 +145,7 @@ namespace ILVerify
         private int Run()
         {
             _verifier = new Verifier(this, GetVerifierOptions());
-            _verifier.SetSystemModuleName(new AssemblyName(_options.SystemModule ?? "mscorlib"));
+            _verifier.SetSystemModuleName(new AssemblyName(_options.SystemModule ?? "corelib"));
 
             int numErrors = 0;
 

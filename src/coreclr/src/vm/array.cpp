@@ -1273,7 +1273,7 @@ BOOL IsImplicitInterfaceOfSZArray(MethodTable *pInterfaceMT)
     PRECONDITION(pInterfaceMT->IsInterface());
     PRECONDITION(pInterfaceMT->HasInstantiation());
 
-    // Is target interface Anything<T> in mscorlib?
+    // Is target interface Anything<T> in CoreLib?
     if (!pInterfaceMT->HasInstantiation() || !pInterfaceMT->GetModule()->IsSystem())
         return FALSE;
 
@@ -1327,7 +1327,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
     MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 
     // The most common reason for this assert is that the order of the SZArrayHelper methods in
-    // mscorlib.h does not match the order they are implemented on the generic interfaces.
+    // corelib.h does not match the order they are implemented on the generic interfaces.
     _ASSERTE(pGenericImplementor == MemberLoader::FindMethodByName(g_pSZArrayHelperClass, pItfcMeth->GetName()));
 
     // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute

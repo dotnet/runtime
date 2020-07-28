@@ -154,7 +154,7 @@ public:
 #endif
 
 public:
-    // Used to avoid touching metadata for mscorlib methods.
+    // Used to avoid touching metadata for CoreLib methods.
     // instance methods must pass in the 'this' object
     // static methods must pass null
     MethodDescCallSite(BinderMethodID id, OBJECTREF* porProtectedThis = NULL) :
@@ -174,7 +174,7 @@ public:
         DefaultInit(porProtectedThis);
     }
 
-    // Used to avoid touching metadata for mscorlib methods.
+    // Used to avoid touching metadata for CoreLib methods.
     // instance methods must pass in the 'this' object
     // static methods must pass null
     MethodDescCallSite(BinderMethodID id, OBJECTHANDLE hThis) :

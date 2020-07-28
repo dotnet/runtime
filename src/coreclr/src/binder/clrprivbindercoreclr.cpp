@@ -20,7 +20,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     HRESULT hr = S_OK;
 
 #ifdef _DEBUG
-    // MSCORLIB should be bound using BindToSystem
+    // CoreLib should be bound using BindToSystem
     _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 

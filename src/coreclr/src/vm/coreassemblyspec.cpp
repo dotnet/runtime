@@ -91,7 +91,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(CheckPointer(pAppDomain));
-        PRECONDITION(IsCoreLib() == FALSE); // This should never be called for MSCORLIB (explicit loading)
+        PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 

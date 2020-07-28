@@ -79,7 +79,7 @@ public:
         return m_pBindingContext;
     }
 
-    BOOL IsAssemblySpecForMscorlib();
+    BOOL IsAssemblySpecForCoreLib();
 
     HRESULT ParseName();
     DWORD Hash();

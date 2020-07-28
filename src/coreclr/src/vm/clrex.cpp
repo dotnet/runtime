@@ -189,7 +189,7 @@ OBJECTREF CLRException::GetThrowable()
             //  CreateThrowable() and is being caught in this EX_TRY/EX_CATCH.)
             //  If that exception is the same as the one for which this GetThrowable()
             //  was called, we're in a recursive situation.
-            // Since the CreateThrowable() call should return a type from mscorlib,
+            // Since the CreateThrowable() call should return a type from CoreLib,
             //  there really shouldn't be much opportunity for error.  We could be
             //  out of memory, we could overflow the stack, or the runtime could
             //  be in a weird state(the thread could be aborted as well).

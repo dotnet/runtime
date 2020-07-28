@@ -2412,7 +2412,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     //
     // In this IL stub implementation we call the native method kernel32!GetFileAttributes,
     // and then we immediately try to save the Last Error code by calling the
-    // mscorlib method System.StubHelpers.StubHelpers.SetLastError().
+    // CoreLib method System.StubHelpers.StubHelpers.SetLastError().
     //
     // However when we are coming from a precompiled IL Stub in an ngen image
     // we must use an ExternalMethodFixup to find the target address of

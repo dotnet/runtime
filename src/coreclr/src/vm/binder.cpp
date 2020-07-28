@@ -59,7 +59,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
 
     PTR_MethodTable pMT = NULL;
 
-    // Binder methods are used for loading "known" types from mscorlib.dll. Thus they are unlikely to be part
+    // Binder methods are used for loading "known" types. Thus they are unlikely to be part
     // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
@@ -111,7 +111,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     const CoreLibMethodDescription *d = m_methodDescriptions + (id - 1);
 
     MethodTable * pMT = GetClassLocal(d->classID);
-    _ASSERTE(pMT != NULL && "Couldn't find a type in mscorlib!");
+    _ASSERTE(pMT != NULL && "Couldn't find a type in System.Private.CoreLib!");
 
     if (d->sig != NULL)
     {
@@ -199,7 +199,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     // Run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    // Binder methods are used for loading "known" types from mscorlib.dll. Thus they are unlikely to be part
+    // Binder methods are used for loading "known" types. Thus they are unlikely to be part
     // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
@@ -528,11 +528,11 @@ const CoreLibBinder::OffsetAndSizeCheck CoreLibBinder::OffsetsAndSizes[] =
 
     #define DEFINE_FIELD_U(stringName, unmanagedContainingType, unmanagedOffset) \
         { 0, 0, 0, PTR_CUTF8((TADDR) # stringName), offsetof(unmanagedContainingType, unmanagedOffset), sizeof(((unmanagedContainingType*)1)->unmanagedOffset) },
-    #include "mscorlib.h"
+    #include "corelib.h"
 };
 
 //
-// check the basic consistency between mscorlib and mscorwks
+// check the basic consistency between CoreLib and VM
 //
 void CoreLibBinder::Check()
 {
@@ -566,7 +566,7 @@ void CoreLibBinder::Check()
         else
         if (p->fieldName != NULL)
         {
-            // This assert will fire if there is DEFINE_FIELD_U macro without preceeding DEFINE_CLASS_U macro in mscorlib.h
+            // This assert will fire if there is DEFINE_FIELD_U macro without preceeding DEFINE_CLASS_U macro in corelib.h
             _ASSERTE(pMT != NULL);
 
             FieldDesc * pFD = MemberLoader::FindField(pMT, p->fieldName, NULL, 0, NULL);
@@ -876,23 +876,23 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 #endif // CHECK_FCALL_SIGNATURE
 
 //
-// extended check of consistency between mscorlib and mscorwks:
-//  - verifies that all references from mscorlib to mscorwks are present
-//  - verifies that all references from mscorwks to mscorlib are present
+// extended check of consistency between CoreLib and VM:
+//  - verifies that all references from CoreLib to VM are present
+//  - verifies that all references from VM to CoreLib are present
 //  - limited detection of mismatches between managed and unmanaged fcall signatures
 //
 void CoreLibBinder::CheckExtended()
 {
     STANDARD_VM_CONTRACT;
 
-    // check the consistency of BCL and VM
+    // check the consistency of CoreLib and VM
     // note: it is not enabled by default because of it is time consuming and
     // changes the bootstrap sequence of the EE
     if (!CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ConsistencyCheck))
         return;
 
     //
-    // VM referencing BCL (mscorlib.h)
+    // VM referencing CoreLib (corelib.h)
     //
     for (BinderClassID cID = (BinderClassID) 1; (int)cID < m_cClasses; cID = (BinderClassID) (cID + 1))
     {
@@ -966,7 +966,7 @@ void CoreLibBinder::CheckExtended()
     }
 
     //
-    // BCL referencing VM (ecall.cpp)
+    // CoreLib referencing VM (ecalllist.h)
     //
     SetSHash<DWORD> usedECallIds;
 
@@ -1014,7 +1014,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszClassName = pszNameSpace = "Invalid TypeDef record";
             }
-            printf("CheckExtended: Unable to load class from mscorlib: %s.%s\n", pszNameSpace, pszClassName);
+            printf("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
         EX_END_CATCH(SwallowAllExceptions)
 
@@ -1119,7 +1119,7 @@ extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
 extern const USHORT c_nCoreLibFieldDescriptions;
 
 #ifdef CROSSGEN_COMPILE
-namespace CrossGenMscorlib
+namespace CrossGenCoreLib
 {
     extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
     extern const USHORT c_nCoreLibClassDescriptions;
@@ -1167,9 +1167,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
             ->AllocMem(S_SIZE_T(sizeof(CoreLibBinder)));
 
     pTargetBinder->SetDescriptions(pModule,
-        CrossGenMscorlib::c_rgCoreLibClassDescriptions,  CrossGenMscorlib::c_nCoreLibClassDescriptions,
-        CrossGenMscorlib::c_rgCoreLibMethodDescriptions, CrossGenMscorlib::c_nCoreLibMethodDescriptions,
-        CrossGenMscorlib::c_rgCoreLibFieldDescriptions,  CrossGenMscorlib::c_nCoreLibFieldDescriptions);
+        CrossGenCoreLib::c_rgCoreLibClassDescriptions,  CrossGenCoreLib::c_nCoreLibClassDescriptions,
+        CrossGenCoreLib::c_rgCoreLibMethodDescriptions, CrossGenCoreLib::c_nCoreLibMethodDescriptions,
+        CrossGenCoreLib::c_rgCoreLibFieldDescriptions,  CrossGenCoreLib::c_nCoreLibFieldDescriptions);
 
     pTargetBinder->AllocateTables();
 

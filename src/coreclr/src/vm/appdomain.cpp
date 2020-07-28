@@ -1268,7 +1268,7 @@ void SystemDomain::Init()
 
     DWORD size = 0;
 
-    // Get the install directory so we can find mscorlib
+    // Get the install directory so we can find CoreLib
     hr = GetInternalSystemDirectory(NULL, &size);
     if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
         ThrowHR(hr);
@@ -1307,7 +1307,7 @@ void SystemDomain::Init()
         }
 #endif
 
-        // Finish loading mscorlib now.
+        // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
     }
 
@@ -1424,7 +1424,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // the globals in this function before finishing the load.
     m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemFile, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
 
-    // Set up binder for mscorlib
+    // Set up binder for CoreLib
     CoreLibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
 
     // Load Object
@@ -1475,7 +1475,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load the Object array class.
     g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
 
-    // We have delayed allocation of mscorlib's static handles until we load the object class
+    // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
     // Make sure all primitive types are loaded
@@ -1567,7 +1567,7 @@ void SystemDomain::LoadBaseSystemClasses()
     if (GCStress<cfg_instr_ngen>::IsEnabled())
     {
         // Setting up gc coverage requires the base system classes
-        //  to be initialized. So we have deferred it until now for mscorlib.
+        //  to be initialized. So we have deferred it until now for CoreLib.
         Module *pModule = CoreLibBinder::GetModule();
         _ASSERTE(pModule->IsSystem());
         if(pModule->HasNativeImage())
@@ -1666,7 +1666,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     MethodTable* pCaller = pMeth->GetMethodTable();
 
-    // All Reflection Invocation methods are defined in mscorlib.dll
+    // All Reflection Invocation methods are defined in CoreLib
     if (!pCaller->GetModule()->IsSystem())
         return false;
 
@@ -1889,7 +1889,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
-    // is only invoked for selected methods in mscorlib itself. So we're
+    // is only invoked for selected methods in CoreLib itself. So we're
     // reasonably sure we won't have any sensitive methods late bound invoked on
     // constructors, properties or events. This leaves being invoked via
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
@@ -3162,8 +3162,8 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
-    // We need to perform the early steps of loading mscorlib without a domain transition.  This is
-    // important for bootstrapping purposes - we need to get mscorlib at least partially loaded
+    // We need to perform the early steps of loading CoreLib without a domain transition.  This is
+    // important for bootstrapping purposes - we need to get CoreLib at least partially loaded
     // into a domain before we can run serialization code to do the transition.
     //
     // Note that we cannot do this in general for all assemblies, because some of the security computations
@@ -3876,7 +3876,7 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
 
-    // Check to see if this fits our rather loose idea of a reference to mscorlib.
+    // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
     if (pSpec->IsCoreLib())
         return TRUE;
@@ -3906,7 +3906,7 @@ PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/
     }
     CONTRACTL_END;
 
-    // Check to see if this fits our rather loose idea of a reference to mscorlib.
+    // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
     if (fThrow && pSpec->IsCoreLib())
     {
@@ -4004,13 +4004,13 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     {
                         if (SystemDomain::SystemFile() && bindResult.IsCoreLib())
                         {
-                            // Avoid rebinding to another copy of mscorlib
+                            // Avoid rebinding to another copy of CoreLib
                             result = SystemDomain::SystemFile();
                             result.SuppressRelease(); // Didn't get a refcount
                         }
                         else
                         {
-                            // IsSystem on the PEFile should be false, even for mscorlib satellites
+                            // IsSystem on the PEFile should be false, even for CoreLib satellites
                             result = PEAssembly::Open(&bindResult,
                                                       FALSE);
                         }

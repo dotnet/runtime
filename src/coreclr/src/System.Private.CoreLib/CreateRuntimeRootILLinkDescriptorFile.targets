@@ -7,7 +7,7 @@
   <PropertyGroup>
     <_ILLinkRuntimeRootDescriptorFilePath>$(ILLinkTrimXml)</_ILLinkRuntimeRootDescriptorFilePath>
     <_NamespaceFilePath Condition=" '$(_NamespaceFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\namespace.h</_NamespaceFilePath>
-    <_MscorlibFilePath Condition=" '$(_MscorlibFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\mscorlib.h</_MscorlibFilePath>
+    <_MscorlibFilePath Condition=" '$(_MscorlibFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\corelib.h</_MscorlibFilePath>
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
     <_RexcepFilePath Condition=" '$(_RexcepFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\rexcep.h</_RexcepFilePath>
     <_ILLinkDescriptorsIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.Combined.xml</_ILLinkDescriptorsIntermediatePath>

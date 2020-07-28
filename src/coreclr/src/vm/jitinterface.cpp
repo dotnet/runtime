@@ -1360,7 +1360,7 @@ bool CEEInfo::tryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
 }
 
 /*********************************************************************/
-// We have a few frequently used constants in mscorlib that are defined as
+// We have a few frequently used constants in CoreLib that are defined as
 // readonly static fields for historic reasons. Check for them here and
 // allow them to be treated as actual constants by the JIT.
 static CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc * field)
@@ -6812,8 +6812,8 @@ void CEEInfo::setMethodAttribs (
             }
             else
             {
-                // Don't cache inlining hints inside mscorlib during NGen of other assemblies,
-                // since mscorlib is loaded domain neutral and will survive worker process recycling,
+                // Don't cache inlining hints inside CoreLib during NGen of other assemblies,
+                // since CoreLib is loaded domain neutral and will survive worker process recycling,
                 // causing determinism problems.
                 Module * pModule = ftn->GetModule();
                 if (pModule->IsSystem() && pModule->HasNativeImage())
@@ -6898,8 +6898,8 @@ mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
 /*********************************************************************
 
 IL is the most efficient and portable way to implement certain low level methods
-in mscorlib.dll. Unfortunately, there is no good way to link IL into mscorlib.dll today.
-Until we find a good way to link IL into mscorlib.dll, we will provide the IL implementation here.
+in CoreLib. Unfortunately, there is no good way to link IL into CoreLib today.
+Until we find a good way to link IL into CoreLib, we will provide the IL implementation here.
 
 - All IL intrinsincs are members of System.Runtime.CompilerServices.JitHelpers class
 - All IL intrinsincs should be kept very simple. Implement the minimal reusable version of
@@ -7208,7 +7208,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
     STANDARD_VM_CONTRACT;
 
     //
-    // This replaces the implementations of Volatile.* in mscorlib with more efficient ones.
+    // This replaces the implementations of Volatile.* in CoreLib with more efficient ones.
     // We do this because we cannot otherwise express these in C#.  What we *want* to do is
     // to treat the byref args to these methods as "volatile."  In pseudo-C#, this would look
     // like:
@@ -7271,7 +7271,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
         //
         // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
         // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-        // The implementation in mscorlib already does this, so we will only substitute a new
+        // The implementation in CoreLib already does this, so we will only substitute a new
         // IL body if we're running on a 64-bit platform.
         //
         IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
@@ -7874,7 +7874,7 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
         mdToken token;
         IfFailThrow(ptr.GetToken(&token));
 
-        // We are inside mscorlib - simple token match is sufficient
+        // We are inside CoreLib - simple token match is sufficient
         if (token == CoreLibBinder::GetClass(CLASS__STACKCRAWMARK)->GetCl())
             return TRUE;
     }
@@ -13546,7 +13546,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (CORCOMPILE_IS_PCODE_TAGGED(result))
             {
                 // There is a rare case where the function entrypoint may not be aligned. This could happen only for FCalls,
-                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for mscorlib.dll does not exist
+                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for CoreLib does not exist
                 // and /nodependencies flag for ngen was used). The function entrypoints should be aligned in all other cases.
                 //
                 // We will wrap the unaligned method entrypoint by funcptr stub with aligned entrypoint.

@@ -170,7 +170,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
 
     DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
 
-    // Set the caller's assembly to be mscorlib
+    // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
     PEAssembly *pParentAssembly = pCallersAssembly->GetFile();
 

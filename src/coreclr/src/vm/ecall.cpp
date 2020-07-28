@@ -16,12 +16,12 @@
 #ifndef DACCESS_COMPILE
 
 #ifdef CROSSGEN_COMPILE
-namespace CrossGenMscorlib
+namespace CrossGenCoreLib
 {
     extern const ECClass c_rgECClasses[];
     extern const int c_nECClasses;
 };
-using namespace CrossGenMscorlib;
+using namespace CrossGenCoreLib;
 #else // CROSSGEN_COMPILE
 extern const ECClass c_rgECClasses[];
 extern const int c_nECClasses;
@@ -53,7 +53,7 @@ Utf8String, but String is similar.)
   add any void-returning metasig declarations if they haven't already been defined elsewhere.
   search "String_RetUtf8Str" for an example of how to do this.
 
-- src/vm/mscorlib.h, search "DEFINE_CLASS(UTF8_STRING" and add the new DEFINE_METHOD
+- src/vm/corelib.h, search "DEFINE_CLASS(UTF8_STRING" and add the new DEFINE_METHOD
   declarations for the Utf8String-returning Ctor methods, referencing the new metasig declarations.
 
 **********/
@@ -498,16 +498,16 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     //
     // You'll see this assert in several situations, almost all being the fault of whomever
     // last touched a particular ecall or fcall method, either here or in the classlibs.
-    // However, you must also ensure you don't have stray copies of mscorlib.dll on your machine.
+    // However, you must also ensure you don't have stray copies of System.Private.CoreLib.dll on your machine.
     // 1) You forgot to add your class to c_rgECClasses, the list of classes w/ ecall & fcall methods.
     // 2) You forgot to add your particular method to the ECFunc array for your class.
     // 3) You misspelled the name of your function and/or classname.
     // 4) The signature of the managed function doesn't match the hardcoded metadata signature
     //    listed in your ECFunc array.  The hardcoded metadata sig is only necessary to disambiguate
     //    overloaded ecall functions - usually you can leave it set to NULL.
-    // 5) Your copy of mscorlib.dll & mscoree.dll are out of sync - rebuild both.
-    // 6) You've loaded the wrong copy of mscorlib.dll.  In msdev's debug menu,
-    //    select the "Modules..." dialog.  Verify the path for mscorlib is right.
+    // 5) Your copy of System.Private.CoreLib.dll & coreclr.dll are out of sync - rebuild both.
+    // 6) You've loaded the wrong copy of System.Private.CoreLib.dll.  In Visual Studio's debug menu,
+    //    select the "Modules..." dialog.  Verify the path for System.Private.CoreLib is right.
     // 7) Someone mucked around with how the signatures in metasig.h are parsed, changing the
     //    interpretation of a part of the signature (this is very rare & extremely unlikely,
     //    but has happened at least once).
@@ -631,7 +631,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
                 if (!usedIDs.Contains(id))
                 {
-                    printf("CheckMscorlibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
+                    printf("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
                     fUnusedFCallsFound = TRUE;
                     continue;
                 }
@@ -641,7 +641,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
         if (fUnreferencedType)
         {
-            printf("CheckMscorlibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
+            printf("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
             fUnusedFCallsFound = TRUE;
             continue;
         }
@@ -803,7 +803,7 @@ CorInfoIntrinsics ECall::GetIntrinsicID(MethodDesc* pMD)
         return(CORINFO_INTRINSIC_Illegal);
     }
 
-    // All intrinsic live in mscorlib.dll (FindECFuncForMethod does not work for non-mscorlib intrinsics)
+    // All intrinsic live in CoreLib (FindECFuncForMethod does not work for non-CoreLib intrinsics)
     if (!pMD->GetModule()->IsSystem())
     {
         return(CORINFO_INTRINSIC_Illegal);

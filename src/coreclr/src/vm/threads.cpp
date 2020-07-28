@@ -7844,7 +7844,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    // This is the case when we're building mscorlib and haven't yet created
+    // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
     if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
         return NULL;

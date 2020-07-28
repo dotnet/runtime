@@ -5964,7 +5964,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         break;
 
     case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin mscorlib types
+        // This path should only be taken for the builtin CoreLib types
         // and primitive valuetypes
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&

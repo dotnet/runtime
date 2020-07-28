@@ -63,7 +63,7 @@
 // Some useful effects of this rule (for ngen purposes) are:
 //
 // * G<object,...,object> lives in the module defining G
-// * non-mscorlib instantiations of mscorlib-defined generic types live in the module
+// * non-CoreLib instantiations of CoreLib-defined generic types live in the module
 //   of the instantiation (when only one module is invloved in the instantiation)
 //
 
@@ -250,7 +250,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
 
     // We're a little stuck - we can't force the item into an NGEN image at this point.  So just bail out
     // and use the loader module we've computed without recording the choice. The loader module should always
-    // be mscorlib in this case.
+    // be CoreLib in this case.
     AppDomain * pAppDomain = GetAppDomain();
     if (!pAppDomain->IsCompilationDomain() ||
         !pAppDomain->ToCompilationDomain()->GetTargetModule())
