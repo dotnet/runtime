@@ -445,7 +445,7 @@ enum ReasonForRejectingNativeImage
 {
     ReasonForRejectingNativeImage_NoNiForManifestModule = 0x101,
     ReasonForRejectingNativeImage_DependencyNotNative = 0x102,
-    ReasonForRejectingNativeImage_MscorlibNotNative = 0x103,
+    ReasonForRejectingNativeImage_CoreLibNotNative = 0x103,
     ReasonForRejectingNativeImage_FailedSecurityCheck = 0x104,
     ReasonForRejectingNativeImage_DependencyIdentityMismatch = 0x105,
     ReasonForRejectingNativeImage_CannotShareNiAssemblyNotDomainNeutral = 0x106,

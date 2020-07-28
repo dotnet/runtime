@@ -283,8 +283,8 @@ HRESULT EnsureEEStarted()
 
     HRESULT hr = E_FAIL;
 
-    // On non x86 platforms, when we load mscorlib.dll during EEStartup, we will
-    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for mscorlib.dll. We are
+    // On non x86 platforms, when we load CoreLib during EEStartup, we will
+    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for CoreLib. We are
     // far enough in startup that this is allowed, however we don't want to
     // re-start the startup code so we need to check to see if startup has
     // been initiated or completed before we call EEStartup.
@@ -824,7 +824,7 @@ void EEStartupHelper()
 
         AccessCheckOptions::Startup();
 
-        MscorlibBinder::Startup();
+        CoreLibBinder::Startup();
 
         Stub::Init();
         StubLinkerCPU::Init();
@@ -1030,8 +1030,8 @@ void EEStartupHelper()
             SystemDomain::SystemModule()->ExpandAll();
         }
 
-        // Perform mscorlib consistency check if requested
-        g_Mscorlib.CheckExtended();
+        // Perform CoreLib consistency check if requested
+        g_CoreLib.CheckExtended();
 
 #endif // _DEBUG
 
@@ -1107,7 +1107,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 // EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
 // what it does include
 //     * Creates the default and shared, appdomains.
-//     * Loads mscorlib.dll and loads up the fundamental types (System.Object ...)
+//     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
 // see code:#EEShutdown for a analagous routine run during shutdown.

@@ -365,7 +365,7 @@ public:
             pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
             // save the current culture
-            LocalDesc locDescCulture(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+            LocalDesc locDescCulture(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
             DWORD dwCultureLocalNum = pcs->NewLocal(locDescCulture);
 
             pcs->EmitSTLOC(dwCultureLocalNum);
@@ -653,7 +653,7 @@ public:
             MetaSig nsig(
                 GetStubTargetMethodSig(),
                 GetStubTargetMethodSigLength(),
-                MscorlibBinder::GetModule(),
+                CoreLibBinder::GetModule(),
                 &typeContext);
 
             CorElementType type;
@@ -881,7 +881,7 @@ public:
             PCCOR_SIGNATURE pManagedSig;
             ULONG           cManagedSig;
 
-            IMDInternalImport* pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport* pIMDI = CoreLibBinder::GetModule()->GetMDImport();
 
             pStubMD->GetSig(&pManagedSig, &cManagedSig);
 
@@ -1246,7 +1246,7 @@ public:
         pCleanupStartLabel = pcsSetup->NewCodeLabel();
         pReturnLabel = pcsSetup->NewCodeLabel();
 
-        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(MscorlibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
+        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(CoreLibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
         pcsSetup->EmitLDNULL();
         pcsSetup->EmitSTLOC(dwExceptionDispatchInfoLocal);
 
@@ -1880,7 +1880,7 @@ void NDirectStubLinker::NeedsCleanupList()
         SetCleanupNeeded();
 
         // we setup a new local that will hold the cleanup work list
-        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+        LocalDesc desc(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
         m_dwCleanupWorkListLocalNum = NewLocal(desc);
     }
 }
@@ -1936,7 +1936,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
-            m_pcsDispatch->EmitLDFLD(GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__TARGET)));
+            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
         }
     }
 
@@ -2133,7 +2133,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
-            int tokDelegate_methodPtr = pcsEmit->GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
+            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
@@ -4341,7 +4341,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
             // so we have to special-case it here.
             // If a type doesn't have a native representation, we won't set this flag.
             // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }
@@ -5170,7 +5170,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     LocalDesc i4(ELEMENT_TYPE_I4);
     sigBuilder.NewArg(&i4);
 
-    LocalDesc cleanupWorkList(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+    LocalDesc cleanupWorkList(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
     cleanupWorkList.MakeByRef();
     sigBuilder.NewArg(&cleanupWorkList);
 

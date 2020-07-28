@@ -1198,9 +1198,9 @@ MemberLoader::FindMethod(MethodTable * pMT, LPCUTF8 pwzName, LPHARDCODEDMETASIG 
         MODE_ANY;
     } CONTRACTL_END;
 
-    Signature sig = MscorlibBinder::GetSignature(pwzSignature);
+    Signature sig = CoreLibBinder::GetSignature(pwzSignature);
 
-    return FindMethod(pMT, pwzName, sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), flags);
+    return FindMethod(pMT, pwzName, sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), flags);
 }
 
 //*******************************************************************************
@@ -1389,9 +1389,9 @@ MemberLoader::FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetSignature(pwzSignature);
+    Signature sig = CoreLibBinder::GetSignature(pwzSignature);
 
-    return FindConstructor(pMT, sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule());
+    return FindConstructor(pMT, sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule());
 }
 
 //*******************************************************************************
