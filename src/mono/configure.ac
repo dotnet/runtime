@@ -2050,7 +2050,7 @@ AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
 
 if test "x$mono_feature_disable_alc_unloadability" = "xyes"; then
 	AC_DEFINE(DISABLE_ALC_UNLOADABILITY, 1, [Disable ALC unloadability in netcore])
-	AC_MSG_NOTICE([Didsabled ALC unloadability])
+	AC_MSG_NOTICE([Disabled ALC unloadability])
 fi
 
 if test "x$mono_feature_disable_domain_code_memory" = "xyes"; then
