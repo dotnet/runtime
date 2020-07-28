@@ -1253,19 +1253,9 @@ namespace System.Net.Http
             }
 
             // If there's enough space in the buffer to just copy all of the string's bytes, do so.
-            int offset = _writeOffset;
-            int available = _writeBuffer.Length - offset;
-
-            // Fast-path Latin1 and UTF8 as the most common scenarios of non-default encoding
-            const int MaxUtf8BytesPerChar = 3;
-            int requiredSpace = ReferenceEquals(encoding, Encoding.Latin1) ? s.Length :
-                ReferenceEquals(encoding, Encoding.UTF8) ? s.Length * MaxUtf8BytesPerChar :
-                encoding.GetMaxByteCount(s.Length);
-
-            if (requiredSpace <= available)
+            if (encoding.GetMaxByteCount(s.Length) <= _writeBuffer.Length - _writeOffset)
             {
-                int written = encoding.GetBytes(s, _writeBuffer.AsSpan(offset));
-                _writeOffset = offset + written;
+                _writeOffset += encoding.GetBytes(s, _writeBuffer.AsSpan(_writeOffset));
                 return Task.CompletedTask;
             }
 
