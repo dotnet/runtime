@@ -18,14 +18,14 @@ namespace System.Reflection
         {
             _compilation = compilation;
             Dictionary<AssemblyName, IAssemblySymbol> assemblies = compilation.References
-                                        .OfType<PortableExecutableReference>()
-                                        .ToDictionary(r => AssemblyName.GetAssemblyName(r.FilePath),
-                                                      r => (IAssemblySymbol)compilation.GetAssemblyOrModuleSymbol(r)!);
+                .OfType<PortableExecutableReference>()
+                .ToDictionary(
+                    r => string.IsNullOrWhiteSpace(r.FilePath) ?
+                        new AssemblyName(r.Display) : AssemblyName.GetAssemblyName(r.FilePath),
+                    r => (IAssemblySymbol)compilation.GetAssemblyOrModuleSymbol(r)!);
 
             foreach (var item in assemblies)
             {
-                // REVIEW: We need to figure out full framework
-                // _assemblies[item.Key.FullName] = item.Value;
                 _assemblies[item.Key.Name] = item.Value!;
             }
 

@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -98,7 +97,6 @@ namespace System.Text.Json.SourceGeneration
                 member.Clear();
 
                 context.AddSource($"{entry.Key}ClassInfo", SourceText.From($@"
-using System;
 using System.Collections.Generic;
 
 namespace HelloWorldGenerated
