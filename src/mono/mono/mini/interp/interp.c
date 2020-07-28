@@ -5318,6 +5318,13 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF) {
+			MonoObject* const o = sp [-1].data.o;
+			NULL_CHECK (o);
+			sp[-1].data.p = (guint8*)o + MONO_STRUCT_OFFSET (MonoArray, vector);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII) {
 			sp--;
 			sp [-1].data.i = interp_intrins_ordinal_ignore_case_ascii ((guint32)sp [-1].data.i, (guint32)sp [0].data.i);
