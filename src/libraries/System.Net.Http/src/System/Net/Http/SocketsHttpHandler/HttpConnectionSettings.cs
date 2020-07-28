@@ -99,7 +99,7 @@ namespace System.Net.Http
                 _proxy = _proxy,
                 _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
                 _useCookies = _useCookies,
-                _useProxy = _useProxy
+                _useProxy = _useProxy,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectionFactory = _connectionFactory,
                 _plaintextFilter = _plaintextFilter

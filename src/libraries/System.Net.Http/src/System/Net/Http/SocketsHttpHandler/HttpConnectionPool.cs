@@ -1236,7 +1236,7 @@ namespace System.Net.Http
                 TransportContext? transportContext = null;
                 if (IsSecure)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream!, cancellationToken).ConfigureAwait(false);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, connection.Stream, cancellationToken).ConfigureAwait(false);
                     connection = Connection.FromStream(sslStream, leaveOpen: false, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint);
                     transportContext = sslStream.TransportContext;
                 }
@@ -1296,17 +1296,14 @@ namespace System.Net.Http
             {
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp2Only)}");
                     return _sslOptionsHttp2Only!;
                 }
 
                 if (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
                 {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp2)}");
                     return _sslOptionsHttp2!;
                 }
             }
-            if (NetEventSource.Log.IsEnabled()) Trace($"GetSslOptionsForRequest({request.Version}, {request.VersionPolicy}) --> {nameof(_sslOptionsHttp11)}");
             return _sslOptionsHttp11!;
         }
 
