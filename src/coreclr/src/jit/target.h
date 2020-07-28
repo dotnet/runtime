@@ -1619,11 +1619,11 @@ public:
     static const enum ArgOrder g_tgtArgOrder;
 };
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
                                                             // the regNumber type
 const char* getRegName(regNumber reg, bool isFloat = false);
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
