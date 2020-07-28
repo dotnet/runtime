@@ -933,7 +933,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void IsNullRef_NotNull()
+        public static unsafe void IsNullRef_NotNull()
         {
             // Validate that calling with a primitive type works.
 
@@ -952,6 +952,11 @@ namespace System.Runtime.CompilerServices
 
             string stringValue = nameof(IsNullRef_NotNull);
             Assert.False(Unsafe.IsNullRef<string>(ref stringValue));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)1;
+            Assert.False(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
         }
 
         [Fact]
@@ -969,10 +974,15 @@ namespace System.Runtime.CompilerServices
 
             Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.AsRef<object>(null)));
             Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.AsRef<string>(null)));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)0;
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
         }
 
         [Fact]
-        public static void NullRef()
+        public static unsafe void NullRef()
         {
             // Validate that calling with a primitive type works.
 
@@ -986,6 +996,18 @@ namespace System.Runtime.CompilerServices
 
             Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.NullRef<object>()));
             Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.NullRef<string>()));
+
+            // Validate that pinning results in a null pointer
+
+            fixed (void* p = &Unsafe.NullRef<int>())
+            {
+                Assert.True(p == (void*)0);
+            }
+
+            // Validate that dereferencing a null ref throws a NullReferenceException
+
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>() = 42);
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>());
         }
     }
 
