@@ -24,9 +24,9 @@ namespace Profiler.Tests
         }
     }
 
-    class GCBasicTests
+    class GCTests
     {
-        static readonly Guid GcBasicEventsProfilerGuid = new Guid("BCD8186F-1EEC-47E9-AFA7-396F879382C3");
+        static readonly Guid GCProfilerGuid = new Guid("BCD8186F-1EEC-47E9-AFA7-396F879382C3");
 
         public static int RunTest(String[] args) 
         {
@@ -79,7 +79,7 @@ namespace Profiler.Tests
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "GCTests",
-                                          profilerClsid: GcBasicEventsProfilerGuid);
+                                          profilerClsid: GCProfilerGuid);
         }
     }
 }
