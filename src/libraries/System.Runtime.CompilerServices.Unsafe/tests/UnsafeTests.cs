@@ -413,7 +413,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
-            fixed (byte * p = b)
+            fixed (byte* p = b)
             {
                 ref int r = ref Unsafe.AsRef<int>(p);
                 Assert.Equal(0x42424242, r);
@@ -839,7 +839,7 @@ namespace System.Runtime.CompilerServices
             Unsafe.SkipInit(out double doubleValue);
 
             // Validate that calling on user-defined unmanaged structs works.
-            
+
             Unsafe.SkipInit(out Byte4 byte4Value);
             Unsafe.SkipInit(out Byte4Short2 byte4Short2Value);
             Unsafe.SkipInit(out Byte512 byte512Value);
@@ -935,48 +935,12 @@ namespace System.Runtime.CompilerServices
         [Fact]
         public static void IsNullRef_NotNull()
         {
-            // Validate that calling with primitive types works.
-
-            sbyte sbyteValue = 1;
-            Assert.False(Unsafe.IsNullRef<sbyte>(ref sbyteValue));
-
-            byte byteValue = 2;
-            Assert.False(Unsafe.IsNullRef<byte>(ref byteValue));
-
-            short shortValue = 3;
-            Assert.False(Unsafe.IsNullRef<short>(ref shortValue));
-
-            ushort ushortValue = 4;
-            Assert.False(Unsafe.IsNullRef<ushort>(ref ushortValue));
+            // Validate that calling with a primitive type works.
 
             int intValue = 5;
             Assert.False(Unsafe.IsNullRef<int>(ref intValue));
 
-            uint uintValue = 6;
-            Assert.False(Unsafe.IsNullRef<uint>(ref uintValue));
-
-            long longValue = 7;
-            Assert.False(Unsafe.IsNullRef<long>(ref longValue));
-
-            ulong ulongValue = 8;
-            Assert.False(Unsafe.IsNullRef<ulong>(ref ulongValue));
-
-            float floatValue = 9;
-            Assert.False(Unsafe.IsNullRef<float>(ref floatValue));
-
-            double doubleValue = 10;
-            Assert.False(Unsafe.IsNullRef<double>(ref doubleValue));
-
             // Validate that calling on user-defined unmanaged structs works.
-
-            Byte4 byte4Value = default;
-            Assert.False(Unsafe.IsNullRef<Byte4>(ref byte4Value));
-
-            Byte4Short2 byte4Short2Value = default;
-            Assert.False(Unsafe.IsNullRef<Byte4Short2>(ref byte4Short2Value));
-
-            Byte512 byte512Value = default;
-            Assert.False(Unsafe.IsNullRef<Byte512>(ref byte512Value));
 
             Int32Double int32DoubleValue = default;
             Assert.False(Unsafe.IsNullRef<Int32Double>(ref int32DoubleValue));
@@ -993,23 +957,12 @@ namespace System.Runtime.CompilerServices
         [Fact]
         public static unsafe void IsNullRef_Null()
         {
-            // Validate that calling with primitive types works.
+            // Validate that calling with a primitive type works.
 
-            Assert.True(Unsafe.IsNullRef<sbyte>(ref Unsafe.AsRef<sbyte>(null)));
-            Assert.True(Unsafe.IsNullRef<byte>(ref Unsafe.AsRef<byte>(null)));
-            Assert.True(Unsafe.IsNullRef<short>(ref Unsafe.AsRef<short>(null)));
-            Assert.True(Unsafe.IsNullRef<ushort>(ref Unsafe.AsRef<ushort>(null)));
             Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(null)));
-            Assert.True(Unsafe.IsNullRef<uint>(ref Unsafe.AsRef<uint>(null)));
-            Assert.True(Unsafe.IsNullRef<long>(ref Unsafe.AsRef<long>(null)));
-            Assert.True(Unsafe.IsNullRef<ulong>(ref Unsafe.AsRef<ulong>(null)));
-            Assert.True(Unsafe.IsNullRef<double>(ref Unsafe.AsRef<double>(null)));
 
             // Validate that calling on user-defined unmanaged structs works.
 
-            Assert.True(Unsafe.IsNullRef<Byte4>(ref Unsafe.AsRef<Byte4>(null)));
-            Assert.True(Unsafe.IsNullRef<Byte4Short2>(ref Unsafe.AsRef<Byte4Short2>(null)));
-            Assert.True(Unsafe.IsNullRef<Byte512>(ref Unsafe.AsRef<Byte512>(null)));
             Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.AsRef<Int32Double>(null)));
 
             // Validate that calling on reference types works.
@@ -1021,24 +974,12 @@ namespace System.Runtime.CompilerServices
         [Fact]
         public static void NullRef()
         {
-            // Validate that calling with primitive types works.
+            // Validate that calling with a primitive type works.
 
-            Assert.True(Unsafe.IsNullRef<sbyte>(ref Unsafe.NullRef<sbyte>()));
-            Assert.True(Unsafe.IsNullRef<byte>(ref Unsafe.NullRef<byte>()));
-            Assert.True(Unsafe.IsNullRef<short>(ref Unsafe.NullRef<short>()));
-            Assert.True(Unsafe.IsNullRef<ushort>(ref Unsafe.NullRef<ushort>()));
             Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.NullRef<int>()));
-            Assert.True(Unsafe.IsNullRef<uint>(ref Unsafe.NullRef<uint>()));
-            Assert.True(Unsafe.IsNullRef<long>(ref Unsafe.NullRef<long>()));
-            Assert.True(Unsafe.IsNullRef<ulong>(ref Unsafe.NullRef<ulong>()));
-            Assert.True(Unsafe.IsNullRef<float>(ref Unsafe.NullRef<float>()));
-            Assert.True(Unsafe.IsNullRef<double>(ref Unsafe.NullRef<double>()));
 
             // Validate that calling on user-defined unmanaged structs works.
 
-            Assert.True(Unsafe.IsNullRef<Byte4>(ref Unsafe.NullRef<Byte4>()));
-            Assert.True(Unsafe.IsNullRef<Byte4Short2>(ref Unsafe.NullRef<Byte4Short2>()));
-            Assert.True(Unsafe.IsNullRef<Byte512>(ref Unsafe.NullRef<Byte512>()));
             Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.NullRef<Int32Double>()));
 
             // Validate that calling on reference types works.
@@ -1083,7 +1024,7 @@ namespace System.Runtime.CompilerServices
         public fixed byte Bytes[512];
     }
 
-    [StructLayout(LayoutKind.Explicit, Size=16)]
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct Int32Double
     {
         [FieldOffset(0)]
