@@ -396,7 +396,7 @@ typedef enum
      * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
      * the primary object is the original instantiation and the secondary represents the added field.
      *
-     * They are also used to implement the ConditionalWeakTable class in mscorlib.dll. If you want to use
+     * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
      *
      *

@@ -7240,7 +7240,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
     if (mt->IsString())
     {
         COR_TYPEID token;
-        token.token1 = MscorlibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
+        token.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
         token.token2 = 0;
 
         pLayout->componentID = token;

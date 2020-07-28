@@ -47,7 +47,7 @@ enum BinderClassID
 #define DEFINE_CLASS(i,n,s)         CLASS__ ## i,
 #include "mscorlib.h"
 
-    CLASS__MSCORLIB_COUNT,
+    CLASS__CORELIB_COUNT,
 
     // Aliases for element type classids
     CLASS__NIL      = CLASS__ELEMENT_TYPE_END,
@@ -98,20 +98,20 @@ enum BinderFieldID
     FIELD__MSCORLIB_COUNT,
 };
 
-struct MscorlibClassDescription
+struct CoreLibClassDescription
 {
     PTR_CSTR nameSpace;
     PTR_CSTR name;
 };
 
-struct MscorlibMethodDescription
+struct CoreLibMethodDescription
 {
     BinderClassID classID;
     PTR_CSTR name;
     PTR_HARDCODEDMETASIG sig;
 };
 
-struct MscorlibFieldDescription
+struct CoreLibFieldDescription
 {
     BinderClassID classID;
     PTR_CSTR name;
@@ -189,24 +189,24 @@ class CoreLibBinder
     static MethodTable *GetException(RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInMscorlib);  // Not supported for exceptions defined outside mscorlib.
-        BinderClassID id = (BinderClassID) (kind + CLASS__MSCORLIB_COUNT);
+        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return GetClass(id);
     }
 
     static BOOL IsException(MethodTable *pMT, RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInMscorlib);  // Not supported for exceptions defined outside mscorlib.
-        BinderClassID id = (BinderClassID) (kind + CLASS__MSCORLIB_COUNT);
+        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return dac_cast<TADDR>(GetClassIfExist(id)) == dac_cast<TADDR>(pMT);
     }
 
     static LPCUTF8 GetExceptionName(RuntimeExceptionKind kind)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(kind <= kLastExceptionInMscorlib);  // Not supported for exceptions defined outside mscorlib.
-        BinderClassID id = (BinderClassID) (kind + CLASS__MSCORLIB_COUNT);
+        _ASSERTE(kind <= kLastExceptionInCoreLib);  // Not supported for exceptions defined outside CoreLib.
+        BinderClassID id = (BinderClassID) (kind + CLASS__CORELIB_COUNT);
         return GetClassName(id);
     }
 
@@ -281,9 +281,9 @@ private:
     const BYTE* ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, const BYTE* pSig);
 
     void SetDescriptions(Module * pModule,
-        const MscorlibClassDescription * pClassDescriptions, USHORT nClasses,
-        const MscorlibMethodDescription * pMethodDescriptions, USHORT nMethods,
-        const MscorlibFieldDescription * pFieldDescriptions, USHORT nFields);
+        const CoreLibClassDescription * pClassDescriptions, USHORT nClasses,
+        const CoreLibMethodDescription * pMethodDescriptions, USHORT nMethods,
+        const CoreLibFieldDescription * pFieldDescriptions, USHORT nFields);
 
     void AllocateTables();
 
@@ -298,9 +298,9 @@ private:
     DPTR(PTR_FieldDesc) m_pFields;
 
     // This is necessary to avoid embeding copy of the descriptions into mscordacwks
-    DPTR(const MscorlibClassDescription) m_classDescriptions;
-    DPTR(const MscorlibMethodDescription) m_methodDescriptions;
-    DPTR(const MscorlibFieldDescription) m_fieldDescriptions;
+    DPTR(const CoreLibClassDescription) m_classDescriptions;
+    DPTR(const CoreLibMethodDescription) m_methodDescriptions;
+    DPTR(const CoreLibFieldDescription) m_fieldDescriptions;
 
     USHORT m_cClasses;
     USHORT m_cMethods;
@@ -341,7 +341,7 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
         INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != CLASS__NIL);
-        PRECONDITION((&g_CoreLib)->m_cClasses > 0);  // Make sure mscorlib has been loaded.
+        PRECONDITION((&g_CoreLib)->m_cClasses > 0);  // Make sure CoreLib has been loaded.
         PRECONDITION(id <= (&g_CoreLib)->m_cClasses);
     }
     CONTRACTL_END;

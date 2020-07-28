@@ -131,7 +131,7 @@ enum BinderClassID
 #define DEFINE_CLASS(i,n,s)         CLASS__ ## i,
 #include "mscorlib.h"
 
-    CLASS__MSCORLIB_COUNT,
+    CLASS__CORELIB_COUNT,
 
     CLASS__VOID     = CLASS__ELEMENT_TYPE_VOID,
     CLASS__BOOLEAN  = CLASS__ELEMENT_TYPE_BOOLEAN,
@@ -153,20 +153,20 @@ enum BinderClassID
     CLASS__OBJECT   = CLASS__ELEMENT_TYPE_OBJECT
 };
 
-struct MscorlibClassDescription
+struct CoreLibClassDescription
 {
     LPCSTR  nameSpace;
     LPCSTR  name;
 };
 
-struct MscorlibMethodDescription
+struct CoreLibMethodDescription
 {
     BinderClassID classID;
     LPCSTR  name;
     const HardCodedMetaSig * sig;
 };
 
-struct MscorlibFieldDescription
+struct CoreLibFieldDescription
 {
     BinderClassID classID;
     LPCSTR  name;
@@ -325,16 +325,16 @@ enum _gsigc {
 //
 
 // Extern definitions so that binder.cpp can see these tables
-extern const MscorlibClassDescription c_rgMscorlibClassDescriptions[];
-extern const USHORT c_nMscorlibClassDescriptions;
+extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
+extern const USHORT c_nCoreLibClassDescriptions;
 
-extern const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[];
-extern const USHORT c_nMscorlibMethodDescriptions;
+extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
+extern const USHORT c_nCoreLibMethodDescriptions;
 
-extern const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[];
-extern const USHORT c_nMscorlibFieldDescriptions;
+extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
+extern const USHORT c_nCoreLibFieldDescriptions;
 
-const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
+const CoreLibClassDescription c_rgCoreLibClassDescriptions[] =
 {
     #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   { ns, c },
     #include "cortypeinfo.h"
@@ -348,23 +348,23 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #include "rexcep.h"
 };
-const USHORT c_nMscorlibClassDescriptions = NumItems(c_rgMscorlibClassDescriptions);
+const USHORT c_nCoreLibClassDescriptions = NumItems(c_rgCoreLibClassDescriptions);
 
 #define gsig_NoSig (*(HardCodedMetaSig *)NULL)
 
-const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[] =
+const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[] =
 {
     #define DEFINE_METHOD(c,i,s,g)          { CLASS__ ## c , # s, & gsig_ ## g },
     #include "mscorlib.h"
 };
-const USHORT c_nMscorlibMethodDescriptions = NumItems(c_rgMscorlibMethodDescriptions) + 1;
+const USHORT c_nCoreLibMethodDescriptions = NumItems(c_rgCoreLibMethodDescriptions) + 1;
 
-const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[] =
+const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
 {
     #define DEFINE_FIELD(c,i,s)           { CLASS__ ## c , # s },
     #include "mscorlib.h"
 };
-const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptions) + 1;
+const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions) + 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

@@ -653,7 +653,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
         name.InitializeSpec(pDependency->dwAssemblyRef,
                             ((pManifestNativeImage != NULL) ? pManifestNativeImage : pNativeImage)->GetNativeMDImport(),
                             GetDomainAssembly());
-        _ASSERTE(name.IsMscorlib());
+        _ASSERTE(name.IsCoreLib());
 #endif
 
         PEAssembly * pDependencyFile = SystemDomain::SystemFile();

@@ -3878,7 +3878,7 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
 
     // Check to see if this fits our rather loose idea of a reference to mscorlib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (pSpec->IsMscorlib())
+    if (pSpec->IsCoreLib())
         return TRUE;
 
     return m_AssemblyCache.Contains(pSpec);
@@ -3908,7 +3908,7 @@ PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/
 
     // Check to see if this fits our rather loose idea of a reference to mscorlib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (fThrow && pSpec->IsMscorlib())
+    if (fThrow && pSpec->IsCoreLib())
     {
         CONSISTENCY_CHECK(SystemDomain::System()->SystemAssembly() != NULL);
         PEAssembly *pFile = SystemDomain::System()->SystemFile();
@@ -4002,7 +4002,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                     if (bindResult.Found())
                     {
-                        if (SystemDomain::SystemFile() && bindResult.IsMscorlib())
+                        if (SystemDomain::SystemFile() && bindResult.IsCoreLib())
                         {
                             // Avoid rebinding to another copy of mscorlib
                             result = SystemDomain::SystemFile();
@@ -4034,7 +4034,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         // return an assembly that does not match, and this can cause recursive resource lookups during error
                         // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
                         // AssemblySpec::Bind().
-                        if (!pSpec->IsMscorlibSatellite())
+                        if (!pSpec->IsCoreLibSatellite())
                         {
                             // Trigger the resolve event also for non-throw situation.
                             AssemblySpec NewSpec(this);

@@ -276,7 +276,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
         AssemblySpec spec;
         spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), NULL);
 
-        if (spec.IsMscorlib())
+        if (spec.IsCoreLib())
         {
             pAssembly = SystemDomain::System()->SystemAssembly();
         }
@@ -6646,7 +6646,7 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
     // mscorlib references in the ngen image since fusion doesn't understand how to bind them.
     // (Not to mention the fact that they are redundant.)
     AssemblySpec spec;
-    if (pRefSpec->IsMscorlib())
+    if (pRefSpec->IsCoreLib())
     {
         _ASSERTE(pFile); // mscorlib had better not be missing
         if (!pFile)

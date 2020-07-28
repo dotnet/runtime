@@ -305,7 +305,7 @@ public:
         TADDR pMetadataStartTarget;
         TADDR pMetadataStartHost;
         SIZE_T MetadataSize;
-        bool fIsMscorlib;
+        bool fIsCoreLib;
         bool fIsHardbound;
         WCHAR name[128];
     };

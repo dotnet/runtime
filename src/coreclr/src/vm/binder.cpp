@@ -63,7 +63,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
     // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    const MscorlibClassDescription *d = m_classDescriptions + (int)id;
+    const CoreLibClassDescription *d = m_classDescriptions + (int)id;
 
     pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name).AsMethodTable();
 
@@ -108,7 +108,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
 #ifndef DACCESS_COMPILE
     MethodDesc * pMD = NULL;
 
-    const MscorlibMethodDescription *d = m_methodDescriptions + (id - 1);
+    const CoreLibMethodDescription *d = m_methodDescriptions + (id - 1);
 
     MethodTable * pMT = GetClassLocal(d->classID);
     _ASSERTE(pMT != NULL && "Couldn't find a type in mscorlib!");
@@ -167,7 +167,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
 
     FieldDesc * pFD = NULL;
 
-    const MscorlibFieldDescription *d = m_fieldDescriptions + (id - 1);
+    const CoreLibFieldDescription *d = m_fieldDescriptions + (id - 1);
 
     MethodTable * pMT = GetClassLocal(d->classID);
 
@@ -203,7 +203,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    const MscorlibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
+    const CoreLibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
 
     PTR_MethodTable pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
         ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_UNRESTOREDTYPEKEY).AsMethodTable();
@@ -1109,26 +1109,26 @@ ErrExit:
 
 #endif // _DEBUG && !CROSSGEN_COMPILE
 
-extern const MscorlibClassDescription c_rgMscorlibClassDescriptions[];
-extern const USHORT c_nMscorlibClassDescriptions;
+extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
+extern const USHORT c_nCoreLibClassDescriptions;
 
-extern const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[];
-extern const USHORT c_nMscorlibMethodDescriptions;
+extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
+extern const USHORT c_nCoreLibMethodDescriptions;
 
-extern const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[];
-extern const USHORT c_nMscorlibFieldDescriptions;
+extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
+extern const USHORT c_nCoreLibFieldDescriptions;
 
 #ifdef CROSSGEN_COMPILE
 namespace CrossGenMscorlib
 {
-    extern const MscorlibClassDescription c_rgMscorlibClassDescriptions[];
-    extern const USHORT c_nMscorlibClassDescriptions;
+    extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
+    extern const USHORT c_nCoreLibClassDescriptions;
 
-    extern const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[];
-    extern const USHORT c_nMscorlibMethodDescriptions;
+    extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
+    extern const USHORT c_nCoreLibMethodDescriptions;
 
-    extern const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[];
-    extern const USHORT c_nMscorlibFieldDescriptions;
+    extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
+    extern const USHORT c_nCoreLibFieldDescriptions;
 };
 #endif
 
@@ -1139,9 +1139,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
     CoreLibBinder * pGlobalBinder = &g_CoreLib;
 
     pGlobalBinder->SetDescriptions(pModule,
-        c_rgMscorlibClassDescriptions,  c_nMscorlibClassDescriptions,
-        c_rgMscorlibMethodDescriptions, c_nMscorlibMethodDescriptions,
-        c_rgMscorlibFieldDescriptions,  c_nMscorlibFieldDescriptions);
+        c_rgCoreLibClassDescriptions,  c_nCoreLibClassDescriptions,
+        c_rgCoreLibMethodDescriptions, c_nCoreLibMethodDescriptions,
+        c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
 #if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
     CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
@@ -1167,9 +1167,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
             ->AllocMem(S_SIZE_T(sizeof(CoreLibBinder)));
 
     pTargetBinder->SetDescriptions(pModule,
-        CrossGenMscorlib::c_rgMscorlibClassDescriptions,  CrossGenMscorlib::c_nMscorlibClassDescriptions,
-        CrossGenMscorlib::c_rgMscorlibMethodDescriptions, CrossGenMscorlib::c_nMscorlibMethodDescriptions,
-        CrossGenMscorlib::c_rgMscorlibFieldDescriptions,  CrossGenMscorlib::c_nMscorlibFieldDescriptions);
+        CrossGenMscorlib::c_rgCoreLibClassDescriptions,  CrossGenMscorlib::c_nCoreLibClassDescriptions,
+        CrossGenMscorlib::c_rgCoreLibMethodDescriptions, CrossGenMscorlib::c_nCoreLibMethodDescriptions,
+        CrossGenMscorlib::c_rgCoreLibFieldDescriptions,  CrossGenMscorlib::c_nCoreLibFieldDescriptions);
 
     pTargetBinder->AllocateTables();
 
@@ -1180,9 +1180,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
 }
 
 void CoreLibBinder::SetDescriptions(Module * pModule,
-    const MscorlibClassDescription * pClassDescriptions, USHORT nClasses,
-    const MscorlibMethodDescription * pMethodDescriptions, USHORT nMethods,
-    const MscorlibFieldDescription * pFieldDescriptions, USHORT nFields)
+    const CoreLibClassDescription * pClassDescriptions, USHORT nClasses,
+    const CoreLibMethodDescription * pMethodDescriptions, USHORT nMethods,
+    const CoreLibFieldDescription * pFieldDescriptions, USHORT nFields)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1229,7 +1229,7 @@ PTR_MethodTable CoreLibBinder::LoadPrimitiveType(CorElementType et)
     // Primitive types hit cyclic reference on binder during type loading so we have to load them in two steps
     if (pMT == NULL)
     {
-        const MscorlibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)et;
+        const CoreLibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)et;
 
         pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
             ClassLoader::ThrowIfNotFound, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
@@ -1341,11 +1341,11 @@ CoreLibBinder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
 
     DacEnumMemoryRegion(dac_cast<TADDR>(m_classDescriptions),
-                        m_cClasses * sizeof(MscorlibClassDescription));
+                        m_cClasses * sizeof(CoreLibClassDescription));
     DacEnumMemoryRegion(dac_cast<TADDR>(m_methodDescriptions),
-                        (m_cMethods - 1) * sizeof(MscorlibMethodDescription));
+                        (m_cMethods - 1) * sizeof(CoreLibMethodDescription));
     DacEnumMemoryRegion(dac_cast<TADDR>(m_fieldDescriptions),
-                        (m_cFields - 1) * sizeof(MscorlibFieldDescription));
+                        (m_cFields - 1) * sizeof(CoreLibFieldDescription));
 
     if (m_pModule.IsValid())
     {

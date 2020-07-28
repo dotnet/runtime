@@ -3491,7 +3491,7 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
     // IsExceptionOfType is supported for mscorlib exception types only
-    _ASSERTE(reKind <= kLastExceptionInMscorlib);
+    _ASSERTE(reKind <= kLastExceptionInCoreLib);
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 

@@ -73,7 +73,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
 }
 
 #ifndef DACCESS_COMPILE
-BOOL BaseAssemblySpec::IsMscorlib()
+BOOL BaseAssemblySpec::IsCoreLib()
 {
     CONTRACTL
     {
@@ -139,7 +139,7 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 // mscorlib.debug.resources.dll and uses the same public key as mscorlib.
 // It does not necessarily have the same version, and the Culture will
 // always be set to something like "jp-JP".
-BOOL BaseAssemblySpec::IsMscorlibSatellite() const
+BOOL BaseAssemblySpec::IsCoreLibSatellite() const
 {
     CONTRACTL
     {
