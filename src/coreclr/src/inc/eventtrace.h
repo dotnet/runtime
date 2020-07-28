@@ -172,6 +172,8 @@ namespace ETW
         static void Cleanup();
         static VOID DeleteTypeHashNoLock(AllLoggedTypes **ppAllLoggedTypes);
         static VOID FlushObjectAllocationEvents();
+        static UINT32 TypeLoadBegin();
+        static VOID TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 loadLevel);
 
     private:
         static BOOL ShouldLogType(TypeHandle th);

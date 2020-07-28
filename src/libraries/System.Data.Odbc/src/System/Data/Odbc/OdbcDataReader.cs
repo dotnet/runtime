@@ -15,12 +15,12 @@ namespace System.Data.Odbc
 {
     public sealed class OdbcDataReader : DbDataReader
     {
-        private OdbcCommand _command;
+        private OdbcCommand? _command;
 
         private int _recordAffected = -1;
-        private FieldNameLookup _fieldNameLookup;
+        private FieldNameLookup? _fieldNameLookup;
 
-        private DbCache _dataCache;
+        private DbCache? _dataCache;
         private enum HasRowsStatus
         {
             DontKnow = 0,
@@ -51,10 +51,10 @@ namespace System.Data.Odbc
         // the DataReader must not free the statement handle. this is done by the command
         //
 
-        private MetaData[] _metadata;
-        private DataTable _schemaTable; // MDAC 68336
+        private MetaData[]? _metadata;
+        private DataTable? _schemaTable; // MDAC 68336
         private readonly string _cmdText;    // get a copy in case the command text on the command is changed ...
-        private CMDWrapper _cmdWrapper;
+        private CMDWrapper? _cmdWrapper;
 
         internal OdbcDataReader(OdbcCommand command, CMDWrapper cmdWrapper, CommandBehavior commandbehavior)
         {
@@ -69,7 +69,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                CNativeBuffer value = _cmdWrapper._dataReaderBuf;
+                CNativeBuffer? value = _cmdWrapper!._dataReaderBuf;
                 if (null == value)
                 {
                     Debug.Fail("object is disposed");
@@ -79,7 +79,7 @@ namespace System.Data.Odbc
             }
         }
 
-        private OdbcConnection Connection
+        private OdbcConnection? Connection
         {
             get
             {
@@ -94,7 +94,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal OdbcCommand Command
+        internal OdbcCommand? Command
         {
             get
             {
@@ -110,13 +110,13 @@ namespace System.Data.Odbc
         {
             get
             {
-                return _cmdWrapper.StatementHandle;
+                return _cmdWrapper!.StatementHandle!;
             }
         }
 
         private OdbcStatementHandle KeyInfoStatementHandle
         {
-            get { return _cmdWrapper.KeyInfoStatement; }
+            get { return _cmdWrapper!.KeyInfoStatement!; }
         }
 
         internal bool IsBehavior(CommandBehavior behavior)
@@ -178,7 +178,7 @@ namespace System.Data.Odbc
                     ODBC32.RetCode retcode = this.FieldCountNoThrow(out cColsAffected);
                     if (retcode != ODBC32.RetCode.SUCCESS)
                     {
-                        Connection.HandleError(StatementHandle, retcode);
+                        Connection!.HandleError(StatementHandle, retcode);
                     }
                 }
                 return ((null != _dataCache) ? _dataCache._count : 0);
@@ -224,7 +224,7 @@ namespace System.Data.Odbc
                 {
                     // we need to search for the first hidden column
                     //
-                    if (!Connection.ProviderInfo.NoSqlSoptSSNoBrowseTable && !Connection.ProviderInfo.NoSqlSoptSSHiddenColumns)
+                    if (!Connection!.ProviderInfo.NoSqlSoptSSNoBrowseTable && !Connection.ProviderInfo.NoSqlSoptSSHiddenColumns)
                     {
                         for (int i = 0; i < cColsAffected; i++)
                         {
@@ -317,9 +317,9 @@ namespace System.Data.Odbc
 
         private void Close(bool disposing)
         {
-            Exception error = null;
+            Exception? error = null;
 
-            CMDWrapper wrapper = _cmdWrapper;
+            CMDWrapper? wrapper = _cmdWrapper;
             if (null != wrapper && wrapper.StatementHandle != null)
             {
                 // disposing
@@ -339,7 +339,7 @@ namespace System.Data.Odbc
                         {
                             // Output Parameters are not guareenteed to be returned until all the data
                             // from any restssets are read, so we do this after the above NextResult call(s)
-                            _command.Parameters.GetOutputValues(_cmdWrapper);
+                            _command.Parameters.GetOutputValues(_cmdWrapper!);
                         }
                         wrapper.FreeStatementHandle(ODBC32.STMT.CLOSE);
                         _command.CloseFromDataReader();
@@ -407,7 +407,10 @@ namespace System.Data.Odbc
                 {
                     info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW);
                 }
+// TODO-NULLABLE: Behavior change probably needed here - when there's no data type, we mostly probably need to throw instead of returning null.
+#nullable disable
                 return info._typename;
+#nullable enable
             }
             throw ADP.DataReaderNoData();
         }
@@ -545,7 +548,7 @@ namespace System.Data.Odbc
                     //will work), and then query for a speicial SQLServer specific attribute.
                     if (_isRead)
                     {
-                        if (_dataCache.AccessIndex(i) == null)
+                        if (_dataCache!.AccessIndex(i) == null)
                         {
                             int dummy;
                             bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out dummy);
@@ -557,7 +560,7 @@ namespace System.Data.Odbc
                                 return GetValue(i, TypeMap.FromSqlType(subtype));
                             }
                         }
-                        return _dataCache[i];
+                        return _dataCache[i]!;
                     }
                     throw ADP.DataReaderNoData();
 
@@ -573,11 +576,11 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     _dataCache[i] = GetValue(i, GetSqlType(i));
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -601,7 +604,7 @@ namespace System.Data.Odbc
             //Note: Types are always returned (advertised) from ODBC as SQL_TYPEs, and
             //are always bound by the user as SQL_C types.
             TypeMap typeMap;
-            DbSchemaInfo info = _dataCache.GetSchema(i);
+            DbSchemaInfo info = _dataCache!.GetSchema(i);
             if (!info._dbtype.HasValue)
             {
                 info._dbtype = unchecked((ODBC32.SQL_TYPE)(int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW));
@@ -617,14 +620,14 @@ namespace System.Data.Odbc
             {
                 typeMap = TypeMap.FromSqlType(info._dbtype.Value);
             }
-            Connection.SetSupportedType(info._dbtype.Value);
+            Connection!.SetSupportedType(info._dbtype.Value);
             return typeMap;
         }
 
         public override bool IsDBNull(int i)
         {
-            //  Note: ODBC SQLGetData doesn't allow retriving the column value twice.
-            //  The reational is that for ForwardOnly access (the default and LCD of drivers)
+            //  Note: ODBC SQLGetData doesn't allow retrieving the column value twice.
+            //  The rationale is that for ForwardOnly access (the default and LCD of drivers)
             //  we cannot obtain the data more than once, and even GetData(0) (to determine is-null)
             //  still obtains data for fixed length types.
 
@@ -650,7 +653,7 @@ namespace System.Data.Odbc
             // But, to minimize regressions, we will continue caching the fixed-size values (case 2), even with SequentialAccess
             // only in case of SequentialAccess with variable length data types (case 3), we will use GetData with zero length.
 
-            object cachedObj = _dataCache[i];
+            object? cachedObj = _dataCache![i];
             if (cachedObj != null)
             {
                 // case 4 - if cached object was created before, use it
@@ -686,14 +689,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.UTINYINT))
                     {
                         _dataCache[i] = Buffer.ReadByte(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -706,14 +709,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
                         _dataCache[i] = Buffer.ReadChar(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -726,14 +729,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.SSHORT))
                     {
                         _dataCache[i] = Buffer.ReadInt16(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -746,14 +749,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.SLONG))
                     {
                         _dataCache[i] = Buffer.ReadInt32(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -773,7 +776,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
@@ -781,7 +784,7 @@ namespace System.Data.Odbc
                         _dataCache[i] = long.Parse(value, CultureInfo.InvariantCulture);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -794,14 +797,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.BIT))
                     {
                         _dataCache[i] = Buffer.MarshalToManaged(0, ODBC32.SQL_C.BIT, -1);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -814,14 +817,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.REAL))
                     {
                         _dataCache[i] = Buffer.ReadSingle(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -835,14 +838,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_DATE))
                     {
                         _dataCache[i] = Buffer.MarshalToManaged(0, ODBC32.SQL_C.TYPE_DATE, -1);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -856,14 +859,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_TIMESTAMP))
                     {
                         _dataCache[i] = Buffer.MarshalToManaged(0, ODBC32.SQL_C.TYPE_TIMESTAMP, -1);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -884,11 +887,11 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
-                        string s = null;
+                        string? s = null;
                         try
                         {
                             s = (string)Buffer.MarshalToManaged(0, ODBC32.SQL_C.WCHAR, ODBC32.SQL_NTS);
@@ -901,7 +904,7 @@ namespace System.Data.Odbc
                         }
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -914,14 +917,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.DOUBLE))
                     {
                         _dataCache[i] = Buffer.ReadDouble(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -935,14 +938,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.GUID))
                     {
                         _dataCache[i] = Buffer.ReadGuid(0);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -956,7 +959,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     // Obtain _ALL_ the characters
                     // Note: We can bind directly as WCHAR in ODBC and the DM will convert to and
@@ -1049,7 +1052,7 @@ namespace System.Data.Odbc
                         _dataCache[i] = builder.ToString();
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -1063,14 +1066,14 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) == null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_TIME))
                     {
                         _dataCache[i] = Buffer.MarshalToManaged(0, ODBC32.SQL_C.TYPE_TIME, -1);
                     }
                 }
-                return _dataCache[i];
+                return _dataCache[i]!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -1087,17 +1090,17 @@ namespace System.Data.Odbc
             }
         }
 
-        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
             return GetBytesOrChars(i, dataIndex, buffer, false /* bytes buffer */, bufferIndex, length);
         }
-        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length)
         {
             return GetBytesOrChars(i, dataIndex, buffer, true /* chars buffer */, bufferIndex, length);
         }
 
         // unify the implementation of GetChars and GetBytes to prevent code duplicate
-        private long GetBytesOrChars(int i, long dataIndex, Array buffer, bool isCharsBuffer, int bufferIndex, int length)
+        private long GetBytesOrChars(int i, long dataIndex, Array? buffer, bool isCharsBuffer, int bufferIndex, int length)
         {
             if (IsClosed)
             {
@@ -1133,13 +1136,13 @@ namespace System.Data.Odbc
             //                       use the cache - preserve the original behavior to minimize regression risk
             // 4. sequential access, no cache: (fixed now) user reads the bytes/chars in sequential order (no cache)
 
-            object cachedObj = null;                 // The cached object (if there is one)
+            object? cachedObj = null;                 // The cached object (if there is one)
 
             // Get cached object, ensure the correct type using explicit cast, to preserve same behavior as before
             if (isCharsBuffer)
-                cachedObj = (string)_dataCache[i];
+                cachedObj = (string?)_dataCache![i];
             else
-                cachedObj = (byte[])_dataCache[i];
+                cachedObj = (byte[]?)_dataCache![i];
 
             bool isRandomAccess = !IsCommandBehavior(CommandBehavior.SequentialAccess);
 
@@ -1354,7 +1357,7 @@ namespace System.Data.Odbc
 
         // fill the user's buffer (char[] or byte[], depending on isCharsBuffer)
         // if buffer is null, just skip the bytesOrCharsLength bytes or chars
-        private int readBytesOrCharsSequentialAccess(int i, Array buffer, bool isCharsBuffer, int bufferIndex, long bytesOrCharsLength)
+        private int readBytesOrCharsSequentialAccess(int i, Array? buffer, bool isCharsBuffer, int bufferIndex, long bytesOrCharsLength)
         {
             Debug.Assert(bufferIndex >= 0, "Negative buffer index");
             Debug.Assert(bytesOrCharsLength >= 0, "Negative number of bytes or chars to read");
@@ -1477,7 +1480,7 @@ namespace System.Data.Odbc
 
         private object internalGetBytes(int i)
         {
-            if (_dataCache.AccessIndex(i) == null)
+            if (_dataCache!.AccessIndex(i) == null)
             {
                 // Obtain _ALL_ the bytes...
                 // The first time GetData returns the true length (so we have to min it).
@@ -1536,7 +1539,7 @@ namespace System.Data.Odbc
                     _dataCache[i] = rgBytes;
                 }
             }
-            return _dataCache[i];
+            return _dataCache[i]!;
         }
 
         // GetColAttribute
@@ -1555,7 +1558,7 @@ namespace System.Data.Odbc
             ODBC32.RetCode retcode;
 
             // protect against dead connection, dead or canceling command.
-            if ((Connection == null) || _cmdWrapper.Canceling)
+            if ((Connection == null) || _cmdWrapper!.Canceling)
             {
                 return -1;
             }
@@ -1578,7 +1581,7 @@ namespace System.Data.Odbc
             {
                 if (retcode == ODBC32.RetCode.ERROR)
                 {
-                    if ("HY091" == Command.GetDiagSqlState())
+                    if ("HY091" == Command!.GetDiagSqlState())
                     {
                         Connection.FlagUnsupportedColAttr(v3FieldId, v2FieldId);
                     }
@@ -1601,7 +1604,7 @@ namespace System.Data.Odbc
         // returns the stringvalue of the FieldIdentifier field of the column
         // or null if the string returned was empty or if the FieldIdentifier wasn't supported by the driver
         //
-        private string GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
+        private string? GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
             ODBC32.RetCode retcode;
             short cchNameLength = 0;
@@ -1609,10 +1612,10 @@ namespace System.Data.Odbc
             CNativeBuffer buffer = Buffer;
             buffer.WriteInt16(0, 0);
 
-            OdbcStatementHandle stmt = StatementHandle;
+            OdbcStatementHandle? stmt = StatementHandle;
 
             // protect against dead connection
-            if (Connection == null || _cmdWrapper.Canceling || stmt == null)
+            if (Connection == null || _cmdWrapper!.Canceling || stmt == null)
             {
                 return "";
             }
@@ -1633,7 +1636,7 @@ namespace System.Data.Odbc
             {
                 if (retcode == ODBC32.RetCode.ERROR)
                 {
-                    if ("HY091" == Command.GetDiagSqlState())
+                    if ("HY091" == Command!.GetDiagSqlState())
                     {
                         Connection.FlagUnsupportedColAttr(v3FieldId, v2FieldId);
                     }
@@ -1651,12 +1654,12 @@ namespace System.Data.Odbc
         // todo: Another 3.0 only attribute that is guaranteed to fail on V2 driver.
         // need to special case this for V2 drivers.
         //
-        private string GetDescFieldStr(int i, ODBC32.SQL_DESC attribute, ODBC32.HANDLER handler)
+        private string? GetDescFieldStr(int i, ODBC32.SQL_DESC attribute, ODBC32.HANDLER handler)
         {
             int numericAttribute = 0;
 
             // protect against dead connection, dead or canceling command.
-            if ((Connection == null) || _cmdWrapper.Canceling)
+            if ((Connection == null) || _cmdWrapper!.Canceling)
             {
                 return "";
             }
@@ -1684,7 +1687,7 @@ namespace System.Data.Odbc
                 {
                     if (retcode == ODBC32.RetCode.ERROR)
                     {
-                        if ("HY091" == Command.GetDiagSqlState())
+                        if ("HY091" == Command!.GetDiagSqlState())
                         {
                             Connection.FlagUnsupportedColAttr(attribute, (ODBC32.SQL_COLUMN)0);
                         }
@@ -1786,7 +1789,7 @@ namespace System.Data.Odbc
                     // Thus, ignore NO_DATA for variable length data, but raise exception for fixed-size types
                     if (sqlctype != ODBC32.SQL_C.WCHAR && sqlctype != ODBC32.SQL_C.BINARY)
                     {
-                        Connection.HandleError(StatementHandle, retcode);
+                        Connection!.HandleError(StatementHandle, retcode);
                     }
 
                     if (cbActual == (IntPtr)ODBC32.SQL_NO_TOTAL)
@@ -1797,7 +1800,7 @@ namespace System.Data.Odbc
                     break;
 
                 default:
-                    Connection.HandleError(StatementHandle, retcode);
+                    Connection!.HandleError(StatementHandle, retcode);
                     break;
             }
 
@@ -1810,7 +1813,7 @@ namespace System.Data.Odbc
                 // Store the DBNull value in cache. Note that if we need to do it, because second call into the SQLGetData returns NO_DATA, which means
                 // we already consumed the value (see above) and the NULL information is lost. By storing the null in cache, we avoid second call into the driver
                 // for the same row/column.
-                _dataCache[i] = DBNull.Value;
+                _dataCache![i] = DBNull.Value;
                 // the indicator is never -1 (and it should not actually be used if the data is DBNull)
                 cbLengthOrIndicator = 0;
                 return false;
@@ -1864,7 +1867,7 @@ namespace System.Data.Odbc
             switch (retcode)
             {
                 case ODBC32.RetCode.SUCCESS_WITH_INFO:
-                    Connection.HandleErrorNoThrow(StatementHandle, retcode);
+                    Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                     _hasRows = HasRowsStatus.HasRows;
                     _isRead = true;
                     break;
@@ -1880,11 +1883,11 @@ namespace System.Data.Odbc
                     }
                     break;
                 default:
-                    Connection.HandleError(StatementHandle, retcode);
+                    Connection!.HandleError(StatementHandle, retcode);
                     break;
             }
             //Null out previous cached row values.
-            _dataCache.FlushValues();
+            _dataCache!.FlushValues();
 
             // if CommandBehavior == SingleRow we set _noMoreResults to true so that following reads will fail
             if (IsCommandBehavior(CommandBehavior.SingleRow))
@@ -1961,7 +1964,7 @@ namespace System.Data.Odbc
             _schemaTable = null;
 
             int loop = 0; // infinite loop protection, max out after 2000 consecutive failed results
-            OdbcErrorCollection errors = null; // SQLBU 342112
+            OdbcErrorCollection? errors = null; // SQLBU 342112
             do
             {
                 _isValidResult = false;
@@ -1971,7 +1974,7 @@ namespace System.Data.Odbc
 
                 if (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
                 {
-                    Connection.HandleErrorNoThrow(StatementHandle, retcode);
+                    Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                 }
                 else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (ODBC32.RetCode.SUCCESS != retcode))
                 {
@@ -2010,7 +2013,7 @@ namespace System.Data.Odbc
             if (null != errors)
             {
                 Debug.Assert(!disposing, "errors while disposing");
-                errors.SetSource(Connection.Driver);
+                errors.SetSource(Connection!.Driver);
                 OdbcException exception = OdbcException.CreateException(errors, firstRetCode);
                 Connection.ConnectionIsAlive(exception);
                 throw exception;
@@ -2022,7 +2025,7 @@ namespace System.Data.Odbc
         {
             int count = FieldCount;
             MetaData[] metaInfos = new MetaData[count];
-            List<string> qrytables;
+            List<string>? qrytables;
             bool needkeyinfo = IsCommandBehavior(CommandBehavior.KeyInfo);
             bool isKeyColumn;
             bool isHidden;
@@ -2094,7 +2097,7 @@ namespace System.Data.Odbc
                     // Note: Following two attributes are SQL Server specific (hence _SS in the name)
 
                     // SSS_WARNINGS_OFF
-                    if (!Connection.ProviderInfo.NoSqlCASSColumnKey)
+                    if (!Connection!.ProviderInfo.NoSqlCASSColumnKey)
                     {
                         isKeyColumn = GetColAttribute(i, (ODBC32.SQL_DESC)ODBC32.SQL_CA_SS.COLUMN_KEY, (ODBC32.SQL_COLUMN)(-1), ODBC32.HANDLER.IGNORE) == 1;
                         if (isKeyColumn)
@@ -2113,22 +2116,22 @@ namespace System.Data.Odbc
 
                     if (Connection.IsV3Driver)
                     {
-                        if ((metaInfos[i].baseTableName == null) || (metaInfos[i].baseTableName.Length == 0))
+                        if (string.IsNullOrEmpty(metaInfos[i].baseTableName))
                         {
                             // Driver didn't return the necessary information from GetColAttributeStr.
                             // Try GetDescField()
                             metaInfos[i].baseTableName = GetDescFieldStr(i, ODBC32.SQL_DESC.BASE_TABLE_NAME, ODBC32.HANDLER.IGNORE);
                         }
-                        if ((metaInfos[i].baseColumnName == null) || (metaInfos[i].baseColumnName.Length == 0))
+                        if (string.IsNullOrEmpty(metaInfos[i].baseColumnName))
                         {
                             // Driver didn't return the necessary information from GetColAttributeStr.
                             // Try GetDescField()
                             metaInfos[i].baseColumnName = GetDescFieldStr(i, ODBC32.SQL_DESC.BASE_COLUMN_NAME, ODBC32.HANDLER.IGNORE);
                         }
                     }
-                    if ((metaInfos[i].baseTableName != null) && !(qrytables.Contains(metaInfos[i].baseTableName)))
+                    if ((metaInfos[i].baseTableName is string baseTableName) && !(qrytables!.Contains(baseTableName)))
                     {
-                        qrytables.Add(metaInfos[i].baseTableName);
+                        qrytables.Add(baseTableName);
                     }
                 }
 
@@ -2143,7 +2146,7 @@ namespace System.Data.Odbc
             // now loop over the hidden columns (if any)
 
             // SSS_WARNINGS_OFF
-            if (!Connection.ProviderInfo.NoSqlCASSColumnKey)
+            if (!Connection!.ProviderInfo.NoSqlCASSColumnKey)
             {
                 for (int i = count; i < count + _hiddenColumns; i++)
                 {
@@ -2250,7 +2253,10 @@ namespace System.Data.Odbc
             }
             if (_noMoreResults)
             {
+// TODO-NULLABLE: Behavior change (https://github.com/dotnet/runtime/issues/509)
+#nullable disable
                 return null;                                            // no more results
+#nullable enable
             }
             if (null != _schemaTable)
             {
@@ -2269,24 +2275,24 @@ namespace System.Data.Odbc
                 BuildMetaDataInfo();
             }
 
-            DataColumn columnName = schematable.Columns["ColumnName"];
-            DataColumn columnOrdinal = schematable.Columns["ColumnOrdinal"];
-            DataColumn columnSize = schematable.Columns["ColumnSize"];
-            DataColumn numericPrecision = schematable.Columns["NumericPrecision"];
-            DataColumn numericScale = schematable.Columns["NumericScale"];
-            DataColumn dataType = schematable.Columns["DataType"];
-            DataColumn providerType = schematable.Columns["ProviderType"];
-            DataColumn isLong = schematable.Columns["IsLong"];
-            DataColumn allowDBNull = schematable.Columns["AllowDBNull"];
-            DataColumn isReadOnly = schematable.Columns["IsReadOnly"];
-            DataColumn isRowVersion = schematable.Columns["IsRowVersion"];
-            DataColumn isUnique = schematable.Columns["IsUnique"];
-            DataColumn isKey = schematable.Columns["IsKey"];
-            DataColumn isAutoIncrement = schematable.Columns["IsAutoIncrement"];
-            DataColumn baseSchemaName = schematable.Columns["BaseSchemaName"];
-            DataColumn baseCatalogName = schematable.Columns["BaseCatalogName"];
-            DataColumn baseTableName = schematable.Columns["BaseTableName"];
-            DataColumn baseColumnName = schematable.Columns["BaseColumnName"];
+            DataColumn columnName = schematable.Columns["ColumnName"]!;
+            DataColumn columnOrdinal = schematable.Columns["ColumnOrdinal"]!;
+            DataColumn columnSize = schematable.Columns["ColumnSize"]!;
+            DataColumn numericPrecision = schematable.Columns["NumericPrecision"]!;
+            DataColumn numericScale = schematable.Columns["NumericScale"]!;
+            DataColumn dataType = schematable.Columns["DataType"]!;
+            DataColumn providerType = schematable.Columns["ProviderType"]!;
+            DataColumn isLong = schematable.Columns["IsLong"]!;
+            DataColumn allowDBNull = schematable.Columns["AllowDBNull"]!;
+            DataColumn isReadOnly = schematable.Columns["IsReadOnly"]!;
+            DataColumn isRowVersion = schematable.Columns["IsRowVersion"]!;
+            DataColumn isUnique = schematable.Columns["IsUnique"]!;
+            DataColumn isKey = schematable.Columns["IsKey"]!;
+            DataColumn isAutoIncrement = schematable.Columns["IsAutoIncrement"]!;
+            DataColumn baseSchemaName = schematable.Columns["BaseSchemaName"]!;
+            DataColumn baseCatalogName = schematable.Columns["BaseCatalogName"]!;
+            DataColumn baseTableName = schematable.Columns["BaseTableName"]!;
+            DataColumn baseColumnName = schematable.Columns["BaseColumnName"]!;
 
 
             //Populate the rows (1 row for each column)
@@ -2297,7 +2303,7 @@ namespace System.Data.Odbc
 
                 row[columnName] = GetName(i);        //ColumnName
                 row[columnOrdinal] = i;                 //ColumnOrdinal
-                row[columnSize] = unchecked((int)Math.Min(Math.Max(int.MinValue, _metadata[i].size.ToInt64()), int.MaxValue));
+                row[columnSize] = unchecked((int)Math.Min(Math.Max(int.MinValue, _metadata![i].size.ToInt64()), int.MaxValue));
                 row[numericPrecision] = (short)_metadata[i].precision;
                 row[numericScale] = (short)_metadata[i].scale;
                 row[dataType] = _metadata[i].typemap._type;          //DataType
@@ -2328,6 +2334,8 @@ namespace System.Data.Odbc
 
         internal int RetrieveKeyInfo(bool needkeyinfo, QualifiedTableName qualifiedTableName, bool quoted)
         {
+            Debug.Assert(_metadata != null);
+
             ODBC32.RetCode retcode;
             string columnname;
             int ordinal;
@@ -2350,13 +2358,13 @@ namespace System.Data.Odbc
 
                 if (needkeyinfo)
                 {
-                    if (!Connection.ProviderInfo.NoSqlPrimaryKeys)
+                    if (!Connection!.ProviderInfo.NoSqlPrimaryKeys)
                     {
                         // Get the primary keys
                         retcode = KeyInfoStatementHandle.PrimaryKeys(
                                     qualifiedTableName.Catalog,
                                     qualifiedTableName.Schema,
-                                    qualifiedTableName.GetTable(quoted));
+                                    qualifiedTableName.GetTable(quoted)!);
 
                         if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
                         {
@@ -2419,7 +2427,7 @@ namespace System.Data.Odbc
                         }
                         else
                         {
-                            if ("IM001" == Command.GetDiagSqlState())
+                            if ("IM001" == Command!.GetDiagSqlState())
                             {
                                 Connection.ProviderInfo.NoSqlPrimaryKeys = true;
                             }
@@ -2436,7 +2444,7 @@ namespace System.Data.Odbc
                 }
 
                 // Get the special columns for version
-                retcode = KeyInfoStatementHandle.SpecialColumns(qualifiedTableName.GetTable(quoted));
+                retcode = KeyInfoStatementHandle.SpecialColumns(qualifiedTableName.GetTable(quoted)!);
 
                 if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
                 {
@@ -2496,6 +2504,8 @@ namespace System.Data.Odbc
         // Uses SQLStatistics to retrieve key information for a table
         private int RetrieveKeyInfoFromStatistics(QualifiedTableName qualifiedTableName, bool quoted)
         {
+            Debug.Assert(_metadata != null);
+
             ODBC32.RetCode retcode;
             string columnname = string.Empty;
             string indexname = string.Empty;
@@ -2514,7 +2524,7 @@ namespace System.Data.Odbc
             // devnote: this test is already done by calling method ...
             // if (IsClosed) return;   // protect against dead connection
 
-            string tablename1 = qualifiedTableName.GetTable(quoted);
+            string tablename1 = qualifiedTableName.GetTable(quoted)!;
 
             // Select only unique indexes
             retcode = KeyInfoStatementHandle.Statistics(tablename1);
@@ -2670,7 +2680,7 @@ namespace System.Data.Odbc
                     }
                 }
                 // Unbind the columns
-                _cmdWrapper.FreeKeyInfoStatementHandle(ODBC32.STMT.UNBIND);
+                _cmdWrapper!.FreeKeyInfoStatementHandle(ODBC32.STMT.UNBIND);
             }
             finally
             {
@@ -2694,12 +2704,12 @@ namespace System.Data.Odbc
             return false;
         }
 
-        internal int GetOrdinalFromBaseColName(string columnname)
+        internal int GetOrdinalFromBaseColName(string? columnname)
         {
             return GetOrdinalFromBaseColName(columnname, null);
         }
 
-        internal int GetOrdinalFromBaseColName(string columnname, string tablename)
+        internal int GetOrdinalFromBaseColName(string? columnname, string? tablename)
         {
             if (string.IsNullOrEmpty(columnname))
             {
@@ -2737,7 +2747,7 @@ namespace System.Data.Odbc
         // we can't handle multiple tablenames (JOIN)
         // only the first tablename will be returned
 
-        internal string GetTableNameFromCommandText()
+        internal string? GetTableNameFromCommandText()
         {
             if (_command == null)
             {
@@ -2750,7 +2760,7 @@ namespace System.Data.Odbc
             }
             string tablename;
             int idx;
-            CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
+            CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection!.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
 
             if (tokenstmt.StartsWith("select") == true)
             {
@@ -2800,7 +2810,7 @@ namespace System.Data.Odbc
 
             for (int i = 0; i < count; i++)
             {
-                if (_metadata[i].baseTableName == null)
+                if (_metadata![i].baseTableName == null)
                 {
                     _metadata[i].baseTableName = qualifiedTableName.Table;
                     _metadata[i].baseSchemaName = qualifiedTableName.Schema;
@@ -2812,13 +2822,13 @@ namespace System.Data.Odbc
 
         internal sealed class QualifiedTableName
         {
-            private readonly string _catalogName;
-            private readonly string _schemaName;
-            private string _tableName;
-            private string _quotedTableName;
+            private readonly string? _catalogName;
+            private readonly string? _schemaName;
+            private string? _tableName;
+            private string? _quotedTableName;
             private readonly string _quoteChar;
 
-            internal string Catalog
+            internal string? Catalog
             {
                 get
                 {
@@ -2826,7 +2836,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            internal string Schema
+            internal string? Schema
             {
                 get
                 {
@@ -2834,7 +2844,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            internal string Table
+            internal string? Table
             {
                 get
                 {
@@ -2846,14 +2856,14 @@ namespace System.Data.Odbc
                     _tableName = UnQuote(value);
                 }
             }
-            internal string QuotedTable
+            internal string? QuotedTable
             {
                 get
                 {
                     return _quotedTableName;
                 }
             }
-            internal string GetTable(bool flag)
+            internal string? GetTable(bool flag)
             {
                 return (flag ? QuotedTable : Table);
             }
@@ -2861,18 +2871,18 @@ namespace System.Data.Odbc
             {
                 _quoteChar = quoteChar;
             }
-            internal QualifiedTableName(string quoteChar, string qualifiedname)
+            internal QualifiedTableName(string quoteChar, string? qualifiedname)
             {
                 _quoteChar = quoteChar;
 
-                string[] names = ParseProcedureName(qualifiedname, quoteChar, quoteChar);
+                string?[] names = ParseProcedureName(qualifiedname, quoteChar, quoteChar);
                 _catalogName = UnQuote(names[1]);
                 _schemaName = UnQuote(names[2]);
                 _quotedTableName = names[3];
                 _tableName = UnQuote(names[3]);
             }
 
-            private string UnQuote(string str)
+            private string? UnQuote(string? str)
             {
                 if ((str != null) && (str.Length > 0))
                 {
@@ -2893,7 +2903,7 @@ namespace System.Data.Odbc
             // Note: copy-and pasted from internal DbCommandBuilder implementation
             // Note: Per definition (ODBC reference) the CatalogSeparator comes before and after the
             // catalog name, the SchemaSeparator is undefined. Does it come between Schema and Table?
-            internal static string[] ParseProcedureName(string name, string quotePrefix, string quoteSuffix)
+            internal static string?[] ParseProcedureName(string? name, string? quotePrefix, string? quoteSuffix)
             {
                 // Procedure may consist of up to four parts:
                 // 0) Server
@@ -2906,7 +2916,7 @@ namespace System.Data.Odbc
                 //
                 const string Separator = ".";
 
-                string[] qualifiers = new string[4];
+                string?[] qualifiers = new string[4];
                 if (!string.IsNullOrEmpty(name))
                 {
                     bool useQuotes = !string.IsNullOrEmpty(quotePrefix) && !string.IsNullOrEmpty(quoteSuffix);
@@ -2917,8 +2927,10 @@ namespace System.Data.Odbc
                         int startPos = currentPos;
 
                         // does the part begin with a quotePrefix?
-                        if (useQuotes && (name.IndexOf(quotePrefix, currentPos, quotePrefix.Length, StringComparison.Ordinal) == currentPos))
+                        if (useQuotes && (name.IndexOf(quotePrefix!, currentPos, quotePrefix!.Length, StringComparison.Ordinal) == currentPos))
                         {
+                            Debug.Assert(quotePrefix != null && quoteSuffix != null);
+
                             currentPos += quotePrefix.Length; // move past the quotePrefix
 
                             // search for the quoteSuffix (or end of string)
@@ -2978,7 +2990,7 @@ namespace System.Data.Odbc
         private sealed class MetaData
         {
             internal int ordinal;
-            internal TypeMap typemap;
+            internal TypeMap typemap = null!; // Lazy-initialized
 
             internal SQLLEN size;
             internal byte precision;
@@ -2992,10 +3004,10 @@ namespace System.Data.Odbc
             internal bool isLong;
 
             internal bool isKeyColumn;
-            internal string baseSchemaName;
-            internal string baseCatalogName;
-            internal string baseTableName;
-            internal string baseColumnName;
+            internal string? baseSchemaName;
+            internal string? baseCatalogName;
+            internal string? baseTableName;
+            internal string? baseColumnName;
         }
     }
 }

@@ -168,7 +168,7 @@ namespace System.Data
                 _freeRecordList.Capacity = _freeRecordList.Count + _table.Rows.Count;
                 for (int record = 0; record < _recordCapacity; ++record)
                 {
-                    if (_rows[record] is { } row && row.rowID != -1)
+                    if (_rows[record] is DataRow row && row.rowID != -1)
                     {
                         int tempRecord = record;
                         FreeRecord(ref tempRecord);

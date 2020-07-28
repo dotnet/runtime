@@ -82,7 +82,6 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-
             return true;
         }
 

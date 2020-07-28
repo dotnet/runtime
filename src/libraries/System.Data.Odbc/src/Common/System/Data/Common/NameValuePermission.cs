@@ -11,23 +11,23 @@ namespace System.Data.Common
         // reused as both key and value nodes
         // key nodes link to value nodes
         // value nodes link to key nodes
-        private readonly string _value;
+        private readonly string? _value;
 
         // value node with (null != _restrictions) are allowed to match connection strings
-        private DBConnectionString _entry;
+        private DBConnectionString? _entry;
 
-        private NameValuePermission[] _tree; // with branches
+        private NameValuePermission[]? _tree; // with branches
 
         internal NameValuePermission()
         { // root node
         }
 
-        private NameValuePermission(string keyword)
+        private NameValuePermission(string? keyword)
         {
             _value = keyword;
         }
 
-        private NameValuePermission(string value, DBConnectionString entry)
+        private NameValuePermission(string? value, DBConnectionString? entry)
         {
             _value = value;
             _entry = entry;
@@ -40,7 +40,7 @@ namespace System.Data.Common
             _tree = permit._tree;
             if (null != _tree)
             {
-                NameValuePermission[] tree = (_tree.Clone() as NameValuePermission[]);
+                NameValuePermission[] tree = (_tree.Clone() as NameValuePermission[])!;
                 for (int i = 0; i < tree.Length; ++i)
                 {
                     if (null != tree[i])
@@ -52,9 +52,9 @@ namespace System.Data.Common
             }
         }
 
-        int IComparable.CompareTo(object a)
+        int IComparable.CompareTo(object? a)
         {
-            return StringComparer.Ordinal.Compare(_value, ((NameValuePermission)a)._value);
+            return StringComparer.Ordinal.Compare(_value, ((NameValuePermission?)a)?._value);
         }
 
         internal static void AddEntry(NameValuePermission kvtree, ArrayList entries, DBConnectionString entry)
@@ -63,9 +63,9 @@ namespace System.Data.Common
 
             if (null != entry.KeyChain)
             {
-                for (NameValuePair keychain = entry.KeyChain; null != keychain; keychain = keychain.Next)
+                for (NameValuePair? keychain = entry.KeyChain; null != keychain; keychain = keychain.Next)
                 {
-                    NameValuePermission kv;
+                    NameValuePermission? kv;
 
                     kv = kvtree.CheckKeyForValue(keychain.Name);
                     if (null == kv)
@@ -78,7 +78,7 @@ namespace System.Data.Common
                     kv = kvtree.CheckKeyForValue(keychain.Value);
                     if (null == kv)
                     {
-                        DBConnectionString insertValue = ((null != keychain.Next) ? null : entry);
+                        DBConnectionString? insertValue = ((null != keychain.Next) ? null : entry);
                         kv = new NameValuePermission(keychain.Value, insertValue);
                         kvtree.Add(kv); // add directly into live tree
                         if (null != insertValue)
@@ -105,7 +105,7 @@ namespace System.Data.Common
             }
             else
             { // global restrictions, MDAC 84443
-                DBConnectionString kentry = kvtree._entry;
+                DBConnectionString? kentry = kvtree._entry;
                 if (null != kentry)
                 {
                     Debug.Assert(entries.Contains(kentry), "entries doesn't contain entry");
@@ -146,14 +146,14 @@ namespace System.Data.Common
                     int count = _tree.Length;
                     for (int i = 0; i < _tree.Length; ++i)
                     {
-                        NameValuePermission kvtree = target.CheckKeyForValue(_tree[i]._value);
+                        NameValuePermission? kvtree = target.CheckKeyForValue(_tree[i]._value);
                         if (null != kvtree)
                         { // does target tree contain our value
                             _tree[i].Intersect(entries, kvtree);
                         }
                         else
                         {
-                            _tree[i] = null;
+                            _tree[i] = null!; // Temporary, removed below
                             --count;
                         }
                     }
@@ -179,12 +179,12 @@ namespace System.Data.Common
 
         private void Add(NameValuePermission permit)
         {
-            NameValuePermission[] tree = _tree;
+            NameValuePermission[]? tree = _tree;
             int length = ((null != tree) ? tree.Length : 0);
             NameValuePermission[] newtree = new NameValuePermission[1 + length];
             for (int i = 0; i < newtree.Length - 1; ++i)
             {
-                newtree[i] = tree[i];
+                newtree[i] = tree![i];
             }
             newtree[length] = permit;
             Array.Sort(newtree);
@@ -198,7 +198,7 @@ namespace System.Data.Common
                 return false;
             }
             bool hasMatch = false;
-            NameValuePermission[] keytree = _tree; // _tree won't mutate but Add will replace it
+            NameValuePermission[]? keytree = _tree; // _tree won't mutate but Add will replace it
             if (null != keytree)
             {
                 hasMatch = parsetable.IsEmpty; // MDAC 86773
@@ -210,16 +210,16 @@ namespace System.Data.Common
                         NameValuePermission permitKey = keytree[i];
                         if (null != permitKey)
                         {
-                            string keyword = permitKey._value;
+                            string keyword = permitKey._value!;
 #if DEBUG
                             Debug.Assert(null == permitKey._entry, "key member has no restrictions");
 #endif
                             if (parsetable.ContainsKey(keyword))
                             {
-                                string valueInQuestion = (string)parsetable[keyword];
+                                string? valueInQuestion = parsetable[keyword];
 
                                 // keyword is restricted to certain values
-                                NameValuePermission permitValue = permitKey.CheckKeyForValue(valueInQuestion);
+                                NameValuePermission? permitValue = permitKey.CheckKeyForValue(valueInQuestion);
                                 if (null != permitValue)
                                 {
                                     //value does match - continue the chain down that branch
@@ -248,7 +248,7 @@ namespace System.Data.Common
                 // partial chain match, either leaf-node by shorter chain or fail mid-chain if (null == _restrictions)
             }
 
-            DBConnectionString entry = _entry;
+            DBConnectionString? entry = _entry;
             if (null != entry)
             {
                 // also checking !hasMatch is tempting, but wrong
@@ -261,9 +261,9 @@ namespace System.Data.Common
             return hasMatch; // mid-chain failure
         }
 
-        private NameValuePermission CheckKeyForValue(string keyInQuestion)
+        private NameValuePermission? CheckKeyForValue(string? keyInQuestion)
         {
-            NameValuePermission[] valuetree = _tree; // _tree won't mutate but Add will replace it
+            NameValuePermission[]? valuetree = _tree; // _tree won't mutate but Add will replace it
             if (null != valuetree)
             {
                 for (int i = 0; i < valuetree.Length; ++i)

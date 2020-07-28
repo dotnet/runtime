@@ -45,6 +45,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Cbrt(float x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Ceiling(float x);
 
@@ -60,6 +61,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Exp(float x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Floor(float x);
 

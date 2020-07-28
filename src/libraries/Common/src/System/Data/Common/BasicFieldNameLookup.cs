@@ -11,13 +11,13 @@ namespace System.Data.ProviderBase
     internal class BasicFieldNameLookup
     {
         // Dictionary stores the index into the _fieldNames, match via case-sensitive
-        private Dictionary<string, int> _fieldNameLookup;
+        private Dictionary<string, int>? _fieldNameLookup;
 
         // original names for linear searches when exact matches fail
         private readonly string[] _fieldNames;
 
         // By default _compareInfo is set to InvariantCulture CompareInfo
-        private CompareInfo _compareInfo;
+        private CompareInfo? _compareInfo;
 
         public BasicFieldNameLookup(string[] fieldNames)
         {
@@ -74,7 +74,7 @@ namespace System.Data.ProviderBase
 
             int value;
             // via case sensitive search, first match with lowest ordinal matches
-            return _fieldNameLookup.TryGetValue(fieldName, out value) ? value : -1;
+            return _fieldNameLookup!.TryGetValue(fieldName, out value) ? value : -1;
         }
 
         public int IndexOf(string fieldName)
@@ -85,7 +85,7 @@ namespace System.Data.ProviderBase
             }
             int index;
             // via case sensitive search, first match with lowest ordinal matches
-            if (!_fieldNameLookup.TryGetValue(fieldName, out index))
+            if (!_fieldNameLookup!.TryGetValue(fieldName, out index))
             {
                 // via case insensitive search, first match with lowest ordinal matches
                 index = LinearIndexOf(fieldName, CompareOptions.IgnoreCase);
@@ -116,7 +116,7 @@ namespace System.Data.ProviderBase
             {
                 if (0 == _compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
                 {
-                    _fieldNameLookup[fieldName] = i; // add an exact match for the future
+                    _fieldNameLookup![fieldName] = i; // add an exact match for the future
                     return i;
                 }
             }

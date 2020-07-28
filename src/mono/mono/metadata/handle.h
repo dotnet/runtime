@@ -516,6 +516,9 @@ TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
 
+/* Simpler version of MONO_HANDLE_NEW if the handle is not used */
+#define MONO_HANDLE_PIN(object) MONO_HANDLE_NEW (MonoObject, (object))
+
 // Structs cannot be cast to structs.
 // As well, a function is needed because an anonymous struct cannot be initialized in C.
 static inline MonoObjectHandle
