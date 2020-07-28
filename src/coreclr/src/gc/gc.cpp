@@ -18093,8 +18093,6 @@ uint8_t* gc_heap::find_object (uint8_t* interior)
 #ifdef FEATURE_CONSERVATIVE_GC
             if (interior >= heap_segment_allocated(seg))
                 return 0;
-#else
-            assert (interior < heap_segment_allocated (seg));
 #endif
             // If interior falls within the first free object at the beginning of a generation,
             // we don't have brick entry for it, and we may incorrectly treat it as on large object heap.
