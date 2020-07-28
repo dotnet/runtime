@@ -6334,11 +6334,13 @@ namespace
         if (g_hostpolicy_embedded)
         {
 #ifdef TARGET_WINDOWS
-            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0) {
+            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            {
                 return WszGetModuleHandle(NULL);
             }
 #else
-            if (wcscmp(wszLibName, W("libhostpolicy")) == 0) {
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            {
                 return PAL_LoadLibraryDirect(NULL);
             }
 #endif

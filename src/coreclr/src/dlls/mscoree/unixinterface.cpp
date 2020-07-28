@@ -186,7 +186,7 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbe* bundleProbe = nullptr;
-    bool hostPolicyEmbedded;
+    bool hostPolicyEmbedded = false;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
