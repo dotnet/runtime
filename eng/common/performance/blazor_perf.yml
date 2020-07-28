@@ -1,4 +1,3 @@
-parameters:
 steps:
   - script: dotnet --info
     displayName: display dotnet info
