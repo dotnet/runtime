@@ -116,7 +116,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && PlatformDetection.IsSuperUser)
                 {
                     await WriteAsync(path, "text");
                     Assert.Equal("text", await ReadAsync(path));
