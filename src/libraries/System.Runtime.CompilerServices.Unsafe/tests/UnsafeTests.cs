@@ -986,7 +986,7 @@ namespace System.Runtime.CompilerServices
             object objectValue = new object();
             Assert.False(Unsafe.IsNullRef<object>(ref objectValue));
 
-            string stringValue = nameof(IsNullRef);
+            string stringValue = nameof(IsNullRef_NotNull);
             Assert.False(Unsafe.IsNullRef<string>(ref stringValue));
         }
 
