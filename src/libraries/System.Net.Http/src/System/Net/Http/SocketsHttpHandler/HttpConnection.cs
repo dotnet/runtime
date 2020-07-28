@@ -219,12 +219,12 @@ namespace System.Net.Http
                     {
                         Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(header.Key.Name, _currentRequest);
 
-                        await WriteStringAsync(_headerValues[0], valueEncoding, async).ConfigureAwait(false);
+                        await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
                         if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
-                            await WriteStringAsync(cookiesFromContainer, valueEncoding, async).ConfigureAwait(false);
+                            await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
 
                             cookiesFromContainer = null;
                         }
@@ -242,7 +242,7 @@ namespace System.Net.Http
                             for (int i = 1; i < headerValuesCount; i++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], valueEncoding, async).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[i], async, valueEncoding).ConfigureAwait(false);
                             }
                         }
                     }
@@ -257,7 +257,7 @@ namespace System.Net.Http
                 await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
 
                 Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, _currentRequest);
-                await WriteStringAsync(cookiesFromContainer, valueEncoding, async).ConfigureAwait(false);
+                await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
 
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
             }
@@ -1245,7 +1245,7 @@ namespace System.Net.Http
             return WriteStringAsyncSlow(s, async);
         }
 
-        private Task WriteStringAsync(string s, Encoding? encoding, bool async)
+        private Task WriteStringAsync(string s, bool async, Encoding? encoding)
         {
             if (encoding is null)
             {
@@ -1258,11 +1258,11 @@ namespace System.Net.Http
 
             // Fast-path Latin1 and UTF8 as the most common scenarios of non-default encoding
             const int MaxUtf8BytesPerChar = 3;
-            bool sufficientBufferSpace = ReferenceEquals(encoding, Encoding.Latin1) ? available >= s.Length :
-                ReferenceEquals(encoding, Encoding.UTF8) ? available >= s.Length * MaxUtf8BytesPerChar :
-                available >= encoding.GetMaxByteCount(s.Length);
+            int requiredSpace = ReferenceEquals(encoding, Encoding.Latin1) ? s.Length :
+                ReferenceEquals(encoding, Encoding.UTF8) ? s.Length * MaxUtf8BytesPerChar :
+                encoding.GetMaxByteCount(s.Length);
 
-            if (sufficientBufferSpace)
+            if (requiredSpace <= available)
             {
                 int written = encoding.GetBytes(s, _writeBuffer.AsSpan(offset));
                 _writeOffset = offset + written;
@@ -1270,10 +1270,10 @@ namespace System.Net.Http
             }
 
             // Otherwise, fall back to doing a normal slow string write
-            return WriteStringWithEncodingAsyncSlow(s, encoding, async);
+            return WriteStringWithEncodingAsyncSlow(s, async, encoding);
         }
 
-        private async Task WriteStringWithEncodingAsyncSlow(string s, Encoding encoding, bool async)
+        private async Task WriteStringWithEncodingAsyncSlow(string s, bool async, Encoding encoding)
         {
             // Avoid calculating the length if the rented array would be small anyway
             int length = s.Length <= 512
