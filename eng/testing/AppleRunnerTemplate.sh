@@ -54,7 +54,4 @@ _exitCode=$?
 
 echo "XHarness artifacts: `ls -lh $XHARNESS_OUT`"
 
-# Kill the simulator after we're done
-sudo pkill -9 -f "$SIMULATOR_APP"
-
 exit $_exitCode
