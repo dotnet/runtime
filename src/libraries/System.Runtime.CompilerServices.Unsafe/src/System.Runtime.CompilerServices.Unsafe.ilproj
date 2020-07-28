@@ -10,12 +10,12 @@
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
     <IncludePath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)', 'version'))</IncludePath>
     <IncludePath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)', 'version'))</IncludePath>
-    <_PublicKeyToken>B0 3F 5F 7F 11 D5 0A 3A</_PublicKeyToken>
+    <AssemblyPublicKeyToken>B0 3F 5F 7F 11 D5 0A 3A</AssemblyPublicKeyToken>
     <CoreAssembly>System.Runtime</CoreAssembly>
     <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
     <VersionFilePath Condition="'$(VersionFilePath)' == ''">$(IncludePath)version.h</VersionFilePath>
-    <_CoreAssemblyVersion>5.0.0.0</_CoreAssemblyVersion>
-    <_CoreAssemblyVersion Condition="'$(TargetFramework)' != $(NetCoreAppCurrent)">4.0.0.0</_CoreAssemblyVersion>  
+    <CoreAssemblyVersion>5.0.0.0</CoreAssemblyVersion>
+    <CoreAssemblyVersion Condition="'$(TargetFramework)' != $(NetCoreAppCurrent)">4.0.0.0</CoreAssemblyVersion>  
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <_PublicKeyToken Condition="$(TargetFramework.StartsWith('net4'))">B7 7A 5C 56 19 34 E0 89</_PublicKeyToken>
+    <AssemblyPublicKeyToken Condition="$(TargetFramework.StartsWith('net4'))">B7 7A 5C 56 19 34 E0 89</AssemblyPublicKeyToken>
     <CoreAssembly>mscorlib</CoreAssembly>
     <ExtraMacros>#define net45</ExtraMacros>
   </PropertyGroup>
@@ -38,18 +38,17 @@
    <PropertyGroup>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'version', 'version.h'))</VersionFilePath>
       <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
-      <_CoreAssemblyVersion>$(_CoreAssemblyVersion.Replace('.', ':'))</_CoreAssemblyVersion>
+      <_CoreAssemblyVersion>$(CoreAssemblyVersion.Replace('.', ':'))</_CoreAssemblyVersion>
       <_VersionFileContents>
 <![CDATA[
 #define CORE_ASSEMBLY "$(CoreAssembly)"
 #define ASSEMBLY_VERSION "$(_AssemblyVersion)"
 #define CORE_ASSEMBLY_VERSION "$(_CoreAssemblyVersion)"
 $(ExtraMacros)
-
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY
 {
-  .publickeytoken = ($(_PublicKeyToken) )
+  .publickeytoken = ($(AssemblyPublicKeyToken) )
   .ver CORE_ASSEMBLY_VERSION
 }
  ]]>      
@@ -65,5 +64,5 @@ $(ExtraMacros)
     <ItemGroup>
       <FileWrites Include="$(VersionFilePath)" />
     </ItemGroup>
-  </Target> 
+  </Target>
 </Project>
