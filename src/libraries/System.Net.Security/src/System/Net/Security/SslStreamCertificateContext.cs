@@ -71,5 +71,11 @@ namespace System.Net.Security
 
             return new SslStreamCertificateContext(target, intermediates);
         }
+
+        internal SslStreamCertificateContext Duplicate()
+        {
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates);
+
+        }
     }
 }
