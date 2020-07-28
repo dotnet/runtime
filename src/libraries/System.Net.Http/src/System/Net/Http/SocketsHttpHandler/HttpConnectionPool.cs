@@ -364,6 +364,12 @@ namespace System.Net.Http
                 }
                 if (authority != null)
                 {
+                    if (IsAltSvcBlocked(authority))
+                    {
+                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
+                            (new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                    }
+
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
@@ -955,16 +961,10 @@ namespace System.Net.Http
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 
-                        if (_altSvcBlocklist != null)
+                        if (IsAltSvcBlocked(authority))
                         {
-                            lock (_altSvcBlocklist)
-                            {
-                                if (_altSvcBlocklist.Contains(authority))
-                                {
-                                    // Skip authorities in our blocklist.
-                                    continue;
-                                }
-                            }
+                            // Skip authorities in our blocklist.
+                            continue;
                         }
 
                         TimeSpan authorityMaxAge = value.MaxAge;
@@ -1046,6 +1046,22 @@ namespace System.Net.Http
         {
             // If we ever support prenegotiated HTTP/3, this should be set to origin, not nulled out.
             _http3Authority = null;
+        }
+
+        /// <summary>
+        /// Checks whether the given <paramref name="authority"/> is on the currext Alt-Svc blocklist.
+        /// </summary>
+        /// <seealso cref="BlocklistAuthority" />
+        private bool IsAltSvcBlocked(HttpAuthority authority)
+        {
+            if (_altSvcBlocklist != null)
+            {
+                lock (_altSvcBlocklist)
+                {
+                    return _altSvcBlocklist.Contains(authority);
+                }
+            }
+            return false;
         }
 
         /// <summary>
