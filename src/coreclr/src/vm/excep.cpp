@@ -3490,8 +3490,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
 
     MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
-    // IsExceptionOfType is supported for CoreLib exception types only
-    _ASSERTE(reKind <= kLastExceptionInCoreLib);
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
