@@ -594,13 +594,18 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    _socket.Shutdown(SocketShutdown.Send);
+                    _socket?.Shutdown(SocketShutdown.Send);
                 }
                 catch (Exception) { }
 
                 _writer.Dispose();
                 _stream.Dispose();
-                _socket.Dispose();
+                _socket?.Dispose();
+            }
+
+            public override Task InitializeConnectionAsync()
+            {
+                return Task.CompletedTask;
             }
 
             public async Task<List<string>> ReadRequestHeaderAsync()
@@ -894,6 +899,11 @@ namespace System.Net.Test.Common
         public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
         {
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
+        }
+
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        {
+            return Task.FromResult<GenericLoopbackConnection>(new LoopbackServer.Connection(socket, stream));
         }
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
