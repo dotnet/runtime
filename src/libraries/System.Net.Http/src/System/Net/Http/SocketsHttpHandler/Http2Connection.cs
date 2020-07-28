@@ -1747,7 +1747,8 @@ namespace System.Net.Http
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
-                    requestBodyTask.IsCompleted)
+                    requestBodyTask.IsCompleted ||
+                    http2Stream.SendRequestFinished)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
                     // ok waiting for the request body even if it hasn't completed, e.g. because we're not doing duplex).
