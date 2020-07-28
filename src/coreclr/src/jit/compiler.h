@@ -6364,6 +6364,10 @@ protected:
     };
 
     static const size_t s_optCSEhashSize;
+    static const size_t s_optCSEhashGrowthFactor;
+    size_t              optCSEhashSize;     // Size of hashtable
+    size_t              optCSEhashCount;    // Number of entries in hashtable
+    size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 

@@ -20,7 +20,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 /* static */
-const size_t Compiler::s_optCSEhashSize = EXPSET_SZ * 2;
+const size_t Compiler::s_optCSEhashSize         = EXPSET_SZ * 2;
+const size_t Compiler::s_optCSEhashGrowthFactor = 2;
 
 /*****************************************************************************
  *
@@ -40,7 +41,7 @@ void Compiler::optCSEstop()
 
     optCSEtab = new (this, CMK_CSE) CSEdsc*[optCSECandidateCount]();
 
-    for (cnt = s_optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
+    for (cnt = optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
     {
         for (dsc = *ptr; dsc; dsc = dsc->csdNextInBucket)
         {
@@ -375,11 +376,29 @@ void Compiler::optValnumCSE_Init()
     // Allocate and clear the hash bucket table
     optCSEhash = new (this, CMK_CSE) CSEdsc*[s_optCSEhashSize]();
 
+    optCSEhashSize                 = s_optCSEhashSize;
+    optCSEhashMaxCountBeforeResize = optCSEhashSize * s_optCSEhashGrowthFactor;
+    optCSEhashCount                = 0
+
     optCSECandidateCount = 0;
     optDoCSE             = false; // Stays false until we find duplicate CSE tree
 
     // optCseCheckedBoundMap is unused in most functions, allocated only when used
     optCseCheckedBoundMap = nullptr;
+}
+
+unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
+{
+    unsigned hash;
+
+    hash = (unsigned)key;
+#ifdef TARGET_64BIT
+    hash ^= (unsigned)(key >> 32);
+#endif
+    hash *= (unsigned)(optCSEhashSize + 1);
+    hash >>= 7;
+
+    return hash % optCSEhashSize;
 }
 
 //---------------------------------------------------------------------------
@@ -402,7 +421,6 @@ void Compiler::optValnumCSE_Init()
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
     size_t   key;
-    unsigned hash;
     unsigned hval;
     CSEdsc*  hashDsc;
     bool     isIntConstHash       = false;
@@ -502,14 +520,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     // Compute the hash value for the expression
 
-    hash = (unsigned)key;
-#ifdef TARGET_64BIT
-    hash ^= (unsigned)(key >> 32);
-#endif
-    hash *= (unsigned)(s_optCSEhashSize + 1);
-    hash >>= 7;
-
-    hval = hash % s_optCSEhashSize;
+    hval = optCSEKeyToHashIndex(key, optCSEhashSize);
 
     /* Look for a matching index in the hash table */
 
@@ -627,6 +638,37 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
         if (optCSECandidateCount < MAX_CSE_CNT)
         {
+            if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
+            {
+                size_t newOptCSEhashSize      = optCSEhashSize * s_optCSEhashGrowthFactor;
+                CSEdsc** newOptCSEhash = new (this, CMK_CSE) CSEdsc*[new_optCSEhashSize]();
+
+                // Iterate through each existing entry, moving to the new table
+                CSEdsc** ptr;
+                CSEdsc* dsc;
+                size_t cnt;
+                for (cnt = optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
+                {
+                    for (dsc = *ptr; dsc;)
+                    {
+                        CSEdsc* nextDsc = dsc->csdNextInBucket;
+
+                        size_t newHval = optCSEKeyToHashIndex(dsc->csdHashKey, newOptCSEhashSize);
+
+                        // Move CSEdsc to bucket in enlarged table
+                        dsc->csdNextInBucket = newOptCSEhash[newHval];
+                        newOptCSEhash[newHval] = dsc;
+
+                        dsc = nextDsc;
+                    }
+                }
+
+                optCSEhash = newOptCSEhash;
+                optCSEhashSize = newOptCSEhashSize;
+                optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
+            }
+
+            ++optCSEhashCount;
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
             hashDsc->csdHashKey        = key;
