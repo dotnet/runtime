@@ -6333,13 +6333,13 @@ namespace
 
         if (g_hostpolicy_embedded)
         {
-#if defined(TARGET_LINUX)
-            if (wcscmp(wszLibName, W("libhostpolicy")) == 0) {
-                return PAL_LoadLibraryDirect(NULL);
-            }
-#else
+#ifdef TARGET_WINDOWS
             if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0) {
                 return WszGetModuleHandle(NULL);
+            }
+#else
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0) {
+                return PAL_LoadLibraryDirect(NULL);
             }
 #endif
         }
