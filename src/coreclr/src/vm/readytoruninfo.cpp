@@ -830,6 +830,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (m_readyToRunCodeDisabled)
         goto done;
 
+    ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
+
     uint offset;
     if (pMD->HasClassOrMethodInstantiation())
     {

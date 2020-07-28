@@ -9,7 +9,7 @@ namespace System.Data.Common
 
     public class RowUpdatedEventArgs : EventArgs
     {
-        private readonly IDbCommand _command;
+        private readonly IDbCommand? _command;
         private StatementType _statementType;
         private readonly DataTableMapping _tableMapping;
         private Exception? _errors;
@@ -20,7 +20,7 @@ namespace System.Data.Common
         private UpdateStatus _status; // UpdateStatus.Continue; /*0*/
         private int _recordsAffected;
 
-        public RowUpdatedEventArgs(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        public RowUpdatedEventArgs(DataRow dataRow, IDbCommand? command, StatementType statementType, DataTableMapping tableMapping)
         {
             switch (statementType)
             {
@@ -39,7 +39,7 @@ namespace System.Data.Common
             _tableMapping = tableMapping;
         }
 
-        public IDbCommand Command
+        public IDbCommand? Command
         {
             get
             {

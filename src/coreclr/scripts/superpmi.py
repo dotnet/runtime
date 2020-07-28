@@ -2128,7 +2128,7 @@ def setup_args(args):
             # yielding
             # [0]: ""
             # [1]: "\Windows_NT.x64.Checked"
-            standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
+            standard_location_split = os.path.dirname(coreclr_args.base_jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
 
             # Get arch/flavor. Remove leading slash.

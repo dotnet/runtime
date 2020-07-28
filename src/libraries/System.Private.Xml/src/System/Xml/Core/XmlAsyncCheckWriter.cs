@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Threading.Tasks;
 using System.Xml.XPath;
 
@@ -38,7 +39,7 @@ namespace System.Xml
         {
             get
             {
-                XmlWriterSettings settings = _coreWriter.Settings;
+                XmlWriterSettings? settings = _coreWriter.Settings;
 
                 if (null != settings)
                 {
@@ -74,13 +75,13 @@ namespace System.Xml
             _coreWriter.WriteEndDocument();
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsync();
             _coreWriter.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             _coreWriter.WriteStartElement(prefix, localName, ns);
@@ -98,7 +99,7 @@ namespace System.Xml
             _coreWriter.WriteFullEndElement();
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             _coreWriter.WriteStartAttribute(prefix, localName, ns);
@@ -110,19 +111,19 @@ namespace System.Xml
             _coreWriter.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             CheckAsync();
             _coreWriter.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             CheckAsync();
             _coreWriter.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             CheckAsync();
             _coreWriter.WriteProcessingInstruction(name, text);
@@ -140,13 +141,13 @@ namespace System.Xml
             _coreWriter.WriteCharEntity(ch);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             CheckAsync();
             _coreWriter.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             CheckAsync();
             _coreWriter.WriteString(text);
@@ -209,7 +210,7 @@ namespace System.Xml
             _coreWriter.Flush();
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             CheckAsync();
             return _coreWriter.LookupPrefix(ns);
@@ -224,7 +225,7 @@ namespace System.Xml
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -245,7 +246,7 @@ namespace System.Xml
             _coreWriter.WriteName(name);
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             CheckAsync();
             _coreWriter.WriteQualifiedName(localName, ns);
@@ -257,7 +258,7 @@ namespace System.Xml
             _coreWriter.WriteValue(value);
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             CheckAsync();
             _coreWriter.WriteValue(value);
@@ -368,7 +369,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsync();
             var task = _coreWriter.WriteDocTypeAsync(name, pubid, sysid, subset);
@@ -376,7 +377,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             var task = _coreWriter.WriteStartElementAsync(prefix, localName, ns);
@@ -400,7 +401,7 @@ namespace System.Xml
             return task;
         }
 
-        protected internal override Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             var task = _coreWriter.WriteStartAttributeAsync(prefix, localName, ns);
@@ -416,7 +417,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             CheckAsync();
             var task = _coreWriter.WriteCDataAsync(text);
@@ -424,7 +425,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteCommentAsync(string text)
+        public override Task WriteCommentAsync(string? text)
         {
             CheckAsync();
             var task = _coreWriter.WriteCommentAsync(text);
@@ -456,7 +457,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsync();
             var task = _coreWriter.WriteWhitespaceAsync(ws);
@@ -464,7 +465,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             CheckAsync();
             var task = _coreWriter.WriteStringAsync(text);
@@ -544,7 +545,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteQualifiedNameAsync(string localName, string ns)
+        public override Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             CheckAsync();
             var task = _coreWriter.WriteQualifiedNameAsync(localName, ns);
