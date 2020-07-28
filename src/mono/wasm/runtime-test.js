@@ -275,14 +275,20 @@ var App = {
 
 		if (args[0] == "--run") {
 			// Run an exe
-			if (args.length == 1)
+			if (args.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
+				return;
+			}
 			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0)
+			if (main_assembly == 0) {
 				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
+				return;
+			}
 			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0)
+			if (main_method == 0) {
 				fail_exec ("Error: Main (string[]) method not found.");
+				return;
+			}
 
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
@@ -310,14 +316,15 @@ var App = {
 				if (eh_res != 0) {
 					print ("Exception:" + string_get_utf8 (res));
 					test_exit (1);
+					return;
 				}
 				var exit_code = unbox_int (res);
-				if (exit_code != 0)
-					test_exit (exit_code);
+				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
+				return;
 			}
 
 /*
@@ -333,9 +340,6 @@ var App = {
 				Module.pump_message ();
 			}
 */
-
-			if (is_browser)
-				test_exit (0);
 
 			return;
 		} else {
