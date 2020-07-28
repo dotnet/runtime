@@ -182,5 +182,34 @@ partial class Test
     public static partial void Method(int t = 0);
 }
 ";
+
+        /// <summary>
+        /// Declaration with user defined attributes with prefixed name.
+        /// </summary>
+        public static readonly string UserDefinedPrefixedAttributes = @"
+using System;
+using System.Runtime.InteropServices;
+
+namespace System.Runtime.InteropServices
+{
+    // Prefix with ATTRIBUTE so the lengths will match during check.
+    sealed class ATTRIBUTEGeneratedDllImportAttribute : Attribute
+    {
+        public ATTRIBUTEGeneratedDllImportAttribute(string a) { }
+    }
+}
+
+partial class Test
+{
+    [ATTRIBUTEGeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial void Method1();
+
+    [ATTRIBUTEGeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method2();
+
+    [System.Runtime.InteropServices.ATTRIBUTEGeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method3();
+}
+";
     }
 }

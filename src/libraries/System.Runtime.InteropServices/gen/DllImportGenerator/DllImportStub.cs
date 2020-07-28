@@ -91,9 +91,9 @@ namespace Microsoft.Interop
             // Forward call to generated P/Invoke
             var returnMaybe = method.ReturnType.SpecialType == SpecialType.System_Void
                 ? string.Empty
-                : "return";
+                : "return ";
 
-            var dispatchCall = new StringBuilder($"{returnMaybe} {dllImportName}");
+            var dispatchCall = new StringBuilder($"{returnMaybe}{dllImportName}");
             if (!dllImportParams.Any())
             {
                 dispatchCall.Append("();");
