@@ -9,21 +9,21 @@ namespace System.Data.OleDb
     public sealed partial class OleDbCommand : System.Data.Common.DbCommand, System.Data.IDbCommand, System.ICloneable, System.IDisposable
     {
         public OleDbCommand() { }
-        public OleDbCommand(string cmdText) { }
-        public OleDbCommand(string cmdText, System.Data.OleDb.OleDbConnection connection) { }
-        public OleDbCommand(string cmdText, System.Data.OleDb.OleDbConnection connection, System.Data.OleDb.OleDbTransaction transaction) { }
+        public OleDbCommand(string? cmdText) { }
+        public OleDbCommand(string? cmdText, System.Data.OleDb.OleDbConnection? connection) { }
+        public OleDbCommand(string? cmdText, System.Data.OleDb.OleDbConnection? connection, System.Data.OleDb.OleDbTransaction? transaction) { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public override string CommandText { get { throw null; } set { } }
+        public override string? CommandText { get { throw null; } set { } }
         public override int CommandTimeout { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.CommandType.Text)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public override System.Data.CommandType CommandType { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbConnection Connection { get { throw null; } set { } }
-        protected override System.Data.Common.DbConnection DbConnection { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbConnection? Connection { get { throw null; } set { } }
+        protected override System.Data.Common.DbConnection? DbConnection { get { throw null; } set { } }
         protected override System.Data.Common.DbParameterCollection DbParameterCollection { get { throw null; } }
-        protected override System.Data.Common.DbTransaction DbTransaction { get { throw null; } set { } }
+        protected override System.Data.Common.DbTransaction? DbTransaction { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(true)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
@@ -32,7 +32,7 @@ namespace System.Data.OleDb
         public new System.Data.OleDb.OleDbParameterCollection Parameters { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public new System.Data.OleDb.OleDbTransaction Transaction { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbTransaction? Transaction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.UpdateRowSource.Both)]
         public override System.Data.UpdateRowSource UpdatedRowSource { get { throw null; } set { } }
         public override void Cancel() { }
@@ -44,7 +44,7 @@ namespace System.Data.OleDb
         public override int ExecuteNonQuery() { throw null; }
         public new System.Data.OleDb.OleDbDataReader ExecuteReader() { throw null; }
         public new System.Data.OleDb.OleDbDataReader ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
-        public override object ExecuteScalar() { throw null; }
+        public override object? ExecuteScalar() { throw null; }
         public override void Prepare() { }
         public void ResetCommandTimeout() { }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { throw null; }
@@ -54,9 +54,9 @@ namespace System.Data.OleDb
     public sealed partial class OleDbCommandBuilder : System.Data.Common.DbCommandBuilder
     {
         public OleDbCommandBuilder() { }
-        public OleDbCommandBuilder(System.Data.OleDb.OleDbDataAdapter adapter) { }
+        public OleDbCommandBuilder(System.Data.OleDb.OleDbDataAdapter? adapter) { }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbDataAdapter DataAdapter { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbDataAdapter? DataAdapter { get { throw null; } set { } }
         protected override void ApplyParameterInfo(System.Data.Common.DbParameter parameter, System.Data.DataRow datarow, System.Data.StatementType statementType, bool whereClause) { }
         public static void DeriveParameters(System.Data.OleDb.OleDbCommand command) { }
         public new System.Data.OleDb.OleDbCommand GetDeleteCommand() { throw null; }
@@ -78,11 +78,12 @@ namespace System.Data.OleDb
     public sealed partial class OleDbConnection : System.Data.Common.DbConnection, System.Data.IDbConnection, System.ICloneable, System.IDisposable
     {
         public OleDbConnection() { }
-        public OleDbConnection(string connectionString) { }
+        public OleDbConnection(string? connectionString) { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string ConnectionString { get { throw null; } set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override int ConnectionTimeout { get { throw null; } }
@@ -97,7 +98,7 @@ namespace System.Data.OleDb
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override System.Data.ConnectionState State { get { throw null; } }
-        public event System.Data.OleDb.OleDbInfoMessageEventHandler InfoMessage { add { } remove { } }
+        public event System.Data.OleDb.OleDbInfoMessageEventHandler? InfoMessage { add { } remove { } }
         protected override System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         public new System.Data.OleDb.OleDbTransaction BeginTransaction() { throw null; }
         public new System.Data.OleDb.OleDbTransaction BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
@@ -106,11 +107,11 @@ namespace System.Data.OleDb
         public new System.Data.OleDb.OleDbCommand CreateCommand() { throw null; }
         protected override System.Data.Common.DbCommand CreateDbCommand() { throw null; }
         protected override void Dispose(bool disposing) { }
-        public override void EnlistTransaction(System.Transactions.Transaction transaction) { }
-        public System.Data.DataTable GetOleDbSchemaTable(System.Guid schema, object[] restrictions) { throw null; }
+        public override void EnlistTransaction(System.Transactions.Transaction? transaction) { }
+        public System.Data.DataTable GetOleDbSchemaTable(System.Guid schema, object?[]? restrictions) { throw null; }
         public override System.Data.DataTable GetSchema() { throw null; }
         public override System.Data.DataTable GetSchema(string collectionName) { throw null; }
-        public override System.Data.DataTable GetSchema(string collectionName, string[] restrictionValues) { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName, string?[]? restrictionValues) { throw null; }
         public override void Open() { }
         public static void ReleaseObjectPool() { }
         public void ResetState() { }
@@ -121,13 +122,14 @@ namespace System.Data.OleDb
     public sealed partial class OleDbConnectionStringBuilder : System.Data.Common.DbConnectionStringBuilder
     {
         public OleDbConnectionStringBuilder() { }
-        public OleDbConnectionStringBuilder(string connectionString) { }
+        public OleDbConnectionStringBuilder(string? connectionString) { }
         [System.ComponentModel.DisplayNameAttribute("Data Source")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string DataSource { get { throw null; } set { } }
         [System.ComponentModel.DisplayNameAttribute("File Name")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string FileName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override object this[string keyword] { get { throw null; } set { } }
         public override System.Collections.ICollection Keys { get { throw null; } }
         [System.ComponentModel.DisplayNameAttribute("Persist Security Info")]
@@ -136,28 +138,28 @@ namespace System.Data.OleDb
         public override void Clear() { }
         public override bool ContainsKey(string keyword) { throw null; }
         public override bool Remove(string keyword) { throw null; }
-        public override bool TryGetValue(string keyword, out object value) { throw null; }
+        public override bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
     }
     public sealed partial class OleDbDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public OleDbDataAdapter() { }
-        public OleDbDataAdapter(System.Data.OleDb.OleDbCommand selectCommand) { }
-        public OleDbDataAdapter(string selectCommandText, System.Data.OleDb.OleDbConnection selectConnection) { }
-        public OleDbDataAdapter(string selectCommandText, string selectConnectionString) { }
+        public OleDbDataAdapter(System.Data.OleDb.OleDbCommand? selectCommand) { }
+        public OleDbDataAdapter(string? selectCommandText, System.Data.OleDb.OleDbConnection? selectConnection) { }
+        public OleDbDataAdapter(string? selectCommandText, string? selectConnectionString) { }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbCommand DeleteCommand { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbCommand? DeleteCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbCommand InsertCommand { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbCommand? InsertCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbCommand SelectCommand { get { throw null; } set { } }
-        System.Data.IDbCommand System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
-        System.Data.IDbCommand System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
-        System.Data.IDbCommand System.Data.IDbDataAdapter.SelectCommand { get { throw null; } set { } }
-        System.Data.IDbCommand System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbCommand? SelectCommand { get { throw null; } set { } }
+        System.Data.IDbCommand? System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
+        System.Data.IDbCommand? System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
+        System.Data.IDbCommand? System.Data.IDbDataAdapter.SelectCommand { get { throw null; } set { } }
+        System.Data.IDbCommand? System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public new System.Data.OleDb.OleDbCommand UpdateCommand { get { throw null; } set { } }
-        public event System.Data.OleDb.OleDbRowUpdatedEventHandler RowUpdated { add { } remove { } }
-        public event System.Data.OleDb.OleDbRowUpdatingEventHandler RowUpdating { add { } remove { } }
+        public new System.Data.OleDb.OleDbCommand? UpdateCommand { get { throw null; } set { } }
+        public event System.Data.OleDb.OleDbRowUpdatedEventHandler? RowUpdated { add { } remove { } }
+        public event System.Data.OleDb.OleDbRowUpdatingEventHandler? RowUpdating { add { } remove { } }
         protected override System.Data.Common.RowUpdatedEventArgs CreateRowUpdatedEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         protected override System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         public int Fill(System.Data.DataSet dataSet, object ADODBRecordSet, string srcTable) { throw null; }
@@ -180,9 +182,9 @@ namespace System.Data.OleDb
         public override void Close() { }
         public override bool GetBoolean(int ordinal) { throw null; }
         public override byte GetByte(int ordinal) { throw null; }
-        public override long GetBytes(int ordinal, long dataIndex, byte[] buffer, int bufferIndex, int length) { throw null; }
+        public override long GetBytes(int ordinal, long dataIndex, byte[]? buffer, int bufferIndex, int length) { throw null; }
         public override char GetChar(int ordinal) { throw null; }
-        public override long GetChars(int ordinal, long dataIndex, char[] buffer, int bufferIndex, int length) { throw null; }
+        public override long GetChars(int ordinal, long dataIndex, char[]? buffer, int bufferIndex, int length) { throw null; }
         public new System.Data.OleDb.OleDbDataReader GetData(int ordinal) { throw null; }
         public override string GetDataTypeName(int index) { throw null; }
         public override System.DateTime GetDateTime(int ordinal) { throw null; }
@@ -259,7 +261,7 @@ namespace System.Data.OleDb
         public int ErrorCode { get { throw null; } }
         public System.Data.OleDb.OleDbErrorCollection Errors { get { throw null; } }
         public string Message { get { throw null; } }
-        public string Source { get { throw null; } }
+        public string? Source { get { throw null; } }
         public override string ToString() { throw null; }
     }
     public delegate void OleDbInfoMessageEventHandler(object sender, System.Data.OleDb.OleDbInfoMessageEventArgs e);
@@ -319,12 +321,12 @@ namespace System.Data.OleDb
     public sealed partial class OleDbParameter : System.Data.Common.DbParameter, System.Data.IDataParameter, System.Data.IDbDataParameter, System.ICloneable
     {
         public OleDbParameter() { }
-        public OleDbParameter(string name, System.Data.OleDb.OleDbType dataType) { }
-        public OleDbParameter(string name, System.Data.OleDb.OleDbType dataType, int size) { }
-        public OleDbParameter(string parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, bool isNullable, byte precision, byte scale, string srcColumn, System.Data.DataRowVersion srcVersion, object value) { }
-        public OleDbParameter(string parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, byte precision, byte scale, string sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object value) { }
-        public OleDbParameter(string name, System.Data.OleDb.OleDbType dataType, int size, string srcColumn) { }
-        public OleDbParameter(string name, object value) { }
+        public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType) { }
+        public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size) { }
+        public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, bool isNullable, byte precision, byte scale, string? srcColumn, System.Data.DataRowVersion srcVersion, object? value) { }
+        public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, byte precision, byte scale, string? sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object? value) { }
+        public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size, string? srcColumn) { }
+        public OleDbParameter(string? name, object? value) { }
         public override System.Data.DbType DbType { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public override System.Data.ParameterDirection Direction { get { throw null; } set { } }
@@ -332,18 +334,20 @@ namespace System.Data.OleDb
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.Data.Common.DbProviderSpecificTypePropertyAttribute(true)]
         public System.Data.OleDb.OleDbType OleDbType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string ParameterName { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((byte)0)]
         public new byte Precision { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((byte)0)]
         public new byte Scale { get { throw null; } set { } }
         public override int Size { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string SourceColumn { get { throw null; } set { } }
         public override bool SourceColumnNullMapping { get { throw null; } set { } }
         public override System.Data.DataRowVersion SourceVersion { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.StringConverter))]
-        public override object Value { get { throw null; } set { } }
+        public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOleDbType() { }
         object System.ICloneable.Clone() { throw null; }
@@ -365,13 +369,13 @@ namespace System.Data.OleDb
         public override object SyncRoot { get { throw null; } }
         public System.Data.OleDb.OleDbParameter Add(System.Data.OleDb.OleDbParameter value) { throw null; }
         public override int Add(object value) { throw null; }
-        public System.Data.OleDb.OleDbParameter Add(string parameterName, System.Data.OleDb.OleDbType oleDbType) { throw null; }
-        public System.Data.OleDb.OleDbParameter Add(string parameterName, System.Data.OleDb.OleDbType oleDbType, int size) { throw null; }
-        public System.Data.OleDb.OleDbParameter Add(string parameterName, System.Data.OleDb.OleDbType oleDbType, int size, string sourceColumn) { throw null; }
-        public System.Data.OleDb.OleDbParameter Add(string parameterName, object value) { throw null; }
+        public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType) { throw null; }
+        public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size) { throw null; }
+        public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size, string? sourceColumn) { throw null; }
+        public System.Data.OleDb.OleDbParameter Add(string? parameterName, object? value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.OleDb.OleDbParameter[] values) { }
-        public System.Data.OleDb.OleDbParameter AddWithValue(string parameterName, object value) { throw null; }
+        public System.Data.OleDb.OleDbParameter AddWithValue(string? parameterName, object? value) { throw null; }
         public override void Clear() { }
         public bool Contains(System.Data.OleDb.OleDbParameter value) { throw null; }
         public override bool Contains(object value) { throw null; }
@@ -396,14 +400,14 @@ namespace System.Data.OleDb
     public sealed partial class OleDbRowUpdatedEventArgs : System.Data.Common.RowUpdatedEventArgs
     {
         public OleDbRowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
-        public new System.Data.OleDb.OleDbCommand Command { get { throw null; } }
+        public new System.Data.OleDb.OleDbCommand? Command { get { throw null; } }
     }
     public delegate void OleDbRowUpdatedEventHandler(object sender, System.Data.OleDb.OleDbRowUpdatedEventArgs e);
     public sealed partial class OleDbRowUpdatingEventArgs : System.Data.Common.RowUpdatingEventArgs
     {
         public OleDbRowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
-        protected override System.Data.IDbCommand BaseCommand { get { throw null; } set { } }
-        public new System.Data.OleDb.OleDbCommand Command { get { throw null; } set { } }
+        protected override System.Data.IDbCommand? BaseCommand { get { throw null; } set { } }
+        public new System.Data.OleDb.OleDbCommand? Command { get { throw null; } set { } }
     }
     public delegate void OleDbRowUpdatingEventHandler(object sender, System.Data.OleDb.OleDbRowUpdatingEventArgs e);
     public sealed partial class OleDbSchemaGuid
@@ -450,8 +454,8 @@ namespace System.Data.OleDb
     public sealed partial class OleDbTransaction : System.Data.Common.DbTransaction
     {
         internal OleDbTransaction() { }
-        public new System.Data.OleDb.OleDbConnection Connection { get { throw null; } }
-        protected override System.Data.Common.DbConnection DbConnection { get { throw null; } }
+        public new System.Data.OleDb.OleDbConnection? Connection { get { throw null; } }
+        protected override System.Data.Common.DbConnection? DbConnection { get { throw null; } }
         public override System.Data.IsolationLevel IsolationLevel { get { throw null; } }
         public System.Data.OleDb.OleDbTransaction Begin() { throw null; }
         public System.Data.OleDb.OleDbTransaction Begin(System.Data.IsolationLevel isolevel) { throw null; }

@@ -506,7 +506,7 @@ namespace System.Xml
         // Initializes a new instance of XmlTextReaderImpl class for parsing fragments with the specified stream, fragment type and parser context
         // This constructor is used when creating XmlTextReaderImpl for V1 XmlTextReader
         // SxS: The method resolves URI but does not expose the resolved value up the stack hence Resource Exposure scope is None.
-        internal XmlTextReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        internal XmlTextReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this((context != null && context.NameTable != null) ? context.NameTable : new NameTable())
         {
             Encoding? enc = (context != null) ? context.Encoding : null;
@@ -529,7 +529,7 @@ namespace System.Xml
 
         // Initializes a new instance of XmlTextRreaderImpl class for parsing fragments with the specified string, fragment type and parser context
         // This constructor is used when creating XmlTextReaderImpl for V1 XmlTextReader
-        internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
             if (xmlFragment == null)
@@ -556,7 +556,7 @@ namespace System.Xml
         // "innerXml" of an XmlDecl is. This internal function is required by DOM. When(if) we handle/allow
         // all nodetypes in InnerXml then we should support them as part of fragment constructor as well.
         // Until then, this internal function will have to do.
-        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext context)
+        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
             InitStringInput((context == null) ? string.Empty : context.BaseURI, Encoding.Unicode, string.Concat("<?xml ", xmlFragment, "?>"));
@@ -821,7 +821,7 @@ namespace System.Xml
 
         // Initializes a new instance of the XmlTextReaderImpl class for fragment parsing.
         // This constructor is used by XmlBinaryReader for nested text XML
-        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext context, XmlReaderSettings settings)
+        internal XmlTextReaderImpl(string xmlFragment, XmlParserContext? context, XmlReaderSettings settings)
             : this(null, settings, context)
         {
             Debug.Assert(xmlFragment != null);
@@ -9247,7 +9247,7 @@ namespace System.Xml
         // Validation support
         //
 
-        internal IValidationEventHandling ValidationEventHandling
+        internal IValidationEventHandling? ValidationEventHandling
         {
             set
             {

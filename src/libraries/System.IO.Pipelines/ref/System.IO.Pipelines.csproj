@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net461'">true</ExcludeFromPackage>
     <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks
     we should use the lib asset instead. -->
     <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
@@ -10,8 +11,8 @@
     <Compile Include="System.IO.Pipelines.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 </Project>

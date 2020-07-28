@@ -576,7 +576,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: net472
+      framework: net48
       runTests: true
       testScope: innerloop
       condition: >-
@@ -595,7 +595,6 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
-      liveRuntimeBuildConfig: release
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -682,7 +681,6 @@ jobs:
     platforms:
     - Linux_arm
     - Windows_NT_x86
-    - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -850,7 +848,6 @@ jobs:
     platforms:
     - Windows_NT_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_arm
       - Windows_NT_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:

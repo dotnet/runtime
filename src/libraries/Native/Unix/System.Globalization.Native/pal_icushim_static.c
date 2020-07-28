@@ -11,6 +11,8 @@
 #include <unicode/localpointer.h>
 #include <unicode/utrace.h>
 
+static int32_t isLoaded = 0;
+
 static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
@@ -65,7 +67,8 @@ int32_t GlobalizationNative_LoadICU(void)
         log_icu_error("ulocdata_getCLDRVersion", status);
         return 0;
     }
-
+    
+    isLoaded = 1;
     return 1;
 }
 
@@ -76,6 +79,12 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
 int32_t GlobalizationNative_GetICUVersion(void)
 {
+    // this method is only used from our tests
+    // this way we ensure we're testing on the right mode
+    // even though we can call u_getVersion without loading since it is statically linked.
+    if (!isLoaded)
+        return 0;
+
     UVersionInfo versionInfo;
     u_getVersion(versionInfo);
 

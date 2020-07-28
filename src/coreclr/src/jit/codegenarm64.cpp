@@ -4699,7 +4699,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
+    // Need an additional integer register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != addr->GetRegNum());
 
@@ -4766,16 +4766,13 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
-    unsigned offs   = 0;
-    unsigned varNum = treeNode->AsLclVarCommon()->GetLclNum();
+    GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
+
+    unsigned offs   = lclVar->GetLclOffs();
+    unsigned varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    if (treeNode->OperGet() == GT_STORE_LCL_FLD)
-    {
-        offs = treeNode->AsLclFld()->GetLclOffs();
-    }
-
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    GenTree* op1 = lclVar->gtGetOp1();
 
     if (op1->isContained())
     {
@@ -4792,8 +4789,8 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     }
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    // Need an additional integer register to extract upper 4 bytes from data.
+    regNumber tmpReg = lclVar->GetSingleTempReg();
 
     // store lower 8 bytes
     GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, operandReg, varNum, offs);

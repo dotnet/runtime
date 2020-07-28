@@ -16,23 +16,21 @@
     <CoreAssemblyVersion>5.0.0.0</CoreAssemblyVersion>
     <CoreAssemblyVersion Condition="'$(TargetFramework)' != $(NetCoreAppCurrent)">4.0.0.0</CoreAssemblyVersion>  
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <AssemblyPublicKeyToken Condition="$(TargetFramework.StartsWith('net4'))">B7 7A 5C 56 19 34 E0 89</AssemblyPublicKeyToken>
     <CoreAssembly>mscorlib</CoreAssembly>
     <ExtraMacros>#define net45</ExtraMacros>
   </PropertyGroup>
-
   <ItemGroup>
-    <Reference Include="System.Runtime" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
-    <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
   </ItemGroup>
-
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp2.0'">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
   <Target Name="GenerateVersionFile">
    <PropertyGroup>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'version', 'version.h'))</VersionFilePath>
@@ -62,6 +60,15 @@ $(ExtraMacros)
 
     <ItemGroup>
       <FileWrites Include="$(VersionFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Decompile the ILResourceReference to get native resources. -->
+  <Target Name="SetILResourceReference"
+          BeforeTargets="DisassembleIlasmResourceFile"
+          Condition="'@(ResolvedMatchingContract)' != ''">
+    <ItemGroup>
+      <ILResourceReference Include="@(ResolvedMatchingContract)" />
     </ItemGroup>
   </Target>
 </Project>

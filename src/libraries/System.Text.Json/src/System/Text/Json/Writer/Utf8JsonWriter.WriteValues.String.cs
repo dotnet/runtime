@@ -349,5 +349,19 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
         }
+
+        /// <summary>
+        /// Writes a number as a JSON string. The string value is not escaped.
+        /// </summary>
+        /// <param name="utf8Value"></param>
+        internal void WriteNumberValueAsStringUnescaped(ReadOnlySpan<byte> utf8Value)
+        {
+            // The value has been validated prior to calling this method.
+
+            WriteStringByOptions(utf8Value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.String;
+        }
     }
 }

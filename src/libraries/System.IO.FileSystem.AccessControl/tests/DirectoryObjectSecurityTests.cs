@@ -67,7 +67,6 @@ namespace System.Security.AccessControl
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetAccessRules_InvalidTargetType()
         {
             var activeDirectorySecurity = new ActiveDirectorySecurity();

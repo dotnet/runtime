@@ -6,7 +6,7 @@
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
-    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -20,10 +20,6 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
@@ -59,35 +55,31 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
-  <Target Name="SetupRuntimePackNative"
-          AfterTargets="AfterResolveReferences">
-    <ItemGroup>
-      <BinPlaceItem Include="@(RuntimeFiles)" />
-      <BinPlaceItem Include="@(MonoCrossFiles)">
-        <DestinationSubDirectory>cross/</DestinationSubDirectory>
-      </BinPlaceItem>
-      <BinPlaceItem Include="@(MonoIncludeFiles)">
-        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
-      </BinPlaceItem>
-    </ItemGroup>
-  </Target>
-
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
-          Condition="'$(RuntimeFlavor)' == 'Mono'" />
+          Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <!-- Setup runtime pack native. -->
+      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
+                               DestinationSubDirectory="cross/" />
+      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
+                               DestinationSubDirectory="include/%(RecursiveDir)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
@@ -109,10 +101,8 @@
 
   <!-- Strip away placeholder tfms and TargetFrameworkSuffix. -->
   <Target Name="StripTargetFrameworkSuffixFromTargetFrameworks"
-          Condition="'$(TargetFrameworks)' != ''"
           BeforeTargets="_GetRestoreTargetFrameworksOutput;_GetRestoreTargetFrameworksAsItems">
     <PropertyGroup>
-      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '_[^;]+;?', ''))</TargetFrameworks>
       <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '-[^;]+', ''))</TargetFrameworks>
     </PropertyGroup>
   </Target>

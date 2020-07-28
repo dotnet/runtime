@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.Common
@@ -111,7 +112,7 @@ namespace System.Data.Common
                 }
             }
 
-            object System.Collections.IEnumerator.Current
+            object? System.Collections.IEnumerator.Current
             {
                 get
                 {
@@ -131,7 +132,7 @@ namespace System.Data.Common
         internal static bool ConvertToBoolean(object value)
         {
             Debug.Assert(null != value, "ConvertToBoolean(null)");
-            string svalue = (value as string);
+            string? svalue = (value as string);
             if (null != svalue)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))

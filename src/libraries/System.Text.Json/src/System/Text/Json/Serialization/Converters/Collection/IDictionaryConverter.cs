@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object?> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<object?> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
             do
             {
                 if (ShouldFlush(writer, ref state))
