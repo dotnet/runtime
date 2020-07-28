@@ -310,6 +310,7 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing) { }
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
     }
     public partial class StreamContent : System.Net.Http.HttpContent
     {

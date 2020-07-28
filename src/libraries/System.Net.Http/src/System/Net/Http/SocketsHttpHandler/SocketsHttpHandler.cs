@@ -273,6 +273,17 @@ namespace System.Net.Http
             }
         }
 
+        public bool EnableMultipleHttp2Connections
+        {
+            get => _settings._enableMultipleHttp2Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp2Connections = value;
+            }
+        }
+
         internal bool SupportsAutomaticDecompression => true;
         internal bool SupportsProxy => true;
         internal bool SupportsRedirectConfiguration => true;

@@ -21,18 +21,25 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
-        public static TimeSpan Timeout => Http2LoopbackServer.Timeout;
+        private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
         private readonly byte[] _prefix;
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
         public bool IsInvalid => _connectionSocket == null;
         public Stream Stream => _connectionStream;
+        public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
         public Http2LoopbackConnection(Socket socket, Http2Options httpOptions)
+            : this(socket, httpOptions, Http2LoopbackServer.Timeout)
+        {
+        }
+
+        public Http2LoopbackConnection(Socket socket, Http2Options httpOptions, TimeSpan timeout)
         {
             _connectionSocket = socket;
             _connectionStream = new NetworkStream(_connectionSocket, true);
+            _timeout = timeout;
 
             if (httpOptions.UseSsl)
             {
@@ -81,12 +88,12 @@ namespace System.Net.Test.Common
             await WriteFrameAsync(emptySettings).ConfigureAwait(false);
 
             // Receive and ACK the client settings frame.
-            Frame clientSettings = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Frame clientSettings = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             clientSettings.Flags = clientSettings.Flags | FrameFlags.Ack;
             await WriteFrameAsync(clientSettings).ConfigureAwait(false);
 
             // Receive the client ACK of the server settings frame.
-            clientSettings = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            clientSettings = await ReadFrameAsync(_timeout).ConfigureAwait(false);
         }
 
         public async Task WriteFrameAsync(Frame frame)
@@ -225,7 +232,7 @@ namespace System.Net.Test.Common
 
         public async Task ReadRstStreamAsync(int streamId)
         {
-            Frame frame = await ReadFrameAsync(Timeout);
+            Frame frame = await ReadFrameAsync(_timeout);
 
             if (frame == null)
             {
@@ -248,7 +255,7 @@ namespace System.Net.Test.Common
         {
             IgnoreWindowUpdates();
 
-            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame != null)
             {
                 if (!ignoreUnexpectedFrames)
@@ -310,7 +317,7 @@ namespace System.Net.Test.Common
         public async Task<HeadersFrame> ReadRequestHeaderFrameAsync()
         {
             // Receive HEADERS frame for request.
-            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame == null)
             {
                 throw new IOException("Failed to read Headers frame.");
@@ -476,7 +483,7 @@ namespace System.Net.Test.Common
 
             do
             {
-                frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+                frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
                 if (frame == null && expectEndOfStream)
                 {
                     break;
@@ -516,7 +523,7 @@ namespace System.Net.Test.Common
             HttpRequestData requestData = new HttpRequestData();
 
             // Receive HEADERS frame for request.
-            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame == null)
             {
                 throw new IOException("Failed to read Headers frame.");
@@ -567,7 +574,7 @@ namespace System.Net.Test.Common
             byte[] pingData = new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 };
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
-            PingFrame pingAck = (PingFrame)await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
                 throw new Exception("Expected PING ACK");
