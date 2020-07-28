@@ -38611,6 +38611,7 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
     uint8_t*       end = heap_segment_allocated (seg);
     BOOL small_object_segments = TRUE;
     int align_const = get_alignment_constant (small_object_segments);
+    BOOL walk_pinned_object_heap = walk_large_object_heap_p;
 
     while (1)
 
@@ -38625,20 +38626,25 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
             }
             else
             {
-                if (small_object_segments && walk_large_object_heap_p)
-
+                if (walk_large_object_heap_p)
                 {
-                    small_object_segments = FALSE;
-                    align_const = get_alignment_constant (small_object_segments);
+                    walk_large_object_heap_p = FALSE;
                     seg = generation_start_segment (large_object_generation);
-                    x = heap_segment_mem (seg);
-                    end = heap_segment_allocated (seg);
-                    continue;
+                }
+                else if (walk_pinned_object_heap)
+                {
+                    walk_pinned_object_heap = FALSE;
+                    seg = generation_start_segment (pinned_object_generation);
                 }
                 else
                 {
                     break;
                 }
+
+                align_const = get_alignment_constant (FALSE);
+                x = heap_segment_mem (seg);
+                end = heap_segment_allocated (seg);
+                continue;
             }
         }
 
