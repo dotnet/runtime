@@ -38609,8 +38609,7 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                      generation_allocation_start (gen));
 
     uint8_t*       end = heap_segment_allocated (seg);
-    BOOL small_object_segments = TRUE;
-    int align_const = get_alignment_constant (small_object_segments);
+    int align_const = get_alignment_constant (TRUE);
     BOOL walk_pinned_object_heap = walk_large_object_heap_p;
 
     while (1)
