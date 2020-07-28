@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -103,6 +104,71 @@ namespace System.Net.Http.Functional.Tests
             internal TaskCompletionSource _completedWhenFinalized;
             ~SetOnFinalized() => _completedWhenFinalized.SetResult();
         }
+    }
+
+    public class SocketsHttpHandler_ConnectionFactoryTest : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_ConnectionFactoryTest(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task CustomConnectionFactory_AsyncRequest_Success()
+        {
+            await using ConnectionListenerFactory listenerFactory = new VirtualNetworkConnectionListenerFactory();
+            await using ConnectionListener listener = await listenerFactory.BindAsync(endPoint: null);
+            await using ConnectionFactory connectionFactory = VirtualNetworkConnectionListenerFactory.GetConnectionFactory(listener);
+
+            // TODO: if GenericLoopbackOptions actually worked for HTTP/1 LoopbackServer we could just use that and pass in to CreateConnectionAsync.
+            // Making that work causes other tests to fail, so for now...
+            bool useHttps = UseVersion.Major >= 2 && new GenericLoopbackOptions().UseSsl;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Connection serverConnection = await listener.AcceptAsync();
+                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverConnection.Stream);
+
+                await loopbackConnection.InitializeConnectionAsync();
+
+                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                await loopbackConnection.SendResponseAsync(content: "foo");
+
+                Assert.Equal("/foo", requestData.Path);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHandler.ConnectionFactory = connectionFactory;
+
+                using HttpClient client = CreateHttpClient(handler);
+
+                string response = await client.GetStringAsync($"{(useHttps ? "https" : "http")}://{Guid.NewGuid():N}.com/foo");
+                Assert.Equal("foo", response);
+            });
+
+            await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
+        }
+
+        [Fact]
+        public async Task CustomConnectionFactory_SyncRequest_Fails()
+        {
+            await using ConnectionFactory connectionFactory = new SocketsHttpConnectionFactory();
+            using SocketsHttpHandler handler = new SocketsHttpHandler
+            {
+                ConnectionFactory = connectionFactory
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
+        }
+    }
+
+    public sealed class SocketsHttpHandler_ConnectionFactoryTest_Http2 : SocketsHttpHandler_ConnectionFactoryTest
+    {
+        public SocketsHttpHandler_ConnectionFactoryTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
@@ -2065,7 +2131,7 @@ namespace System.Net.Http.Functional.Tests
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
-            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(5);
+            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(10);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 server.AllowMultipleConnections = true;
@@ -2076,7 +2142,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(MaxConcurrentStreams, acceptedStreamIds.Count);
 
                 List<Task<HttpResponseMessage>> connection1SendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 10).ConfigureAwait(false);
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, connection1SendTasks, MaxConcurrentStreams);
                 int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
 

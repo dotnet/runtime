@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// This file contains the classes, methods, and field used by the EE from mscorlib
+// This file contains the classes, methods, and field used by the EE from corelib
 
 //
 // To use this, define one of the following macros & include the file like so:
@@ -8,7 +8,7 @@
 // #define DEFINE_CLASS(id, nameSpace, stringName)         CLASS__ ## id,
 // #define DEFINE_METHOD(classId, id, stringName, gSign)
 // #define DEFINE_FIELD(classId, id, stringName)
-// #include "mscorlib.h"
+// #include "corelib.h"
 //
 // Note: To determine if the namespace you want to use in DEFINE_CLASS is supported or not,
 //       examine vm\namespace.h. If it is not present, define it there and then proceed to use it below.

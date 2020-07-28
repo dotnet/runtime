@@ -4,20 +4,20 @@
 
 
 //
-// This file defines tables for references between VM and mscorlib.
+// This file defines tables for references between VM and corelib.
 //
 // When compiling crossgen, this file is compiled with the FEATURE_XXX define settings matching the target.
 // It allows us to strip features (e.g. refection only load) from crossgen without stripping them from the target.
 //
 
-#ifdef CROSSGEN_MSCORLIB
+#ifdef CROSSGEN_CORELIB
 // Use minimal set of headers for crossgen
 #include "windows.h"
 #include "corinfo.h"
 #else
 #include "common.h"
 #include "ecall.h"
-#endif // CROSSGEN_MSCORLIB
+#endif // CROSSGEN_CORELIB
 
 #ifndef CROSSGEN_COMPILE
 //
@@ -88,10 +88,10 @@
 
 #include "tailcallhelp.h"
 
-#endif // CROSSGEN_MSCORLIB
+#endif // CROSSGEN_CORELIB
 
 
-#ifdef CROSSGEN_MSCORLIB
+#ifdef CROSSGEN_CORELIB
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -106,7 +106,7 @@ enum {
     FCFuncFlag_EndOfArray   = 0x01,
     FCFuncFlag_HasSignature = 0x02,
     FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-    FCFuncFlag_QCall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+    FCFuncFlag_QCall        = 0x08, // QCall - CoreLib to VM transition implemented as PInvoke
 };
 
 struct ECClass
@@ -129,9 +129,9 @@ enum BinderClassID
 #undef TYPEINFO
 
 #define DEFINE_CLASS(i,n,s)         CLASS__ ## i,
-#include "mscorlib.h"
+#include "corelib.h"
 
-    CLASS__MSCORLIB_COUNT,
+    CLASS__CORELIB_COUNT,
 
     CLASS__VOID     = CLASS__ELEMENT_TYPE_VOID,
     CLASS__BOOLEAN  = CLASS__ELEMENT_TYPE_BOOLEAN,
@@ -153,31 +153,31 @@ enum BinderClassID
     CLASS__OBJECT   = CLASS__ELEMENT_TYPE_OBJECT
 };
 
-struct MscorlibClassDescription
+struct CoreLibClassDescription
 {
     LPCSTR  nameSpace;
     LPCSTR  name;
 };
 
-struct MscorlibMethodDescription
+struct CoreLibMethodDescription
 {
     BinderClassID classID;
     LPCSTR  name;
     const HardCodedMetaSig * sig;
 };
 
-struct MscorlibFieldDescription
+struct CoreLibFieldDescription
 {
     BinderClassID classID;
     LPCSTR  name;
 };
 
-#endif // CROSSGEN_MSCORLIB
+#endif // CROSSGEN_CORELIB
 
 
-#ifdef CROSSGEN_MSCORLIB
+#ifdef CROSSGEN_CORELIB
 // When compiling crossgen this namespace creates the second version of the tables than matches the target
-namespace CrossGenMscorlib {
+namespace CrossGenCoreLib {
 #endif
 
 
@@ -321,20 +321,20 @@ enum _gsigc {
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Mscorlib binder
+// CoreLib binder
 //
 
 // Extern definitions so that binder.cpp can see these tables
-extern const MscorlibClassDescription c_rgMscorlibClassDescriptions[];
-extern const USHORT c_nMscorlibClassDescriptions;
+extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
+extern const USHORT c_nCoreLibClassDescriptions;
 
-extern const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[];
-extern const USHORT c_nMscorlibMethodDescriptions;
+extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
+extern const USHORT c_nCoreLibMethodDescriptions;
 
-extern const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[];
-extern const USHORT c_nMscorlibFieldDescriptions;
+extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
+extern const USHORT c_nCoreLibFieldDescriptions;
 
-const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
+const CoreLibClassDescription c_rgCoreLibClassDescriptions[] =
 {
     #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   { ns, c },
     #include "cortypeinfo.h"
@@ -342,29 +342,29 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
 
     #define DEFINE_CLASS(i,n,s)        { g_ ## n ## NS, # s },
     #include "namespace.h"
-    #include "mscorlib.h"
+    #include "corelib.h"
 
-    // Include all exception types here that are defined in mscorlib.  Omit exceptions defined elsewhere.
+    // Include all exception types here that are defined in corelib.  Omit exceptions defined elsewhere.
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #include "rexcep.h"
 };
-const USHORT c_nMscorlibClassDescriptions = NumItems(c_rgMscorlibClassDescriptions);
+const USHORT c_nCoreLibClassDescriptions = NumItems(c_rgCoreLibClassDescriptions);
 
 #define gsig_NoSig (*(HardCodedMetaSig *)NULL)
 
-const MscorlibMethodDescription c_rgMscorlibMethodDescriptions[] =
+const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[] =
 {
     #define DEFINE_METHOD(c,i,s,g)          { CLASS__ ## c , # s, & gsig_ ## g },
-    #include "mscorlib.h"
+    #include "corelib.h"
 };
-const USHORT c_nMscorlibMethodDescriptions = NumItems(c_rgMscorlibMethodDescriptions) + 1;
+const USHORT c_nCoreLibMethodDescriptions = NumItems(c_rgCoreLibMethodDescriptions) + 1;
 
-const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[] =
+const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
 {
     #define DEFINE_FIELD(c,i,s)           { CLASS__ ## c , # s },
-    #include "mscorlib.h"
+    #include "corelib.h"
 };
-const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptions) + 1;
+const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions) + 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -375,7 +375,7 @@ const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptio
 EXTERN_C const LPVOID gPalGlobalizationNative[];
 
 // When compiling crossgen, we only need the target version of the ecall tables
-#if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_MSCORLIB)
+#if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_CORELIB)
 
 #ifdef CROSSGEN_COMPILE
 
@@ -433,9 +433,9 @@ const ECClass c_rgECClasses[] =
 
 const int c_nECClasses = NumItems(c_rgECClasses);
 
-#endif // !CROSSGEN_COMPILE && CROSSGEN_MSCORLIB
+#endif // !CROSSGEN_COMPILE && CROSSGEN_CORELIB
 
 
-#ifdef CROSSGEN_MSCORLIB
-}; // namespace CrossGenMscorlib
+#ifdef CROSSGEN_CORELIB
+}; // namespace CrossGenCoreLib
 #endif

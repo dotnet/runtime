@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Connections;
 using System.Net.Security;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -54,6 +57,9 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
+        internal ConnectionFactory? _connectionFactory;
+        internal Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? _plaintextFilter;
+
         internal IDictionary<string, object?>? _properties;
 
         public HttpConnectionSettings()
@@ -104,7 +110,9 @@ namespace System.Net.Http
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
                 _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting,
-                _enableMultipleHttp2Connections = _enableMultipleHttp2Connections
+                _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _connectionFactory = _connectionFactory,
+                _plaintextFilter = _plaintextFilter
             };
         }
 

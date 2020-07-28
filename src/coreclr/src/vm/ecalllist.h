@@ -415,7 +415,7 @@ FCFuncStart(gCOMClassWriter)
 FCFuncEnd()
 
 FCFuncStart(gCompatibilitySwitchFuncs)
-    FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
+    FCFuncElement("GetValueInternal", CompatibilitySwitch::GetValue)
 FCFuncEnd()
 
 FCFuncStart(gMdUtf8String)

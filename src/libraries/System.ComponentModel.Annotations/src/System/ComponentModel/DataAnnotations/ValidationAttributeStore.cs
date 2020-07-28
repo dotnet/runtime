@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -43,7 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
-        internal DisplayAttribute GetTypeDisplayAttribute(ValidationContext validationContext)
+        internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
             var item = GetTypeStoreItem(validationContext.ObjectType);
@@ -59,7 +60,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName);
+            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.ValidationAttributes;
         }
 
@@ -68,11 +69,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
-        internal DisplayAttribute GetPropertyDisplayAttribute(ValidationContext validationContext)
+        internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName);
+            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.DisplayAttribute;
         }
 
@@ -85,7 +86,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName);
+            var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.PropertyType;
         }
 
@@ -100,8 +101,8 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            PropertyStoreItem item;
-            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName, out item);
+            PropertyStoreItem? item;
+            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out item);
         }
 
         /// <summary>
@@ -115,7 +116,7 @@ namespace System.ComponentModel.DataAnnotations
 
             lock (_typeStoreItems)
             {
-                if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem item))
+                if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem? item))
                 {
                     // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
                     var attributes = CustomAttributeExtensions.GetCustomAttributes(type, true);
@@ -158,7 +159,7 @@ namespace System.ComponentModel.DataAnnotations
 
             internal IEnumerable<ValidationAttribute> ValidationAttributes { get; }
 
-            internal DisplayAttribute DisplayAttribute { get; }
+            internal DisplayAttribute? DisplayAttribute { get; }
         }
 
         /// <summary>
@@ -168,7 +169,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             private readonly object _syncRoot = new object();
             private readonly Type _type;
-            private Dictionary<string, PropertyStoreItem> _propertyStoreItems;
+            private Dictionary<string, PropertyStoreItem>? _propertyStoreItems;
 
             internal TypeStoreItem(Type type, IEnumerable<Attribute> attributes)
                 : base(attributes)
@@ -178,7 +179,7 @@ namespace System.ComponentModel.DataAnnotations
 
             internal PropertyStoreItem GetPropertyStoreItem(string propertyName)
             {
-                if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem item))
+                if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem? item))
                 {
                     throw new ArgumentException(SR.Format(SR.AttributeStore_Unknown_Property, _type.Name, propertyName),
                                                 nameof(propertyName));
@@ -187,7 +188,7 @@ namespace System.ComponentModel.DataAnnotations
                 return item;
             }
 
-            internal bool TryGetPropertyStoreItem(string propertyName, out PropertyStoreItem item)
+            internal bool TryGetPropertyStoreItem(string propertyName, [NotNullWhen(true)] out PropertyStoreItem? item)
             {
                 if (string.IsNullOrEmpty(propertyName))
                 {

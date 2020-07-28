@@ -15,8 +15,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private static int s_uniqueNameInteger = 123;
-
         private SslAuthenticationOptions? _sslAuthenticationOptions;
 
         private int _nestedAuth;
@@ -66,10 +64,6 @@ namespace System.Net.Security
             try
             {
                 _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions, remoteCallback, localCallback);
-                if (_sslAuthenticationOptions.TargetHost!.Length == 0)
-                {
-                    _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
-                }
                 _context = new SecureChannel(_sslAuthenticationOptions, this);
             }
             catch (Win32Exception e)
@@ -420,12 +414,15 @@ namespace System.Net.Security
                     if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
                     {
                         // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
-                        _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                        if (_lastFrame.TargetName != null)
+                        {
+                            _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                        }
 
                         if (_sslAuthenticationOptions.ServerOptionDelegate != null)
                         {
                             SslServerAuthenticationOptions userOptions =
-                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_lastFrame.TargetName, _lastFrame.SupportedVersions),
+                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
                                                                                     _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
                             _sslAuthenticationOptions.UpdateOptions(userOptions);
                         }

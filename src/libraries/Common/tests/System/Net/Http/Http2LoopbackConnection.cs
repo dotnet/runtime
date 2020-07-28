@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http.Functional.Tests;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,28 +25,31 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
-        private readonly byte[] _prefix;
+        private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
         public bool IsInvalid => _connectionSocket == null;
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        public Http2LoopbackConnection(Socket socket, Http2Options httpOptions)
-            : this(socket, httpOptions, Http2LoopbackServer.Timeout)
-        {
-        }
-
-        public Http2LoopbackConnection(Socket socket, Http2Options httpOptions, TimeSpan timeout)
+        private Http2LoopbackConnection(Socket socket, Stream stream, TimeSpan timeout)
         {
             _connectionSocket = socket;
-            _connectionStream = new NetworkStream(_connectionSocket, true);
+            _connectionStream = stream;
             _timeout = timeout;
+        }
 
+        public static Task<Http2LoopbackConnection> CreateAsync(Socket socket, Stream stream, Http2Options httpOptions)
+        {
+            return CreateAsync(socket, stream, httpOptions, Http2LoopbackServer.Timeout);
+        }
+
+        public static async Task<Http2LoopbackConnection> CreateAsync(Socket socket, Stream stream, Http2Options httpOptions, TimeSpan timeout)
+        {
             if (httpOptions.UseSsl)
             {
-                var sslStream = new SslStream(_connectionStream, false, delegate { return true; });
+                var sslStream = new SslStream(stream, false, delegate { return true; });
 
-                using (var cert = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
                 {
 #if !NETFRAMEWORK
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
@@ -61,21 +65,29 @@ namespace System.Net.Test.Common
 
                     options.ClientCertificateRequired = httpOptions.ClientCertificateRequired;
 
-                    sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).Wait();
+                    await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
 #else
-                    sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, checkCertificateRevocation: false).Wait();
+                    await sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, checkCertificateRevocation: false).ConfigureAwait(false);
 #endif
                 }
 
-                _connectionStream = sslStream;
+                stream = sslStream;
             }
 
-            _prefix = new byte[24];
-            if (!FillBufferAsync(_prefix).Result)
+            var con = new Http2LoopbackConnection(socket, stream, timeout);
+            await con.ReadPrefixAsync().ConfigureAwait(false);
+
+            return con;
+        }
+
+        private async Task ReadPrefixAsync()
+        {
+            if (!await FillBufferAsync(_prefix))
             {
                 throw new Exception("Connection stream closed while attempting to read connection preface.");
             }
-            else if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
+
+            if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
             {
                 throw new Exception("HTTP 1.1 request received.");
             }
@@ -275,7 +287,7 @@ namespace System.Net.Test.Common
 
         public void ShutdownSend()
         {
-            _connectionSocket.Shutdown(SocketShutdown.Send);
+            _connectionSocket?.Shutdown(SocketShutdown.Send);
         }
 
         // This will cause a server-initiated shutdown of the connection.
@@ -561,6 +573,41 @@ namespace System.Net.Test.Common
             }
 
             return (streamId, requestData);
+        }
+
+        public override Task InitializeConnectionAsync()
+        {
+            return ReadAndSendSettingsAsync(ackTimeout: null);
+        }
+
+        public async Task<SettingsFrame> ReadAndSendSettingsAsync(TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
+        {
+            // Receive the initial client settings frame.
+            Frame receivedFrame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+            Assert.Equal(FrameType.Settings, receivedFrame.Type);
+            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
+            Assert.Equal(0, receivedFrame.StreamId);
+
+            var clientSettingsFrame = (SettingsFrame)receivedFrame;
+
+            // Receive the initial client window update frame.
+            receivedFrame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+            Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
+            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
+            Assert.Equal(0, receivedFrame.StreamId);
+
+            // Send the initial server settings frame.
+            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
+            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
+
+            // Send the client settings frame ACK.
+            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
+            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
+
+            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
+            await ExpectSettingsAckAsync((int?)ackTimeout?.TotalMilliseconds ?? 5000);
+
+            return clientSettingsFrame;
         }
 
         public async Task SendGoAway(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)

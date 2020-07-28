@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations.Schema
@@ -12,7 +13,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
     public class ColumnAttribute : Attribute
     {
         private int _order = -1;
-        private string _typeName;
+        private string? _typeName;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ColumnAttribute" /> class.
@@ -38,7 +39,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <summary>
         ///     The name of the column the property is mapped to.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         ///     The zero-based order of the column the property is mapped to.
@@ -60,7 +61,8 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <summary>
         ///     The database provider specific data type of the column the property is mapped to.
         /// </summary>
-        public string TypeName
+        [DisallowNull]
+        public string? TypeName
         {
             get => _typeName;
             set

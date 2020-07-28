@@ -8,6 +8,7 @@ using System.Net.Quic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net.Http.Functional.Tests;
 
 namespace System.Net.Test.Common
 {
@@ -82,6 +83,11 @@ namespace System.Net.Test.Common
         public Http3LoopbackStream GetOpenRequest(int requestId = 0)
         {
             return requestId == 0 ? _currentStream : _openStreams[requestId - 1];
+        }
+
+        public override Task InitializeConnectionAsync()
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<Http3LoopbackStream> AcceptStreamAsync()

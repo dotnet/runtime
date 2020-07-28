@@ -7768,7 +7768,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
-        // These should be in mscorlib.h, and available through a JIT/EE interface call.
+        // These should be in corelib.h, and available through a JIT/EE interface call.
         const char* modName;
         const char* className;
         const char* methodName;
