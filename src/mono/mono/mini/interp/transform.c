@@ -4938,6 +4938,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
+			// Common in generic code:
+			// box T + unbox.any T -> nop
+			if (td->last_ins->opcode == MINT_BOX && (td->sp - 1)->klass == klass) {
+				interp_clear_ins (td, td->last_ins);
+				td->ip += 2;
+				break;
+			}
+
 			if (mini_type_is_reference (m_class_get_byval_arg (klass))) {
 				int mt = mint_type (m_class_get_byval_arg (klass));
 				interp_handle_isinst (td, klass, FALSE);
