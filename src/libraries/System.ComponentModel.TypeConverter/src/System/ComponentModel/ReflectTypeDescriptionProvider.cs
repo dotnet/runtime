@@ -138,7 +138,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// This is a table we create for parameterless constructor funcs for intrinsic-type converters.
-        /// Converters that take Types in their constructors are not cached.
+        /// Funcs for converter constructors that take Types are not cached.
         /// </summary>
         private static Dictionary<Type, Func<object>> ConverterConstructorFuncs => LazyInitializer.EnsureInitialized(ref s_converterConstructorFuncs, () => new Dictionary<Type, Func<object>>()
         {
@@ -1378,10 +1378,22 @@ namespace System.ComponentModel
                     {
                         hashEntry = new NullableConverter(callingType);
                     }
+                    else if (type == typeof(ReferenceConverter))
+                    {
+                        hashEntry = new ReferenceConverter(callingType);
+                    }
                     else
                     {
-                        Debug.Assert(type == typeof(ReferenceConverter));
-                        hashEntry = new ReferenceConverter(callingType);
+                        ConstructorInfo ctor = type.GetConstructor(s_typeConstructor);
+                        if (ctor == null)
+                        {
+                            hashEntry = Activator.CreateInstance(type);
+                            table[callingType] = hashEntry;
+                        }
+                        else
+                        {
+                            hashEntry = ctor.Invoke(new object[] { callingType });
+                        }
                     }
                 }
             }
