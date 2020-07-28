@@ -4592,31 +4592,37 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STIND_REF) 
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			mono_gc_wbarrier_generic_store_internal (sp->data.p, sp [1].data.o);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I1)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint8 *) sp->data.p = (gint8)sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I2)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint16 *) sp->data.p = (gint16)sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I4)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint32 *) sp->data.p = sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (mono_i *) sp->data.p = (mono_i)sp[1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I8)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 #ifdef NO_UNALIGNED_ACCESS
@@ -4627,11 +4633,13 @@ call:
 			* (gint64 *) sp->data.p = sp[1].data.l;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_R4)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (float *) sp->data.p = sp[1].data.f_r4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_R8)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 #ifdef NO_UNALIGNED_ACCESS
