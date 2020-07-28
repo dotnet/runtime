@@ -515,7 +515,12 @@ CEEInfo::ConvToJitSig(
             static_assert_no_msg(CORINFO_CALLCONV_FASTCALL == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL);
 
             CorUnmanagedCallingConvention callConvMaybe;
-            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(module, pSig, cbSig, &callConvMaybe))
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(module, pSig, cbSig, &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
             {
                 sigRet->callConv = (CorInfoCallConv)callConvMaybe;
             }

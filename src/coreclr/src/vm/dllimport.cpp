@@ -2955,7 +2955,8 @@ namespace
         _In_ Module *pModule,
         _In_ PCCOR_SIGNATURE pSig,
         _In_ ULONG cSig,
-        _Out_ CorPinvokeMap *pPinvokeMapOut)
+        _Out_ CorPinvokeMap *pPinvokeMapOut,
+        _Out_ UINT *errorResID)
     {
         CONTRACTL
         {
@@ -2966,7 +2967,7 @@ namespace
         CONTRACTL_END
 
         CorUnmanagedCallingConvention callConvMaybe;
-        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe);
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
         if (hr != S_OK)
             return hr;
         
@@ -2992,10 +2993,12 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
         callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
-    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
+    UINT errorResID;
+    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &errorResID);
     if (FAILED(hr))
     {
-        SetError(IDS_EE_NDIRECT_BADNATL); //Bad metadata format
+        // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
+        SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
@@ -6859,7 +6862,12 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
             CorUnmanagedCallingConvention callConvMaybe;
-            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe))
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
             {
                 callConv = callConvMaybe;
             }
