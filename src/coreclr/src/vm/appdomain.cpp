@@ -1559,7 +1559,7 @@ void SystemDomain::LoadBaseSystemClasses()
 #if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
     if (!NingenEnabled())
     {
-        g_Mscorlib.Check();
+        g_CoreLib.Check();
     }
 #endif
 

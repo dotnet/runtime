@@ -1166,7 +1166,7 @@ NativeImageDumper::DumpNativeImage()
             PTR_Module mscorlibModule = mscorlib->pModule;
 
             PTR_MscorlibBinder binder = mscorlibModule->m_pBinder;
-            g_Mscorlib = *binder;
+            g_CoreLib = *binder;
 
             PTR_MethodTable mt = MscorlibBinder::GetExistingClass(CLASS__OBJECT);
             g_pObjectClass = mt;

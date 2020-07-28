@@ -31,7 +31,7 @@
 NOINLINE PTR_MethodTable CoreLibBinder::LookupClass(BinderClassID id)
 {
     WRAPPER_NO_CONTRACT;
-    return (&g_Mscorlib)->LookupClassLocal(id);
+    return (&g_CoreLib)->LookupClassLocal(id);
 }
 
 PTR_MethodTable CoreLibBinder::GetClassLocal(BinderClassID id)
@@ -79,7 +79,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
 NOINLINE MethodDesc * CoreLibBinder::LookupMethod(BinderMethodID id)
 {
     WRAPPER_NO_CONTRACT;
-    return (&g_Mscorlib)->LookupMethodLocal(id);
+    return (&g_CoreLib)->LookupMethodLocal(id);
 }
 
 MethodDesc * CoreLibBinder::GetMethodLocal(BinderMethodID id)
@@ -139,7 +139,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
 NOINLINE FieldDesc * CoreLibBinder::LookupField(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
-    return (&g_Mscorlib)->LookupFieldLocal(id);
+    return (&g_CoreLib)->LookupFieldLocal(id);
 }
 
 FieldDesc * CoreLibBinder::GetFieldLocal(BinderFieldID id)
@@ -192,7 +192,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
-        PRECONDITION(id <= (&g_Mscorlib)->m_cClasses);
+        PRECONDITION(id <= (&g_CoreLib)->m_cClasses);
     }
     CONTRACTL_END;
 
@@ -203,7 +203,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    const MscorlibClassDescription *d = (&g_Mscorlib)->m_classDescriptions + (int)id;
+    const MscorlibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
 
     PTR_MethodTable pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
         ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_UNRESTOREDTYPEKEY).AsMethodTable();
@@ -212,7 +212,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
 
 #ifndef DACCESS_COMPILE
     if ((pMT != NULL) && pMT->IsFullyLoaded())
-        VolatileStore(&(g_Mscorlib.m_pClasses[id]), pMT);
+        VolatileStore(&(g_CoreLib.m_pClasses[id]), pMT);
 #endif
 
     return pMT;
@@ -245,7 +245,7 @@ Signature CoreLibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     }
 #endif
 
-    return (&g_Mscorlib)->GetSignatureLocal(pHardcodedSig);
+    return (&g_CoreLib)->GetSignatureLocal(pHardcodedSig);
 }
 
 Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
@@ -262,7 +262,7 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
 #ifdef CROSSGEN_COMPILE
     return GetModule()->m_pBinder->GetSignatureLocal(pHardcodedSig);
 #else
-    return (&g_Mscorlib)->GetSignatureLocal(pHardcodedSig);
+    return (&g_CoreLib)->GetSignatureLocal(pHardcodedSig);
 #endif
 }
 
@@ -1136,7 +1136,7 @@ void CoreLibBinder::AttachModule(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    CoreLibBinder * pGlobalBinder = &g_Mscorlib;
+    CoreLibBinder * pGlobalBinder = &g_CoreLib;
 
     pGlobalBinder->SetDescriptions(pModule,
         c_rgMscorlibClassDescriptions,  c_nMscorlibClassDescriptions,
@@ -1224,16 +1224,16 @@ PTR_MethodTable CoreLibBinder::LoadPrimitiveType(CorElementType et)
 {
     STANDARD_VM_CONTRACT;
 
-    PTR_MethodTable pMT = g_Mscorlib.m_pClasses[et];
+    PTR_MethodTable pMT = g_CoreLib.m_pClasses[et];
 
     // Primitive types hit cyclic reference on binder during type loading so we have to load them in two steps
     if (pMT == NULL)
     {
-        const MscorlibClassDescription *d = (&g_Mscorlib)->m_classDescriptions + (int)et;
+        const MscorlibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)et;
 
         pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
             ClassLoader::ThrowIfNotFound, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
-        g_Mscorlib.m_pClasses[et] = pMT;
+        g_CoreLib.m_pClasses[et] = pMT;
 
         ClassLoader::EnsureLoaded(pMT);
     }
@@ -1362,4 +1362,4 @@ CoreLibBinder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-GVAL_IMPL(CoreLibBinder, g_Mscorlib);
+GVAL_IMPL(CoreLibBinder, g_CoreLib);

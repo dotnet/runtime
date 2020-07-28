@@ -1031,7 +1031,7 @@ void EEStartupHelper()
         }
 
         // Perform mscorlib consistency check if requested
-        g_Mscorlib.CheckExtended();
+        g_CoreLib.CheckExtended();
 
 #endif // _DEBUG
 

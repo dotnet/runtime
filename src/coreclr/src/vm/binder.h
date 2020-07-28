@@ -330,7 +330,7 @@ private:
 // Global bound modules:
 //
 
-GVAL_DECL(CoreLibBinder, g_Mscorlib);
+GVAL_DECL(CoreLibBinder, g_CoreLib);
 
 FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
 {
@@ -341,15 +341,15 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
         INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != CLASS__NIL);
-        PRECONDITION((&g_Mscorlib)->m_cClasses > 0);  // Make sure mscorlib has been loaded.
-        PRECONDITION(id <= (&g_Mscorlib)->m_cClasses);
+        PRECONDITION((&g_CoreLib)->m_cClasses > 0);  // Make sure mscorlib has been loaded.
+        PRECONDITION(id <= (&g_CoreLib)->m_cClasses);
     }
     CONTRACTL_END;
 
     // Force a GC here under stress because type loading could trigger GC nondeterminsticly
     INDEBUG(TriggerGCUnderStress());
 
-    PTR_MethodTable pMT = VolatileLoad(&((&g_Mscorlib)->m_pClasses[id]));
+    PTR_MethodTable pMT = VolatileLoad(&((&g_CoreLib)->m_pClasses[id]));
     if (pMT == NULL)
         return LookupClass(id);
     return pMT;
@@ -364,14 +364,14 @@ FORCEINLINE MethodDesc * CoreLibBinder::GetMethod(BinderMethodID id)
         INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != METHOD__NIL);
-        PRECONDITION(id <= (&g_Mscorlib)->m_cMethods);
+        PRECONDITION(id <= (&g_CoreLib)->m_cMethods);
     }
     CONTRACTL_END;
 
     // Force a GC here under stress because type loading could trigger GC nondeterminsticly
     INDEBUG(TriggerGCUnderStress());
 
-    MethodDesc * pMD = VolatileLoad(&((&g_Mscorlib)->m_pMethods[id]));
+    MethodDesc * pMD = VolatileLoad(&((&g_CoreLib)->m_pMethods[id]));
     if (pMD == NULL)
         return LookupMethod(id);
     return pMD;
@@ -386,14 +386,14 @@ FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
         INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != FIELD__NIL);
-        PRECONDITION(id <= (&g_Mscorlib)->m_cFields);
+        PRECONDITION(id <= (&g_CoreLib)->m_cFields);
     }
     CONTRACTL_END;
 
     // Force a GC here under stress because type loading could trigger GC nondeterminsticly
     INDEBUG(TriggerGCUnderStress());
 
-    FieldDesc * pFD = VolatileLoad(&((&g_Mscorlib)->m_pFields[id]));
+    FieldDesc * pFD = VolatileLoad(&((&g_CoreLib)->m_pFields[id]));
     if (pFD == NULL)
         return LookupField(id);
     return pFD;
@@ -402,7 +402,7 @@ FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
 FORCEINLINE PTR_MethodTable CoreLibBinder::GetExistingClass(BinderClassID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PTR_MethodTable pMT = (&g_Mscorlib)->m_pClasses[id];
+    PTR_MethodTable pMT = (&g_CoreLib)->m_pClasses[id];
     _ASSERTE(pMT != NULL);
     return pMT;
 }
@@ -410,7 +410,7 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetExistingClass(BinderClassID id)
 FORCEINLINE MethodDesc * CoreLibBinder::GetExistingMethod(BinderMethodID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    MethodDesc * pMD = (&g_Mscorlib)->m_pMethods[id];
+    MethodDesc * pMD = (&g_CoreLib)->m_pMethods[id];
     _ASSERTE(pMD != NULL);
     return pMD;
 }
@@ -418,7 +418,7 @@ FORCEINLINE MethodDesc * CoreLibBinder::GetExistingMethod(BinderMethodID id)
 FORCEINLINE FieldDesc * CoreLibBinder::GetExistingField(BinderFieldID id)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    FieldDesc * pFD = (&g_Mscorlib)->m_pFields[id];
+    FieldDesc * pFD = (&g_CoreLib)->m_pFields[id];
     _ASSERTE(pFD != NULL);
     return pFD;
 }
@@ -433,11 +433,11 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClassIfExist(BinderClassID id)
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
-        PRECONDITION(id <= (&g_Mscorlib)->m_cClasses);
+        PRECONDITION(id <= (&g_CoreLib)->m_cClasses);
     }
     CONTRACTL_END;
 
-    PTR_MethodTable pMT = VolatileLoad(&((&g_Mscorlib)->m_pClasses[id]));
+    PTR_MethodTable pMT = VolatileLoad(&((&g_CoreLib)->m_pClasses[id]));
     if (pMT == NULL)
         return LookupClassIfExist(id);
     return pMT;
@@ -447,7 +447,7 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClassIfExist(BinderClassID id)
 FORCEINLINE PTR_Module CoreLibBinder::GetModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PTR_Module pModule = (&g_Mscorlib)->m_pModule;
+    PTR_Module pModule = (&g_CoreLib)->m_pModule;
     _ASSERTE(pModule != NULL);
     return pModule;
 }
@@ -457,8 +457,8 @@ FORCEINLINE LPCUTF8 CoreLibBinder::GetClassNameSpace(BinderClassID id)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != CLASS__NIL);
-    _ASSERTE(id <= (&g_Mscorlib)->m_cClasses);
-    return (&g_Mscorlib)->m_classDescriptions[id].nameSpace;
+    _ASSERTE(id <= (&g_CoreLib)->m_cClasses);
+    return (&g_CoreLib)->m_classDescriptions[id].nameSpace;
 }
 
 FORCEINLINE LPCUTF8 CoreLibBinder::GetClassName(BinderClassID id)
@@ -466,8 +466,8 @@ FORCEINLINE LPCUTF8 CoreLibBinder::GetClassName(BinderClassID id)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != CLASS__NIL);
-    _ASSERTE(id <= (&g_Mscorlib)->m_cClasses);
-    return (&g_Mscorlib)->m_classDescriptions[id].name;
+    _ASSERTE(id <= (&g_CoreLib)->m_cClasses);
+    return (&g_CoreLib)->m_classDescriptions[id].name;
 }
 
 FORCEINLINE LPCUTF8 CoreLibBinder::GetMethodName(BinderMethodID id)
@@ -475,8 +475,8 @@ FORCEINLINE LPCUTF8 CoreLibBinder::GetMethodName(BinderMethodID id)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != METHOD__NIL);
-    _ASSERTE(id <= (&g_Mscorlib)->m_cMethods);
-    return (&g_Mscorlib)->m_methodDescriptions[id-1].name;
+    _ASSERTE(id <= (&g_CoreLib)->m_cMethods);
+    return (&g_CoreLib)->m_methodDescriptions[id-1].name;
 }
 
 FORCEINLINE LPHARDCODEDMETASIG CoreLibBinder::GetMethodSig(BinderMethodID id)
@@ -484,8 +484,8 @@ FORCEINLINE LPHARDCODEDMETASIG CoreLibBinder::GetMethodSig(BinderMethodID id)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != METHOD__NIL);
-    _ASSERTE(id <= (&g_Mscorlib)->m_cMethods);
-    return (&g_Mscorlib)->m_methodDescriptions[id-1].sig;
+    _ASSERTE(id <= (&g_CoreLib)->m_cMethods);
+    return (&g_CoreLib)->m_methodDescriptions[id-1].sig;
 }
 
 FORCEINLINE LPCUTF8 CoreLibBinder::GetFieldName(BinderFieldID id)
@@ -493,8 +493,8 @@ FORCEINLINE LPCUTF8 CoreLibBinder::GetFieldName(BinderFieldID id)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != FIELD__NIL);
-    _ASSERTE(id <= (&g_Mscorlib)->m_cFields);
-    return (&g_Mscorlib)->m_fieldDescriptions[id-1].name;
+    _ASSERTE(id <= (&g_CoreLib)->m_cFields);
+    return (&g_CoreLib)->m_fieldDescriptions[id-1].name;
 }
 
 #endif // _BINDERMODULE_H_

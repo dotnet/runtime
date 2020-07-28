@@ -2399,7 +2399,7 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    MethodTable * pMethodTable = (&g_Mscorlib)->GetElementType(elementType);
+    MethodTable * pMethodTable = (&g_CoreLib)->GetElementType(elementType);
 
     return TypeHandle(pMethodTable);
 } // DacDbiInterfaceImpl::FindLoadedElementType
