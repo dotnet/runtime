@@ -611,5 +611,16 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 
 void mini_register_sigterm_handler (void);
 
+#define MINI_BEGIN_CODEGEN() do { \
+	mono_codeman_enable_write (); \
+	} while (0)
+
+#define MINI_END_CODEGEN(buf,size,type,arg) do { \
+	mono_codeman_disable_write (); \
+	mono_arch_flush_icache ((buf), (size)); \
+	if ((int)type != -1) \
+		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (type), (arg))); \
+	} while (0)
+
 #endif /* __MONO_MINI_RUNTIME_H__ */
 
