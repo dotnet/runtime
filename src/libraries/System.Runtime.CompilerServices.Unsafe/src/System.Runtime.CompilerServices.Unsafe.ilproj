@@ -8,8 +8,7 @@
     <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);GenerateVersionFile</PrepareForBuildDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)', 'version'))</IncludePath>
-    <IncludePath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)', 'version'))</IncludePath>
+    <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
     <AssemblyPublicKeyToken>B0 3F 5F 7F 11 D5 0A 3A</AssemblyPublicKeyToken>
     <CoreAssembly>System.Runtime</CoreAssembly>
     <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
