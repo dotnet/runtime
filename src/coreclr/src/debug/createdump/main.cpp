@@ -44,7 +44,7 @@ int __cdecl main(const int argc, const char* argv[])
     char* enabled = getenv("COMPlus_DbgEnableElfDumpOnMacOS");
     if (enabled == nullptr || strcmp(enabled, "1") != 0)
     {
-        fprintf(stderr, "Dumps not supported on MacOS\n");
+        fprintf(stderr, "MachO coredumps are not supported. To enable ELF coredumps on MacOS, set the COMPlus_DbgEnableElfDumpOnMacOS environment variable to 1.\n");
         return -1;
     }
 #endif
