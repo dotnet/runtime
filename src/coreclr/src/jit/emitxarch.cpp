@@ -163,8 +163,10 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0)
+    // If there are no instructions in this IG, we can look back at
+    // the previous IG's instructions if this IG is an extension.
+    //
+    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
@@ -2956,24 +2958,27 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     }
     else
     {
+        regNumber amBaseReg = REG_NA;
         if (memBase != nullptr)
         {
-            id->idAddr()->iiaAddrMode.amBaseReg = memBase->GetRegNum();
-        }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
+            assert(!memBase->isContained());
+            amBaseReg = memBase->GetRegNum();
+            assert(amBaseReg != REG_NA);
         }
 
+        regNumber amIndxReg = REG_NA;
         if (indir->HasIndex())
         {
-            id->idAddr()->iiaAddrMode.amIndxReg = indir->Index()->GetRegNum();
+            GenTree* index = indir->Index();
+            assert(!index->isContained());
+            amIndxReg = index->GetRegNum();
+            assert(amIndxReg != REG_NA);
         }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-        }
-        id->idAddr()->iiaAddrMode.amScale = emitEncodeScale(indir->Scale());
+
+        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA) || (indir->Offset() != 0)); // At least one should be set.
+        id->idAddr()->iiaAddrMode.amBaseReg = amBaseReg;
+        id->idAddr()->iiaAddrMode.amIndxReg = amIndxReg;
+        id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
 
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
@@ -3043,11 +3048,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        unsigned             offset  = 0;
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            offset = varNode->AsLclFld()->GetLclOffs();
-        }
+        unsigned             offset  = varNode->GetLclOffs();
         emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
@@ -3288,9 +3289,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             switch (memBase->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = memBase->AsLclVarCommon()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());
@@ -3601,8 +3604,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA ||
-           addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT));
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
@@ -3681,8 +3683,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
-           addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT));
 
     ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)

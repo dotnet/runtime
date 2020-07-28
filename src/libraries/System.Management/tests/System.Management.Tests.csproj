@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MofHelpers\MofCollection.cs" />
@@ -22,5 +22,11 @@
     <EmbeddedResource Include="Resources\CleanUp.mof">
       <LogicalName>CleanUp.mof</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.Management.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Management" />
   </ItemGroup>
 </Project>

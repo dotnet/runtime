@@ -120,6 +120,10 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool SupportsAutomaticDecompression => false;
+        public bool SupportsProxy => false;
+        public bool SupportsRedirectConfiguration => false;
+
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 

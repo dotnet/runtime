@@ -88,7 +88,7 @@ jobs:
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
@@ -101,8 +101,8 @@ jobs:
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 
-      # NET472
-      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+      # .NETFramework
+      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
       
       # AllConfigurations
@@ -112,7 +112,7 @@ jobs:
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
@@ -124,8 +124,8 @@ jobs:
             - Windows.7.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 
-      # NET472
-      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+      # .NETFramework
+      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
 
     # Windows_NT arm

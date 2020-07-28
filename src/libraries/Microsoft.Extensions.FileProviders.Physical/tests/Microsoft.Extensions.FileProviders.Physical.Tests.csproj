@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders.Physical</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.FileProviders.Physical" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.FileProviders.Physical.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>

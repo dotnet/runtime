@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Xml.XPath;
@@ -12,8 +13,8 @@ namespace MS.Internal.Xml.XPath
     {
         protected string prefix;
         protected string name;
-        protected XsltContext xsltContext;
-        private ResetableIterator _queryIterator;
+        protected XsltContext? xsltContext;
+        private ResetableIterator? _queryIterator;
 
         public ExtensionQuery(string prefix, string name) : base()
         {
@@ -25,7 +26,7 @@ namespace MS.Internal.Xml.XPath
             this.prefix = other.prefix;
             this.name = other.name;
             this.xsltContext = other.xsltContext;
-            _queryIterator = (ResetableIterator)Clone(other._queryIterator);
+            _queryIterator = (ResetableIterator?)Clone(other._queryIterator);
         }
 
         public override void Reset()
@@ -36,7 +37,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {
@@ -52,7 +53,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             if (_queryIterator == null)
             {
@@ -77,7 +78,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        protected object ProcessResult(object value)
+        protected object? ProcessResult(object? value)
         {
             if (value is string) return value;
             if (value is double) return value;
@@ -91,7 +92,7 @@ namespace MS.Internal.Xml.XPath
                 return this; // We map null to NodeSet to let $null/foo work well.
             }
 
-            ResetableIterator resetable = value as ResetableIterator;
+            ResetableIterator? resetable = value as ResetableIterator;
             if (resetable != null)
             {
                 // We need Clone() value because variable may be used several times
@@ -99,15 +100,16 @@ namespace MS.Internal.Xml.XPath
                 _queryIterator = (ResetableIterator)resetable.Clone();
                 return this;
             }
-            XPathNodeIterator nodeIterator = value as XPathNodeIterator;
+            XPathNodeIterator? nodeIterator = value as XPathNodeIterator;
             if (nodeIterator != null)
             {
                 _queryIterator = new XPathArrayIterator(nodeIterator);
                 return this;
             }
-            IXPathNavigable navigable = value as IXPathNavigable;
+            IXPathNavigable? navigable = value as IXPathNavigable;
             if (navigable != null)
             {
+                // This may be null if navigable is typeof(XmlNode).
                 return navigable.CreateNavigator();
             }
 
@@ -118,7 +120,7 @@ namespace MS.Internal.Xml.XPath
             if (value is ulong) return (double)(ulong)value;
             if (value is float) return (double)(float)value;
             if (value is decimal) return (double)(decimal)value;
-            return value.ToString();
+            return value.ToString()!;
         }
 
         protected string QName { get { return prefix.Length != 0 ? prefix + ":" + name : name; } }
