@@ -2317,7 +2317,8 @@ static void
 emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
 {
 	g_assert (!is_ok (error_msg));
-	char *str = mono_mempool_strdup (cfg->domain->mp, mono_error_get_message (error_msg));
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (cfg->domain);
+	char *str = mono_mempool_strdup (memory_manager->mp, mono_error_get_message (error_msg));
 	MonoInst *iargs[1];
 	if (cfg->compile_aot)
 		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
