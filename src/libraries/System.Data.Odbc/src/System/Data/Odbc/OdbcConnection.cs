@@ -16,12 +16,12 @@ namespace System.Data.Odbc
     {
         private int _connectionTimeout = ADP.DefaultConnectionTimeout;
 
-        private OdbcInfoMessageEventHandler _infoMessageEventHandler;
-        private WeakReference _weakTransaction;
+        private OdbcInfoMessageEventHandler? _infoMessageEventHandler;
+        private WeakReference? _weakTransaction;
 
-        private OdbcConnectionHandle _connectionHandle;
+        private OdbcConnectionHandle? _connectionHandle;
 
-        public OdbcConnection(string connectionString) : this()
+        public OdbcConnection(string? connectionString) : this()
         {
             ConnectionString = connectionString;
         }
@@ -32,7 +32,7 @@ namespace System.Data.Odbc
             _connectionTimeout = connection._connectionTimeout;
         }
 
-        internal OdbcConnectionHandle ConnectionHandle
+        internal OdbcConnectionHandle? ConnectionHandle
         {
             get
             {
@@ -45,6 +45,7 @@ namespace System.Data.Odbc
             }
         }
 
+        [AllowNull]
         public override string ConnectionString
         {
             get
@@ -110,7 +111,7 @@ namespace System.Data.Odbc
                     // note: This will return an empty string if the driver keyword was used to connect
                     // see ODBC3.0 Programmers Reference, SQLGetInfo
                     //
-                    return GetInfoStringUnhandled(ODBC32.SQL_INFO.SERVER_NAME, true);
+                    return GetInfoStringUnhandled(ODBC32.SQL_INFO.SERVER_NAME, true)!;
                 }
                 return string.Empty;
             }
@@ -145,7 +146,7 @@ namespace System.Data.Odbc
             get
             {
                 Debug.Assert(null != this.PoolGroup, "PoolGroup must never be null when accessing ProviderInfo");
-                return (OdbcConnectionPoolGroupProviderInfo)this.PoolGroup.ProviderInfo;
+                return (OdbcConnectionPoolGroupProviderInfo)this.PoolGroup.ProviderInfo!;
             }
         }
 
@@ -165,14 +166,14 @@ namespace System.Data.Odbc
             }
         }
 
-        internal OdbcTransaction LocalTransaction
+        internal OdbcTransaction? LocalTransaction
         {
             get
             {
-                OdbcTransaction result = null;
+                OdbcTransaction? result = null;
                 if (null != _weakTransaction)
                 {
-                    result = ((OdbcTransaction)_weakTransaction.Target);
+                    result = ((OdbcTransaction?)_weakTransaction.Target);
                 }
                 return result;
             }
@@ -200,7 +201,7 @@ namespace System.Data.Odbc
                 {
                     if (ProviderInfo.DriverName == null)
                     {
-                        ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
+                        ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
                     }
                     return ProviderInfo.DriverName;
                 }
@@ -237,7 +238,7 @@ namespace System.Data.Odbc
             }
         }
 
-        public event OdbcInfoMessageEventHandler InfoMessage
+        public event OdbcInfoMessageEventHandler? InfoMessage
         {
             add
             {
@@ -255,7 +256,7 @@ namespace System.Data.Odbc
             if (!ProviderInfo.HasEscapeChar)
             {
                 string escapeCharString;
-                escapeCharString = GetInfoStringUnhandled(ODBC32.SQL_INFO.SEARCH_PATTERN_ESCAPE);
+                escapeCharString = GetInfoStringUnhandled(ODBC32.SQL_INFO.SEARCH_PATTERN_ESCAPE)!;
                 Debug.Assert((escapeCharString.Length <= 1), "Can't handle multichar quotes");
                 ProviderInfo.EscapeChar = (escapeCharString.Length == 1) ? escapeCharString[0] : QuoteChar(method)[0];
             }
@@ -268,7 +269,7 @@ namespace System.Data.Odbc
             if (!ProviderInfo.HasQuoteChar)
             {
                 string quoteCharString;
-                quoteCharString = GetInfoStringUnhandled(ODBC32.SQL_INFO.IDENTIFIER_QUOTE_CHAR);
+                quoteCharString = GetInfoStringUnhandled(ODBC32.SQL_INFO.IDENTIFIER_QUOTE_CHAR)!;
                 Debug.Assert((quoteCharString.Length <= 1), "Can't handle multichar quotes");
                 ProviderInfo.QuoteChar = (1 == quoteCharString.Length) ? quoteCharString : "\0";
             }
@@ -287,11 +288,11 @@ namespace System.Data.Odbc
 
         private void RollbackDeadTransaction()
         {
-            WeakReference weak = _weakTransaction;
+            WeakReference? weak = _weakTransaction;
             if ((null != weak) && !weak.IsAlive)
             {
                 _weakTransaction = null;
-                ConnectionHandle.CompleteTransaction(ODBC32.SQL_ROLLBACK);
+                ConnectionHandle!.CompleteTransaction(ODBC32.SQL_ROLLBACK);
             }
         }
 
@@ -315,7 +316,7 @@ namespace System.Data.Odbc
             return clone;
         }
 
-        internal bool ConnectionIsAlive(Exception innerException)
+        internal bool ConnectionIsAlive(Exception? innerException)
         {
             if (IsOpen)
             {
@@ -348,18 +349,18 @@ namespace System.Data.Odbc
         {
             InnerConnection.CloseConnection(this, ConnectionFactory);
 
-            OdbcConnectionHandle connectionHandle = _connectionHandle;
+            OdbcConnectionHandle? connectionHandle = _connectionHandle;
 
             if (null != connectionHandle)
             {
                 _connectionHandle = null;
 
                 // If there is a pending transaction, automatically rollback.
-                WeakReference weak = _weakTransaction;
+                WeakReference? weak = _weakTransaction;
                 if (null != weak)
                 {
                     _weakTransaction = null;
-                    IDisposable transaction = weak.Target as OdbcTransaction;
+                    IDisposable? transaction = weak.Target as OdbcTransaction;
                     if ((null != transaction) && weak.IsAlive)
                     {
                         transaction.Dispose();
@@ -379,7 +380,7 @@ namespace System.Data.Odbc
             string value = "";
             int cbActual = 0;
             byte[] buffer = new byte[100];
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
@@ -412,7 +413,7 @@ namespace System.Data.Odbc
             int retval = -1;
             int cbActual = 0;
             byte[] buffer = new byte[4];
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
@@ -442,7 +443,7 @@ namespace System.Data.Odbc
 
         private string GetDiagSqlState()
         {
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle connectionHandle = ConnectionHandle!;
             string sqlstate;
             connectionHandle.GetDiagnosticField(out sqlstate);
             return sqlstate;
@@ -451,7 +452,7 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode GetInfoInt16Unhandled(ODBC32.SQL_INFO info, out short resultValue)
         {
             byte[] buffer = new byte[2];
-            ODBC32.RetCode retcode = ConnectionHandle.GetInfo1(info, buffer);
+            ODBC32.RetCode retcode = ConnectionHandle!.GetInfo1(info, buffer);
             resultValue = BitConverter.ToInt16(buffer, 0);
             return retcode;
         }
@@ -459,7 +460,7 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode GetInfoInt32Unhandled(ODBC32.SQL_INFO info, out int resultValue)
         {
             byte[] buffer = new byte[4];
-            ODBC32.RetCode retcode = ConnectionHandle.GetInfo1(info, buffer);
+            ODBC32.RetCode retcode = ConnectionHandle!.GetInfo1(info, buffer);
             resultValue = BitConverter.ToInt32(buffer, 0);
             return retcode;
         }
@@ -467,22 +468,22 @@ namespace System.Data.Odbc
         private int GetInfoInt32Unhandled(ODBC32.SQL_INFO infotype)
         {
             byte[] buffer = new byte[4];
-            ConnectionHandle.GetInfo1(infotype, buffer);
+            ConnectionHandle!.GetInfo1(infotype, buffer);
             return BitConverter.ToInt32(buffer, 0);
         }
 
-        internal string GetInfoStringUnhandled(ODBC32.SQL_INFO info)
+        internal string? GetInfoStringUnhandled(ODBC32.SQL_INFO info)
         {
             return GetInfoStringUnhandled(info, false);
         }
 
-        private string GetInfoStringUnhandled(ODBC32.SQL_INFO info, bool handleError)
+        private string? GetInfoStringUnhandled(ODBC32.SQL_INFO info, bool handleError)
         {
             //SQLGetInfo
-            string value = null;
+            string? value = null;
             short cbActual = 0;
             byte[] buffer = new byte[100];
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
@@ -499,7 +500,7 @@ namespace System.Data.Odbc
                 }
                 else if (handleError)
                 {
-                    this.HandleError(ConnectionHandle, retcode);
+                    this.HandleError(connectionHandle, retcode);
                 }
             }
             else if (handleError)
@@ -510,7 +511,7 @@ namespace System.Data.Odbc
         }
 
         // non-throwing HandleError
-        internal Exception HandleErrorNoThrow(OdbcHandle hrHandle, ODBC32.RetCode retcode)
+        internal Exception? HandleErrorNoThrow(OdbcHandle hrHandle, ODBC32.RetCode retcode)
         {
             Debug.Assert(retcode != ODBC32.RetCode.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
 
@@ -537,14 +538,14 @@ namespace System.Data.Odbc
                         e.Errors.SetSource(this.Driver);
                     }
                     ConnectionIsAlive(e);        // this will close and throw if the connection is dead
-                    return (Exception)e;
+                    return e;
             }
             return null;
         }
 
         internal void HandleError(OdbcHandle hrHandle, ODBC32.RetCode retcode)
         {
-            Exception e = HandleErrorNoThrow(hrHandle, retcode);
+            Exception? e = HandleErrorNoThrow(hrHandle, retcode);
             switch (retcode)
             {
                 case ODBC32.RetCode.SUCCESS:
@@ -601,11 +602,11 @@ namespace System.Data.Odbc
             OdbcEnvironment.ReleaseObjectPool();
         }
 
-        internal OdbcTransaction SetStateExecuting(string method, OdbcTransaction transaction)
+        internal OdbcTransaction? SetStateExecuting(string method, OdbcTransaction? transaction)
         { // MDAC 69003
             if (null != _weakTransaction)
             { // transaction may exist
-                OdbcTransaction weak = (_weakTransaction.Target as OdbcTransaction);
+                OdbcTransaction? weak = (_weakTransaction.Target as OdbcTransaction);
                 if (transaction != weak)
                 { // transaction doesn't exist
                     if (null == transaction)
@@ -778,7 +779,7 @@ namespace System.Data.Odbc
             ODBC32.RetCode retcode;
             short fExists;
             Debug.Assert((short)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
                 retcode = connectionHandle.GetFunctions(odbcFunction, out fExists);
@@ -921,7 +922,7 @@ namespace System.Data.Odbc
             };
 
             //Start the transaction
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle connectionHandle = ConnectionHandle!;
             ODBC32.RetCode retcode = connectionHandle.BeginTransaction(ref isolevel);
             if (retcode == ODBC32.RetCode.ERROR)
             {
@@ -948,7 +949,7 @@ namespace System.Data.Odbc
             RollbackDeadTransaction();
 
             //Set the database
-            OdbcConnectionHandle connectionHandle = ConnectionHandle;
+            OdbcConnectionHandle connectionHandle = ConnectionHandle!;
             ODBC32.RetCode retcode = connectionHandle.SetConnectionAttribute3(ODBC32.SQL_ATTR.CURRENT_CATALOG, value, checked((int)value.Length * 2));
 
             if (retcode != ODBC32.RetCode.SUCCESS)
@@ -957,7 +958,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal string Open_GetServerVersion()
+        internal string? Open_GetServerVersion()
         {
             //SQLGetInfo - SQL_DBMS_VER
             return GetInfoStringUnhandled(ODBC32.SQL_INFO.DBMS_VER, true);

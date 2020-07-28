@@ -247,13 +247,14 @@ namespace System.Xml.Schema
                         XmlNode[] markup = new XmlNode[list.Count];
                         for (int i = 0; i < list.Count; i++)
                         {
-                            markup[i] = list[i];
+                            markup[i] = list[i]!;
                         }
 
                         _builder!.ProcessMarkup(markup);
                         _namespaceManager!.PopScope();
                         _builder.EndChildren();
                     }
+
                     _markupDepth = int.MaxValue;
                 }
                 else
@@ -405,7 +406,7 @@ namespace System.Xml.Schema
             XmlAttribute attr;
             if (prefix.Length == 0)
             {
-                attr = _dummyDocument.CreateAttribute(string.Empty, _xmlns, XmlReservedNs.NsXmlNs);
+                attr = _dummyDocument.CreateAttribute(string.Empty, _xmlns!, XmlReservedNs.NsXmlNs);
             }
             else
             {

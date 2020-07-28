@@ -286,7 +286,7 @@ namespace System.Numerics.Tensors
 
         internal static void Contract<T>(Tensor<T> left, Tensor<T> right, int[] leftAxes, int[] rightAxes, Tensor<T> result)
         {
-            var resultDimensions = ValidateContractArgs(left, right, leftAxes, rightAxes, result);
+            ValidateContractArgs(left, right, leftAxes, rightAxes, result);
 
             TensorArithmetic<T>.Instance.Contract(left, right, leftAxes, rightAxes, result);
         }
