@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Net.Http.Functional.Tests
 {
     /// <summary>HttpContent that mocks exceptions on serialization.</summary>
-    public class ThrowingContent : HttpContent
+    public partial class ThrowingContent : HttpContent
     {
         private readonly Func<Exception> _exnFactory;
         private readonly int _length;
@@ -32,4 +32,7 @@ namespace System.Net.Http.Functional.Tests
             return true;
         }
     }
+
+    public class ThrowingContentException : Exception
+    { }
 }

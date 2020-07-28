@@ -692,6 +692,21 @@ namespace System.Net.Http
                 // hook up a continuation that will log it.
                 if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
+                    // In case the connection is disposed, it's most probable that
+                    // expect100Continue timer expired and request content sending failed.
+                    // We're awaiting the task to propagate the exception in this case.
+                    if (Volatile.Read(ref _disposed) == 1)
+                    {
+                        if (async)
+                        {
+                            await sendRequestContentTask.ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // No way around it here if we want to get the exception from the task.
+                            sendRequestContentTask.GetAwaiter().GetResult();
+                        }
+                    }
                     LogExceptions(sendRequestContentTask);
                 }
 
@@ -793,7 +808,8 @@ namespace System.Net.Http
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
-            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
+            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask,
+            HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
         {
             // Wait until we receive a trigger notification that it's ok to continue sending content.
             // This will come either when the timer fires or when we receive a response status line from the server.
@@ -806,7 +822,17 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request content for Expect: 100-continue.");
-                await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Tear down the connection if called from the timer thread because caller's thread will wait for server status line indefinitely
+                    // or till HttpClient.Timeout tear the connection itself.
+                    Dispose();
+                    throw;
+                }
             }
             else
             {
