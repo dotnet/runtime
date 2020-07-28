@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -48,6 +47,9 @@ namespace Internal.TypeSystem
         internal TypeDesc _returnType;
         internal TypeDesc[] _parameters;
         internal EmbeddedSignatureData[] _embeddedSignatureData;
+
+        // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
+        public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
 
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {

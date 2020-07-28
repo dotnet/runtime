@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -52,8 +51,6 @@ namespace System.Net
             {
                 return null;
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
 
             X509Certificate2? result = null;
             SafeFreeCertContext? remoteContext = null;
@@ -109,11 +106,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(securityContext, result);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
         }
 

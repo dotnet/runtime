@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.h
 //
@@ -238,9 +237,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void  Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-    void  Init(IStream* pStream, UINT64 uStreamAsmId,
-               DWORD dwModuleId, BOOL resourceFile);
+    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
 
     void VerifyIsILOrNIAssembly(BOOL fIL);
 

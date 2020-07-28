@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -11,6 +10,7 @@ using System.Security;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -220,6 +220,7 @@ namespace System.IO.Pipes
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
+        [MinimumOSPlatform("windows7.0")]
         public void WaitForPipeDrain()
         {
             CheckWriteOperations();

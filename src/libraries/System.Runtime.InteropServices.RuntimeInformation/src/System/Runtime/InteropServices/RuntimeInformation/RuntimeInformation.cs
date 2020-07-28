@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 
@@ -49,5 +48,10 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static string RuntimeIdentifier =>
             s_runtimeIdentifier ??= AppContext.GetData("RUNTIME_IDENTIFIER") as string ?? "unknown";
+
+        /// <summary>
+        /// Indicates whether the current application is running on the specified platform.
+        /// </summary>
+        public static bool IsOSPlatform(OSPlatform osPlatform) => osPlatform.IsCurrent;
     }
 }

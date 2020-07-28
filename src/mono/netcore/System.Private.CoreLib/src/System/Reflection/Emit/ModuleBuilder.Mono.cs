@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -408,6 +410,7 @@ namespace System.Reflection.Emit
             return result;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
@@ -523,6 +526,7 @@ namespace System.Reflection.Emit
                         return null;
                 }
         */
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             if (types == null)
@@ -860,11 +864,13 @@ namespace System.Reflection.Emit
             return global_type_created.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveField(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveMember(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
@@ -884,21 +890,25 @@ namespace System.Reflection.Emit
                 return m;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveMethod(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override string ResolveString(int metadataToken)
         {
             return RuntimeModule.ResolveString(this, _impl, metadataToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
         {
             return RuntimeModule.ResolveSignature(this, _impl, metadataToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveType(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);

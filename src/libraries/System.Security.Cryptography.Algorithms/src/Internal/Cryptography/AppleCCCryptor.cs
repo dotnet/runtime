@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -39,46 +38,38 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null, "Expected valid input, got null");
-            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
-            Debug.Assert(count > 0, $"Expected positive count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
-            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
-            Debug.Assert(output != null, "Expected valid output, got null");
-            Debug.Assert(outputOffset >= 0, $"Expected non-negative outputOffset, got {outputOffset}");
-            Debug.Assert(output.Length - outputOffset >= count, $"Expected valid output length/offset/count triplet, got {output.Length}/{outputOffset}/{count}");
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
 
-            return CipherUpdate(input, inputOffset, count, output, outputOffset);
+            return CipherUpdate(input, output);
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null, "Expected valid input, got null");
-            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
-            Debug.Assert(count >= 0, $"Expected non-negative count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
-            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length <= output.Length);
 
-            byte[] output = ProcessFinalBlock(input, inputOffset, count);
+            int written = ProcessFinalBlock(input, output);
             Reset();
-            return output;
+            return written;
         }
 
-        private unsafe byte[] ProcessFinalBlock(byte[] input, int inputOffset, int count)
+        private unsafe int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            if (count == 0)
+            if (input.Length == 0)
             {
-                return Array.Empty<byte>();
+                return 0;
             }
 
-            byte[] output = new byte[count];
-            int outputBytes = CipherUpdate(input, inputOffset, count, output, 0);
+            int outputBytes = CipherUpdate(input, output);
             int ret;
             int errorCode;
 
-            fixed (byte* outputStart = &output[0])
+            Debug.Assert(output.Length > 0);
+
+            fixed (byte* outputStart = output)
             {
                 byte* outputCurrent = outputStart + outputBytes;
                 int bytesWritten;
@@ -95,44 +86,29 @@ namespace Internal.Cryptography
 
             ProcessInteropError(ret, errorCode);
 
-            if (outputBytes == output.Length)
-            {
-                return output;
-            }
-
-            if (outputBytes == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] userData = new byte[outputBytes];
-            Buffer.BlockCopy(output, 0, userData, 0, outputBytes);
-            return userData;
+            return outputBytes;
         }
 
-        private unsafe int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        private unsafe int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int ret;
             int ccStatus;
             int bytesWritten;
 
-            if (count == 0)
+            if (input.Length == 0)
             {
                 return 0;
             }
 
-            fixed (byte* inputStart = input)
-            fixed (byte* outputStart = output)
+            fixed (byte* pInput = input)
+            fixed (byte* pOutput = output)
             {
-                byte* inputCurrent = inputStart + inputOffset;
-                byte* outputCurrent = outputStart + outputOffset;
-
                 ret = Interop.AppleCrypto.CryptorUpdate(
                     _cryptor,
-                    inputCurrent,
-                    count,
-                    outputCurrent,
-                    output.Length - outputOffset,
+                    pInput,
+                    input.Length,
+                    pOutput,
+                    output.Length,
                     out bytesWritten,
                     out ccStatus);
             }

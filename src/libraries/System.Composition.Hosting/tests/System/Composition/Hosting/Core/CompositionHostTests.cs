@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +10,6 @@ namespace System.Composition.Hosting.Core.Tests
     public class CompositionHostTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_CompositionContextContract_ReturnsExpected()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -22,7 +20,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_MultipleDependencies_ReturnsExpected()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new MultipleDependency()))
@@ -57,7 +54,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         [InlineData(typeof(int), new Type[] { typeof(int) })]
         [InlineData(typeof(IList<>), new Type[] { typeof(IList<>) })]
         [InlineData(typeof(ICollection<>), new Type[] { typeof(ICollection<>) })]
@@ -87,7 +83,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         [InlineData(typeof(string[]), new Type[] { typeof(string[]), typeof(string) })]
         [InlineData(typeof(IList<string>), new Type[] { typeof(IList<string>), typeof(string) })]
         [InlineData(typeof(ICollection<string>), new Type[] { typeof(ICollection<string>), typeof(string) })]
@@ -106,7 +101,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         [InlineData(typeof(ExportFactory<int>), null, new Type[] { typeof(int), typeof(ExportFactory<int>) })]
         [InlineData(typeof(ExportFactory<int>), new string[] { "1", "2", "3" }, new Type[] { typeof(int), typeof(ExportFactory<int>) })]
         [InlineData(typeof(ExportFactory<int, ParameterlessConstructor>), null, new Type[] { typeof(int), typeof(ExportFactory<int, ParameterlessConstructor>) })]
@@ -135,7 +129,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         [InlineData(typeof(Lazy<int, int>))]
         [InlineData(typeof(Lazy<int, IDictionary<string, string>>))]
         [InlineData(typeof(Lazy<int, PrivateConstructor>))]
@@ -149,7 +142,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_AbstractMetadata_ThrowsInvalidOperationException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -159,7 +151,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_NullProviderInProviders_ThrowsNullReferenceException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[] { null }))
@@ -178,7 +169,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_MultipleReturns_ThrowsCompositionFailedException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new MultiplePromises()))
@@ -201,7 +191,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_FailedDependency_ThrowsCompositionFailedException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new FailedDependency()))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -30,7 +29,7 @@ namespace System.Threading.Tasks
         }
 
         // static delegate for threads allocated to handle LongRunning tasks.
-        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s =>
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = static s =>
         {
             Debug.Assert(s is Task);
             ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);

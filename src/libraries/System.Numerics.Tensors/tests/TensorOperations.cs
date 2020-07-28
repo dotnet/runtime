@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Numerics.Tensors
 {
@@ -287,7 +286,7 @@ namespace System.Numerics.Tensors
 
         internal static void Contract<T>(Tensor<T> left, Tensor<T> right, int[] leftAxes, int[] rightAxes, Tensor<T> result)
         {
-            var resultDimensions = ValidateContractArgs(left, right, leftAxes, rightAxes, result);
+            ValidateContractArgs(left, right, leftAxes, rightAxes, result);
 
             TensorArithmetic<T>.Instance.Contract(left, right, leftAxes, rightAxes, result);
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.cpp
 //
@@ -51,6 +50,9 @@
 #include "eventtrace.h"
 #include "clr/fs/path.h"
 using namespace clr::fs;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
 
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
@@ -2924,6 +2926,57 @@ inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
 #endif // !TARGET_UNIX
 }
 
+namespace
+{
+    bool TryConvertCallConvValueToPInvokeCallConv(_In_ BYTE callConv, _Out_ CorPinvokeMap *pPinvokeMapOut)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        switch (callConv)
+        {
+        case IMAGE_CEE_CS_CALLCONV_C:
+            *pPinvokeMapOut = pmCallConvCdecl;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            *pPinvokeMapOut = pmCallConvStdcall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_THISCALL:
+            *pPinvokeMapOut = pmCallConvThiscall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            *pPinvokeMapOut = pmCallConvFastcall;
+            return true;
+        }
+
+        return false;
+    }
+
+    HRESULT GetUnmanagedPInvokeCallingConvention(
+        _In_ Module *pModule,
+        _In_ PCCOR_SIGNATURE pSig,
+        _In_ ULONG cSig,
+        _Out_ CorPinvokeMap *pPinvokeMapOut)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        CorUnmanagedCallingConvention callConvMaybe;
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe);
+        if (hr != S_OK)
+            return hr;
+        
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
+            return S_FALSE;
+
+        return hr;
+    }
+}
+
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
     CONTRACTL
@@ -2939,9 +2992,8 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
         callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
-    BOOL fSuccess = MetaSig::GetUnmanagedCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
-
-    if (!fSuccess)
+    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
+    if (FAILED(hr))
     {
         SetError(IDS_EE_NDIRECT_BADNATL); //Bad metadata format
     }
@@ -3620,7 +3672,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                            pParamTokenArray,
                                            nlType,
                                            nlFlags,
-                                           0,
+                                           1, // Indicating as the first argument
                                            pss,
                                            isInstanceMethod,
                                            argOffset,
@@ -5211,14 +5263,10 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 {
     STANDARD_VM_CONTRACT;
 
-    BOOL fGcMdaEnabled = FALSE;
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
 #ifdef FEATURE_PREJIT
-        if (fGcMdaEnabled)
-            return NULL;
-
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
@@ -5231,23 +5279,17 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return ((fGcMdaEnabled && !pNMD->IsQCall()) ? NULL : pNMD->ndirect.m_pStubMD.GetValueMaybeNull());
+        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
     }
 #endif // FEATURE_COMINTEROP
     else if (pMD->IsEEImpl())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
         if (SF_IsReverseStub(dwStubFlags))
         {
@@ -6264,6 +6306,28 @@ namespace
         }
 #endif // FEATURE_CORESYSTEM && !TARGET_UNIX
 
+#if defined(TARGET_LINUX)
+        if (g_coreclr_embedded)
+        {
+            // this matches exactly the names in  Interop.Libraries.cs 
+            static const LPCWSTR toRedirect[] = {
+                W("libSystem.Native"),
+                W("libSystem.IO.Compression.Native"),
+                W("libSystem.Net.Security.Native"),
+                W("libSystem.Security.Cryptography.Native.OpenSsl")
+            };
+
+            int count = lengthof(toRedirect);
+            for (int i = 0; i < count; ++i)
+            {
+                if (wcscmp(wszLibName, toRedirect[i]) == 0)
+                {
+                    return PAL_LoadLibraryDirect(NULL);
+                }
+            }
+        }
+#endif
+
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
         bool libNameIsRelativePath = Path::IsRelative(wszLibName);
@@ -6789,25 +6853,24 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
-        switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
+        BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
+
+        // Unmanaged calling convention indicates modopt should be read
+        if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
-            case IMAGE_CEE_CS_CALLCONV_C:
-                unmgdCallConv = pmCallConvCdecl;
-                break;
-            case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                unmgdCallConv = pmCallConvStdcall;
-                break;
-            case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                unmgdCallConv = pmCallConvThiscall;
-                break;
-            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                unmgdCallConv = pmCallConvFastcall;
-                break;
-            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
-                COMPlusThrow(kNotImplementedException);
-            default:
-                COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+            CorUnmanagedCallingConvention callConvMaybe;
+            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe))
+            {
+                callConv = callConvMaybe;
+            }
+            else
+            {
+                callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+            }
         }
+
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConv, &unmgdCallConv))
+            COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
@@ -69,14 +68,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 },
                 critical: false);
 
-        private static readonly X509EnhancedKeyUsageExtension s_tlsServerEku =
-            new X509EnhancedKeyUsageExtension(
-                new OidCollection
-                {
-                    new Oid("1.3.6.1.5.5.7.3.1", null)
-                },
-                false);
-
         private static readonly X509EnhancedKeyUsageExtension s_tlsClientEku =
             new X509EnhancedKeyUsageExtension(
                 new OidCollection
@@ -105,6 +96,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal bool CorruptRevocationSignature { get; set; }
         internal DateTimeOffset? RevocationExpiration { get; set; }
         internal bool CorruptRevocationIssuerName { get; set; }
+
+        // All keys created in this method are smaller than recommended,
+        // but they only live for a few seconds (at most),
+        // and never communicate out of process.
+        const int DefaultKeySize = 1024;
 
         internal CertificateAuthority(
             X509Certificate2 cert,
@@ -159,25 +155,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 subject,
                 publicKey,
                 TimeSpan.FromMinutes(1),
-                new X509BasicConstraintsExtension(
-                    certificateAuthority: true,
-                    depthLimit.HasValue,
-                    depthLimit.GetValueOrDefault(),
-                    critical: true),
-                s_caKeyUsage,
-                ekuExtension: null);
+                new X509ExtensionCollection() {
+                    new X509BasicConstraintsExtension(
+                        certificateAuthority: true,
+                        depthLimit.HasValue,
+                        depthLimit.GetValueOrDefault(),
+                        critical: true),
+                    s_caKeyUsage });
         }
 
-        internal X509Certificate2 CreateEndEntity(string subject, RSA publicKey, X509Extension altName)
+        internal X509Certificate2 CreateEndEntity(string subject, RSA publicKey, X509ExtensionCollection extensions)
         {
             return CreateCertificate(
                 subject,
                 publicKey,
                 TimeSpan.FromSeconds(2),
-                s_eeConstraints,
-                s_eeKeyUsage,
-                s_tlsServerEku,
-                altName: altName);
+                extensions);
         }
 
         internal X509Certificate2 CreateOcspSigner(string subject, RSA publicKey)
@@ -186,9 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 subject,
                 publicKey,
                 TimeSpan.FromSeconds(1),
-                s_eeConstraints,
-                s_eeKeyUsage,
-                s_ocspResponderEku,
+                new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_ocspResponderEku},
                 ocspResponder: true);
         }
 
@@ -248,11 +239,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             string subject,
             RSA publicKey,
             TimeSpan nestingBuffer,
-            X509BasicConstraintsExtension basicConstraints,
-            X509KeyUsageExtension keyUsage,
-            X509EnhancedKeyUsageExtension ekuExtension,
-            bool ocspResponder = false,
-            X509Extension altName = null)
+            X509ExtensionCollection extensions,
+            bool ocspResponder = false)
         {
             if (_cdpExtension == null && CdpUri != null)
             {
@@ -275,8 +263,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
 
-            request.CertificateExtensions.Add(basicConstraints);
-            request.CertificateExtensions.Add(keyUsage);
+            foreach (X509Extension extension in extensions)
+            {
+                request.CertificateExtensions.Add(extension);
+            }
 
             // Windows does not accept OCSP Responder certificates which have
             // a CDP extension, or an AIA extension with an OCSP endpoint.
@@ -289,16 +279,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             request.CertificateExtensions.Add(_akidExtension);
             request.CertificateExtensions.Add(
                 new X509SubjectKeyIdentifierExtension(request.PublicKey, false));
-
-            if (ekuExtension != null)
-            {
-                request.CertificateExtensions.Add(ekuExtension);
-            }
-
-            if (altName != null)
-            {
-                request.CertificateExtensions.Add(altName);
-            }
 
             byte[] serial = new byte[sizeof(long)];
             RandomNumberGenerator.Fill(serial);
@@ -508,7 +488,7 @@ ResponderID ::= CHOICE {
                     }
                 }
 
-                writer.WriteGeneralizedTime(now);
+                writer.WriteGeneralizedTime(now, omitFractionalSeconds: true);
 
                 using (writer.PushSequence())
                 {
@@ -841,7 +821,9 @@ SingleResponse ::= SEQUENCE {
             string testName = null,
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
-            string subjectName = null)
+            string subjectName = null,
+            int keySize = DefaultKeySize,
+            X509ExtensionCollection extensions = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
@@ -855,14 +837,15 @@ SingleResponse ::= SEQUENCE {
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            // All keys created in this method are smaller than recommended,
-            // but they only live for a few seconds (at most),
-            // and never communicate out of process.
-            const int KeySize = 1024;
+            if (extensions == null)
+            {
+                // default to client
+                extensions = new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_tlsClientEku };
+            }
 
-            using (RSA rootKey = RSA.Create(KeySize))
-            using (RSA intermedKey = RSA.Create(KeySize))
-            using (RSA eeKey = RSA.Create(KeySize))
+            using (RSA rootKey = RSA.Create(keySize))
+            using (RSA intermedKey = RSA.Create(keySize))
+            using (RSA eeKey = RSA.Create(keySize))
             {
                 var rootReq = new CertificateRequest(
                     BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
@@ -920,19 +903,11 @@ SingleResponse ::= SEQUENCE {
                     endEntityRevocationViaCrl ? cdpUrl : null,
                     endEntityRevocationViaOcsp ? ocspUrl : null);
 
-                X509Extension altName = null;
-
-                if (!String.IsNullOrEmpty(subjectName))
-                {
-                    SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
-                    builder.AddDnsName(subjectName);
-                    altName = builder.Build();
-                }
-
                 endEntityCert = intermediateAuthority.CreateEndEntity(
-                    BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey,
-                    altName);
+                        BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                        eeKey,
+                        extensions);
+
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
             }
 

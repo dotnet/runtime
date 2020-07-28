@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: TieredCompilation.CPP
 //
@@ -773,9 +772,15 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         PrepareCodeConfigBuffer configBuffer(nativeCodeVersion);
         PrepareCodeConfig *config = configBuffer.GetConfig();
 
+#if defined(TARGET_X86)
+        // Deferring X86 support until a need is observed or
+        // time permits investigation into all the potential issues.
+        // https://github.com/dotnet/runtime/issues/33582
+#else
         // This is a recompiling request which means the caller was
         // in COOP mode since the code already ran.
         _ASSERTE(!pMethod->HasUnmanagedCallersOnlyAttribute());
+#endif
         config->SetCallerGCMode(CallerGCMode::Coop);
         pCode = pMethod->PrepareCode(config);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",

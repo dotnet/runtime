@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -71,7 +70,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -1043,7 +1042,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         ctrlExpr = call->gtCallAddr;
     }
 
-    RegisterType registerType = call->TypeGet();
+    RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1064,7 +1063,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates = retTypeDesc->GetABIReturnRegs();
         assert((int)genCountBits(dstCandidates) == dstCount);
     }
-    else if (varTypeIsFloating(registerType))
+    else if (varTypeUsesFloatReg(registerType))
     {
 #ifdef TARGET_X86
         // The return value will be on the X87 stack, and we will need to move it.
@@ -1780,9 +1779,9 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
 
-    switch (tree->AsIntrinsic()->gtIntrinsicId)
+    switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
 
@@ -1799,16 +1798,16 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 
 #ifdef TARGET_X86
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Sin:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Sin:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // TARGET_X86
 
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             break;
 
         default:

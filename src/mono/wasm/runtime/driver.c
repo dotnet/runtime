@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include <emscripten.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,9 +11,11 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/image.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
+#include <mono/jit/mono-private-unstable.h>
 
 #include "pinvoke.h"
 
@@ -38,6 +39,7 @@ char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
+char *mono_method_get_full_name (MonoMethod *method);
 
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
@@ -136,7 +138,7 @@ struct WasmAssembly_ {
 static WasmAssembly *assemblies;
 static int assembly_count;
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
 	int len = strlen (name);
@@ -145,7 +147,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
 		mono_register_symfile_for_assembly (new_name, data, size);
-		return;
+		return 1;
 	}
 	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
 	entry->assembly.name = strdup (name);
@@ -154,6 +156,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
+	return mono_has_pdb_checksum (data, size);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -294,6 +297,38 @@ icall_table_lookup_symbol (void *func)
 
 #endif
 
+/*
+ * get_native_to_interp:
+ *
+ *   Return a pointer to a wasm function which can be used to enter the interpreter to
+ * execute METHOD from native code.
+ * EXTRA_ARG is the argument passed to the interp entry functions in the runtime.
+ */
+void*
+get_native_to_interp (MonoMethod *method, void *extra_arg)
+{
+	MonoClass *klass = mono_method_get_class (method);
+	MonoImage *image = mono_class_get_image (klass);
+	MonoAssembly *assembly = mono_image_get_assembly (image);
+	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+	const char *name = mono_assembly_name_get_name (aname);
+	const char *class_name = mono_class_get_name (klass);
+	const char *method_name = mono_method_get_name (method);
+	char key [128];
+	int len;
+
+	assert (strlen (name) < 100);
+	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	len = strlen (key);
+	for (int i = 0; i < len; ++i) {
+		if (key [i] == '.')
+			key [i] = '_';
+	}
+
+	void *addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	return addr;
+}
+
 void mono_initialize_internals ()
 {
 	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
@@ -310,7 +345,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
+mono_wasm_load_runtime (const char *unused, int enable_debugging)
 {
 	const char *interp_opts = "";
 
@@ -322,13 +357,11 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
-#ifdef ENABLE_NETCORE
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
-#endif
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
+	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
 #ifdef ENABLE_AOT
 	// Defined in driver-gen.c

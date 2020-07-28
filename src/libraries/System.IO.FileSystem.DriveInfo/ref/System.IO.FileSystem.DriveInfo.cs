@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -18,8 +17,8 @@ namespace System.IO
         public System.IO.DirectoryInfo RootDirectory { get { throw null; } }
         public long TotalFreeSpace { get { throw null; } }
         public long TotalSize { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
-        public string VolumeLabel { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
+        public string VolumeLabel { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public static System.IO.DriveInfo[] GetDrives() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }

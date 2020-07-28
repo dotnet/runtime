@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Reflection.Emit/AssemblyBuilder.cs
 //
@@ -333,6 +335,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes()
         {
             throw not_supported();
@@ -474,6 +477,7 @@ namespace System.Reflection.Emit
             return new TypeBuilderInstantiation(gtd, typeArguments);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -520,6 +524,7 @@ namespace System.Reflection.Emit
             return AssemblyName.Create(_mono_assembly, null);
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Module[] GetLoadedModules(bool getResourceModules)
@@ -549,6 +554,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache
         {
             get

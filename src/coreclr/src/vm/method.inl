@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -134,11 +133,14 @@ inline BOOL MethodDesc::IsQCall()
 FORCEINLINE DWORD MethodDesc::IsGenericComPlusCall()
 {
     LIMITED_METHOD_CONTRACT;
-    return (mcInstantiated == GetClassification() && AsInstantiatedMethodDesc()->IMD_HasComPlusCallInfo());
+    return m_wFlags & mdcHasComPlusCallInfo;
 }
+
 inline void MethodDesc::SetupGenericComPlusCall()
 {
     LIMITED_METHOD_CONTRACT;
+    m_wFlags |= mdcHasComPlusCallInfo;
+
     AsInstantiatedMethodDesc()->IMD_SetupGenericComPlusCall();
 }
 #endif // FEATURE_COMINTEROP

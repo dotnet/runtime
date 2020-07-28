@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -15,6 +14,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>Gets the system's page size.</summary>
         protected static Lazy<int> s_pageSize = new Lazy<int>(() =>
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Browser))
+                return Environment.SystemPageSize;
+
             int pageSize;
             const int _SC_PAGESIZE_FreeBSD = 47;
             const int _SC_PAGESIZE_Linux = 30;
@@ -31,9 +33,6 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         [DllImport("libc", SetLastError = true)]
         private static extern int sysconf(int name);
-
-        [DllImport("libc", SetLastError = true)]
-        protected static extern int geteuid();
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)

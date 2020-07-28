@@ -1,15 +1,9 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// optimize for speed
-
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef _DEBUG
 #ifdef _MSC_VER
+// optimize for speed
 #pragma optimize( "t", on )
 #endif
 #endif
@@ -2936,6 +2930,11 @@ protected:
 #endif
 #endif //MULTIPLE_HEAPS
 
+#ifdef MARK_LIST
+    PER_HEAP_ISOLATED
+    void grow_mark_list();
+#endif //MARK_LIST
+
 #ifdef BACKGROUND_GC
 
     PER_HEAP
@@ -3843,6 +3842,9 @@ protected:
     PER_HEAP_ISOLATED
     size_t mark_list_size;
 
+    PER_HEAP_ISOLATED
+    bool mark_list_overflow;
+
     PER_HEAP
     uint8_t** mark_list_end;
 
@@ -4400,9 +4402,7 @@ public:
     size_t GetPromotedCount();
 
     //Methods used by the shutdown code to call every finalizer
-    void SetSegForShutDown(BOOL fHasLock);
     size_t GetNumberFinalizableObjects();
-    void DiscardNonCriticalObjects();
 
     void CheckFinalizerObjects();
 };

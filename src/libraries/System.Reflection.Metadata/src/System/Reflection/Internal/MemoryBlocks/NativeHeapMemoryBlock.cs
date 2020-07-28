@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,14 +21,13 @@ namespace System.Reflection.Internal
 
             public DisposableData(int size)
             {
+#if FEATURE_CER
                 // make sure the current thread isn't aborted in between allocating and storing the pointer
-#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
-                {
-                }
+                { /* intentionally left blank */ }
                 finally
+#endif
                 {
                     _pointer = Marshal.AllocHGlobal(size);
                 }
@@ -37,14 +35,13 @@ namespace System.Reflection.Internal
 
             protected override void Release()
             {
+#if FEATURE_CER
                 // make sure the current thread isn't aborted in between zeroing the pointer and freeing the memory
-#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
-                {
-                }
+                { /* intentionally left blank */ }
                 finally
+#endif
                 {
                     IntPtr ptr = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
                     if (ptr != IntPtr.Zero)

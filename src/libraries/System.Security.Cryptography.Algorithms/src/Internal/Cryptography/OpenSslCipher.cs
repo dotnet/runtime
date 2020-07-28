@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -41,27 +40,22 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override unsafe int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override unsafe int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
 
             // OpenSSL 1.1 does not allow partial overlap.
-            if (input == output && inputOffset != outputOffset)
+            if (input.Overlaps(output, out int overlapOffset) && overlapOffset != 0)
             {
-                byte[] tmp = CryptoPool.Rent(count);
+                byte[] tmp = CryptoPool.Rent(input.Length);
+                Span<byte> tmpSpan = tmp;
                 int written = 0;
 
                 try
                 {
-                    written = CipherUpdate(input, inputOffset, count, tmp, 0);
-                    Buffer.BlockCopy(tmp, 0, output, outputOffset, written);
+                    written = CipherUpdate(input, tmpSpan);
+                    tmpSpan.Slice(0, written).CopyTo(output);
                     return written;
                 }
                 finally
@@ -70,59 +64,59 @@ namespace Internal.Cryptography
                 }
             }
 
-            return CipherUpdate(input, inputOffset, count, output, outputOffset);
+            return CipherUpdate(input, output);
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length <= output.Length);
 
-            byte[] output = ProcessFinalBlock(input, inputOffset, count);
+            int written = ProcessFinalBlock(input, output);
             Reset();
-            return output;
+            return written;
         }
 
-        private byte[] ProcessFinalBlock(byte[] input, int inputOffset, int count)
+        private int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] output = new byte[count];
-            int outputBytes = CipherUpdate(input, inputOffset, count, output, 0);
-
-            Span<byte> outputSpan = output.AsSpan(outputBytes);
-            int bytesWritten;
-            CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out bytesWritten));
-            outputBytes += bytesWritten;
-
-            if (outputBytes == output.Length)
+            // If input and output overlap but are not the same, we need to use a
+            // temp buffer since openssl doesn't seem to like partial overlaps.
+            if (input.Overlaps(output, out int offset) && offset != 0)
             {
-                return output;
-            }
+                byte[] rented = CryptoPool.Rent(input.Length);
+                int written = 0;
 
-            if (outputBytes == 0)
+                try
+                {
+                    written = CipherUpdate(input, rented);
+                    Span<byte> outputSpan = rented.AsSpan(written);
+                    CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out int finalWritten));
+                    written += finalWritten;
+                    rented.AsSpan(0, written).CopyTo(output);
+                    return written;
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: written);
+                }
+            }
+            else
             {
-                return Array.Empty<byte>();
+                int written = CipherUpdate(input, output);
+                Span<byte> outputSpan = output.Slice(written);
+                CheckBoolReturn(Interop.Crypto.EvpCipherFinalEx(_ctx, outputSpan, out int finalWritten));
+                written += finalWritten;
+                return written;
             }
-
-            byte[] userData = new byte[outputBytes];
-            Buffer.BlockCopy(output, 0, userData, 0, outputBytes);
-            return userData;
         }
 
-        private int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        private int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int bytesWritten;
-
-            ReadOnlySpan<byte> inputSpan = input.AsSpan(inputOffset, count);
-            Span<byte> outputSpan = output.AsSpan(outputOffset);
-
             Interop.Crypto.EvpCipherUpdate(
                 _ctx,
-                outputSpan,
-                out bytesWritten,
-                inputSpan);
+                output,
+                out int bytesWritten,
+                input);
 
             return bytesWritten;
         }

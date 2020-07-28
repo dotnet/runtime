@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.Pipes;
@@ -11,6 +10,11 @@ namespace System.ServiceProcess.Tests
 {
     internal sealed class TestServiceProvider
     {
+        // To view tracing, use DbgView from sysinternals.com;
+        // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
+        // and filter to just messages beginning with "##"
+        internal const bool DebugTracing = false;
+
         private const int readTimeout = 60000;
 
         private static readonly Lazy<bool> s_runningWithElevatedPrivileges = new Lazy<bool>(
@@ -29,6 +33,7 @@ namespace System.ServiceProcess.Tests
             {
                 if (_client == null)
                 {
+                    DebugTrace("TestServiceProvider: Creating client stream");
                     _client = new NamedPipeClientStream(".", TestServiceName, PipeDirection.In);
                 }
                 return _client;
@@ -37,10 +42,12 @@ namespace System.ServiceProcess.Tests
             {
                 if (value == null)
                 {
+                    DebugTrace("TestServiceProvider: Disposing client stream");
                     _client.Dispose();
                     _client = null;
                 }
             }
+
         }
 
         public readonly string TestServiceAssembly = typeof(TestService).Assembly.Location;
@@ -126,6 +133,7 @@ namespace System.ServiceProcess.Tests
             {
                 if (_client != null)
                 {
+                    DebugTrace("TestServiceProvider: Disposing client stream in Dispose()");
                     _client.Dispose();
                     _client = null;
                 }
@@ -142,6 +150,16 @@ namespace System.ServiceProcess.Tests
                 {
                     _dependentServices.DeleteTestServices();
                 }
+            }
+        }
+
+        internal static void DebugTrace(string message)
+        {
+            if (DebugTracing)
+            {
+#pragma warning disable CS0162 // unreachable code
+                Debug.WriteLine("## " + message);
+#pragma warning restore
             }
         }
     }

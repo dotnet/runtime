@@ -93,12 +93,12 @@ function fail_exec (reason) {
 }
 
 function inspect_object (o) {
-    var r = "";
-    for(var p in o) {
-        var t = typeof o[p];
-        r += "'" + p + "' => '" + t + "', ";
-    }
-    return r;
+	var r = "";
+	for(var p in o) {
+		var t = typeof o[p];
+		r += "'" + p + "' => '" + t + "', ";
+	}
+	return r;
 }
 
 // Preprocess arguments
@@ -130,9 +130,6 @@ while (true) {
 	} else if (args [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		args = args.slice (1);
-	} else if (args [0] == "--enable-zoneinfo") {
-		enable_zoneinfo = true;
-		args = args.slice (1);			
 	} else {
 		break;
 	}
@@ -149,7 +146,7 @@ function writeContentToFile(content, path)
 if (typeof window == "undefined")
   load ("mono-config.js");
 
-var Module = { 
+var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	print: print,
@@ -170,109 +167,54 @@ var Module = {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
-		// Read and write files to virtual file system listed in mono-config
-		if (typeof config.files_to_map != 'undefined') {
-			Module.print("Mapping test support files listed in config.files_to_map to VFS");
-			const files_to_map = config.files_to_map;
-			try {
-				for (var i = 0; i < files_to_map.length; i++)
-				{
-					if (typeof files_to_map[i].directory != 'undefined')
-					{
-						var directory = files_to_map[i].directory == '' ? '/' : files_to_map[i].directory;
-						if (directory != '/') {
-							Module['FS_createPath']('/', directory, true, true);
-						}
-
-						const files = files_to_map[i].files;
-						for (var j = 0; j < files.length; j++)
-						{
-							var fullPath = directory != '/' ? directory + '/' + files[j] : files[j];
-							var content = new Uint8Array (read ("supportFiles/" + fullPath, 'binary'));
-							writeContentToFile(content, fullPath);
-						}
-					}
-				}
-			}
-			catch (err) {
-				Module.printErr(err);
-				Module.printErr(err.stack);
-				test_exit(1);
-			}
-		}
-
 		if (!enable_gc) {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
-		if (enable_zoneinfo) {
-			// Load the zoneinfo data into the VFS rooted at /zoneinfo
-			FS.mkdir("zoneinfo");
-			Module['FS_createPath']('/', 'zoneinfo', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Indian', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Atlantic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'US', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Brazil', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Pacific', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Arctic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'America', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Indiana', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Argentina', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Kentucky', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'North_Dakota', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Australia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Etc', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Asia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Antarctica', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Europe', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Mexico', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Africa', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Chile', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Canada', true, true);			
-			var zoneInfoData = read ('zoneinfo.data', 'binary');
-			var metadata = JSON.parse(read ("mono-webassembly-zoneinfo-fs-smd.js.metadata", 'utf-8'));
-			var files = metadata.files;
-			for (var i = 0; i < files.length; ++i) {
-				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				writeContentToFile(byteArray, files[i].filename);
-			}
-		}
-		MONO.mono_load_runtime_and_bcl (
-			config.vfs_prefix,
-			config.deploy_prefix,
-			config.enable_debugging,
-			config.assembly_list,
-			function () {
-				App.init ();
-			},
-			function (asset)
-			{
-			  // for testing purposes add BCL assets to VFS until we special case File.Open
-			  // to identify when an assembly from the BCL is being open and resolve it correctly.
-			  var content = new Uint8Array (read (asset, 'binary'));
-			  var path = asset.substr(config.deploy_prefix.length);
-			  writeContentToFile(content, path);
 
-			  if (typeof window != 'undefined') {
+		config.loaded_cb = function () {
+			App.init ();
+		};
+		config.fetch_file_cb = function (asset) {
+			// console.log("fetch_file_cb('" + asset + "')");
+			// for testing purposes add BCL assets to VFS until we special case File.Open
+			// to identify when an assembly from the BCL is being open and resolve it correctly.
+			/*
+			var content = new Uint8Array (read (asset, 'binary'));
+			var path = asset.substr(config.deploy_prefix.length);
+			writeContentToFile(content, path);
+			*/
+
+			if (typeof window != 'undefined') {
 				return fetch (asset, { credentials: 'same-origin' });
-			  } else {
+			} else {
 				// The default mono_load_runtime_and_bcl defaults to using
-				// fetch to load the assets.  It also provides a way to set a 
+				// fetch to load the assets.  It also provides a way to set a
 				// fetch promise callback.
 				// Here we wrap the file read in a promise and fake a fetch response
 				// structure.
-				return new Promise((resolve, reject) => {
-						var response = { ok: true, url: asset,
-							arrayBuffer: function() {
-								return new Promise((resolve2, reject2) => {
-									resolve2(content);
-							}
-						)}
+				return new Promise ((resolve, reject) => {
+					var bytes = null, error = null;
+					try {
+						bytes = read (asset, 'binary');
+					} catch (exc) {
+						error = exc;
 					}
-				   resolve(response)
-				 })
-			  }
+					var response = { ok: (bytes && !error), url: asset,
+						arrayBuffer: function () {
+							return new Promise ((resolve2, reject2) => {
+								if (error)
+									reject2 (error);
+								else
+									resolve2 (new Uint8Array (bytes));
+						}
+					)}
+					}
+					resolve (response);
+				})
 			}
-		);
+		};
+
+		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
 
@@ -282,7 +224,7 @@ if (typeof window == "undefined")
 const IGNORE_PARAM_COUNT = -1;
 
 var App = {
-    init: function () {
+	init: function () {
 
 		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
 		var find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string'])
@@ -399,5 +341,8 @@ var App = {
 		} else {
 			fail_exec ("Unhanded argument: " + args [0]);
 		}
-    },
+	},
+	call_test_method: function (method_name, args) {
+		return BINDING.call_static_method("[System.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name, args);
+	}
 };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: eventtrace.cpp
 // Abstract: This module implements Event Tracing support
@@ -32,6 +31,7 @@
 #include "dbginterface.h"
 #include "finalizerthread.h"
 #include "clrversion.h"
+#include "typestring.h"
 
 #define Win32EventWrite EventWrite
 
@@ -3153,6 +3153,65 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
     return &AllLoggedTypes::s_cs;
 }
 
+// The number of type load operations
+// NOTE: This isn't the count of types loaded, as some types may have multiple type loads
+//       occur to them as they transition up type loader levels
+LONG s_TypeLoadOps = 0;
+
+UINT32 ETW::TypeSystemLog::TypeLoadBegin()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    UINT32 typeLoad = (UINT32)InterlockedIncrement(&s_TypeLoadOps);
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStart))
+    {
+        FireEtwTypeLoadStart(
+            typeLoad,
+            GetClrInstanceId());
+    }
+
+    return typeLoad;
+}
+
+void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 loadLevel)
+{
+    CONTRACTL{
+        NOTHROW;
+        THROWS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        EX_TRY
+        {
+            StackSString typeName;
+            const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
+                TypeString::FormatNamespace |
+                TypeString::FormatAngleBrackets);
+
+            TypeString::AppendType(typeName, th, formatFlags);
+
+            SCOUNT_T maxTypeNameLen = (cbMaxEtwEvent / 2) - 0x100;
+            if (typeName.GetCount() > (unsigned)maxTypeNameLen)
+            {
+                typeName.Truncate(typeName.Begin() + maxTypeNameLen);
+            }
+
+            FireEtwTypeLoadStop(
+                typeLoad,
+                GetClrInstanceId(),
+                loadLevel,
+                (UINT64)th.AsPtr(),
+                typeName
+                );
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Outermost level of ETW-type-logging.  Clients outside eventtrace.cpp call this to log
@@ -3560,7 +3619,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     {
         CrstHolder _crst(GetHashCrst());
         // Like above, check if the type has been added from a different thread since we last looked it up.
-        if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+        if (!pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
         {
             *pfCreatedNew = FALSE;
             return fSucceeded;
@@ -5305,6 +5364,22 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
         } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
     }
 }
+
+VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStart))
+    {
+        FireEtwR2RGetEntryPointStart(
+            (UINT64)pMethodDesc,
+            GetClrInstanceId());
+    }
+}
+
 
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */

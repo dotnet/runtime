@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -16,7 +15,6 @@ namespace System.Composition.Hosting.Tests
     public class ContainerConfigurationTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithProvider_ValidProvider_RegistersProvider()
         {
             var configuration = new ContainerConfiguration();
@@ -63,7 +61,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithDefaultConventions_PartWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -78,7 +75,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithDefaultConventions_IEnumerablePartsWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -93,7 +89,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithDefaultConventions_PartsArrayWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -108,7 +103,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithDefaultConventions_PartTNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -144,7 +138,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithPartT_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -158,7 +151,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithPart_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -180,7 +172,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void WithParts_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -263,7 +254,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_ExportedSubClass_Success()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -284,7 +274,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_OpenGenericTypes_Success()
         {
             var conventions = new ConventionBuilder();
@@ -314,7 +303,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_ImportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -342,7 +330,6 @@ namespace System.Composition.Hosting.Tests
         public class DerivedFromBaseWithImport : BaseWithImport { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_ExportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -364,7 +351,6 @@ namespace System.Composition.Hosting.Tests
         public class DerivedFromBaseWithExport : BaseWithExport { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_ExportsToInheritedProperties_DontInterfereWithBase()
         {
             var conventions = new ConventionBuilder();
@@ -388,7 +374,6 @@ namespace System.Composition.Hosting.Tests
         public class DerivedFromBaseWithExport2 : BaseWithExport { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_HasConventions_ClassExportsAreNotInherited()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -398,7 +383,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_HasConventions_PropertyExportsAreNotInherited()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -421,7 +405,6 @@ namespace System.Composition.Hosting.Tests
         public class CustomExport : ExportAttribute { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_HasConventions_CustomAttributesAreNotInherited()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -436,7 +419,6 @@ namespace System.Composition.Hosting.Tests
         public class DerivedFromBaseWithCustomExport : BaseWithCustomExport { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_OpenGenericTypePart_Success()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithParts(typeof(GenericExportedType<>));
@@ -490,7 +472,6 @@ namespace System.Composition.Hosting.Tests
         public class ContractExportedType { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_AbstractOrStructType_Success()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithParts(typeof(AbstractClass), typeof(StructType));
@@ -504,7 +485,6 @@ namespace System.Composition.Hosting.Tests
         public struct StructType { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_MetadataProperty_Success()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithPart(typeof(MetadataProperty));
@@ -542,7 +522,6 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreateContainer_MetadataClass_Success()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithPart(typeof(MetadataClass));

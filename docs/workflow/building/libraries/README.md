@@ -74,7 +74,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net5.0` (currently the latest .NET version) or `net472`. (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net5.0` (currently the latest .NET version) or `net48` (the latest .NETFramework version). (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
@@ -175,6 +175,25 @@ dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```
 dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
+
+### Iterating on System.Private.CoreLib changes
+When changing `System.Private.CoreLib` after a full build, in order to test against those changes, you will need an updated `System.Private.CoreLib` in the testhost. In order to achieve that, you can build the `libs.pretest` subset which does testhost setup including copying over `System.Private.CoreLib`.
+
+After doing a build of the runtime:
+
+```
+build.cmd clr -rc Release
+```
+
+You can iterate on `System.Private.CoreLib` by running:
+
+```
+build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
+```
+
+When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
+
+You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
 
 ### Building for Mono
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.h
 //
@@ -62,6 +61,8 @@ class ReadyToRunInfo
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
 
+    PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
+
     PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
@@ -92,6 +93,8 @@ public:
     static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
+
+    PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 

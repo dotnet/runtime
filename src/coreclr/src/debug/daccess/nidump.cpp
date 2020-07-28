@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -7997,7 +7996,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
                               InstantiatedMethodDesc, METHODDESCS );
 
 #ifdef FEATURE_COMINTEROP
-        if (imd->IMD_HasComPlusCallInfo())
+        if (imd->IsGenericComPlusCall())
         {
             PTR_ComPlusCallInfo compluscall = imd->IMD_GetComPlusCallInfo();
             DumpComPlusCallInfo( compluscall, METHODDESCS );

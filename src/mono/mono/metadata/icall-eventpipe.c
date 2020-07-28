@@ -5,7 +5,7 @@
 #ifdef ENABLE_NETCORE
 #include <mono/metadata/icall-decl.h>
 
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 #include <mono/eventpipe/ep-rt-config.h>
 #include <mono/eventpipe/ep.h>
 #include <mono/eventpipe/ep-event.h>
@@ -172,6 +172,54 @@ mono_eventpipe_fini (void)
 	ep_rt_mono_initialized = FALSE;
 }
 
+static
+void
+delegate_callback_data_free_func (
+	EventPipeCallback callback_func,
+	void *callback_data)
+{
+	if (callback_data)
+		mono_gchandle_free_internal ((MonoGCHandle)callback_data);
+}
+
+static
+void
+delegate_callback_func (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_context)
+{
+
+	/*internal unsafe delegate void EtwEnableCallback(
+		in Guid sourceId,
+		int isEnabled,
+		byte level,
+		long matchAnyKeywords,
+		long matchAllKeywords,
+		EVENT_FILTER_DESCRIPTOR* filterData,
+		void* callbackContext);*/
+
+	MonoGCHandle delegate_object_handle = (MonoGCHandle)callback_context;
+	MonoObject *delegate_object = delegate_object_handle ? mono_gchandle_get_target_internal (delegate_object_handle) : NULL;
+	if (delegate_object) {
+		void *params [7];
+		params [0] = (void *)source_id;
+		params [1] = (void *)&is_enabled;
+		params [2] = (void *)&level;
+		params [3] = (void *)&match_any_keywords;
+		params [4] = (void *)&match_all_keywords;
+		params [5] = (void *)filter_data;
+		params [6] = NULL;
+
+		ERROR_DECL (error);
+		mono_runtime_delegate_invoke_checked (delegate_object, params, error);
+	}
+}
+
 gconstpointer
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoStringHandle provider_name,
@@ -179,26 +227,19 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoError *error)
 {
 	EventPipeProvider *provider = NULL;
-	gpointer delegate_func = NULL;
+	void *callback_data = NULL;
 
 	if (MONO_HANDLE_IS_NULL (provider_name)) {
 		mono_error_set_argument_null (error, "providerName", "");
 		return NULL;
 	}
 
-#ifndef HOST_WASM
-	if (!MONO_HANDLE_IS_NULL (callback_func)) {
-		delegate_func = mono_delegate_to_ftnptr_impl (callback_func, error);
-		if (!is_ok (error) || !delegate_func) {
-			mono_error_set_argument_null (error, "callback_func", "");
-			return NULL;
-		}
-	}
-#endif
+	if (!MONO_HANDLE_IS_NULL (callback_func))
+		callback_data = (void *)mono_gchandle_new_weakref_internal (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, callback_func)), FALSE);
 
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 	if (is_ok (error) && provider_name_utf8) {
-		provider = ep_create_provider (provider_name_utf8, (EventPipeCallback)delegate_func, NULL);
+		provider = ep_create_provider (provider_name_utf8, delegate_callback_func, delegate_callback_data_free_func, callback_data);
 	}
 
 	g_free (provider_name_utf8);
@@ -248,11 +289,13 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 {
 	ERROR_DECL (error);
 	EventPipeSessionID session_id = 0;
+	char *output_file_utf8 = NULL;
 
 	if (circular_buffer_size_mb == 0 || format > EP_SERIALIZATION_FORMAT_COUNT || providers_len == 0 || providers == NULL)
 		return 0;
 
-	char *output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
+	if (output_file)
+		output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
 
 	EventPipeProviderConfigurationNative *native_config_providers = (EventPipeProviderConfigurationNative *)providers;
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);

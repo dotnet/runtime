@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -130,7 +129,7 @@ namespace System.Runtime.CompilerServices
                 SynchronizationContext? syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    syncCtx.Post(s => ((IAsyncStateMachineBox)s!).MoveNext(), box);
+                    syncCtx.Post(static s => ((IAsyncStateMachineBox)s!).MoveNext(), box);
                 }
                 else
                 {
@@ -141,7 +140,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
-                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s!).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler);
+                        Task.Factory.StartNew(static s => ((IAsyncStateMachineBox)s!).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler);
                     }
                 }
             }
@@ -157,7 +156,7 @@ namespace System.Runtime.CompilerServices
                 // fire the correlation ETW event
                 TplEventSource.Log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, (currentTask != null) ? currentTask.Id : 0, continuationId);
 
-                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation, continuationIdTask) =>
+                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, static (innerContinuation, continuationIdTask) =>
                 {
                     TplEventSource log = TplEventSource.Log;
                     log.TaskWaitContinuationStarted(((Task<int>)continuationIdTask).Result);

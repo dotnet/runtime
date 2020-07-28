@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -333,6 +332,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509Chain() { }
         public X509Chain(bool useMachineContext) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public X509Chain(System.IntPtr chainContext) { }
         public System.IntPtr ChainContext { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainElementCollection ChainElements { get { throw null; } }

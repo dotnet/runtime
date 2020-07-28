@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -140,11 +139,11 @@ namespace System.Net
     {
         internal HttpListenerTimeoutManager() { }
         public System.TimeSpan DrainEntityBody { get { throw null; } set { } }
-        public System.TimeSpan EntityBody { get { throw null; } set { } }
-        public System.TimeSpan HeaderWait { get { throw null; } set { } }
+        public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public System.TimeSpan IdleConnection { get { throw null; } set { } }
-        public long MinSendBytesPerSecond { get { throw null; } set { } }
-        public System.TimeSpan RequestQueue { get { throw null; } set { } }
+        public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
     }
 }
 namespace System.Net.WebSockets

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // bindertracing.cpp
@@ -217,14 +216,14 @@ namespace BinderTracing
 
     AssemblyBindOperation::~AssemblyBindOperation()
     {
-        if (!BinderTracing::IsEnabled() || ShouldIgnoreBind())
-            return;
+        if (BinderTracing::IsEnabled() && !ShouldIgnoreBind())
+        {
+            // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
+            if (!m_populatedBindRequest)
+                PopulateBindRequest(m_bindRequest);
 
-        // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
-        if (!m_populatedBindRequest)
-            PopulateBindRequest(m_bindRequest);
-
-        FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+            FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+        }
 
         if (m_resultAssembly != nullptr)
             m_resultAssembly->Release();

@@ -2,25 +2,29 @@
   <Import Project="Directory.Build.props" />
 
   <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects;CopyAllNativeTestProjectBinaries" >
+    <PropertyGroup>
+      <TestRoot>$(RepoRoot)src\tests\</TestRoot>
+    </PropertyGroup>
+
     <ItemGroup>
-      <DisabledProjects Include="TestWrappers*\**\*.csproj" />
-      <DisabledProjects Include="*\**\cs_template.csproj" />
-      <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
-      <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
-      <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />
-      <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />
-      <DisabledProjects Include="Common\stress_dependencies\stress_dependencies.csproj" />
-      <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
-      <DisabledProjects Include="Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
-      <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
-      <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
-      <DisabledProjects Include="reflection\GenericAttribute\GenericAttributeTests.csproj" />
-      <DisabledProjects Include="Common\ilasm\ilasm.ilproj" />
+      <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
+      <DisabledProjects Include="$(TestRoot)*\**\cs_template.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\test_dependencies\test_dependencies.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\PerfHarness\PerfHarness.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\stress_dependencies\stress_dependencies.csproj" />
+      <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
+      <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
+      <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\regressions\DD117522\Test.csproj" />
+      <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
+      <DisabledProjects Include="$(TestRoot)reflection\GenericAttribute\GenericAttributeTests.csproj" />
+      <DisabledProjects Include="$(TestRoot)Common\ilasm\ilasm.ilproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.
@@ -36,11 +40,11 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="JIT\Methodical\Boxing\callconv\_relinstance_il.ilproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical\Boxing\callconv\_relinstance_il.ilproj">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b35351\b35351.ilproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b35351\b35351.ilproj">
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
@@ -53,39 +57,39 @@
         <GroupNumber>1</GroupNumber>
       </_GroupStartsWith> -->
 
-      <_GroupStartsWith Include="JIT\CodeGenBringUpTests\DblNeg_ro.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\CodeGenBringUpTests\DblNeg_ro.csproj">
         <GroupNumber>2</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Directed\shift\uint32_d.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Directed\shift\uint32_d.csproj">
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Methodical\AsgOp\r8\r8flat_cs_r.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical\AsgOp\r8\r8flat_cs_r.csproj">
         <GroupNumber>4</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_ro.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_ro.csproj">
         <GroupNumber>5</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b25701\b25701.ilproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b25701\b25701.ilproj">
         <GroupNumber>6</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\Regression\JitBlue\GitHub_19171\GitHub_19171.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\JitBlue\GitHub_19171\GitHub_19171.csproj">
         <GroupNumber>7</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value030.csproj">
+      <_GroupStartsWith Include="$(TestRoot)JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value030.csproj">
         <GroupNumber>8</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="Loader\classloader\TypeGeneratorTests\TypeGeneratorTest225\Generated225.ilproj">
+      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest225\Generated225.ilproj">
         <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
+      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
         <GroupNumber>10</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>

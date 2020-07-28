@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -14,12 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection.Abstractions" Aliases="DIAbstractions" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\..\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>

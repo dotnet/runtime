@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -109,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri)
                 {
-                    Credentials = new NetworkCredential("rightusername", "rightpassword")
+                    Credentials = new NetworkCredential("user", "password")
                 };
 
                 const string content = "This is a test";

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ServiceBaseTests.cs" />
@@ -10,6 +10,9 @@
     <Compile Include="ServiceProcessDescriptionAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include=".\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
+    <ProjectReference Include="System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
 </Project>

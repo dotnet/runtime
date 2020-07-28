@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -765,7 +764,7 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeIsFloating(TypeGet()))
+        if (varTypeUsesFloatReg(TypeGet()))
         {
             if (GetRegNum() != REG_STK)
             {
@@ -901,7 +900,7 @@ public:
                     bool                 propagate = true);
     bool IsFloatRegType() const
     {
-        return isFloatRegType(lvType) || lvIsHfaRegArg();
+        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
     }
 
     var_types GetHfaType() const
@@ -984,6 +983,8 @@ public:
         }
         return GetLayout()->GetRegisterType();
     }
+
+    bool CanBeReplacedWithItsField(Compiler* comp) const;
 
 #ifdef DEBUG
 public:
@@ -3238,6 +3239,7 @@ public:
 #endif // TARGET_ARM
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
+    void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
 #ifdef UNIX_AMD64_ABI
@@ -3467,6 +3469,10 @@ public:
 
         bool CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd);
         bool TryPromoteStructVar(unsigned lclNum);
+        void Clear()
+        {
+            structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
+        }
 
 #ifdef DEBUG
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
@@ -3735,7 +3741,7 @@ protected:
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
-                              CorInfoIntrinsics     intrinsicID,
+                              NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -3931,9 +3937,9 @@ public:
     bool VarTypeIsMultiByteAndCanEnreg(
         var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
 
-    bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
-    bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
-    bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
+    bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
+    bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(GenTree* tree);
 
 private:
@@ -4988,10 +4994,11 @@ public:
     void fgInitBlockVarSets();
 
     // true if we've gone through and created GC Poll calls.
-    bool fgGCPollsCreated;
-    void fgMarkGCPollBlocks();
-    void fgCreateGCPolls();
-    bool fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt = nullptr);
+    bool        fgGCPollsCreated;
+    void        fgMarkGCPollBlocks();
+    void        fgCreateGCPolls();
+    PhaseStatus fgInsertGCPolls();
+    BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
     // Requires that "block" is a block that returns from
     // a finally.  Returns the number of successors (jump targets of
@@ -5608,11 +5615,14 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
 
     GenTree* fgMorphToEmulatedFP(GenTree* tree);
     GenTree* fgMorphConst(GenTree* tree);
+
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -6316,11 +6326,12 @@ protected:
 
     struct CSEdsc
     {
-        CSEdsc* csdNextInBucket; // used by the hash table
-
-        unsigned csdHashKey; // the orginal hashkey
-
-        unsigned csdIndex; // 1..optCSECandidateCount
+        CSEdsc*  csdNextInBucket;  // used by the hash table
+        size_t   csdHashKey;       // the orginal hashkey
+        ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
+        ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
+                                   // assignment
+        unsigned csdIndex;         // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6349,6 +6360,7 @@ protected:
 
         ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
                                    // number, this will reflect it; otherwise, NoVN.
+                                   // not used for shared const CSE's
     };
 
     static const size_t s_optCSEhashSize;
@@ -6395,6 +6407,16 @@ protected:
 #ifdef DEBUG
     void optEnsureClearCSEInfo();
 #endif // DEBUG
+
+    static bool Is_Shared_Const_CSE(size_t key)
+    {
+        return ((key & TARGET_SIGN_BIT) != 0);
+    }
+
+    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    {
+        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+    }
 
 #endif // FEATURE_ANYCSE
 
@@ -6515,6 +6537,7 @@ public:
 #define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
 
     bool doesMethodHaveFatPointer()
     {
@@ -7607,7 +7630,7 @@ public:
 
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
     // node, else NULL.
-    static GenTree* fgIsIndirOfAddrOfLocal(GenTree* tree);
+    static GenTreeLclVar* fgIsIndirOfAddrOfLocal(GenTree* tree);
 
     // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
@@ -7640,7 +7663,7 @@ public:
 
     bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
     {
-        bits        = nullptr;
+        *bits       = nullptr;
         bool result = false;
 
         if (m_promotedStructDeathVars != nullptr)
@@ -7977,7 +8000,7 @@ private:
     // vector type (i.e. do not analyze or promote its fields).
     // Note that all but the fixed vector types are opaque, even though they may
     // actually be declared as having fields.
-    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle)
+    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
     {
         return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
                 (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
@@ -7993,7 +8016,7 @@ private:
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
-    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
+    bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
         if (!varDsc->lvSIMDType)
         {
@@ -8179,7 +8202,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return TYP_SIMD32;
+            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
         }
         else
         {
@@ -8220,7 +8243,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -8250,7 +8273,7 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -9056,7 +9079,7 @@ public:
         bool compIsVarArgs : 1;          // Does the method have varargs parameters?
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an instrinsic
+        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
         bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
@@ -9185,7 +9208,7 @@ public:
 
     // Returns true if the method returns a value in more than one return register,
     // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
-    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD* handling,
     // this method correctly returns false for it (it is passed as HVA), when the original returns true.
     bool compMethodReturnsMultiRegRegTypeAlternate()
     {
@@ -9195,8 +9218,8 @@ public:
         return varTypeIsLong(info.compRetNativeType);
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
-        // TYP_SIMD16 is returned in one register.
-        if (info.compRetNativeType == TYP_SIMD16)
+        // TYP_SIMD* are returned in one register.
+        if (varTypeIsSIMD(info.compRetNativeType))
         {
             return false;
         }

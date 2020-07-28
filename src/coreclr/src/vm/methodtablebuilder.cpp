@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: METHODTABLEBUILDER.CPP
 //
@@ -2411,6 +2410,7 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                         compatibleSignatures = TRUE;
                         bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = true;
+                        bmtMetaData->fHasCovariantOverride = true;
                     }
                 }
 
@@ -5590,6 +5590,19 @@ MethodTableBuilder::ProcessMethodImpls()
 {
     STANDARD_VM_CONTRACT;
 
+    if (bmtMetaData->fHasCovariantOverride)
+    {
+        GetHalfBakedClass()->SetHasCovariantOverride();
+    }
+    if (GetParentMethodTable() != NULL)
+    {
+        EEClass* parentClass = GetParentMethodTable()->GetClass();
+        if (parentClass->HasCovariantOverride())
+            GetHalfBakedClass()->SetHasCovariantOverride();
+        if (parentClass->HasVTableMethodImpl())
+            GetHalfBakedClass()->SetHasVTableMethodImpl();
+    }
+
     if (bmtMethod->dwNumberMethodImpls == 0)
         return;
 
@@ -5681,6 +5694,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
+                        
                         MethodTable * pDeclMT = NULL;
                         MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
@@ -5785,6 +5799,7 @@ MethodTableBuilder::ProcessMethodImpls()
                             }
                             else
                             {
+                                GetHalfBakedClass()->SetHasVTableMethodImpl();
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
                             }
 

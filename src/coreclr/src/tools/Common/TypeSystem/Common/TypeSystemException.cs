@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,7 +9,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Base type for all type system exceptions.
     /// </summary>
-    public abstract class TypeSystemException : Exception
+    public abstract partial class TypeSystemException : Exception
     {
         private string[] _arguments;
 
@@ -46,7 +45,16 @@ namespace Internal.TypeSystem
 
         private static string GetExceptionString(ExceptionStringID id, string[] args)
         {
-            // TODO: Share the strings and lookup logic with System.Private.CoreLib.
+            string formatString = GetFormatString(id);
+            try
+            {
+                if (formatString != null)
+                {
+                    return String.Format(formatString, (object[])args);
+                }
+            }
+            catch {}
+            
             return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
         }
 

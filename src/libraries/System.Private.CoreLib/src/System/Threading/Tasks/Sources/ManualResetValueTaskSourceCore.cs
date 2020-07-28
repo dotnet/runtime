@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -174,7 +173,7 @@ namespace System.Threading.Tasks.Sources
                         break;
 
                     case SynchronizationContext sc:
-                        sc.Post(s =>
+                        sc.Post(static s =>
                         {
                             var tuple = (Tuple<Action<object?>, object?>)s!;
                             tuple.Item1(tuple.Item2);
@@ -319,7 +318,7 @@ namespace System.Threading.Tasks.Sources
             switch (_capturedContext)
             {
                 case SynchronizationContext sc:
-                    sc.Post(s =>
+                    sc.Post(static s =>
                     {
                         var state = (Tuple<Action<object?>, object?>)s!;
                         state.Item1(state.Item2);

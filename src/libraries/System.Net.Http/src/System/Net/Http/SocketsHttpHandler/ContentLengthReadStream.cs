@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -48,7 +47,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -111,7 +110,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -166,7 +165,7 @@ namespace System.Net.Http
 
             private void Finish()
             {
-                if (HttpTelemetry.IsEnabled) LogRequestStop();
+                if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                 _contentBytesRemaining = 0;
                 _connection!.CompleteResponse();
                 _connection = null;
@@ -219,7 +218,7 @@ namespace System.Net.Http
                 if (drainTime != Timeout.InfiniteTimeSpan)
                 {
                     cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                    ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
+                    ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                 }
                 try
                 {

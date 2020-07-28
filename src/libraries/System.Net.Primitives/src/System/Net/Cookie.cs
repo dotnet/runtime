@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections.Generic;
@@ -415,14 +414,6 @@ namespace System.Net
                     // Domain must start with '.' if set explicitly.
                     if (domain[0] != '.')
                     {
-                        if (!(variant == CookieVariant.Rfc2965 || variant == CookieVariant.Plain))
-                        {
-                            if (shouldThrow)
-                            {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, m_domain));
-                            }
-                            return false;
-                        }
                         domain = '.' + domain;
                     }
 

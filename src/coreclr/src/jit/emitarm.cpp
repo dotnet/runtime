@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3510,11 +3509,22 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     NYI("emitIns_S");
 }
 
-/*****************************************************************************
- *
- *  Add an instruction referencing a register and a stack-based local variable.
- */
-void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+//-------------------------------------------------------------------------------------
+// emitIns_R_S: Add an instruction referencing a register and a stack-based local variable.
+//
+// Arguments:
+//    ins      - The instruction to add.
+//    attr     - Oeration size.
+//    varx     - The variable to generate offset for.
+//    offs     - The offset of variable or field in stack.
+//    pBaseReg - The base register that is used while calculating the offset. For example, if the offset
+//               with "stack pointer" can't be encoded in instruction, "frame pointer" can be used to get
+//               the offset of the field. In such case, pBaseReg will store the "fp".
+//
+// Return Value:
+//    The pBaseReg that holds the base register that was used to calculate the offset.
+//
+void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber* pBaseReg)
 {
     if (ins == INS_mov)
     {
@@ -3547,6 +3557,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     insFormat fmt = IF_NONE;
     insFlags  sf  = INS_FLAGS_NOT_SET;
     regNumber reg2;
+    regNumber baseRegUsed;
 
     /* Figure out the variable's frame position */
     int      base;
@@ -3555,6 +3566,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     base = emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
                                      CodeGen::instIsFP(ins));
+    if (pBaseReg != nullptr)
+    {
+        *pBaseReg = reg2;
+    }
 
     disp   = base + offs;
     undisp = unsigned_abs(disp);
@@ -3575,8 +3590,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true);
-            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
+            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, baseRegUsed);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
         }
@@ -3599,8 +3614,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         {
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
             fmt = IF_T2_E0;
+
+            // Ensure the baseReg calculated is correct.
+            assert(baseRegUsed == reg2);
         }
     }
     else if (ins == INS_add)
@@ -3625,7 +3643,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         {
             // Load disp into a register
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
+
+            // Ensure the baseReg calculated is correct.
+            assert(baseRegUsed == reg2);
             emitIns_R_R_R(ins, attr, reg1, reg2, rsvdReg);
             return;
         }
@@ -3662,8 +3683,24 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     appendToCurIG(id);
 }
 
-// generate the offset of &varx + offs into a register
-void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage)
+//-------------------------------------------------------------------------------------
+// emitIns_genStackOffset: Generate the offset of &varx + offs into a register
+//
+// Arguments:
+//    r            - Register in which offset calculation result is stored.
+//    varx         - The variable to generate offset for.
+//    offs         - The offset of variable or field in stack.
+//    isFloatUsage - True if the instruction being generated is a floating point instruction. This requires using
+//                   floating-point offset restrictions. Note that a variable can be non-float, e.g., struct, but
+//                   accessed as a float local field.
+//    pBaseReg     - The base register that is used while calculating the offset. For example, if the offset with
+//                   "stack pointer" can't be encoded in instruction, "frame pointer" can be used to get the offset
+//                   of the field. In such case, pBaseReg will store the "fp".
+//
+// Return Value:
+//    The pBaseReg that holds the base register that was used to calculate the offset.
+//
+void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage, regNumber* pBaseReg)
 {
     regNumber regBase;
     int       base;
@@ -3673,11 +3710,13 @@ void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFlo
         emitComp->lvaFrameAddress(varx, emitComp->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs, isFloatUsage);
     disp = base + offs;
 
-    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs);
+    emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, pBaseReg);
 
     if ((disp & 0xffff) != disp)
     {
-        emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs);
+        regNumber regBaseUsedInMovT;
+        emitIns_R_S(INS_movt, EA_4BYTE, r, varx, offs, &regBaseUsedInMovT);
+        assert(*pBaseReg == regBaseUsedInMovT);
     }
 }
 
@@ -3708,6 +3747,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     insFormat fmt = IF_NONE;
     insFlags  sf  = INS_FLAGS_NOT_SET;
     regNumber reg2;
+    regNumber baseRegUsed;
 
     /* Figure out the variable's frame position */
     int      base;
@@ -3736,7 +3776,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true);
+            emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
+
+            // Ensure the baseReg calculated is correct.
+            assert(baseRegUsed == reg2);
             emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
@@ -3758,8 +3801,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     {
         // Load disp into a register
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false);
+        emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ false, &baseRegUsed);
         fmt = IF_T2_E0;
+
+        // Ensure the baseReg calculated is correct.
+        assert(baseRegUsed == reg2);
     }
     assert((fmt == IF_T1_J2) || (fmt == IF_T2_E0) || (fmt == IF_T2_H0) || (fmt == IF_T2_VLDST) || (fmt == IF_T2_K1));
     assert(sf != INS_FLAGS_DONT_CARE);

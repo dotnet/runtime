@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Test.Cryptography;
@@ -81,6 +80,19 @@ namespace System.Security.Cryptography.Algorithms.Tests
         {
             using (referenceAlgorithm)
             using (IncrementalHash incrementalHash = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+
+                VerifyIncrementalResult(referenceAlgorithm, incrementalHash);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyIncrementalHMAC_SpanKey(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incrementalHash = IncrementalHash.CreateHMAC(hashAlgorithm, new ReadOnlySpan<byte>(s_hmacKey)))
             {
                 referenceAlgorithm.Key = s_hmacKey;
 
@@ -472,7 +484,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         public static void VerifyGetCurrentHash_Digest(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             referenceAlgorithm.Dispose();
-            
+
             using (IncrementalHash single = IncrementalHash.CreateHash(hashAlgorithm))
             using (IncrementalHash accumulated = IncrementalHash.CreateHash(hashAlgorithm))
             {

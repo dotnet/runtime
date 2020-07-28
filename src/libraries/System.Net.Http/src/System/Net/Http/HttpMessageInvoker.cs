@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Http.Headers;
@@ -22,19 +21,15 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, handler);
-
             if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, handler);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
             _handler = handler;
             _disposeHandler = disposeHandler;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public virtual HttpResponseMessage Send(HttpRequestMessage request,
@@ -46,13 +41,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
-
-            HttpResponseMessage response = _handler.Send(request, cancellationToken);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, response);
-
-            return response;
+            return _handler.Send(request, cancellationToken);
         }
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -64,13 +53,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
-
-            Task<HttpResponseMessage> task = _handler.SendAsync(request, cancellationToken);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, task);
-
-            return task;
+            return _handler.SendAsync(request, cancellationToken);
         }
 
         public void Dispose()

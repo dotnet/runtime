@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This class contains all the data & functionality for code generation
@@ -93,7 +92,7 @@ private:
 
     inline RegState* regStateForType(var_types t)
     {
-        return varTypeIsFloating(t) ? &floatRegState : &intRegState;
+        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
     }
     inline RegState* regStateForReg(regNumber reg)
     {
@@ -1406,8 +1405,6 @@ public:
     void inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type);
     void inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type);
 
-    void inst_RV_ST(
-        instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size = EA_UNKNOWN);
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);

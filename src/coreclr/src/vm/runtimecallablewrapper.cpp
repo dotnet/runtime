@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -2225,7 +2224,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     if (hr == CO_E_OBJNOTCONNECTED || hr == RPC_E_INVALID_OBJECT || hr == RPC_E_INVALID_OBJREF || hr == CO_E_OBJNOTREG)
     {
         // set apartment state
-        GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+        GetThread()->SetApartment(Thread::AS_InMTA);
 
         // Release the stream of the IUnkEntry to force UnmarshalIUnknownForCurrContext
         // to remarshal to the stream.

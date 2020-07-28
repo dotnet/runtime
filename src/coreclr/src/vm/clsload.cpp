@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: clsload.cpp
 //
@@ -3261,7 +3260,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 }
             }
 
-            // We really don't need this check anymore.
             if (rank > MAX_RANK)
             {
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);
@@ -3591,6 +3589,10 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     }
 #endif
 
+#if defined(FEATURE_EVENT_TRACE)
+    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
+#endif
+
     // When using domain neutral assemblies (and not eagerly propagating dependency loads),
     // it's possible to get here without having injected the module into the current app domain.
     // GetDomainFile will accomplish that.
@@ -3612,6 +3614,13 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     _ASSERTE(typeHnd.GetLoadLevel() >= targetLevelUnderLock);
 
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
+
+#if defined(FEATURE_EVENT_TRACE)
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
+    }
+#endif
 
     return typeHnd;
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -273,6 +272,10 @@ namespace System.Net.Http
                 _settings._expect100ContinueTimeout = value;
             }
         }
+
+        internal bool SupportsAutomaticDecompression => true;
+        internal bool SupportsProxy => true;
+        internal bool SupportsRedirectConfiguration => true;
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());

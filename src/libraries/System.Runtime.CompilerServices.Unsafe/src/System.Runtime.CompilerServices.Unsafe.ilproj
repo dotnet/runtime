@@ -10,14 +10,23 @@
     <IncludePath>include\$(TargetFramework)</IncludePath>
     <IncludePath Condition="$(TargetFramework.StartsWith('net4'))">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-
   <ItemGroup>
-    <Reference Include="System.Runtime" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
-    <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp2.0'">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <!-- Decompile the ILResourceReference to get native resources. -->
+  <Target Name="SetILResourceReference"
+          BeforeTargets="DisassembleIlasmResourceFile"
+          Condition="'@(ResolvedMatchingContract)' != ''">
+    <ItemGroup>
+      <ILResourceReference Include="@(ResolvedMatchingContract)" />
+    </ItemGroup>
+  </Target>
 </Project>

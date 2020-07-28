@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1765,6 +1764,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+    info.compMethodHashPrivate = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
     //
@@ -3414,7 +3417,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
 
         // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
+        // mode allowlist. If user has requested only enable mode,
         // don't allow this stress mode to turn on.
         const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
 
@@ -4842,6 +4845,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
 
+    // Insert GC Polls
+    DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
+
     // Determine start of cold region if we are hot/cold splitting
     //
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
@@ -5284,10 +5290,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if FUNC_INFO_LOGGING
     LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // rspriv.
 //
@@ -1669,6 +1668,11 @@ typedef CordbEnumerator<COR_SEGMENT,
                         ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
 
+typedef CordbEnumerator<COR_MEMORY_RANGE,
+                        COR_MEMORY_RANGE,
+                        ICorDebugMemoryRangeEnum, IID_ICorDebugMemoryRangeEnum,
+                        IdentityConvert<COR_MEMORY_RANGE> > CordbMemoryRangeEnumerator;
+
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
                         ICorDebugExceptionObjectCallStackEnum, IID_ICorDebugExceptionObjectCallStackEnum,
@@ -2932,6 +2936,7 @@ class CordbProcess :
     public ICorDebugProcess7,
     public ICorDebugProcess8,
     public ICorDebugProcess10,
+    public ICorDebugProcess11,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
     public IProcessShimHooks
@@ -3144,6 +3149,11 @@ public:
     // ICorDebugProcess10
     //-----------------------------------------------------------
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
+
+    //-----------------------------------------------------------
+    // ICorDebugProcess11
+    //-----------------------------------------------------------
+    COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
 
     //-----------------------------------------------------------
     // Methods not exposed via a COM interface.
@@ -11823,5 +11833,3 @@ struct RSDebuggingInfo
 #include "rspriv.inl"
 
 #endif // #if RSPRIV_H
-
-

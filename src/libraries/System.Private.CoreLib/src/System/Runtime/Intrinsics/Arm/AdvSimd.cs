@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -2713,6 +2712,236 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector64<byte> value1, Vector64<byte> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector64<double> value1, Vector64<double> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector64<short> value1, Vector64<short> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector64<int> value1, Vector64<int> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector64<long> value1, Vector64<long> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector64<float> value1, Vector64<float> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(byte* address, Vector128<byte> value1, Vector128<byte> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(double* address, Vector128<double> value1, Vector128<double> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(short* address, Vector128<short> value1, Vector128<short> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(int* address, Vector128<int> value1, Vector128<int> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(long* address, Vector128<long> value1, Vector128<long> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(float* address, Vector128<float> value1, Vector128<float> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(uint* address, Vector128<uint> value1, Vector128<uint> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePair(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) => StorePair(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector64<byte> value1, Vector64<byte> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector64<double> value1, Vector64<double> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector64<short> value1, Vector64<short> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector64<long> value1, Vector64<long> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Dt1, Dt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(byte* address, Vector128<byte> value1, Vector128<byte> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(double* address, Vector128<double> value1, Vector128<double> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(short* address, Vector128<short> value1, Vector128<short> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(int* address, Vector128<int> value1, Vector128<int> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(long* address, Vector128<long> value1, Vector128<long> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(float* address, Vector128<float> value1, Vector128<float> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(uint* address, Vector128<uint> value1, Vector128<uint> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP Qt1, Qt2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairNonTemporal(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) => StorePairNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(int* address, Vector64<int> value1, Vector64<int> value2) => StorePairScalar(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(float* address, Vector64<float> value1, Vector64<float> value2) => StorePairScalar(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalar(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairScalar(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) => StorePairScalarNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) => StorePairScalarNonTemporal(address, value1, value2);
+
+            /// <summary>
+            ///   A64: STNP St1, St2, [Xn]
+            /// </summary>
+            public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairScalarNonTemporal(address, value1, value2);
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -10843,6 +11072,174 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FRECPS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) => ReciprocalStep(left, right);
+
+        /// <summary>
+        /// int16x4_t vrev32_s16 (int16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<int> ReverseElement16(Vector64<int> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x4_t vrev64_s16 (int16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<long> ReverseElement16(Vector64<long> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x4_t vrev32_u16 (uint16x4_t vec)
+        ///   A32: VREV32.16 Dd, Dm
+        ///   A64: REV32 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<uint> ReverseElement16(Vector64<uint> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x4_t vrev64_u16 (uint16x4_t vec)
+        ///   A32: VREV64.16 Dd, Dm
+        ///   A64: REV64 Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<ulong> ReverseElement16(Vector64<ulong> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x8_t vrev32q_s16 (int16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<int> ReverseElement16(Vector128<int> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int16x8_t vrev64q_s16 (int16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<long> ReverseElement16(Vector128<long> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x8_t vrev32q_u16 (uint16x8_t vec)
+        ///   A32: VREV32.16 Qd, Qm
+        ///   A64: REV32 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<uint> ReverseElement16(Vector128<uint> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// uint16x8_t vrev64q_u16 (uint16x8_t vec)
+        ///   A32: VREV64.16 Qd, Qm
+        ///   A64: REV64 Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<ulong> ReverseElement16(Vector128<ulong> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// int32x2_t vrev64_s32 (int32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<long> ReverseElement32(Vector64<long> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// uint32x2_t vrev64_u32 (uint32x2_t vec)
+        ///   A32: VREV64.32 Dd, Dm
+        ///   A64: REV64 Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<ulong> ReverseElement32(Vector64<ulong> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// int32x4_t vrev64q_s32 (int32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<long> ReverseElement32(Vector128<long> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// uint32x4_t vrev64q_u32 (uint32x4_t vec)
+        ///   A32: VREV64.32 Qd, Qm
+        ///   A64: REV64 Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<ulong> ReverseElement32(Vector128<ulong> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// int8x8_t vrev16_s8 (int8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<short> ReverseElement8(Vector64<short> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// int8x8_t vrev32_s8 (int8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<int> ReverseElement8(Vector64<int> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// int8x8_t vrev64_s8 (int8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<long> ReverseElement8(Vector64<long> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x8_t vrev16_u8 (uint8x8_t vec)
+        ///   A32: VREV16.8 Dd, Dm
+        ///   A64: REV16 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ushort> ReverseElement8(Vector64<ushort> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x8_t vrev32_u8 (uint8x8_t vec)
+        ///   A32: VREV32.8 Dd, Dm
+        ///   A64: REV32 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<uint> ReverseElement8(Vector64<uint> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x8_t vrev64_u8 (uint8x8_t vec)
+        ///   A32: VREV64.8 Dd, Dm
+        ///   A64: REV64 Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ulong> ReverseElement8(Vector64<ulong> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// int8x16_t vrev16q_s8 (int8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<short> ReverseElement8(Vector128<short> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// int8x16_t vrev32q_s8 (int8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<int> ReverseElement8(Vector128<int> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// int8x16_t vrev64q_s8 (int8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<long> ReverseElement8(Vector128<long> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x16_t vrev16q_u8 (uint8x16_t vec)
+        ///   A32: VREV16.8 Qd, Qm
+        ///   A64: REV16 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<ushort> ReverseElement8(Vector128<ushort> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x16_t vrev32q_u8 (uint8x16_t vec)
+        ///   A32: VREV32.8 Qd, Qm
+        ///   A64: REV32 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<uint> ReverseElement8(Vector128<uint> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// uint8x16_t vrev64q_u8 (uint8x16_t vec)
+        ///   A32: VREV64.8 Qd, Qm
+        ///   A64: REV64 Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<ulong> ReverseElement8(Vector128<ulong> value) => ReverseElement8(value);
 
         /// <summary>
         /// float32x2_t vrnda_f32 (float32x2_t a)

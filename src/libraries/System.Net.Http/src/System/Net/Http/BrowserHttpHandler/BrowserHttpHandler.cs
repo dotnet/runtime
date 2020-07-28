@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -121,6 +120,10 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool SupportsAutomaticDecompression => false;
+        public bool SupportsProxy => false;
+        public bool SupportsRedirectConfiguration => false;
+
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
@@ -146,11 +149,11 @@ namespace System.Net.Http
                 {
                     if (request.Content is StringContent)
                     {
-                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
+                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true));
                     }
                     else
                     {
-                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
+                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true)))
                         {
                             requestObject.SetObjectProperty("body", uint8Buffer);
                         }
