@@ -114,6 +114,7 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
+            _idleSinceTickCount = Environment.TickCount64;
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
         }
@@ -1473,7 +1474,7 @@ namespace System.Net.Http
 
             // Check idle timeout when there are not pending requests for a while.
             if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
-                (_httpStreams.Count == 0) && (_idleSinceTickCount > 0) &&
+                (_httpStreams.Count == 0) &&
                 ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
