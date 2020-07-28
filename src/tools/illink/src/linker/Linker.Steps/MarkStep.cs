@@ -1038,7 +1038,7 @@ namespace Mono.Linker.Steps
 				if (method != null)
 					return method;
 
-				type = type.BaseType.Resolve ();
+				type = type.BaseType?.Resolve ();
 			}
 
 			return null;
