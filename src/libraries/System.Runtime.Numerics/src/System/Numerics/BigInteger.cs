@@ -30,6 +30,11 @@ namespace System.Numerics
         private static readonly BigInteger s_bnZeroInt = new BigInteger(0);
         private static readonly BigInteger s_bnMinusOneInt = new BigInteger(-1);
 
+        public BigInteger(string value)
+        {
+            return Parse(value, NumberStyles.Integer);
+        }
+        
         public BigInteger(int value)
         {
             if (value == int.MinValue)
