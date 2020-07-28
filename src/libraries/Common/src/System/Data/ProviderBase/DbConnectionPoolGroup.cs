@@ -34,8 +34,8 @@ namespace System.Data.ProviderBase
 
         private int _state;          // see PoolGroupState* below
 
-        private DbConnectionPoolGroupProviderInfo _providerInfo;
-        private DbMetaDataFactory _metaDataFactory;
+        private DbConnectionPoolGroupProviderInfo? _providerInfo;
+        private DbMetaDataFactory? _metaDataFactory;
 
         // always lock this before changing _state, we don't want to move out of the 'Disabled' state
         // PoolGroupStateUninitialized = 0;
@@ -63,7 +63,7 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionPoolKey PoolKey => _poolKey;
 
-        internal DbConnectionPoolGroupProviderInfo ProviderInfo
+        internal DbConnectionPoolGroupProviderInfo? ProviderInfo
         {
             get
             {
@@ -74,7 +74,7 @@ namespace System.Data.ProviderBase
                 _providerInfo = value;
                 if (null != value)
                 {
-                    _providerInfo.PoolGroup = this;
+                    _providerInfo!.PoolGroup = this;
                 }
             }
         }
@@ -83,7 +83,7 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionPoolGroupOptions PoolGroupOptions => _poolGroupOptions;
 
-        internal DbMetaDataFactory MetaDataFactory
+        internal DbMetaDataFactory? MetaDataFactory
         {
             get
             {
@@ -102,7 +102,7 @@ namespace System.Data.ProviderBase
             // will return the number of connections in the group after clearing has finished
 
             // First, note the old collection and create a new collection to be used
-            ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool> oldPoolCollection = null;
+            ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool>? oldPoolCollection = null;
             lock (this)
             {
                 if (_poolCollection.Count > 0)
@@ -130,7 +130,7 @@ namespace System.Data.ProviderBase
             return _poolCollection.Count;
         }
 
-        internal DbConnectionPool GetConnectionPool(DbConnectionFactory connectionFactory)
+        internal DbConnectionPool? GetConnectionPool(DbConnectionFactory connectionFactory)
         {
             // When this method returns null it indicates that the connection
             // factory should not use pooling.
@@ -138,10 +138,10 @@ namespace System.Data.ProviderBase
             // We don't support connection pooling on Win9x;
             // PoolGroupOptions will only be null when we're not supposed to pool
             // connections.
-            DbConnectionPool pool = null;
+            DbConnectionPool? pool = null;
             if (null != _poolGroupOptions)
             {
-                DbConnectionPoolIdentity currentIdentity = DbConnectionPoolIdentity.NoIdentity;
+                DbConnectionPoolIdentity? currentIdentity = DbConnectionPoolIdentity.NoIdentity;
 
                 if (_poolGroupOptions.PoolByIdentity)
                 {
@@ -168,7 +168,7 @@ namespace System.Data.ProviderBase
                             // Did someone already add it to the list?
                             if (!_poolCollection.TryGetValue(currentIdentity, out pool))
                             {
-                                DbConnectionPoolProviderInfo connectionPoolProviderInfo = connectionFactory.CreateConnectionPoolProviderInfo(this.ConnectionOptions);
+                                DbConnectionPoolProviderInfo? connectionPoolProviderInfo = connectionFactory.CreateConnectionPoolProviderInfo(this.ConnectionOptions);
                                 DbConnectionPool newPool = new DbConnectionPool(connectionFactory, this, currentIdentity, connectionPoolProviderInfo);
 
                                 if (MarkPoolGroupAsActive())

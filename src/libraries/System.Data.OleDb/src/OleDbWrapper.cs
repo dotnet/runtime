@@ -17,10 +17,10 @@ namespace System.Data.OleDb
 
         // since we only have one DataLinks object, caching the delegate here is valid as long we
         // maintain an AddRef which is also the lifetime of this class instance
-        private readonly UnsafeNativeMethods.IDataInitializeGetDataSource DangerousIDataInitializeGetDataSource;
+        private readonly UnsafeNativeMethods.IDataInitializeGetDataSource? DangerousIDataInitializeGetDataSource;
 
         // DataLinks (the unknown parameter) is created via Activator.CreateInstance outside of the SafeHandle
-        internal OleDbServicesWrapper(object unknown) : base()
+        internal OleDbServicesWrapper(object? unknown) : base()
         {
             if (null != unknown)
             {
@@ -44,7 +44,7 @@ namespace System.Data.OleDb
         internal void GetDataSource(OleDbConnectionString constr, ref DataSourceWrapper datasrcWrapper)
         {
             OleDbHResult hr;
-            UnsafeNativeMethods.IDataInitializeGetDataSource GetDataSource = DangerousIDataInitializeGetDataSource;
+            UnsafeNativeMethods.IDataInitializeGetDataSource GetDataSource = DangerousIDataInitializeGetDataSource!;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -52,7 +52,7 @@ namespace System.Data.OleDb
                 DangerousAddRef(ref mustRelease);
 
                 // this is the string that DataLinks / OLE DB Services will use to create the provider
-                string connectionString = constr.ActualConnectionString;
+                string connectionString = constr.ActualConnectionString!;
 
                 // base.handle is the 'this' pointer for making the COM call to GetDataSource
                 // the datasrcWrapper will store the IID_IDBInitialize pointer
@@ -72,7 +72,7 @@ namespace System.Data.OleDb
                 {
                     throw ODB.ProviderUnavailable(constr.Provider, null);
                 }
-                Exception e = OleDbConnection.ProcessResults(hr, null, null);
+                Exception? e = OleDbConnection.ProcessResults(hr, null, null);
                 Debug.Assert(null != e, "CreateProviderError");
                 throw e;
             }
@@ -113,7 +113,7 @@ namespace System.Data.OleDb
                 IntPtr method = Marshal.ReadIntPtr(vtable, 0);
 
                 // we cache the QueryInterface delegate to prevent recreating it on every call
-                UnsafeNativeMethods.IUnknownQueryInterface QueryInterface = constr.DangerousDataSourceIUnknownQueryInterface;
+                UnsafeNativeMethods.IUnknownQueryInterface? QueryInterface = constr.DangerousDataSourceIUnknownQueryInterface;
 
                 // since the delegate lifetime is longer than the original instance used to create it
                 // we double check before each usage to verify the delegates function pointer
@@ -130,7 +130,7 @@ namespace System.Data.OleDb
                 method = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size);  // Initialize is the 4'th vtable entry
 
                 // we cache the Initialize delegate to prevent recreating it on every call
-                UnsafeNativeMethods.IDBInitializeInitialize Initialize = constr.DangerousIDBInitializeInitialize;
+                UnsafeNativeMethods.IDBInitializeInitialize? Initialize = constr.DangerousIDBInitializeInitialize;
 
                 // since the delegate lifetime is longer than the original instance used to create it
                 // we double check before each usage to verify the delegates function pointer
@@ -156,7 +156,7 @@ namespace System.Data.OleDb
                         vtable = Marshal.ReadIntPtr(idbCreateSession, 0);
                         method = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size);  // CreateSession is the 4'th vtable entry
 
-                        UnsafeNativeMethods.IDBCreateSessionCreateSession CreateSession = constr.DangerousIDBCreateSessionCreateSession;
+                        UnsafeNativeMethods.IDBCreateSessionCreateSession? CreateSession = constr.DangerousIDBCreateSessionCreateSession;
 
                         // since the delegate lifetime is longer than the original instance used to create it
                         // we double check before each usage to verify the delegates function pointer
@@ -227,7 +227,7 @@ namespace System.Data.OleDb
 
         // we cache the DangerousIDBCreateCommandCreateCommand (expecting base.handle to be IDBCreateCommand)
         // since we maintain an AddRef on IDBCreateCommand it is safe to use the delegate without rechecking its function pointer
-        private UnsafeNativeMethods.IDBCreateCommandCreateCommand DangerousIDBCreateCommandCreateCommand;
+        private UnsafeNativeMethods.IDBCreateCommandCreateCommand? DangerousIDBCreateCommandCreateCommand;
 
         internal SessionWrapper() : base()
         {
@@ -319,11 +319,11 @@ namespace System.Data.OleDb
             DangerousIDBCreateCommandCreateCommand = CreateCommand;
         }
 
-        internal OleDbHResult CreateCommand(ref object icommandText)
+        internal OleDbHResult CreateCommand(ref object? icommandText)
         {
             // if (null == CreateCommand), the IDBCreateCommand isn't supported - aka E_NOINTERFACE
             OleDbHResult hr = OleDbHResult.E_NOINTERFACE;
-            UnsafeNativeMethods.IDBCreateCommandCreateCommand CreateCommand = DangerousIDBCreateCommandCreateCommand;
+            UnsafeNativeMethods.IDBCreateCommandCreateCommand? CreateCommand = DangerousIDBCreateCommandCreateCommand;
             if (null != CreateCommand)
             {
                 bool mustRelease = false;
@@ -362,7 +362,7 @@ namespace System.Data.OleDb
         }
     }
 
-    // unable to use generics bacause (unknown as T) doesn't compile
+    // unable to use generics because (unknown as T) doesn't compile
     internal struct IDBInfoWrapper : IDisposable
     {
         // _unknown must be tracked because the _value may not exist,
@@ -373,7 +373,7 @@ namespace System.Data.OleDb
         internal IDBInfoWrapper(object unknown)
         {
             _unknown = unknown;
-            _value = (unknown as UnsafeNativeMethods.IDBInfo);
+            _value = (unknown as UnsafeNativeMethods.IDBInfo)!;
         }
 
         internal UnsafeNativeMethods.IDBInfo Value
@@ -387,8 +387,8 @@ namespace System.Data.OleDb
         public void Dispose()
         {
             object unknown = _unknown;
-            _unknown = null;
-            _value = null;
+            _unknown = null!;
+            _value = null!;
             if (null != unknown)
             {
                 Marshal.ReleaseComObject(unknown);
@@ -404,7 +404,7 @@ namespace System.Data.OleDb
         internal IDBPropertiesWrapper(object unknown)
         {
             _unknown = unknown;
-            _value = (unknown as UnsafeNativeMethods.IDBProperties);
+            _value = (unknown as UnsafeNativeMethods.IDBProperties)!;
             Debug.Assert(null != _value, "null IDBProperties");
         }
 
@@ -420,8 +420,8 @@ namespace System.Data.OleDb
         public void Dispose()
         {
             object unknown = _unknown;
-            _unknown = null;
-            _value = null;
+            _unknown = null!;
+            _value = null!;
             if (null != unknown)
             {
                 Marshal.ReleaseComObject(unknown);
@@ -437,7 +437,7 @@ namespace System.Data.OleDb
         internal IDBSchemaRowsetWrapper(object unknown)
         {
             _unknown = unknown;
-            _value = (unknown as UnsafeNativeMethods.IDBSchemaRowset);
+            _value = (unknown as UnsafeNativeMethods.IDBSchemaRowset)!;
         }
 
         internal UnsafeNativeMethods.IDBSchemaRowset Value
@@ -451,8 +451,8 @@ namespace System.Data.OleDb
         public void Dispose()
         {
             object unknown = _unknown;
-            _unknown = null;
-            _value = null;
+            _unknown = null!;
+            _value = null!;
             if (null != unknown)
             {
                 Marshal.ReleaseComObject(unknown);
@@ -468,7 +468,7 @@ namespace System.Data.OleDb
         internal IOpenRowsetWrapper(object unknown)
         {
             _unknown = unknown;
-            _value = (unknown as UnsafeNativeMethods.IOpenRowset);
+            _value = (unknown as UnsafeNativeMethods.IOpenRowset)!;
             Debug.Assert(null != _value, "null IOpenRowsetWrapper");
         }
 
@@ -484,8 +484,8 @@ namespace System.Data.OleDb
         public void Dispose()
         {
             object unknown = _unknown;
-            _unknown = null;
-            _value = null;
+            _unknown = null!;
+            _value = null!;
             if (null != unknown)
             {
                 Marshal.ReleaseComObject(unknown);
@@ -501,7 +501,7 @@ namespace System.Data.OleDb
         internal ITransactionJoinWrapper(object unknown)
         {
             _unknown = unknown;
-            _value = (unknown as NativeMethods.ITransactionJoin);
+            _value = (unknown as NativeMethods.ITransactionJoin)!;
         }
 
         internal NativeMethods.ITransactionJoin Value
@@ -515,8 +515,8 @@ namespace System.Data.OleDb
         public void Dispose()
         {
             object unknown = _unknown;
-            _unknown = null;
-            _value = null;
+            _unknown = null!;
+            _value = null!;
             if (null != unknown)
             {
                 Marshal.ReleaseComObject(unknown);
