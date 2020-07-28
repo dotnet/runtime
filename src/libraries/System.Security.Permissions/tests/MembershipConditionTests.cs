@@ -61,6 +61,7 @@ namespace System.Security.Permissions.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography.Algorithms is not supported on this platform.
         public static void HashMembershipConditionCallMethods()
         {
             HashMembershipCondition hmc = new HashMembershipCondition(Cryptography.SHA1.Create(), new byte[1]);
@@ -78,6 +79,7 @@ namespace System.Security.Permissions.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography.X509Certificates is not supported on this platform.
         public static void PublisherMembershipConditionCallMethods()
         {
             PublisherMembershipCondition pmc = new PublisherMembershipCondition(new System.Security.Cryptography.X509Certificates.X509Certificate());

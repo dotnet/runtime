@@ -49,7 +49,7 @@ namespace System.Data.Odbc
                 new SchemaFunctionName(OdbcMetaDataCollectionNames.Views, ODBC32.SQL_API.SQLTABLES)};
 
             // verify the existance of the table in the data set
-            DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
+            DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
             if (metaDataCollectionsTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.MetaDataCollections);
@@ -59,7 +59,7 @@ namespace System.Data.Odbc
             metaDataCollectionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.MetaDataCollections, null);
 
             // verify the existance of the table in the data set
-            DataTable restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
+            DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
             if (restrictionsTable != null)
             {
                 // copy the table filtering out any rows that don't apply to the current version of the provider
@@ -72,13 +72,14 @@ namespace System.Data.Odbc
             // 3) the provider does not support the necessary odbc function
 
 
-            DataColumn populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism];
-            DataColumn collectionName = metaDataCollectionsTable.Columns[_collectionName];
-            DataColumn restrictionCollectionName = null;
+            DataColumn populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism]!;
+            DataColumn collectionName = metaDataCollectionsTable.Columns[_collectionName]!;
+            DataColumn? restrictionCollectionName = null;
             if (restrictionsTable != null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
             }
+            Debug.Assert(restrictionCollectionName != null);
 
             foreach (DataRow collection in metaDataCollectionsTable.Rows)
             {
@@ -123,12 +124,12 @@ namespace System.Data.Odbc
 
             // replace the original table with the updated one
             metaDataCollectionsTable.AcceptChanges();
-            CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]);
+            CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!);
             CollectionDataSet.Tables.Add(metaDataCollectionsTable);
 
             if (restrictionsTable != null)
             {
-                CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]);
+                CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]!);
                 CollectionDataSet.Tables.Add(restrictionsTable);
             }
         }
@@ -180,7 +181,7 @@ namespace System.Data.Odbc
 
         private void DataTableFromDataReaderDataTypes(DataTable dataTypesTable, OdbcDataReader dataReader, OdbcConnection connection)
         {
-            DataTable schemaTable = null;
+            DataTable? schemaTable = null;
             //
 
             // Build a DataTable from the reader
@@ -195,25 +196,25 @@ namespace System.Data.Odbc
             object[] getTypeInfoValues = new object[schemaTable.Rows.Count];
             DataRow dataTypesRow;
 
-            DataColumn typeNameColumn = dataTypesTable.Columns[DbMetaDataColumnNames.TypeName];
-            DataColumn providerDbTypeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.ProviderDbType];
-            DataColumn columnSizeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.ColumnSize];
-            DataColumn createParametersColumn = dataTypesTable.Columns[DbMetaDataColumnNames.CreateParameters];
-            DataColumn dataTypeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.DataType];
-            DataColumn isAutoIncermentableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsAutoIncrementable];
-            DataColumn isCaseSensitiveColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsCaseSensitive];
-            DataColumn isFixedLengthColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedLength];
-            DataColumn isFixedPrecisionScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedPrecisionScale];
-            DataColumn isLongColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsLong];
-            DataColumn isNullableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsNullable];
-            DataColumn isSearchableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchable];
-            DataColumn isSearchableWithLikeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchableWithLike];
-            DataColumn isUnsignedColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsUnsigned];
-            DataColumn maximumScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.MaximumScale];
-            DataColumn minimumScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.MinimumScale];
-            DataColumn literalPrefixColumn = dataTypesTable.Columns[DbMetaDataColumnNames.LiteralPrefix];
-            DataColumn literalSuffixColumn = dataTypesTable.Columns[DbMetaDataColumnNames.LiteralSuffix];
-            DataColumn SQLTypeNameColumn = dataTypesTable.Columns[OdbcMetaDataColumnNames.SQLType];
+            DataColumn typeNameColumn = dataTypesTable.Columns[DbMetaDataColumnNames.TypeName]!;
+            DataColumn providerDbTypeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.ProviderDbType]!;
+            DataColumn columnSizeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.ColumnSize]!;
+            DataColumn createParametersColumn = dataTypesTable.Columns[DbMetaDataColumnNames.CreateParameters]!;
+            DataColumn dataTypeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.DataType]!;
+            DataColumn isAutoIncermentableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsAutoIncrementable]!;
+            DataColumn isCaseSensitiveColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsCaseSensitive]!;
+            DataColumn isFixedLengthColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedLength]!;
+            DataColumn isFixedPrecisionScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedPrecisionScale]!;
+            DataColumn isLongColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsLong]!;
+            DataColumn isNullableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsNullable]!;
+            DataColumn isSearchableColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchable]!;
+            DataColumn isSearchableWithLikeColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchableWithLike]!;
+            DataColumn isUnsignedColumn = dataTypesTable.Columns[DbMetaDataColumnNames.IsUnsigned]!;
+            DataColumn maximumScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.MaximumScale]!;
+            DataColumn minimumScaleColumn = dataTypesTable.Columns[DbMetaDataColumnNames.MinimumScale]!;
+            DataColumn literalPrefixColumn = dataTypesTable.Columns[DbMetaDataColumnNames.LiteralPrefix]!;
+            DataColumn literalSuffixColumn = dataTypesTable.Columns[DbMetaDataColumnNames.LiteralSuffix]!;
+            DataColumn SQLTypeNameColumn = dataTypesTable.Columns[OdbcMetaDataColumnNames.SQLType]!;
 
 
             const int indexTYPE_NAME = 0;
@@ -234,7 +235,7 @@ namespace System.Data.Odbc
             const int SQL_DATE_V2 = 9;
             const int SQL_TIME_V2 = 10;
 
-            TypeMap typeMap;
+            TypeMap? typeMap;
 
 
             while (dataReader.Read())
@@ -247,11 +248,9 @@ namespace System.Data.Odbc
                 dataTypesRow[typeNameColumn] = getTypeInfoValues[indexTYPE_NAME];
                 dataTypesRow[SQLTypeNameColumn] = getTypeInfoValues[indexDATA_TYPE];
 
-                sqlType = (ODBC32.SQL_TYPE)(int)Convert.ChangeType(getTypeInfoValues[indexDATA_TYPE],
-                                                                      typeof(int),
-                                                                      (System.IFormatProvider)null);
+                sqlType = (ODBC32.SQL_TYPE)(int)Convert.ChangeType(getTypeInfoValues[indexDATA_TYPE], typeof(int), null);
                 // if the driver is pre version 3 and it returned the v2 SQL_DATE or SQL_TIME types they need
-                // to be mapped to thier v3 equlivants
+                // to be mapped to their v3 equivalent
                 if (connection.IsV3Driver == false)
                 {
                     if ((int)sqlType == SQL_DATE_V2)
@@ -428,7 +427,7 @@ namespace System.Data.Odbc
 
         private DataTable DataTableFromDataReaderIndex(IDataReader reader,
                                                        string tableName,
-                                                       string restrictionIndexName)
+                                                       string? restrictionIndexName)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -499,7 +498,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private void FillOutRestrictions(int restrictionsCount, string[] restrictions, object[] allRestrictions, string collectionName)
+        private void FillOutRestrictions(int restrictionsCount, string?[]? restrictions, object?[] allRestrictions, string collectionName)
         {
             Debug.Assert(allRestrictions.Length >= restrictionsCount);
 
@@ -530,11 +529,11 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetColumnsCollection(string[] restrictions, OdbcConnection connection)
+        private DataTable GetColumnsCollection(string?[]? restrictions, OdbcConnection connection)
         {
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
-            DataTable resultTable = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
+            DataTable? resultTable = null;
             const int columnsRestrictionsCount = 4;
 
             try
@@ -563,7 +562,7 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetDataSourceInformationCollection(string[] restrictions,
+        private DataTable GetDataSourceInformationCollection(string?[]? restrictions,
                                                              OdbcConnection connection)
         {
             if (ADP.IsEmptyArray(restrictions) == false)
@@ -572,7 +571,7 @@ namespace System.Data.Odbc
             }
 
             // verify that the data source information table is in the data set
-            DataTable dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
+            DataTable? dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
             if (dataSourceInformationTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataSourceInformation);
@@ -588,7 +587,7 @@ namespace System.Data.Odbc
             }
             DataRow dataSourceInformation = dataSourceInformationTable.Rows[0];
 
-            string stringValue;
+            string? stringValue;
             short int16Value;
             int int32Value;
             ODBC32.RetCode retcode;
@@ -724,7 +723,7 @@ namespace System.Data.Odbc
             }
 
             // build the QuotedIdentifierPattern using the quote prefix and suffix from the provider and
-            // assuming that the quote suffix is escaped via repetion (i.e " becomes "")
+            // assuming that the quote suffix is escaped via repetition (i.e " becomes "")
             stringValue = connection.QuoteChar(ADP.GetSchema);
 
             if (stringValue != null)
@@ -733,7 +732,7 @@ namespace System.Data.Odbc
                 // quoted identifiers
                 if (stringValue != " ")
                 {
-                    // only know how to build the parttern if the quote characters is 1 character
+                    // only know how to build the pattern if the quote characters is 1 character
                     // in all other cases just leave the field null
                     if (stringValue.Length == 1)
                     {
@@ -782,7 +781,7 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetDataTypesCollection(string[] restrictions, OdbcConnection connection)
+        private DataTable GetDataTypesCollection(string?[]? restrictions, OdbcConnection connection)
         {
             if (ADP.IsEmptyArray(restrictions) == false)
             {
@@ -792,7 +791,7 @@ namespace System.Data.Odbc
 
 
             // verify the existance of the table in the data set
-            DataTable dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
+            DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
             if (dataTypesTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataTypes);
@@ -801,8 +800,8 @@ namespace System.Data.Odbc
             // copy the data table it
             dataTypesTable = CloneAndFilterCollection(DbMetaDataCollectionNames.DataTypes, null);
 
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
             object[] allArguments = new object[1];
             allArguments[0] = ODBC32.SQL_ALL_TYPES;
 
@@ -831,11 +830,11 @@ namespace System.Data.Odbc
             return dataTypesTable;
         }
 
-        private DataTable GetIndexCollection(string[] restrictions, OdbcConnection connection)
+        private DataTable GetIndexCollection(string?[]? restrictions, OdbcConnection connection)
         {
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
-            DataTable resultTable = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
+            DataTable? resultTable = null;
             const int nativeRestrictionsCount = 5;
             const int indexRestrictionsCount = 4;
             const int indexOfTableName = 2;
@@ -857,7 +856,7 @@ namespace System.Data.Odbc
 
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLSTATISTICS);
 
-                string indexName = null;
+                string? indexName = null;
                 if (restrictions != null)
                 {
                     if (restrictions.Length >= indexOfIndexName + 1)
@@ -885,11 +884,11 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProcedureColumnsCollection(string[] restrictions, OdbcConnection connection, bool isColumns)
+        private DataTable GetProcedureColumnsCollection(string?[]? restrictions, OdbcConnection connection, bool isColumns)
         {
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
-            DataTable resultTable = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
+            DataTable? resultTable = null;
             const int procedureColumnsRestrictionsCount = 4;
 
             try
@@ -928,18 +927,18 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProceduresCollection(string[] restrictions, OdbcConnection connection)
+        private DataTable GetProceduresCollection(string?[]? restrictions, OdbcConnection connection)
         {
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
-            DataTable resultTable = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
+            DataTable? resultTable = null;
             const int columnsRestrictionsCount = 4;
             const int indexOfProcedureType = 3;
 
             try
             {
                 command = GetCommand(connection);
-                string[] allRestrictions = new string[columnsRestrictionsCount];
+                string?[] allRestrictions = new string[columnsRestrictionsCount];
                 FillOutRestrictions(columnsRestrictionsCount, restrictions, allRestrictions, OdbcMetaDataCollectionNames.Procedures);
 
 
@@ -952,7 +951,7 @@ namespace System.Data.Odbc
                 else
                 {
                     short procedureType;
-                    if ((restrictions[indexOfProcedureType] == "SQL_PT_UNKNOWN") ||
+                    if ((restrictions![indexOfProcedureType] == "SQL_PT_UNKNOWN") ||
                             (restrictions[indexOfProcedureType] == "0" /*ODBC32.SQL_PROCEDURETYPE.UNKNOWN*/))
                     {
                         procedureType = (short)ODBC32.SQL_PROCEDURETYPE.UNKNOWN;
@@ -990,7 +989,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetReservedWordsCollection(string[] restrictions, OdbcConnection connection)
+        private DataTable GetReservedWordsCollection(string?[]? restrictions, OdbcConnection connection)
         {
             if (ADP.IsEmptyArray(restrictions) == false)
             {
@@ -998,7 +997,7 @@ namespace System.Data.Odbc
             }
 
             // verify the existance of the table in the data set
-            DataTable reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
+            DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
             if (reservedWordsTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
@@ -1007,13 +1006,13 @@ namespace System.Data.Odbc
             // copy the table filtering out any rows that don't apply to tho current version of the prrovider
             reservedWordsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.ReservedWords, null);
 
-            DataColumn reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
+            DataColumn? reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
             if (reservedWordColumn == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
             }
 
-            string keywords = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.KEYWORDS);
+            string? keywords = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.KEYWORDS);
 
             if (null != keywords)
             {
@@ -1031,11 +1030,11 @@ namespace System.Data.Odbc
             return reservedWordsTable;
         }
 
-        private DataTable GetTablesCollection(string[] restrictions, OdbcConnection connection, bool isTables)
+        private DataTable GetTablesCollection(string?[]? restrictions, OdbcConnection connection, bool isTables)
         {
-            OdbcCommand command = null;
-            OdbcDataReader dataReader = null;
-            DataTable resultTable = null;
+            OdbcCommand? command = null;
+            OdbcDataReader? dataReader = null;
+            DataTable? resultTable = null;
             const int tablesRestrictionsCount = 3;
             const string includedTableTypesTables = "TABLE,SYSTEM TABLE";
             const string includedTableTypesViews = "VIEW";
@@ -1081,7 +1080,7 @@ namespace System.Data.Odbc
         }
 
         private bool IncludeIndexRow(object rowIndexName,
-                                        string restrictionIndexName,
+                                        string? restrictionIndexName,
                                         short rowIndexType)
         {
             // never include table statictics rows
@@ -1112,9 +1111,9 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        protected override DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
+        protected override DataTable PrepareCollection(string collectionName, string?[]? restrictions, DbConnection connection)
         {
-            DataTable resultTable = null;
+            DataTable? resultTable = null;
             OdbcConnection odbcConnection = (OdbcConnection)connection;
 
             if (collectionName == OdbcMetaDataCollectionNames.Tables)

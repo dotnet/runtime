@@ -1,8 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <nullable>enable</nullable>
+    <CborPropertyTests>false</CborPropertyTests>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(CborPropertyTests)' == 'True'">
+    <DefineConstants>$(DefineConstants),CBOR_PROPERTY_TESTS</DefineConstants>
+    <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
+    <NoWarn>CS8002</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
@@ -26,7 +34,20 @@
     <Compile Include="Writer\CborWriterTests.Integer.cs" />
     <Compile Include="Writer\CborWriterTests.ByteString.cs" />
     <Compile Include="Writer\CborWriterTests.TextString.cs" />
-    <Compile Include="CborRoundtripTests.cs" />
     <Compile Include="CoseKeyHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(CborPropertyTests)' == 'True'">
+    <Compile Include="PropertyTests\CborPropertyTests.cs" />
+    <Compile Include="PropertyTests\CborRandomGenerators.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(CborPropertyTests)' == 'True'">
+    <ProjectReference Include="CborDocument\System.Formats.Cbor.Tests.DataModel.fsproj" />
+    <PackageReference Include="FsCheck.Xunit" Version="$(FsCheckVersion)" />
   </ItemGroup>
 </Project>
