@@ -240,6 +240,11 @@
           <param name="source">The reference to check.</param>
           <remarks>This check is conceptually similar to "(void*)(&amp;source) == nullptr".</remarks>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.NullRef``1">
+          <summary>
+            Returns a by-ref to type <typeparamref name="T"/> that is a null reference.
+          </summary>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address.
