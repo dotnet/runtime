@@ -1658,7 +1658,7 @@ internal class Program
         public override int GetHashCode() { return x; }
     }
 
-    struct SomeClass : IEquatable<SomeClass>
+    class SomeClass : IEquatable<SomeClass>
     {
         public SomeClass(int _xVal)
         {
@@ -1748,6 +1748,10 @@ internal class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool ArrayLdtokenTests()
     {
+        // We're testing that mapping from ldtoken to RuntimeMethodHandle works for various ways that 
+        // ldtokens can be referenced (either via a generic token, or not.
+        // (there are slightly different codepaths in crossgen for this)
+        // Incorrect encoding will trigger a BadImageFormatException
         RuntimeMethodHandle rmhCtor1 = default(RuntimeMethodHandle);
         RuntimeMethodHandle rmhCtor2 = default(RuntimeMethodHandle);
         RuntimeMethodHandle rmhSet = default(RuntimeMethodHandle);
