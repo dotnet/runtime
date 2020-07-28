@@ -8,6 +8,6 @@ namespace System.Runtime.Versioning
     internal static class CompatibilitySwitch
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string? GetValueInternalCall(string compatibilitySwitchName);
+        internal static extern string? GetValueInternal(string compatibilitySwitchName);
     }
 }
