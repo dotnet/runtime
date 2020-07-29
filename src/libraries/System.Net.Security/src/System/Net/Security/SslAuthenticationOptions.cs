@@ -10,7 +10,7 @@ namespace System.Net.Security
 {
     internal class SslAuthenticationOptions
     {
-        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
+        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
 
@@ -136,7 +136,7 @@ namespace System.Net.Security
         internal EncryptionPolicy EncryptionPolicy { get; set; }
         internal bool RemoteCertRequired { get; set; }
         internal bool CheckCertName { get; set; }
-        internal RemoteCertValidationCallback? CertValidationDelegate { get; set; }
+        internal RemoteCertificateValidationCallback? CertValidationDelegate { get; set; }
         internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
         internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }

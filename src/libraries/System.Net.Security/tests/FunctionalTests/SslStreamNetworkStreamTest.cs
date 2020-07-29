@@ -277,22 +277,34 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_Throws()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
+            string errorMessage;
             var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            options.RemoteCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) =>
-                {
-                    chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
-                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    // This should work and we should be able to trust the chain.
-                    Assert.True(chain.Build((X509Certificate2)certificate));
-                    // Reject it in custom callback to simulate for example pinning.
-                    return false;
-                };
+            if (customCallback)
+            {
+                options.RemoteCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
+                        chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        // This should work and we should be able to trust the chain.
+                        Assert.True(chain.Build((X509Certificate2)certificate));
+                        // Reject it in custom callback to simulate for example pinning.
+                        return false;
+                    };
+
+                errorMessage = "RemoteCertificateValidationCallback";
+            }
+            else
+            {
+                errorMessage = "PartialChain";
+            }
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -303,7 +315,8 @@ namespace System.Net.Security.Tests
                 Task t1 = client.AuthenticateAsClientAsync(options, default);
                 Task t2 = server.AuthenticateAsServerAsync(_serverCert);
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
                 await t2;
             }
