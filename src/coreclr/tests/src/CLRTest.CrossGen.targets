@@ -72,6 +72,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
     fi
 
+    ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
+
     if [ ! -z ${LargeVersionBubble+x} ]%3B then
         ExtraCrossGen2Args+=" --inputbubble"
     fi
@@ -186,6 +188,8 @@ if defined RunCrossGen (
 )
 REM CrossGen2 Script
 if defined RunCrossGen2 (
+    set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
+
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     call :TakeLock
     set CrossGen2Status=0
