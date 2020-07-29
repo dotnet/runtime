@@ -10,7 +10,7 @@
 //      S Caller() { return Callee(); }
 //
 //   2) S is a value type with non-GC fields and has such size that it
-//      must passed via return buffer
+//      must be passed via return buffer;
 //
 //   3) call to Callee is transformed to tail call via helper:
 //
@@ -23,7 +23,7 @@
 // During morph phase the JIT discovers that both Caller and Callee have the return buffer arguments and
 // falsely assumes that the value can be directly passed from Caller to Callee.
 // Here is a problem: DispatchTailCalls helper expects the RetValue argument (in this case, return buffer argument)
-// to always point on the stack. However, during a reflection call the return buffer for S value type can be placed on the GC heap (see condition 2 above).
+// to always point to the stack. However, during a reflection call the return buffer for S value type can be placed on the GC heap (see condition 2 above).
 // As a consequence, when GC is called at DispatchTailCalls the object corresponding to the return value buffer can be moved,
 // but the pointers passed to DispatchTailCalls will not be updated that leads to Callee using the non-updated location when writing its return value.
 //
