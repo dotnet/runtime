@@ -18,6 +18,7 @@
     <Platforms>x64;x86;arm;arm64</Platforms>
 
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimAssemblyVerbose>false</ILLinkTrimAssemblyVerbose>
     <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 

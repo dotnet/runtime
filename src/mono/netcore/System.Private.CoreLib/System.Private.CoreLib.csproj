@@ -143,6 +143,7 @@
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimAssemblyVerbose>false</ILLinkTrimAssemblyVerbose>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
   </PropertyGroup>
 

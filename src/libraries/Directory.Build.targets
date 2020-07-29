@@ -92,7 +92,7 @@
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(IsNETCoreAppSrc)' == 'true' and
                                 '$(BinPlaceRuntime)' == 'true' and
-                                '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
+                                '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true;ILLinkTrimAssemblyVerbose=true</SetProperties>
     </BinPlaceTargetFrameworks>
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)"
                               Condition="'$(IsAspNetCoreApp)' == 'true'">
