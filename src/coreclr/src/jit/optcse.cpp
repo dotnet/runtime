@@ -38,7 +38,7 @@ void Compiler::optCSEstop()
 
     CSEdsc*  dsc;
     CSEdsc** ptr;
-    unsigned cnt;
+    size_t   cnt;
 
     optCSEtab = new (this, CMK_CSE) CSEdsc*[optCSECandidateCount]();
 
@@ -641,13 +641,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         {
             if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
             {
-                size_t newOptCSEhashSize      = optCSEhashSize * s_optCSEhashGrowthFactor;
-                CSEdsc** newOptCSEhash = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
+                size_t newOptCSEhashSize = optCSEhashSize * s_optCSEhashGrowthFactor;
+                CSEdsc** newOptCSEhash   = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
 
                 // Iterate through each existing entry, moving to the new table
                 CSEdsc** ptr;
-                CSEdsc* dsc;
-                size_t cnt;
+                CSEdsc*  dsc;
+                size_t   cnt;
                 for (cnt = optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
                 {
                     for (dsc = *ptr; dsc;)
@@ -657,15 +657,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                         size_t newHval = optCSEKeyToHashIndex(dsc->csdHashKey, newOptCSEhashSize);
 
                         // Move CSEdsc to bucket in enlarged table
-                        dsc->csdNextInBucket = newOptCSEhash[newHval];
+                        dsc->csdNextInBucket   = newOptCSEhash[newHval];
                         newOptCSEhash[newHval] = dsc;
 
                         dsc = nextDsc;
                     }
                 }
 
-                optCSEhash = newOptCSEhash;
-                optCSEhashSize = newOptCSEhashSize;
+                optCSEhash                     = newOptCSEhash;
+                optCSEhashSize                 = newOptCSEhashSize;
                 optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
             }
 
