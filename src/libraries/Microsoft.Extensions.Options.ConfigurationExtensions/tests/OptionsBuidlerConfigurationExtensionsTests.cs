@@ -59,25 +59,6 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         }
 
         [Fact]
-        public static void BindConfiguration_InvokesBinderConfigurationAction()
-        {
-            var services = new ServiceCollection();
-            // Add empty IConfiguration service
-            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-            var optionsBuilder = services.AddOptions<FakeOptions>();
-            bool binderConfigurationInvoked = false;
-
-            _ = optionsBuilder.BindConfiguration("Test", _ =>
-            {
-                binderConfigurationInvoked = true;
-            });
-            using ServiceProvider serviceProvider = services.BuildServiceProvider();
-            _ = serviceProvider.GetRequiredService<IOptions<FakeOptions>>();
-
-            Assert.True(binderConfigurationInvoked);
-        }
-
-        [Fact]
         public static void BindConfiguration_UsesConfigurationSectionPath()
         {
             const string configSectionName = "Test";
