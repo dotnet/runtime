@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
-            if (useVersion == HttpVersion.Version30)
+            if (useVersion == HttpVersion30)
             {
                 SetUsePrenegotiatedHttp3(handler, usePrenegotiatedHttp3: true);
             }
