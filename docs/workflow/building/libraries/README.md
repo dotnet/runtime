@@ -83,7 +83,7 @@ For more details on the build settings see [project-guidelines](../../../coding-
 
 If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed.
 
-By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `-subset libtests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh -subset libs.tests -test`. To specify just the libraries, use `-subset libs`.
+By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `-subset libs.tests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh -subset libs.tests -test`. To specify just the libraries, use `-subset libs`.
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
