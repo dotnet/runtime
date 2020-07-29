@@ -4,19 +4,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Test.Common;
+using System.Net.Http;
+using System.Net;
 using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Http.Functional.Tests
+namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 {
-    public class HttpRequestMessageTest : HttpClientHandlerTestBase
+    public class HttpRequestMessageTest
     {
         private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;
-
-        public HttpRequestMessageTest(ITestOutputHelper output) : base(output) { }
+        private HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+#nullable enable        
+        private HttpRequestOptionsKey<IDictionary<string, object?>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object?>>("WebAssemblyFetchOptions");
+#nullable disable
 
         [Fact]
         public void Ctor_Default_CorrectDefaults()
@@ -24,7 +27,6 @@ namespace System.Net.Http.Functional.Tests
             var rm = new HttpRequestMessage();
 
             Assert.Equal(HttpMethod.Get, rm.Method);
-            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
             Assert.Null(rm.Content);
             Assert.Null(rm.RequestUri);
         }
@@ -134,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Properties_SetPropertiesAndGetTheirValue_MatchingValues()
+        public void Properties_SetOptionsAndGetTheirValue_MatchingValues()
         {
             var rm = new HttpRequestMessage();
 
@@ -155,6 +157,133 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.NotNull(rm.Headers);
             Assert.NotNull(rm.Options);
+        }
+
+#nullable enable
+        [Fact]
+        public void Properties_SetOptionsAndGetTheirValue_Set_FetchOptions()
+        {
+            var rm = new HttpRequestMessage();
+
+            var content = new MockContent();
+            var uri = new Uri("https://example.com");
+            var version = new Version(1, 0);
+            var method = new HttpMethod("custom");
+
+            rm.Content = content;
+            rm.Method = method;
+            rm.RequestUri = uri;
+            rm.Version = version;
+            
+            var fetchme = new Dictionary<string, object?>();
+            fetchme.Add("hic", null);
+            fetchme.Add("sunt", 4444);
+            fetchme.Add("dracones", new List<string>());
+            rm.Options.Set(FetchOptions, fetchme);
+
+            Assert.Equal(content, rm.Content);
+            Assert.Equal(uri, rm.RequestUri);
+            Assert.Equal(method, rm.Method);
+            Assert.Equal(version, rm.Version);
+
+            Assert.NotNull(rm.Headers);
+            Assert.NotNull(rm.Options);
+
+            rm.Options.TryGetValue(FetchOptions, out IDictionary<string, object?>? fetchOptionsValue);
+            Assert.NotNull(fetchOptionsValue);
+            if (fetchOptionsValue != null)
+            {
+                foreach (var item in fetchOptionsValue)
+                {
+                    Assert.True(fetchme.ContainsKey(item.Key));
+                }
+            }
+        }
+#nullable disable
+
+#nullable enable
+        [Fact]
+        public void Properties_SetOptionsAndGetTheirValue_NotSet_FetchOptions()
+        {
+            var rm = new HttpRequestMessage();
+
+            var content = new MockContent();
+            var uri = new Uri("https://example.com");
+            var version = new Version(1, 0);
+            var method = new HttpMethod("custom");
+
+            rm.Content = content;
+            rm.Method = method;
+            rm.RequestUri = uri;
+            rm.Version = version;
+
+            Assert.Equal(content, rm.Content);
+            Assert.Equal(uri, rm.RequestUri);
+            Assert.Equal(method, rm.Method);
+            Assert.Equal(version, rm.Version);
+
+            Assert.NotNull(rm.Headers);
+            Assert.NotNull(rm.Options);
+
+            rm.Options.TryGetValue(FetchOptions, out IDictionary<string, object?>? fetchOptionsValue);
+            Assert.Null(fetchOptionsValue);
+        }
+#nullable disable
+
+        [Fact]
+        public void Properties_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse()
+        {
+            var rm = new HttpRequestMessage();
+
+            var content = new MockContent();
+            var uri = new Uri("https://example.com");
+            var version = new Version(1, 0);
+            var method = new HttpMethod("custom");
+
+            rm.Content = content;
+            rm.Method = method;
+            rm.RequestUri = uri;
+            rm.Version = version;
+            
+            rm.Options.Set(EnableStreamingResponse, true);
+
+            Assert.Equal(content, rm.Content);
+            Assert.Equal(uri, rm.RequestUri);
+            Assert.Equal(method, rm.Method);
+            Assert.Equal(version, rm.Version);
+
+            Assert.NotNull(rm.Headers);
+            Assert.NotNull(rm.Options);
+
+            rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
+            Assert.True(streamingEnabledValue);
+        }
+
+        [Fact]
+        public void Properties_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse()
+        {
+            var rm = new HttpRequestMessage();
+
+            var content = new MockContent();
+            var uri = new Uri("https://example.com");
+            var version = new Version(1, 0);
+            var method = new HttpMethod("custom");
+
+            rm.Content = content;
+            rm.Method = method;
+            rm.RequestUri = uri;
+            rm.Version = version;
+            
+            Assert.Equal(content, rm.Content);
+            Assert.Equal(uri, rm.RequestUri);
+            Assert.Equal(method, rm.Method);
+            Assert.Equal(version, rm.Version);
+
+            Assert.NotNull(rm.Headers);
+            Assert.NotNull(rm.Options);
+
+            rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
+            Assert.False(streamingEnabledValue);
         }
 
         [Fact]
@@ -217,64 +346,6 @@ namespace System.Net.Http.Functional.Tests
                 "}", rm.ToString());
         }
 
-        [Theory]
-        [InlineData("DELETE")]
-        [InlineData("OPTIONS")]
-        [InlineData("HEAD")]
-        public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
-        {
-            using (HttpClient client = CreateHttpClient())
-            {
-                await LoopbackServer.CreateServerAsync(async (server, uri) =>
-                {
-                    var request = new HttpRequestMessage();
-                    request.RequestUri = uri;
-                    request.Method = new HttpMethod(method);
-
-                    Task<HttpResponseMessage> requestTask = client.SendAsync(request);
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        List<string> headers = await connection.ReadRequestHeaderAsync();
-                        Assert.DoesNotContain(headers, line => line.StartsWith("Content-length"));
-
-                        await connection.SendResponseAsync();
-                        await requestTask;
-                    });
-                });
-            }
-        }
-
-        [Fact]
-        public async Task HttpRequest_BodylessMethod_LargeContentLength()
-        {
-            using (HttpClient client = CreateHttpClient())
-            {
-                await LoopbackServer.CreateServerAsync(async (server, uri) =>
-                {
-                    var request = new HttpRequestMessage(HttpMethod.Head, uri);
-
-                    Task<HttpResponseMessage> requestTask = client.SendAsync(request);
-
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        // Content-Length greater than 2GB.
-                        string response = LoopbackServer.GetConnectionCloseResponse(
-                            HttpStatusCode.OK, "Content-Length: 2167849215\r\n\r\n");
-                        await connection.SendResponseAsync(response);
-
-                        await requestTask;
-                    });
-
-                    using (HttpResponseMessage result = requestTask.Result)
-                    {
-                        Assert.NotNull(result);
-                        Assert.NotNull(result.Content);
-                        Assert.Equal(2167849215, result.Content.Headers.ContentLength);
-                    }
-                });
-            }
-        }
-
         #region Helper methods
 
         private class MockContent : HttpContent
@@ -286,8 +357,10 @@ namespace System.Net.Http.Functional.Tests
                 throw new NotImplementedException();
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+#nullable enable
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
+#nullable disable                
                 throw new NotImplementedException();
             }
 
