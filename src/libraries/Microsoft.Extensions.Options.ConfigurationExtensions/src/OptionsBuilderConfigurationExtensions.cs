@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Configure<IConfiguration>((opts, config) =>
             {
                 IConfiguration section = config.GetSection(configSectionPath);
-                section?.Bind(opts, configureBinder);
+                section.Bind(opts, configureBinder);
             });
             return optionsBuilder;
         }
