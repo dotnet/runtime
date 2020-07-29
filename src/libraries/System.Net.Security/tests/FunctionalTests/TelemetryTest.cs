@@ -25,13 +25,7 @@ namespace System.Net.Security.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [Fact]
-        public static async Task LongTest()
-        {
-            await Task.Delay(30_000);
-        }
-
-        //[OuterLoop]
+        [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void EventSource_SuccessfulHandshake_LogsStartStop()
         {
@@ -66,7 +60,7 @@ namespace System.Net.Security.Tests
             }).Dispose();
         }
 
-        //[OuterLoop]
+        [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void EventSource_UnsuccessfulHandshake_LogsStartFailureStop()
         {
